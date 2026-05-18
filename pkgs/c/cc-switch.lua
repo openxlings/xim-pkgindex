@@ -21,7 +21,11 @@ package = {
     xpm = {
         linux = {
             url_template = "https://github.com/farion1231/cc-switch/releases/download/v{version}/CC-Switch-v{version}-Linux-x86_64.AppImage",
-            ["latest"] = { ref = "3.14.1" },
+            ["latest"] = { ref = "3.15.0" },
+            ["3.15.0"] = {
+                url = "https://github.com/farion1231/cc-switch/releases/download/v3.15.0/CC-Switch-v3.15.0-Linux-x86_64.AppImage",
+                sha256 = "f6c70d88c5b446109f5ae8c3f8b3ad5ad9a1613226b353d9108e2467d7180809",
+            },
             ["3.14.1"] = {
                 url = "https://github.com/farion1231/cc-switch/releases/download/v3.14.1/CC-Switch-v3.14.1-Linux-x86_64.AppImage",
                 sha256 = "a2e5c4183156437c96a1fe72df2a7b4b87ff6c857cdf0912e7057c34efcd5309",
@@ -29,7 +33,11 @@ package = {
         },
         macosx = {
             url_template = "https://github.com/farion1231/cc-switch/releases/download/v{version}/CC-Switch-v{version}-macOS.zip",
-            ["latest"] = { ref = "3.14.1" },
+            ["latest"] = { ref = "3.15.0" },
+            ["3.15.0"] = {
+                url = "https://github.com/farion1231/cc-switch/releases/download/v3.15.0/CC-Switch-v3.15.0-macOS.zip",
+                sha256 = "095f6f9176e472788e38dd5f0950299d5300976477d8d4482337e09446d7eff2",
+            },
             ["3.14.1"] = {
                 url = "https://github.com/farion1231/cc-switch/releases/download/v3.14.1/CC-Switch-v3.14.1-macOS.zip",
                 sha256 = "595cdbb510405b12578ccc6250dd096cc8c85dc3def2af0e0ac8c5d3e28b3807",
@@ -37,7 +45,11 @@ package = {
         },
         windows = {
             url_template = "https://github.com/farion1231/cc-switch/releases/download/v{version}/CC-Switch-v{version}-Windows-Portable.zip",
-            ["latest"] = { ref = "3.14.1" },
+            ["latest"] = { ref = "3.15.0" },
+            ["3.15.0"] = {
+                url = "https://github.com/farion1231/cc-switch/releases/download/v3.15.0/CC-Switch-v3.15.0-Windows-Portable.zip",
+                sha256 = "0aeb1cab0f5f62416327ef351c48a41e084d2e8c36a67a5b964667fa75893385",
+            },
             ["3.14.1"] = {
                 url = "https://github.com/farion1231/cc-switch/releases/download/v3.14.1/CC-Switch-v3.14.1-Windows-Portable.zip",
                 sha256 = "3747d1218e1fc7f3671b61d1ebf059f5a5aff556dd096b439484681b254eb866",
