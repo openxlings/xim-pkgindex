@@ -62,6 +62,10 @@ package = {
             ["0.0.17"] = "XLINGS_RES",
             ["0.0.16"] = "XLINGS_RES",
         },
+        windows = {
+            ["latest"] = { ref = "0.0.17" },
+            ["0.0.17"] = "XLINGS_RES",
+        },
     },
 }
 
@@ -71,6 +75,7 @@ import("xim.libxpkg.xvm")
 function install()
     local mcpp_dir = pkginfo.install_file()
         :replace(".tar.gz", "")
+        :replace(".zip", "")
     os.tryrm(pkginfo.install_dir())
     os.mv(mcpp_dir, pkginfo.install_dir())
     return true
