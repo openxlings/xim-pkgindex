@@ -19,6 +19,7 @@ class XpkgMeta:
     has_install: bool = False
     has_config: bool = False
     has_uninstall: bool = False
+    has_installed: bool = False
     has_xvm_enable: bool = False
     raw_content: str = ""
 
@@ -71,6 +72,7 @@ def parse_xpkg(lua_path: str) -> XpkgMeta:
     meta.has_install = bool(re.search(r'^function\s+install\s*\(', content, re.MULTILINE))
     meta.has_config = bool(re.search(r'^function\s+config\s*\(', content, re.MULTILINE))
     meta.has_uninstall = bool(re.search(r'^function\s+uninstall\s*\(', content, re.MULTILINE))
+    meta.has_installed = bool(re.search(r'^function\s+installed\s*\(', content, re.MULTILINE))
 
     return meta
 

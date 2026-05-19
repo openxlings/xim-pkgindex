@@ -57,6 +57,7 @@ package = {
 }
 
 import("xim.libxpkg.pkginfo")
+import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
 import("xim.libxpkg.system")
 
@@ -152,9 +153,7 @@ function install()
 end
 
 function config()
-    -- Sentinel package: no shim, no xvm registration. Consumers read
-    -- pkginfo.dep_install_dir("libcuda-host-link") + "/lib/libcuda.so.1"
-    -- as the canonical link path.
+    xvm.add(package.name)
     return true
 end
 

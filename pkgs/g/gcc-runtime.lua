@@ -61,6 +61,7 @@ package = {
 }
 
 import("xim.libxpkg.pkginfo")
+import("xim.libxpkg.xvm")
 
 function install()
     -- Tarball extracts to gcc-runtime-<ver>-linux-x86_64/lib64/. Move
@@ -75,6 +76,7 @@ function install()
 end
 
 function config()
+    xvm.add(package.name)
     return true
 end
 

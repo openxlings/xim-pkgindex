@@ -35,6 +35,7 @@ package = {
 }
 
 import("xim.libxpkg.pkginfo")
+import("xim.libxpkg.xvm")
 import("xim.libxpkg.system")
 import("xim.libxpkg.log")
 
@@ -66,6 +67,8 @@ function install()
 end
 
 function config()
+    xvm.add(package.name)
+
     local certs_dir = _sys_etc_certs_dir()
     local ssl_dir   = _sys_etc_ssl_dir()
     local pem_src   = path.join(pkginfo.install_dir(), "cacert.pem")

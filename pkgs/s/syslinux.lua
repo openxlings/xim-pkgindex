@@ -73,10 +73,10 @@ end
 
 function config()
     local bindir = path.join(pkginfo.install_dir(), "bin")
-    local root = "syslinux@" .. pkginfo.version()
-    xvm.add(host_installers[1], { bindir = bindir })
-    for i = 2, #host_installers do
-        xvm.add(host_installers[i], { bindir = bindir, binding = root })
+    local root = package.name .. "@" .. pkginfo.version()
+    xvm.add(package.name)
+    for _, p in ipairs(host_installers) do
+        xvm.add(p, { bindir = bindir, binding = root })
     end
 
     log.info("syslinux installed to %s", pkginfo.install_dir())
@@ -89,6 +89,7 @@ function config()
 end
 
 function uninstall()
+    xvm.remove(package.name)
     for _, p in ipairs(host_installers) do
         xvm.remove(p)
     end

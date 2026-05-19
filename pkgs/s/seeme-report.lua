@@ -33,6 +33,7 @@ package = {
 }
 
 import("xim.libxpkg.pkginfo")
+import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
 
 function install()
@@ -50,20 +51,22 @@ function install()
 end
 
 function config()
-    -- config xvm
-    os.exec(string.format(
-        [[xvm add seeme-report %s --alias "python %s" --env REPORT_KEY="seeme" --env REPORT_URL="http://127.0.0.1"]],
-        pkginfo.version(), path.join(pkginfo.install_dir(), "report.py")
-    ))
-    os.exec(string.format(
-        [[xvm add seeme-reportw %s --alias "pythonw %s" --env REPORT_KEY="seeme" --env REPORT_URL="http://127.0.0.1"]],
-        pkginfo.version(), path.join(pkginfo.install_dir(), "report.py")
-    ))
+    local report_script = path.join(pkginfo.install_dir(), "report.py")
+
+    xvm.add(package.name, {
+        alias = "python " .. report_script,
+        env = { REPORT_KEY = "seeme", REPORT_URL = "http://127.0.0.1" },
+    })
+    xvm.add("seeme-reportw", {
+        alias = "pythonw " .. report_script,
+        env = { REPORT_KEY = "seeme", REPORT_URL = "http://127.0.0.1" },
+        binding = package.name .. "@" .. pkginfo.version(),
+    })
     return true
 end
 
 function uninstall()
-    os.exec("xvm remove seeme-report " .. pkginfo.version())
-    os.exec("xvm remove seeme-reportw " .. pkginfo.version())
+    xvm.remove(package.name)
+    xvm.remove("seeme-reportw")
     return true
 end

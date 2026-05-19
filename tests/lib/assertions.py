@@ -2,6 +2,7 @@
 import re
 import os
 import subprocess
+import pytest
 from tests.lib.xpkg_parser import XpkgMeta, parse_xpkg
 from tests.lib.xvm_client import XvmClient
 from tests.lib.xlings_client import XlingsClient
@@ -44,6 +45,42 @@ def assert_valid_type(meta: XpkgMeta):
         return
     valid = {"package", "script", "config", "template", "bugfix"}
     assert meta.pkg_type in valid, f"未知 type: {meta.pkg_type}, 应为 {valid}"
+
+
+def assert_config_registers_package_name(meta: XpkgMeta):
+    """[Spec D1] config hook 必须通过 xvm.add() 注册 package.name
+
+    豁免条件:
+    - ref 包 (无 config hook)
+    - 有自定义 installed() hook 的包
+    - type 为 script/config/bugfix/template 的包
+    """
+    if meta.is_ref:
+        return
+    if meta.has_installed:
+        return
+    if meta.pkg_type in ("script", "config", "bugfix", "template"):
+        return
+    if not meta.has_config:
+        pytest.fail(
+            f"[Spec D3] '{meta.name}': 普通包必须定义 config hook，"
+            f"且在其中通过 xvm.add(package.name) 注册包名"
+        )
+
+    content = meta.raw_content
+    # Check for xvm.add(package.name) or xvm:add(package.name) — the standard pattern
+    has_pkg_name_var = bool(re.search(r'xvm[.:]\s*add\s*\(\s*package\.name', content))
+    # Also accept xvm.add("literal-name") where literal matches meta.name
+    has_pkg_name_lit = bool(re.search(
+        rf'xvm[.:]\s*add\s*\(\s*["\']' + re.escape(meta.name) + r'["\']',
+        content
+    ))
+    assert has_pkg_name_var or has_pkg_name_lit, (
+        f"[Spec D1] '{meta.name}': config hook 必须通过 xvm.add(package.name) "
+        f"注册包名。当前 config 中未找到 xvm.add(package.name) 或 "
+        f'xvm.add("{meta.name}", ...)。'
+        f"\n  fix: 在 config() 中添加 xvm.add(package.name) 注册为 marker"
+    )
 
 
 def assert_no_typos(lua_path: str):
