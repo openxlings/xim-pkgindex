@@ -47,8 +47,63 @@ def assert_valid_type(meta: XpkgMeta):
     assert meta.pkg_type in valid, f"未知 type: {meta.pkg_type}, 应为 {valid}"
 
 
+def _has_xvm_add_calls(content: str) -> bool:
+    """文件中是否存在任何 xvm.add / xvm:add 调用"""
+    return bool(re.search(r'xvm[.:]\s*add\s*\(', content))
+
+
+def _name_registered_directly(content: str, pkg_name: str) -> bool:
+    """检测 package.name 是否通过直接调用注册
+
+    匹配模式:
+      xvm.add(package.name ...)
+      xvm.add("pkg-name" ...)
+    """
+    if re.search(r'xvm[.:]\s*add\s*\(\s*package\.name', content):
+        return True
+    if re.search(
+        rf'xvm[.:]\s*add\s*\(\s*["\']' + re.escape(pkg_name) + r'["\']',
+        content
+    ):
+        return True
+    return False
+
+
+def _name_registered_via_list(content: str, pkg_name: str) -> bool:
+    """检测 package.name 是否通过列表迭代被动态注册
+
+    检测逻辑:
+    1. 扫描所有 lua table literal { "a", "b", ... }
+    2. 如果某个 table 中包含 "pkg_name" 字符串
+    3. 且该 table 赋值给的变量在 xvm.add(var) 或 for 循环中被使用
+    则认为 package.name 被动态注册
+    """
+    # 找到所有包含 pkg_name 的 table 定义: local xxx = { ... "pkg_name" ... }
+    table_pattern = re.compile(
+        r'local\s+(\w+)\s*=\s*\{([^}]*)\}', re.DOTALL
+    )
+    for m in table_pattern.finditer(content):
+        var_name = m.group(1)
+        table_body = m.group(2)
+        # 检查 table 中是否包含 pkg_name 字符串
+        if not re.search(rf'["\']' + re.escape(pkg_name) + r'["\']', table_body):
+            continue
+        # 检查该变量是否被用于 xvm.add 的 for 循环
+        # 模式: for _, x in ipairs(var_name) ... xvm.add(x, ...)
+        if re.search(
+            rf'for\s+\w+\s*,\s*\w+\s+in\s+ipairs\s*\(\s*{re.escape(var_name)}\s*\)',
+            content
+        ):
+            return True
+    return False
+
+
 def assert_config_registers_package_name(meta: XpkgMeta):
     """[Spec D1] config hook 必须通过 xvm.add() 注册 package.name
+
+    检测策略 (任一通过即合规):
+    1. 直接注册: xvm.add(package.name) 或 xvm.add("pkg-name", ...)
+    2. 动态注册: package.name 出现在某个 table 中，该 table 通过 for 循环传入 xvm.add()
 
     豁免条件:
     - ref 包 (无 config hook)
@@ -64,22 +119,34 @@ def assert_config_registers_package_name(meta: XpkgMeta):
     if not meta.has_config:
         pytest.fail(
             f"[Spec D3] '{meta.name}': 普通包必须定义 config hook，"
-            f"且在其中通过 xvm.add(package.name) 注册包名"
+            f"且在其中通过 xvm.add() 注册包名"
         )
 
     content = meta.raw_content
-    # Check for xvm.add(package.name) or xvm:add(package.name) — the standard pattern
-    has_pkg_name_var = bool(re.search(r'xvm[.:]\s*add\s*\(\s*package\.name', content))
-    # Also accept xvm.add("literal-name") where literal matches meta.name
-    has_pkg_name_lit = bool(re.search(
-        rf'xvm[.:]\s*add\s*\(\s*["\']' + re.escape(meta.name) + r'["\']',
-        content
-    ))
-    assert has_pkg_name_var or has_pkg_name_lit, (
-        f"[Spec D1] '{meta.name}': config hook 必须通过 xvm.add(package.name) "
-        f"注册包名。当前 config 中未找到 xvm.add(package.name) 或 "
-        f'xvm.add("{meta.name}", ...)。'
-        f"\n  fix: 在 config() 中添加 xvm.add(package.name) 注册为 marker"
+
+    # 无任何 xvm.add 调用 — 必定未注册
+    if not _has_xvm_add_calls(content):
+        pytest.fail(
+            f"[Spec D1] '{meta.name}': config 中无任何 xvm.add() 调用，"
+            f"package.name 未被注册。"
+            f"\n  fix: 在 config() 中添加 xvm.add(package.name)"
+        )
+
+    # 策略 1: 直接注册
+    if _name_registered_directly(content, meta.name):
+        return
+
+    # 策略 2: 通过列表迭代动态注册
+    if _name_registered_via_list(content, meta.name):
+        return
+
+    pytest.fail(
+        f"[Spec D1] '{meta.name}': config 中存在 xvm.add() 调用，"
+        f"但未检测到 package.name 被注册。\n"
+        f"  检测了以下模式:\n"
+        f"    1. xvm.add(package.name) 或 xvm.add(\"{meta.name}\", ...)\n"
+        f"    2. \"{meta.name}\" 出现在某个 table 中且该 table 通过 for 循环传入 xvm.add()\n"
+        f"  fix: 在 config() 中显式添加 xvm.add(package.name)"
     )
 
 

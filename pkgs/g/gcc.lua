@@ -150,7 +150,7 @@ function uninstall()
         xvm.remove(lib, gcc_version)
     end
 
-    xvm.remove(package.name)
+    xvm.remove("xim-gnu-gcc")
     xvm.remove("cc")
 
     return true
@@ -176,11 +176,11 @@ function __config_linux()
         log.warn("subos dir is empty, skip alias linker/sysroot injection")
     end
 
-    xvm.add(package.name) -- root
+    xvm.add("xim-gnu-gcc") -- root
 
     local config = {
         bindir = gcc_bindir,
-        binding = package.name .. "@" .. pkginfo.version(),
+        binding = "xim-gnu-gcc@" .. pkginfo.version(),
         envs = {
             --["LD_LIBRARY_PATH"] = ld_lib_path,
             --["LD_RUN_PATH"] = ld_lib_path,
@@ -208,7 +208,7 @@ function __config_linux()
         type = "lib",
         version = "gcc-" .. pkginfo.version(),
         bindir = path.join(pkginfo.install_dir(), "lib64"),
-        binding = package.name .. "@" .. pkginfo.version(),
+        binding = "xim-gnu-gcc@" .. pkginfo.version(),
     }
 
     for _, lib in ipairs(gcc_lib) do
@@ -221,7 +221,7 @@ function __config_linux()
     xvm.add("cc", {
         alias = "gcc" .. alias_args,
         version = pkginfo.version(),
-        binding = package.name .. "@" .. pkginfo.version(),
+        binding = "xim-gnu-gcc@" .. pkginfo.version(),
     })
 
     return true
