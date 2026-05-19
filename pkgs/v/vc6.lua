@@ -20,6 +20,13 @@ package = {
             deps = { "shortcut-tool" },
             ["latest"] = { ref = "6.0" },
             ["6.0"] = "XLINGS_RES",
+            -- xim install vc6@chinese  (简体中文版)
+            ["chinese"] = {
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/vc6/releases/download/6.0-chs/vc6-6.0-chs-windows-x86_64.zip",
+                    CN = "https://gitcode.com/xlings-res/vc6/releases/download/6.0-chs/vc6-6.0-chs-windows-x86_64.zip",
+                },
+            },
         },
     },
 }
@@ -29,13 +36,18 @@ import("xim.libxpkg.xvm")
 import("xim.libxpkg.system")
 import("xim.libxpkg.log")
 
-local SHORTCUT_NAME = "Visual C++ 6.0"
+local function __shortcut_name()
+    if pkginfo.version() == "chinese" then
+        return "Visual C++ 6.0 中文版"
+    end
+    return "Visual C++ 6.0"
+end
 local MSDEV_REL = path.join("Common", "MSDev98", "BIN", "MSDEV.EXE")
 
 function installed()
     local msdev = path.join(pkginfo.install_dir(), MSDEV_REL)
     if os.isfile(msdev) then
-        return "6.0"
+        return pkginfo.version()
     end
     return nil
 end
@@ -61,7 +73,7 @@ function config()
     -- Create desktop + start menu shortcut
     system.exec(string.format(
         [[shortcut-tool create --name "%s" --target "%s" --icon "%s"]],
-        SHORTCUT_NAME, msdev_path, msdev_path
+        __shortcut_name(), msdev_path, msdev_path
     ))
 
     log.info("VC++ 6.0 installed with Windows XP SP3 compatibility mode")
@@ -72,7 +84,7 @@ end
 function uninstall()
     -- Remove shortcut
     system.exec(string.format(
-        [[shortcut-tool remove --name "%s"]], SHORTCUT_NAME
+        [[shortcut-tool remove --name "%s"]], __shortcut_name()
     ))
 
     -- Unregister from xvm
