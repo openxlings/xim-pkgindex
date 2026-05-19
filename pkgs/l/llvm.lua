@@ -46,9 +46,9 @@ package = {
             ["20.1.7"] = {
                 url = {
                     GLOBAL = "https://github.com/xlings-res/llvm/releases/download/20.1.7/llvm-20.1.7-windows-x86_64.tar.xz",
-                    CN = "https://gitcode.com/xlings-res/llvm/releases/download/20.1.7/llvm-20.1.7-windows-x86_64.tar.xz",
+                    CN = "https://gitcode.com/xlings-res/llvm/releases/download/20.1.7-r1/llvm-20.1.7-windows-x86_64.tar.xz",
                 },
-                sha256 = "1900412c31f1ab4165fefc31460623031d0ee4f8f1c03072b8026d1f04f656b9",
+                sha256 = "17b306ac837b754f805d5b2fbf4785f5fc8ec40b5fa1241fa8125eca5a02b38f",
             },
         },
     },
