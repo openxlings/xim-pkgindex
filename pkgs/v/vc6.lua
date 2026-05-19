@@ -30,7 +30,7 @@ import("xim.libxpkg.system")
 import("xim.libxpkg.log")
 
 local SHORTCUT_NAME = "Visual C++ 6.0"
-local MSDEV_REL = path.join("Common", "MSDev98", "Bin", "MSDEV.EXE")
+local MSDEV_REL = path.join("Common", "MSDev98", "BIN", "MSDEV.EXE")
 
 function installed()
     local msdev = path.join(pkginfo.install_dir(), MSDEV_REL)
@@ -55,7 +55,7 @@ function config()
 
     -- Register IDE launcher to xvm
     xvm.add("msdev", {
-        bindir = path.join(pkginfo.install_dir(), "Common", "MSDev98", "Bin"),
+        bindir = path.join(pkginfo.install_dir(), "Common", "MSDev98", "BIN"),
     })
 
     -- Create desktop + start menu shortcut
@@ -90,9 +90,10 @@ function __setup_compat_mode(exe_path)
         [[reg add "HKCU\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers" /v "%s" /d "~ WINXPSP3 RUNASADMIN" /f]],
         exe_path
     )
-    try { function() os.run(cmd) end, catch = function(e)
-        log.warn("Failed to set compat mode: %s", tostring(e))
-    end }
+    local ok, err = pcall(os.run, cmd)
+    if not ok then
+        log.warn("Failed to set compat mode: %s", tostring(err))
+    end
 end
 
 function __cleanup_compat_mode(exe_path)
@@ -100,7 +101,8 @@ function __cleanup_compat_mode(exe_path)
         [[reg delete "HKCU\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers" /v "%s" /f]],
         exe_path
     )
-    try { function() os.run(cmd) end, catch = function(e)
-        log.warn("Failed to clean compat registry: %s", tostring(e))
-    end }
+    local ok, err = pcall(os.run, cmd)
+    if not ok then
+        log.warn("Failed to clean compat registry: %s", tostring(err))
+    end
 end
