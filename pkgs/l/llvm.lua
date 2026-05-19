@@ -26,13 +26,7 @@ package = {
                 "xim:libxml2@2.13.5",
             },
             ["latest"] = { ref = "20.1.7" },
-            ["20.1.7"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/20.1.7/llvm-20.1.7-linux-x86_64.tar.xz",
-                    CN = "https://gitcode.com/xlings-res/llvm/releases/download/20.1.7/llvm-20.1.7-linux-x86_64.tar.xz",
-                },
-                sha256 = "b28ff325888d45f81cf76cd92655aabcc000235c6e89c34d5a6bb73bf5865fb2",
-            },
+            ["20.1.7"] = "XLINGS_RES",
         },
         macosx = {
             ["latest"] = { ref = "20.1.7" },
@@ -43,13 +37,7 @@ package = {
         },
         windows = {
             ["latest"] = { ref = "20.1.7" },
-            ["20.1.7"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/20.1.7/llvm-20.1.7-windows-x86_64.tar.xz",
-                    CN = "https://gitcode.com/xlings-res/llvm/releases/download/20.1.7/llvm-20.1.7-windows-x86_64.tar.xz",
-                },
-                sha256 = "1900412c31f1ab4165fefc31460623031d0ee4f8f1c03072b8026d1f04f656b9",
-            },
+            ["20.1.7"] = "XLINGS_RES",
         },
     },
 }

@@ -21,20 +21,20 @@ package = {
             ["latest"] = { ref = "20.1.7" },
             ["20.1.7"] = {
                 url = {
-                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/20.1.7/llvm-tools-20.1.7-linux-x86_64.tar.xz",
-                    CN = "https://gitcode.com/xlings-res/llvm/releases/download/20.1.7/llvm-tools-20.1.7-linux-x86_64.tar.xz",
+                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/20.1.7/llvm-tools-20.1.7-linux-x86_64.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/llvm/releases/download/20.1.7/llvm-tools-20.1.7-linux-x86_64.tar.gz",
                 },
-                sha256 = "c438945f6fc10dafc539158ef8c93684fef1f2d88dee864396f88557d4a460c0",
+                sha256 = nil,
             },
         },
         windows = {
             ["latest"] = { ref = "20.1.7" },
             ["20.1.7"] = {
                 url = {
-                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/20.1.7/llvm-tools-20.1.7-windows-x86_64.tar.xz",
-                    CN = "https://gitcode.com/xlings-res/llvm/releases/download/20.1.7/llvm-tools-20.1.7-windows-x86_64.tar.xz",
+                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/20.1.7/llvm-tools-20.1.7-windows-x86_64.zip",
+                    CN = "https://gitcode.com/xlings-res/llvm/releases/download/20.1.7/llvm-tools-20.1.7-windows-x86_64.zip",
                 },
-                sha256 = "021047864f767747e4131a716357472e4a8343f11957c34c2a41d56a227d35f4",
+                sha256 = nil,
             },
         },
     },
