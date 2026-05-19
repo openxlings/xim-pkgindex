@@ -102,7 +102,7 @@ function __setup_compat_mode(exe_path)
         [[reg add "HKCU\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers" /v "%s" /d "~ WINXPSP3 RUNASADMIN" /f]],
         exe_path
     )
-    local ok, err = pcall(os.run, cmd)
+    local ok, err = pcall(system.exec, cmd)
     if not ok then
         log.warn("Failed to set compat mode: %s", tostring(err))
     end
@@ -113,7 +113,7 @@ function __cleanup_compat_mode(exe_path)
         [[reg delete "HKCU\Software\Microsoft\Windows NT\CurrentVersion\AppCompatFlags\Layers" /v "%s" /f]],
         exe_path
     )
-    local ok, err = pcall(os.run, cmd)
+    local ok, err = pcall(system.exec, cmd)
     if not ok then
         log.warn("Failed to clean compat registry: %s", tostring(err))
     end
