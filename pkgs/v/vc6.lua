@@ -31,8 +31,8 @@ package = {
             ["latest"] = { ref = "chinese" },
             ["chinese"] = {
                 url = {
-                    GLOBAL = "https://github.com/xlings-res/vc6/releases/download/6.0-chs/vc6-6.0-chinese-windows-x86_64.zip",
-                    CN = "https://gitcode.com/xlings-res/vc6/releases/download/6.0-chs/vc6-6.0-chs-v2-windows-x86_64.zip",
+                    GLOBAL = "https://github.com/xlings-res/vc6/releases/download/6.0-chs/vc6-chinese-windows-x86_64.zip",
+                    CN = "https://gitcode.com/xlings-res/vc6/releases/download/6.0-chs/vc6-chinese-windows-x86_64.zip",
                 },
             },
             ["english"] = "XLINGS_RES",
@@ -65,35 +65,9 @@ end
 
 function install()
     os.tryrm(pkginfo.install_dir())
-    -- xlings may rename the downloaded file, so the extracted folder name
-    -- (from zip internal structure) may not match install_file():replace(".zip","").
-    -- Scan for the extracted folder containing MSDEV.EXE instead.
-    local install_file = pkginfo.install_file()
-    local extract_dir = path.directory(install_file)
-
-    -- Try direct name match first (works for XLINGS_RES convention)
-    local guessed = install_file:replace(".zip", "")
-    if os.isdir(guessed) then
-        os.mv(guessed, pkginfo.install_dir())
-        return true
-    end
-
-    -- Fallback: find the extracted folder by looking for MSDEV.EXE
-    for _, entry in ipairs(os.dirs(path.join(extract_dir, "vc6-*"))) do
-        if os.isfile(path.join(entry, MSDEV_REL)) then
-            os.mv(entry, pkginfo.install_dir())
-            return true
-        end
-    end
-
-    -- Last resort: try any directory starting with "vc6"
-    for _, entry in ipairs(os.dirs(path.join(extract_dir, "vc6*"))) do
-        os.mv(entry, pkginfo.install_dir())
-        return true
-    end
-
-    log.error("install failed: could not find extracted VC6 directory")
-    return false
+    local extracted = pkginfo.install_file():replace(".zip", "")
+    os.mv(extracted, pkginfo.install_dir())
+    return true
 end
 
 function config()
