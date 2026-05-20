@@ -16,17 +16,13 @@ package = {
     programs = { "msdev" },
 
     -- 中文版制作流程 (基于英文版 6.0 自动生成):
-    --   1. LIEF (Python) 从英文版 14 个 PE 文件 (DLL/PKG/EXE) 中
-    --      提取 RT_STRING 资源段的 3528 条 String Table 字符串
+    --   1. LIEF (Python) 从英文版 67 个 PE 文件 (DLL/PKG/EXE) 中
+    --      提取 RT_STRING + RT_DIALOG + RT_MENU 共 9473 条资源
     --   2. LLM 批量翻译为简体中文 (保留格式符 %s/%d、快捷键 \tCtrl+X、
-    --      热键标记 & 等), 共翻译 3024 条
-    --   3. LIEF 将中文 UTF-16LE 字符串回写到 PE 资源段
+    --      热键标记 & 等), 共翻译 8638 条
+    --   3. LIEF 将中文 UTF-16LE 回写: 5903 strings + 242 dialogs + 4 menus
     --   4. 打包为 zip 上传至 GitHub/Gitcode xlings-res/vc6@6.0-chs
-    --
-    -- 涉及的 PE 文件: DEVSHL.DLL, MSDEV.EXE, DEVEDIT.PKG,
-    --   IDE/DEVRES.PKG, IDE/DEVBLD.PKG, IDE/DEVDBG.PKG, IDE/DEVCPP.PKG,
-    --   IDE/DEVCLVW.PKG, IDE/DEVDTG.PKG, IDE/DEVAUT1.PKG, IDE/DEVGAL.PKG,
-    --   IDE/DEVTOOL.PKG, IDE/DEVBIED.PKG, IDE/DEVHTMX.PKG
+    --   工具链: https://github.com/Sunrisepeak/vc6
 
     xpm = {
         windows = {
@@ -36,7 +32,7 @@ package = {
             ["chinese"] = {
                 url = {
                     GLOBAL = "https://github.com/xlings-res/vc6/releases/download/6.0-chs/vc6-6.0-chinese-windows-x86_64.zip",
-                    CN = "https://gitcode.com/xlings-res/vc6/releases/download/6.0-chs/vc6-6.0-chinese-windows-x86_64.zip",
+                    CN = "https://gitcode.com/xlings-res/vc6/releases/download/6.0-chs/vc6-6.0-chs-v2-windows-x86_64.zip",
                 },
             },
             ["english"] = "XLINGS_RES",
