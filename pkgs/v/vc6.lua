@@ -15,18 +15,33 @@ package = {
 
     programs = { "msdev" },
 
+    -- 中文版制作流程 (基于英文版 6.0 自动生成):
+    --   1. LIEF (Python) 从英文版 14 个 PE 文件 (DLL/PKG/EXE) 中
+    --      提取 RT_STRING 资源段的 3528 条 String Table 字符串
+    --   2. LLM 批量翻译为简体中文 (保留格式符 %s/%d、快捷键 \tCtrl+X、
+    --      热键标记 & 等), 共翻译 3024 条
+    --   3. LIEF 将中文 UTF-16LE 字符串回写到 PE 资源段
+    --   4. 打包为 zip 上传至 GitHub/Gitcode xlings-res/vc6@6.0-chs
+    --
+    -- 涉及的 PE 文件: DEVSHL.DLL, MSDEV.EXE, DEVEDIT.PKG,
+    --   IDE/DEVRES.PKG, IDE/DEVBLD.PKG, IDE/DEVDBG.PKG, IDE/DEVCPP.PKG,
+    --   IDE/DEVCLVW.PKG, IDE/DEVDTG.PKG, IDE/DEVAUT1.PKG, IDE/DEVGAL.PKG,
+    --   IDE/DEVTOOL.PKG, IDE/DEVBIED.PKG, IDE/DEVHTMX.PKG
+
     xpm = {
         windows = {
             deps = { "shortcut-tool" },
-            ["latest"] = { ref = "6.0" },
-            ["6.0"] = "XLINGS_RES",
-            -- xim install vc6@chinese  (简体中文版)
+            -- 默认安装简体中文版; 英文版: xlings install vc6@english
+            ["latest"] = { ref = "chinese" },
             ["chinese"] = {
                 url = {
-                    GLOBAL = "https://github.com/xlings-res/vc6/releases/download/6.0-chs/vc6-6.0-chs-windows-x86_64.zip",
-                    CN = "https://gitcode.com/xlings-res/vc6/releases/download/6.0-chs/vc6-6.0-chs-windows-x86_64.zip",
+                    GLOBAL = "https://github.com/xlings-res/vc6/releases/download/6.0-chs/vc6-6.0-chinese-windows-x86_64.zip",
+                    CN = "https://gitcode.com/xlings-res/vc6/releases/download/6.0-chs/vc6-6.0-chinese-windows-x86_64.zip",
                 },
             },
+            ["english"] = "XLINGS_RES",
+            -- "6.0" 作为英文版别名 (向后兼容)
+            ["6.0"] = "XLINGS_RES",
         },
     },
 }
@@ -37,10 +52,10 @@ import("xim.libxpkg.system")
 import("xim.libxpkg.log")
 
 local function __shortcut_name()
-    if pkginfo.version() == "chinese" then
-        return "Visual C++ 6.0 中文版"
+    if pkginfo.version() == "english" or pkginfo.version() == "6.0" then
+        return "Visual C++ 6.0"
     end
-    return "Visual C++ 6.0"
+    return "Visual C++ 6.0 中文版"
 end
 local MSDEV_REL = path.join("Common", "MSDev98", "BIN", "MSDEV.EXE")
 
@@ -65,9 +80,13 @@ function config()
     -- Set Windows XP SP3 compatibility mode + RunAsAdmin via registry
     __setup_compat_mode(msdev_path)
 
+    -- Register package.name as binding root
+    xvm.add(package.name)
+
     -- Register IDE launcher to xvm
     xvm.add("msdev", {
         bindir = path.join(pkginfo.install_dir(), "Common", "MSDev98", "BIN"),
+        binding = package.name .. "@" .. pkginfo.version(),
     })
 
     -- Create desktop + start menu shortcut
@@ -82,17 +101,24 @@ function config()
 end
 
 function uninstall()
-    -- Remove shortcut
-    system.exec(string.format(
-        [[shortcut-tool remove --name "%s"]], __shortcut_name()
+    -- Remove shortcut (try both names in case version changed)
+    pcall(system.exec, string.format(
+        [[shortcut-tool remove --name "%s"]], "Visual C++ 6.0 中文版"
+    ))
+    pcall(system.exec, string.format(
+        [[shortcut-tool remove --name "%s"]], "Visual C++ 6.0"
     ))
 
     -- Unregister from xvm
+    xvm.remove(package.name)
     xvm.remove("msdev")
 
     -- Clean up compatibility registry entry
     local msdev_path = path.join(pkginfo.install_dir(), MSDEV_REL)
     __cleanup_compat_mode(msdev_path)
+
+    -- Remove install directory
+    os.tryrm(pkginfo.install_dir())
 
     return true
 end
