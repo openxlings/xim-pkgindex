@@ -18,15 +18,17 @@ package = {
     xpm = {
         windows = {
             deps = { "shortcut-tool" },
-            ["latest"] = { ref = "6.0" },
-            ["6.0"] = "XLINGS_RES",
-            -- xim install vc6@chinese  (简体中文版)
+            -- default: Chinese simplified; use vc6@english for English
+            ["latest"] = { ref = "chinese" },
             ["chinese"] = {
                 url = {
-                    GLOBAL = "https://github.com/xlings-res/vc6/releases/download/6.0-chs/vc6-6.0-chs-windows-x86_64.zip",
-                    CN = "https://gitcode.com/xlings-res/vc6/releases/download/6.0-chs/vc6-6.0-chs-windows-x86_64.zip",
+                    GLOBAL = "https://github.com/xlings-res/vc6/releases/download/6.0-chs/vc6-6.0-chinese-windows-x86_64.zip",
+                    CN = "https://gitcode.com/xlings-res/vc6/releases/download/6.0-chs/vc6-6.0-chinese-windows-x86_64.zip",
                 },
             },
+            ["english"] = "XLINGS_RES",
+            -- keep "6.0" as alias for english (backward compat)
+            ["6.0"] = "XLINGS_RES",
         },
     },
 }
@@ -37,10 +39,10 @@ import("xim.libxpkg.system")
 import("xim.libxpkg.log")
 
 local function __shortcut_name()
-    if pkginfo.version() == "chinese" then
-        return "Visual C++ 6.0 中文版"
+    if pkginfo.version() == "english" or pkginfo.version() == "6.0" then
+        return "Visual C++ 6.0"
     end
-    return "Visual C++ 6.0"
+    return "Visual C++ 6.0 中文版"
 end
 local MSDEV_REL = path.join("Common", "MSDev98", "BIN", "MSDEV.EXE")
 
@@ -65,9 +67,13 @@ function config()
     -- Set Windows XP SP3 compatibility mode + RunAsAdmin via registry
     __setup_compat_mode(msdev_path)
 
+    -- Register package.name as binding root
+    xvm.add(package.name)
+
     -- Register IDE launcher to xvm
     xvm.add("msdev", {
         bindir = path.join(pkginfo.install_dir(), "Common", "MSDev98", "BIN"),
+        binding = package.name .. "@" .. pkginfo.version(),
     })
 
     -- Create desktop + start menu shortcut
@@ -82,17 +88,24 @@ function config()
 end
 
 function uninstall()
-    -- Remove shortcut
-    system.exec(string.format(
-        [[shortcut-tool remove --name "%s"]], __shortcut_name()
+    -- Remove shortcut (try both names in case version changed)
+    pcall(system.exec, string.format(
+        [[shortcut-tool remove --name "%s"]], "Visual C++ 6.0 中文版"
+    ))
+    pcall(system.exec, string.format(
+        [[shortcut-tool remove --name "%s"]], "Visual C++ 6.0"
     ))
 
     -- Unregister from xvm
+    xvm.remove(package.name)
     xvm.remove("msdev")
 
     -- Clean up compatibility registry entry
     local msdev_path = path.join(pkginfo.install_dir(), MSDEV_REL)
     __cleanup_compat_mode(msdev_path)
+
+    -- Remove install directory
+    os.tryrm(pkginfo.install_dir())
 
     return true
 end
