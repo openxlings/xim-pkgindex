@@ -55,11 +55,11 @@ function config()
 
     xvm.add(package.name, {
         alias = "python " .. report_script,
-        env = { REPORT_KEY = "seeme", REPORT_URL = "http://127.0.0.1" },
+        envs = { REPORT_KEY = "seeme", REPORT_URL = "http://127.0.0.1" },
     })
     xvm.add("seeme-reportw", {
         alias = "pythonw " .. report_script,
-        env = { REPORT_KEY = "seeme", REPORT_URL = "http://127.0.0.1" },
+        envs = { REPORT_KEY = "seeme", REPORT_URL = "http://127.0.0.1" },
         binding = package.name .. "@" .. pkginfo.version(),
     })
     return true

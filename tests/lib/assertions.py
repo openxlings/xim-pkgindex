@@ -70,15 +70,17 @@ def _name_registered_directly(content: str, pkg_name: str) -> bool:
 
 
 def _name_registered_via_list(content: str, pkg_name: str) -> bool:
-    """检测 package.name 是否通过列表迭代被动态注册
+    """检测 package.name 是否通过列表/table 被动态注册
 
     检测逻辑:
-    1. 扫描所有 lua table literal { "a", "b", ... }
+    1. 扫描所有 lua table literal: local xxx = { "a", "b", ... }
     2. 如果某个 table 中包含 "pkg_name" 字符串
-    3. 且该 table 赋值给的变量在 xvm.add(var) 或 for 循环中被使用
+    3. 且该 table 的元素通过以下任一方式传入 xvm.add():
+       a) for _, v in ipairs(var) 迭代        (gcc, musl-gcc)
+       b) for i = N, #var 数值循环             (syslinux)
+       c) var[N] 直接索引                      (syslinux)
     则认为 package.name 被动态注册
     """
-    # 找到所有包含 pkg_name 的 table 定义: local xxx = { ... "pkg_name" ... }
     table_pattern = re.compile(
         r'local\s+(\w+)\s*=\s*\{([^}]*)\}', re.DOTALL
     )
@@ -88,10 +90,22 @@ def _name_registered_via_list(content: str, pkg_name: str) -> bool:
         # 检查 table 中是否包含 pkg_name 字符串
         if not re.search(rf'["\']' + re.escape(pkg_name) + r'["\']', table_body):
             continue
-        # 检查该变量是否被用于 xvm.add 的 for 循环
-        # 模式: for _, x in ipairs(var_name) ... xvm.add(x, ...)
+        var_esc = re.escape(var_name)
+        # (a) for _, v in ipairs(var)
         if re.search(
-            rf'for\s+\w+\s*,\s*\w+\s+in\s+ipairs\s*\(\s*{re.escape(var_name)}\s*\)',
+            rf'for\s+\w+\s*,\s*\w+\s+in\s+ipairs\s*\(\s*{var_esc}\s*\)',
+            content
+        ):
+            return True
+        # (b) for i = N, #var (numeric loop over table length)
+        if re.search(
+            rf'for\s+\w+\s*=\s*\d+\s*,\s*#{var_esc}\b',
+            content
+        ):
+            return True
+        # (c) var[N] used as xvm.add argument
+        if re.search(
+            rf'xvm[.:]\s*add\s*\(\s*{var_esc}\s*\[',
             content
         ):
             return True
