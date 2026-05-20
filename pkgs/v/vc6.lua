@@ -15,10 +15,23 @@ package = {
 
     programs = { "msdev" },
 
+    -- 中文版制作流程 (基于英文版 6.0 自动生成):
+    --   1. LIEF (Python) 从英文版 14 个 PE 文件 (DLL/PKG/EXE) 中
+    --      提取 RT_STRING 资源段的 3528 条 String Table 字符串
+    --   2. LLM 批量翻译为简体中文 (保留格式符 %s/%d、快捷键 \tCtrl+X、
+    --      热键标记 & 等), 共翻译 3024 条
+    --   3. LIEF 将中文 UTF-16LE 字符串回写到 PE 资源段
+    --   4. 打包为 zip 上传至 GitHub/Gitcode xlings-res/vc6@6.0-chs
+    --
+    -- 涉及的 PE 文件: DEVSHL.DLL, MSDEV.EXE, DEVEDIT.PKG,
+    --   IDE/DEVRES.PKG, IDE/DEVBLD.PKG, IDE/DEVDBG.PKG, IDE/DEVCPP.PKG,
+    --   IDE/DEVCLVW.PKG, IDE/DEVDTG.PKG, IDE/DEVAUT1.PKG, IDE/DEVGAL.PKG,
+    --   IDE/DEVTOOL.PKG, IDE/DEVBIED.PKG, IDE/DEVHTMX.PKG
+
     xpm = {
         windows = {
             deps = { "shortcut-tool" },
-            -- default: Chinese simplified; use vc6@english for English
+            -- 默认安装简体中文版; 英文版: xlings install vc6@english
             ["latest"] = { ref = "chinese" },
             ["chinese"] = {
                 url = {
@@ -27,7 +40,7 @@ package = {
                 },
             },
             ["english"] = "XLINGS_RES",
-            -- keep "6.0" as alias for english (backward compat)
+            -- "6.0" 作为英文版别名 (向后兼容)
             ["6.0"] = "XLINGS_RES",
         },
     },
