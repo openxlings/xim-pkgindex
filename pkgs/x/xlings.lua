@@ -36,7 +36,11 @@ package = {
     -- one version at a time.
     xpm = {
         linux = {
-            ["latest"] = { ref = "0.4.36" },
+            ["latest"] = { ref = "0.4.37" },
+            ["0.4.37"] = {
+                url = "https://github.com/openxlings/xlings/releases/download/v0.4.37/xlings-0.4.37-linux-x86_64.tar.gz",
+                sha256 = "4b63644ce3b7d17e598b01ce45ce593bf41b0e2f12644d80e20975a6c6448137",
+            },
             ["0.4.36"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.36/xlings-0.4.36-linux-x86_64.tar.gz",
                 sha256 = "a818bd7493e24fa83edb8a3f142d5b96a37acf6a34949dd944d61791c0db2513",
@@ -157,7 +161,11 @@ package = {
             ["0.3.0"] = "XLINGS_RES",
         },
         macosx = {
-            ["latest"] = { ref = "0.4.36" },
+            ["latest"] = { ref = "0.4.37" },
+            ["0.4.37"] = {
+                url = "https://github.com/openxlings/xlings/releases/download/v0.4.37/xlings-0.4.37-macosx-arm64.tar.gz",
+                sha256 = "6764766092a7d558fbe97739ba9370cde37b8015148ac5a2fe67ffeee5c094c3",
+            },
             ["0.4.36"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.36/xlings-0.4.36-macosx-arm64.tar.gz",
                 sha256 = "d2db5ebfb9f7264a52269c5d825de24a5bf3ed6b6841948694538f1ecc7125be",
@@ -278,7 +286,11 @@ package = {
             ["0.3.0"] = "XLINGS_RES",
         },
         windows = {
-            ["latest"] = { ref = "0.4.36" },
+            ["latest"] = { ref = "0.4.37" },
+            ["0.4.37"] = {
+                url = "https://github.com/openxlings/xlings/releases/download/v0.4.37/xlings-0.4.37-windows-x86_64.zip",
+                sha256 = "5f8f341a1efaa89ed5d9df5ff0e77a1a58e6ee4270e7d9e299d8119557fea45a",
+            },
             ["0.4.36"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.36/xlings-0.4.36-windows-x86_64.zip",
                 sha256 = "959d75e8fbcba3f671670071342d57342823b67a518a6cf99251be9d768c74ce",
