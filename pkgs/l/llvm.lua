@@ -26,7 +26,12 @@ package = {
                 "xim:libxml2@2.13.5",
             },
             ["latest"] = { ref = "20.1.7" },
-            ["20.1.7"] = "XLINGS_RES",
+            ["20.1.7"] = {
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/20.1.7/llvm-20.1.7-linux-x86_64.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/llvm/releases/download/20.1.7/llvm-20.1.7-v3-linux-x86_64.tar.gz",
+                },
+            },
         },
         macosx = {
             ["latest"] = { ref = "20.1.7" },
