@@ -36,7 +36,11 @@ package = {
     -- one version at a time.
     xpm = {
         linux = {
-            ["latest"] = { ref = "0.4.38" },
+            ["latest"] = { ref = "0.4.39" },
+            ["0.4.39"] = {
+                url = "https://github.com/openxlings/xlings/releases/download/v0.4.39/xlings-0.4.39-linux-x86_64.tar.gz",
+                sha256 = "beac3c49dc561527e56f62564f9229510389e11379640819c352af17e3567f71",
+            },
             ["0.4.38"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.38/xlings-0.4.38-linux-x86_64.tar.gz",
                 sha256 = "55dfca43dcbbef31b20c1fb4aced545fb37ca8119ad816ff8bbbdc286c172129",
@@ -165,7 +169,11 @@ package = {
             ["0.3.0"] = "XLINGS_RES",
         },
         macosx = {
-            ["latest"] = { ref = "0.4.38" },
+            ["latest"] = { ref = "0.4.39" },
+            ["0.4.39"] = {
+                url = "https://github.com/openxlings/xlings/releases/download/v0.4.39/xlings-0.4.39-macosx-arm64.tar.gz",
+                sha256 = "cdae486f87c3b980186ed20d6ebf01fd1b4d725d2ae6984e3d6729a3b0b3cb5f",
+            },
             ["0.4.38"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.38/xlings-0.4.38-macosx-arm64.tar.gz",
                 sha256 = "48876b1fad4336ee00191d3e29e32e6b3689685850cc5848dba6dcf45996b628",
@@ -294,7 +302,11 @@ package = {
             ["0.3.0"] = "XLINGS_RES",
         },
         windows = {
-            ["latest"] = { ref = "0.4.38" },
+            ["latest"] = { ref = "0.4.39" },
+            ["0.4.39"] = {
+                url = "https://github.com/openxlings/xlings/releases/download/v0.4.39/xlings-0.4.39-windows-x86_64.zip",
+                sha256 = "b6b83a6b627682023a07e7ceca7f6b757cb3a82eaba7bc4157081d1435e9d376",
+            },
             ["0.4.38"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.38/xlings-0.4.38-windows-x86_64.zip",
                 sha256 = "982b13a430597556fe824142a2af53cab26f52d787f80524cbe126a61d993295",
