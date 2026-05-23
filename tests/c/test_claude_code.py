@@ -63,10 +63,11 @@ class TestIsolation:
 
 class TestDesign:
     @pytest.mark.static
-    def test_runtime_entry_uses_cli_js(self):
+    def test_runtime_entry_supports_both_layouts(self):
         content = open(PKG_FILE, encoding='utf-8').read()
-        assert "function __claude_cli()" in content
+        assert "function __claude_entry()" in content
         assert "@anthropic-ai" in content
+        assert "claude.exe" in content
         assert "cli.js" in content
         assert "node \"%s\"" in content
 

@@ -20,19 +20,22 @@ package = {
     xpm = {
         linux = {
             deps = {"node", "npm"},
-            ["latest"] = { ref = "2.1.90" },
+            ["latest"] = { ref = "2.1.142" },
+            ["2.1.142"] = { ref = "2.1.142" },
             ["2.1.90"] = { ref = "2.1.90" },
             ["2.1.63"] = {},
         },
         macosx = {
             deps = {"node", "npm"},
-            ["latest"] = { ref = "2.1.90" },
+            ["latest"] = { ref = "2.1.142" },
+            ["2.1.142"] = { ref = "2.1.142" },
             ["2.1.90"] = { ref = "2.1.90" },
             ["2.1.63"] = {},
         },
         windows = {
             deps = {"node", "npm"},
-            ["latest"] = { ref = "2.1.90" },
+            ["latest"] = { ref = "2.1.142" },
+            ["2.1.142"] = { ref = "2.1.142" },
             ["2.1.90"] = { ref = "2.1.90" },
             ["2.1.63"] = {},
         },
@@ -44,11 +47,26 @@ import("xim.libxpkg.xvm")
 
 
 -- 结构说明（基于 npm 包元数据 + 本地安装校验）:
---   1) 包自身入口由 package.json 的 bin.claude = "cli.js" 定义
---   2) 安装后主入口位于: <install>/node_modules/@anthropic-ai/claude-code/cli.js
---   3) npm .bin 包装脚本在不同 OS 的形态可能不同（如 .cmd/.ps1），这里不依赖它
-function __claude_cli()
-    return path.join(pkginfo.install_dir(), "node_modules", "@anthropic-ai", "claude-code", "cli.js")
+--   1) 旧版（<= 2.1.100）：package.json 的 bin.claude = "cli.js"，
+--      主入口位于 <install>/node_modules/@anthropic-ai/claude-code/cli.js，
+--      需要通过 node 解释器执行。
+--   2) 新版（>= 2.1.120）：package.json 的 bin.claude = "bin/claude.exe"，
+--      install.cjs 在 postinstall 把对应平台的原生二进制覆盖到
+--      <install>/node_modules/@anthropic-ai/claude-code/bin/claude.exe，
+--      可直接执行（即使在 linux/macos 文件名也是 claude.exe）。
+--   3) 这里运行时探测，向后兼容历史版本。npm .bin 包装在不同 OS 形态不同，
+--      不直接依赖。
+function __claude_entry()
+    local pkg_root = path.join(pkginfo.install_dir(), "node_modules", "@anthropic-ai", "claude-code")
+    local native = path.join(pkg_root, "bin", "claude.exe")
+    if os.isfile(native) then
+        return { path = native, mode = "native" }
+    end
+    local js = path.join(pkg_root, "cli.js")
+    if os.isfile(js) then
+        return { path = js, mode = "node" }
+    end
+    return nil
 end
 
 function install()
@@ -62,16 +80,23 @@ function install()
     )
     os.exec(npm_install)
 
-    if not os.isfile(__claude_cli()) then
-        raise("claude cli.js not found after npm install")
+    if not __claude_entry() then
+        raise("claude entry (bin/claude.exe or cli.js) not found after npm install")
     end
 
     return true
 end
 
 function config()
+    local entry = __claude_entry()
+    local alias
+    if entry.mode == "native" then
+        alias = string.format([["%s"]], entry.path)
+    else
+        alias = string.format([[node "%s"]], entry.path)
+    end
     xvm.add("claude", {
-        alias = string.format([[node "%s"]], __claude_cli()),
+        alias = alias,
         envs = {
             -- should be set by user, not hardcoded here
             --CLAUDE_CONFIG_DIR = path.join(pkginfo.install_dir(), "config"),
