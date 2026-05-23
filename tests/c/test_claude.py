@@ -10,8 +10,8 @@ from tests.lib.assertions import (
 )
 from tests.lib.platform_utils import skip_if_not
 
-PKG = "claude-code"
-PKG_FILE = "pkgs/c/claude-code.lua"
+PKG = "claude"
+PKG_FILE = "pkgs/c/claude.lua"
 
 
 @pytest.fixture(scope='module')
