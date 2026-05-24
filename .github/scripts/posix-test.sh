@@ -137,10 +137,11 @@ for rel_file in "${files[@]}"; do
     fi
     pkg=$(printf '%s' "$meta_json"     | python3 -c "import json,sys; print(json.loads(sys.stdin.read())['name'])")
     pkg_type=$(printf '%s' "$meta_json" | python3 -c "import json,sys; print(json.loads(sys.stdin.read()).get('type','package'))")
+    pkg_ns=$(printf '%s' "$meta_json"   | python3 -c "import json,sys; print(json.loads(sys.stdin.read()).get('namespace','local') or 'local')")
     is_ref=$(printf '%s' "$meta_json"   | python3 -c "import json,sys; print(json.loads(sys.stdin.read())['is_ref'])")
     has_plat=$(printf '%s' "$meta_json" | python3 -c "import json,sys; print(json.loads(sys.stdin.read()).get('$HAS_KEY', False))")
     programs=$(printf '%s' "$meta_json" | python3 -c "import json,sys; print(' '.join(json.loads(sys.stdin.read())['programs']))")
-    info "name=$pkg  type=$pkg_type  programs=[$programs]  is_ref=$is_ref  $HAS_KEY=$has_plat"
+    info "name=$pkg  type=$pkg_type  namespace=$pkg_ns  programs=[$programs]  is_ref=$is_ref  $HAS_KEY=$has_plat"
 
     if [[ "$is_ref" == "True" ]]; then
         info "skip (ref package)"; skipped=$((skipped+1)); continue
@@ -168,8 +169,13 @@ for rel_file in "${files[@]}"; do
     shims_before=$(shim_set)
     info "shims before install: $(printf '%s\n' "$shims_before" | grep -c . || true)"
 
-    step "[$pkg] install"
-    if ! "$XLINGS_CMD" install "local:$pkg" -y; then
+    # Packages that declare `namespace = "config"` (or any other non-default
+    # namespace) are registered under <namespace>:<name> rather than
+    # local:<name>, so install/remove must address them by that spec.
+    pkg_spec="${pkg_ns}:${pkg}"
+
+    step "[$pkg] install ($pkg_spec)"
+    if ! "$XLINGS_CMD" install "$pkg_spec" -y; then
         log_fail "install failed"; failures+=("$rel_file (install)"); continue
     fi
 
@@ -226,8 +232,8 @@ for rel_file in "${files[@]}"; do
         info "no new shim appeared (type='$pkg_type'; programs='$programs' may have been re-pointed)"
     fi
 
-    step "[$pkg] uninstall"
-    if ! "$XLINGS_CMD" remove "local:$pkg" -y; then
+    step "[$pkg] uninstall ($pkg_spec)"
+    if ! "$XLINGS_CMD" remove "$pkg_spec" -y; then
         log_fail "uninstall failed"; failures+=("$rel_file (uninstall)"); continue
     fi
 
