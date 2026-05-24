@@ -11,6 +11,7 @@ class XpkgMeta:
     spec: str = ""
     description: str = ""
     pkg_type: str = ""
+    namespace: str = ""
     programs: list = field(default_factory=list)
     platforms: dict = field(default_factory=dict)
     is_ref: bool = False
@@ -48,6 +49,7 @@ def parse_xpkg(lua_path: str) -> XpkgMeta:
     meta.spec = _extract_field(content, "spec") or ""
     meta.description = _extract_field(content, "description") or ""
     meta.pkg_type = _extract_field(content, "type") or ""
+    meta.namespace = _extract_field(content, "namespace") or ""
     meta.has_xvm_enable = "xvm_enable = true" in content
 
     # programs 列表

@@ -105,7 +105,8 @@ foreach ($relFile in $files) {
         continue
     }
     $meta = $metaJson | ConvertFrom-Json
-    Log-Info "name=$($meta.name)  programs=[$($meta.programs -join ',')]  is_ref=$($meta.is_ref)  has_windows=$($meta.has_windows)"
+    $pkgNs = if ($meta.namespace) { $meta.namespace } else { "local" }
+    Log-Info "name=$($meta.name)  namespace=$pkgNs  programs=[$($meta.programs -join ',')]  is_ref=$($meta.is_ref)  has_windows=$($meta.has_windows)"
 
     if ($meta.is_ref) {
         Log-Info "skip (ref package)"
@@ -146,9 +147,14 @@ foreach ($relFile in $files) {
     $shimsBefore = Get-ShimSet
     Log-Info "shims before install: $($shimsBefore.Count)"
 
+    # Packages that declare `namespace = "config"` (or any other non-default
+    # namespace) are registered under <namespace>:<name> rather than
+    # local:<name>, so install/remove must address them by that spec.
+    $pkgSpec = "${pkgNs}:${pkg}"
+
     # --- install ---
-    Log-Step "[$pkg] install"
-    & $xlingsCmd install "local:$pkg" -y 2>&1 | Write-Host
+    Log-Step "[$pkg] install ($pkgSpec)"
+    & $xlingsCmd install $pkgSpec -y 2>&1 | Write-Host
     if ($LASTEXITCODE -ne 0) {
         Log-Fail "install failed"
         $failures += "$relFile (install)"
@@ -207,8 +213,8 @@ foreach ($relFile in $files) {
     }
 
     # --- uninstall ---
-    Log-Step "[$pkg] uninstall"
-    & $xlingsCmd remove "local:$pkg" -y 2>&1 | Write-Host
+    Log-Step "[$pkg] uninstall ($pkgSpec)"
+    & $xlingsCmd remove $pkgSpec -y 2>&1 | Write-Host
     if ($LASTEXITCODE -ne 0) {
         Log-Fail "uninstall failed"
         $failures += "$relFile (uninstall)"
