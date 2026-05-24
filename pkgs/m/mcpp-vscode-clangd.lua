@@ -44,6 +44,9 @@ function config()
     end
     local settings = os.isfile(settings_file) and json.loadfile(settings_file) or {}
     settings["clangd.path"] = path.join(pkginfo.dep_install_dir("llvm-tools", pkginfo.version()), "bin", "clangd")
+    -- Enable clangd's C++20 modules support so mcpp's `import std;` /
+    -- `import <module>;` projects resolve correctly under the editor.
+    settings["clangd.arguments"] = { "--experimental-modules-support" }
     json.savefile(settings_file, settings, { indent = true })
     system.exec("code --install-extension llvm-vs-code-extensions.vscode-clangd")
     os.cd(root)

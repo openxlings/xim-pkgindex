@@ -97,6 +97,11 @@ class TestStatic:
         assert manifest_check < settings_update
 
     @pytest.mark.static
+    def test_enables_clangd_experimental_modules(self, meta):
+        assert '"clangd.arguments"' in meta.raw_content
+        assert '"--experimental-modules-support"' in meta.raw_content
+
+    @pytest.mark.static
     def test_installs_vscode_clangd_extension(self, meta):
         assert "code --install-extension llvm-vs-code-extensions.vscode-clangd" in meta.raw_content
 
