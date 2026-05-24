@@ -166,16 +166,16 @@ for rel_file in "${files[@]}"; do
         log_fail "config --add-xpkg failed"; failures+=("$rel_file (register)"); continue
     fi
 
-    # Packages that declare a non-default namespace (e.g. `namespace = "config"`)
-    # are system-side-effect config helpers — they touch hosts files, fontconfig,
-    # PowerShell policy, .vscode/settings.json, etc. — not real artifact installs.
-    # They also collide with the xim global repo on `<ns>:<name>@<ver>` after
-    # merge (both repos carry the same spec, no way to disambiguate), so the
-    # install/uninstall lifecycle assertion is both not useful and not testable
-    # for them. Register-only is enough; the static/isolation/index suites still
-    # validate their xpkg shape.
-    if [[ "$pkg_ns" != "local" ]]; then
-        info "skip (install/uninstall not asserted for namespace='$pkg_ns')"
+    # `namespace = "config"` is not a package — it's a bundle of system-side
+    # configuration steps (hosts files, fontconfig, PowerShell policy,
+    # .vscode/settings.json, mirror endpoints, etc.). The install/uninstall
+    # lifecycle assertion is not the right shape for it, and it also collides
+    # with the xim global repo on `config:<name>@<ver>` after merge (both repos
+    # carry the same spec, no way to disambiguate by repo). Register-only is
+    # enough; the static/isolation/index suites still validate the xpkg shape.
+    # Other namespaces remain full lifecycle tests.
+    if [[ "$pkg_ns" == "config" ]]; then
+        info "skip (install/uninstall not asserted for namespace='config')"
         continue
     fi
 
