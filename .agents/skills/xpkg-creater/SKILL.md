@@ -75,6 +75,18 @@ xpm = {
 
 参考实现：`pkgs/g/github-gh.lua`
 
+### 1.2.1 XLINGS_RES 镜像发布要求
+
+当某个版本在包索引中写成 `"XLINGS_RES"` 时，该版本已经进入 xlings 多镜像资源服务链路。发布前必须同时满足：
+
+- `https://github.com/xlings-res/<pkg>` 与 `https://gitcode.com/xlings-res/<pkg>` 都存在同名 tag/release。
+- 两边 release 都包含该版本声明会使用的全部平台资产；文件名必须符合 xlings-res 约定。
+- 两边资产必须来自同一个权威上游 release 或同一次构建产物；发布后从 GitHub RES、GitCode RES、权威上游各下载一次并比对 sha256，确认字节一致。
+- 如果补发历史版本，发布后确认两边 `latest` 仍指向应当作为最新的版本，不要因为补旧版本导致 latest 倒退。
+- PR 描述或汇报中写清楚 GitHub RES、GitCode RES 的 release/tag，以及 sha256 校验结果。
+
+如果 GitHub RES 和 GitCode RES 任一侧缺资源、版本不一致、资产不一致，不能把该版本切到 `"XLINGS_RES"`；先补齐镜像资源，再改包索引。
+
 ## 2) hooks 实现规范（核心）
 
 ### 2.1 import 规范

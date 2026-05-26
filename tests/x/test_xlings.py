@@ -38,20 +38,25 @@ class TestStatic:
         assert_no_typos(PKG_FILE)
 
     @pytest.mark.static
-    def test_latest_platforms_use_xlings_res(self, meta):
+    def test_recent_versions_use_xlings_res(self, meta):
         def platform_block(platform, next_platform):
             start = meta.raw_content.index(f"        {platform} = {{")
             end = meta.raw_content.index(f"        {next_platform} = {{", start)
             return meta.raw_content[start:end]
 
+        recent_versions = ("0.4.42", "0.4.41", "0.4.40")
         for platform, next_platform in (("linux", "macosx"), ("macosx", "windows")):
             block = platform_block(platform, next_platform)
             assert re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"0\.4\.42"\s*\}', block)
-            assert re.search(r'\["0\.4\.42"\]\s*=\s*"XLINGS_RES"', block)
+            for version in recent_versions:
+                escaped = re.escape(version)
+                assert re.search(rf'\["{escaped}"\]\s*=\s*"XLINGS_RES"', block)
 
         windows = meta.raw_content[meta.raw_content.index("        windows = {"):]
         assert re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"0\.4\.42"\s*\}', windows)
-        assert re.search(r'\["0\.4\.42"\]\s*=\s*"XLINGS_RES"', windows)
+        for version in recent_versions:
+            escaped = re.escape(version)
+            assert re.search(rf'\["{escaped}"\]\s*=\s*"XLINGS_RES"', windows)
 
 
 class TestIndex:
