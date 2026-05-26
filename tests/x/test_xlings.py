@@ -1,4 +1,5 @@
 """测试 xlings 包"""
+import re
 import pytest
 from tests.lib.xpkg_parser import parse_xpkg
 from tests.lib.assertions import (
@@ -35,6 +36,21 @@ class TestStatic:
     @pytest.mark.static
     def test_no_typos(self):
         assert_no_typos(PKG_FILE)
+
+    @pytest.mark.static
+    def test_latest_linux_macos_use_xlings_res(self, meta):
+        def platform_block(platform, next_platform):
+            start = meta.raw_content.index(f"        {platform} = {{")
+            end = meta.raw_content.index(f"        {next_platform} = {{", start)
+            return meta.raw_content[start:end]
+
+        for platform, next_platform in (("linux", "macosx"), ("macosx", "windows")):
+            block = platform_block(platform, next_platform)
+            assert re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"0\.4\.41"\s*\}', block)
+            assert re.search(r'\["0\.4\.41"\]\s*=\s*"XLINGS_RES"', block)
+
+        windows = meta.raw_content[meta.raw_content.index("        windows = {"):]
+        assert re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"0\.4\.40"\s*\}', windows)
 
 
 class TestIndex:
@@ -73,4 +89,3 @@ class TestVerify:
     @skip_if_not('linux')
     def test_xlings(self):
         assert_command_output("xlings --version 2>&1 | head -1", contains="xlings")
-
