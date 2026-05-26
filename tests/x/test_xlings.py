@@ -44,17 +44,17 @@ class TestStatic:
             end = meta.raw_content.index(f"        {next_platform} = {{", start)
             return meta.raw_content[start:end]
 
-        recent_versions = ("0.4.42", "0.4.41", "0.4.40")
+        mirrored_versions = ("0.4.43", "0.4.42", "0.4.41", "0.4.40")
         for platform, next_platform in (("linux", "macosx"), ("macosx", "windows")):
             block = platform_block(platform, next_platform)
-            assert re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"0\.4\.42"\s*\}', block)
-            for version in recent_versions:
+            assert re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"0\.4\.43"\s*\}', block)
+            for version in mirrored_versions:
                 escaped = re.escape(version)
                 assert re.search(rf'\["{escaped}"\]\s*=\s*"XLINGS_RES"', block)
 
         windows = meta.raw_content[meta.raw_content.index("        windows = {"):]
-        assert re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"0\.4\.42"\s*\}', windows)
-        for version in recent_versions:
+        assert re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"0\.4\.43"\s*\}', windows)
+        for version in mirrored_versions:
             escaped = re.escape(version)
             assert re.search(rf'\["{escaped}"\]\s*=\s*"XLINGS_RES"', windows)
 
