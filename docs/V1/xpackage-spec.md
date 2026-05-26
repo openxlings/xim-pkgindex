@@ -80,6 +80,8 @@ function uninstall() ... end
 
 ### 禁用 API 与替代方案
 
+> xmake兼容api逐步优化使用libxpkg原生的运行时
+
 | 禁用（xmake 特有） | 替代（xpkg 规范） |
 |-------------------|-----------------|
 | `is_host("linux")` | `os.host() == "linux"` |
