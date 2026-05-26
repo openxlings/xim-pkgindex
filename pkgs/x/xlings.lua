@@ -29,18 +29,16 @@ package = {
 
     xvm_enable = true,
 
-    -- The current release uses XLINGS_RES so downloads can
+    -- Recent mirrored releases use XLINGS_RES so downloads can
     -- resolve through the configured multi-mirror resource service.
     -- Historical 0.4.x entries keep their direct GitHub release URLs.
     xpm = {
         linux = {
-            ["latest"] = { ref = "0.4.42" },
+            ["latest"] = { ref = "0.4.43" },
+            ["0.4.43"] = "XLINGS_RES",
             ["0.4.42"] = "XLINGS_RES",
             ["0.4.41"] = "XLINGS_RES",
-            ["0.4.40"] = {
-                url = "https://github.com/openxlings/xlings/releases/download/v0.4.40/xlings-0.4.40-linux-x86_64.tar.gz",
-                sha256 = "02e47440aae74f8a8f6d32e001001aedc9742c36af048a3af604b1ae450257c4",
-            },
+            ["0.4.40"] = "XLINGS_RES",
             ["0.4.39"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.39/xlings-0.4.39-linux-x86_64.tar.gz",
                 sha256 = "beac3c49dc561527e56f62564f9229510389e11379640819c352af17e3567f71",
@@ -173,13 +171,11 @@ package = {
             ["0.3.0"] = "XLINGS_RES",
         },
         macosx = {
-            ["latest"] = { ref = "0.4.42" },
+            ["latest"] = { ref = "0.4.43" },
+            ["0.4.43"] = "XLINGS_RES",
             ["0.4.42"] = "XLINGS_RES",
             ["0.4.41"] = "XLINGS_RES",
-            ["0.4.40"] = {
-                url = "https://github.com/openxlings/xlings/releases/download/v0.4.40/xlings-0.4.40-macosx-arm64.tar.gz",
-                sha256 = "25589957250cb0be51a22ee2cea4615a3665c5fed257c1e1568f4d7be5b81e75",
-            },
+            ["0.4.40"] = "XLINGS_RES",
             ["0.4.39"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.39/xlings-0.4.39-macosx-arm64.tar.gz",
                 sha256 = "cdae486f87c3b980186ed20d6ebf01fd1b4d725d2ae6984e3d6729a3b0b3cb5f",
@@ -312,12 +308,11 @@ package = {
             ["0.3.0"] = "XLINGS_RES",
         },
         windows = {
-            ["latest"] = { ref = "0.4.42" },
+            ["latest"] = { ref = "0.4.43" },
+            ["0.4.43"] = "XLINGS_RES",
             ["0.4.42"] = "XLINGS_RES",
-            ["0.4.40"] = {
-                url = "https://github.com/openxlings/xlings/releases/download/v0.4.40/xlings-0.4.40-windows-x86_64.zip",
-                sha256 = "92afb39331eb406b15ea96b727f5ade53d05205e1afe6b72d442e4607c3f3aee",
-            },
+            ["0.4.41"] = "XLINGS_RES",
+            ["0.4.40"] = "XLINGS_RES",
             ["0.4.39"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.39/xlings-0.4.39-windows-x86_64.zip",
                 sha256 = "b6b83a6b627682023a07e7ceca7f6b757cb3a82eaba7bc4157081d1435e9d376",
