@@ -39,6 +39,7 @@ class TestStatic:
 
     @pytest.mark.static
     def test_latest_0030_uses_xlings_res(self, meta):
+        # 0.0.x mcpp assets are distributed through the XLINGS_RES mirrors.
         def platform_block(platform, next_marker):
             start = meta.raw_content.index(f"        {platform} = {{")
             end = meta.raw_content.index(next_marker, start)
