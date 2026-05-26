@@ -318,11 +318,7 @@ package = {
             ["0.3.0"] = "XLINGS_RES",
         },
         windows = {
-            ["latest"] = { ref = "0.4.41" },
-            ["0.4.41"] = {
-                url = "https://github.com/openxlings/xlings/releases/download/v0.4.41/xlings-0.4.41-windows-x86_64.zip",
-                sha256 = "7ccfdea68a64587f8e8b2e5b7128f98a55e1eba7fdab451a2d5998017799bf8e",
-            },
+            ["latest"] = { ref = "0.4.40" },
             ["0.4.40"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.40/xlings-0.4.40-windows-x86_64.zip",
                 sha256 = "92afb39331eb406b15ea96b727f5ade53d05205e1afe6b72d442e4607c3f3aee",
