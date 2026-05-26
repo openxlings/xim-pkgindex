@@ -29,12 +29,13 @@ package = {
 
     xvm_enable = true,
 
-    -- The current Linux/macOS release uses XLINGS_RES so downloads can
+    -- The current release uses XLINGS_RES so downloads can
     -- resolve through the configured multi-mirror resource service.
     -- Historical 0.4.x entries keep their direct GitHub release URLs.
     xpm = {
         linux = {
-            ["latest"] = { ref = "0.4.41" },
+            ["latest"] = { ref = "0.4.42" },
+            ["0.4.42"] = "XLINGS_RES",
             ["0.4.41"] = "XLINGS_RES",
             ["0.4.40"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.40/xlings-0.4.40-linux-x86_64.tar.gz",
@@ -172,7 +173,8 @@ package = {
             ["0.3.0"] = "XLINGS_RES",
         },
         macosx = {
-            ["latest"] = { ref = "0.4.41" },
+            ["latest"] = { ref = "0.4.42" },
+            ["0.4.42"] = "XLINGS_RES",
             ["0.4.41"] = "XLINGS_RES",
             ["0.4.40"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.40/xlings-0.4.40-macosx-arm64.tar.gz",
@@ -310,7 +312,8 @@ package = {
             ["0.3.0"] = "XLINGS_RES",
         },
         windows = {
-            ["latest"] = { ref = "0.4.40" },
+            ["latest"] = { ref = "0.4.42" },
+            ["0.4.42"] = "XLINGS_RES",
             ["0.4.40"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.40/xlings-0.4.40-windows-x86_64.zip",
                 sha256 = "92afb39331eb406b15ea96b727f5ade53d05205e1afe6b72d442e4607c3f3aee",
