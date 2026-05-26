@@ -89,6 +89,31 @@ xpm = {
 - `import("common")`
 - `import("platform")`
 
+### 2.1.1 通用 Lua/API 边界
+
+一般情况下，新增或维护 xpkg 只能使用三类能力：
+- XPackage Spec V1 规定的 `package` 元数据、`xpm` 描述和 lifecycle hooks。
+- 标准 Lua 语法与标准库（例如 `string/table/io/os.getenv/pcall/error` 等）。
+- 必要的 `xim.libxpkg.*` API（例如 `pkginfo/xvm/system/log/json`）。
+
+不要默认引入 xmake 私有 runtime/API。除非某个既有包的兼容性约束已经证明必须使用，否则避免：
+- `core.*`、`detect.*`、`runtime.*`、`xim.base.runtime`
+- `common`、`platform`
+- `path.*`、`os.host()`、`is_host()`、`try { ... }`、`raise(...)`
+
+测试也应默认锁定这条边界：import 只能来自 `xim.libxpkg.*`，路径、错误处理、文件 IO 优先用标准 Lua 或 `libxpkg` 可移植封装。
+
+### 2.1.2 配置型包的 Lua 边界
+
+对 `type = "config"` 且会写入用户工具配置的包（例如 Claude/LLM 配置）：
+- 只使用标准 Lua 语法、`package` 元数据、hooks，以及必要的 `xim.libxpkg.*` import。
+- 不使用 xmake 私有 import/API：`core.*`、`detect.*`、`xim.base.runtime`、`runtime.*`、`is_host()`、`os.host()`、`path.*`、`try { ... }`。
+- Lua 错误使用标准 `error(...)`，不要使用 `raise(...)`。
+- `install()` 保持轻量，默认 `return true`；实际配置写入放在 `config()`。
+- 修改已有 JSON 配置时先读取并保留原对象，只更新本包负责的 key；写入前备份，并用 `log.info/log.warn/log.error` 说明结果，敏感 token 不要明文打印。
+- 如果用户未输入新 key 但已有有效配置，使用 `log.warn` 提示继续复用旧 key 且不改 token；如果没有可复用 key，使用 `log.error` 后失败。
+- 针对独立行为（例如修复 Claude token 缓存的 env 项）单独抽成函数，便于测试锁定边界。
+
 ### 2.2 install() 约束
 
 `install()` 只负责安装动作本身：
@@ -118,6 +143,8 @@ xpm = {
 1. 在 `pkgs/<首字母>/<name>.lua` 新增或修改包。
 2. 若新增包，创建镜像测试文件：
    - `tests/<首字母>/test_<name_with_underscore>.py`
+   - 测试默认锁定：只 import `xim.libxpkg.*`，只使用标准 Lua + xpkg 规范，不使用 `path.*`/`os.host()`/`try {}`/`raise()` 等 xmake 私有 API。
+   - 对写用户配置的 `type = "config"` 包，额外锁定：`install()` 轻量，实际写入在 `config()`。
 3. 先跑本地直接命令验证（索引/安装/搜索/卸载）。
 4. 再跑测试集验证（L0~L4，至少 L0/L1/L2）。
 5. 准备 PR：写清楚包用途、安装/卸载行为、系统影响、测试结果。
