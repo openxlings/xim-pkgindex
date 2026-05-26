@@ -1,4 +1,5 @@
 """测试 mcpp 包"""
+import re
 import pytest
 from tests.lib.xpkg_parser import parse_xpkg
 from tests.lib.assertions import (
@@ -35,6 +36,23 @@ class TestStatic:
     @pytest.mark.static
     def test_no_typos(self):
         assert_no_typos(PKG_FILE)
+
+    @pytest.mark.static
+    def test_latest_0030_uses_xlings_res(self, meta):
+        def platform_block(platform, next_marker):
+            start = meta.raw_content.index(f"        {platform} = {{")
+            end = meta.raw_content.index(next_marker, start)
+            return meta.raw_content[start:end]
+
+        platforms = (
+            ("linux", "        macosx = {"),
+            ("macosx", "        windows = {"),
+            ("windows", "\n        },\n    },"),
+        )
+        for platform, next_marker in platforms:
+            block = platform_block(platform, next_marker)
+            assert re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"0\.0\.30"\s*\}', block)
+            assert re.search(r'\["0\.0\.30"\]\s*=\s*"XLINGS_RES"', block)
 
 
 class TestIndex:
