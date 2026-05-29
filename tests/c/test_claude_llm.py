@@ -56,8 +56,10 @@ class TestClaudeLlmStatic:
             assert platform in raw_content
 
         assert raw_content.count("[\"latest\"] = { ref = \"deepseek\" }") == 3
-        assert raw_content.count("[\"deepseek\"] = {}") == 3
-        assert raw_content.count("\"xim:claude\"") == 3
+        assert raw_content.count("[\"deepseek\"] = { ref = \"deepseek-v4-pro\" }") == 3
+        assert raw_content.count("[\"deepseek-v4-pro\"] = {}") == 3
+        assert raw_content.count("[\"deepseek-v4-flash\"] = {}") == 3
+        assert raw_content.count("\"xim:claude@2.1.153\"") == 3
 
     def test_imports_are_limited_to_libxpkg(self, raw_content, meta):
         assert "xim.libxpkg.json" in meta.imports
@@ -158,11 +160,6 @@ class TestClaudeLlmStatic:
     def test_applies_expected_deepseek_environment(self, raw_content):
         expected_values = {
             "ANTHROPIC_BASE_URL": "https://api.deepseek.com/anthropic",
-            "ANTHROPIC_MODEL": "deepseek-v4-pro[1m]",
-            "ANTHROPIC_DEFAULT_OPUS_MODEL": "deepseek-v4-pro[1m]",
-            "ANTHROPIC_DEFAULT_SONNET_MODEL": "deepseek-v4-pro[1m]",
-            "ANTHROPIC_DEFAULT_HAIKU_MODEL": "deepseek-v4-pro[1m]",
-            "CLAUDE_CODE_SUBAGENT_MODEL": "deepseek-v4-pro[1m]",
             "CLAUDE_CODE_EFFORT_LEVEL": "max",
             "API_TIMEOUT_MS": "3000000",
             "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC": "1",
@@ -171,6 +168,14 @@ class TestClaudeLlmStatic:
         for key, value in expected_values.items():
             assert f'__set_env(env, "{key}", "{value}")' in raw_content
 
+        assert '["deepseek-v4-pro"] = "deepseek-v4-pro[1m]"' in raw_content
+        assert '["deepseek-v4-flash"] = "deepseek-v4-flash"' in raw_content
+        assert 'local model_name = version_to_model_name[pkginfo.version()] or "deepseek-v4-pro[1m]"' in raw_content
+        assert '__set_env(env, "ANTHROPIC_MODEL", model_name)' in raw_content
+        assert '__set_env(env, "ANTHROPIC_DEFAULT_OPUS_MODEL", model_name)' in raw_content
+        assert '__set_env(env, "ANTHROPIC_DEFAULT_SONNET_MODEL", model_name)' in raw_content
+        assert '__set_env(env, "ANTHROPIC_DEFAULT_HAIKU_MODEL", "deepseek-v4-flash")' in raw_content
+        assert '__set_env(env, "CLAUDE_CODE_SUBAGENT_MODEL", "deepseek-v4-flash")' in raw_content
         assert '__set_env(env, "ANTHROPIC_AUTH_TOKEN", api_key, true)' in raw_content
         assert "sk-xxx" not in raw_content
 

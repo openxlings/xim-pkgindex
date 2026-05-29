@@ -213,7 +213,7 @@ end
 local function __verify_claude()
     log.info("正在调用 Claude Code 发起一次配置验证请求...")
     print("")
-    system.exec([[claude -p --setting-sources user tell_model_name_and_calculate_1_plus_2_use_chinese]])
+    system.exec([[claude -p --setting-sources user --tools "" --no-session-persistence tell_model_name_and_calculate_1_plus_2_use_chinese]])
     print("")
 end
 
