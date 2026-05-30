@@ -12,7 +12,7 @@ from tests.lib.assertions import (
 from tests.lib.platform_utils import skip_if_not
 
 PKG = "mcpp"
-INSTALL_PKG = "local:mcpp@0.0.33"
+INSTALL_PKG = "local:mcpp@0.0.34"
 PKG_FILE = "pkgs/m/mcpp.lua"
 
 
@@ -39,7 +39,7 @@ class TestStatic:
         assert_no_typos(PKG_FILE)
 
     @pytest.mark.static
-    def test_latest_0033_uses_xlings_res(self, meta):
+    def test_latest_0034_uses_xlings_res(self, meta):
         # 0.0.x mcpp assets are distributed through the XLINGS_RES mirrors.
         def platform_block(platform, next_marker):
             start = meta.raw_content.index(f"        {platform} = {{")
@@ -53,8 +53,8 @@ class TestStatic:
         )
         for platform, next_marker in platforms:
             block = platform_block(platform, next_marker)
-            assert re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"0\.0\.33"\s*\}', block)
-            assert re.search(r'\["0\.0\.33"\]\s*=\s*"XLINGS_RES"', block)
+            assert re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"0\.0\.34"\s*\}', block)
+            assert re.search(r'\["0\.0\.34"\]\s*=\s*"XLINGS_RES"', block)
 
 
 class TestIndex:
@@ -92,7 +92,7 @@ class TestVerify:
     @pytest.mark.verify
     @skip_if_not('linux')
     def test_mcpp(self):
-        assert_command_output("mcpp --version", contains="mcpp 0.0.33")
+        assert_command_output("mcpp --version", contains="mcpp 0.0.34")
 
     @pytest.mark.verify
     @skip_if_not('linux')
