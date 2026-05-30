@@ -38,7 +38,7 @@ class TestStatic:
         assert_no_typos(PKG_FILE)
 
     @pytest.mark.static
-    def test_latest_0030_uses_xlings_res(self, meta):
+    def test_latest_0031_uses_xlings_res(self, meta):
         # 0.0.x mcpp assets are distributed through the XLINGS_RES mirrors.
         def platform_block(platform, next_marker):
             start = meta.raw_content.index(f"        {platform} = {{")
@@ -52,8 +52,8 @@ class TestStatic:
         )
         for platform, next_marker in platforms:
             block = platform_block(platform, next_marker)
-            assert re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"0\.0\.30"\s*\}', block)
-            assert re.search(r'\["0\.0\.30"\]\s*=\s*"XLINGS_RES"', block)
+            assert re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"0\.0\.31"\s*\}', block)
+            assert re.search(r'\["0\.0\.31"\]\s*=\s*"XLINGS_RES"', block)
 
 
 class TestIndex:
