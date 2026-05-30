@@ -56,6 +56,11 @@ class TestStatic:
             assert re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"0\.0\.34"\s*\}', block)
             assert re.search(r'\["0\.0\.34"\]\s*=\s*"XLINGS_RES"', block)
 
+    @pytest.mark.static
+    def test_install_uses_runtime_dir(self, meta):
+        assert "path.directory(archive)" in meta.raw_content
+        assert "path.filename(mcpp_dir)" in meta.raw_content
+
 
 class TestIndex:
     @pytest.mark.index

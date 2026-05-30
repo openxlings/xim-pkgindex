@@ -115,9 +115,14 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 
 function install()
-    local mcpp_dir = pkginfo.install_file()
+    local archive = pkginfo.install_file()
+    local mcpp_dir = archive
         :replace(".tar.gz", "")
         :replace(".zip", "")
+    local runtime_dir = path.join(path.directory(archive), path.filename(mcpp_dir))
+    if os.isdir(runtime_dir) then
+        mcpp_dir = runtime_dir
+    end
     os.tryrm(pkginfo.install_dir())
     os.mv(mcpp_dir, pkginfo.install_dir())
     return true
