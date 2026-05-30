@@ -65,3 +65,15 @@ could contain xlings index clones but miss the default `mcpplibs` clone. mcpp
 - `xlings-res/mcpp` mirrors were published for `0.0.36` on GitHub and GitCode.
 - `pkgs/m/mcpp.lua` now points `latest` to `0.0.36` so xlings CI can use the
   corrected bootstrap tool.
+
+## Follow-up: xlings 0.4.47
+
+After xlings PR #315 switched CI/release bootstrap to `mcpp 0.0.36`, xlings
+`v0.4.47` was released from merge commit
+`66e601bcc84d787f4f772494f807cf85af85b745`.
+
+- Release run: https://github.com/openxlings/xlings/actions/runs/26692719560
+- Source release: https://github.com/openxlings/xlings/releases/tag/v0.4.47
+- Mirror release: https://github.com/xlings-res/xlings/releases/tag/0.4.47
+- GitCode mirror: `xlings-res/xlings@0.4.47`
+- `pkgs/x/xlings.lua` now points `latest` to `0.4.47`.
