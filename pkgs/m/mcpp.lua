@@ -127,7 +127,11 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 
 local function mcpp_bin()
-    return path.join(pkginfo.install_dir(), "bin", "mcpp")
+    local exe = "mcpp"
+    if os.host() == "windows" then
+        exe = "mcpp.exe"
+    end
+    return path.join(pkginfo.install_dir(), "bin", exe)
 end
 
 local function ensure_runtime_dir()
