@@ -126,7 +126,19 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 
-function install()
+local function mcpp_bin()
+    local exe = "mcpp"
+    if os.host() == "windows" then
+        exe = "mcpp.exe"
+    end
+    return path.join(pkginfo.install_dir(), "bin", exe)
+end
+
+local function ensure_runtime_dir()
+    if os.isfile(mcpp_bin()) then
+        return true
+    end
+
     local archive = pkginfo.install_file()
     local mcpp_dir = archive
         :replace(".tar.gz", "")
@@ -137,10 +149,15 @@ function install()
     end
     os.tryrm(pkginfo.install_dir())
     os.mv(mcpp_dir, pkginfo.install_dir())
-    return true
+    return os.isfile(mcpp_bin())
+end
+
+function install()
+    return ensure_runtime_dir()
 end
 
 function config()
+    ensure_runtime_dir()
     xvm.add("mcpp", { bindir = path.join(pkginfo.install_dir(), "bin") })
     return true
 end
