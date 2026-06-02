@@ -1,8 +1,8 @@
 # xim-pkgindex: mcpp GL Runtime Rollout Plan
 
-> 状态: active
-> 分支: `codex/gl-runtime-closure-rollout`
-> PR: pending
+> 状态: merged rollout checkpoint; package/version rollout waits for an mcpp release
+> 分支: `codex/gl-runtime-closure-rollout` (merged via PR #271)
+> PR: https://github.com/openxlings/xim-pkgindex/pull/271
 > Last updated: 2026-06-03
 > 目标: 在 mcpp 和 mcpp-index 完成标准运行时闭包能力后,按现有 xlings 发布流程更新可安装版本和必要镜像资产。
 
@@ -54,8 +54,9 @@ pattern:
 ## Implementation Plan
 
 - [x] Create this repository-level rollout checkpoint.
-- [ ] Wait for mcpp runtime metadata support PR to merge and release.
-- [ ] Wait for mcpp-index GL runtime package/metadata PR to merge.
+- [ ] Wait for mcpp release containing runtime metadata support.
+  - Done: mcpp runtime metadata support PR #106 merged.
+- [x] Wait for mcpp-index GL runtime package/metadata PR to merge.
 - [ ] Decide whether xlings bootstrap or user-facing install requires a new
       `pkgs/m/mcpp.lua` version.
 - [ ] If required, update `pkgs/m/mcpp.lua`.
@@ -83,15 +84,17 @@ mcpp --version
 
 ## PR / CI / Merge Notes
 
-- [ ] Commit this plan as the first checkpoint.
-- [ ] PR body must be sanitized: no local absolute paths, no private usernames,
+- [x] Commit this plan as the first checkpoint.
+- [x] PR body must be sanitized: no local absolute paths, no private usernames,
       no operator prompt content.
-- [ ] Record upstream PR/release links only after they are public.
-- [ ] Poll CI without serially blocking unrelated repository work.
-- [ ] Squash merge after checks pass, using repository policy.
+- [x] Record upstream PR/release links only after they are public.
+- [x] Poll CI without serially blocking unrelated repository work.
+- [x] Squash merge after checks pass, using repository policy.
+  - PR #271 merged at commit `2008e1b553dfe254c13fe32e925fca2617ac0631`.
 
 ## Cross-Repository Dependencies
 
 - Blocked on `mcpp` release for tool behavior.
-- Blocked on `mcpp-index` merge for package metadata.
+- `mcpp-index` package metadata PR has merged; future package rollout should
+  consume that public state.
 - Does not block `imgui-m` documentation or example work.
