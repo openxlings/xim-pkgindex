@@ -12,7 +12,7 @@ from tests.lib.assertions import (
 from tests.lib.platform_utils import skip_if_not
 
 PKG = "xlings"
-INSTALL_PKG = "local:xlings@0.4.47"
+INSTALL_PKG = "local:xlings@0.4.48"
 PKG_FILE = "pkgs/x/xlings.lua"
 
 
@@ -45,16 +45,16 @@ class TestStatic:
             end = meta.raw_content.index(f"        {next_platform} = {{", start)
             return meta.raw_content[start:end]
 
-        mirrored_versions = ("0.4.47", "0.4.46", "0.4.44", "0.4.43", "0.4.42", "0.4.41", "0.4.40")
+        mirrored_versions = ("0.4.48", "0.4.47", "0.4.46", "0.4.44", "0.4.43", "0.4.42", "0.4.41", "0.4.40")
         for platform, next_platform in (("linux", "macosx"), ("macosx", "windows")):
             block = platform_block(platform, next_platform)
-            assert re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"0\.4\.47"\s*\}', block)
+            assert re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"0\.4\.48"\s*\}', block)
             for version in mirrored_versions:
                 escaped = re.escape(version)
                 assert re.search(rf'\["{escaped}"\]\s*=\s*"XLINGS_RES"', block)
 
         windows = meta.raw_content[meta.raw_content.index("        windows = {"):]
-        assert re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"0\.4\.47"\s*\}', windows)
+        assert re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"0\.4\.48"\s*\}', windows)
         for version in mirrored_versions:
             escaped = re.escape(version)
             assert re.search(rf'\["{escaped}"\]\s*=\s*"XLINGS_RES"', windows)
@@ -96,6 +96,6 @@ class TestVerify:
     @skip_if_not('linux')
     def test_xlings(self):
         assert_command_output(
-            "xlings use xlings@0.4.47 >/dev/null && xlings --version 2>&1 | head -1",
-            contains="xlings 0.4.47",
+            "xlings use xlings@0.4.48 >/dev/null && xlings --version 2>&1 | head -1",
+            contains="xlings 0.4.48",
         )
