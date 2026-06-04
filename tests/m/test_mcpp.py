@@ -53,8 +53,8 @@ class TestStatic:
         )
         for platform, next_marker in platforms:
             block = platform_block(platform, next_marker)
-            assert re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"0\.0\.46"\s*\}', block)
-            assert re.search(r'\["0\.0\.46"\]\s*=\s*"XLINGS_RES"', block)
+            assert re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"0\.0\.48"\s*\}', block)
+            assert re.search(r'\["0\.0\.48"\]\s*=\s*"XLINGS_RES"', block)
 
     @pytest.mark.static
     def test_install_uses_runtime_dir(self, meta):
