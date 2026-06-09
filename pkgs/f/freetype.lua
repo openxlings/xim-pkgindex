@@ -21,9 +21,8 @@ package = {
             ["latest"] = { ref = "2.13.2" },
             ["2.13.2"] = {
                 url = {
-                    -- CN: switch to gitcode.com/xlings-res/freetype once the mirror is published
                     GLOBAL = "https://github.com/xlings-res/freetype/releases/download/2.13.2/freetype-2.13.2-linux-x86_64.tar.gz",
-                    CN     = "https://github.com/xlings-res/freetype/releases/download/2.13.2/freetype-2.13.2-linux-x86_64.tar.gz",
+                    CN     = "https://gitcode.com/xlings-res/freetype/releases/download/2.13.2/freetype-2.13.2-linux-x86_64.tar.gz",
                 },
                 sha256 = "461bd3493988542edabdda6ac54436e796d2f56055478acfb8efec7aa1cc55ac",
             },
