@@ -24,18 +24,36 @@ package = {
         windows = {
             deps = { "virtualbox" },
             ["latest"] = { ref = "24.04.4" },
-            ["24.04.4"] = { },
+            ["24.04.4"] = {
+                url = {
+                    GLOBAL = "https://releases.ubuntu.com/24.04/ubuntu-24.04.4-desktop-amd64.iso",
+                    CN     = "https://mirrors.ustc.edu.cn/ubuntu-releases/24.04/ubuntu-24.04.4-desktop-amd64.iso",
+                },
+                sha256 = "3a4c9877b483ab46d7c3fbe165a0db275e1ae3cfe56a5657e5a47c2f99a99d1e",
+            },
         },
         linux = {
             deps = { "virtualbox" },
             ["latest"] = { ref = "24.04.4" },
-            ["24.04.4"] = { },
+            ["24.04.4"] = {
+                url = {
+                    GLOBAL = "https://releases.ubuntu.com/24.04/ubuntu-24.04.4-desktop-amd64.iso",
+                    CN     = "https://mirrors.ustc.edu.cn/ubuntu-releases/24.04/ubuntu-24.04.4-desktop-amd64.iso",
+                },
+                sha256 = "3a4c9877b483ab46d7c3fbe165a0db275e1ae3cfe56a5657e5a47c2f99a99d1e",
+            },
         },
         ubuntu = { ref = "linux" },
         macosx = {
             deps = { "virtualbox" },
             ["latest"] = { ref = "24.04.4" },
-            ["24.04.4"] = { },
+            ["24.04.4"] = {
+                url = {
+                    GLOBAL = "https://releases.ubuntu.com/24.04/ubuntu-24.04.4-desktop-amd64.iso",
+                    CN     = "https://mirrors.ustc.edu.cn/ubuntu-releases/24.04/ubuntu-24.04.4-desktop-amd64.iso",
+                },
+                sha256 = "3a4c9877b483ab46d7c3fbe165a0db275e1ae3cfe56a5657e5a47c2f99a99d1e",
+            },
         },
     },
 }
@@ -45,8 +63,6 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.log")
 
 local UBUNTU_VERSION = "24.04.4"
-local ISO_FILE = "ubuntu-" .. UBUNTU_VERSION .. "-desktop-amd64.iso"
-local ISO_URL  = "https://releases.ubuntu.com/24.04/" .. ISO_FILE
 
 -- VM defaults (overridable through environment variables)
 local function env(name, default)
@@ -87,13 +103,11 @@ function install()
     local workdir = pkginfo.install_dir()
     os.mkdir(workdir)
 
-    local iso = path.join(workdir, ISO_FILE)
-    if not os.isfile(iso) then
-        log.info("Downloading Ubuntu %s desktop ISO (~6GB, this may take a while)...", UBUNTU_VERSION)
-        system.exec(string.format([[curl -L -o "%s" "%s"]], iso, ISO_URL))
-    else
-        log.info("Reusing cached ISO: %s", iso)
-    end
+    -- ISO is fetched by the framework via the xpm multi-mirror url
+    -- (GLOBAL=releases.ubuntu.com, CN=USTC); pkginfo.install_file()
+    -- points at the downloaded, sha256-verified Ubuntu %s desktop ISO.
+    local iso = pkginfo.install_file()
+    log.info("Using Ubuntu %s desktop ISO: %s", UBUNTU_VERSION, iso)
 
     local vdi = path.join(workdir, cfg.name .. ".vdi")
 
