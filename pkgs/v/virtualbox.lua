@@ -23,16 +23,34 @@ package = {
     xpm = {
         windows = {
             ["latest"] = { ref = "7.2.8" },
-            ["7.2.8"] = { },
+            ["7.2.8"] = {
+                url = {
+                    GLOBAL = "https://download.virtualbox.org/virtualbox/7.2.8/VirtualBox-7.2.8-173730-Win.exe",
+                    CN     = "https://gitcode.com/xlings-res/vbox/releases/download/7.2.8/VirtualBox-7.2.8-173730-Win.exe",
+                },
+                sha256 = "ae5415cc968c0e8acddd99358c21d267a2c31ac4ff5182861aab9e6931001606",
+            },
         },
         linux = {
             ["latest"] = { ref = "7.2.8" },
-            ["7.2.8"] = { },
+            ["7.2.8"] = {
+                url = {
+                    GLOBAL = "https://download.virtualbox.org/virtualbox/7.2.8/VirtualBox-7.2.8-173730-Linux_amd64.run",
+                    CN     = "https://gitcode.com/xlings-res/vbox/releases/download/7.2.8/VirtualBox-7.2.8-173730-Linux_amd64.run",
+                },
+                sha256 = "c878868d9b9e849d051c6248fc5b2d5b75411365840c5a7857b09f112629cb57",
+            },
         },
         ubuntu = { ref = "linux" },
         macosx = {
             ["latest"] = { ref = "7.2.8" },
-            ["7.2.8"] = { },
+            ["7.2.8"] = {
+                url = {
+                    GLOBAL = "https://download.virtualbox.org/virtualbox/7.2.8/VirtualBox-7.2.8-173730-OSX.dmg",
+                    CN     = "https://gitcode.com/xlings-res/vbox/releases/download/7.2.8/VirtualBox-7.2.8-173730-OSX.dmg",
+                },
+                sha256 = "77a7deef70f4e68b261856eda43650335f4db5fbf7223320ebd1c78e5cddc473",
+            },
         },
     },
 }
@@ -42,17 +60,10 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
 
-local VBOX_VERSION = "7.2.8"
-local VBOX_BUILD   = "173730"
-local VBOX_BASEURL = "https://download.virtualbox.org/virtualbox/" .. VBOX_VERSION .. "/"
-
-local installer_file = {
-    windows = "VirtualBox-" .. VBOX_VERSION .. "-" .. VBOX_BUILD .. "-Win.exe",
-    linux   = "VirtualBox-" .. VBOX_VERSION .. "-" .. VBOX_BUILD .. "-Linux_amd64.run",
-    macosx  = "VirtualBox-" .. VBOX_VERSION .. "-" .. VBOX_BUILD .. "-OSX.dmg",
-}
-
--- directory that holds the VBoxManage executable after a system install
+-- directory that holds the VBoxManage executable after a system install.
+-- VirtualBox ships a kernel driver (vboxdrv) and must be installed
+-- system-side; the official installer places VBoxManage here. The xvm
+-- shim below just routes to wherever VBoxManage actually lands.
 local vboxmanage_bindir = {
     windows = "C:/Program Files/Oracle/VirtualBox",
     linux   = "/usr/bin",
@@ -69,33 +80,29 @@ end
 
 function install()
     local host = os.host()
-    local url = VBOX_BASEURL .. installer_file[host]
-
-    log.info("Downloading VirtualBox %s for %s ...", VBOX_VERSION, host)
+    -- installer is fetched by the framework via the xpm multi-mirror url
+    -- (GLOBAL=download.virtualbox.org, CN=gitcode xlings-res/vbox);
+    -- pkginfo.install_file() is the downloaded, sha256-verified installer.
+    local installer = pkginfo.install_file()
+    log.info("Installing VirtualBox from %s ...", installer)
 
     if host == "windows" then
-        local out = installer_file[host]
-        system.exec(string.format([[curl -L -o "%s" "%s"]], out, url))
         -- Oracle-supported silent install (installs hypervisor + drivers).
         log.warn("Installing VirtualBox silently (requires administrator privileges)...")
-        system.exec(string.format([[%s --silent --ignore-reboot]], out))
+        system.exec(string.format([["%s" --silent --ignore-reboot]], installer))
     elseif host == "macosx" then
-        local out = installer_file[host]
-        system.exec(string.format([[curl -L -o "%s" "%s"]], out, url))
-        system.exec(string.format([[hdiutil attach "%s" -mountpoint /Volumes/VirtualBox]], out))
+        system.exec(string.format([[hdiutil attach "%s" -mountpoint /Volumes/VirtualBox]], installer))
         log.warn("Installing VirtualBox (requires sudo; approve the Oracle kernel extension in System Settings > Privacy & Security)...")
         system.exec([[sudo installer -pkg /Volumes/VirtualBox/VirtualBox.pkg -target /]])
         system.exec([[hdiutil detach /Volumes/VirtualBox]])
     else
         -- linux / ubuntu: the .run installer builds the vboxdrv kernel module.
-        local out = installer_file[host]
         log.warn("Installing kernel-module build prerequisites (dkms, headers)...")
         system.exec([[sudo apt-get update]])
         system.exec([[sudo apt-get install -y dkms build-essential linux-headers-$(uname -r)]])
-        system.exec(string.format([[curl -L -o "%s" "%s"]], out, url))
-        system.exec(string.format([[chmod +x "%s"]], out))
+        system.exec(string.format([[chmod +x "%s"]], installer))
         log.warn("Installing VirtualBox (requires sudo; builds the vboxdrv kernel module)...")
-        system.exec(string.format([[sudo sh "%s"]], out))
+        system.exec(string.format([[sudo sh "%s"]], installer))
         -- allow the current user to manage USB / VMs without root
         system.exec([[sudo usermod -aG vboxusers "$USER" || true]])
     end
