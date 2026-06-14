@@ -3,7 +3,7 @@ package = {
 
     -- base info
     name = "virtualbox",
-    description = "Oracle VM VirtualBox hypervisor + VBoxManage CLI (alias: vbox)",
+    description = "Oracle VM VirtualBox userspace + VBoxManage CLI (portable, alias: vbox)",
     homepage = "https://www.virtualbox.org",
     maintainers = {"Oracle"},
     licenses = {"GPL-3.0"},
@@ -12,7 +12,6 @@ package = {
 
     -- xim pkg info
     type = "package",
-    namespace = "config",
     archs = {"x86_64"},
     status = "stable", -- dev, stable, deprecated
     categories = {"virtualization", "vm", "hypervisor"},
@@ -20,120 +19,74 @@ package = {
 
     xvm_enable = true,
 
+    -- Portable userspace: a repackaged, relocatable ($ORIGIN RPATH) build of
+    -- the VirtualBox Linux userspace, hosted on the xlings-res mirror. It
+    -- installs entirely under the xpkgs dir (no system clash, xvm-managed,
+    -- version-switchable). Windows/macOS use a different installer layout and
+    -- still need on-device validation, so only linux is declared for now.
     xpm = {
-        windows = {
-            ["latest"] = { ref = "7.2.8" },
-            ["7.2.8"] = {
-                url = {
-                    GLOBAL = "https://download.virtualbox.org/virtualbox/7.2.8/VirtualBox-7.2.8-173730-Win.exe",
-                    CN     = "https://gitcode.com/xlings-res/vbox/releases/download/7.2.8/VirtualBox-7.2.8-173730-Win.exe",
-                },
-                sha256 = "ae5415cc968c0e8acddd99358c21d267a2c31ac4ff5182861aab9e6931001606",
-            },
-        },
         linux = {
             ["latest"] = { ref = "7.2.8" },
             ["7.2.8"] = {
                 url = {
-                    GLOBAL = "https://download.virtualbox.org/virtualbox/7.2.8/VirtualBox-7.2.8-173730-Linux_amd64.run",
-                    CN     = "https://gitcode.com/xlings-res/vbox/releases/download/7.2.8/VirtualBox-7.2.8-173730-Linux_amd64.run",
+                    GLOBAL = "https://github.com/xlings-res/vbox/releases/download/7.2.8/virtualbox-7.2.8-linux-x86_64.tar.gz",
+                    CN     = "https://gitcode.com/xlings-res/vbox/releases/download/7.2.8/virtualbox-7.2.8-linux-x86_64.tar.gz",
                 },
-                sha256 = "c878868d9b9e849d051c6248fc5b2d5b75411365840c5a7857b09f112629cb57",
+                sha256 = "803e7b6b5bb20a7b99cf19613fabf08ed3c5252fc1da629d4684ea8868f39ffc",
             },
         },
         ubuntu = { ref = "linux" },
-        macosx = {
-            ["latest"] = { ref = "7.2.8" },
-            ["7.2.8"] = {
-                url = {
-                    GLOBAL = "https://download.virtualbox.org/virtualbox/7.2.8/VirtualBox-7.2.8-173730-OSX.dmg",
-                    CN     = "https://gitcode.com/xlings-res/vbox/releases/download/7.2.8/VirtualBox-7.2.8-173730-OSX.dmg",
-                },
-                sha256 = "77a7deef70f4e68b261856eda43650335f4db5fbf7223320ebd1c78e5cddc473",
-            },
-        },
     },
 }
 
-import("xim.libxpkg.system")
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
 
--- directory that holds the VBoxManage executable after a system install.
--- VirtualBox ships a kernel driver (vboxdrv) and must be installed
--- system-side; the official installer places VBoxManage here. The xvm
--- shim below just routes to wherever VBoxManage actually lands.
-local vboxmanage_bindir = {
-    windows = "C:/Program Files/Oracle/VirtualBox",
-    linux   = "/usr/bin",
-    macosx  = "/usr/local/bin",
-}
-
 function installed()
-    local ok, output = pcall(os.iorun, "VBoxManage --version")
-    if ok and output and string.find(output, "%d+%.%d+%.%d+") then
-        return output:match("(%d+%.%d+%.%d+)") or true
-    end
-    return false
+    -- Check OUR xpkgs install only — never a system/distro VirtualBox on PATH
+    -- (e.g. /usr/bin/VBoxManage), so install() always provisions the portable
+    -- userspace and the two never get confused.
+    return os.isfile(path.join(pkginfo.install_dir(), "VBoxManage"))
 end
 
 function install()
-    local host = os.host()
-    -- installer is fetched by the framework via the xpm multi-mirror url
-    -- (GLOBAL=download.virtualbox.org, CN=gitcode xlings-res/vbox);
-    -- pkginfo.install_file() is the downloaded, sha256-verified installer.
-    local installer = pkginfo.install_file()
-    log.info("Installing VirtualBox from %s ...", installer)
+    local idir = pkginfo.install_dir()
+    os.tryrm(idir)
 
-    if host == "windows" then
-        -- Oracle-supported silent install (installs hypervisor + drivers).
-        log.warn("Installing VirtualBox silently (requires administrator privileges)...")
-        system.exec(string.format([["%s" --silent --ignore-reboot]], installer))
-    elseif host == "macosx" then
-        system.exec(string.format([[hdiutil attach "%s" -mountpoint /Volumes/VirtualBox]], installer))
-        log.warn("Installing VirtualBox (requires sudo; approve the Oracle kernel extension in System Settings > Privacy & Security)...")
-        system.exec([[sudo installer -pkg /Volumes/VirtualBox/VirtualBox.pkg -target /]])
-        system.exec([[hdiutil detach /Volumes/VirtualBox]])
+    -- Prefer moving the framework-extracted tree (builtin os.mv is reliable);
+    -- fall back to self-extracting the tarball, stripping the top-level
+    -- virtualbox-<ver>-linux-x86_64/ wrapper.
+    local srcdir = pkginfo.install_file():gsub("%.tar%.gz$", "")
+    if os.isdir(srcdir) then
+        os.mv(srcdir, idir)
     else
-        -- linux / ubuntu: the .run installer builds the vboxdrv kernel module.
-        log.warn("Installing kernel-module build prerequisites (dkms, headers)...")
-        system.exec([[sudo apt-get update]])
-        system.exec([[sudo apt-get install -y dkms build-essential linux-headers-$(uname -r)]])
-        system.exec(string.format([[chmod +x "%s"]], installer))
-        log.warn("Installing VirtualBox (requires sudo; builds the vboxdrv kernel module)...")
-        system.exec(string.format([[sudo sh "%s"]], installer))
-        -- allow the current user to manage USB / VMs without root
-        system.exec([[sudo usermod -aG vboxusers "$USER" || true]])
+        os.mkdir(idir)
+        os.exec(string.format([[tar xzf "%s" -C "%s" --strip-components=1]], pkginfo.install_file(), idir))
     end
-
-    log.info("VirtualBox installed. Note: a reboot may be required for kernel drivers to load.")
     return true
 end
 
 function config()
-    local host = os.host()
-    local bindir = vboxmanage_bindir[host]
+    local idir = pkginfo.install_dir()
 
-    -- expose the VirtualBox CLI through xvm, plus a short `vbox` alias
-    xvm.add("VBoxManage", { bindir = bindir })
-    xvm.add("vbox", { bindir = bindir, alias = "VBoxManage" })
+    -- VBOX_APP_HOME tells VirtualBox where its components live so the
+    -- relocated userspace finds XPCOM components / unattended templates.
+    xvm.add("VBoxManage", { bindir = idir, envs = { VBOX_APP_HOME = idir } })
+    xvm.add("VBoxHeadless", { bindir = idir, envs = { VBOX_APP_HOME = idir } })
+    xvm.add("vbox", { bindir = idir, alias = "VBoxManage", envs = { VBOX_APP_HOME = idir } })
 
-    log.info("Registered 'VBoxManage' and alias 'vbox' to xvm.")
+    log.info("Registered VBoxManage / VBoxHeadless to xvm (alias 'vbox').")
+    log.warn("Booting a VM still needs the host kernel driver (vboxdrv): one-time")
+    log.warn("  sudo %s/vboxdrv.sh setup   (system-wide; needs dkms + kernel headers)", idir)
     return true
 end
 
 function uninstall()
     xvm.remove("VBoxManage")
+    xvm.remove("VBoxHeadless")
     xvm.remove("vbox")
-
-    local host = os.host()
-    if host == "windows" then
-        log.warn("Uninstall VirtualBox from 'Apps & features', or run the installer with --uninstall.")
-    elseif host == "macosx" then
-        log.warn("Run the VirtualBox_Uninstall.tool from the VirtualBox disk image to fully remove it.")
-    else
-        system.exec([[sudo /opt/VirtualBox/uninstall.sh || true]])
-    end
+    -- userspace lives entirely under the xpkgs install dir; the framework
+    -- removes it. The shared kernel driver (if set up) is left untouched.
     return true
 end
