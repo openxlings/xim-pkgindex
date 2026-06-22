@@ -211,6 +211,7 @@ local gcc_version_list = {
 local target_list = {
     "i486-linux-musl",
     "x86_64-linux-musl",
+    "aarch64-linux-musl",
     "arm-linux-musleabi",
     "arm-linux-musleabihf",
     "sh2eb-linux-muslfdpic",
