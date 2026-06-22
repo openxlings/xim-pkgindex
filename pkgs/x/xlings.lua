@@ -13,7 +13,7 @@ package = {
     repo = "https://github.com/openxlings/xlings",
 
     -- xim pkg info
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable", -- dev, stable, deprecated
     categories = {"tools", "package-manager", "version-manager"},
     keywords = {"xlings", "package-manager", "version-manager", "dev-tools"},
