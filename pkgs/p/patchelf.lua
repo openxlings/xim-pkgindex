@@ -11,7 +11,7 @@ package = {
     docs = "https://github.com/NixOS/patchelf",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"elf", "binary", "tool"},
     keywords = {"elfpatch", "patchelf", "rpath", "interpreter"},

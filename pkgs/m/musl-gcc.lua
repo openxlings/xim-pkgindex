@@ -63,12 +63,12 @@ import("xim.libxpkg.log")
 -- from the installed payload's `bin/<triple>-gcc`, so all logic below is
 -- arch-agnostic. Native build => triple's arch == host arch.
 local function __musl_triple()
-    -- Detect from the payload's per-target sysroot dir (musl-cross-make lays
-    -- the toolchain out as <root>/<triple>/{bin,include,lib}). os.isdir is the
-    -- most widely-available sandbox primitive — avoid os.files globbing.
-    local install_dir = pkginfo.install_dir()
-    for _, t in ipairs({"x86_64-linux-musl", "aarch64-linux-musl"}) do
-        if os.isdir(path.join(install_dir, t)) then return t end
+    -- Detect from the payload's frontend `bin/<triple>-gcc` via os.isfile —
+    -- the most reliable sandbox primitive (os.files is nil here, os.isdir
+    -- proved unreliable). aarch64 first so the native aarch64 toolchain wins.
+    local bindir = path.join(pkginfo.install_dir(), "bin")
+    for _, t in ipairs({"aarch64-linux-musl", "x86_64-linux-musl"}) do
+        if os.isfile(path.join(bindir, t .. "-gcc")) then return t end
     end
     return "x86_64-linux-musl"                  -- fallback
 end
@@ -99,8 +99,21 @@ local function __patch_toolchain_dynamic_bins()
     local musl_lib_dir = path.join(install_dir, triple, "lib")
     local musl_loader = path.join(musl_lib_dir, "libc.so")
 
+    -- Relocation only applies to a musl-DYNAMIC toolchain (bins whose PT_INTERP
+    -- points at musl's libc.so). A static toolchain (no libc.so / no INTERP) and
+    -- a host without patchelf need no relocation — skip gracefully rather than
+    -- failing the install.
     if not os.isfile(musl_loader) then
-        raise("musl loader not found: " .. musl_loader)
+        log.warn("musl-gcc: no musl libc.so at %s; skipping relocation (static toolchain?)", musl_loader)
+        return
+    end
+    local have_patchelf = try {
+        function() os.exec("patchelf --version"); return true end,
+        catch = function() return false end
+    }
+    if not have_patchelf then
+        log.warn("musl-gcc: patchelf unavailable; skipping dynamic-bin relocation")
+        return
     end
 
     local bindirs = {
@@ -109,22 +122,21 @@ local function __patch_toolchain_dynamic_bins()
     }
 
     local patched = 0
-    os.exec("patchelf --version")
-
     for _, bindir in ipairs(bindirs) do
         if os.isdir(bindir) then
             for _, name in ipairs(__dynamic_bins(triple)) do
                 local target = path.join(bindir, name)
                 if os.isfile(target) then
-                    os.exec(string.format(
-                        "patchelf --set-interpreter %q %q",
-                        musl_loader, target
-                    ))
-                    os.exec(string.format(
-                        "patchelf --set-rpath %q %q",
-                        musl_lib_dir, target
-                    ))
-                    patched = patched + 1
+                    -- only dynamic ELFs have an interpreter; skip static bins.
+                    local interp = try {
+                        function() return os.iorun("patchelf --print-interpreter " .. target) end,
+                        catch = function() return "" end
+                    }
+                    if interp and interp:trim() ~= "" then
+                        os.exec(string.format("patchelf --set-interpreter %q %q", musl_loader, target))
+                        os.exec(string.format("patchelf --set-rpath %q %q", musl_lib_dir, target))
+                        patched = patched + 1
+                    end
                 end
             end
         end
