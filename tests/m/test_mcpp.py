@@ -39,8 +39,11 @@ class TestStatic:
         assert_no_typos(PKG_FILE)
 
     @pytest.mark.static
-    def test_latest_0056_uses_xlings_res(self, meta):
-        # 0.0.x mcpp assets are distributed through the XLINGS_RES mirrors.
+    def test_latest_uses_xlings_res(self, meta):
+        # mcpp assets are distributed through the XLINGS_RES mirrors. Assert the
+        # `latest` ref (whatever version it currently points at) maps to an
+        # XLINGS_RES entry in every platform block — version-agnostic so it
+        # doesn't go stale on each release bump.
         def platform_block(platform, next_marker):
             start = meta.raw_content.index(f"        {platform} = {{")
             end = meta.raw_content.index(next_marker, start)
@@ -53,8 +56,10 @@ class TestStatic:
         )
         for platform, next_marker in platforms:
             block = platform_block(platform, next_marker)
-            assert re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"0\.0\.56"\s*\}', block)
-            assert re.search(r'\["0\.0\.56"\]\s*=\s*"XLINGS_RES"', block)
+            m = re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"([0-9.]+)"\s*\}', block)
+            assert m, f"no `latest` ref in {platform} block"
+            latest = m.group(1)
+            assert re.search(rf'\["{re.escape(latest)}"\]\s*=\s*"XLINGS_RES"', block)
 
     @pytest.mark.static
     def test_install_uses_runtime_dir(self, meta):
