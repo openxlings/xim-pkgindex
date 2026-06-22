@@ -63,11 +63,12 @@ import("xim.libxpkg.log")
 -- from the installed payload's `bin/<triple>-gcc`, so all logic below is
 -- arch-agnostic. Native build => triple's arch == host arch.
 local function __musl_triple()
-    local bindir = path.join(pkginfo.install_dir(), "bin")
-    local cands = os.files(path.join(bindir, "*-linux-musl-gcc"))
-    if cands and #cands > 0 then
-        local b = path.filename(cands[1])      -- <triple>-gcc
-        return b:sub(1, #b - #"-gcc")
+    -- Detect from the payload's per-target sysroot dir (musl-cross-make lays
+    -- the toolchain out as <root>/<triple>/{bin,include,lib}). os.isdir is the
+    -- most widely-available sandbox primitive — avoid os.files globbing.
+    local install_dir = pkginfo.install_dir()
+    for _, t in ipairs({"x86_64-linux-musl", "aarch64-linux-musl"}) do
+        if os.isdir(path.join(install_dir, t)) then return t end
     end
     return "x86_64-linux-musl"                  -- fallback
 end
