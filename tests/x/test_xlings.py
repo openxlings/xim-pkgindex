@@ -40,24 +40,25 @@ class TestStatic:
 
     @pytest.mark.static
     def test_recent_versions_use_xlings_res(self, meta):
+        # Version-agnostic: the `latest` ref (whatever it currently is) must map
+        # to an XLINGS_RES entry in every platform block, and a few stable
+        # historical versions stay XLINGS_RES. Avoids going stale on each bump.
         def platform_block(platform, next_platform):
             start = meta.raw_content.index(f"        {platform} = {{")
+            if next_platform is None:
+                return meta.raw_content[start:]
             end = meta.raw_content.index(f"        {next_platform} = {{", start)
             return meta.raw_content[start:end]
 
-        mirrored_versions = ("0.4.51", "0.4.50", "0.4.49", "0.4.48", "0.4.47", "0.4.46", "0.4.44", "0.4.43", "0.4.42", "0.4.41", "0.4.40")
-        for platform, next_platform in (("linux", "macosx"), ("macosx", "windows")):
+        stable_versions = ("0.4.44", "0.4.43", "0.4.42", "0.4.41", "0.4.40")
+        for platform, next_platform in (("linux", "macosx"), ("macosx", "windows"), ("windows", None)):
             block = platform_block(platform, next_platform)
-            assert re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"0\.4\.51"\s*\}', block)
-            for version in mirrored_versions:
-                escaped = re.escape(version)
-                assert re.search(rf'\["{escaped}"\]\s*=\s*"XLINGS_RES"', block)
-
-        windows = meta.raw_content[meta.raw_content.index("        windows = {"):]
-        assert re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"0\.4\.51"\s*\}', windows)
-        for version in mirrored_versions:
-            escaped = re.escape(version)
-            assert re.search(rf'\["{escaped}"\]\s*=\s*"XLINGS_RES"', windows)
+            m = re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"([0-9.]+)"\s*\}', block)
+            assert m, f"no `latest` ref in {platform} block"
+            latest = m.group(1)
+            assert re.search(rf'\["{re.escape(latest)}"\]\s*=\s*"XLINGS_RES"', block)
+            for version in stable_versions:
+                assert re.search(rf'\["{re.escape(version)}"\]\s*=\s*"XLINGS_RES"', block)
 
 
 class TestIndex:
