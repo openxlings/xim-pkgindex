@@ -11,7 +11,7 @@ package = {
 
     -- xim pkg info
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable", -- dev, stable, deprecated
     categories = {"build-system", "ninja"},
     keywords = {"ninja", "build-system", "cross-platform"},
@@ -21,13 +21,15 @@ package = {
 
     xpm = {
         linux = {
-            -- Runtime deps. ninja prebuilt is dynamically linked
-            -- (INTERP=/lib64/ld-linux-x86-64.so.2) and pulls libc/libm
-            -- from glibc plus libstdc++.so.6 + libgcc_s.so.1 from
-            -- xim:gcc-runtime (the runtime libs split out of xim:gcc).
-            deps = {
-                runtime = { "xim:glibc@2.39", "xim:gcc-runtime@15.1.0" },
-            },
+            -- Self-contained, no runtime deps (mirrors patchelf.lua, the other
+            -- bootstrap tool). Both Linux assets are statically linked, so they
+            -- carry their own libc/libstdc++ and need no INTERP/RPATH patching:
+            --   x86_64  → ninja-1.12.1-linux-x86_64.tar.gz   (glibc-static)
+            --   aarch64 → ninja-1.12.1-linux-aarch64.tar.gz  (musl-static)
+            -- This is why no glibc/gcc-runtime deps are declared: xim resolves
+            -- deps per-OS (not per-arch), so a glibc dep would 404 on aarch64
+            -- (no glibc asset for arm). A static ninja sidesteps that entirely
+            -- and is the right shape for a bootstrap build tool regardless.
             ["latest"] = { ref = "1.12.1" },
             ["1.12.1"] = "XLINGS_RES",
         },
