@@ -41,12 +41,12 @@ package = {
 
     xpm = {
         linux = {
-            -- glibc-hosted cross tools: declare glibc so the sandbox loader is
-            -- present and auto-elfpatch can repoint INTERP/RPATH (same pattern
-            -- as binutils.lua). XLINGS_RES resolves the host-matching asset:
-            --   aarch64-linux-musl-gcc-<ver>-linux-x86_64.tar.gz
-            deps = { "xim:glibc@2.39" },
-
+            -- No deps: this is a self-contained toolchain. The native (aarch64
+            -- host) asset is static (musl-cross-make --static) and the cross
+            -- (x86_64 host) asset runs against the host's own glibc — neither
+            -- needs xim:glibc (which has no aarch64 asset) nor relocation; the
+            -- install hook just unpacks. XLINGS_RES picks the host-matching
+            -- asset: aarch64-linux-musl-gcc-<ver>-linux-{x86_64,aarch64}.tar.gz
             ["latest"] = { ref = "15.1.0" },
             ["15.1.0"] = "XLINGS_RES",
         },
