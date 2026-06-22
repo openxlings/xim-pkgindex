@@ -15,7 +15,7 @@ package = {
     -- aarch64-linux-musl (baked into the name). Distinct from `musl-gcc`,
     -- which is the host==target NATIVE toolchain. Built via musl-cross-make
     -- (Canadian-cross step A: build=x86_64, host=x86_64, target=aarch64).
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "dev", -- dev, stable, deprecated
     categories = {"compiler", "gnu", "language", "cross"},
     keywords = {"compiler", "gnu", "gcc", "cross", "aarch64", "arm64", "musl"},

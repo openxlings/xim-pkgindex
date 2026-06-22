@@ -13,7 +13,7 @@ package = {
 
     -- xim pkg info
     type = "package",
-    archs = {"x86_64", "arm64"},
+    archs = {"x86_64", "arm64", "aarch64"},
     status = "dev", -- 0.0.x: upstream is pre-1.0, expect breaking changes
     categories = {"build-tool", "cpp"},
     keywords = {"cpp", "c++", "build", "module", "package-manager"},

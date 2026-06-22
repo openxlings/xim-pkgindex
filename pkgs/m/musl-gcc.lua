@@ -11,7 +11,12 @@ package = {
 
     -- xim pkg info
     type = "package",
-    archs = {"x86_64"},
+    -- Native (host == target) musl toolchain. XLINGS_RES picks the
+    -- host-matching asset: musl-gcc-<ver>-linux-x86_64 on x86_64,
+    -- musl-gcc-<ver>-linux-aarch64 on aarch64. All install/config logic below
+    -- is triple-agnostic (detected from the payload), so the same package
+    -- serves both arches.
+    archs = {"x86_64", "aarch64"},
     status = "stable", -- dev, stable, deprecated
     categories = {"compiler", "gnu", "language"},
     keywords = {"compiler", "gnu", "gcc", "language", "c", "c++"},
@@ -31,15 +36,13 @@ package = {
         linux = {
             -- patchelf is required by __patch_toolchain_dynamic_bins() in
             -- install() — the prebuilt tarball ships every binutils binary
-            -- (~16 entries under bin/x86_64-linux-musl-* AND under
-            -- x86_64-linux-musl/bin/) with PT_INTERP hardcoded to the
-            -- canonical /home/xlings/.xlings_data/lib/ld-musl-x86_64.so.1
-            -- path. Without patchelf at install time the relocation step
-            -- silently no-ops (os.exec falls back), and the toolchain only
-            -- runs on machines where that exact canonical path resolves —
-            -- breaking any non-default XLINGS_HOME, container, fresh
-            -- machine, or "first ever musl-gcc install" scenario. Declaring
-            -- the dep guarantees patchelf is on the install-hook PATH.
+            -- (~16 entries under bin/<triple>-* AND under <triple>/bin/) with
+            -- PT_INTERP hardcoded to the canonical
+            -- /home/xlings/.xlings_data/lib/ld-musl-<arch>.so.1 path. Without
+            -- patchelf the relocation step silently no-ops and the toolchain
+            -- only runs where that exact path resolves — breaking non-default
+            -- XLINGS_HOME / containers / fresh machines. Declaring the dep
+            -- guarantees patchelf is on the install-hook PATH.
             deps = { "xim:patchelf@0.18.0" },
 
             -- toolchain build based on musl-gcc-static
@@ -56,31 +59,44 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
 
-local toolchain_dynamic_bins = {
-    "x86_64-linux-musl-addr2line",
-    "x86_64-linux-musl-ar",
-    "x86_64-linux-musl-as",
-    "x86_64-linux-musl-c++filt",
-    "x86_64-linux-musl-elfedit",
-    "x86_64-linux-musl-gprof",
-    "x86_64-linux-musl-ld",
-    "x86_64-linux-musl-ld.bfd",
-    "x86_64-linux-musl-nm",
-    "x86_64-linux-musl-objcopy",
-    "x86_64-linux-musl-objdump",
-    "x86_64-linux-musl-ranlib",
-    "x86_64-linux-musl-readelf",
-    "x86_64-linux-musl-size",
-    "x86_64-linux-musl-strings",
-    "x86_64-linux-musl-strip",
-    -- target-prefixed copies
-    "ar", "as", "ld", "ld.bfd", "nm",
-    "objcopy", "objdump", "ranlib", "readelf", "strip",
-}
+-- Detect the toolchain triple (e.g. x86_64-linux-musl / aarch64-linux-musl)
+-- from the installed payload's `bin/<triple>-gcc`, so all logic below is
+-- arch-agnostic. Native build => triple's arch == host arch.
+local function __musl_triple()
+    -- Detect from the payload's per-target sysroot dir (musl-cross-make lays
+    -- the toolchain out as <root>/<triple>/{bin,include,lib}). os.isdir is the
+    -- most widely-available sandbox primitive — avoid os.files globbing.
+    local install_dir = pkginfo.install_dir()
+    for _, t in ipairs({"x86_64-linux-musl", "aarch64-linux-musl"}) do
+        if os.isdir(path.join(install_dir, t)) then return t end
+    end
+    return "x86_64-linux-musl"                  -- fallback
+end
+
+-- "<triple>-linux-musl" -> "<arch>" (the part before "-linux")
+local function __musl_arch(triple)
+    return triple:split("-linux")[1]
+end
+
+local function __dynamic_bins(triple)
+    local tools = {
+        "addr2line", "ar", "as", "c++filt", "elfedit", "gprof",
+        "ld", "ld.bfd", "nm", "objcopy", "objdump", "ranlib",
+        "readelf", "size", "strings", "strip",
+    }
+    local out = {}
+    for _, t in ipairs(tools) do table.insert(out, triple .. "-" .. t) end
+    -- target-prefixed copies (live under <triple>/bin/)
+    for _, t in ipairs({"ar","as","ld","ld.bfd","nm","objcopy","objdump","ranlib","readelf","strip"}) do
+        table.insert(out, t)
+    end
+    return out
+end
 
 local function __patch_toolchain_dynamic_bins()
     local install_dir = pkginfo.install_dir()
-    local musl_lib_dir = path.join(install_dir, "x86_64-linux-musl", "lib")
+    local triple = __musl_triple()
+    local musl_lib_dir = path.join(install_dir, triple, "lib")
     local musl_loader = path.join(musl_lib_dir, "libc.so")
 
     if not os.isfile(musl_loader) then
@@ -89,7 +105,7 @@ local function __patch_toolchain_dynamic_bins()
 
     local bindirs = {
         path.join(install_dir, "bin"),
-        path.join(install_dir, "x86_64-linux-musl", "bin"),
+        path.join(install_dir, triple, "bin"),
     }
 
     local patched = 0
@@ -97,7 +113,7 @@ local function __patch_toolchain_dynamic_bins()
 
     for _, bindir in ipairs(bindirs) do
         if os.isdir(bindir) then
-            for _, name in ipairs(toolchain_dynamic_bins) do
+            for _, name in ipairs(__dynamic_bins(triple)) do
                 local target = path.join(bindir, name)
                 if os.isfile(target) then
                     os.exec(string.format(
@@ -114,57 +130,34 @@ local function __patch_toolchain_dynamic_bins()
         end
     end
 
-    log.info("musl-gcc relocate: patched dynamic tools = %d", patched)
+    log.info("musl-gcc relocate (%s): patched dynamic tools = %d", triple, patched)
 end
 
 -- ─────────────────────────────────────────────────────────────────────
 -- gcc-flavor cross-registration
 --
 -- A musl-gcc install also publishes itself under the standard `gcc` family
--- of program names with version suffix `-musl` (e.g. `15.1.0-musl`). Users
--- can then switch flavors via:
+-- of program names with version suffix `-musl` (e.g. `15.1.0-musl`):
 --   xlings use gcc 15.1.0          # glibc
---   xlings use gcc 15.1.0-musl     # musl
+--   xlings use gcc 15.1.0-musl     # musl (this package, host-native)
 --
--- The cross-registered programs form their own binding subtree rooted at
--- `xim-musl-gnu-gcc@<flavor_ver>`, parallel to xim:gcc.lua's
--- `xim-gnu-gcc@<ver>`. Keeping this tree separate from the primary
--- `musl-gcc@<ver>` tree (which holds musl-gcc / musl-g++ / x86_64-linux-musl-*
--- / musl-ldd / musl-loader / musl-gcc-static / musl-g++-static) means the
--- gcc-flavor view in `xlings info gcc` is not entangled with musl-gcc's
--- internal program shimming, and removal of one flavor's registrations
--- doesn't reach into the other.
---
--- Why the suffix and not a prefix:
---   xvm's match_version splits versions on `.` and parses each segment with
---   from_chars; `15.1.0-musl` parses cleanly as 15/1/0(-musl) so it sorts
---   alongside `15.1.0`, while `musl-15.1.0` sorts as 0.1.0 (`musl-15` parses
---   as 0). Both forms are still distinct from `15.1.0` under prefix_matches
---   so `xlings use gcc 15.1.0` will not accidentally pick up the musl row.
---
--- Why only the frontends (gcc/g++/c++/cpp/cc):
---   GCC drives cc1/as/ld via toolchain-internal paths, not PATH, so the
---   compile/link pipeline is fully covered by the frontend shim. ar/nm/
---   ranlib/strip operate on ELF and don't depend on libc flavor; the host
---   binutils handles musl-produced .o/.a files fine, no need to remap them.
---
--- Why `-Wl,--dynamic-linker=...`/`-rpath` but NOT `--sysroot`:
---   musl-gcc's toolchain is self-contained: its `x86_64-linux-musl/{include,
---   lib}` already serves as the sysroot, so `--sysroot=...` would mis-point
---   to subos's glibc headers. Linking, however, defaults to musl's standard
---   `/lib/ld-musl-x86_64.so.1` dynamic linker which doesn't exist on glibc
---   hosts; remap to the toolchain-shipped libc.so (musl: libc.so doubles as
---   the dynamic linker) and add rpath so dynamic binaries Just Work. Static
---   builds ignore both flags.
+-- See git history for the rationale on the suffix (sorts alongside 15.1.0),
+-- the frontends-only shimming (gcc drives cc1/as/ld internally), and why we
+-- inject `-Wl,--dynamic-linker=`/`-rpath` to the toolchain-shipped libc.so
+-- (musl: libc.so doubles as the dynamic linker) but NOT `--sysroot`.
+-- All names/paths are derived from the detected triple so this works for any
+-- host arch (x86_64, aarch64, ...).
 -- ─────────────────────────────────────────────────────────────────────
 
-local __gcc_flavor_progs = {
-    ["gcc"] = "x86_64-linux-musl-gcc",
-    ["g++"] = "x86_64-linux-musl-g++",
-    ["c++"] = "x86_64-linux-musl-c++",
-    ["cpp"] = "x86_64-linux-musl-cpp",
-    ["cc"]  = "x86_64-linux-musl-gcc",
-}
+local function __gcc_flavor_progs(triple)
+    return {
+        ["gcc"] = triple .. "-gcc",
+        ["g++"] = triple .. "-g++",
+        ["c++"] = triple .. "-c++",
+        ["cpp"] = triple .. "-cpp",
+        ["cc"]  = triple .. "-gcc",
+    }
+end
 
 local function __gcc_flavor_version()
     return pkginfo.version() .. "-musl"
@@ -176,7 +169,7 @@ end
 
 local function __gcc_flavor_alias_args()
     local musl_lib_dir = path.join(
-        pkginfo.install_dir(), "x86_64-linux-musl", "lib"
+        pkginfo.install_dir(), __musl_triple(), "lib"
     )
     local musl_loader = path.join(musl_lib_dir, "libc.so")
     return string.format(
@@ -198,7 +191,7 @@ local function __register_as_gcc_flavor()
     -- Anchor a virtual root node for this flavor's subtree.
     xvm.add(root_name)
 
-    for prog, target in pairs(__gcc_flavor_progs) do
+    for prog, target in pairs(__gcc_flavor_progs(__musl_triple())) do
         xvm.add(prog, {
             bindir  = gcc_bindir,
             alias   = target .. alias_args,
@@ -210,7 +203,7 @@ end
 
 local function __unregister_gcc_flavor()
     local flavor_ver = __gcc_flavor_version()
-    for prog, _ in pairs(__gcc_flavor_progs) do
+    for prog, _ in pairs(__gcc_flavor_progs(__musl_triple())) do
         xvm.remove(prog, flavor_ver)
     end
     -- Drop the virtual root only if no other musl-gcc version still hangs
@@ -222,7 +215,7 @@ local function __remove_specs()
     local install_dir = pkginfo.install_dir()
     local specs_file = path.join(
         install_dir,
-        "lib", "gcc", "x86_64-linux-musl", pkginfo.version(), "specs"
+        "lib", "gcc", __musl_triple(), pkginfo.version(), "specs"
     )
 
     if not os.isfile(specs_file) then
@@ -247,26 +240,28 @@ end
 
 function config()
     local gcc_bindir = path.join(pkginfo.install_dir(), "bin")
+    local triple = __musl_triple()
+    local arch_prefix = __musl_arch(triple) .. "-linux-"  -- e.g. "aarch64-linux-"
 
     -- binding tree - root node
     local binding_tree_root = "musl-gcc@" .. pkginfo.version()
     xvm.add("musl-gcc", {
         bindir = gcc_bindir,
-        alias = "x86_64-linux-musl-gcc",
+        alias = triple .. "-gcc",
     })
 
-    local __binding_tree_root = "x86_64-linux-musl-gcc@" .. pkginfo.version()
-    xvm.add("x86_64-linux-musl-gcc", { bindir = gcc_bindir })
+    local __binding_tree_root = triple .. "-gcc@" .. pkginfo.version()
+    xvm.add(triple .. "-gcc", { bindir = gcc_bindir })
 
     for _, prog in ipairs(package.programs) do
         if prog ~= "musl-gcc" then
             xvm.add(prog, {
                 bindir = gcc_bindir,
-                alias = "x86_64-linux-" .. prog,
+                alias = arch_prefix .. prog,
                 binding = binding_tree_root,
             })
-            -- full-name
-            xvm.add("x86_64-linux-" .. prog, {
+            -- full-name (e.g. aarch64-linux-musl-ar)
+            xvm.add(arch_prefix .. prog, {
                 bindir = gcc_bindir,
                 binding = __binding_tree_root,
             })
@@ -275,8 +270,7 @@ function config()
 
 -- runtime lib path (used by musl-ldd / musl-loader only)
     local musl_lib_dir = path.join(
-        pkginfo.install_dir(),
-        "x86_64-linux-musl", "lib"
+        pkginfo.install_dir(), triple, "lib"
     )
 
 -- special commands: musl-ldd and musl-loader invoke libc.so (the musl
@@ -312,10 +306,11 @@ function config()
 end
 
 function uninstall()
+    local arch_prefix = __musl_arch(__musl_triple()) .. "-linux-"
     __unregister_gcc_flavor()
     for _, prog in ipairs(package.programs) do
         xvm.remove(prog)
-        xvm.remove("x86_64-linux-" .. prog)
+        xvm.remove(arch_prefix .. prog)
     end
     -- special commands
     xvm.remove("musl-ldd", "musl-gcc-" .. pkginfo.version())
