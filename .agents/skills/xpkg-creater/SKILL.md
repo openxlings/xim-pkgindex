@@ -77,6 +77,11 @@ xpm = {
 
 ### 1.2.1 XLINGS_RES 镜像发布要求
 
+> 这里的 `XLINGS_RES` / 镜像表解析的是**软件包二进制**，走资源服务器
+> `GLOBAL = github.com/xlings-res`、`CN = gitcode.com/xlings-res`。这与「索引仓库本身」
+> 的分发（索引即资源 / Y-asset）是同一套资源服务路径但不同资产，互不混淆。
+> 索引机制全貌见 `docs/design/index-distribution.md`（同步自 xlings v0.4.55 源码）。
+
 当某个版本在包索引中写成 `"XLINGS_RES"` 时，该版本已经进入 xlings 多镜像资源服务链路。发布前必须同时满足：
 
 - `https://github.com/xlings-res/<pkg>` 与 `https://gitcode.com/xlings-res/<pkg>` 都存在同名 tag/release。
