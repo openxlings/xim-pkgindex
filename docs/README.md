@@ -9,6 +9,12 @@
 | [V0/xpackage-spec.md](V0/xpackage-spec.md) | ~~已废弃~~ - V0 规范 |
 | [V0/add-xpackage.md](V0/add-xpackage.md) | ~~已废弃~~ - V0 添加流程 |
 
+## 索引机制
+
+| 文档 | 说明 |
+|------|------|
+| [design/index-distribution.md](design/index-distribution.md) | **索引机制** - 三层模型、命名空间解析、索引即资源(Y-asset)分发与镜像、发版协同（同步自 xlings v0.4.55 源码） |
+
 ## 测试
 
 | 文档 | 说明 |
