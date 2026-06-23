@@ -297,7 +297,26 @@ function xpkg_main(version, ...)
     --local output = cmds["--output"]
 
     if cmds["--static"] then
-        cmds["--static"] = [[COMMON_CONFIG += CC="gcc -static" CXX="g++ -static"]]
+        -- Fully-static toolchain, per config.mak.dist's documented recipe.
+        -- Two non-obvious requirements (a plain `CC="gcc -static"` gets BOTH
+        -- wrong and yields a host-glibc-dynamic toolchain whose g++ dies with
+        -- exit 127 on a cold sandbox):
+        --   1. Build WITH the musl host compiler (<host>-linux-musl-gcc), not
+        --      the glibc `gcc` — otherwise the "static" binaries are glibc-
+        --      static (NSS dlopen still wants glibc). Requires xim:musl-gcc for
+        --      the build host to be installed.
+        --   2. Use the DOUBLE `-static --static`: the 2nd `--static` is passed
+        --      to the linker, piercing binutils' libtool (which silently drops a
+        --      lone `-static`, producing a DYNAMIC as-new/ld → broken target
+        --      musl libc configure).
+        -- `-g0 -Os` + `LDFLAGS=-s` strip & shrink (≈90 MB vs ≈830 MB unstripped).
+        local host = (os.arch() == "arm64") and "aarch64" or os.arch()
+        local cc  = host .. "-linux-musl-gcc"
+        local cxx = host .. "-linux-musl-g++"
+        cmds["--static"] = string.format(
+            'COMMON_CONFIG += CC="%s -static --static" CXX="%s -static --static"\n'
+            .. 'COMMON_CONFIG += CFLAGS="-g0 -Os" CXXFLAGS="-g0 -Os" LDFLAGS="-s"',
+            cc, cxx)
     end
 
     version = verify_and_choice_from_list(

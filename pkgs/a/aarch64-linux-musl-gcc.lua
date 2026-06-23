@@ -41,12 +41,20 @@ package = {
 
     xpm = {
         linux = {
-            -- No deps: this is a self-contained toolchain. The native (aarch64
-            -- host) asset is static (musl-cross-make --static) and the cross
-            -- (x86_64 host) asset runs against the host's own glibc — neither
-            -- needs xim:glibc (which has no aarch64 asset) nor relocation; the
-            -- install hook just unpacks. XLINGS_RES picks the host-matching
-            -- asset: aarch64-linux-musl-gcc-<ver>-linux-{x86_64,aarch64}.tar.gz
+            -- No deps: a fully self-contained toolchain. BOTH host assets are
+            -- musl-static — their host ELFs (gcc/g++/cc1plus/as/ld/...) have no
+            -- PT_INTERP and no NEEDED libs, so they need neither a libc loader
+            -- in the sandbox (no xim:glibc) nor elfpatch relocation; the install
+            -- hook just unpacks. Built via musl-cross-make with the musl host
+            -- compiler and `-static --static` (the double flag pierces binutils'
+            -- libtool so even as-new/ld come out static) + `-g0 -Os`/`LDFLAGS=-s`
+            -- to strip. This is what keeps xlings hermetic: the toolchain leans
+            -- on neither host nor sandbox glibc.
+            --   (History: an earlier x86_64 asset was glibc-DYNAMIC with a baked
+            --    sandbox INTERP; on a cold sandbox its g++ died with exit 127.
+            --    Rebuilt musl-static so "no deps" is now actually true.)
+            -- XLINGS_RES picks the host-matching asset:
+            -- aarch64-linux-musl-gcc-<ver>-linux-{x86_64,aarch64}.tar.gz
             ["latest"] = { ref = "15.1.0" },
             ["15.1.0"] = "XLINGS_RES",
         },
