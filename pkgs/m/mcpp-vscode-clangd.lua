@@ -24,6 +24,11 @@ package = {
             ["latest"] = { ref = "20.1.7" },
             ["20.1.7"] = {},
         },
+        macosx = {
+            deps = { "xim:mcpp", "xim:code", "xim:llvm-tools@20.1.7" },
+            ["latest"] = { ref = "20.1.7" },
+            ["20.1.7"] = {},
+        },
     },
 }
 

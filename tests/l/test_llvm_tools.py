@@ -1,4 +1,5 @@
 """测试 llvm-tools 包"""
+import re
 import pytest
 from tests.lib.xpkg_parser import parse_xpkg
 from tests.lib.assertions import (
@@ -35,6 +36,18 @@ class TestStatic:
     @pytest.mark.static
     def test_no_typos(self):
         assert_no_typos(PKG_FILE)
+
+    @pytest.mark.static
+    def test_supports_macosx_arm64(self, meta):
+        # Apple Silicon slim bundle, mirroring llvm.lua's macOS-ARM64 source.
+        macosx = re.search(r"macosx\s*=\s*\{(.*?)\n        \}", meta.raw_content, re.DOTALL)
+        assert macosx, "missing macosx xpm block"
+        body = macosx.group(1)
+        assert "llvm-tools-20.1.7-macosx-arm64.tar.xz" in body, \
+            "macosx must reference the macosx-arm64 bundle"
+        assert "github.com/xlings-res/llvm" in body and "gitcode.com/xlings-res/llvm" in body, \
+            "macosx must provide both GLOBAL and CN mirrors"
+        assert "arm64" in meta.raw_content, "archs should include arm64"
 
 
 class TestIndex:

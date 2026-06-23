@@ -9,7 +9,7 @@ package = {
     repo = "https://github.com/llvm/llvm-project",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "arm64"},
     status = "stable",
     categories = {"toolchain", "llvm", "formatter", "linter"},
     keywords = {"clang-format", "clang-tidy", "clangd", "llvm", "lsp"},
@@ -33,6 +33,20 @@ package = {
                 url = {
                     GLOBAL = "https://github.com/xlings-res/llvm/releases/download/20.1.7/llvm-tools-20.1.7-windows-x86_64.zip",
                     CN = "https://gitcode.com/xlings-res/llvm/releases/download/20.1.7/llvm-tools-20.1.7-windows-x86_64.zip",
+                },
+                sha256 = nil,
+            },
+        },
+        -- Apple Silicon only, mirroring llvm.lua's macosx (which ships
+        -- macOS-ARM64). The slim bundle is carved from the upstream full
+        -- LLVM release via .agents/tools/build-llvm-tools.sh; clang-format,
+        -- clang-tidy and clangd are self-contained (system-only dylibs).
+        macosx = {
+            ["latest"] = { ref = "20.1.7" },
+            ["20.1.7"] = {
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/20.1.7/llvm-tools-20.1.7-macosx-arm64.tar.xz",
+                    CN = "https://gitcode.com/xlings-res/llvm/releases/download/20.1.7/llvm-tools-20.1.7-macosx-arm64.tar.xz",
                 },
                 sha256 = nil,
             },

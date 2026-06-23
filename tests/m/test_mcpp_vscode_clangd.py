@@ -88,6 +88,19 @@ class TestStatic:
         assert '["20.1.7"]' in windows_body
 
     @pytest.mark.static
+    def test_supports_macosx(self, meta):
+        # macosx must mirror the linux deps and version pins. mcpp and code
+        # already ship macOS artifacts; llvm-tools now carries an Apple
+        # Silicon (macosx-arm64) bundle carved from the upstream LLVM release.
+        macosx = re.search(r"macosx\s*=\s*\{(.*?)\n        \}", meta.raw_content, re.DOTALL)
+        assert macosx, "missing macosx xpm block"
+        macosx_body = macosx.group(1)
+        for dep in ("xim:mcpp", "xim:code", "xim:llvm-tools@20.1.7"):
+            assert re.search(rf'["\']{re.escape(dep)}["\']', macosx_body), \
+                f"macosx missing dependency: {dep}"
+        assert '["20.1.7"]' in macosx_body
+
+    @pytest.mark.static
     def test_clangd_path_is_host_aware(self, meta):
         # clangd binary is `clangd.exe` on windows, `clangd` elsewhere.
         assert 'os.host() == "windows"' in meta.raw_content
