@@ -1,0 +1,70 @@
+name: Publish Index Artifact
+
+# Decouples xim-pkgindex artifact publishing from xlings releases: editing the
+# index here (pkgs/**) re-publishes the versioned index artifact + rolling
+# pointer to xlings-res/xim-index (GitHub + GitCode), so default (artifact-source)
+# clients pick up the change on their next refresh — no xlings release needed.
+# Design: .agents/docs/2026-06-24-artifact-publish-mechanism.md
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'pkgs/**'
+      - 'xim-indexrepos.lua'
+      - '.xpkgindex.json'
+  workflow_dispatch:
+  schedule:
+    - cron: '0 18 * * *'   # nightly catch-all / mirror re-sync
+
+# Serialize: a later push supersedes an in-flight publish.
+concurrency:
+  group: publish-index-artifact
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      # PAT with write to xlings-res/xim-index (release assets + pointer file).
+      XLINGS_RES_TOKEN: ${{ secrets.XLINGS_RES_TOKEN }}
+      GITCODE_TOKEN: ${{ secrets.GITCODE_TOKEN }}
+      # gh CLI (used by publish_xim_index.sh) targets xlings-res, so it must use
+      # the cross-repo PAT, not the default repo-scoped GITHUB_TOKEN.
+      GH_TOKEN: ${{ secrets.XLINGS_RES_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # need HEAD short-sha for content-hash artifact name
+
+      - name: Install gtc (gitcode-cli)
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/sunrisepeak/gitcode-cli/main/bin/gtc \
+            -o "$HOME/.local/bin/gtc" --create-dirs || \
+          { mkdir -p "$HOME/.local/bin"; curl -fsSL https://raw.githubusercontent.com/sunrisepeak/gitcode-cli/main/bin/gtc -o "$HOME/.local/bin/gtc"; }
+          chmod +x "$HOME/.local/bin/gtc"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Build + publish index artifact (content-hash version)
+        if: ${{ env.XLINGS_RES_TOKEN != '' }}
+        run: |
+          set -euo pipefail
+          # Content-hash naming: decouple the artifact from any xlings/mcpp version.
+          VER="$(git rev-parse --short HEAD)"
+          echo "publishing xim-index @ $VER"
+          bash tools/build_xim_index_artifact.sh --src . --version "$VER" --out build/index
+          # gh -> github xlings-res; gtc -> gitcode (skipped automatically if token absent)
+          if [ -n "${GITCODE_TOKEN:-}" ]; then
+            bash tools/publish_xim_index.sh --version "$VER" --dir build/index
+          else
+            bash tools/publish_xim_index.sh --version "$VER" --dir build/index --skip-gitcode
+          fi
+          # Combined rolling pointer (repo file, overwriteable) on both ends.
+          bash tools/push_index_pointers.sh build/index
+
+      - name: Skipped (no XLINGS_RES_TOKEN)
+        if: ${{ env.XLINGS_RES_TOKEN == '' }}
+        run: echo "XLINGS_RES_TOKEN not set — skipping publish (fork/no-secret run)."
