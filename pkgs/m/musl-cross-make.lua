@@ -229,6 +229,14 @@ GCC_VER = %s
 TARGET = %s
 OUTPUT = %s
 
+# Pin musl to 1.2.5 explicitly. Without this the build inherits musl-cross-make's
+# default (or git-master), and musl >= 1.2.6 registers the main thread's robust
+# list (set_robust_list) at startup — which Android 13's app seccomp TRAPs as
+# SIGSYS, so EVERY binary from a 1.2.6 toolchain dies with "Bad system call" on
+# Termux. 1.2.5 doesn't make that call. Keep all toolchains (cross + native) on
+# 1.2.5 for Android compatibility. See .agents docs 2026-06-23-termux-android-adaptation.
+MUSL_VER = 1.2.5
+
 # [OK] - RPATH -> RUNPATH (by --enable-new-dtags) and append with --with-specs
 # [X]  - GCC_CONFIG += -Wl,--with-dynamic-linker=/home/xlings/.xlings_data/lib/ld-musl-x86_64.so.1
 # [X]  - have'nt -Wl,--with-dynamic-linker only use --dynamic-linker by --with-extra-ldflags
