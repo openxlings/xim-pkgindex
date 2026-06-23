@@ -40,13 +40,10 @@ jobs:
         with:
           fetch-depth: 0   # need HEAD short-sha for content-hash artifact name
 
-      - name: Install gtc (gitcode-cli)
+      - name: Enable vendored gtc (gitcode-cli)
         run: |
-          curl -fsSL https://raw.githubusercontent.com/sunrisepeak/gitcode-cli/main/bin/gtc \
-            -o "$HOME/.local/bin/gtc" --create-dirs || \
-          { mkdir -p "$HOME/.local/bin"; curl -fsSL https://raw.githubusercontent.com/sunrisepeak/gitcode-cli/main/bin/gtc -o "$HOME/.local/bin/gtc"; }
-          chmod +x "$HOME/.local/bin/gtc"
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          chmod +x tools/gtc
+          echo "$PWD/tools" >> "$GITHUB_PATH"
 
       - name: Build + publish index artifact (content-hash version)
         if: ${{ env.XLINGS_RES_TOKEN != '' }}
