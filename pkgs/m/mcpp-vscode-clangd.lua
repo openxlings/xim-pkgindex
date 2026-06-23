@@ -19,6 +19,11 @@ package = {
             ["latest"] = { ref = "20.1.7" },
             ["20.1.7"] = {},
         },
+        windows = {
+            deps = { "xim:mcpp", "xim:code", "xim:llvm-tools@20.1.7" },
+            ["latest"] = { ref = "20.1.7" },
+            ["20.1.7"] = {},
+        },
     },
 }
 
@@ -43,7 +48,8 @@ function config()
         os.mkdir(vscode_dir)
     end
     local settings = os.isfile(settings_file) and json.loadfile(settings_file) or {}
-    settings["clangd.path"] = path.join(pkginfo.dep_install_dir("llvm-tools", pkginfo.version()), "bin", "clangd")
+    local clangd_exe = os.host() == "windows" and "clangd.exe" or "clangd"
+    settings["clangd.path"] = path.join(pkginfo.dep_install_dir("llvm-tools", pkginfo.version()), "bin", clangd_exe)
     -- Enable clangd's C++20 modules support so mcpp's `import std;` /
     -- `import <module>;` projects resolve correctly under the editor.
     settings["clangd.arguments"] = { "--experimental-modules-support" }

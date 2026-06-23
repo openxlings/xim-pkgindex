@@ -76,6 +76,24 @@ class TestStatic:
         assert 'mcpp toolchain install llvm@" .. pkginfo.version() .. " default' in meta.raw_content
 
     @pytest.mark.static
+    def test_supports_windows(self, meta):
+        # windows must mirror the linux deps and version pins, since mcpp,
+        # code and llvm-tools all ship windows artifacts.
+        windows = re.search(r"windows\s*=\s*\{(.*?)\n        \}", meta.raw_content, re.DOTALL)
+        assert windows, "missing windows xpm block"
+        windows_body = windows.group(1)
+        for dep in ("xim:mcpp", "xim:code", "xim:llvm-tools@20.1.7"):
+            assert re.search(rf'["\']{re.escape(dep)}["\']', windows_body), \
+                f"windows missing dependency: {dep}"
+        assert '["20.1.7"]' in windows_body
+
+    @pytest.mark.static
+    def test_clangd_path_is_host_aware(self, meta):
+        # clangd binary is `clangd.exe` on windows, `clangd` elsewhere.
+        assert 'os.host() == "windows"' in meta.raw_content
+        assert '"clangd.exe"' in meta.raw_content
+
+    @pytest.mark.static
     def test_configures_clangd_path_only(self, meta):
         assert '"clangd.path"' in meta.raw_content
         assert "compile-commands-dir" not in meta.raw_content
