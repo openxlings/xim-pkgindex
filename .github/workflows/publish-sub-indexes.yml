@@ -1,0 +1,89 @@
+name: Publish Sub-Index Artifacts (manual)
+
+# Manually (or release-time) re-publish the DEFAULT sub-index artifacts
+# (awesome / scode / d2x) to xlings-res/xim-index, so artifact-source clients
+# pick up sub-index changes without waiting for the next xlings release.
+#
+# Why manual-only: the sub-index contents live in their OWN repos
+# (xim-pkgindex-{awesome,scode}, d2learn/xim-pkgindex-d2x), so a push to THIS
+# repo can't know they changed. xlings `release.yml` already republishes the
+# full set at release time; this workflow is the on-demand top-up in between.
+# The main `xim` key keeps its own push-triggered publish-artifact.yml.
+#
+# Plan: openxlings/xlings .agents/docs/2026-06-25-index-ecosystem-unification-plan.md (C2)
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Which default sub-index(es) to (re)publish'
+        type: choice
+        options: [all, awesome, scode, d2x]
+        default: all
+
+# Share the pointer-write serialization group with the main publisher so a
+# sub-index publish and a main-index publish never race on the combined pointer.
+concurrency:
+  group: publish-index-artifact
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish-sub:
+    runs-on: ubuntu-latest
+    env:
+      # PAT with write to xlings-res/xim-index (release assets + pointer file).
+      XLINGS_RES_TOKEN: ${{ secrets.XLINGS_RES_TOKEN }}
+      GITCODE_TOKEN: ${{ secrets.GITCODE_TOKEN }}
+      # gh CLI (publish_xim_index.sh) targets xlings-res -> needs the cross-repo PAT.
+      GH_TOKEN: ${{ secrets.XLINGS_RES_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4   # for the vendored tools/
+
+      - name: Enable vendored gtc (gitcode-cli)
+        run: |
+          chmod +x tools/gtc
+          echo "$PWD/tools" >> "$GITHUB_PATH"
+
+      - name: Build + publish selected sub-indexes (content-hash version)
+        if: ${{ env.XLINGS_RES_TOKEN != '' }}
+        run: |
+          set -euo pipefail
+          mkdir -p build/index
+          TARGET='${{ inputs.target }}'
+
+          # Canonical sub-index repo URLs (must match xlings release.yml and the
+          # main index's xim-indexrepos.lua so clients classify them as official).
+          declare -A URLS=(
+            [awesome]="https://github.com/openxlings/xim-pkgindex-awesome.git"
+            [scode]="https://github.com/openxlings/xim-pkgindex-scode.git"
+            [d2x]="https://github.com/d2learn/xim-pkgindex-d2x.git"
+          )
+
+          if [ "$TARGET" = all ]; then SUBS="awesome scode d2x"; else SUBS="$TARGET"; fi
+
+          for n in $SUBS; do
+            url="${URLS[$n]}"
+            # Content-hash version: short sha of the sub-repo HEAD, decoupling the
+            # artifact name from any xlings/mcpp version.
+            sha="$(git ls-remote "$url" HEAD | cut -c1-7)"
+            [ -n "$sha" ] || { echo "::error::cannot resolve HEAD for $url"; exit 1; }
+            echo "publishing sub-index '$n' @ $sha ($url)"
+            XLINGS_RELEASE_PKGINDEX_URL="$url" \
+              bash tools/build_xim_index_artifact.sh --name "$n" --version "$sha" --out build/index
+            if [ -n "${GITCODE_TOKEN:-}" ]; then
+              bash tools/publish_xim_index.sh --version "$sha" --name "$n" --dir build/index
+            else
+              bash tools/publish_xim_index.sh --version "$sha" --name "$n" --dir build/index --skip-gitcode
+            fi
+          done
+
+          # Merge ONLY the rebuilt sub-index keys into the combined pointer; the
+          # sibling 'xim' key (and any non-rebuilt subs) are preserved.
+          bash tools/push_index_pointers.sh build/index
+
+      - name: Skipped (no XLINGS_RES_TOKEN)
+        if: ${{ env.XLINGS_RES_TOKEN == '' }}
+        run: echo "XLINGS_RES_TOKEN not set — skipping publish (fork/no-secret run)."
