@@ -27,7 +27,8 @@ package = {
 
     xpm = {
         windows = {
-            ["latest"] = { ref = "1.108.0" },
+            ["latest"] = { ref = "1.125.1" },
+            ["1.125.1"] = _win_url("1.125.1"),
             ["1.108.1"] = _win_url("1.108.1"),
             ["1.108.0"] = _win_url("1.108.0"),
             ["1.106.1"] = _win_url("1.106.1"),
@@ -39,7 +40,8 @@ package = {
             ["1.93.1"] = _win_url("1.93.1"),
         },
         linux = {
-            ["latest"] = { ref = "1.108.0" },
+            ["latest"] = { ref = "1.125.1" },
+            ["1.125.1"] = _linux_url("1.125.1"),
             ["1.108.1"] = _linux_url("1.108.1"),
             ["1.108.0"] = _linux_url("1.108.0"),
             ["1.106.1"] = _linux_url("1.106.1"),
@@ -48,7 +50,8 @@ package = {
             ["1.93.1"] = _linux_url("1.93.1"),
         },
         macosx = {
-            ["latest"] = { ref = "1.108.0" },
+            ["latest"] = { ref = "1.125.1" },
+            ["1.125.1"] = _mac_url("1.125.1"),
             ["1.108.1"] = _mac_url("1.108.1"),
             ["1.108.0"] = _mac_url("1.108.0"),
             ["1.106.1"] = _mac_url("1.106.1"),
@@ -104,6 +107,21 @@ function install()
         os.exec("unzip stable")
         os.mv("Visual Studio Code.app", pkginfo.install_dir())
         os.tryrm("stable")
+        -- One-time Gatekeeper prep on the freshly installed bundle. Both steps are
+        -- best-effort: `xattr -rd` errors with EPERM on nested signed helper bundles
+        -- (Code Helper.app), but de-quarantining the top-level bundle is enough for
+        -- Gatekeeper. A partial failure must NOT abort install — otherwise config()'s
+        -- xvm.add (the "installed" marker, see XPkgManager.installed -> xvm.has) never
+        -- runs and every dependent install re-triggers this forever.
+        local appdir = path.join(pkginfo.install_dir(), "Visual Studio Code.app")
+        pcall(function()
+            system.exec([[xattr -rd com.apple.quarantine "]] .. appdir .. [[" 2>/dev/null]])
+        end)
+        -- register app for first launch (Info.plist CFBundleIdentifier is com.microsoft.VSCode)
+        local lsregister = "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+        pcall(function()
+            system.exec(lsregister .. [[ -f "]] .. appdir .. [["]])
+        end)
     else
         os.tryrm(pkginfo.install_dir())
         -- The download URL returns a file named "stable" with no extension,
@@ -148,16 +166,9 @@ function config()
         os.cp(lnk_filename .. ".lnk", path.join("C:/Users", os.getenv("USERNAME"), "Desktop"))
         os.mv(lnk_filename .. ".lnk", get_shortcut_dir()[os.host()])
     elseif os.host() == "macosx" then
-        appdir = path.join(pkginfo.install_dir(), "Visual Studio Code.app")
-        -- xattr for macosx
-        system.exec([[xattr -rd com.apple.quarantine "]] .. appdir .. [["]])
-        -- TODO: add lsregister to libxpkg.system
-        -- register app(for first time)
-        -- Info.plist CFBundleIdentifier is com.microsoft.VSCode
-        local lsregister = "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
-        system.exec(lsregister .. [[ -f "]] .. appdir .. [["]])
-        -- Contents/Resources/app
-        appdir = path.join(appdir, "Contents", "Resources", "app")
+        -- de-quarantine + lsregister are one-time install-time concerns now (see install()).
+        -- config() stays idempotent: only resolve the bin path used for the xvm alias below.
+        appdir = path.join(pkginfo.install_dir(), "Visual Studio Code.app", "Contents", "Resources", "app")
     else
         local desktop_info = desktop_shortcut_info()
         if not os.isfile(desktop_info.filepath) then
