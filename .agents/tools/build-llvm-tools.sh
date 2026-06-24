@@ -90,6 +90,22 @@ for t in "${TOOLS[@]}"; do
 done
 [ "$found" -eq 3 ] || die "expected 3 tools, got $found"
 
+# --- clang builtin headers (resource-dir) ----------------------------------
+# clangd derives its resource-dir from its OWN location (<bin>/../lib/clang/<major>)
+# and auto-adds <resource-dir>/include to the search path. Without the builtin
+# headers there (stddef.h, stdint.h, the intrinsic headers, ...), any TU that
+# pulls in libc++ <cstddef> — e.g. via `#include <gtest/gtest.h>` — fails with
+# "'stddef.h' file not found", because libc++'s <stddef.h> does
+# `#include_next <stddef.h>` expecting the compiler builtin header. These are
+# host-independent text headers, so they ship in every platform's bundle.
+RESVER="${VERSION%%.*}"
+HDRSRC="$(find "$SRCROOT" -type d -path "*/lib/clang/${RESVER}/include" -print -quit 2>/dev/null || true)"
+[ -n "$HDRSRC" ] || die "could not find lib/clang/${RESVER}/include under $SRCROOT"
+mkdir -p "$WORK/$BUNDLE/lib/clang/${RESVER}"
+cp -R "$HDRSRC" "$WORK/$BUNDLE/lib/clang/${RESVER}/include"
+[ -f "$WORK/$BUNDLE/lib/clang/${RESVER}/include/stddef.h" ] || die "builtin headers copy missing stddef.h"
+log "  + lib/clang/${RESVER}/include  ($(du -sh "$WORK/$BUNDLE/lib/clang/${RESVER}/include" | cut -f1) builtin headers)"
+
 # --- macOS self-containment check (Mach-O LC_LOAD_DYLIB) -------------------
 if [ "$PLATFORM" = "macosx" ]; then
     log "verifying macOS binaries are self-contained (system-only dylibs) ..."

@@ -41,6 +41,9 @@ package = {
         -- macOS-ARM64). The slim bundle is carved from the upstream full
         -- LLVM release via .agents/tools/build-llvm-tools.sh; clang-format,
         -- clang-tidy and clangd are self-contained (system-only dylibs).
+        -- The bundle also ships lib/clang/<major>/include (clang builtin
+        -- headers) so clangd's derived resource-dir resolves stddef.h etc.
+        -- for files that include libc++ headers (e.g. #include <gtest/gtest.h>).
         macosx = {
             ["latest"] = { ref = "20.1.7" },
             ["20.1.7"] = {
