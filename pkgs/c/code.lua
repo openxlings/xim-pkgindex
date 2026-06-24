@@ -147,24 +147,27 @@ function install()
 end
 
 function config()
-    local xvm_cmd_template1 = [[xvm add code %s --path "%s/bin" --alias %s]]
-    local xvm_cmd_template2 = [[xvm add vscode %s --path "%s/bin" --alias %s]]
     local code_alias = "code"
     local appdir = pkginfo.install_dir()
 
     -- config desktop entry
     if os.host() == "windows" then
         code_alias = "code.cmd"
-        -- create desktop shortcut
-        local lnk_filename = "Visual Studio Code - [" .. pkginfo.version() .. "]"
-        create_windows_shortcut(
-            lnk_filename,
-            path.join(pkginfo.install_dir(), "code.exe"),
-            path.join(pkginfo.install_dir(), "code.exe"),
-            pkginfo.install_dir()
-        )
-        os.cp(lnk_filename .. ".lnk", path.join("C:/Users", os.getenv("USERNAME"), "Desktop"))
-        os.mv(lnk_filename .. ".lnk", get_shortcut_dir()[os.host()])
+        -- Desktop / Start Menu shortcut is best-effort: a OneDrive-redirected
+        -- Desktop (or missing dir) makes os.cp throw, which must NOT abort config
+        -- before the xvm.add "installed" marker below — else code is never marked
+        -- installed and every dependent install re-runs this forever.
+        pcall(function()
+            local lnk_filename = "Visual Studio Code - [" .. pkginfo.version() .. "]"
+            create_windows_shortcut(
+                lnk_filename,
+                path.join(pkginfo.install_dir(), "code.exe"),
+                path.join(pkginfo.install_dir(), "code.exe"),
+                pkginfo.install_dir()
+            )
+            os.trycp(lnk_filename .. ".lnk", path.join("C:/Users", os.getenv("USERNAME"), "Desktop"))
+            os.trymv(lnk_filename .. ".lnk", get_shortcut_dir()[os.host()])
+        end)
     elseif os.host() == "macosx" then
         -- de-quarantine + lsregister are one-time install-time concerns now (see install()).
         -- config() stays idempotent: only resolve the bin path used for the xvm alias below.
