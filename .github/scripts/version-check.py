@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Upstream version checker (and optional bumper) for xim-pkgindex.
 
-Scans every `pkgs/**/*.lua` for an opt-in `url_template` field on any
-platform inside the `xpm` table. For each opted-in package, queries the
-GitHub Releases API for the latest tag, compares against the version
-recorded in `xpm.<plat>.["latest"].ref`, and prints a JSON report of
-every package whose upstream has moved ahead.
+Scans every `pkgs/**/*.lua` for an opt-in marker on any platform inside
+the `xpm` table — either `url_template` (hardcoded url+sha256 packages) or
+`res_versioned = true` (XLINGS_RES packages, e.g. xlings itself). For each
+opted-in package, queries the GitHub Releases API for the latest tag,
+compares against the version recorded in `xpm.<plat>.["latest"].ref`, and
+prints a JSON report of every package whose upstream has moved ahead.
 
 In `--apply` mode the script additionally downloads each new artifact,
 computes its sha256, and rewrites the lua file in-place: a new
@@ -101,6 +102,20 @@ def extract_url_template(platform_body: str) -> str | None:
     return m.group(1) if m else None
 
 
+def extract_res_versioned(platform_body: str) -> bool:
+    """True if the platform opts into XLINGS_RES-style auto-bump.
+
+    Marked with `res_versioned = true`. Such a platform tracks its `repo`'s
+    latest GitHub release just like `url_template`, but on bump it appends
+    `["<ver>"] = "XLINGS_RES"` (resolved through the multi-mirror resource
+    service) instead of a hardcoded url+sha256 — so it keeps the mirror
+    fallback that XLINGS_RES gives and needs no artifact download. This is
+    what lets the bot keep `xlings` (and other XLINGS_RES packages) current
+    instead of silently going stale.
+    """
+    return re.search(r'\bres_versioned\s*=\s*true\b', platform_body) is not None
+
+
 def extract_latest_ref(platform_body: str) -> str | None:
     m = re.search(
         r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"([^"]+)"',
@@ -148,18 +163,22 @@ def check_package(lua_path: Path, token: str | None) -> dict[str, Any] | None:
     if not xpm:
         return None
 
-    platforms: dict[str, dict[str, str]] = {}
+    platforms: dict[str, dict[str, Any]] = {}
     for plat in _PLATFORM_KEYS:
         body = find_platform_block(xpm, plat)
         if not body:
             continue
         tmpl = extract_url_template(body)
+        res = extract_res_versioned(body)
         ref = extract_latest_ref(body)
-        if tmpl or ref:
-            platforms[plat] = {"url_template": tmpl, "ref": ref}
+        if tmpl or res or ref:
+            platforms[plat] = {"url_template": tmpl, "res_versioned": res, "ref": ref}
 
-    if not any(p.get("url_template") for p in platforms.values()):
-        # No opt-in marker on any platform → manual maintenance.
+    # Opt-in is either url_template (hardcoded url+sha256 mode) or
+    # res_versioned (XLINGS_RES mode). A platform that sets neither is
+    # manually maintained and skipped.
+    if not any(p.get("url_template") or p.get("res_versioned")
+               for p in platforms.values()):
         return None
 
     # Validate each opted-in template has the placeholder.
@@ -176,7 +195,7 @@ def check_package(lua_path: Path, token: str | None) -> dict[str, Any] | None:
     current_versions = {
         plat: info["ref"]
         for plat, info in platforms.items()
-        if info.get("url_template") and info.get("ref")
+        if (info.get("url_template") or info.get("res_versioned")) and info.get("ref")
     }
     if len(set(current_versions.values())) != 1:
         return {
@@ -247,10 +266,14 @@ def check_package(lua_path: Path, token: str | None) -> dict[str, Any] | None:
 
     record["status"] = "update-available"
     proposed: dict[str, str] = {}
+    res_platforms: list[str] = []
     for plat, info in platforms.items():
         if info.get("url_template"):
             proposed[plat] = info["url_template"].replace("{version}", upstream)
+        elif info.get("res_versioned"):
+            res_platforms.append(plat)
     record["proposed_urls"] = proposed
+    record["proposed_res"] = res_platforms
     return record
 
 
@@ -304,13 +327,23 @@ def apply_bump(
     upstream: str,
     proposed_urls: dict[str, str],
     token: str | None,
+    res_platforms: list[str] | None = None,
 ) -> dict[str, Any]:
-    """Edit lua_path in place: append `["<upstream>"] = {...}` per platform
-    and bump `["latest"].ref` from <current> to <upstream>. Existing
-    version entries are untouched.
+    """Edit lua_path in place: append a new `["<upstream>"]` entry per
+    platform and bump `["latest"].ref` from <current> to <upstream>.
+    Existing version entries are untouched.
+
+    Two entry shapes, per platform:
+      - url_template platforms (in `proposed_urls`): the artifact is
+        downloaded, its sha256 computed, and a
+        `["<upstream>"] = { url = ..., sha256 = ... }` block appended.
+      - res_versioned platforms (in `res_platforms`): a bare
+        `["<upstream>"] = "XLINGS_RES"` entry is appended — no download,
+        no sha256 (the resource service resolves + verifies it).
 
     Returns a record describing what happened (status + per-platform).
     """
+    res_platforms = res_platforms or []
     text = lua_path.read_text(encoding="utf-8")
 
     # Locate xpm block once so per-platform searches stay scoped to it.
@@ -366,6 +399,30 @@ def apply_bump(
             )
         )
         per_platform[plat] = sha
+
+    # XLINGS_RES platforms: append a bare entry, no download/sha256.
+    for plat in res_platforms:
+        plat_range = find_block_range(text, plat, xpm[0])
+        if not plat_range or plat_range[1] > xpm[1]:
+            continue
+        plat_body = text[plat_range[0] : plat_range[1]]
+        latest_pat = re.compile(
+            r'(?m)^(?P<indent>[ \t]*)\["latest"\]\s*=\s*\{\s*ref\s*=\s*"'
+            + re.escape(current)
+            + r'"\s*\}\s*,?[ \t]*\n'
+        )
+        m = latest_pat.search(plat_body)
+        if not m:
+            continue
+        indent = m.group("indent")
+        replacement = (
+            f'{indent}["latest"] = {{ ref = "{upstream}" }},\n'
+            f'{indent}["{upstream}"] = "XLINGS_RES",\n'
+        )
+        edits.append(
+            (plat_range[0] + m.start(), plat_range[0] + m.end(), replacement)
+        )
+        per_platform[plat] = "XLINGS_RES"
 
     if not edits:
         return {"status": "no-edit", "reason": "no matching latest line on any platform"}
@@ -434,6 +491,7 @@ def main() -> int:
                 rec["upstream"],
                 rec["proposed_urls"],
                 args.token,
+                rec.get("proposed_res", []),
             )
             rec["apply"] = applied
 

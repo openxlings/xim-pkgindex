@@ -34,6 +34,9 @@ package = {
     -- Historical 0.4.x entries keep their direct GitHub release URLs.
     xpm = {
         linux = {
+            -- res_versioned: version-bump bot tracks openxlings/xlings releases and
+            -- appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
+            res_versioned = true,
             ["latest"] = { ref = "0.4.60" },
             ["0.4.60"] = "XLINGS_RES",
             ["0.4.55"] = "XLINGS_RES",
@@ -183,6 +186,9 @@ package = {
             ["0.3.0"] = "XLINGS_RES",
         },
         macosx = {
+            -- res_versioned: version-bump bot tracks openxlings/xlings releases and
+            -- appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
+            res_versioned = true,
             ["latest"] = { ref = "0.4.60" },
             ["0.4.60"] = "XLINGS_RES",
             ["0.4.55"] = "XLINGS_RES",
@@ -332,6 +338,9 @@ package = {
             ["0.3.0"] = "XLINGS_RES",
         },
         windows = {
+            -- res_versioned: version-bump bot tracks openxlings/xlings releases and
+            -- appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
+            res_versioned = true,
             ["latest"] = { ref = "0.4.60" },
             ["0.4.60"] = "XLINGS_RES",
             ["0.4.55"] = "XLINGS_RES",

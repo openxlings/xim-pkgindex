@@ -54,6 +54,38 @@ is no `source` field; the contract assumes GitHub). Packages whose
 upstream is not a GitHub Release simply leave `url_template`
 unset and continue to be maintained by hand.
 
+## XLINGS_RES mode (`res_versioned`)
+
+Some packages — notably `xlings` itself — record their version entries
+as `["<ver>"] = "XLINGS_RES"` (resolved through the multi-mirror resource
+service) instead of a hardcoded `url + sha256`. They cannot use
+`url_template` (there is no single URL, and the resource service handles
+integrity), so they previously had **no** auto-update path and went stale
+silently (xlings `latest` was stuck 5 releases behind).
+
+Such a platform opts in with `res_versioned = true` next to its version
+table:
+
+```lua
+xpm = {
+    linux = {
+        res_versioned = true,
+        ["latest"] = { ref = "0.4.60" },
+        ["0.4.60"] = "XLINGS_RES",
+    },
+    -- macosx / windows likewise
+}
+```
+
+Resolution is identical to `url_template` (rules 1–5 above: scan, read
+`package.repo`, query `releases/latest`, compare against
+`["latest"].ref`). The only difference is the **bump shape**: on an
+update the updater appends a bare `["<upstream>"] = "XLINGS_RES"` entry
+and bumps `["latest"].ref` — **no artifact download, no sha256** (the
+resource service resolves and verifies the binary, and provides mirror
+fallback). A platform may set `url_template` *or* `res_versioned`, not
+both; `url_template` wins if both are present.
+
 ## What is NOT in scope (v1)
 
 - **The xlings package manager does not consume `url_template`.** It
@@ -73,7 +105,11 @@ unset and continue to be maintained by hand.
 
 ## Behaviour when fields are missing or inconsistent
 
-- No `url_template` on any platform → package is skipped (manual mode).
+- No `url_template` **and** no `res_versioned` on any platform → package
+  is skipped (manual mode).
+- `res_versioned = true` on a platform → that platform auto-bumps as a
+  bare `["<ver>"] = "XLINGS_RES"` entry (no url/sha256). Requires
+  `package.repo` like the `url_template` path.
 - `url_template` on some platforms only → only those platforms are
   refreshed; other platforms are left alone.
 - `package.repo` missing or not a GitHub URL → the package is
