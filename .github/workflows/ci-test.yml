@@ -32,6 +32,9 @@ jobs:
           chmod +x .github/scripts/check-no-direct-ld-libpath.sh
           .github/scripts/check-no-direct-ld-libpath.sh
 
+      - name: version-check unit tests (url_template + XLINGS_RES bump)
+        run: python3 .github/scripts/test_version_check.py
+
 
       - name: Get changed-files (only pull_request）
         uses: tj-actions/changed-files@v46
