@@ -39,7 +39,8 @@ package = {
     xpm = {
         linux = {
             url_template = "https://github.com/mcpp-community/mcpp/releases/download/v{version}/mcpp-{version}-linux-x86_64.tar.gz",
-            ["latest"] = { ref = "0.0.65" },
+            ["latest"] = { ref = "0.0.66" },
+            ["0.0.66"] = "XLINGS_RES",
             ["0.0.65"] = "XLINGS_RES",
             ["0.0.64"] = "XLINGS_RES",
             ["0.0.63"] = "XLINGS_RES",
@@ -100,7 +101,8 @@ package = {
             ["0.0.1"] = "XLINGS_RES",
         },
         macosx = {
-            ["latest"] = { ref = "0.0.65" },
+            ["latest"] = { ref = "0.0.66" },
+            ["0.0.66"] = "XLINGS_RES",
             ["0.0.65"] = "XLINGS_RES",
             ["0.0.64"] = "XLINGS_RES",
             ["0.0.63"] = "XLINGS_RES",
@@ -147,7 +149,8 @@ package = {
             ["0.0.16"] = "XLINGS_RES",
         },
         windows = {
-            ["latest"] = { ref = "0.0.65" },
+            ["latest"] = { ref = "0.0.66" },
+            ["0.0.66"] = "XLINGS_RES",
             ["0.0.65"] = "XLINGS_RES",
             ["0.0.64"] = "XLINGS_RES",
             ["0.0.63"] = "XLINGS_RES",
