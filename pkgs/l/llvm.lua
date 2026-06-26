@@ -19,6 +19,9 @@ package = {
 
     xpm = {
         linux = {
+            -- linux ships the maintainer's slim self-contained build (XLINGS_RES).
+            -- xim:linux-headers is a thin delegator to scode:linux-headers, so the
+            -- install-test harness registers the scode sub-index (see .github/scripts).
             deps = {
                 "xim:glibc@2.39",
                 "xim:linux-headers@5.11.1",
