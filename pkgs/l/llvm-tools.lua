@@ -36,6 +36,13 @@ package = {
                 },
                 sha256 = nil,
             },
+            ["22.1.8"] = {
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/22.1.8/llvm-tools-22.1.8-windows-x86_64.zip",
+                    CN = "https://gitcode.com/xlings-res/llvm/releases/download/22.1.8/llvm-tools-22.1.8-windows-x86_64.zip",
+                },
+                sha256 = nil,
+            },
         },
         -- Apple Silicon only, mirroring llvm.lua's macosx (which ships
         -- macOS-ARM64). The slim bundle is carved from the upstream full
@@ -53,7 +60,16 @@ package = {
                 },
                 sha256 = nil,
             },
+            ["22.1.8"] = {
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/22.1.8/llvm-tools-22.1.8-macosx-arm64.tar.xz",
+                    CN = "https://gitcode.com/xlings-res/llvm/releases/download/22.1.8/llvm-tools-22.1.8-macosx-arm64.tar.xz",
+                },
+                sha256 = nil,
+            },
         },
+        -- NOTE: linux 22.1.8 is built by the maintainer's slim-build pipeline
+        -- (not carved from upstream here); add its xpm entry once published.
     },
 }
 

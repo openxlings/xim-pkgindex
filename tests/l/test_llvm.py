@@ -36,6 +36,23 @@ class TestStatic:
     def test_no_typos(self):
         assert_no_typos(PKG_FILE)
 
+    @pytest.mark.static
+    def test_supports_22_1_8(self, meta):
+        # 22.1.8 available on macOS (slim carve) + windows (XLINGS_RES);
+        # linux 22.1.8 is pending the maintainer slim-build pipeline.
+        rc = meta.raw_content
+        assert '["22.1.8"]' in rc, "missing 22.1.8 version entry"
+        assert "llvm-22.1.8-macosx-arm64.tar.xz" in rc, \
+            "macosx must reference the 22.1.8 slim toolchain asset"
+
+    @pytest.mark.static
+    def test_macosx_uses_slim_dual_mirror(self, meta):
+        # macOS ships the slim carved toolchain on both mirrors (the 1.4GB
+        # upstream monolith is no longer mirrored).
+        rc = meta.raw_content
+        assert "llvm-20.1.7-macosx-arm64.tar.xz" in rc
+        assert "github.com/xlings-res/llvm" in rc and "gitcode.com/xlings-res/llvm" in rc
+
 
 class TestIndex:
     @pytest.mark.index

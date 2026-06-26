@@ -49,6 +49,16 @@ class TestStatic:
             "macosx must provide both GLOBAL and CN mirrors"
         assert "arm64" in meta.raw_content, "archs should include arm64"
 
+    @pytest.mark.static
+    def test_supports_22_1_8(self, meta):
+        # 22.1.8 tools available on macOS + windows (carved from upstream);
+        # linux 22.1.8 pending the maintainer slim-build pipeline.
+        rc = meta.raw_content
+        assert "llvm-tools-22.1.8-macosx-arm64.tar.xz" in rc, \
+            "macosx must reference the 22.1.8 tools bundle"
+        assert "llvm-tools-22.1.8-windows-x86_64.zip" in rc, \
+            "windows must reference the 22.1.8 tools bundle"
+
 
 class TestIndex:
     @pytest.mark.index

@@ -28,17 +28,36 @@ package = {
             ["latest"] = { ref = "20.1.7" },
             ["20.1.7"] = "XLINGS_RES",
         },
+        -- macOS ships a slim, self-contained toolchain carved from the upstream
+        -- full release (the 1.4GB upstream monolith is no longer mirrored):
+        -- clang/lld/binutils + compiler-rt + libc++ (headers/libs + share/libc++
+        -- std modules), with the static .a libs, lldb and clang extra tools
+        -- dropped. Built via .agents/tools/build-llvm-subpkg.sh (--pkg llvm).
         macosx = {
             ["latest"] = { ref = "20.1.7" },
             ["20.1.7"] = {
-                url = "https://gitcode.com/xlings-res/llvm/releases/download/20.1.7/LLVM-20.1.7-macOS-ARM64.tar.xz",
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/20.1.7/llvm-20.1.7-macosx-arm64.tar.xz",
+                    CN = "https://gitcode.com/xlings-res/llvm/releases/download/20.1.7/llvm-20.1.7-macosx-arm64.tar.xz",
+                },
+                sha256 = nil,
+            },
+            ["22.1.8"] = {
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/22.1.8/llvm-22.1.8-macosx-arm64.tar.xz",
+                    CN = "https://gitcode.com/xlings-res/llvm/releases/download/22.1.8/llvm-22.1.8-macosx-arm64.tar.xz",
+                },
                 sha256 = nil,
             },
         },
         windows = {
             ["latest"] = { ref = "20.1.7" },
             ["20.1.7"] = "XLINGS_RES",
+            ["22.1.8"] = "XLINGS_RES",
         },
+        -- NOTE: linux 22.1.8 is produced by the maintainer's slim-build pipeline
+        -- (not carved from upstream here); add ["22.1.8"] once published, then
+        -- bump every platform's latest ref to 22.1.8 together.
     },
 }
 
