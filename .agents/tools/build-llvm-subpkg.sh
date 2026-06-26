@@ -181,23 +181,46 @@ do_libcxx() {
         rel="${d#$TOP/}"; mkdir -p "$DEST/$(dirname "$rel")"; cp -R "$d" "$DEST/$rel"
         log "  + $rel"
     done < <(find "$TOP/include" -mindepth 2 -maxdepth 2 -type d -name 'c++' 2>/dev/null)
-    # libs: libc++ / libc++abi / libunwind / libatomic (+ modules json),
-    # preserve path under lib/. libatomic carries the out-of-line __atomic_*
-    # libcalls that 16-byte/oversized std::atomic lower to; libc++ over-links
-    # it (a phantom NEEDED) so dropping it crashes EVERY binary at load with
-    # `libatomic.so.1: cannot open`, and genuine atomic users can't link
-    # without it. It is a GCC runtime lib that the upstream LLVM Linux release
-    # bundles in lib/<triple>/ — carry it through so the package stays
-    # self-contained (matches 20.1.7; see mcpp .agents/docs
-    # 2026-06-26-llvm22-libatomic-self-containment-design.md).
+    # libs: libc++ / libc++abi / libunwind (+ modules json), preserve path
+    # under lib/.
     while IFS= read -r f; do
         rel="${f#$TOP/}"; mkdir -p "$DEST/$(dirname "$rel")"; cp -a "$f" "$DEST/$rel"; found=$((found+1))
     done < <(find "$TOP/lib" -maxdepth 2 \( \
-        -name 'libc++*' -o -name 'libc++abi*' -o -name 'libunwind*' \
-        -o -name 'libatomic*' -o -name 'libc++.modules.json' \
+        -name 'libc++*' -o -name 'libc++abi*' -o -name 'libunwind*' -o -name 'libc++.modules.json' \
         \) 2>/dev/null)
     log "  + $found libcxx lib artifacts"
     [ "$found" -ge 1 ] || die "libcxx: no libc++/libc++abi/libunwind libs found (not shipped on $PLATFORM?)"
+
+    # libatomic — Linux self-containment. libatomic carries the out-of-line
+    # __atomic_* libcalls that 16-byte/oversized std::atomic lower to; libc++
+    # over-links it (a phantom NEEDED) so OMITTING it crashes EVERY binary at
+    # load with `libatomic.so.1: cannot open`, and genuine atomic users can't
+    # link. CRUCIALLY it is a GCC runtime lib — LLVM builds no libatomic
+    # (clang/cmake/caches/Release.cmake DEFAULT_RUNTIMES has none), so the
+    # upstream LLVM Linux release does NOT ship it (verified: 0 files in
+    # LLVM-22.1.8-Linux-X64). The upstream tarball silently relies on the host
+    # GCC's libatomic; for a self-contained package we must carry our own.
+    # Source it from the build host's GCC and drop it beside libc++ in the
+    # per-triple lib dir. (mcpp .agents/docs
+    # 2026-06-26-llvm22-libatomic-self-containment-design.md.)
+    if [ "$PLATFORM" = "linux" ]; then
+        local cxxdir atomic_real base atomic_a
+        cxxdir=$(dirname "$(find "$DEST/lib" -maxdepth 2 -name 'libc++.so.1' 2>/dev/null | head -1)")
+        [ -n "$cxxdir" ] && [ -d "$cxxdir" ] \
+            || die "libatomic: cannot locate libc++ triple lib dir under $DEST/lib"
+        command -v gcc >/dev/null 2>&1 \
+            || die "libatomic: gcc not on build host (needed to source libatomic for self-containment)"
+        atomic_real=$(readlink -f "$(gcc -print-file-name=libatomic.so.1)" 2>/dev/null)
+        [ -n "$atomic_real" ] && [ -e "$atomic_real" ] \
+            || die "libatomic: 'gcc -print-file-name=libatomic.so.1' did not resolve to a real file"
+        base=$(basename "$atomic_real")            # e.g. libatomic.so.1.2.0
+        cp "$atomic_real" "$cxxdir/$base"
+        ln -sf "$base" "$cxxdir/libatomic.so.1"
+        ln -sf libatomic.so.1 "$cxxdir/libatomic.so"
+        atomic_a=$(gcc -print-file-name=libatomic.a 2>/dev/null)
+        [ -n "$atomic_a" ] && [ -e "$atomic_a" ] && cp "$atomic_a" "$cxxdir/libatomic.a"
+        log "  + libatomic (host gcc: $base + .so/.so.1${atomic_a:+ + .a})"
+    fi
     # libc++ std modules (share/libc++/v1/std.cppm) — needed by `import std;`
     if [ -d "$TOP/share/libc++" ]; then
         mkdir -p "$DEST/share"; cp -R "$TOP/share/libc++" "$DEST/share/libc++"
