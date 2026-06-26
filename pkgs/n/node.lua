@@ -1,17 +1,33 @@
+-- V2 Scheme B per-arch builders: each returns a { x86_64 = {...}, aarch64 = {...} }
+-- map so x86_64 AND aarch64 both resolve to the correct nodejs.org asset.
+-- (V1 previously shipped only x64 on linux/windows and only darwin-arm64 on
+-- macOS, contradicting its own archs declaration.)
 local function _win_url(ver)
-    return { url = string.format("https://nodejs.org/dist/v%s/node-v%s-win-x64.zip", ver, ver), sha256 = nil }
+    return {
+        x86_64  = { url = string.format("https://nodejs.org/dist/v%s/node-v%s-win-x64.zip",   ver, ver) },
+        aarch64 = { url = string.format("https://nodejs.org/dist/v%s/node-v%s-win-arm64.zip", ver, ver) },
+    }
 end
 local function _linux_url(ver)
-    return { url = string.format("https://nodejs.org/dist/v%s/node-v%s-linux-x64.tar.xz", ver, ver), sha256 = nil }
+    return {
+        x86_64  = { url = string.format("https://nodejs.org/dist/v%s/node-v%s-linux-x64.tar.xz",   ver, ver) },
+        aarch64 = { url = string.format("https://nodejs.org/dist/v%s/node-v%s-linux-arm64.tar.xz", ver, ver) },
+    }
 end
 local function _mac_url(ver)
-    return { url = string.format("https://nodejs.org/dist/v%s/node-v%s-darwin-arm64.tar.gz", ver, ver), sha256 = nil }
+    return {
+        x86_64  = { url = string.format("https://nodejs.org/dist/v%s/node-v%s-darwin-x64.tar.gz",   ver, ver) },
+        aarch64 = { url = string.format("https://nodejs.org/dist/v%s/node-v%s-darwin-arm64.tar.gz", ver, ver) },
+    }
 end
+
+-- node's release dir/file token per platform+arch (used by install()).
+local function _node_arch() return ({ x86_64 = "x64", aarch64 = "arm64" })[os.arch()] or "x64" end
 
 -- xpkg info
 
 package = {
-    spec = "1",
+    spec = "2",
     homepage = "https://nodejs.org",
     name = "node",
     description = "Node.js is a JavaScript runtime built on Chrome's V8 JavaScript engine",
@@ -22,7 +38,7 @@ package = {
     docs = "https://nodejs.org/docs",
 
     -- xim pkg info
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable", -- dev, stable, deprecated
     categories = {"node", "javascript"},
 
@@ -89,17 +105,18 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
 
+-- Arch-aware extracted-dir templates (node uses x64/arm64 tokens).
 local node_dir_template = {
-    linux = "node-v%s-linux-x64",
-    windows = "node-v%s-win-x64",
-    macosx = "node-v%s-darwin-arm64",
+    linux = "node-v%s-linux-%s",
+    windows = "node-v%s-win-%s",
+    macosx = "node-v%s-darwin-%s",
 }
 
 function install()
     os.tryrm(pkginfo.install_dir())
     log.debug("Installing Node.js to %s ...", pkginfo.install_dir())
     os.mv(
-        string.format(node_dir_template[os.host()], pkginfo.version()),
+        string.format(node_dir_template[os.host()], pkginfo.version(), _node_arch()),
         pkginfo.install_dir()
     )
     return true
