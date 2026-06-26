@@ -57,14 +57,14 @@ mac/win 三个工具均静态自包含(self-containment 校验已证实)。
 
 | 维度 | linux-x86_64 | macosx-arm64 | windows-x86_64 |
 |------|-------------|--------------|----------------|
-| `llvm` 来源 | xlings 自建 slim 构建（维护者管线） | 上游 `LLVM-<ver>-macOS-ARM64` carve | 上游 `clang+llvm-<ver>-x86_64-pc-windows-msvc` carve |
+| `llvm` 来源 | 上游 `LLVM-<ver>-Linux-X64` carve | 上游 `LLVM-<ver>-macOS-ARM64` carve | 上游 `clang+llvm-<ver>-x86_64-pc-windows-msvc` carve |
 | libc++ | 有 | 有 | **无**（MSVC STL） |
 | 共享库扩展名 | `.so` | `.dylib` | `.dll` |
 | libc++ 库目录 | `lib/<triple>/` | `lib/`（直接） | — |
 | 可执行后缀 | 无 | 无 | `.exe` |
 | 资产扩展名 | `tar.gz`+`tar.xz` | `tar.xz` | `tar.xz`+`zip` |
 | 自包含校验 | `ldd` | Mach-O LC_LOAD_DYLIB | `objdump -p` 导入表 |
-| 本流程能否产出 | 否（维护者构建） | 是 | 是 |
+| 本流程能否产出 | 是（上游 carve） | 是 | 是 |
 
 ## 4. 自包含事实（20.1.7/22.1.8 实测）
 

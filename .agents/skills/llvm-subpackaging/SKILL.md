@@ -89,9 +89,14 @@ build-llvm-subpkg.sh --in <dir>                  --pkg tools  --version 22.1.8 -
 
 ## 6) 平台落地能力(谁能产哪个)
 
-- **macosx-arm64 / windows-x86_64**:可从上游全量 carve(本机即可),由本流程产出。
-- **linux-x86_64**:`llvm` 是 xlings **自建 slim 构建**(非上游 carve),由维护者的构建管线产出;
-  `llvm-tools` 可从上游 Linux 全量 carve 但通常随自建管线一起。→ **linux 新版本资源不在本 SOP 自动覆盖范围**,需维护者构建后再接线。
+**三平台都从上游全量 release carve,本机即可产出**(同一 `build-llvm-subpkg.sh` 流程):
+- macosx-arm64 ← `LLVM-<ver>-macOS-ARM64.tar.xz`
+- windows-x86_64 ← `clang+llvm-<ver>-x86_64-pc-windows-msvc.tar.xz`
+- linux-x86_64 ← `LLVM-<ver>-Linux-X64.tar.xz`(含 libc++ / share/libc++ / compiler-rt,与 mac 同构;
+  clang 二进制运行期只依赖系统库,编译期目标由 `llvm.lua` 的 sysroot 注入 cfg 决定)
+
+> 上游 Linux 全量约 1.9GB(carve 后 `llvm`≈150M xz)。早期误以为 linux 需"自建构建",
+> 实测可直接 carve 上游,与 mac/win 完全一致。
 
 ## 7) 验收清单
 

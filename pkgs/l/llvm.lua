@@ -19,17 +19,19 @@ package = {
 
     xpm = {
         linux = {
-            -- linux ships the maintainer's slim self-contained build (XLINGS_RES).
-            -- xim:linux-headers is a thin delegator to scode:linux-headers, so the
-            -- install-test harness registers the scode sub-index (see .github/scripts).
+            -- slim self-contained toolchain carved from the upstream full release
+            -- (same as mac/win, via build-llvm-subpkg.sh --pkg llvm). xim:linux-headers
+            -- is a thin delegator to scode:linux-headers, so the install-test harness
+            -- registers the scode sub-index (see .github/scripts).
             deps = {
                 "xim:glibc@2.39",
                 "xim:linux-headers@5.11.1",
                 "xim:zlib@1.3.1",
                 "xim:libxml2@2.13.5",
             },
-            ["latest"] = { ref = "20.1.7" },
+            ["latest"] = { ref = "22.1.8" },
             ["20.1.7"] = "XLINGS_RES",
+            ["22.1.8"] = "XLINGS_RES",
         },
         -- macOS ships a slim, self-contained toolchain carved from the upstream
         -- full release (the 1.4GB upstream monolith is no longer mirrored):
@@ -37,7 +39,7 @@ package = {
         -- std modules), with the static .a libs, lldb and clang extra tools
         -- dropped. Built via .agents/tools/build-llvm-subpkg.sh (--pkg llvm).
         macosx = {
-            ["latest"] = { ref = "20.1.7" },
+            ["latest"] = { ref = "22.1.8" },
             ["20.1.7"] = {
                 url = {
                     GLOBAL = "https://github.com/xlings-res/llvm/releases/download/20.1.7/llvm-20.1.7-macosx-arm64.tar.xz",
@@ -54,13 +56,10 @@ package = {
             },
         },
         windows = {
-            ["latest"] = { ref = "20.1.7" },
+            ["latest"] = { ref = "22.1.8" },
             ["20.1.7"] = "XLINGS_RES",
             ["22.1.8"] = "XLINGS_RES",
         },
-        -- NOTE: linux 22.1.8 is produced by the maintainer's slim-build pipeline
-        -- (not carved from upstream here); add ["22.1.8"] once published, then
-        -- bump every platform's latest ref to 22.1.8 together.
     },
 }
 
