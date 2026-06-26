@@ -81,6 +81,11 @@ $failures = @()
 $tested   = 0
 $skipped  = 0
 
+# Register official sub-indexes so packages that delegate to them resolve
+# (see posix-test.sh for rationale: xim:linux-headers -> scode:linux-headers).
+# Best-effort.
+& $xlingsCmd config --index-repo "scode:https://github.com/openxlings/xim-pkgindex-scode.git" 2>&1 | Out-Null
+
 foreach ($relFile in $files) {
     $luaFile = Join-Path $WorkspaceRoot $relFile
     if (-not (Test-Path $luaFile)) {

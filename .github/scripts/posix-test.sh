@@ -112,6 +112,13 @@ failures=()
 tested=0
 skipped=0
 
+# Register official sub-indexes so packages that delegate to them resolve.
+# e.g. xim:linux-headers is a thin delegator whose payload lives in
+# scode:linux-headers (xim-pkgindex-scode); without the scode index any
+# package depending on linux-headers (llvm, gcc, glibc, ...) fails to install
+# with "package 'scode:linux-headers@<ver>' not found". Best-effort.
+"$XLINGS_CMD" config --index-repo "scode:https://github.com/openxlings/xim-pkgindex-scode.git" 2>/dev/null || true
+
 for rel_file in "${files[@]}"; do
     [[ -n "$rel_file" ]] || continue
     lua_file="$WORKSPACE_ROOT/$rel_file"
