@@ -42,6 +42,7 @@ lib/clang/<major>/lib/...       # compiler-rt(各平台子目录)
 include/c++/v1/                 # libc++ 头
 include/<triple>/c++/v1/        # 平台特化头(若上游提供)
 lib/<triple>/ 或 lib/           # libc++ / libc++abi / libunwind (.so|.dylib + .a) + libc++.modules.json
+lib/<triple>/libatomic.so*+.a   # 仅 linux:GCC 运行时库,libc++ 幽灵依赖 + 16字节原子 __atomic_* 退化调用所需;漏带则每个产物运行期挂 libatomic.so.1
 share/libc++/v1/                # std.cppm / std.compat.cppm + std/*.inc(`import std;` 需要)
 ```
 
