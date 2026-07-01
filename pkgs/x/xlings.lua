@@ -37,7 +37,8 @@ package = {
             -- res_versioned: version-bump bot tracks openxlings/xlings releases and
             -- appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "0.4.60" },
+            ["latest"] = { ref = "0.4.62" },
+            ["0.4.62"] = "XLINGS_RES",
             ["0.4.60"] = "XLINGS_RES",
             ["0.4.55"] = "XLINGS_RES",
             ["0.4.54"] = "XLINGS_RES",
@@ -189,7 +190,8 @@ package = {
             -- res_versioned: version-bump bot tracks openxlings/xlings releases and
             -- appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "0.4.60" },
+            ["latest"] = { ref = "0.4.62" },
+            ["0.4.62"] = "XLINGS_RES",
             ["0.4.60"] = "XLINGS_RES",
             ["0.4.55"] = "XLINGS_RES",
             ["0.4.54"] = "XLINGS_RES",
@@ -341,7 +343,8 @@ package = {
             -- res_versioned: version-bump bot tracks openxlings/xlings releases and
             -- appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "0.4.60" },
+            ["latest"] = { ref = "0.4.62" },
+            ["0.4.62"] = "XLINGS_RES",
             ["0.4.60"] = "XLINGS_RES",
             ["0.4.55"] = "XLINGS_RES",
             ["0.4.54"] = "XLINGS_RES",
