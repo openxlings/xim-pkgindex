@@ -38,7 +38,9 @@ package = {
     -- directly; the shell launcher is only useful from the bundle root.
     xpm = {
         linux = {
-            url_template = "https://github.com/mcpp-community/mcpp/releases/download/v{version}/mcpp-{version}-linux-x86_64.tar.gz",
+            -- res_versioned: version-bump bot tracks mcpp-community/mcpp releases
+            -- and appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
+            res_versioned = true,
             ["latest"] = { ref = "0.0.82" },
             ["0.0.82"] = "XLINGS_RES",
             ["0.0.81"] = "XLINGS_RES",
@@ -115,6 +117,9 @@ package = {
             ["0.0.1"] = "XLINGS_RES",
         },
         macosx = {
+            -- res_versioned: version-bump bot tracks mcpp-community/mcpp releases
+            -- and appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
+            res_versioned = true,
             ["latest"] = { ref = "0.0.82" },
             ["0.0.82"] = "XLINGS_RES",
             ["0.0.81"] = "XLINGS_RES",
@@ -177,6 +182,9 @@ package = {
             ["0.0.16"] = "XLINGS_RES",
         },
         windows = {
+            -- res_versioned: version-bump bot tracks mcpp-community/mcpp releases
+            -- and appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
+            res_versioned = true,
             ["latest"] = { ref = "0.0.82" },
             ["0.0.82"] = "XLINGS_RES",
             ["0.0.81"] = "XLINGS_RES",
