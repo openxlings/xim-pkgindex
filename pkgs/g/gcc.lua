@@ -160,20 +160,34 @@ end
 
 function __config_linux()
     local gcc_bindir = path.join(pkginfo.install_dir(), "bin")
+
+    -- LINK axis (loader + rpath): baked into the SPECS, pointing directly at
+    -- this package's own dep payloads — the glibc payload's loader/lib plus
+    -- gcc's own lib64 (libstdc++/libgcc_s at run time). Payload-direct, no
+    -- subos indirection: the specs govern every invocation style (xvm shim,
+    -- direct <install_dir>/bin/gcc, and downstream tools), so they must not
+    -- depend on an environment directory that may be absent or belong to a
+    -- different home. Mirrors llvm.lua's payload-direct cfg.
+    local glibc_lib, dynamic_linker = __find_glibc_runtime()
+    if glibc_lib then
+        local rpath = glibc_lib .. ":" .. path.join(pkginfo.install_dir(), "lib64")
+        __rewrite_specs_linux(rpath, dynamic_linker)
+    else
+        log.warn("glibc payload not found (deps declare xim:glibc);"
+            .. " skip specs rewrite — gcc keeps its baked build-machine paths")
+    end
+
+    -- HEADER axis: injected only on the xvm shim aliases. gcc's header
+    -- search (include-fixed, #include_next) needs an FHS-shaped tree, which
+    -- individual payloads are not — the subos is exactly xlings' FHS
+    -- composite view for this purpose. Consumers that bypass the shim
+    -- (e.g. mcpp) supply their own header flags.
     local sysroot_dir = system.subos_sysrootdir()
-    local sysroot_lib = nil
-    local dynamic_linker = nil
     local alias_args = ""
     if sysroot_dir and sysroot_dir ~= "" then
-        sysroot_lib = path.join(sysroot_dir, "lib")
-        dynamic_linker = path.join(sysroot_lib, "ld-linux-x86-64.so.2")
-        alias_args = string.format(
-            ' --sysroot=%s -Wl,--dynamic-linker=%s -Wl,--enable-new-dtags,-rpath,%s -Wl,-rpath-link,%s',
-            sysroot_dir, dynamic_linker, sysroot_lib, sysroot_lib
-        )
-        __rewrite_specs_linux(sysroot_dir, sysroot_lib, dynamic_linker)
+        alias_args = string.format(' --sysroot=%s', sysroot_dir)
     else
-        log.warn("subos dir is empty, skip alias linker/sysroot injection")
+        log.warn("subos dir is empty, skip alias sysroot injection")
     end
 
     xvm.add("xim-gnu-gcc") -- root
@@ -244,10 +258,13 @@ end
 -- stamp lives inside install_dir and is wiped on `xim reinstall
 -- gcc` along with the rest of the payload, so version bumps and
 -- forced reinstalls naturally re-rewrite.
-function __rewrite_specs_linux(sysroot_dir, sysroot_lib, dynamic_linker)
+function __rewrite_specs_linux(rpath, dynamic_linker)
+    -- The "-payload" suffix versions the specs SCHEMA: pre-existing installs
+    -- carry the old subos-form stamp, which no longer matches, so the next
+    -- config() re-fire converges them to the payload-direct form.
     local stamp = path.join(
         pkginfo.install_dir(),
-        ".specs-rewritten-" .. pkginfo.version() .. ".stamp"
+        ".specs-rewritten-" .. pkginfo.version() .. "-payload.stamp"
     )
     if os.isfile(stamp) then
         log.debug("gcc specs already rewritten (stamp present), skipping.")
@@ -257,11 +274,36 @@ function __rewrite_specs_linux(sysroot_dir, sysroot_lib, dynamic_linker)
     local gcc_bin = path.join(pkginfo.install_dir(), "bin/gcc")
     local specs_config_bin = path.join(system.bindir(), "gcc-specs-config")
 
-    log.info("Rewriting gcc specs to install-machine paths via gcc-specs-config...")
+    log.info("Rewriting gcc specs to payload-direct paths via gcc-specs-config...")
     system.exec(string.format(
         "%s %s --dynamic-linker %s --rpath %s --linker-type gnu",
-        specs_config_bin, gcc_bin, dynamic_linker, sysroot_lib
+        specs_config_bin, gcc_bin, dynamic_linker, rpath
     ))
 
     io.writefile(stamp, pkginfo.version())
+end
+
+-- Locate the glibc payload runtime (this package's own dep, xim:glibc) via
+-- pkginfo.dep_install_dir, and discover the loader NAME from the payload
+-- contents (any `ld-*.so*`) — no architecture hardcodes, no directory
+-- layout assumptions. Same helper shape as llvm.lua's.
+function __find_glibc_runtime()
+    local glibc_dir = pkginfo.dep_install_dir("glibc")
+    if not glibc_dir then return nil, nil end
+
+    for _, libname in ipairs({"lib64", "lib"}) do
+        local libdir = path.join(glibc_dir, libname)
+        local g = io.popen('ls -1 "' .. libdir .. '" 2>/dev/null')
+        if g then
+            for line in g:lines() do
+                local name = line:gsub("[\r\n]+$", "")
+                if name:match("^ld%-") and name:find(".so", 1, true) then
+                    g:close()
+                    return libdir, path.join(libdir, name)
+                end
+            end
+            g:close()
+        end
+    end
+    return nil, nil
 end
