@@ -18,6 +18,21 @@
 
 例：`llvm-22.1.8-macosx-arm64.tar.xz`、`llvm-tools-22.1.8-windows-x86_64.zip`
 
+## 1.5 准入验收（上传前必做,Linux `llvm` 包)
+
+```bash
+.agents/tools/verify-toolchain.sh <llvm-*.tar.gz> \
+  --loader ~/.xlings/data/xpkgs/xim-x-glibc/2.39/lib64/ld-linux-x86-64.so.2
+```
+
+脚本内置 **llvm gate**,不通过一律不上传:
+1. **缺件**:`share/libc++/v1/std.cppm`、`libc++.so*`、`libatomic.so.1`
+   (历史事故:slim carve 漏 libatomic → 所有产物运行期
+   `libatomic.so.1: cannot open`,由用户端发现);
+2. **hermetic CRT**:`-###` 干跑断言 `Scrt1.o/crti.o/crtn.o` 全部解析进
+   glibc payload(`-B`),不落宿主 `/lib`、不裸名(mcpp issue #195 环境类);
+3. **import std 端到端**:std.cppm 预编译 → 编译链接 → 运行。
+
 ## 2. 发布命令
 
 ### GLOBAL（GitHub，支持覆盖）
