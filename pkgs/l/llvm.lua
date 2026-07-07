@@ -65,7 +65,6 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
-import("xim.libxpkg.system")
 import("xim.libxpkg.log")
 
 local alias_apps = {
@@ -148,7 +147,9 @@ function install()
     os.mv(llvmdir, pkginfo.install_dir())
 
     if os.host() == "linux" then
-        __install_linux_cfg()
+        if not __install_linux_cfg() then
+            return false
+        end
     elseif os.host() == "macosx" then
         __install_macosx_cfg()
     end
@@ -156,47 +157,114 @@ function install()
     return true
 end
 
+-- Locate the glibc payload runtime that this package's own `deps` declare
+-- (xim:glibc). Returns lib_dir, loader_path — or nil when absent.
+--
+-- The loader NAME is discovered from the payload contents (any `ld-*.so*`),
+-- mirroring glibc.lua's `exports.runtime.loader` declaration, so nothing
+-- here hardcodes an architecture.
+function __find_glibc_runtime()
+    local xpkgs_root = path.directory(path.directory(pkginfo.install_dir()))
+    local glibc_root = path.join(xpkgs_root, "xim-x-glibc")
+
+    local versions = {}
+    local f = io.popen('ls -1 "' .. glibc_root .. '" 2>/dev/null')
+    if f then
+        for line in f:lines() do
+            local v = line:gsub("[\r\n]+$", "")
+            if v:match("^%d") then table.insert(versions, v) end
+        end
+        f:close()
+    end
+    table.sort(versions)
+
+    for i = #versions, 1, -1 do
+        for _, libname in ipairs({"lib64", "lib"}) do
+            local libdir = path.join(glibc_root, versions[i], libname)
+            local g = io.popen('ls -1 "' .. libdir .. '" 2>/dev/null')
+            if g then
+                for line in g:lines() do
+                    local name = line:gsub("[\r\n]+$", "")
+                    if name:match("^ld%-") and name:find(".so", 1, true) then
+                        g:close()
+                        return libdir, path.join(libdir, name)
+                    end
+                end
+                g:close()
+            end
+        end
+    end
+    return nil, nil
+end
+
+-- Detect the target triple from the payload layout (lib/<triple>).
+function __detect_triple(install_dir)
+    local f = io.popen('ls -1 "' .. path.join(install_dir, "lib") .. '" 2>/dev/null')
+    if f then
+        for line in f:lines() do
+            local name = line:gsub("[\r\n]+$", "")
+            if name:find("-linux-", 1, true) then
+                f:close()
+                return name
+            end
+        end
+        f:close()
+    end
+    return nil
+end
+
+-- Deterministic, hermetic cfg: generated from the package's OWN deps (the
+-- glibc payload), never from whatever environment (subos, host sysroot)
+-- happened to exist at install time — the same package version produces the
+-- same cfg on every machine, and a human running the bundled clang++
+-- directly gets sandbox CRT discovery (-B: Scrt1.o/crti.o/crtn.o — the
+-- driver never consults -L for these), the sandbox loader, and bundled
+-- libc++. No silent host fallback: without the glibc payload the install
+-- fails loudly instead of writing a cfg that links the host's C runtime.
 function __install_linux_cfg()
     local install_dir = pkginfo.install_dir()
     local bindir = path.join(install_dir, "bin")
-    local cxxinc = path.join(install_dir, "include", "c++", "v1")
-    local cxxinc_triple = path.join(install_dir, "include", "x86_64-unknown-linux-gnu", "c++", "v1")
-    local libcxx_dir = path.join(install_dir, "lib", "x86_64-unknown-linux-gnu")
 
-    local sysroot_dir = system.subos_sysrootdir()
+    local glibc_lib, loader = __find_glibc_runtime()
+    if not glibc_lib then
+        log.error("glibc payload not found (this package's deps declare xim:glibc);"
+            .. " refusing to write a host-dependent clang cfg")
+        return false
+    end
 
-    -- Common flags: use bundled lld, compiler-rt, libunwind (no GCC dependency)
-    local common_flags = "-fuse-ld=lld\n"
+    local common_flags = "-B" .. glibc_lib .. "\n"
+        .. "-L" .. glibc_lib .. "\n"
+        .. "-Wl,--dynamic-linker=" .. loader .. "\n"
+        .. "-Wl,--enable-new-dtags,-rpath," .. glibc_lib .. "\n"
+        .. "-fuse-ld=lld\n"
         .. "--rtlib=compiler-rt\n"
         .. "--unwindlib=libunwind\n"
 
-    -- clang.cfg: C compiler config
     local clang_cfg = common_flags
-    -- clang++.cfg: C++ compiler config (use bundled libc++)
     local clangxx_cfg = common_flags
         .. "-nostdinc++\n"
         .. "-stdlib=libc++\n"
-        .. "-isystem " .. cxxinc .. "\n"
-        .. "-isystem " .. cxxinc_triple .. "\n"
-        .. "-L" .. libcxx_dir .. "\n"
-        .. "-Wl,-rpath," .. libcxx_dir .. "\n"
+        .. "-isystem " .. path.join(install_dir, "include", "c++", "v1") .. "\n"
 
-    if sysroot_dir and sysroot_dir ~= "" then
-        local sysroot_lib = path.join(sysroot_dir, "lib")
-        local dynamic_linker = path.join(sysroot_lib, "ld-linux-x86-64.so.2")
-        local sysroot_flags = "--sysroot=" .. sysroot_dir .. "\n"
-            .. "-Wl,--dynamic-linker=" .. dynamic_linker .. "\n"
-            .. "-Wl,--enable-new-dtags,-rpath," .. sysroot_lib .. "\n"
-            .. "-Wl,-rpath-link," .. sysroot_lib .. "\n"
-        clang_cfg = sysroot_flags .. clang_cfg
-        clangxx_cfg = sysroot_flags .. clangxx_cfg
-    else
-        log.warn("subos sysroot not detected; clang will use system sysroot")
+    local triple = __detect_triple(install_dir)
+    if triple then
+        local cxxinc_triple = path.join(install_dir, "include", triple, "c++", "v1")
+        if os.isdir(cxxinc_triple) then
+            clangxx_cfg = clangxx_cfg .. "-isystem " .. cxxinc_triple .. "\n"
+        end
+        local libcxx_dir = path.join(install_dir, "lib", triple)
+        clangxx_cfg = clangxx_cfg
+            .. "-L" .. libcxx_dir .. "\n"
+            .. "-Wl,-rpath," .. libcxx_dir .. "\n"
     end
 
+    local major = pkginfo.version():match("^(%d+)")
     io.writefile(path.join(bindir, "clang.cfg"), clang_cfg)
-    io.writefile(path.join(bindir, "clang-20.cfg"), clang_cfg)
     io.writefile(path.join(bindir, "clang++.cfg"), clangxx_cfg)
+    if major then
+        io.writefile(path.join(bindir, "clang-" .. major .. ".cfg"), clang_cfg)
+    end
+    return true
 end
 
 function __install_macosx_cfg()
