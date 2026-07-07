@@ -41,7 +41,8 @@ package = {
             -- res_versioned: version-bump bot tracks mcpp-community/mcpp releases
             -- and appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "0.0.82" },
+            ["latest"] = { ref = "0.0.83" },
+            ["0.0.83"] = "XLINGS_RES",
             ["0.0.82"] = "XLINGS_RES",
             ["0.0.81"] = "XLINGS_RES",
             ["0.0.80"] = "XLINGS_RES",
@@ -120,7 +121,8 @@ package = {
             -- res_versioned: version-bump bot tracks mcpp-community/mcpp releases
             -- and appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "0.0.82" },
+            ["latest"] = { ref = "0.0.83" },
+            ["0.0.83"] = "XLINGS_RES",
             ["0.0.82"] = "XLINGS_RES",
             ["0.0.81"] = "XLINGS_RES",
             ["0.0.80"] = "XLINGS_RES",
@@ -185,7 +187,8 @@ package = {
             -- res_versioned: version-bump bot tracks mcpp-community/mcpp releases
             -- and appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "0.0.82" },
+            ["latest"] = { ref = "0.0.83" },
+            ["0.0.83"] = "XLINGS_RES",
             ["0.0.82"] = "XLINGS_RES",
             ["0.0.81"] = "XLINGS_RES",
             ["0.0.80"] = "XLINGS_RES",
