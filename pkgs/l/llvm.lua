@@ -160,41 +160,47 @@ end
 -- Locate the glibc payload runtime that this package's own `deps` declare
 -- (xim:glibc). Returns lib_dir, loader_path — or nil when absent.
 --
--- The loader NAME is discovered from the payload contents (any `ld-*.so*`),
--- mirroring glibc.lua's `exports.runtime.loader` declaration, so nothing
--- here hardcodes an architecture.
+-- Resolution goes through pkginfo.dep_install_dir (store scan with
+-- namespace matching + xvm fallback) instead of hand-derived directory
+-- layout assumptions. The loader NAME is discovered from the payload
+-- contents (any `ld-*.so*`), mirroring glibc.lua's `exports.runtime.loader`
+-- declaration, so nothing here hardcodes an architecture.
 function __find_glibc_runtime()
-    local xpkgs_root = path.directory(path.directory(pkginfo.install_dir()))
-    local glibc_root = path.join(xpkgs_root, "xim-x-glibc")
+    local glibc_dir = pkginfo.dep_install_dir("glibc")
+    if not glibc_dir then return nil, nil end
 
-    local versions = {}
-    local f = io.popen('ls -1 "' .. glibc_root .. '" 2>/dev/null')
-    if f then
-        for line in f:lines() do
-            local v = line:gsub("[\r\n]+$", "")
-            if v:match("^%d") then table.insert(versions, v) end
-        end
-        f:close()
-    end
-    table.sort(versions)
-
-    for i = #versions, 1, -1 do
-        for _, libname in ipairs({"lib64", "lib"}) do
-            local libdir = path.join(glibc_root, versions[i], libname)
-            local g = io.popen('ls -1 "' .. libdir .. '" 2>/dev/null')
-            if g then
-                for line in g:lines() do
-                    local name = line:gsub("[\r\n]+$", "")
-                    if name:match("^ld%-") and name:find(".so", 1, true) then
-                        g:close()
-                        return libdir, path.join(libdir, name)
-                    end
+    for _, libname in ipairs({"lib64", "lib"}) do
+        local libdir = path.join(glibc_dir, libname)
+        local g = io.popen('ls -1 "' .. libdir .. '" 2>/dev/null')
+        if g then
+            for line in g:lines() do
+                local name = line:gsub("[\r\n]+$", "")
+                if name:match("^ld%-") and name:find(".so", 1, true) then
+                    g:close()
+                    return libdir, path.join(libdir, name)
                 end
-                g:close()
             end
+            g:close()
         end
     end
     return nil, nil
+end
+
+-- Locate the linux-headers payload's include dir (this package's own dep).
+-- xim:linux-headers is a thin delegator to scode:linux-headers, so the
+-- xim-namespaced store entry can be a metadata-only husk — require the
+-- actual payload marker (include/linux/limits.h) and fall back to the
+-- scode namespace explicitly. Returns nil when absent (warn-level: the
+-- cfg then omits the kernel-header line; compiles that need <linux/*.h>
+-- surface a clear missing-header error instead of a broken install).
+function __find_linux_headers_include()
+    for _, name in ipairs({"linux-headers", "scode:linux-headers"}) do
+        local dir = pkginfo.dep_install_dir(name)
+        if dir and os.isfile(path.join(dir, "include", "linux", "limits.h")) then
+            return path.join(dir, "include")
+        end
+    end
+    return nil
 end
 
 -- Detect the target triple from the payload layout (lib/<triple>).
@@ -240,7 +246,25 @@ function __install_linux_cfg()
         .. "--rtlib=compiler-rt\n"
         .. "--unwindlib=libunwind\n"
 
-    local clang_cfg = common_flags
+    -- Header axis (C and C++ drivers alike): the C library and kernel
+    -- headers come from the same dep payloads the link axis uses. Without
+    -- these a direct `clang hello.c` only works when the HOST happens to
+    -- ship /usr/include — i.e. silently non-hermetic, and broken on
+    -- header-less machines. Ordering matters for C++: libc++'s headers
+    -- must be searched BEFORE the glibc headers (its C-header wrappers
+    -- reach libc via #include_next), so these lines are appended AFTER the
+    -- libc++ -isystem block below — same ordering mcpp's link model emits.
+    local c_hdr_flags = "-isystem "
+        .. path.join(path.directory(glibc_lib), "include") .. "\n"
+    local linux_inc = __find_linux_headers_include()
+    if linux_inc then
+        c_hdr_flags = c_hdr_flags .. "-isystem " .. linux_inc .. "\n"
+    else
+        log.warn("linux-headers payload not found; cfg omits kernel headers"
+            .. " (compiles needing <linux/*.h> will report missing headers)")
+    end
+
+    local clang_cfg = common_flags .. c_hdr_flags
     local clangxx_cfg = common_flags
         .. "-nostdinc++\n"
         .. "-stdlib=libc++\n"
@@ -252,6 +276,9 @@ function __install_linux_cfg()
         if os.isdir(cxxinc_triple) then
             clangxx_cfg = clangxx_cfg .. "-isystem " .. cxxinc_triple .. "\n"
         end
+    end
+    clangxx_cfg = clangxx_cfg .. c_hdr_flags
+    if triple then
         local libcxx_dir = path.join(install_dir, "lib", triple)
         clangxx_cfg = clangxx_cfg
             .. "-L" .. libcxx_dir .. "\n"
