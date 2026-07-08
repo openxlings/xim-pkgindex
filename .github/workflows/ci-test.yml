@@ -22,7 +22,7 @@ jobs:
       - name: Installation Xlings on Ubuntu
         run: |
           export XLINGS_NON_INTERACTIVE=1
-          export XLINGS_VERSION=v0.4.44
+          export XLINGS_VERSION=v0.4.62
           curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
           echo "XLINGS_HOME=$HOME/.xlings" >> "$GITHUB_ENV"
           echo "PATH=$HOME/.xlings/subos/current/bin:$HOME/.xlings/bin:$PATH" >> "$GITHUB_ENV"
@@ -79,7 +79,7 @@ jobs:
         shell: pwsh
         run: |
           $env:XLINGS_NON_INTERACTIVE = "1"
-          $env:XLINGS_VERSION = "v0.4.44"
+          $env:XLINGS_VERSION = "v0.4.62"
           iex (Invoke-WebRequest `
             -Uri "https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.ps1" `
             -UseBasicParsing).Content
@@ -130,7 +130,7 @@ jobs:
       - name: Install xlings on Ubuntu
         run: |
           export XLINGS_NON_INTERACTIVE=1
-          export XLINGS_VERSION=v0.4.44
+          export XLINGS_VERSION=v0.4.62
           curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
           echo "XLINGS_HOME=$HOME/.xlings" >> "$GITHUB_ENV"
           echo "$HOME/.xlings/bin"               >> "$GITHUB_PATH"
@@ -173,7 +173,7 @@ jobs:
       - name: Install xlings on macOS
         run: |
           export XLINGS_NON_INTERACTIVE=1
-          export XLINGS_VERSION=v0.4.44
+          export XLINGS_VERSION=v0.4.62
           curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
           echo "XLINGS_HOME=$HOME/.xlings" >> "$GITHUB_ENV"
           echo "$HOME/.xlings/bin"               >> "$GITHUB_PATH"

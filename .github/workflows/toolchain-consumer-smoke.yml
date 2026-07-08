@@ -1,0 +1,119 @@
+# Toolchain-bump consumer smoke — the gate the llvm 22.1.8 incident showed
+# was missing (2026-07-08: the default-llvm bump broke every macOS mcpp
+# build via a libc++ header/dylib split; nothing in this repo's CI builds
+# WITH a bumped toolchain, so it merged green and detonated downstream).
+#
+# For PRs touching a toolchain package, install the bumped toolchain FROM
+# THIS PR's tree, then act as the toolchain's real consumer: mcpp (stable
+# release) builds and tests a program that exercises std string hashing —
+# the exact class of symbol that crosses the libc++ dylib boundary.
+#
+# Design: mcpp .agents/docs/2026-07-08-root-cause-remediation-design.md §C.1.
+
+name: toolchain consumer smoke
+
+on:
+  pull_request:
+    paths:
+      - 'pkgs/l/llvm.lua'
+      - 'pkgs/g/gcc.lua'
+      - 'pkgs/m/musl-gcc.lua'
+
+concurrency:
+  group: toolchain-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  consumer-smoke:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+          - os: macos-latest
+            platform: macos
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install xlings
+        run: |
+          export XLINGS_NON_INTERACTIVE=1
+          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
+          echo "$HOME/.xlings/bin"               >> "$GITHUB_PATH"
+          echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
+
+      - name: Register THIS PR's tree as the local index
+        run: |
+          # Same mechanism as posix-test.sh: a local index outranks the
+          # remote one, so `xlings install <toolchain>` below resolves to
+          # the PR's bumped descriptor, not main's.
+          mkdir -p "$HOME/.xlings/data/xim-pkgindex-local"
+          cp -a pkgs "$HOME/.xlings/data/xim-pkgindex-local/"
+          xlings config --index-repo "scode:https://github.com/openxlings/xim-pkgindex-scode.git" 2>/dev/null || true
+
+      - name: Install the bumped toolchain + mcpp
+        run: |
+          case "${{ matrix.platform }}" in
+            macos) xlings install llvm -y ;;
+            linux)
+              # gcc/musl-gcc bumps matter on linux; llvm bumps on both.
+              if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q 'pkgs/l/llvm.lua'; then
+                xlings install llvm -y
+              else
+                xlings install gcc -y
+              fi
+              ;;
+          esac
+          xlings install mcpp -y
+          MCPP="$HOME/.xlings/subos/default/bin/mcpp"
+          test -x "$MCPP"
+          "$MCPP" --version
+          echo "MCPP=$MCPP" >> "$GITHUB_ENV"
+          echo "MCPP_VENDORED_XLINGS=$HOME/.xlings/subos/default/bin/xlings" >> "$GITHUB_ENV"
+
+      - name: Point mcpp at the xlings-installed toolchain
+        run: |
+          # Mirror mcpp ci-macos's sandbox-reuse dance, version-agnostic:
+          # symlink whatever the PR installed into mcpp's registry and make
+          # it the default toolchain.
+          set -e
+          mkdir -p "$HOME/.mcpp/registry/data/xpkgs"
+          for kind in xim-x-llvm xim-x-gcc; do
+            src_root="$HOME/.xlings/data/xpkgs/$kind"
+            [ -d "$src_root" ] || continue
+            for verdir in "$src_root"/*/; do
+              ver=$(basename "$verdir")
+              printf '1\n' > "$verdir/.mcpp_ok" || true
+              mkdir -p "$HOME/.mcpp/registry/data/xpkgs/$kind"
+              ln -sfn "$verdir" "$HOME/.mcpp/registry/data/xpkgs/$kind/$ver"
+              case "$kind" in
+                xim-x-llvm) echo "TOOLCHAIN=llvm@$ver" >> "$GITHUB_ENV" ;;
+                xim-x-gcc)  echo "TOOLCHAIN=gcc@$ver"  >> "$GITHUB_ENV" ;;
+              esac
+            done
+          done
+
+      - name: Consumer smoke — mcpp builds + tests with the bumped toolchain
+        run: |
+          set -e
+          "$MCPP" new smokeapp
+          cd smokeapp
+          "$MCPP" toolchain default "$TOOLCHAIN" || true
+          mkdir -p tests
+          cat > tests/hash_test.cpp <<'EOF'
+          // std string hashing — the symbol class that crosses the libc++
+          // dylib boundary (llvm 22.1.8's __hash_memory).
+          import std;
+
+          int main() {
+              std::unordered_map<std::string, int> m;
+              for (int i = 0; i < 100; ++i) m["key" + std::to_string(i)] = i;
+              return (m.size() == 100 && m.at("key42") == 42) ? 0 : 1;
+          }
+          EOF
+          "$MCPP" build
+          "$MCPP" run
+          "$MCPP" test
