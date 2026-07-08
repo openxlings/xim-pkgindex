@@ -45,18 +45,26 @@ jobs:
           echo "$HOME/.xlings/bin"               >> "$GITHUB_PATH"
           echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
 
+      - name: Detect changed toolchain descriptors
+        uses: tj-actions/changed-files@v46
+        id: changed
+        with:
+          files: |
+            pkgs/l/llvm.lua
+            pkgs/g/gcc.lua
+            pkgs/m/musl-gcc.lua
+
       - name: Register the changed descriptor via add-xpkg
         run: |
           # `xlings --add-xpkg <file>` is the sanctioned single-descriptor
           # local-index mechanism (validated copy into xim-pkgindex-local);
           # `local:<pkg>` install then targets it unambiguously — a bare
           # name is ambiguous once the descriptor exists in two indexes.
-          git fetch -q origin "${{ github.base_ref }}"
           xlings config --index-repo "scode:https://github.com/openxlings/xim-pkgindex-scode.git" 2>/dev/null || true
-          CHANGED=$(git diff --name-only "origin/${{ github.base_ref }}"...HEAD -- 'pkgs/l/llvm.lua' 'pkgs/g/gcc.lua' 'pkgs/m/musl-gcc.lua')
+          CHANGED="${{ steps.changed.outputs.all_changed_files }}"
           echo "changed: $CHANGED"
           for f in $CHANGED; do xlings --add-xpkg "$f"; done
-          echo "CHANGED_FILES=$(echo $CHANGED | tr '\n' ' ')" >> "$GITHUB_ENV"
+          echo "CHANGED_FILES=$CHANGED" >> "$GITHUB_ENV"
 
       - name: Install the bumped toolchain + mcpp
         run: |
