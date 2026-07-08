@@ -47,6 +47,9 @@ package = {
 
             -- toolchain build based on musl-gcc-static
             ["latest"] = { ref = "15.1.0" },
+            -- gcc 16: fixes the GCC-15 module-instantiation link bug
+            -- (mcpp remediation doc A2/R5b); stripped ~105MB assets.
+            ["16.1.0"] = "XLINGS_RES",
             ["15.1.0"] = "XLINGS_RES", -- deps musl-gcc
             ["13.3.0"] = "XLINGS_RES",
             ["11.5.0"] = "XLINGS_RES",
