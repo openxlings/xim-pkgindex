@@ -45,28 +45,34 @@ jobs:
           echo "$HOME/.xlings/bin"               >> "$GITHUB_PATH"
           echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
 
-      - name: Register THIS PR's tree as the local index
+      - name: Register the changed descriptor via add-xpkg
         run: |
-          # Same mechanism as posix-test.sh: a local index outranks the
-          # remote one, so `xlings install <toolchain>` below resolves to
-          # the PR's bumped descriptor, not main's.
-          mkdir -p "$HOME/.xlings/data/xim-pkgindex-local"
-          cp -a pkgs "$HOME/.xlings/data/xim-pkgindex-local/"
+          # `xlings --add-xpkg <file>` is the sanctioned single-descriptor
+          # local-index mechanism (validated copy into xim-pkgindex-local);
+          # `local:<pkg>` install then targets it unambiguously — a bare
+          # name is ambiguous once the descriptor exists in two indexes.
+          git fetch -q origin "${{ github.base_ref }}"
           xlings config --index-repo "scode:https://github.com/openxlings/xim-pkgindex-scode.git" 2>/dev/null || true
+          CHANGED=$(git diff --name-only "origin/${{ github.base_ref }}"...HEAD -- 'pkgs/l/llvm.lua' 'pkgs/g/gcc.lua' 'pkgs/m/musl-gcc.lua')
+          echo "changed: $CHANGED"
+          for f in $CHANGED; do xlings --add-xpkg "$f"; done
+          echo "CHANGED_FILES=$(echo $CHANGED | tr '\n' ' ')" >> "$GITHUB_ENV"
 
       - name: Install the bumped toolchain + mcpp
         run: |
           case "${{ matrix.platform }}" in
-            macos) xlings install llvm -y ;;
+            macos) TOOL=llvm ;;
             linux)
-              # gcc/musl-gcc bumps matter on linux; llvm bumps on both.
-              if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q 'pkgs/l/llvm.lua'; then
-                xlings install llvm -y
-              else
-                xlings install gcc -y
-              fi
+              if echo "$CHANGED_FILES" | grep -q 'llvm.lua'; then TOOL=llvm; else TOOL=gcc; fi
               ;;
           esac
+          if ! echo "$CHANGED_FILES" | grep -q "$TOOL"; then
+            # e.g. macos job on a gcc-only bump: nothing to smoke here.
+            echo "no $TOOL descriptor changed; installing from official index as baseline"
+            xlings install "xim:$TOOL" -y
+          else
+            xlings install "local:$TOOL" -y
+          fi
           xlings install mcpp -y
           MCPP="$HOME/.xlings/subos/default/bin/mcpp"
           test -x "$MCPP"
