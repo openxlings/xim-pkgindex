@@ -56,6 +56,9 @@ package = {
             -- XLINGS_RES picks the host-matching asset:
             -- aarch64-linux-musl-gcc-<ver>-linux-{x86_64,aarch64}.tar.gz
             ["latest"] = { ref = "15.1.0" },
+            -- gcc 16: fixes the GCC-15 module-instantiation link bug that
+            -- forced an anchor workaround in mcpp (remediation doc A2).
+            ["16.1.0"] = "XLINGS_RES",
             ["15.1.0"] = "XLINGS_RES",
         },
     },
