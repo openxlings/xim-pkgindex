@@ -68,18 +68,22 @@ jobs:
 
       - name: Install the bumped toolchain + mcpp
         run: |
-          case "${{ matrix.platform }}" in
-            macos) TOOL=llvm ;;
-            linux)
-              if echo "$CHANGED_FILES" | grep -q 'llvm.lua'; then TOOL=llvm; else TOOL=gcc; fi
-              ;;
+          # Derive the tool from the changed FILE NAME (musl-gcc.lua also
+          # matches *gcc.lua* — order matters; round 4 installed local:gcc
+          # for a musl-gcc bump and died on 'not found').
+          TOOL=""
+          case "$CHANGED_FILES" in
+            *llvm.lua*)     TOOL=llvm ;;
+            *musl-gcc.lua*) [ "${{ matrix.platform }}" = "linux" ] && TOOL=musl-gcc ;;
+            *gcc.lua*)      [ "${{ matrix.platform }}" = "linux" ] && TOOL=gcc ;;
           esac
-          if ! echo "$CHANGED_FILES" | grep -q "$TOOL"; then
-            # e.g. macos job on a gcc-only bump: nothing to smoke here.
-            echo "no $TOOL descriptor changed; installing from official index as baseline"
-            xlings install "xim:$TOOL" -y
-          else
+          if [ -n "$TOOL" ]; then
             xlings install "local:$TOOL" -y
+          else
+            # e.g. the macos job on a linux-only (gcc/musl-gcc) bump:
+            # run the consumer smoke against the official llvm baseline.
+            echo "no descriptor relevant to this platform changed; baseline install"
+            xlings install "xim:llvm" -y
           fi
           xlings install mcpp -y
           MCPP="$HOME/.xlings/subos/default/bin/mcpp"
@@ -95,7 +99,7 @@ jobs:
           # it the default toolchain.
           set -e
           mkdir -p "$HOME/.mcpp/registry/data/xpkgs"
-          for kind in xim-x-llvm xim-x-gcc; do
+          for kind in xim-x-llvm xim-x-gcc xim-x-musl-gcc; do
             src_root="$HOME/.xlings/data/xpkgs/$kind"
             [ -d "$src_root" ] || continue
             for verdir in "$src_root"/*/; do
@@ -104,8 +108,9 @@ jobs:
               mkdir -p "$HOME/.mcpp/registry/data/xpkgs/$kind"
               ln -sfn "$verdir" "$HOME/.mcpp/registry/data/xpkgs/$kind/$ver"
               case "$kind" in
-                xim-x-llvm) echo "TOOLCHAIN=llvm@$ver" >> "$GITHUB_ENV" ;;
-                xim-x-gcc)  echo "TOOLCHAIN=gcc@$ver"  >> "$GITHUB_ENV" ;;
+                xim-x-llvm)     echo "TOOLCHAIN=llvm@$ver"      >> "$GITHUB_ENV" ;;
+                xim-x-gcc)      echo "TOOLCHAIN=gcc@$ver"       >> "$GITHUB_ENV" ;;
+                xim-x-musl-gcc) echo "TOOLCHAIN=gcc@$ver-musl"  >> "$GITHUB_ENV" ;;
               esac
             done
           done
