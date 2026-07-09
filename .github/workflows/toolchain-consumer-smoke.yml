@@ -63,7 +63,7 @@ jobs:
           xlings config --index-repo "scode:https://github.com/openxlings/xim-pkgindex-scode.git" 2>/dev/null || true
           CHANGED="${{ steps.changed.outputs.all_changed_files }}"
           echo "changed: $CHANGED"
-          for f in $CHANGED; do xlings --add-xpkg "$f"; done
+          for f in $CHANGED; do xlings config --add-xpkg "$f"; done
           echo "CHANGED_FILES=$CHANGED" >> "$GITHUB_ENV"
 
       - name: Install the bumped toolchain + mcpp
