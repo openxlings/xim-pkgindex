@@ -23,7 +23,10 @@ package = {
             url_template = "https://github.com/sxyazi/yazi/releases/download/v{version}/yazi-x86_64-unknown-linux-musl.zip",
             ["latest"] = { ref = "26.5.6" },
             ["26.5.6"] = {
-                url = "https://github.com/sxyazi/yazi/releases/download/v26.5.6/yazi-x86_64-unknown-linux-musl.zip",
+                url = {
+                    GLOBAL = "https://github.com/sxyazi/yazi/releases/download/v26.5.6/yazi-x86_64-unknown-linux-musl.zip",
+                    CN = "https://gitcode.com/xlings-res/yazi/releases/download/26.5.6/yazi-x86_64-unknown-linux-musl.zip",
+                },
                 sha256 = "1031a02560d053301537195a6661d227c15cb4ce5c30481050b31e2b88681bff",
             },
         },
@@ -31,7 +34,10 @@ package = {
             url_template = "https://github.com/sxyazi/yazi/releases/download/v{version}/yazi-aarch64-apple-darwin.zip",
             ["latest"] = { ref = "26.5.6" },
             ["26.5.6"] = {
-                url = "https://github.com/sxyazi/yazi/releases/download/v26.5.6/yazi-aarch64-apple-darwin.zip",
+                url = {
+                    GLOBAL = "https://github.com/sxyazi/yazi/releases/download/v26.5.6/yazi-aarch64-apple-darwin.zip",
+                    CN = "https://gitcode.com/xlings-res/yazi/releases/download/26.5.6/yazi-aarch64-apple-darwin.zip",
+                },
                 sha256 = "7abd71725e2fe27bed036becbf6ce79fa17964eb68491d34190011c94b8c7ca8",
             },
         },
@@ -39,7 +45,10 @@ package = {
             url_template = "https://github.com/sxyazi/yazi/releases/download/v{version}/yazi-x86_64-pc-windows-msvc.zip",
             ["latest"] = { ref = "26.5.6" },
             ["26.5.6"] = {
-                url = "https://github.com/sxyazi/yazi/releases/download/v26.5.6/yazi-x86_64-pc-windows-msvc.zip",
+                url = {
+                    GLOBAL = "https://github.com/sxyazi/yazi/releases/download/v26.5.6/yazi-x86_64-pc-windows-msvc.zip",
+                    CN = "https://gitcode.com/xlings-res/yazi/releases/download/26.5.6/yazi-x86_64-pc-windows-msvc.zip",
+                },
                 sha256 = "6c6c52a4b2648e179f917bdaa7c57e793d18561b380a8bfa025f10cd1b9b2ad1",
             },
         },
