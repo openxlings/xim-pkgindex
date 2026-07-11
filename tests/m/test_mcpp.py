@@ -40,26 +40,36 @@ class TestStatic:
 
     @pytest.mark.static
     def test_latest_uses_xlings_res(self, meta):
-        # mcpp assets are distributed through the XLINGS_RES mirrors. Assert the
-        # `latest` ref (whatever version it currently points at) maps to an
-        # XLINGS_RES entry in every platform block — version-agnostic so it
-        # doesn't go stale on each release bump.
+        # The latest target must keep the legacy URL sentinel while adding the
+        # complete per-platform architecture checksum set.
         def platform_block(platform, next_marker):
             start = meta.raw_content.index(f"        {platform} = {{")
             end = meta.raw_content.index(next_marker, start)
             return meta.raw_content[start:end]
 
         platforms = (
-            ("linux", "        macosx = {"),
-            ("macosx", "        windows = {"),
-            ("windows", "\n        },\n    },"),
+            ("linux", "        macosx = {", {"x86_64", "aarch64"}),
+            ("macosx", "        windows = {", {"aarch64"}),
+            ("windows", "\n        },\n    },", {"x86_64"}),
         )
-        for platform, next_marker in platforms:
+        for platform, next_marker, expected_arches in platforms:
             block = platform_block(platform, next_marker)
             m = re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"([0-9.]+)"\s*\}', block)
             assert m, f"no `latest` ref in {platform} block"
             latest = m.group(1)
-            assert re.search(rf'\["{re.escape(latest)}"\]\s*=\s*"XLINGS_RES"', block)
+            entry_start = block.index(f'["{latest}"]', m.end())
+            next_entry = re.search(r'\n\s*\["[0-9.]+' + r'"\]\s*=', block[entry_start + 1:])
+            entry_end = (entry_start + 1 + next_entry.start()) if next_entry else len(block)
+            entry = block[entry_start:entry_end]
+            assert re.search(r'url\s*=\s*"XLINGS_RES"', entry)
+            hashes = {
+                arch: digest.lower()
+                for arch, digest in re.findall(
+                    r'\b(x86_64|aarch64)\s*=\s*"([0-9a-fA-F]{64})"', entry)
+            }
+            assert set(hashes) == expected_arches
+
+        assert re.search(r'\bxpm\s*=\s*\{\s*source\s*=\s*"xlings-res"', meta.raw_content)
 
     @pytest.mark.static
     def test_install_uses_runtime_dir(self, meta):
