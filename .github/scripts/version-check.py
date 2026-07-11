@@ -106,12 +106,9 @@ def extract_res_versioned(platform_body: str) -> bool:
     """True if the platform opts into XLINGS_RES-style auto-bump.
 
     Marked with `res_versioned = true`. Such a platform tracks its `repo`'s
-    latest GitHub release just like `url_template`, but on bump it appends
-    `["<ver>"] = "XLINGS_RES"` (resolved through the multi-mirror resource
-    service) instead of a hardcoded url+sha256 — so it keeps the mirror
-    fallback that XLINGS_RES gives and needs no artifact download. This is
-    what lets the bot keep `xlings` (and other XLINGS_RES packages) current
-    instead of silently going stale.
+    latest GitHub release just like `url_template`. Apply mode accepts a new
+    version only after the mirrored xlings-res release contains a binary and
+    matching sha256 sidecar for every opted-in platform resource.
     """
     return re.search(r'\bres_versioned\s*=\s*true\b', platform_body) is not None
 
@@ -321,6 +318,131 @@ def compute_sha256(url: str, token: str | None) -> str:
     return h.hexdigest()
 
 
+def fetch_text(url: str, token: str | None) -> str:
+    req = urllib.request.Request(
+        url, headers={"User-Agent": "xim-pkgindex-version-bump"}
+    )
+    if token and "github.com" in url:
+        req.add_header("Authorization", f"Bearer {token}")
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        return resp.read().decode("utf-8")
+
+
+def github_release_by_tag(owner: str, name: str, tag: str,
+                          token: str | None) -> dict[str, Any]:
+    url = f"https://api.github.com/repos/{owner}/{name}/releases/tags/{tag}"
+    req = urllib.request.Request(
+        url, headers={"User-Agent": "xim-pkgindex-version-bump"}
+    )
+    if token:
+        req.add_header("Authorization", f"Bearer {token}")
+    with urllib.request.urlopen(req, timeout=30) as resp:
+        return json.loads(resp.read())
+
+
+def canonical_arch(arch: str) -> str:
+    value = arch.lower().replace("-", "_")
+    if value in {"amd64", "x64", "x86_64"}:
+        return "x86_64"
+    if value in {"arm64", "armv8", "aarch64"}:
+        return "aarch64"
+    return value
+
+
+def release_arches(package_name: str, version: str, platform: str,
+                   assets: dict[str, str]) -> set[str]:
+    prefix = f"{package_name}-{version}-{platform}-"
+    result = set()
+    for name in assets:
+        if (not name.startswith(prefix)
+                or name.endswith(".sha256")
+                or not (name.endswith(".tar.gz") or name.endswith(".zip"))):
+            continue
+        suffix = name[len(prefix):]
+        result.add(canonical_arch(
+            suffix.removesuffix(".tar.gz").removesuffix(".zip")))
+    return result
+
+
+def resolve_res_hashes(package_name: str, current: str, version: str,
+                       platforms: list[str], token: str | None) -> dict[str, Any]:
+    """Verify xlings-res release assets and return platform->arch->sha256.
+
+    The sidecar supplies the expected digest; the binary is streamed and
+    hashed independently. Missing platform assets, sidecars, malformed
+    digests, or mismatches abort the entire version bump.
+    """
+    try:
+        current_release = github_release_by_tag(
+            "xlings-res", package_name, current, token)
+        release = github_release_by_tag("xlings-res", package_name, version, token)
+    except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError) as e:
+        return {"status": "error", "reason": f"resource release unavailable: {e}"}
+
+    assets = {
+        item.get("name", ""): item.get("browser_download_url", "")
+        for item in release.get("assets", [])
+        if item.get("name") and item.get("browser_download_url")
+    }
+    current_assets = {
+        item.get("name", ""): item.get("browser_download_url", "")
+        for item in current_release.get("assets", [])
+        if item.get("name") and item.get("browser_download_url")
+    }
+    result: dict[str, dict[str, str]] = {}
+    for platform in platforms:
+        expected_arches = release_arches(
+            package_name, current, platform, current_assets)
+        actual_arches = release_arches(package_name, version, platform, assets)
+        if not expected_arches:
+            return {
+                "status": "error",
+                "reason": f"current release has no resource asset for {platform}",
+            }
+        if actual_arches != expected_arches:
+            return {
+                "status": "error",
+                "reason": (
+                    f"architecture set changed for {platform}: "
+                    f"{sorted(expected_arches)} -> {sorted(actual_arches)}"
+                ),
+            }
+        prefix = f"{package_name}-{version}-{platform}-"
+        binaries = [
+            name for name in assets
+            if name.startswith(prefix)
+            and (name.endswith(".tar.gz") or name.endswith(".zip"))
+            and not name.endswith(".sha256")
+        ]
+        if not binaries:
+            return {"status": "error", "reason": f"no resource asset for {platform}"}
+        hashes: dict[str, str] = {}
+        for filename in sorted(binaries):
+            suffix = filename[len(prefix):]
+            arch = suffix.removesuffix(".tar.gz").removesuffix(".zip")
+            arch = canonical_arch(arch)
+            sidecar = filename + ".sha256"
+            if sidecar not in assets:
+                return {"status": "error", "reason": f"missing sidecar: {sidecar}"}
+            try:
+                sidecar_text = fetch_text(assets[sidecar], token).strip()
+                match = re.fullmatch(r"([0-9a-fA-F]{64})\s+\*?(.+)", sidecar_text)
+                if not match or match.group(2) != filename:
+                    return {"status": "error", "reason": f"invalid sidecar: {sidecar}"}
+                expected = match.group(1).lower()
+                actual = compute_sha256(assets[filename], token)
+            except (urllib.error.HTTPError, urllib.error.URLError, TimeoutError) as e:
+                return {"status": "error", "reason": f"failed to verify {filename}: {e}"}
+            if actual != expected:
+                return {
+                    "status": "error",
+                    "reason": f"sha256 mismatch for {filename}: got {actual}, want {expected}",
+                }
+            hashes[arch] = expected
+        result[platform] = hashes
+    return result
+
+
 def apply_bump(
     lua_path: Path,
     current: str,
@@ -337,9 +459,9 @@ def apply_bump(
       - url_template platforms (in `proposed_urls`): the artifact is
         downloaded, its sha256 computed, and a
         `["<upstream>"] = { url = ..., sha256 = ... }` block appended.
-      - res_versioned platforms (in `res_platforms`): a bare
-        `["<upstream>"] = "XLINGS_RES"` entry is appended — no download,
-        no sha256 (the resource service resolves + verifies it).
+      - res_versioned platforms (in `res_platforms`): mirrored binaries and
+        sidecars are verified first, then a V1-compatible `url = "XLINGS_RES"`
+        resource table with per-arch sha256 values is appended.
 
     Returns a record describing what happened (status + per-platform).
     """
@@ -352,7 +474,14 @@ def apply_bump(
         return {"status": "error", "reason": "xpm block not found"}
 
     edits: list[tuple[int, int, str]] = []
-    per_platform: dict[str, str] = {}
+    per_platform: dict[str, Any] = {}
+
+    res_hashes: dict[str, Any] = {}
+    if res_platforms:
+        res_hashes = resolve_res_hashes(
+            lua_path.stem, current, upstream, res_platforms, token)
+        if res_hashes.get("status") == "error":
+            return res_hashes
     for plat, new_url in proposed_urls.items():
         plat_range = find_block_range(text, plat, xpm[0])
         if not plat_range or plat_range[1] > xpm[1]:
@@ -400,7 +529,8 @@ def apply_bump(
         )
         per_platform[plat] = sha
 
-    # XLINGS_RES platforms: append a bare entry, no download/sha256.
+    # XLINGS_RES platforms: retain the sentinel URL for V1 readers while
+    # supplying architecture hashes to V2/current readers.
     for plat in res_platforms:
         plat_range = find_block_range(text, plat, xpm[0])
         if not plat_range or plat_range[1] > xpm[1]:
@@ -415,14 +545,26 @@ def apply_bump(
         if not m:
             continue
         indent = m.group("indent")
+        hashes = res_hashes.get(plat, {})
+        if not hashes:
+            return {"status": "error", "reason": f"no verified hashes for {plat}"}
+        hash_lines = "".join(
+            f'{indent}        {arch} = "{digest}",\n'
+            for arch, digest in sorted(hashes.items())
+        )
         replacement = (
             f'{indent}["latest"] = {{ ref = "{upstream}" }},\n'
-            f'{indent}["{upstream}"] = "XLINGS_RES",\n'
+            f'{indent}["{upstream}"] = {{\n'
+            f'{indent}    url = "XLINGS_RES",\n'
+            f'{indent}    sha256 = {{\n'
+            f'{hash_lines}'
+            f'{indent}    }},\n'
+            f'{indent}}},\n'
         )
         edits.append(
             (plat_range[0] + m.start(), plat_range[0] + m.end(), replacement)
         )
-        per_platform[plat] = "XLINGS_RES"
+        per_platform[plat] = hashes
 
     if not edits:
         return {"status": "no-edit", "reason": "no matching latest line on any platform"}
