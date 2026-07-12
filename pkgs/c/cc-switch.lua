@@ -7,6 +7,7 @@ package = {
     maintainers = {"farion1231"},
     licenses = {"MIT"},
     repo = "https://github.com/farion1231/cc-switch",
+    ci = { mirror = true, update = true },
     docs = "https://github.com/farion1231/cc-switch#readme",
 
     type = "app",

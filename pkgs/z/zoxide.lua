@@ -7,6 +7,7 @@ package = {
     maintainers = {"ajeetdsouza"},
     licenses = {"MIT"},
     repo = "https://github.com/ajeetdsouza/zoxide",
+    ci = { mirror = true, update = true },
     docs = "https://github.com/ajeetdsouza/zoxide#readme",
 
     type = "package",

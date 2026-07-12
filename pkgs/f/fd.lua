@@ -7,6 +7,7 @@ package = {
     maintainers = {"David Peter"},
     licenses = {"MIT", "Apache-2.0"},
     repo = "https://github.com/sharkdp/fd",
+    ci = { mirror = true, update = true },
     docs = "https://github.com/sharkdp/fd#readme",
 
     type = "package",

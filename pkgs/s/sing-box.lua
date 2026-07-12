@@ -7,6 +7,7 @@ package = {
     maintainers = {"SagerNet"},
     licenses = {"GPL-3.0-or-later"},
     repo = "https://github.com/SagerNet/sing-box",
+    ci = { mirror = true, update = true },
     docs = "https://sing-box.sagernet.org/",
 
     type = "package",

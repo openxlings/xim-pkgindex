@@ -8,6 +8,7 @@ package = {
     maintainers = {"ruki"},
     licenses = {"Apache-2.0"},
     repo = "https://github.com/xmake-io/xmake",
+    ci = { update = true },
     homepage = "https://xmake.io",
     docs = "https://xmake.io/#/getting_started",
 

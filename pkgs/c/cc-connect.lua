@@ -7,6 +7,7 @@ package = {
     maintainers = {"chenhg5"},
     licenses = {"MIT"},
     repo = "https://github.com/chenhg5/cc-connect",
+    ci = { mirror = true, update = true },
     docs = "https://github.com/chenhg5/cc-connect#readme",
 
     type = "package",

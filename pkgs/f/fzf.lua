@@ -7,6 +7,7 @@ package = {
     maintainers = {"Junegunn Choi"},
     licenses = {"MIT"},
     repo = "https://github.com/junegunn/fzf",
+    ci = { mirror = true, update = true },
     docs = "https://junegunn.github.io/fzf/",
 
     type = "package",

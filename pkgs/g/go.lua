@@ -9,6 +9,7 @@ package = {
     contributors = "https://github.com/golang/go/graphs/contributors",
     licenses = {"BSD-3-Clause"},
     repo = "https://github.com/golang/go",
+    ci = { mirror = true, update = true },
     docs = "https://go.dev/doc",
 
     type = "package",
