@@ -29,6 +29,7 @@ def check(cond, msg):
 RES_FIXTURE = '''package = {
     name = "xlings",
     repo = "https://github.com/openxlings/xlings",
+    ci = { update = true },
     xpm = {
         linux = {
             res_versioned = true,
@@ -53,6 +54,7 @@ RES_FIXTURE = '''package = {
 URL_FIXTURE = '''package = {
     name = "uv",
     repo = "https://github.com/astral-sh/uv",
+    ci = { update = true },
     xpm = {
         linux = {
             url_template = "https://example.com/uv-{version}-linux.tar.gz",
@@ -68,6 +70,34 @@ def test_extract_res_versioned():
     print("test_extract_res_versioned")
     check(vc.extract_res_versioned("res_versioned = true,") is True, "detects true")
     check(vc.extract_res_versioned('url_template = "x"') is False, "absent -> false")
+
+
+def test_extract_ci_update_and_policy():
+    print("test package.ci opt-in and central policy")
+    check(vc.extract_ci_update("ci = { update = true },") is True, "detects package opt-in")
+    check(vc.extract_ci_update("ci = { mirror = true },") is False, "mirror-only is not update opt-in")
+    with tempfile.TemporaryDirectory() as d:
+        root = Path(d)
+        (root / ".github").mkdir()
+        (root / ".github" / "xpkg-ci.yml").write_text(
+            "version: 1\nupdate:\n  enabled: true\n  interval: 3d\n  max_packages_per_run: 5\n",
+            encoding="utf-8",
+        )
+        policy = vc.load_ci_policy(root)
+        check(policy["interval"] == "3d", "reads central interval")
+        check(policy["max_packages_per_run"] == 5, "reads central package limit")
+    check(
+        vc.extract_source_template(
+            'source = "https://example/${version}/foo.tar.gz",',
+            "",
+        ) == "https://example/${version}/foo.tar.gz",
+        "recognizes xpm source URL templates",
+    )
+    check(
+        vc.expand_version_template("https://x/${version}/{version}", "1.2.3")
+        == "https://x/1.2.3/1.2.3",
+        "expands both template spellings",
+    )
 
 
 def test_res_apply_bump():
@@ -181,6 +211,7 @@ def test_url_apply_bump_unaffected(monkeypatch_sha="deadbeef"):
 
 if __name__ == "__main__":
     test_extract_res_versioned()
+    test_extract_ci_update_and_policy()
     test_res_apply_bump()
     test_res_apply_bump_fails_closed_without_complete_hashes()
     test_res_hash_discovery_rejects_architecture_regression()

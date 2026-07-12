@@ -11,6 +11,7 @@ package = {
     contributors = "https://github.com/openxlings/xlings/graphs/contributors",
     licenses = {"Apache-2.0"},
     repo = "https://github.com/openxlings/xlings",
+    ci = { update = true },
 
     -- xim pkg info
     archs = {"x86_64", "aarch64"},

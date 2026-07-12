@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Upstream version checker (and optional bumper) for xim-pkgindex.
 
-Scans every `pkgs/**/*.lua` for an opt-in marker on any platform inside
-the `xpm` table — either `url_template` (hardcoded url+sha256 packages) or
-`res_versioned = true` (XLINGS_RES packages, e.g. xlings itself). For each
+Scans `pkgs/**/*.lua` for explicit `package.ci.update = true` opt-in and a
+legacy per-platform marker inside the `xpm` table — either `url_template`
+ (hardcoded url+sha256 packages) or `res_versioned = true` (XLINGS_RES
+packages, e.g. xlings itself). For each
 opted-in package, queries the GitHub Releases API for the latest tag,
 compares against the version recorded in `xpm.<plat>.["latest"].ref`, and
 prints a JSON report of every package whose upstream has moved ahead.
@@ -102,6 +103,24 @@ def extract_url_template(platform_body: str) -> str | None:
     return m.group(1) if m else None
 
 
+def extract_source_template(xpm_body: str, platform_body: str) -> str | None:
+    """Read a URL-template source at platform or xpm scope.
+
+    `source = "xlings-res"` is a runtime resource selector and is not an
+    update template.  Only templates containing ${version} participate in
+    upstream release discovery.
+    """
+    for body in (platform_body, xpm_body):
+        m = re.search(r'\bsource\s*=\s*"([^"\n]+)"', body)
+        if m and "${version}" in m.group(1):
+            return m.group(1)
+    return None
+
+
+def expand_version_template(template: str, version: str) -> str:
+    return template.replace("${version}", version).replace("{version}", version)
+
+
 def extract_res_versioned(platform_body: str) -> bool:
     """True if the platform opts into XLINGS_RES-style auto-bump.
 
@@ -111,6 +130,29 @@ def extract_res_versioned(platform_body: str) -> bool:
     matching sha256 sidecar for every opted-in platform resource.
     """
     return re.search(r'\bres_versioned\s*=\s*true\b', platform_body) is not None
+
+
+def extract_ci_update(lua: str) -> bool:
+    """Return package.ci.update, defaulting to false.
+
+    CI metadata is deliberately package-scoped and opt-in.  A permissive
+    parser is used here because package files are Lua, while the existing
+    checker remains intentionally dependency-free in CI.
+    """
+    m = re.search(r'\bci\s*=\s*\{', lua)
+    if not m:
+        return False
+    start = m.end()
+    depth = 1
+    i = start
+    while i < len(lua) and depth > 0:
+        if lua[i] == "{":
+            depth += 1
+        elif lua[i] == "}":
+            depth -= 1
+        i += 1
+    body = lua[start : i - 1] if depth == 0 else ""
+    return re.search(r'\bupdate\s*=\s*true\b', body) is not None
 
 
 def extract_latest_ref(platform_body: str) -> str | None:
@@ -144,6 +186,30 @@ def normalize_version(tag: str) -> str:
     return tag[1:] if tag.startswith("v") else tag
 
 
+def load_ci_policy(workspace: Path) -> dict[str, Any]:
+    """Read the dependency-free central .github/xpkg-ci.yml policy."""
+    path = workspace / ".github" / "xpkg-ci.yml"
+    policy: dict[str, Any] = {"enabled": True, "interval": "3d", "max_packages_per_run": 50, "request_budget": 500}
+    if not path.is_file():
+        return policy
+    text = path.read_text(encoding="utf-8")
+    for key in ("enabled",):
+        m = re.search(rf"^\s+{key}:\s*(true|false)\s*$", text, re.MULTILINE)
+        if m:
+            policy[key] = m.group(1) == "true"
+    for key in ("interval", "wakeup_cron"):
+        m = re.search(rf"^\s+{key}:\s*([^#\n]+?)\s*$", text, re.MULTILINE)
+        if m:
+            policy[key] = m.group(1).strip().strip('"')
+    for key in ("max_packages_per_run", "request_budget"):
+        m = re.search(rf"^\s+{key}:\s*(\d+)\s*$", text, re.MULTILINE)
+        if m:
+            policy[key] = int(m.group(1))
+    if not re.fullmatch(r"[1-9][0-9]*d", str(policy["interval"])):
+        raise ValueError(".github/xpkg-ci.yml update.interval must be a positive duration such as 3d")
+    return policy
+
+
 def check_package(lua_path: Path, token: str | None) -> dict[str, Any] | None:
     """Return a JSON-serializable record for this package, or None to skip.
 
@@ -156,6 +222,8 @@ def check_package(lua_path: Path, token: str | None) -> dict[str, Any] | None:
       "error"         — any operational failure (network, HTTP, parse)
     """
     text = read_text(lua_path)
+    if not extract_ci_update(text):
+        return None
     xpm = find_xpm_block(text)
     if not xpm:
         return None
@@ -165,7 +233,7 @@ def check_package(lua_path: Path, token: str | None) -> dict[str, Any] | None:
         body = find_platform_block(xpm, plat)
         if not body:
             continue
-        tmpl = extract_url_template(body)
+        tmpl = extract_url_template(body) or extract_source_template(xpm, body)
         res = extract_res_versioned(body)
         ref = extract_latest_ref(body)
         if tmpl or res or ref:
@@ -266,7 +334,7 @@ def check_package(lua_path: Path, token: str | None) -> dict[str, Any] | None:
     res_platforms: list[str] = []
     for plat, info in platforms.items():
         if info.get("url_template"):
-            proposed[plat] = info["url_template"].replace("{version}", upstream)
+            proposed[plat] = expand_version_template(info["url_template"], upstream)
         elif info.get("res_versioned"):
             res_platforms.append(plat)
     record["proposed_urls"] = proposed
@@ -611,6 +679,14 @@ def main() -> int:
     if not pkg_dir.is_dir():
         print(f"error: {pkg_dir} not found", file=sys.stderr)
         return 2
+    try:
+        policy = load_ci_policy(Path(args.workspace))
+    except ValueError as e:
+        print(f"error: {e}", file=sys.stderr)
+        return 2
+    if not policy.get("enabled", True):
+        print(json.dumps({"policy": policy, "summary": {}, "packages": []}, indent=2))
+        return 0
 
     records: list[dict[str, Any]] = []
     skipped = 0
@@ -650,7 +726,7 @@ def main() -> int:
             if r.get("apply", {}).get("status") == "applied"
         ),
     }
-    out = {"summary": summary, "packages": records}
+    out = {"policy": policy, "summary": summary, "packages": records}
     print(json.dumps(out, indent=2))
     return 0
 

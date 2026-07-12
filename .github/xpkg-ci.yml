@@ -1,0 +1,10 @@
+version: 1
+
+# Package manifests opt in with package.ci.update=true.  The scheduler wakes
+# daily, but a package is scanned only when this central interval expires.
+update:
+  enabled: true
+  interval: 3d
+  wakeup_cron: "17 2 * * *"
+  max_packages_per_run: 50
+  request_budget: 500

@@ -15,8 +15,11 @@ silently served the same binary to every CPU arch — e.g. a recipe declaring
 broken binary on ARM. V2 makes architecture a **first-class, declarative,
 install-time-resolved** dimension, with a mandatory per-arch checksum.
 
-Requires **xlings ≥ 0.4.61** (libxpkg ≥ 0.0.42). Older clients ignore the new
-shapes; keep a V1 fallback entry if you must support them.
+Requires **xlings ≥ 0.4.63** (libxpkg ≥ 0.0.44) for the complete `xpm.source`
+and compat contract. The per-architecture shapes were introduced earlier and
+remain compatible with xlings 0.4.61+. Older clients ignore new fields or may
+misinterpret root/platform `source`; keep the legacy entry form when the same
+index must be consumed by those clients.
 
 ## Arch names (canonical + aliases)
 
@@ -80,14 +83,53 @@ mandatory per-arch `sha256`.
 Auto-URL pattern (unchanged from V1 `XLINGS_RES`):
 `{res-server}/{name}/releases/download/{version}/{name}-{version}-{os}-{arch}.{ext}`
 
+### Shape source — shared default source (recommended)
+
+`xpm.source` keeps the original platform/version matrix and removes repeated
+URLs or repeated `"XLINGS_RES"` values. It can be declared at the root or on a
+platform; the platform value overrides the root value. Supported values are
+`"xlings-res"` and an HTTP(S) URL template.
+
+```lua
+xpm = {
+    source = "xlings-res",
+    linux = {
+        ["latest"] = { ref = "1.0.0" },
+        ["1.0.0"] = {
+            sha256 = { x86_64 = "<x86-hash>", aarch64 = "<arm-hash>" },
+        },
+    },
+}
+```
+
+For a regular third-party release:
+
+```lua
+xpm = {
+    source = "https://github.com/acme/foo/releases/download/${version}/foo-${os}-${arch_alias}.${ext}",
+    linux = {
+        ["1.0.0"] = {
+            arch_alias = { x86_64 = "amd64", aarch64 = "arm64" },
+            sha256 = { x86_64 = "<amd64-hash>", aarch64 = "<arm64-hash>" },
+        },
+    },
+}
+```
+
+An explicit version `url` always overrides `source`; mirror tables, `ref`,
+single hashes and per-arch resource maps remain valid. `res = true` is a
+legacy input for the same official resource URL and should not be added to new
+recipes.
+
 ## Resolution order (install time, on the host)
 
 1. follow version `ref` (e.g. `latest → 4.0.2`) — unchanged;
-2. **Shape B**: pick `archs[host_arch]` → `{url, sha256}` (fail-closed);
-3. **res**: build the `XLINGS_RES` URL + `sha256[host_arch]` (fail-closed);
-4. **Shape C**: expand the template with the host arch + `sha256[host_arch]` (fail-closed);
-5. otherwise the V1 single-arch path (`url`/`sha256`/`XLINGS_RES`) — unchanged;
-6. mirror (`GLOBAL`/`CN`) selection applies **after** the arch pick.
+2. pick a per-arch resource map → `{url, sha256}` (fail-closed);
+3. use explicit version `url`/hash;
+4. use platform `source`, then root `source`;
+5. expand `xlings-res` or URL templates and select the host-arch hash;
+6. otherwise use the V1 single-arch path (`url`/`sha256`/`XLINGS_RES`);
+7. mirror (`GLOBAL`/`CN`) selection applies **after** resource normalization.
 
 The index keeps the **raw, arch-agnostic** data; arch is resolved per-host at
 install time (so a single shared index artifact serves every arch).
