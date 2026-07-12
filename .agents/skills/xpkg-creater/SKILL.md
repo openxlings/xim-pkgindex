@@ -1,12 +1,12 @@
 ---
 name: xpkg-creater
-description: 在 xim-pkgindex 中创建/更新 xpkg 包（V1），遵守 xlings subos 隔离规范，补齐 tests，并在本地与测试集验证通过后再提交 PR。
+description: 在 xim-pkgindex 中创建/更新 xpkg 包（V2/兼容 V1），遵守 xlings SubOS 隔离规范，补齐多架构资源与测试，并在本地与测试集验证通过后再提交 PR。
 ---
 
 # xpkg-creater
 
 用于在 `xim-pkgindex` 仓库中新增或维护 xpkg 包文件，确保满足：
-- XPackage Spec V1（`spec = "1"`）
+- XPackage Spec V2（新包推荐 `spec = "2"`，历史 V1 继续兼容）
 - hooks 约束（尤其 `install` / `config`）
 - subos 环境隔离规范
 - 本地验证 + 测试集验证 + CI 要求
@@ -23,7 +23,7 @@ description: 在 xim-pkgindex 中创建/更新 xpkg 包（V1），遵守 xlings 
 
 安装方式与快速命令见 `references/xlings-setup-and-links.md`。
 
-## 1) 包格式规范（基于本仓库 V1）
+## 1) 包格式规范
 
 一个 xpkg 文件由两部分组成：
 1. `package = { ... }` 元数据域
@@ -32,7 +32,7 @@ description: 在 xim-pkgindex 中创建/更新 xpkg 包（V1），遵守 xlings 
 ### 1.1 必填与推荐字段
 
 至少保证：
-- `spec = "1"`
+- `spec = "2"`（仅维护历史配方时可继续使用 `"1"`）
 - `name`
 - `description`
 - `type`（常见：`package/script/config/template`）
@@ -50,30 +50,36 @@ description: 在 xim-pkgindex 中创建/更新 xpkg 包（V1），遵守 xlings 
   - `{"latest" = { ref = "x.y.z" }}`
   - `{"x.y.z" = { url = "...", sha256 = "..." }}`
   - `"XLINGS_RES"`
+- 新包默认来源推荐使用 `xpm.source`：
+  - `source = "xlings-res"`：官方资源服务器，版本项提供每个架构的 `sha256`
+  - `source = "https://.../${version}/...${arch}..."`：第三方 URL template
+- URL 不规则时使用版本项 per-arch resource map；特殊版本用显式 `url` 覆盖默认 source。
+- 多架构条目的 `sha256` 必须覆盖每个受支持架构；缺失时版本检查器必须 fail closed。
 - 平台继承：`ubuntu = { ref = "linux" }`
 - script/config 类型可使用空资源：`["0.0.1"] = {}`
 
-#### 资源选择策略（默认使用官方 URL）
+#### 资源选择策略（默认使用 xlings-res）
 
-优先使用官方下载 URL 作为默认资源，同时以注释形式保留 `XLINGS_RES` 备选。
-这样保证首次安装直接从官方源下载，后续如需切换到 xlings 镜像只需取消注释即可。
+官方二进制优先使用 `xpm.source = "xlings-res"`，并为每个平台/架构写入权威 SHA256。
+第三方 release 使用 URL template + per-arch SHA256；只有 URL 不规则时才展开 per-arch
+resource map。显式版本 `url` 可以覆盖根级或平台级 source。
 
 ```lua
 xpm = {
+    source = "xlings-res",
     linux = {
         ["latest"] = { ref = "1.0.0" },
-        -- 默认：使用官方 URL
         ["1.0.0"] = {
-            url = "https://github.com/org/repo/releases/download/v1.0.0/tool_1.0.0_linux_amd64.tar.gz",
-            sha256 = nil,
+            sha256 = {
+                x86_64 = "<linux-x86_64-sha256>",
+                aarch64 = "<linux-aarch64-sha256>",
+            },
         },
-        -- 备选：使用 xlings 镜像资源（取消注释并删除上面的 url 配置即可切换）
-        -- ["1.0.0"] = "XLINGS_RES",
     },
 },
 ```
 
-参考实现：`pkgs/g/github-gh.lua`
+参考实现：`docs/V2/xpackage-spec.md` 与 `pkgs/g/github-gh.lua`
 
 ### 1.2.1 XLINGS_RES 镜像发布要求
 
@@ -82,11 +88,13 @@ xpm = {
 > 的分发（索引即资源 / Y-asset）是同一套资源服务路径但不同资产，互不混淆。
 > 索引机制全貌见 `docs/design/index-distribution.md`（同步自 xlings v0.4.55 源码）。
 
-当某个版本在包索引中写成 `"XLINGS_RES"` 时，该版本已经进入 xlings 多镜像资源服务链路。发布前必须同时满足：
+当某个版本使用 `xpm.source = "xlings-res"`（历史写法为 `"XLINGS_RES"`）时，该版本已经进入 xlings 多镜像资源服务链路。发布前必须同时满足：
 
 - `https://github.com/xlings-res/<pkg>` 与 `https://gitcode.com/xlings-res/<pkg>` 都存在同名 tag/release。
 - 两边 release 都包含该版本声明会使用的全部平台资产；文件名必须符合 xlings-res 约定。
 - 两边资产必须来自同一个权威上游 release 或同一次构建产物；发布后从 GitHub RES、GitCode RES、权威上游各下载一次并比对 sha256，确认字节一致。
+- 每个归档都要发布同名 `.sha256` sidecar；索引版本项必须为每个受支持架构写入与 sidecar 一致的 SHA256。
+- `version-check.py --apply` 缺少平台、架构、资产或 sidecar 时必须 fail closed，不得生成不完整条目。
 - 如果补发历史版本，发布后确认两边 `latest` 仍指向应当作为最新的版本，不要因为补旧版本导致 latest 倒退。
 - PR 描述或汇报中写清楚 GitHub RES、GitCode RES 的 release/tag，以及 sha256 校验结果。
 
@@ -180,11 +188,11 @@ xpm = {
   4) 是否修改系统配置/环境变量
   5) 本地测试与 CI 测试结果
 
-## 5) 最小骨架（V1）
+## 5) 最小骨架（V2）
 
 ```lua
 package = {
-  spec = "1",
+  spec = "2",
   name = "demo",
   description = "demo package",
   type = "package",
@@ -194,13 +202,12 @@ package = {
   keywords = {"demo"},
   xvm_enable = true,
   xpm = {
+    source = "xlings-res",
     linux = {
       ["latest"] = { ref = "1.0.0" },
       ["1.0.0"] = {
-        url = "https://github.com/org/repo/releases/download/v1.0.0/demo_1.0.0_linux_amd64.tar.gz",
-        sha256 = nil,
+        sha256 = { x86_64 = "<sha256>", aarch64 = "<sha256>" },
       },
-      -- ["1.0.0"] = "XLINGS_RES",
     },
   },
 }
