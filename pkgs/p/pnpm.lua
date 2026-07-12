@@ -1,11 +1,12 @@
 package = {
-    spec = "1",
+    spec = "2",
     homepage = "https://pnpm.io",
     name = "pnpm",
     description = "Fast, disk space efficient package manager",
     licenses = {"MIT"},
     type = "package",
     repo = "https://github.com/pnpm/pnpm",
+    ci = { mirror = true, update = true },
     docs = "https://pnpm.io/motivation",
 
     -- xim pkg info
@@ -44,7 +45,11 @@ package = {
                 runtime = { "xim:glibc@2.39", "xim:gcc-runtime@15.1.0" },
             },
             url_template = "https://github.com/pnpm/pnpm/releases/download/v{version}/pnpm-linux-x64.tar.gz",
-            ["latest"] = { ref = "11.0.5" },
+            ["latest"] = { ref = "11.12.0" },
+            ["11.12.0"] = {
+                url = "https://github.com/pnpm/pnpm/releases/download/v11.12.0/pnpm-linux-x64.tar.gz",
+                sha256 = "dd19bfd8bcd33a3b38dcce335e8d233194c0a61ffe1f5bcf5047f60f6d4978b8",
+            },
             ["11.0.5"] = {
                 url = "https://github.com/pnpm/pnpm/releases/download/v11.0.5/pnpm-linux-x64.tar.gz",
                 sha256 = "c1b55f53f5344cf0e26441d97b9ee2ee3b81791503c5cbd4bb93ae1898b8d211",
@@ -52,7 +57,11 @@ package = {
         },
         macosx = {
             url_template = "https://github.com/pnpm/pnpm/releases/download/v{version}/pnpm-darwin-arm64.tar.gz",
-            ["latest"] = { ref = "11.0.5" },
+            ["latest"] = { ref = "11.12.0" },
+            ["11.12.0"] = {
+                url = "https://github.com/pnpm/pnpm/releases/download/v11.12.0/pnpm-darwin-arm64.tar.gz",
+                sha256 = "0d63d9b468690e661a182efd2c1bc752dbddc753e852b76ca5218f32fcf78a2e",
+            },
             ["11.0.5"] = {
                 url = "https://github.com/pnpm/pnpm/releases/download/v11.0.5/pnpm-darwin-arm64.tar.gz",
                 sha256 = "24d412b2d137c6bc91e09c039b0e8ced6b5ac8f1dc9ea1881f0521cdb3bc5318",
@@ -60,7 +69,11 @@ package = {
         },
         windows = {
             url_template = "https://github.com/pnpm/pnpm/releases/download/v{version}/pnpm-win32-x64.zip",
-            ["latest"] = { ref = "11.0.5" },
+            ["latest"] = { ref = "11.12.0" },
+            ["11.12.0"] = {
+                url = "https://github.com/pnpm/pnpm/releases/download/v11.12.0/pnpm-win32-x64.zip",
+                sha256 = "7ac25ba81b8a9f213a307ae89198ba7e636e6c74fa0d775d554ba46e0187358b",
+            },
             ["11.0.5"] = {
                 url = "https://github.com/pnpm/pnpm/releases/download/v11.0.5/pnpm-win32-x64.zip",
                 sha256 = "c79329a48a5e67bbbf73578fe0ddd5ff1fef05ed8c9ce43cfdc675d4d173fa3a",

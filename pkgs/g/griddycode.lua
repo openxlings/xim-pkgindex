@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "2",
 
     -- base info
     name = "griddycode",
@@ -8,6 +8,7 @@ package = {
     maintainers = {"face-hh"},
     licenses = {"Apache-2.0"},
     repo = "https://github.com/face-hh/griddycode",
+    ci = { mirror = true, update = true },
 
     -- xim pkg info
     type = "package",
