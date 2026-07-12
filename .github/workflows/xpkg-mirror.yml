@@ -18,15 +18,16 @@ permissions:
   contents: read
 
 jobs:
-  publish:
+  discover:
     if: >-
-      github.event_name == 'workflow_dispatch' ||
-      (github.event.workflow_run.conclusion == 'success' &&
-       github.event.workflow_run.head_branch == 'main')
+      github.event_name == 'workflow_run' &&
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
-    environment: xlings-res-publish
     permissions:
       contents: read
+    outputs:
+      packages: ${{ steps.discover.outputs.packages }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -39,33 +40,95 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Verify manifest
-        if: github.event_name == 'workflow_dispatch'
-        run: python3 tools/xpkg_ci.py --workspace . verify "${{ inputs.manifest }}"
-
-      - name: Materialize opted-in mirror packages
-        if: github.event_name == 'workflow_run'
+      - name: Discover mirror packages
+        id: discover
         env:
-          # xpkg_ci.py --execute invokes both gh and gtc.  workflow_run jobs
-          # do not inherit the token from the manual-dispatch step below.
+          EVENT_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          import os
+          import subprocess
+          from pathlib import Path
+
+          sha = os.environ["EVENT_SHA"]
+          changed = subprocess.check_output(
+              ["git", "diff", "--name-only", f"{sha}^", sha, "--", "pkgs/*/*.lua"],
+              text=True,
+          ).splitlines()
+          packages = set()
+          for file in changed:
+              package = Path(file).stem
+              output = subprocess.check_output(
+                  ["python3", "tools/xpkg_ci.py", "--workspace", ".", "inspect", "--only", package],
+                  text=True,
+              )
+              data = json.loads(output)
+              if data["packages"] and data["packages"][0]["mirror"]:
+                  packages.add(package)
+          value = json.dumps(sorted(packages), separators=(",", ":"))
+          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
+              output.write(f"packages={value}\n")
+          print(value)
+          PY
+
+  mirror:
+    needs: discover
+    if: needs.discover.outputs.packages != '[]'
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJSON(needs.discover.outputs.packages) }}
+    runs-on: ubuntu-latest
+    environment: xlings-res-publish
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Mirror ${{ matrix.package }}
+        env:
           GH_TOKEN: ${{ secrets.XLINGS_RES_TOKEN }}
           GITCODE_TOKEN: ${{ secrets.GITCODE_TOKEN }}
         run: |
           set -euo pipefail
-          mkdir -p "$RUNNER_TEMP/xpkg-manifests"
-          changed="$(git diff --name-only '${{ github.event.workflow_run.head_sha }}^' '${{ github.event.workflow_run.head_sha }}' -- 'pkgs/*/*.lua' || true)"
-          for file in $changed; do
-            pkg="$(basename "$file" .lua)"
-            mirror="$(python3 tools/xpkg_ci.py --workspace . inspect --only "$pkg" | python3 -c 'import json,sys; d=json.load(sys.stdin); print(str(bool(d["packages"] and d["packages"][0]["mirror"])).lower())')"
-            if [ "$mirror" = true ]; then
-              python3 tools/xpkg_ci.py --workspace . materialize "$pkg" --output "$RUNNER_TEMP/xpkg-manifests/$pkg"
-              python3 tools/xpkg_ci.py --workspace . verify "$RUNNER_TEMP/xpkg-manifests/$pkg/manifest.json"
-              python3 tools/xpkg_ci.py --workspace . mirror "$RUNNER_TEMP/xpkg-manifests/$pkg/manifest.json" --execute
-            fi
-          done
+          out="$RUNNER_TEMP/xpkg-manifests/${{ matrix.package }}"
+          mkdir -p "$out"
+          python3 tools/xpkg_ci.py --workspace . materialize "${{ matrix.package }}" --output "$out"
+          python3 tools/xpkg_ci.py --workspace . verify "$out/manifest.json"
+          python3 tools/xpkg_ci.py --workspace . mirror "$out/manifest.json" --execute
 
-      - name: Publish immutable xlings-res release (manual manifest)
-        if: github.event_name == 'workflow_dispatch'
+  publish-manual:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: xlings-res-publish
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Publish immutable xlings-res release
         env:
           GH_TOKEN: ${{ secrets.XLINGS_RES_TOKEN }}
+          GITCODE_TOKEN: ${{ secrets.GITCODE_TOKEN }}
+        run: python3 tools/xpkg_ci.py --workspace . verify "${{ inputs.manifest }}"
+      - name: Mirror verified manifest
+        env:
+          GH_TOKEN: ${{ secrets.XLINGS_RES_TOKEN }}
+          GITCODE_TOKEN: ${{ secrets.GITCODE_TOKEN }}
         run: python3 tools/xpkg_ci.py --workspace . mirror "${{ inputs.manifest }}" --execute
