@@ -222,6 +222,31 @@ def expand_template(template: str, package: str, version: str,
     return template
 
 
+def resolve_platform_arches(arches: list[str], template: str,
+                            aliases: dict[str, str]) -> tuple[list[str] | None, str | None]:
+    """Decide which arches to materialize for one platform's URL template.
+
+    An arch-parameterized template (``${arch}``/``{arch}``) covers every declared
+    arch.  A non-parameterized URL bakes in exactly one arch, so infer which
+    declared arch it is (by the arch name or its alias appearing in the URL) and
+    record only that one — otherwise a package like bat, which declares
+    ``{x86_64, aarch64}`` globally but ships x86_64 on linux/windows and aarch64
+    on macOS, would be mislabelled as ``arches[0]`` or rejected outright.
+
+    Returns ``(arches, None)`` on success or ``(None, error)`` when a
+    non-parameterized URL cannot be pinned to exactly one declared arch.
+    """
+    if "${arch}" in template or "{arch}" in template:
+        return arches, None
+    if len(arches) == 1:
+        return [arches[0]], None
+    matched = [a for a in arches if a in template or aliases.get(a, a) in template]
+    if len(matched) != 1:
+        return None, (f"cannot infer arch from non-arch-templated URL "
+                      f"(declared {arches}, matched {matched})")
+    return matched, None
+
+
 def validate_archive(path: Path) -> str | None:
     try:
         if path.name.endswith(".tar.gz") or path.name.endswith(".tar.xz") or path.name.endswith(".tar.bz2"):
@@ -294,9 +319,9 @@ def materialize(args: argparse.Namespace) -> int:
         if not template:
             return fail(f"{platform}: URL/template missing")
         aliases = dict(re.findall(r'(x86_64|aarch64|x86)\s*=\s*"([^"]+)"', body))
-        if len(arches) > 1 and "${arch}" not in template and "{arch}" not in template:
-            return fail(f"{platform}: multi-arch package needs an arch-aware URL template")
-        use_arches = arches if ("${arch}" in template or "{arch}" in template) else [arches[0]]
+        use_arches, arch_error = resolve_platform_arches(arches, template, aliases)
+        if arch_error:
+            return fail(f"{platform}: {arch_error}")
         for arch in use_arches:
             final_url = expand_template(template, args.package, version, platform, arch, aliases)
             if not final_url.startswith("https://"):

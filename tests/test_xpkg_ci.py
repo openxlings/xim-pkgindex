@@ -169,10 +169,28 @@ def test_cmd_mirror_execute_content_gate():
         mod._download_sha256 = orig_dl
 
 
+def test_resolve_platform_arches():
+    r = mod.resolve_platform_arches
+    # arch-parameterized template -> every declared arch
+    assert r(["x86_64", "aarch64"], "u/{arch}.tar.gz", {}) == (["x86_64", "aarch64"], None)
+    assert r(["x86_64", "aarch64"], "u/${arch}.tar.gz", {}) == (["x86_64", "aarch64"], None)
+    # single declared arch -> that arch
+    assert r(["x86_64"], "u/bat-x86_64-linux.tar.gz", {}) == (["x86_64"], None)
+    # multi declared, single arch baked into the URL -> infer it (bat's shape)
+    assert r(["x86_64", "aarch64"], "u/bat-x86_64-unknown-linux-musl.tar.gz", {}) == (["x86_64"], None)
+    assert r(["x86_64", "aarch64"], "u/bat-aarch64-apple-darwin.tar.gz", {}) == (["aarch64"], None)
+    # arch alias present in the URL (e.g. arm64) resolves to the declared arch
+    assert r(["x86_64", "aarch64"], "u/foo-arm64.zip", {"aarch64": "arm64"}) == (["aarch64"], None)
+    # non-parameterized URL with no matchable arch -> error, fail closed
+    arches, err = r(["x86_64", "aarch64"], "u/foo-universal.tar.gz", {})
+    assert arches is None and err and "cannot infer arch" in err, (arches, err)
+
+
 def main() -> int:
     test_verify_mirror_content()
     test_ensure_mirror_repos()
     test_cmd_mirror_execute_content_gate()
+    test_resolve_platform_arches()
     with tempfile.TemporaryDirectory() as d:
         root = Path(d)
         payload = root / "payload.txt"
