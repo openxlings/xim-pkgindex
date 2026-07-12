@@ -1,6 +1,6 @@
 # xpkg CI 镜像与自动更新设计方案
 
-> 编写日期: 2026-07-12 | 状态: 设计评审中 | 适用仓库: `openxlings/xim-pkgindex`
+> 编写日期: 2026-07-12 | 状态: 已实现，持续验证中 | 适用仓库: `openxlings/xim-pkgindex`
 
 ## 1. 摘要
 
@@ -388,10 +388,24 @@ checkout
 7. xlings/libxpkg 安装路径不读取或执行 `package.ci`。
 8. 旧 V1/V2 配方和旧客户端解析结果保持不变。
 
-## 10. 待评审决策
+## 10. 实现状态与部署决策
 
-- 是否采用 `package.ci = { mirror = true, update = true }` 作为唯一正式写法；
-- 自动镜像 release 创建后，是否由独立 PR 激活 xlings-res 安装候选，还是仅作为备用资产发布；
-- 首批允许自动镜像的 release provider（建议先 GitHub Releases）；
-- 中央扫描初始周期是否采用 `3d`，并通过 `.github/xpkg-ci.yml` 统一调整；
-- 是否要求许可证字段存在且属于允许再分发列表。
+- 正式写法已经确定为可选的 `package.ci = { mirror = true, update = true }`；
+  两个开关彼此独立，未声明 `ci` 的包保持手工维护。
+- 中央策略已经落地到 `.github/xpkg-ci.yml`：当前为 `3d`、每日唤醒，包文件不再散落
+  `1d/3d/weekly` 等周期标注。
+- 自动更新只创建 PR；PR 合并且 xpkg 测试成功后，受保护的
+  `xlings-res-publish` 环境才允许生成不可覆盖的 GitHub/GitCode release。
+- 首阶段 provider 仍限定 HTTPS 上游、GitHub Releases 与 GitCode 镜像；普通 URL 和用户
+  自有 mirror 不会被隐式发布，必须显式 `mirror=true`。
+- 许可证白名单暂不作为阻断条件，后续可在中央策略增加；当前以 HTTPS、完整平台矩阵、
+  SHA256、sidecar、归档可读性和不可覆盖 release 作为发布门槛。
+
+## 11. 已完成的真实验证
+
+- `version-check` 与 `tools/xpkg_ci.py scan` 已验证中央策略、3 天状态节流和 `ci.update`
+  opt-in；真实扫描发现 `uv 0.11.8 -> 0.11.28`，并已由自动 bump PR 合并。
+- `xpkg test` 成功后，`xpkg-mirror-release` 的 post-merge 路径已在 GitHub Actions 成功运行；
+  当前没有包声明 `mirror=true`，因此该次运行安全地无发布并完成 changed-package 审计。
+- 发布链路仍可通过 `workflow_dispatch` 提交经过 `verify` 的 manifest；重复 GitHub release
+  只接受完整同名资产，GitCode 创建幂等且上传带有限重试，不覆盖既有资产。

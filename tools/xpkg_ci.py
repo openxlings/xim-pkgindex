@@ -373,12 +373,22 @@ def cmd_mirror(args: argparse.Namespace) -> int:
         if result.returncode != 0:
             print(result.stderr, file=sys.stderr)
             return result.returncode
+    # GitCode's release-create endpoint is idempotent, while asset upload can
+    # transiently fail (and can report an existing immutable asset as a
+    # conflict). Retry the upload a few times, but never replace an asset.
     gitcode = subprocess.run(gtc_command, text=True, capture_output=True)
     if gitcode.returncode != 0:
         print(gitcode.stderr, file=sys.stderr)
         return gitcode.returncode
     upload = ["tools/gtc", "release", "upload", gitcode_repo, "--tag", tag, *files]
-    gitcode = subprocess.run(upload, text=True, capture_output=True)
+    gitcode = None
+    for attempt in range(3):
+        gitcode = subprocess.run(upload, text=True, capture_output=True)
+        if gitcode.returncode == 0:
+            break
+        if attempt < 2:
+            time.sleep(2 ** attempt)
+    assert gitcode is not None
     if gitcode.returncode != 0:
         print(gitcode.stderr, file=sys.stderr)
         return gitcode.returncode
