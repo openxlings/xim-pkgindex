@@ -10,6 +10,7 @@ package = {
     maintainers = {"Sunrisepeak"},
     licenses = {"GPL-3.0"},
     repo = "https://github.com/Sunrisepeak/KHistory",
+    ci = { mirror = true },
 
     -- xim pkg info
     type = "package",

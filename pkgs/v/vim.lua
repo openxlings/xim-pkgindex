@@ -7,6 +7,7 @@ package = {
     contributors = "https://github.com/vim/vim/graphs/contributors",
     licenses = {"Vim"},
     repo = "https://github.com/vim/vim",
+    ci = { mirror = true },
     docs = "https://www.vim.org/docs.php",
 
     type = "package",
