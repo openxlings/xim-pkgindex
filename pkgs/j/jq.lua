@@ -9,6 +9,11 @@ package = {
     repo = "https://github.com/jqlang/jq",
     docs = "https://jqlang.org/manual/",
 
+    -- mirror only: jq ships raw-binary assets (jq-linux-amd64 etc.) which the
+    -- mirror tool now handles; its release tag is jq-<version> with no
+    -- url_template, so auto-update is not wired here.
+    ci = { mirror = true },
+
     type = "package",
     archs = {"x86_64", "aarch64"},
     status = "stable",
