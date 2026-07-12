@@ -30,7 +30,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          # Publish with the current mainline mirror tooling. The event SHA is
+          # still used below to identify which package files changed.
+          ref: main
           fetch-depth: 0
 
       - uses: actions/setup-python@v5
