@@ -25,6 +25,7 @@ import sys
 import time
 import tarfile
 import zipfile
+import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Any
@@ -32,6 +33,9 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 VC_PATH = ROOT / ".github" / "scripts" / "version-check.py"
+GITCODE_RELEASE_TIMEOUT = 60
+GITCODE_UPLOAD_TIMEOUT = 90
+GITCODE_VERIFY_TIMEOUT = 20
 
 
 def load_vcheck():
@@ -392,24 +396,60 @@ def cmd_mirror(args: argparse.Namespace) -> int:
     # GitCode's release-create endpoint is idempotent, while asset upload can
     # transiently fail (and can report an existing immutable asset as a
     # conflict). Retry the upload a few times, but never replace an asset.
-    gitcode = subprocess.run(gtc_command, text=True, capture_output=True)
+    try:
+        gitcode = subprocess.run(
+            gtc_command,
+            text=True,
+            capture_output=True,
+            timeout=GITCODE_RELEASE_TIMEOUT,
+        )
+    except subprocess.TimeoutExpired:
+        return fail("gtc release create timed out")
     if gitcode.returncode != 0:
         print(gitcode.stderr, file=sys.stderr)
         return gitcode.returncode
-    upload = ["tools/gtc", "release", "upload", gitcode_repo, "--tag", tag, *files]
-    gitcode = None
-    for attempt in range(3):
-        gitcode = subprocess.run(upload, text=True, capture_output=True)
-        if gitcode.returncode == 0:
-            break
-        if attempt < 2:
-            time.sleep(2 ** attempt)
-    assert gitcode is not None
-    if gitcode.returncode != 0:
-        print(gitcode.stderr, file=sys.stderr)
-        return gitcode.returncode
+
+    def asset_available(filename: str) -> bool:
+        url = (
+            f"https://gitcode.com/{gitcode_repo}/releases/download/"
+            f"{tag}/{filename}"
+        )
+        try:
+            request = urllib.request.Request(url, method="HEAD")
+            with urllib.request.urlopen(request, timeout=GITCODE_VERIFY_TIMEOUT) as response:
+                return response.status == 200
+        except (OSError, urllib.error.URLError):
+            return False
+
+    # GitCode may finish the upload but hang while waiting for obs_callback.
+    # Upload one file at a time, bound the subprocess, and accept a timed-out
+    # command when the immutable download URL is already available.
+    for file in files:
+        filename = Path(file).name
+        upload = ["tools/gtc", "release", "upload", gitcode_repo, "--tag", tag, file]
+        uploaded = False
+        last_error = ""
+        for attempt in range(3):
+            try:
+                result_upload = subprocess.run(
+                    upload,
+                    text=True,
+                    capture_output=True,
+                    timeout=GITCODE_UPLOAD_TIMEOUT,
+                )
+                last_error = result_upload.stderr.strip()
+            except subprocess.TimeoutExpired:
+                last_error = "gtc upload timed out"
+            if asset_available(filename):
+                uploaded = True
+                break
+            if attempt < 2:
+                time.sleep(2 ** attempt)
+        if not uploaded:
+            return fail(f"GitCode asset upload failed for {filename}: {last_error}")
+
     print(result.stdout)
-    print(gitcode.stdout)
+    print(f"GitCode assets verified for {gitcode_repo}@{tag}")
     return 0
 
 
