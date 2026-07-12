@@ -9,6 +9,11 @@ package = {
     repo = "https://github.com/sharkdp/bat",
     docs = "https://github.com/sharkdp/bat#readme",
 
+    -- CI automation opt-in (metadata only; ignored by libxpkg/installer).
+    -- mirror: publish the declared version to xlings-res after merge.
+    -- update: enroll in the central scanner to PR new upstream releases.
+    ci = { mirror = true, update = true },
+
     type = "package",
     archs = {"x86_64", "aarch64"},
     status = "stable",
