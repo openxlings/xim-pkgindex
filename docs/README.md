@@ -1,7 +1,7 @@
 # 文档索引
 
 贡献者入口：[贡献指南](contributing.md) · [XPackage V2 规范](V2/xpackage-spec.md) ·
-[索引分发设计](design/index-distribution.md)
+[索引分发设计](design/index-distribution.md) · [CI 镜像与自动更新设计](../.agents/docs/2026-07-12-xpkg-ci-mirror-update-design.md)
 
 ## 包规范
 
@@ -33,3 +33,9 @@
 |------|------|
 | [spec/url-template.md](spec/url-template.md) | URL 模板自动版本更新规范 |
 | [migrations/](migrations/) | API 迁移文档 |
+
+## Agent 工作文档
+
+| 文档 | 说明 |
+|------|------|
+| [xpkg CI 镜像与自动更新设计](../.agents/docs/2026-07-12-xpkg-ci-mirror-update-design.md) | `package.ci`、中央调度、镜像 release、自动更新 PR 和安全门禁 |
