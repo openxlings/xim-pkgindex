@@ -8,6 +8,7 @@ package = {
     contributors = "https://github.com/2412322029/seeme",
     licenses = {""},
     repo = "https://github.com/2412322029/seeme",
+    ci = { mirror = true },
     docs = "https://github.com/2412322029/seeme",
 
     -- xim pkg info
