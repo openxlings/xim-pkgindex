@@ -7,7 +7,11 @@ package = {
     maintainers = {"farion1231"},
     licenses = {"MIT"},
     repo = "https://github.com/farion1231/cc-switch",
-    ci = { mirror = true, update = true },
+    -- update only: cc-switch ships universal per-platform assets
+    -- (CC-Switch-*-macOS.zip / *-Windows-Portable.zip carry no arch token)
+    -- while declaring two arches, so it doesn't fit the per-arch mirror
+    -- model. It still auto-updates via url_template + latest.ref.
+    ci = { update = true },
     docs = "https://github.com/farion1231/cc-switch#readme",
 
     type = "app",
