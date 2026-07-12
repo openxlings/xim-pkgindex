@@ -181,9 +181,21 @@ def test_resolve_platform_arches():
     assert r(["x86_64", "aarch64"], "u/bat-aarch64-apple-darwin.tar.gz", {}) == (["aarch64"], None)
     # arch alias present in the URL (e.g. arm64) resolves to the declared arch
     assert r(["x86_64", "aarch64"], "u/foo-arm64.zip", {"aarch64": "arm64"}) == (["aarch64"], None)
+    # default aliases apply even when the recipe declares none (jq's shape:
+    # jq-linux-amd64 / jq-macos-arm64, archs = {x86_64, aarch64}, aliases = {})
+    assert r(["x86_64", "aarch64"], "u/jq-linux-amd64", {}) == (["x86_64"], None)
+    assert r(["x86_64", "aarch64"], "u/jq-macos-arm64", {}) == (["aarch64"], None)
     # non-parameterized URL with no matchable arch -> error, fail closed
     arches, err = r(["x86_64", "aarch64"], "u/foo-universal.tar.gz", {})
     assert arches is None and err and "cannot infer arch" in err, (arches, err)
+
+
+def test_archive_suffix_gate():
+    # Recognized archives are validated; raw binaries are not (no container).
+    assert "jq-linux-amd64".endswith(mod.ARCHIVE_SUFFIXES) is False
+    assert "xmake-bundle-v3.0.7.win64.exe".endswith(mod.ARCHIVE_SUFFIXES) is False
+    assert "bat-v0.26.1-x86_64-unknown-linux-musl.tar.gz".endswith(mod.ARCHIVE_SUFFIXES) is True
+    assert "foo.zip".endswith(mod.ARCHIVE_SUFFIXES) is True
 
 
 def main() -> int:
@@ -191,6 +203,7 @@ def main() -> int:
     test_ensure_mirror_repos()
     test_cmd_mirror_execute_content_gate()
     test_resolve_platform_arches()
+    test_archive_suffix_gate()
     with tempfile.TemporaryDirectory() as d:
         root = Path(d)
         payload = root / "payload.txt"

@@ -35,6 +35,12 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 VC_PATH = ROOT / ".github" / "scripts" / "version-check.py"
 GITCODE_RELEASE_TIMEOUT = 60
+# Canonical arch spellings used in release URLs when a recipe doesn't declare
+# its own per-version alias (e.g. jq ships jq-linux-amd64 / jq-macos-arm64).
+DEFAULT_ARCH_ALIASES = {"x86_64": "amd64", "aarch64": "arm64"}
+# Recognized release archive extensions; anything else is a raw binary asset
+# whose integrity is guaranteed by its sha256 rather than a structural check.
+ARCHIVE_SUFFIXES = (".tar.gz", ".tar.xz", ".tar.bz2", ".tgz", ".zip")
 # GitCode's upload callback is especially slow for large release assets.
 GITCODE_UPLOAD_TIMEOUT = 600
 GITCODE_VERIFY_TIMEOUT = 20
@@ -210,7 +216,7 @@ def declared_arches(text: str) -> list[str]:
 def expand_template(template: str, package: str, version: str,
                     platform: str, arch: str,
                     aliases: dict[str, str] | None = None) -> str:
-    aliases = aliases or {"x86_64": "amd64", "aarch64": "arm64"}
+    aliases = aliases or dict(DEFAULT_ARCH_ALIASES)
     values = {
         "name": package, "version": version, "os": platform,
         "arch": arch, "arch_alias": aliases.get(arch, arch),
@@ -240,7 +246,16 @@ def resolve_platform_arches(arches: list[str], template: str,
         return arches, None
     if len(arches) == 1:
         return [arches[0]], None
-    matched = [a for a in arches if a in template or aliases.get(a, a) in template]
+
+    def present(arch: str) -> bool:
+        # Match the arch by its own name, the recipe's declared alias, or the
+        # canonical default spelling (amd64/arm64), so jq-style URLs resolve.
+        for spelling in (arch, aliases.get(arch), DEFAULT_ARCH_ALIASES.get(arch)):
+            if spelling and spelling in template:
+                return True
+        return False
+
+    matched = [a for a in arches if present(a)]
     if len(matched) != 1:
         return None, (f"cannot infer arch from non-arch-templated URL "
                       f"(declared {arches}, matched {matched})")
@@ -340,10 +355,13 @@ def materialize(args: argparse.Namespace) -> int:
             except Exception as exc:
                 output.unlink(missing_ok=True)
                 return fail(f"failed to download {final_url}: {exc}")
-            archive_error = validate_archive(output)
-            if archive_error:
-                output.unlink(missing_ok=True)
-                return fail(f"invalid archive {filename}: {archive_error}")
+            # Archives get a structural check; raw binaries (jq, xmake bundles)
+            # have no container to validate, so their sha256 is the guarantee.
+            if filename.endswith(ARCHIVE_SUFFIXES):
+                archive_error = validate_archive(output)
+                if archive_error:
+                    output.unlink(missing_ok=True)
+                    return fail(f"invalid archive {filename}: {archive_error}")
             sidecar = output.with_name(output.name + ".sha256")
             sidecar.write_text(f"{digest.hexdigest()}  {output.name}\n", encoding="utf-8")
             assets.append({"os": platform, "arch": arch, "filename": filename,
