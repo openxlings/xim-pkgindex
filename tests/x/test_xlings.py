@@ -51,12 +51,27 @@ class TestStatic:
             return meta.raw_content[start:end]
 
         stable_versions = ("0.4.44", "0.4.43", "0.4.42", "0.4.41", "0.4.40")
+        expected_arches = {
+            "linux": {"x86_64", "aarch64"},
+            "macosx": {"aarch64"},
+            "windows": {"x86_64"},
+        }
         for platform, next_platform in (("linux", "macosx"), ("macosx", "windows"), ("windows", None)):
             block = platform_block(platform, next_platform)
             m = re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"([0-9.]+)"\s*\}', block)
             assert m, f"no `latest` ref in {platform} block"
             latest = m.group(1)
-            assert re.search(rf'\["{re.escape(latest)}"\]\s*=\s*"XLINGS_RES"', block)
+            entry_start = block.index(f'["{latest}"]', m.end())
+            next_entry = re.search(r'\n\s*\["[0-9.]+' + r'"\]\s*=', block[entry_start + 1:])
+            entry_end = (entry_start + 1 + next_entry.start()) if next_entry else len(block)
+            entry = block[entry_start:entry_end]
+            assert re.search(r'url\s*=\s*"XLINGS_RES"', entry)
+            hashes = {
+                arch: digest.lower()
+                for arch, digest in re.findall(
+                    r'\b(x86_64|aarch64)\s*=\s*"([0-9a-fA-F]{64})"', entry)
+            }
+            assert set(hashes) == expected_arches[platform]
             for version in stable_versions:
                 assert re.search(rf'\["{re.escape(version)}"\]\s*=\s*"XLINGS_RES"', block)
 
