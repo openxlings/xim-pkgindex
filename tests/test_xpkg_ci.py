@@ -26,11 +26,20 @@ class FakeRun:
     def __init__(self, route):
         self.route = route
         self.calls = []
+        self.envs = []
 
     def __call__(self, cmd, *args, **kwargs):
         self.calls.append(list(cmd))
+        self.envs.append(kwargs.get("env"))
         rc, out, err = self.route(list(cmd))
         return subprocess.CompletedProcess(cmd, rc, out, err)
+
+    def env_for(self, *prefix):
+        prefix = list(prefix)
+        for call, env in zip(self.calls, self.envs):
+            if call[: len(prefix)] == prefix:
+                return env
+        return None
 
     def ran(self, *prefix):
         prefix = list(prefix)
@@ -97,6 +106,10 @@ def test_ensure_mirror_repos():
         assert fake.ran("gh", "repo", "create")
         assert fake.ran("tools/gtc", "repo", "create")
         assert fake.ran("tools/gtc", "repo", "push")
+        # the seed push must carry a git identity so the commit works on a bare
+        # CI runner (no global git user.name/email)
+        push_env = fake.env_for("tools/gtc", "repo", "push")
+        assert push_env and push_env.get("GIT_AUTHOR_NAME") and push_env.get("GIT_COMMITTER_EMAIL"), push_env
 
         # GitCode seed push failure is reported, fail closed.
         def push_fails(cmd):
