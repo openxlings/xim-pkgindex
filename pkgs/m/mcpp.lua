@@ -8,6 +8,7 @@ package = {
     maintainers = {"https://github.com/mcpp-community/mcpp/graphs/contributors"},
     licenses = {"Apache-2.0"},
     repo = "https://github.com/mcpp-community/mcpp",
+    ci = { update = true },
     homepage = "https://github.com/mcpp-community/mcpp",
     docs = "https://github.com/mcpp-community/mcpp#readme",
 

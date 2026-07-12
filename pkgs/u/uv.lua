@@ -7,6 +7,7 @@ package = {
     maintainers = {"Astral"},
     licenses = {"MIT", "Apache-2.0"},
     repo = "https://github.com/astral-sh/uv",
+    ci = { update = true },
     docs = "https://docs.astral.sh/uv",
 
     type = "package",

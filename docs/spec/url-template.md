@@ -1,14 +1,16 @@
 # `url_template`: opt-in package version auto-update
 
 A small contract between an xpkg description and the in-repo version
-checker (`.github/scripts/version-check.py`). Adding it lets the
-weekly cron find new upstream releases and (eventually) open auto-bump
-PRs. Without it, the package is maintained by hand, same as today.
+checker (`.github/scripts/version-check.py`). The package must explicitly
+opt in with `ci = { update = true }`; `url_template` only describes the
+asset URL. Without the CI opt-in, the package is maintained by hand.
+The scan interval is centralized in `.github/xpkg-ci.yml` and is not
+repeated in individual package files.
 
 ## The contract
 
-A package opts in by placing a single string field
-`xpm.<platform>.url_template` next to that platform's version table:
+A package opts in with `ci = { update = true }` and places a single string
+field `xpm.<platform>.url_template` next to that platform's version table:
 
 ```lua
 xpm = {
@@ -34,8 +36,8 @@ The placeholder `{version}` is the only token recognised today.
 ## Resolution rules (v1)
 
 1. Updater scans every `pkgs/**/*.lua`.
-2. Any package whose `xpm` has at least one platform with a
-   `url_template` field is considered opt-in.
+2. Only packages with `ci = { update = true }` and at least one platform
+   with a `url_template` field are considered opt-in.
 3. The updater treats `package.repo` as a GitHub URL and extracts
    `<owner>/<name>` from it.
 4. It calls `GET https://api.github.com/repos/<owner>/<name>/releases/latest`
@@ -122,13 +124,13 @@ both; `url_template` wins if both are present.
 Both phases now ship in the same script (`.github/scripts/version-check.py`)
 behind the `--apply` flag and as separate scheduled workflows.
 
-**Phase 1 — `version-check.yml` (default, dry-run):** runs daily at
-01:00 UTC. Reads `url_template`s, queries upstream, prints a JSON
+**Phase 1 — `version-check.yml` (default, dry-run):** wakes daily according
+to the central policy. Reads opted-in `url_template`s, queries upstream, prints a JSON
 report of "<pkg>: <current> → <available>", uploads it as a workflow
 artifact, and does not modify any file or open any PR.
 
-**Phase 2 — `version-bump.yml` (`--apply`):** runs weekly (Mondays
-02:00 UTC) or on manual dispatch. For every package the dry-run flags
+**Phase 2 — `version-bump.yml` (`--apply`):** runs from the central
+scheduler or on manual dispatch. For every opted-in package the dry-run flags
 as `update-available`, the script:
 
 1. Downloads the new artifact for each opted-in platform and computes

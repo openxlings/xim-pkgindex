@@ -1,13 +1,12 @@
-name: version-check
+name: xpkg-ci-scan
 
-# Phase 1 dry-run for the url_template auto-update contract
-# (docs/spec/url-template.md). Scans every package, queries upstream
-# GitHub releases, and uploads a JSON report as a workflow artifact.
+# Central Phase 1 dry-run for the package.ci update contract. The workflow
+# wakes daily; .github/xpkg-ci.yml controls the effective interval and limits.
 # Does NOT modify any package or open any pull request — that's Phase 2.
 
 on:
   schedule:
-    - cron: "0 1 * * *"   # daily at 01:00 UTC
+    - cron: "17 2 * * *"   # central policy wake-up; package interval is policy-driven
   workflow_dispatch:
 
 jobs:
@@ -23,11 +22,24 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Run version-check (dry-run)
+      - name: Restore central scan state
+        uses: actions/cache/restore@v4
+        with:
+          path: .github/.xpkg-ci-state.json
+          key: xpkg-ci-state-${{ github.run_id }}
+          restore-keys: xpkg-ci-state-
+
+      - name: Run xpkg-ci scan (dry-run)
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          python3 .github/scripts/version-check.py --workspace . | tee version-report.json
+          python3 tools/xpkg_ci.py --workspace . scan --state-file .github/.xpkg-ci-state.json | tee version-report.json
+
+      - name: Save central scan state
+        uses: actions/cache/save@v4
+        with:
+          path: .github/.xpkg-ci-state.json
+          key: xpkg-ci-state-${{ github.run_id }}
 
       - name: Print update-available packages (if any)
         run: |

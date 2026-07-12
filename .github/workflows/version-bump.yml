@@ -1,7 +1,7 @@
 name: version-bump
 
-# Phase 2 of the url_template auto-update contract
-# (docs/spec/url-template.md). Runs the dry-run scanner; for every
+# Central Phase 2 of the package.ci update contract. Runs the dry-run scanner;
+# for every explicitly opted-in package whose upstream is ahead,
 # package whose upstream is ahead, applies the bump in-place on a
 # dedicated `auto/bump-<pkg>-<upstream>` branch and opens a PR.
 # Idempotent: if the branch already exists on origin, that package is
@@ -9,7 +9,7 @@ name: version-bump
 
 on:
   schedule:
-    - cron: "0 2 * * 1"   # Mondays 02:00 UTC (one cycle behind the daily scan)
+    - cron: "37 2 * * *"   # daily wake-up; policy interval filters due packages
   workflow_dispatch:
     inputs:
       only:
@@ -34,6 +34,13 @@ jobs:
         with:
           python-version: "3.12"
 
+      - name: Restore central scan state
+        uses: actions/cache/restore@v4
+        with:
+          path: .github/.xpkg-ci-state.json
+          key: xpkg-ci-state-${{ github.run_id }}
+          restore-keys: xpkg-ci-state-
+
       - name: Configure git identity
         run: |
           git config user.name  "xim-pkgindex-bot[bot]"
@@ -49,7 +56,7 @@ jobs:
           if [ -n "${{ inputs.only }}" ]; then
             ONLY_ARG="--only ${{ inputs.only }}"
           fi
-          python3 .github/scripts/version-check.py --workspace . $ONLY_ARG > "$RUNNER_TEMP/scan.json"
+          python3 tools/xpkg_ci.py --workspace . scan --state-file .github/.xpkg-ci-state.json $ONLY_ARG > "$RUNNER_TEMP/scan.json"
           python3 -c "
           import json, os
           d = json.load(open(os.environ['RUNNER_TEMP'] + '/scan.json'))
@@ -59,6 +66,12 @@ jobs:
           " > "$RUNNER_TEMP/to-bump.tsv"
           echo "Packages to bump:"
           cat "$RUNNER_TEMP/to-bump.tsv" || true
+
+      - name: Save central scan state
+        uses: actions/cache/save@v4
+        with:
+          path: .github/.xpkg-ci-state.json
+          key: xpkg-ci-state-${{ github.run_id }}
 
       - name: Bump each package on its own branch and open PR
         env:
