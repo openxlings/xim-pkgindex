@@ -394,22 +394,6 @@ def cmd_mirror(args: argparse.Namespace) -> int:
         if result.returncode != 0:
             print(result.stderr, file=sys.stderr)
             return result.returncode
-    # GitCode's release-create endpoint is idempotent, while asset upload can
-    # transiently fail (and can report an existing immutable asset as a
-    # conflict). Retry the upload a few times, but never replace an asset.
-    try:
-        gitcode = subprocess.run(
-            gtc_command,
-            text=True,
-            capture_output=True,
-            timeout=GITCODE_RELEASE_TIMEOUT,
-        )
-    except subprocess.TimeoutExpired:
-        return fail("gtc release create timed out")
-    if gitcode.returncode != 0:
-        print(gitcode.stderr, file=sys.stderr)
-        return gitcode.returncode
-
     def asset_available(filename: str) -> bool:
         url = (
             f"https://gitcode.com/{gitcode_repo}/releases/download/"
@@ -426,6 +410,28 @@ def cmd_mirror(args: argparse.Namespace) -> int:
         except (OSError, urllib.error.URLError):
             return False
 
+    # GitCode's release-create endpoint is idempotent. If every immutable
+    # asset is already downloadable, the package is fully mirrored and this
+    # job should succeed without calling gtc again.
+    if all(asset_available(Path(file).name) for file in files):
+        print(result.stdout)
+        print(f"GitCode assets already verified for {gitcode_repo}@{tag}; skipping upload")
+        return 0
+
+    # Otherwise create the release and upload only the missing assets.
+    try:
+        gitcode = subprocess.run(
+            gtc_command,
+            text=True,
+            capture_output=True,
+            timeout=GITCODE_RELEASE_TIMEOUT,
+        )
+    except subprocess.TimeoutExpired:
+        return fail("gtc release create timed out")
+    if gitcode.returncode != 0:
+        print(gitcode.stderr, file=sys.stderr)
+        return gitcode.returncode
+
     # GitCode may finish the upload but hang while waiting for obs_callback.
     # Upload one file at a time, bound the subprocess, and accept a timed-out
     # command when the immutable download URL is already available.
@@ -434,6 +440,8 @@ def cmd_mirror(args: argparse.Namespace) -> int:
         upload = ["tools/gtc", "release", "upload", gitcode_repo, "--tag", tag, file]
         uploaded = False
         last_error = ""
+        if asset_available(filename):
+            continue
         for attempt in range(3):
             try:
                 result_upload = subprocess.run(
