@@ -62,9 +62,15 @@ def bool_field(body: str, name: str) -> bool:
     return re.search(rf"\b{re.escape(name)}\s*=\s*true\b", body) is not None
 
 
-def source_value(text: str) -> str | None:
+def source_value(text: str) -> str | dict[str, str] | None:
     m = re.search(r"\bsource\s*=\s*\"([^\"]+)\"", text)
-    return m.group(1) if m else None
+    if m:
+        return m.group(1)
+    m = re.search(r"\bsource\s*=\s*\{((?:[^{}]|\$\{[^{}]*\})*)\}", text)
+    if not m:
+        return None
+    values = dict(re.findall(r"\b([A-Za-z][A-Za-z0-9_]*)\s*=\s*\"([^\"]+)\"", m.group(1)))
+    return values or None
 
 
 def inspect_package(path: Path) -> dict[str, Any]:
@@ -182,6 +188,14 @@ def lua_string(body: str, key: str) -> str | None:
     return match.group(1) if match else None
 
 
+def source_templates(body: str) -> dict[str, str] | None:
+    match = re.search(r"\bsource\s*=\s*\{((?:[^{}]|\$\{[^{}]*\})*)\}", body)
+    if not match:
+        return None
+    values = dict(re.findall(r"\b([A-Za-z][A-Za-z0-9_]*)\s*=\s*\"([^\"]+)\"", match.group(1)))
+    return values or None
+
+
 def declared_arches(text: str) -> list[str]:
     match = re.search(r'\barchs\s*=\s*\{([^}]*)\}', text)
     return re.findall(r'"([^"]+)"', match.group(1)) if match else []
@@ -267,7 +281,8 @@ def materialize(args: argparse.Namespace) -> int:
         source_match = re.search(r'\bsource\s*=\s*"([^"]+)"', platform_body)
         if not source_match:
             source_match = re.search(r'\bsource\s*=\s*"([^"]+)"', xpm_body)
-        template = url or (source_match.group(1) if source_match else None)
+        source_map = source_templates(platform_body) or source_templates(xpm_body) or {}
+        template = url or source_map.get("GLOBAL") or (source_match.group(1) if source_match else None)
         if url == "XLINGS_RES" or template == "xlings-res":
             return fail(f"{platform}: cannot materialize an already mirrored XLINGS_RES source")
         if not template:

@@ -34,6 +34,17 @@ def main() -> int:
         assert record["update"] is True
         assert record["source"] is None
 
+        mapped = Path(d) / "mapped.lua"
+        mapped.write_text(
+            'package = { name = "mapped", xpm = { source = { '
+            'GLOBAL = "https://github.com/acme/mapped/${version}.tar.gz", '
+            'CN = "https://gitcode.com/acme/mapped/${version}.tar.gz" } } }',
+            encoding="utf-8",
+        )
+        mapped_record = mod.inspect_package(mapped)
+        assert mapped_record["source"]["GLOBAL"].endswith("${version}.tar.gz")
+        assert mapped_record["source"]["CN"].startswith("https://gitcode.com/")
+
         manifest = {
             "format": 1,
             "package": "foo",

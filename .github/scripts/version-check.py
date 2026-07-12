@@ -103,6 +103,14 @@ def extract_url_template(platform_body: str) -> str | None:
     return m.group(1) if m else None
 
 
+def extract_source_map(body: str) -> dict[str, str] | None:
+    m = re.search(r'\bsource\s*=\s*\{((?:[^{}]|\$\{[^{}]*\})*)\}', body)
+    if not m:
+        return None
+    result = dict(re.findall(r'\b([A-Za-z][A-Za-z0-9_]*)\s*=\s*"([^"]+)"', m.group(1)))
+    return result or None
+
+
 def extract_source_template(xpm_body: str, platform_body: str) -> str | None:
     """Read a URL-template source at platform or xpm scope.
 
@@ -111,6 +119,9 @@ def extract_source_template(xpm_body: str, platform_body: str) -> str | None:
     upstream release discovery.
     """
     for body in (platform_body, xpm_body):
+        source_map = extract_source_map(body)
+        if source_map and "GLOBAL" in source_map and "${version}" in source_map["GLOBAL"]:
+            return source_map["GLOBAL"]
         m = re.search(r'\bsource\s*=\s*"([^"\n]+)"', body)
         if m and "${version}" in m.group(1):
             return m.group(1)
@@ -237,7 +248,12 @@ def check_package(lua_path: Path, token: str | None) -> dict[str, Any] | None:
         res = extract_res_versioned(body)
         ref = extract_latest_ref(body)
         if tmpl or res or ref:
-            platforms[plat] = {"url_template": tmpl, "res_versioned": res, "ref": ref}
+            platforms[plat] = {
+                "url_template": tmpl,
+                "source_map": extract_source_map(body) or extract_source_map(xpm),
+                "res_versioned": res,
+                "ref": ref,
+            }
 
     # Opt-in is either url_template (hardcoded url+sha256 mode) or
     # res_versioned (XLINGS_RES mode). A platform that sets neither is
@@ -331,13 +347,17 @@ def check_package(lua_path: Path, token: str | None) -> dict[str, Any] | None:
 
     record["status"] = "update-available"
     proposed: dict[str, str] = {}
+    proposed_source_maps: list[str] = []
     res_platforms: list[str] = []
     for plat, info in platforms.items():
         if info.get("url_template"):
             proposed[plat] = expand_version_template(info["url_template"], upstream)
+            if info.get("source_map"):
+                proposed_source_maps.append(plat)
         elif info.get("res_versioned"):
             res_platforms.append(plat)
     record["proposed_urls"] = proposed
+    record["proposed_source_maps"] = proposed_source_maps
     record["proposed_res"] = res_platforms
     return record
 
@@ -518,6 +538,7 @@ def apply_bump(
     proposed_urls: dict[str, str],
     token: str | None,
     res_platforms: list[str] | None = None,
+    source_map_platforms: list[str] | None = None,
 ) -> dict[str, Any]:
     """Edit lua_path in place: append a new `["<upstream>"]` entry per
     platform and bump `["latest"].ref` from <current> to <upstream>.
@@ -534,6 +555,7 @@ def apply_bump(
     Returns a record describing what happened (status + per-platform).
     """
     res_platforms = res_platforms or []
+    source_map_platforms = source_map_platforms or []
     text = lua_path.read_text(encoding="utf-8")
 
     # Locate xpm block once so per-platform searches stay scoped to it.
@@ -580,13 +602,19 @@ def apply_bump(
 
         # Build the replacement: keep the latest line (with bumped ref)
         # and immediately follow it with the new version block.
-        replacement = (
-            f'{indent}["latest"] = {{ ref = "{upstream}" }},\n'
-            f'{indent}["{upstream}"] = {{\n'
-            f'{indent}    url = "{new_url}",\n'
-            f'{indent}    sha256 = "{sha}",\n'
-            f'{indent}}},\n'
-        )
+        if plat in source_map_platforms:
+            replacement = (
+                f'{indent}["latest"] = {{ ref = "{upstream}" }},\n'
+                f'{indent}["{upstream}"] = {{ sha256 = "{sha}" }},\n'
+            )
+        else:
+            replacement = (
+                f'{indent}["latest"] = {{ ref = "{upstream}" }},\n'
+                f'{indent}["{upstream}"] = {{\n'
+                f'{indent}    url = "{new_url}",\n'
+                f'{indent}    sha256 = "{sha}",\n'
+                f'{indent}}},\n'
+            )
 
         edits.append(
             (
@@ -710,6 +738,7 @@ def main() -> int:
                 rec["proposed_urls"],
                 args.token,
                 rec.get("proposed_res", []),
+                rec.get("proposed_source_maps", []),
             )
             rec["apply"] = applied
 
