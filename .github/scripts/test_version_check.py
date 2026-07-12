@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Offline tests for version-check.py — focused on the XLINGS_RES auto-bump
-path (and a guard that url_template behaviour is unchanged).
+"""Offline tests for version-check.py.
 
 Self-contained (no pytest): run `python3 .github/scripts/test_version_check.py`.
-Exit 0 = all pass, non-zero = failure. The res_versioned path needs no
-network (no artifact download / sha256), so these tests are deterministic.
+Exit 0 = all pass, non-zero = failure. Network/resource discovery is replaced
+with deterministic test data.
 """
 
 import importlib.util
@@ -72,23 +71,90 @@ def test_extract_res_versioned():
 
 
 def test_res_apply_bump():
-    print("test_res_apply_bump (offline, no network)")
-    with tempfile.TemporaryDirectory() as d:
-        p = Path(d) / "xlings.lua"
-        p.write_text(RES_FIXTURE, encoding="utf-8")
-        result = vc.apply_bump(
-            p, current="0.4.60", upstream="0.4.61",
-            proposed_urls={}, token=None,
-            res_platforms=["linux", "macosx", "windows"],
+    print("test_res_apply_bump writes dual-compatible checked entries")
+    original = vc.resolve_res_hashes
+    vc.resolve_res_hashes = lambda *args, **kwargs: {
+        "linux": {"x86_64": "a" * 64, "aarch64": "b" * 64},
+        "macosx": {"aarch64": "c" * 64},
+        "windows": {"x86_64": "d" * 64},
+    }
+    try:
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "xlings.lua"
+            p.write_text(RES_FIXTURE, encoding="utf-8")
+            result = vc.apply_bump(
+                p, current="0.4.60", upstream="0.4.61",
+                proposed_urls={}, token=None,
+                res_platforms=["linux", "macosx", "windows"],
+            )
+            out = p.read_text(encoding="utf-8")
+            check(result["status"] == "applied", f"status applied (got {result['status']})")
+            check(out.count('["latest"] = { ref = "0.4.61" }') == 3, "latest bumped on all 3 platforms")
+            check('["0.4.61"] = "XLINGS_RES"' not in out, "new target is never a bare sentinel")
+            check(out.count('url = "XLINGS_RES"') == 3, "keeps the V1-compatible URL sentinel")
+            check(out.count("sha256 = {") == 3, "writes per-arch checksum tables")
+            check('x86_64 = "' + "a" * 64 + '"' in out, "writes linux x86_64 hash")
+            check('aarch64 = "' + "b" * 64 + '"' in out, "writes linux aarch64 hash")
+            check('["0.4.60"] = "XLINGS_RES"' in out, "old version entry preserved")
+    finally:
+        vc.resolve_res_hashes = original
+
+
+def test_res_apply_bump_fails_closed_without_complete_hashes():
+    print("test_res_apply_bump fails closed when resource verification fails")
+    original = vc.resolve_res_hashes
+    vc.resolve_res_hashes = lambda *args, **kwargs: {
+        "status": "error", "reason": "missing sidecar for windows"
+    }
+    try:
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "xlings.lua"
+            p.write_text(RES_FIXTURE, encoding="utf-8")
+            before = p.read_text(encoding="utf-8")
+            result = vc.apply_bump(
+                p, current="0.4.60", upstream="0.4.61",
+                proposed_urls={}, token=None,
+                res_platforms=["linux", "macosx", "windows"],
+            )
+            check(result["status"] == "error", "verification error aborts bump")
+            check(p.read_text(encoding="utf-8") == before, "failure leaves recipe untouched")
+    finally:
+        vc.resolve_res_hashes = original
+
+
+def test_res_hash_discovery_rejects_architecture_regression():
+    print("test_res_hash_discovery rejects a missing architecture")
+    original_release = vc.github_release_by_tag
+    current_assets = [
+        "mcpp-1.0.0-linux-x86_64.tar.gz",
+        "mcpp-1.0.0-linux-aarch64.tar.gz",
+        "mcpp-1.0.0-macosx-arm64.tar.gz",
+        "mcpp-1.0.0-windows-x86_64.zip",
+    ]
+    upstream_assets = [
+        "mcpp-1.1.0-linux-x86_64.tar.gz",
+        "mcpp-1.1.0-macosx-arm64.tar.gz",
+        "mcpp-1.1.0-windows-x86_64.zip",
+    ]
+
+    def release(_owner, _name, tag, _token):
+        names = current_assets if tag == "1.0.0" else upstream_assets
+        assets = []
+        for name in names:
+            assets.append({"name": name, "browser_download_url": "https://example/" + name})
+            assets.append({"name": name + ".sha256", "browser_download_url": "https://example/" + name + ".sha256"})
+        return {"assets": assets}
+
+    vc.github_release_by_tag = release
+    try:
+        result = vc.resolve_res_hashes(
+            "mcpp", "1.0.0", "1.1.0",
+            ["linux", "macosx", "windows"], None,
         )
-        out = p.read_text(encoding="utf-8")
-        check(result["status"] == "applied", f"status applied (got {result['status']})")
-        check(out.count('["latest"] = { ref = "0.4.61" }') == 3, "latest bumped on all 3 platforms")
-        check(out.count('["0.4.61"] = "XLINGS_RES"') == 3, "new XLINGS_RES entry on all 3 platforms")
-        check('["0.4.60"] = "XLINGS_RES"' in out, "old version entry preserved")
-        check("sha256" not in out, "no sha256 written for res entries")
-        check(all(v == "XLINGS_RES" for v in result["platforms"].values()),
-              "per-platform reports XLINGS_RES")
+        check(result["status"] == "error", "arch set regression aborts verification")
+        check("architecture set changed" in result["reason"], "error identifies architecture set")
+    finally:
+        vc.github_release_by_tag = original_release
 
 
 def test_url_apply_bump_unaffected(monkeypatch_sha="deadbeef"):
@@ -116,6 +182,8 @@ def test_url_apply_bump_unaffected(monkeypatch_sha="deadbeef"):
 if __name__ == "__main__":
     test_extract_res_versioned()
     test_res_apply_bump()
+    test_res_apply_bump_fails_closed_without_complete_hashes()
+    test_res_hash_discovery_rejects_architecture_regression()
     test_url_apply_bump_unaffected()
     if _failures:
         print(f"\n{len(_failures)} FAILURE(S)")
