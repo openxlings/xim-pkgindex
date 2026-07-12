@@ -37,7 +37,14 @@ package = {
             -- res_versioned: version-bump bot tracks openxlings/xlings releases and
             -- appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "0.4.62" },
+            ["latest"] = { ref = "0.4.63" },
+            ["0.4.63"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "596a6f57577293ca533a701136227ce353e0d4e0d7a623b77f84a9e2bc95fcea",
+                    x86_64 = "3a435ae7ed58bd839053d9f5c72320a0123942ae9ccf920f424ce28f520076f6",
+                },
+            },
             ["0.4.62"] = "XLINGS_RES",
             ["0.4.60"] = "XLINGS_RES",
             ["0.4.55"] = "XLINGS_RES",
@@ -190,7 +197,13 @@ package = {
             -- res_versioned: version-bump bot tracks openxlings/xlings releases and
             -- appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "0.4.62" },
+            ["latest"] = { ref = "0.4.63" },
+            ["0.4.63"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "e58e585836c26861ce470c2d519f5bba6f641bbc8691c1d668070bafbeaf0602",
+                },
+            },
             ["0.4.62"] = "XLINGS_RES",
             ["0.4.60"] = "XLINGS_RES",
             ["0.4.55"] = "XLINGS_RES",
@@ -343,7 +356,13 @@ package = {
             -- res_versioned: version-bump bot tracks openxlings/xlings releases and
             -- appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "0.4.62" },
+            ["latest"] = { ref = "0.4.63" },
+            ["0.4.63"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "0ec7845bcc346439c46332676cb8430cea8384f31ee67256df5d58f38a08fe1c",
+                },
+            },
             ["0.4.62"] = "XLINGS_RES",
             ["0.4.60"] = "XLINGS_RES",
             ["0.4.55"] = "XLINGS_RES",
