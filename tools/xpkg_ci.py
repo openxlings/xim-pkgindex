@@ -415,9 +415,13 @@ def cmd_mirror(args: argparse.Namespace) -> int:
             f"{tag}/{filename}"
         )
         try:
-            request = urllib.request.Request(url, method="HEAD")
+            # GitCode's release endpoint may not implement HEAD reliably. A
+            # one-byte ranged GET validates the actual download path without
+            # fetching the complete asset.
+            request = urllib.request.Request(url, headers={"Range": "bytes=0-0"})
             with urllib.request.urlopen(request, timeout=GITCODE_VERIFY_TIMEOUT) as response:
-                return response.status == 200
+                response.read(1)
+                return response.status in (200, 206)
         except (OSError, urllib.error.URLError):
             return False
 
