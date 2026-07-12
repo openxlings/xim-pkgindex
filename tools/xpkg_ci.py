@@ -23,6 +23,8 @@ import re
 import subprocess
 import sys
 import time
+import tarfile
+import zipfile
 import urllib.request
 from pathlib import Path
 from typing import Any
@@ -186,8 +188,9 @@ def declared_arches(text: str) -> list[str]:
 
 
 def expand_template(template: str, package: str, version: str,
-                    platform: str, arch: str) -> str:
-    aliases = {"x86_64": "amd64", "aarch64": "arm64"}
+                    platform: str, arch: str,
+                    aliases: dict[str, str] | None = None) -> str:
+    aliases = aliases or {"x86_64": "amd64", "aarch64": "arm64"}
     values = {
         "name": package, "version": version, "os": platform,
         "arch": arch, "arch_alias": aliases.get(arch, arch),
@@ -197,6 +200,24 @@ def expand_template(template: str, package: str, version: str,
         template = template.replace("${" + key + "}", value)
         template = template.replace("{" + key + "}", value)
     return template
+
+
+def validate_archive(path: Path) -> str | None:
+    try:
+        if path.name.endswith(".tar.gz") or path.name.endswith(".tar.xz") or path.name.endswith(".tar.bz2"):
+            with tarfile.open(path, "r:*") as archive:
+                next(archive)
+        elif path.name.endswith(".zip"):
+            with zipfile.ZipFile(path) as archive:
+                if archive.testzip() is not None:
+                    return "zip CRC check failed"
+                if not archive.namelist():
+                    return "zip archive is empty"
+        else:
+            return "unsupported archive extension"
+    except (OSError, tarfile.TarError, zipfile.BadZipFile, StopIteration) as exc:
+        return str(exc) or "archive validation failed"
+    return None
 
 
 def materialize(args: argparse.Namespace) -> int:
@@ -250,11 +271,12 @@ def materialize(args: argparse.Namespace) -> int:
             return fail(f"{platform}: cannot materialize an already mirrored XLINGS_RES source")
         if not template:
             return fail(f"{platform}: URL/template missing")
+        aliases = dict(re.findall(r'(x86_64|aarch64|x86)\s*=\s*"([^"]+)"', body))
         if len(arches) > 1 and "${arch}" not in template and "{arch}" not in template:
             return fail(f"{platform}: multi-arch package needs an arch-aware URL template")
         use_arches = arches if ("${arch}" in template or "{arch}" in template) else [arches[0]]
         for arch in use_arches:
-            final_url = expand_template(template, args.package, version, platform, arch)
+            final_url = expand_template(template, args.package, version, platform, arch, aliases)
             if not final_url.startswith("https://"):
                 return fail(f"{platform}/{arch}: source URL must use https")
             filename = final_url.rsplit("/", 1)[-1]
@@ -271,6 +293,10 @@ def materialize(args: argparse.Namespace) -> int:
             except Exception as exc:
                 output.unlink(missing_ok=True)
                 return fail(f"failed to download {final_url}: {exc}")
+            archive_error = validate_archive(output)
+            if archive_error:
+                output.unlink(missing_ok=True)
+                return fail(f"invalid archive {filename}: {archive_error}")
             sidecar = output.with_name(output.name + ".sha256")
             sidecar.write_text(f"{digest.hexdigest()}  {output.name}\n", encoding="utf-8")
             assets.append({"os": platform, "arch": arch, "filename": filename,
