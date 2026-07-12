@@ -84,14 +84,19 @@ jobs:
 
       - name: Bump each package on its own branch and open PR
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          XPKG_BOT_TOKEN: ${{ secrets.XPKG_BOT_TOKEN }}
         run: |
           set -euo pipefail
           if [ ! -s "$RUNNER_TEMP/to-bump.tsv" ]; then
             echo "No updates available — nothing to do."
             exit 0
           fi
+          if [ -z "$XPKG_BOT_TOKEN" ]; then
+            echo "error: configure protected secret XPKG_BOT_TOKEN to allow the bot to create PRs" >&2
+            exit 1
+          fi
+          export GH_TOKEN="$XPKG_BOT_TOKEN"
+          export GITHUB_TOKEN="$XPKG_BOT_TOKEN"
 
           while IFS=$'\t' read -r pkg current upstream; do
             branch="auto/bump-${pkg}-${upstream}"
