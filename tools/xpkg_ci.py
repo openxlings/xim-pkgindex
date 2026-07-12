@@ -19,6 +19,7 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import os
 import re
 import subprocess
 import sys
@@ -489,9 +490,19 @@ def ensure_mirror_repos(package: str, repo: str, gitcode_repo: str) -> str | Non
         with tempfile.TemporaryDirectory() as seed:
             readme = Path(seed) / "README.md"
             readme.write_text(f"# {package}\n\n{description}.\n", encoding="utf-8")
+            # gtc repo push makes a git commit; a bare CI runner has no git
+            # identity configured, so pin one via env (git honours GIT_*_NAME/
+            # EMAIL without touching global config).
+            seed_env = {
+                **os.environ,
+                "GIT_AUTHOR_NAME": "xlings-res-bot",
+                "GIT_AUTHOR_EMAIL": "xlings-res-bot@users.noreply.github.com",
+                "GIT_COMMITTER_NAME": "xlings-res-bot",
+                "GIT_COMMITTER_EMAIL": "xlings-res-bot@users.noreply.github.com",
+            }
             pushed = subprocess.run(
                 ["tools/gtc", "repo", "push", gitcode_repo, seed, "-m", "seed mirror repo"],
-                text=True, capture_output=True,
+                text=True, capture_output=True, env=seed_env,
             )
             if pushed.returncode != 0:
                 return f"failed to seed GitCode repo {gitcode_repo}: {pushed.stderr.strip()}"
