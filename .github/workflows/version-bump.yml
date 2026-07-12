@@ -16,6 +16,11 @@ on:
         description: "Restrict to a single package by lua basename (optional)"
         required: false
         default: ""
+      force:
+        description: "Ignore the central scan interval for this manual run"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -56,7 +61,11 @@ jobs:
           if [ -n "${{ inputs.only }}" ]; then
             ONLY_ARG="--only ${{ inputs.only }}"
           fi
-          python3 tools/xpkg_ci.py --workspace . scan --state-file .github/.xpkg-ci-state.json $ONLY_ARG > "$RUNNER_TEMP/scan.json"
+          FORCE_ARG=""
+          if [ "${{ inputs.force }}" = "true" ]; then
+            FORCE_ARG="--force"
+          fi
+          python3 tools/xpkg_ci.py --workspace . scan --state-file .github/.xpkg-ci-state.json $FORCE_ARG $ONLY_ARG > "$RUNNER_TEMP/scan.json"
           python3 -c "
           import json, os
           d = json.load(open(os.environ['RUNNER_TEMP'] + '/scan.json'))
