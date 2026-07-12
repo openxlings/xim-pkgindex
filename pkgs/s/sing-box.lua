@@ -7,7 +7,10 @@ package = {
     maintainers = {"SagerNet"},
     licenses = {"GPL-3.0-or-later"},
     repo = "https://github.com/SagerNet/sing-box",
-    ci = { mirror = true, update = true },
+    -- update only: GitCode rejects an xlings-res/sing-box repo under its
+    -- content policy, so the two-forge mirror cannot complete. sing-box still
+    -- auto-updates via url_template + latest.ref.
+    ci = { update = true },
     docs = "https://sing-box.sagernet.org/",
 
     type = "package",
