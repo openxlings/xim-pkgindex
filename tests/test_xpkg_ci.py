@@ -3,6 +3,7 @@
 
 import importlib.util
 import json
+import tarfile
 import tempfile
 from pathlib import Path
 
@@ -14,6 +15,14 @@ spec.loader.exec_module(mod)
 
 def main() -> int:
     with tempfile.TemporaryDirectory() as d:
+        root = Path(d)
+        payload = root / "payload.txt"
+        payload.write_text("payload\n", encoding="utf-8")
+        archive = root / "payload.tar.gz"
+        with tarfile.open(archive, "w:gz") as tar:
+            tar.add(payload, arcname="payload.txt")
+        assert mod.validate_archive(archive) is None
+
         p = Path(d) / "foo.lua"
         p.write_text(
             'package = { name = "foo", repo = "https://github.com/acme/foo", '

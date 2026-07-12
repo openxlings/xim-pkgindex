@@ -206,7 +206,8 @@ def validate_archive(path: Path) -> str | None:
     try:
         if path.name.endswith(".tar.gz") or path.name.endswith(".tar.xz") or path.name.endswith(".tar.bz2"):
             with tarfile.open(path, "r:*") as archive:
-                next(archive)
+                if archive.next() is None:
+                    return "tar archive is empty"
         elif path.name.endswith(".zip"):
             with zipfile.ZipFile(path) as archive:
                 if archive.testzip() is not None:
