@@ -36,7 +36,7 @@ def assert_valid_spec(meta: XpkgMeta):
     """spec 版本必须是已知值"""
     if meta.is_ref:
         return
-    assert meta.spec in ("0", "1"), f"未知 spec 版本: {meta.spec}"
+    assert meta.spec in ("0", "1", "2"), f"未知 spec 版本: {meta.spec}"
 
 
 def assert_valid_type(meta: XpkgMeta):

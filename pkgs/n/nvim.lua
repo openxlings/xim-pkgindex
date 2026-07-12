@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "2",
     -- base info
     name = "nvim",
     description = "Vim-fork focused on extensibility and usability",
@@ -7,6 +7,7 @@ package = {
     contributors = "https://github.com/neovim/neovim/graphs/contributors",
     licenses = {"Apache-2.0"},
     repo = "https://github.com/neovim/neovim",
+    ci = { mirror = true, update = true },
     docs = "https://neovim.io/doc",
 
     -- xim pkg info
@@ -47,8 +48,14 @@ package = {
             deps = {
                 runtime = { "xim:glibc@2.39", "xim:gcc-runtime@15.1.0" },
             },
-            url_template = "https://github.com/neovim/neovim/releases/download/v{version}/nvim-linux-x86_64.tar.gz",
-            ["latest"] = { ref = "0.12.2" },
+            source = {
+                GLOBAL = "https://github.com/neovim/neovim/releases/download/v${version}/nvim-linux-x86_64.tar.gz",
+                CN = "https://gitcode.com/xlings-res/nvim/releases/download/${version}/nvim-linux-x86_64.tar.gz",
+            },
+            ["latest"] = { ref = "0.12.4" },
+            ["0.12.4"] = {
+                sha256 = "012bf3fcac5ade43914df3f174668bf64d05e049a4f032a388c027b1ebd78628",
+            },
             ["0.12.2"] = "XLINGS_RES",
             ["0.11.5"] = {
                 url = "https://github.com/neovim/neovim/releases/download/v0.11.5/nvim-linux-x86_64.tar.gz",
@@ -56,8 +63,14 @@ package = {
             }
         },
         windows = {
-            url_template = "https://github.com/neovim/neovim/releases/download/v{version}/nvim-win64.zip",
-            ["latest"] = { ref = "0.12.2" },
+            source = {
+                GLOBAL = "https://github.com/neovim/neovim/releases/download/v${version}/nvim-win64.zip",
+                CN = "https://gitcode.com/xlings-res/nvim/releases/download/${version}/nvim-win64.zip",
+            },
+            ["latest"] = { ref = "0.12.4" },
+            ["0.12.4"] = {
+                sha256 = "9fc3572829ffd13debb6e32555da2c8cc02555568260a9fc4cf1f65bbcca319c",
+            },
             ["0.12.2"] = "XLINGS_RES",
             ["0.11.5"] = {
                 url = "https://github.com/neovim/neovim/releases/download/v0.11.5/nvim-win64.zip",

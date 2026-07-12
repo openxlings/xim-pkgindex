@@ -15,7 +15,7 @@ silently served the same binary to every CPU arch — e.g. a recipe declaring
 broken binary on ARM. V2 makes architecture a **first-class, declarative,
 install-time-resolved** dimension, with a mandatory per-arch checksum.
 
-Requires **xlings ≥ 0.4.63** (libxpkg ≥ 0.0.44) for the complete `xpm.source`
+Requires **xlings ≥ 0.4.63** (libxpkg ≥ 0.0.45) for the complete `xpm.source`
 and compat contract. The per-architecture shapes were introduced earlier and
 remain compatible with xlings 0.4.61+. Older clients ignore new fields or may
 misinterpret root/platform `source`; keep the legacy entry form when the same
@@ -88,7 +88,21 @@ Auto-URL pattern (unchanged from V1 `XLINGS_RES`):
 `xpm.source` keeps the original platform/version matrix and removes repeated
 URLs or repeated `"XLINGS_RES"` values. It can be declared at the root or on a
 platform; the platform value overrides the root value. Supported values are
-`"xlings-res"` and an HTTP(S) URL template.
+`"xlings-res"`, an HTTP(S) URL template, or a regional source map. In a map,
+`GLOBAL` is the canonical upstream and other keys are equivalent-byte fallback
+mirrors:
+
+```lua
+source = {
+    GLOBAL = "https://github.com/acme/foo/releases/download/${version}/foo-${arch_alias}.${ext}",
+    CN = "https://gitcode.com/xlings-res/foo/releases/download/${version}/foo-${arch_alias}.${ext}",
+},
+```
+
+The same map shape is valid at platform scope. Version entries only need to
+carry the checksum when the URL shape is stable. xlings selects the requested
+region first and retains the other regions as fallback candidates; mirror
+assets must be byte-identical.
 
 ```lua
 xpm = {

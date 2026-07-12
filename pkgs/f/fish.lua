@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "2",
 
     name = "fish",
     description = "Friendly interactive shell — smart, user-friendly, modern command-line",
@@ -7,6 +7,7 @@ package = {
     maintainers = {"fish-shell"},
     licenses = {"GPL-2.0"},
     repo = "https://github.com/fish-shell/fish-shell",
+    ci = { mirror = true, update = true },
     docs = "https://fishshell.com/docs/current/",
 
     type = "package",
@@ -29,7 +30,11 @@ package = {
     xpm = {
         linux = {
             url_template = "https://github.com/fish-shell/fish-shell/releases/download/{version}/fish-{version}-linux-x86_64.tar.xz",
-            ["latest"] = { ref = "4.6.0" },
+            ["latest"] = { ref = "4.8.0" },
+            ["4.8.0"] = {
+                url = "https://github.com/fish-shell/fish-shell/releases/download/4.8.0/fish-4.8.0-linux-x86_64.tar.xz",
+                sha256 = "98f7916878fc76be797cabf284f185b56f31a35681e3aec9b9faf7a4a6aa0d74",
+            },
             ["4.6.0"] = {
                 url = "https://github.com/fish-shell/fish-shell/releases/download/4.6.0/fish-4.6.0-linux-x86_64.tar.xz",
                 sha256 = "497c9c4e3fb3c006fe9d2c9a5a5447c1c90490b6b4ce6bfaf75e53b495c82f36",

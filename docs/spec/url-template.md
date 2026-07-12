@@ -1,4 +1,8 @@
-# `url_template`: opt-in package version auto-update
+# `url_template`: legacy opt-in package version auto-update
+
+> Deprecated: new packages should use `xpm.source` (a string or a
+> `GLOBAL`/`CN` map). Existing `url_template` packages remain supported for
+> compatibility and will be migrated opportunistically.
 
 A small contract between an xpkg description and the in-repo version
 checker (`.github/scripts/version-check.py`). The package must explicitly
