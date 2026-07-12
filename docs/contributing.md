@@ -50,6 +50,21 @@ package = {
 没有权威 hash 时可以暂时保留旧表达，但不能把它作为新的官方二进制版本发布；应先
 补齐制品和 sidecar，再提交索引迁移。
 
+## 2.1 CI 扩展
+
+需要加入官方自动镜像或自动更新时，只在包元数据中声明意图：
+
+```lua
+ci = {
+    mirror = true,
+    update = true,
+}
+```
+
+周期、cron、限流和重试统一由仓库 `.github/xpkg-ci.yml` 管理，包文件不写 `1d`、`3d`
+等周期。`mirror` 处理已声明版本；`update` 只负责发现版本并创建 PR。完整工具和
+workflow 边界见 [CI 镜像与自动更新设计](../.agents/docs/2026-07-12-xpkg-ci-mirror-update-design.md)。
+
 ## 3. xlings-res 发布流程
 
 1. 从权威上游 release 或同一次构建取得所有平台/架构制品。

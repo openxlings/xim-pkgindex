@@ -64,6 +64,20 @@ package = {
 `"XLINGS_RES"`、`res = true`、显式 URL、URL template、mirror、`ref` 和旧单 hash
 仍受支持，用于兼容历史配方；新配方不应新增无校验的官方二进制版本。
 
+### CI 自动镜像与更新
+
+自动化是可选的 CI 扩展，不影响用户安装规范：
+
+```lua
+ci = {
+    mirror = true, -- 镜像已声明版本
+    update = true, -- 加入仓库统一扫描
+}
+```
+
+扫描周期统一由仓库 `.github/xpkg-ci.yml` 管理，当前设计默认每 3 天检查一次；包文件不
+单独写入周期。自动更新只创建 PR，镜像 release 只在校验、合并和三方 hash 复核后创建。
+
 ### 资源发布硬门禁
 
 - GitHub RES 与 GitCode RES 必须存在同版本、同文件名的全部平台资产。
