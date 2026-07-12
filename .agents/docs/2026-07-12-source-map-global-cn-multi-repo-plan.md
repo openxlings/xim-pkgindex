@@ -2,7 +2,7 @@
 
 > 日期：2026-07-12  
 > 状态：设计方案，尚未实现  
-> 范围：libxpkg、xlings、xim-pkgindex、xlings-res 发布链  
+> 范围：libxpkg、mcpp-index、xlings、xim-pkgindex、xlings-res 发布链
 > 兼容约束：xlings 包本身暂不迁移到新规范
 
 ## 1. 背景与目标
@@ -116,7 +116,15 @@ ci.update 应消费归一化后的 source 模板，而不是依赖字段名 url_
 测试必须覆盖字符串 source、GLOBAL/CN map、root/platform 覆盖、CN 缺失回退、
 显式版本 URL 覆盖 source、坏 map 和旧 V1/V2 fixture。
 
-### 3.2 openxlings/xlings
+### 3.2 mcpp-community/mcpp-index
+
+- 在 libxpkg tag/release 完成后注册新的 `mcpplibs.xpkg` 版本。
+- `mcpp-index` 的 GLOBAL 归档、CN mirror、SHA256 必须指向同一份 release
+  字节；该注册 PR 是 xlings 使用新 xpkg 版本的依赖，不应省略。
+- 依赖顺序：libxpkg PR merge → tag/release → mcpp-index 注册并 merge →
+  xlings 依赖升级 PR CI。
+
+### 3.3 openxlings/xlings
 
 职责：安装器选择地区、尝试 fallback、校验缓存和输出诊断。
 
@@ -136,7 +144,7 @@ ci.update 应消费归一化后的 source 模板，而不是依赖字段名 url_
   - hash mismatch 拒绝错误资产；
   - source map、显式 mirror map、XLINGS_RES 三种路径兼容。
 
-### 3.3 openxlings/xim-pkgindex
+### 3.4 openxlings/xim-pkgindex
 
 职责：规范、CI、manifest、索引配方和迁移。
 
@@ -157,7 +165,7 @@ ci.update 应消费归一化后的 source 模板，而不是依赖字段名 url_
   - mirror 发布同名 GitHub/GitCode 资产；
   - 增加 source-map fixture 和 dry-run 测试。
 
-### 3.4 xlings-res 发布面
+### 3.5 xlings-res 发布面
 
 每个 package/version 必须同时具备：
 
