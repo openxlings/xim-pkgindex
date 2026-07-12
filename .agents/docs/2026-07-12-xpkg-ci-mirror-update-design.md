@@ -409,3 +409,15 @@ checkout
   当前没有包声明 `mirror=true`，因此该次运行安全地无发布并完成 changed-package 审计。
 - 发布链路仍可通过 `workflow_dispatch` 提交经过 `verify` 的 manifest；重复 GitHub release
   只接受完整同名资产，GitCode 创建幂等且上传带有限重试，不覆盖既有资产。
+- 2026-07-13：一次真实的 per-package mirror run（fish/griddycode/nvim/pnpm 四个独立
+  matrix job）全部成功；pnpm 三个约 40–50 MB 的 bundled-Node 资产在 GitCode 上传约 14 分钟
+  后通过校验，验证了 §6.3 的单文件上传 + 指数退避 + ranged-GET 校验路径。四个包的资产均已
+  在 GitHub RES 与 GitCode RES 上以 ranged GET 复核为可下载（206）。
+- §3.3 的两处实现缺口已在 `tools/xpkg_ci.py` 补齐：
+  - `ensure_mirror_repos`（也暴露为 `ensure-repo` 子命令）在发布前幂等地保证
+    `xlings-res/<pkg>` 在 GitHub 与 GitCode 均存在且 `main` 非空——已存在的包只做只读探测，
+    不产生写调用，也不需要建仓 token 权限；仅全新的 mirror 包会触发建仓并在 GitCode 播种
+    README 以创建 `main`。这消除了「新增 mirror 包需先手工建两个仓库」的前置条件。
+  - `verify_mirror_content` 把原先只做「对象存在」的 ranged-GET 探测升级为三方哈希复核：
+    发布成功前从 GitHub RES 与 GitCode RES 实际下载每个归档资产并与 manifest（源自权威上游）
+    的 sha256 逐一比对，任一不一致即 fail closed。可用 `--no-content-verify` 作为应急旁路。

@@ -22,6 +22,7 @@ import json
 import re
 import subprocess
 import sys
+import tempfile
 import time
 import tarfile
 import zipfile
@@ -350,6 +351,120 @@ def cmd_verify(args: argparse.Namespace) -> int:
     return 0
 
 
+GITHUB_RELEASE_BASE = "https://github.com"
+GITCODE_RELEASE_BASE = "https://gitcode.com"
+
+
+def _download_sha256(url: str, timeout: int = 300) -> tuple[str | None, str]:
+    """Stream a mirror asset and return (hex_digest, "") or (None, error)."""
+    request = urllib.request.Request(url, headers={"User-Agent": "xim-pkgindex-xpkg-ci"})
+    digest = hashlib.sha256()
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            while True:
+                chunk = response.read(1024 * 1024)
+                if not chunk:
+                    break
+                digest.update(chunk)
+    except (OSError, urllib.error.URLError) as exc:
+        return None, str(exc) or "download failed"
+    return digest.hexdigest(), ""
+
+
+def verify_mirror_content(repo: str, gitcode_repo: str, tag: str,
+                          assets: list[dict[str, Any]]) -> str | None:
+    """Fail-closed three-way check: the bytes actually served by GitHub RES and
+    GitCode RES must hash to the authoritative sha256 recorded in the manifest.
+
+    A ranged-GET availability probe only proves an object exists at the URL; it
+    does not prove the mirror stored the correct bytes.  This downloads every
+    archive asset from both mirrors and compares against the manifest digest,
+    which was computed from the authoritative upstream source at materialize
+    time.  Returns an error string on the first mismatch, or None when all
+    mirrors agree with the manifest.
+    """
+    for asset in assets:
+        expected = str(asset["sha256"])
+        filename = asset["filename"]
+        sources = (
+            ("GitHub", f"{GITHUB_RELEASE_BASE}/{repo}/releases/download/{tag}/{filename}"),
+            ("GitCode", f"{GITCODE_RELEASE_BASE}/{gitcode_repo}/releases/download/{tag}/{filename}"),
+        )
+        for host, url in sources:
+            actual, error = _download_sha256(url)
+            if actual is None:
+                return f"{host} content fetch failed for {filename}: {error}"
+            if actual != expected:
+                return (f"{host} content mismatch for {filename}: "
+                        f"expected {expected}, served {actual}")
+    return None
+
+
+def _gh_repo_exists(repo: str) -> bool:
+    result = subprocess.run(
+        ["gh", "repo", "view", repo, "--json", "name"],
+        text=True, capture_output=True,
+    )
+    return result.returncode == 0
+
+
+def _gitcode_main_exists(repo: str) -> bool:
+    result = subprocess.run(
+        ["git", "ls-remote", "--heads", f"https://gitcode.com/{repo}.git", "main"],
+        text=True, capture_output=True,
+    )
+    return result.returncode == 0 and bool(result.stdout.strip())
+
+
+def ensure_mirror_repos(package: str, repo: str, gitcode_repo: str) -> str | None:
+    """Idempotently ensure both mirror repos exist and are non-empty.
+
+    A brand-new mirror package has no xlings-res repo yet, and both `gh release
+    create` and `gtc release create --target main` need a repo that already has
+    a commit on `main`.  Existence is probed read-only first, so an already
+    provisioned package makes no write call and needs no repo-create token
+    scope.  Only a genuinely new package triggers creation (and a README seed on
+    GitCode so its `main` branch exists).  Returns an error string on failure,
+    or None when both repos are ready.
+    """
+    description = f"xlings-res immutable mirror for {package}"
+    if not _gh_repo_exists(repo):
+        created = subprocess.run(
+            ["gh", "repo", "create", repo, "--public", "--add-readme",
+             "--description", description],
+            text=True, capture_output=True,
+        )
+        if created.returncode != 0:
+            return f"failed to create GitHub repo {repo}: {created.stderr.strip()}"
+    if not _gitcode_main_exists(gitcode_repo):
+        created = subprocess.run(
+            ["tools/gtc", "repo", "create", gitcode_repo, "--description", description],
+            text=True, capture_output=True,
+        )
+        if created.returncode != 0:
+            return f"failed to create GitCode repo {gitcode_repo}: {created.stderr.strip()}"
+        with tempfile.TemporaryDirectory() as seed:
+            readme = Path(seed) / "README.md"
+            readme.write_text(f"# {package}\n\n{description}.\n", encoding="utf-8")
+            pushed = subprocess.run(
+                ["tools/gtc", "repo", "push", gitcode_repo, seed, "-m", "seed mirror repo"],
+                text=True, capture_output=True,
+            )
+            if pushed.returncode != 0:
+                return f"failed to seed GitCode repo {gitcode_repo}: {pushed.stderr.strip()}"
+    return None
+
+
+def cmd_ensure_repo(args: argparse.Namespace) -> int:
+    package = args.package
+    repo = f"xlings-res/{package}"
+    problem = ensure_mirror_repos(package, repo, repo)
+    if problem:
+        return fail(problem)
+    print(json.dumps({"status": "ready", "package": package, "repo": repo}, indent=2))
+    return 0
+
+
 def cmd_mirror(args: argparse.Namespace) -> int:
     path = Path(args.manifest)
     try:
@@ -376,6 +491,10 @@ def cmd_mirror(args: argparse.Namespace) -> int:
     if not args.execute:
         print(json.dumps({"status": "dry-run", "github": gh_command, "gitcode": gtc_command}, indent=2))
         return 0
+    if getattr(args, "ensure_repos", True):
+        problem = ensure_mirror_repos(package, repo, gitcode_repo)
+        if problem:
+            return fail(problem)
     view = subprocess.run(
         ["gh", "release", "view", tag, "--repo", repo, "--json", "assets"],
         text=True, capture_output=True,
@@ -410,13 +529,23 @@ def cmd_mirror(args: argparse.Namespace) -> int:
         except (OSError, urllib.error.URLError):
             return False
 
+    def finalize(message: str) -> int:
+        # Availability probes above only prove the objects exist. Before
+        # declaring success, confirm the bytes GitHub RES and GitCode RES
+        # actually serve hash to the authoritative manifest digest.
+        if getattr(args, "content_verify", True):
+            problem = verify_mirror_content(repo, gitcode_repo, tag, manifest["assets"])
+            if problem:
+                return fail(problem)
+        print(result.stdout)
+        print(message)
+        return 0
+
     # GitCode's release-create endpoint is idempotent. If every immutable
     # asset is already downloadable, the package is fully mirrored and this
     # job should succeed without calling gtc again.
     if all(asset_available(Path(file).name) for file in files):
-        print(result.stdout)
-        print(f"GitCode assets already verified for {gitcode_repo}@{tag}; skipping upload")
-        return 0
+        return finalize(f"GitCode assets already verified for {gitcode_repo}@{tag}; skipping upload")
 
     # Otherwise create the release and upload only the missing assets.
     try:
@@ -461,9 +590,7 @@ def cmd_mirror(args: argparse.Namespace) -> int:
         if not uploaded:
             return fail(f"GitCode asset upload failed for {filename}: {last_error}")
 
-    print(result.stdout)
-    print(f"GitCode assets verified for {gitcode_repo}@{tag}")
-    return 0
+    return finalize(f"GitCode assets verified for {gitcode_repo}@{tag}")
 
 
 def cmd_propose(args: argparse.Namespace) -> int:
@@ -501,7 +628,14 @@ def main() -> int:
     p = sub.add_parser("mirror")
     p.add_argument("manifest")
     p.add_argument("--execute", action="store_true")
-    p.set_defaults(func=cmd_mirror)
+    p.add_argument("--no-ensure-repos", dest="ensure_repos", action="store_false",
+                   help="skip bootstrapping missing xlings-res repos")
+    p.add_argument("--no-content-verify", dest="content_verify", action="store_false",
+                   help="skip the three-way GitHub/GitCode byte-hash verification")
+    p.set_defaults(func=cmd_mirror, ensure_repos=True, content_verify=True)
+    p = sub.add_parser("ensure-repo")
+    p.add_argument("package")
+    p.set_defaults(func=cmd_ensure_repo)
     p = sub.add_parser("materialize")
     p.add_argument("package")
     p.add_argument("--version")
