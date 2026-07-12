@@ -34,7 +34,8 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 VC_PATH = ROOT / ".github" / "scripts" / "version-check.py"
 GITCODE_RELEASE_TIMEOUT = 60
-GITCODE_UPLOAD_TIMEOUT = 90
+# GitCode's upload callback is especially slow for large release assets.
+GITCODE_UPLOAD_TIMEOUT = 600
 GITCODE_VERIFY_TIMEOUT = 20
 
 
