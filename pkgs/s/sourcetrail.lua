@@ -7,6 +7,7 @@ package = {
     contributors = "https://github.com/CoatiSoftware/Sourcetrail/graphs/contributors",
     licenses = {"GPL-3.0"},
     repo = "https://github.com/CoatiSoftware/Sourcetrail",
+    ci = { mirror = true },
 
     -- xim pkg info
     type = "package",
