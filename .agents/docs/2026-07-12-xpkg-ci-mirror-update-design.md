@@ -326,6 +326,8 @@ checkout
 - mirror workflow 使用最小化 `xlings-res` 发布 token；
 - 发布环境要求 protected branch/environment approval；
 - `GITHUB_TOKEN` 不得获得任意仓库写权限；GitCode token 只允许目标 release 仓库。
+- 更新 PR workflow 使用受保护的 `XPKG_BOT_TOKEN`；未配置时在发现更新后立即失败并给出
+  明确配置提示，不使用默认 `GITHUB_TOKEN` 绕过仓库的 PR 创建策略。
 
 ### 6.3 可靠性
 
