@@ -43,6 +43,11 @@ jobs:
 
       - name: Materialize opted-in mirror packages
         if: github.event_name == 'workflow_run'
+        env:
+          # xpkg_ci.py --execute invokes both gh and gtc.  workflow_run jobs
+          # do not inherit the token from the manual-dispatch step below.
+          GH_TOKEN: ${{ secrets.XLINGS_RES_TOKEN }}
+          GITCODE_TOKEN: ${{ secrets.GITCODE_TOKEN }}
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/xpkg-manifests"
