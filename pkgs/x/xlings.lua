@@ -46,18 +46,6 @@ package = {
                     x86_64 = "893b46dfa68d236079d5ec9383a12d4abdd7dc2f156197b2671f6c7eb7fde93d",
                 },
             },
-            ["0.4.65"] = {
-                url = "XLINGS_RES",
-                sha256 = {
-                    aarch64 = "65ad3e3287de41905593a00216af1c493ba70db56d1f92fb9edc1021242309a8",
-                },
-            },
-            ["0.4.65"] = {
-                url = "XLINGS_RES",
-                sha256 = {
-                    x86_64 = "aa37912dd708f14bd3f94e6ba1b062d330938270b2ffee4f6da28ae53d5c7850",
-                },
-            },
             ["0.4.64"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -225,6 +213,12 @@ package = {
             -- appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
             res_versioned = true,
             ["latest"] = { ref = "0.4.65" },
+            ["0.4.65"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "65ad3e3287de41905593a00216af1c493ba70db56d1f92fb9edc1021242309a8",
+                },
+            },
             ["0.4.64"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -390,6 +384,12 @@ package = {
             -- appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
             res_versioned = true,
             ["latest"] = { ref = "0.4.65" },
+            ["0.4.65"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "aa37912dd708f14bd3f94e6ba1b062d330938270b2ffee4f6da28ae53d5c7850",
+                },
+            },
             ["0.4.64"] = {
                 url = "XLINGS_RES",
                 sha256 = {
