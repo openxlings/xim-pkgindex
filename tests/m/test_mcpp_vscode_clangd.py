@@ -184,7 +184,9 @@ class TestStatic:
         assert "cdb_compiler" in meta.raw_content
         assert "clang_toolchain_version" in meta.raw_content
         assert 'json.loadfile' in meta.raw_content
-        assert 'clang version' in meta.raw_content
+        # version is parsed straight from the toolchain path, no --version probe
+        assert 'xim%-x%-llvm' in meta.raw_content
+        assert '"clang version' not in meta.raw_content
         assert "only configures clangd for LLVM projects" in meta.raw_content
 
     @pytest.mark.static

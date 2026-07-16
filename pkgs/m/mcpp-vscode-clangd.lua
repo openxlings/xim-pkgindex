@@ -164,21 +164,16 @@ local function cdb_compiler(root)
     return nil
 end
 
--- If `compiler` is a clang/LLVM driver, return its version (e.g. "20.1.7").
--- Returns nil for gcc/msvc/unknown so the caller can print a hint and skip.
+-- Extract the LLVM version straight from the xlings toolchain compiler path,
+-- e.g. `.../xpkgs/xim-x-llvm/20.1.7/bin/clang++` -> "20.1.7" (handles `\` on
+-- Windows). The path already encodes the exact version, so no `--version`
+-- probe is needed. Returns nil for non-LLVM toolchains (xim-x-gcc/..., msvc)
+-- so the caller can print a hint and skip.
 local function clang_toolchain_version(compiler)
     if not compiler then
         return nil
     end
-    if not path.filename(compiler):lower():find("clang", 1, true) then
-        return nil
-    end
-    local out = try {
-        function()
-            return os.iorun('"' .. compiler .. '" --version')
-        end
-    }
-    return out and out:match("clang version%s+([%d%.]+)")
+    return compiler:match("xim%-x%-llvm[/\\]([%d%.]+)")
 end
 
 function install()
