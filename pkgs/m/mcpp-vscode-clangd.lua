@@ -63,6 +63,18 @@ local function has_command(name)
     } or false
 end
 
+-- Return true if VSCode already has `ext` installed. `code --list-extensions`
+-- prints one extension id per line; guarded by try since it fails when `code`
+-- is missing.
+local function has_extension(ext)
+    local out = try {
+        function()
+            return os.iorun("code --list-extensions")
+        end
+    }
+    return out ~= nil and out:lower():find(ext:lower(), 1, true) ~= nil
+end
+
 -- Normalize a clangd.arguments value to a list (json may load a lone string).
 local function as_list(args)
     if type(args) == "table" then
@@ -179,19 +191,23 @@ function install()
         pkgmanager.install("code")
     end
 
-    -- Install the clangd extension (idempotent). If `code` was just installed
-    -- its PATH entry may not be active in this process yet, so failures are
-    -- non-fatal and reported for a manual retry.
-    local ok = try {
-        function()
-            print("\n") -- split to avoid print bug
-            system.exec("code --install-extension llvm-vs-code-extensions.vscode-clangd")
-            return true
+    -- Install the clangd extension only if it is not already present. If
+    -- `code` was just installed its PATH entry may not be active in this
+    -- process yet, so failures are non-fatal and reported for a manual retry.
+    local ext = "llvm-vs-code-extensions.vscode-clangd"
+    if has_extension(ext) then
+        log.info("clangd extension already installed, skipping")
+    else
+        local ok = try {
+            function()
+                system.exec("code --install-extension " .. ext)
+                return true
+            end
+        } or false
+        if not ok then
+            log.warn("could not install the vscode-clangd extension automatically; "
+                .. "run 'code --install-extension " .. ext .. "' manually")
         end
-    } or false
-    if not ok then
-        log.warn("could not install the vscode-clangd extension automatically; "
-            .. "run 'code --install-extension llvm-vs-code-extensions.vscode-clangd' manually")
     end
     return true
 end
@@ -206,9 +222,11 @@ function config()
 
     -- Unified first step: (re)generate compile_commands.json. clangd needs it
     -- as its build DB, and in `auto` mode it is also how we learn the real
-    -- toolchain. The project's default toolchain is left untouched.
+    -- toolchain. --no-cache forces an actual compile: a cached `mcpp build`
+    -- (0s) does NOT rewrite the DB, so without it a stale-removed cdb would
+    -- never come back. The project's default toolchain is left untouched.
     os.tryrm(path.join(root, "compile_commands.json"))
-    system.exec("mcpp build")
+    system.exec("mcpp build --no-cache")
 
     -- Requirement 2: `latest` -> `auto` detects the LLVM version the project
     -- actually built with; an explicit version is used as-is.

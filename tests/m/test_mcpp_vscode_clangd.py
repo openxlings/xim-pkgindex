@@ -137,7 +137,7 @@ class TestStatic:
         assert 'log.warn(' in meta.raw_content
         assert "mcpp-vscode-clangd skipped" in meta.raw_content
         manifest_check = meta.raw_content.index('os.isfile(path.join(root, "mcpp.toml"))')
-        build = meta.raw_content.index('system.exec("mcpp build")')
+        build = meta.raw_content.index('system.exec("mcpp build --no-cache")')
         assert manifest_check < build
 
     @pytest.mark.static
@@ -158,14 +158,18 @@ class TestStatic:
 
     @pytest.mark.static
     def test_installs_vscode_clangd_extension(self, meta):
-        assert "code --install-extension llvm-vs-code-extensions.vscode-clangd" in meta.raw_content
+        assert "code --install-extension " in meta.raw_content
+        assert "llvm-vs-code-extensions.vscode-clangd" in meta.raw_content
+        # only install when not already present
+        assert "has_extension" in meta.raw_content
+        assert "code --list-extensions" in meta.raw_content
 
     @pytest.mark.static
     def test_triggers_mcpp_build(self, meta):
         # build runs first -- it (re)generates compile_commands.json, which
         # clangd needs and which `auto` reads to detect the toolchain -- then
         # llvm-tools is installed for the resolved version.
-        build = meta.raw_content.index('system.exec("mcpp build")')
+        build = meta.raw_content.index('system.exec("mcpp build --no-cache")')
         install_tools = meta.raw_content.index('pkgmanager.install("llvm-tools@" .. ver)')
         assert build < install_tools
 
@@ -186,7 +190,7 @@ class TestStatic:
     @pytest.mark.static
     def test_removes_cdb_before_build(self, meta):
         remove_cdb = meta.raw_content.index('os.tryrm(path.join(root, "compile_commands.json"))')
-        build = meta.raw_content.index("mcpp build")
+        build = meta.raw_content.index('system.exec("mcpp build --no-cache")')
         assert remove_cdb < build
 
     @pytest.mark.static
@@ -204,7 +208,8 @@ class TestStatic:
         body = hook.group(1)
         assert 'has_command("code")' in body
         assert 'pkgmanager.install("code")' in body
-        assert "code --install-extension llvm-vs-code-extensions.vscode-clangd" in body
+        assert 'has_extension(' in body
+        assert "code --install-extension " in body
 
     @pytest.mark.static
     def test_no_custom_project_dir_helpers(self, meta):
