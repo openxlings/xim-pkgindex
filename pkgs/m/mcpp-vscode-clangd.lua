@@ -13,26 +13,31 @@ package = {
     categories = {"cpp", "vscode", "config"},
     keywords = {"mcpp", "vscode", "clangd", "llvm", "cpp-modules", "import-std"},
 
-    -- The package version IS the clangd (llvm-tools) version: pick it
-    -- explicitly (e.g. `mcpp-vscode-clangd@20.1.7`) or take `latest` for the
-    -- newest. Version blocks mirror pkgs/l/llvm-tools.lua. `code` (VSCode) is
-    -- detected at install time rather than pinned as a dependency.
+    -- Version model: `latest` -> `auto`, which detects the LLVM version the
+    -- project actually built with (read from compile_commands.json) and
+    -- installs the matching clangd. An explicit version (e.g.
+    -- `mcpp-vscode-clangd@20.1.7`) pins clangd to that llvm-tools release and
+    -- skips detection. `code` (VSCode) is detected at install time rather than
+    -- pinned as a dependency.
     xpm = {
         linux = {
             deps = { "xim:mcpp" },
-            ["latest"] = { ref = "22.1.8" },
+            ["latest"] = { ref = "auto" },
+            ["auto"] = {},
             ["22.1.8"] = {},
             ["20.1.7"] = {},
         },
         windows = {
             deps = { "xim:mcpp" },
-            ["latest"] = { ref = "22.1.8" },
+            ["latest"] = { ref = "auto" },
+            ["auto"] = {},
             ["22.1.8"] = {},
             ["20.1.7"] = {},
         },
         macosx = {
             deps = { "xim:mcpp" },
-            ["latest"] = { ref = "22.1.8" },
+            ["latest"] = { ref = "auto" },
+            ["auto"] = {},
             ["22.1.8"] = {},
             ["20.1.7"] = {},
         },
@@ -126,6 +131,44 @@ local function write_clangd_settings(root, tools_dir, ver)
     log.info("clangd configured: %s", settings["clangd.path"])
 end
 
+-- Pull the compiler invoked by the first compile_commands.json entry. mcpp
+-- emits a `command` string; fall back to an `arguments` array just in case.
+local function cdb_compiler(root)
+    local cdb = path.join(root, "compile_commands.json")
+    if not os.isfile(cdb) then
+        return nil
+    end
+    local db = json.loadfile(cdb)
+    local entry = db and db[1]
+    if not entry then
+        return nil
+    end
+    if type(entry.arguments) == "table" and entry.arguments[1] then
+        return entry.arguments[1]
+    end
+    if type(entry.command) == "string" then
+        return entry.command:match('^%s*"([^"]+)"') or entry.command:match("^%s*(%S+)")
+    end
+    return nil
+end
+
+-- If `compiler` is a clang/LLVM driver, return its version (e.g. "20.1.7").
+-- Returns nil for gcc/msvc/unknown so the caller can print a hint and skip.
+local function clang_toolchain_version(compiler)
+    if not compiler then
+        return nil
+    end
+    if not path.filename(compiler):lower():find("clang", 1, true) then
+        return nil
+    end
+    local out = try {
+        function()
+            return os.iorun('"' .. compiler .. '" --version')
+        end
+    }
+    return out and out:match("clang version%s+([%d%.]+)")
+end
+
 function install()
     -- Requirement 1: do not pin `code` as a fixed dependency. Detect it and
     -- only install through the package manager when it is missing.
@@ -161,9 +204,28 @@ function config()
     end
     os.cd(root)
 
-    -- Requirement 2: the clangd version is the explicitly selected package
-    -- version (via `@version` or `latest`) -- no toolchain auto-detection.
+    -- Unified first step: (re)generate compile_commands.json. clangd needs it
+    -- as its build DB, and in `auto` mode it is also how we learn the real
+    -- toolchain. The project's default toolchain is left untouched.
+    os.tryrm(path.join(root, "compile_commands.json"))
+    system.exec("mcpp build")
+
+    -- Requirement 2: `latest` -> `auto` detects the LLVM version the project
+    -- actually built with; an explicit version is used as-is.
     local ver = pkginfo.version()
+    if ver == "auto" then
+        local compiler = cdb_compiler(root)
+        local detected = clang_toolchain_version(compiler)
+        if not detected then
+            log.warn("project toolchain is not LLVM/clang (compiler: %s); "
+                .. "mcpp-vscode-clangd only configures clangd for LLVM projects, skipping",
+                compiler or "unknown")
+            return true
+        end
+        log.info("auto-detected project LLVM version: %s", detected)
+        ver = detected
+    end
+
     log.info("installing llvm-tools@%s for clangd", ver)
     pkgmanager.install("llvm-tools@" .. ver)
 
@@ -174,11 +236,6 @@ function config()
     end
 
     write_clangd_settings(root, tools_dir, ver)
-
-    -- Regenerate compile_commands.json so clangd has an up-to-date DB. The
-    -- project's default toolchain is left untouched on purpose.
-    os.tryrm(path.join(root, "compile_commands.json"))
-    system.exec("mcpp build")
     return true
 end
 

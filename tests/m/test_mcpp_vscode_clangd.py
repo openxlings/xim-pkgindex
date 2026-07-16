@@ -95,6 +95,7 @@ class TestStatic:
         assert re.search(r'["\']xim:mcpp["\']', windows_body), "windows missing dependency: xim:mcpp"
         assert not re.search(r'["\']xim:code["\']', windows_body)
         assert "llvm-tools" not in windows_body
+        assert '["auto"]' in windows_body
         assert '["20.1.7"]' in windows_body
         assert '["22.1.8"]' in windows_body
 
@@ -108,6 +109,7 @@ class TestStatic:
         assert re.search(r'["\']xim:mcpp["\']', macosx_body), "macosx missing dependency: xim:mcpp"
         assert not re.search(r'["\']xim:code["\']', macosx_body)
         assert "llvm-tools" not in macosx_body
+        assert '["auto"]' in macosx_body
         assert '["20.1.7"]' in macosx_body
         assert '["22.1.8"]' in macosx_body
 
@@ -160,11 +162,26 @@ class TestStatic:
 
     @pytest.mark.static
     def test_triggers_mcpp_build(self, meta):
-        # llvm-tools is installed for clangd before compile_commands.json is
-        # (re)generated via mcpp build.
-        install_tools = meta.raw_content.index('pkgmanager.install("llvm-tools@" .. ver)')
+        # build runs first -- it (re)generates compile_commands.json, which
+        # clangd needs and which `auto` reads to detect the toolchain -- then
+        # llvm-tools is installed for the resolved version.
         build = meta.raw_content.index('system.exec("mcpp build")')
-        assert install_tools < build
+        install_tools = meta.raw_content.index('pkgmanager.install("llvm-tools@" .. ver)')
+        assert build < install_tools
+
+    @pytest.mark.static
+    def test_auto_detects_llvm_from_cdb(self, meta):
+        # `latest` -> `auto`: read the compiler from compile_commands.json and
+        # match clangd to the project's real LLVM version. Non-clang toolchains
+        # (gcc/msvc) are reported and skipped.
+        assert 'ref = "auto"' in meta.raw_content
+        assert '["auto"]' in meta.raw_content
+        assert 'ver == "auto"' in meta.raw_content
+        assert "cdb_compiler" in meta.raw_content
+        assert "clang_toolchain_version" in meta.raw_content
+        assert 'json.loadfile' in meta.raw_content
+        assert 'clang version' in meta.raw_content
+        assert "only configures clangd for LLVM projects" in meta.raw_content
 
     @pytest.mark.static
     def test_removes_cdb_before_build(self, meta):
