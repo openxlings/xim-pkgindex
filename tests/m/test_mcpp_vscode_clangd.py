@@ -49,9 +49,11 @@ class TestStatic:
         config_hook = re.search(r"function config\(\)(.*?)\nend", meta.raw_content, re.DOTALL)
         assert install_hook, "missing install hook"
         assert config_hook, "missing config hook"
-        assert install_hook.group(1).strip() == "return true"
+        # install now detects/installs VSCode instead of being a no-op (req 1)
+        assert 'has_command("code")' in install_hook.group(1)
         assert "system.rundir()" in config_hook.group(1)
-        assert 'settings["clangd.path"]' in config_hook.group(1)
+        # clangd.path is written from the extracted settings helper
+        assert 'settings["clangd.path"]' in meta.raw_content
 
     @pytest.mark.static
     def test_no_typos(self):
@@ -62,43 +64,54 @@ class TestStatic:
         deps = re.search(r"deps\s*=\s*\{([^}]*)\}", meta.raw_content, re.DOTALL)
         assert deps, "missing deps declaration"
         deps_body = deps.group(1)
-        for dep in ("xim:mcpp", "xim:code", "xim:llvm-tools@20.1.7"):
-            assert re.search(rf'["\']{re.escape(dep)}["\']', deps_body), \
-                f"missing dependency: {dep}"
-        for dep in ("mcpp", "code", "llvm-tools@20.1.7"):
-            assert not re.search(rf'["\']{re.escape(dep)}["\']', deps_body), \
-                f"dependency should use xim namespace: {dep}"
+        # mcpp is the only hard dependency.
+        assert re.search(r'["\']xim:mcpp["\']', deps_body), "missing dependency: xim:mcpp"
+        # code (req 1) and llvm-tools (req 2) are intentionally NOT pinned as deps.
+        assert not re.search(r'["\']xim:code["\']', deps_body), \
+            "code must be detected/installed on demand, not pinned as a dep"
+        assert "llvm-tools" not in deps_body, \
+            "llvm-tools version follows the selected package version, not a dep pin"
+        # any declared dep must use the xim namespace
+        assert not re.search(r'["\']mcpp["\']', deps_body), \
+            "dependency should use xim namespace: mcpp"
 
     @pytest.mark.static
     def test_uses_package_version_for_llvm_tools(self, meta):
         assert "LLVM_TOOLS_VERSION" not in meta.raw_content
-        assert 'pkginfo.dep_install_dir("llvm-tools", pkginfo.version())' in meta.raw_content
-        assert 'mcpp toolchain install llvm@" .. pkginfo.version() .. " default' in meta.raw_content
+        # clangd/llvm-tools version follows the explicitly selected package version
+        assert "pkginfo.version()" in meta.raw_content
+        assert 'pkgmanager.install("llvm-tools@" .. ver)' in meta.raw_content
+        assert 'pkginfo.dep_install_dir("llvm-tools", ver)' in meta.raw_content
+        # the default-toolchain-mutating side effect is gone
+        assert "mcpp toolchain install" not in meta.raw_content
 
     @pytest.mark.static
     def test_supports_windows(self, meta):
-        # windows must mirror the linux deps and version pins, since mcpp,
-        # code and llvm-tools all ship windows artifacts.
+        # windows mirrors the linux block: only mcpp is a hard dep, and the
+        # version menu offers the same llvm-tools versions.
         windows = re.search(r"windows\s*=\s*\{(.*?)\n        \}", meta.raw_content, re.DOTALL)
         assert windows, "missing windows xpm block"
         windows_body = windows.group(1)
-        for dep in ("xim:mcpp", "xim:code", "xim:llvm-tools@20.1.7"):
-            assert re.search(rf'["\']{re.escape(dep)}["\']', windows_body), \
-                f"windows missing dependency: {dep}"
+        assert re.search(r'["\']xim:mcpp["\']', windows_body), "windows missing dependency: xim:mcpp"
+        assert not re.search(r'["\']xim:code["\']', windows_body)
+        assert "llvm-tools" not in windows_body
+        assert '["auto"]' in windows_body
         assert '["20.1.7"]' in windows_body
+        assert '["22.1.8"]' in windows_body
 
     @pytest.mark.static
     def test_supports_macosx(self, meta):
-        # macosx must mirror the linux deps and version pins. mcpp and code
-        # already ship macOS artifacts; llvm-tools now carries an Apple
-        # Silicon (macosx-arm64) bundle carved from the upstream LLVM release.
+        # macosx mirrors the linux block. llvm-tools carries an Apple Silicon
+        # (macosx-arm64) bundle carved from the upstream LLVM release.
         macosx = re.search(r"macosx\s*=\s*\{(.*?)\n        \}", meta.raw_content, re.DOTALL)
         assert macosx, "missing macosx xpm block"
         macosx_body = macosx.group(1)
-        for dep in ("xim:mcpp", "xim:code", "xim:llvm-tools@20.1.7"):
-            assert re.search(rf'["\']{re.escape(dep)}["\']', macosx_body), \
-                f"macosx missing dependency: {dep}"
+        assert re.search(r'["\']xim:mcpp["\']', macosx_body), "macosx missing dependency: xim:mcpp"
+        assert not re.search(r'["\']xim:code["\']', macosx_body)
+        assert "llvm-tools" not in macosx_body
+        assert '["auto"]' in macosx_body
         assert '["20.1.7"]' in macosx_body
+        assert '["22.1.8"]' in macosx_body
 
     @pytest.mark.static
     def test_clangd_path_is_host_aware(self, meta):
@@ -124,8 +137,8 @@ class TestStatic:
         assert 'log.warn(' in meta.raw_content
         assert "mcpp-vscode-clangd skipped" in meta.raw_content
         manifest_check = meta.raw_content.index('os.isfile(path.join(root, "mcpp.toml"))')
-        settings_update = meta.raw_content.index('settings["clangd.path"]')
-        assert manifest_check < settings_update
+        build = meta.raw_content.index('system.exec("mcpp build --no-cache")')
+        assert manifest_check < build
 
     @pytest.mark.static
     def test_enables_clangd_experimental_modules(self, meta):
@@ -133,19 +146,53 @@ class TestStatic:
         assert '"--experimental-modules-support"' in meta.raw_content
 
     @pytest.mark.static
+    def test_gates_modules_flag_for_broken_combo(self, meta):
+        # issue #393: clangd 20.1.7 on Windows crashes (0xC0000005) with the
+        # experimental modules flag; gate it off for that exact combination and
+        # strip it from any pre-existing config so affected users self-heal.
+        assert "modules_flag_supported" in meta.raw_content
+        assert 'os.host() == "windows"' in meta.raw_content
+        assert 'ver == "20.1.7"' in meta.raw_content
+        assert "remove_flag" in meta.raw_content
+        assert "393" in meta.raw_content
+
+    @pytest.mark.static
     def test_installs_vscode_clangd_extension(self, meta):
-        assert "code --install-extension llvm-vs-code-extensions.vscode-clangd" in meta.raw_content
+        assert "code --install-extension " in meta.raw_content
+        assert "llvm-vs-code-extensions.vscode-clangd" in meta.raw_content
+        # only install when not already present
+        assert "has_extension" in meta.raw_content
+        assert "code --list-extensions" in meta.raw_content
 
     @pytest.mark.static
     def test_triggers_mcpp_build(self, meta):
-        toolchain_install = meta.raw_content.index('mcpp toolchain install llvm@" .. pkginfo.version() .. " default')
-        build = meta.raw_content.index("mcpp build")
-        assert toolchain_install < build
+        # build runs first -- it (re)generates compile_commands.json, which
+        # clangd needs and which `auto` reads to detect the toolchain -- then
+        # llvm-tools is installed for the resolved version.
+        build = meta.raw_content.index('system.exec("mcpp build --no-cache")')
+        install_tools = meta.raw_content.index('pkgmanager.install("llvm-tools@" .. ver)')
+        assert build < install_tools
+
+    @pytest.mark.static
+    def test_auto_detects_llvm_from_cdb(self, meta):
+        # `latest` -> `auto`: read the compiler from compile_commands.json and
+        # match clangd to the project's real LLVM version. Non-clang toolchains
+        # (gcc/msvc) are reported and skipped.
+        assert 'ref = "auto"' in meta.raw_content
+        assert '["auto"]' in meta.raw_content
+        assert 'ver == "auto"' in meta.raw_content
+        assert "cdb_compiler" in meta.raw_content
+        assert "clang_toolchain_version" in meta.raw_content
+        assert 'json.loadfile' in meta.raw_content
+        # version is parsed straight from the toolchain path, no --version probe
+        assert 'xim%-x%-llvm' in meta.raw_content
+        assert '"clang version' not in meta.raw_content
+        assert "only configures clangd for LLVM projects" in meta.raw_content
 
     @pytest.mark.static
     def test_removes_cdb_before_build(self, meta):
         remove_cdb = meta.raw_content.index('os.tryrm(path.join(root, "compile_commands.json"))')
-        build = meta.raw_content.index("mcpp build")
+        build = meta.raw_content.index('system.exec("mcpp build --no-cache")')
         assert remove_cdb < build
 
     @pytest.mark.static
@@ -155,11 +202,16 @@ class TestStatic:
         assert ".xlings" not in meta.raw_content
 
     @pytest.mark.static
-    def test_install_hook_stays_small(self, meta):
+    def test_install_hook_installs_code_and_extension(self, meta):
+        # req 1: install detects VSCode, installs it on demand when missing,
+        # and installs the clangd extension.
         hook = re.search(r"function install\(\)(.*?)\nend", meta.raw_content, re.DOTALL)
         assert hook, "missing install hook"
-        lines = [line for line in hook.group(1).splitlines() if line.strip()]
-        assert len(lines) == 1
+        body = hook.group(1)
+        assert 'has_command("code")' in body
+        assert 'pkgmanager.install("code")' in body
+        assert 'has_extension(' in body
+        assert "code --install-extension " in body
 
     @pytest.mark.static
     def test_no_custom_project_dir_helpers(self, meta):
