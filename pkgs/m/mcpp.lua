@@ -43,7 +43,14 @@ package = {
             -- res_versioned: version-bump bot tracks mcpp-community/mcpp releases
             -- and appends checked XLINGS_RES entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "0.0.95" },
+            ["latest"] = { ref = "0.0.96" },
+            ["0.0.96"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "aa1bc6836ab2d33327b818b9ca725724c6ffdae273dc451b9fd64742a55f1917",
+                    x86_64 = "037b439b3bb87e95d1dbbbb0278582d8ae7f5f26179f799254f6a47142f3a966",
+                },
+            },
             ["0.0.95"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -201,7 +208,13 @@ package = {
             -- res_versioned: version-bump bot tracks mcpp-community/mcpp releases
             -- and appends checked XLINGS_RES entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "0.0.95" },
+            ["latest"] = { ref = "0.0.96" },
+            ["0.0.96"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "30251bcd5201b912099380104091327e2acfbe3fad6ab6258a59f1fa2aa517cd",
+                },
+            },
             ["0.0.95"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -334,7 +347,13 @@ package = {
             -- res_versioned: version-bump bot tracks mcpp-community/mcpp releases
             -- and appends checked XLINGS_RES entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "0.0.95" },
+            ["latest"] = { ref = "0.0.96" },
+            ["0.0.96"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "821ecf4e2db18c5bd152a8fe1c3e9c2e8ac6ef72ffa239a538637acb87ad2382",
+                },
+            },
             ["0.0.95"] = {
                 url = "XLINGS_RES",
                 sha256 = {
