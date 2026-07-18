@@ -27,45 +27,59 @@ package = {
     -- nasm(.exe) + ndisasm(.exe) at its root, so one install hook covers
     -- every platform.
     --
-    -- The "XLINGS_RES" placeholder is required here (mcpp#232): deployed
-    -- xlings engines resolve it to the arch-correct asset URL at runtime
-    -- (with GLOBAL→CN resource-server fallback), while the newer
-    -- `source = "xlings-res"` + per-arch sha256 form is silently ignored
-    -- by them — no download gets planned, the install hook no-ops, and
-    -- the package lands "installed" but empty with dangling shims. The
-    -- loader can only express a single sha256 string per version entry,
-    -- so per-arch checksums stay recorded below until the spec grows an
-    -- arch-keyed sha256 table.
+    -- Version entries use `url = "XLINGS_RES"` + per-arch sha256 (the
+    -- mcpp.lua idiom), NOT the bare `source = "xlings-res"` form
+    -- (mcpp#232): deployed xlings engines don't parse a `source` key, so
+    -- that form resolves to no URL at all — no download gets planned, the
+    -- install hook no-ops, and the package lands "installed" but empty
+    -- with dangling shims. The placeholder url is resolved at runtime to
+    -- the arch-correct asset (with GLOBAL→CN resource-server fallback);
+    -- the arch-keyed sha256 table is declared for engines that can verify
+    -- it and harmlessly ignored by older ones.
     --
     -- Provenance (upstream = https://www.nasm.us/pub/nasm/releasebuilds/<ver>/):
     --   windows x86_64 / x86 — byte-identical upstream win64/win32 zips,
     --     only the archive filename is renamed.
-    --     sha256 x86_64 161d0bfaff53c2f9e9f3e69fd0672323ebabafd1268976a5cec11be92a19aee7
-    --            x86    dca7d736580aafcf88a07838bb597a4f093fa157e56ce522891e86ab0a37c949
     --   macosx x86_64 / aarch64 — the upstream macosx zip (an i386+x86_64
     --     universal binary; upstream ships no native arm64 build),
     --     repacked file-identical into tar.gz to match the res ext rule.
     --     Both arch assets are the same bytes: on Apple Silicon the
     --     x86_64 slice runs via Rosetta 2, upstream's only supported path.
-    --     sha256 both 440d2cf13e32b6bcce79a7d933c037bbd47b4c4ae12f030f6efda539c0e34bcd
     --   linux x86_64 / aarch64 — built from the upstream source tarball
     --     (nasm-<ver>.tar.xz) as fully-static musl binaries (musl-gcc /
     --     aarch64-linux-musl-gcc, `-O2 -static`, stripped), so they are
     --     portable across distributions with no glibc runtime dep.
-    --     sha256 x86_64  77f2e098291212c32b40c32706e03371a6629e847724cecc6f8c03d56ba7c04c
-    --            aarch64 a592df8b05c1b5552a90f22573f1132984788ec63bcae90d926573db27d0e407
     xpm = {
         linux = {
             ["latest"] = { ref = "3.02" },
-            ["3.02"] = "XLINGS_RES",
+            ["3.02"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "77f2e098291212c32b40c32706e03371a6629e847724cecc6f8c03d56ba7c04c",
+                    aarch64 = "a592df8b05c1b5552a90f22573f1132984788ec63bcae90d926573db27d0e407",
+                },
+            },
         },
         windows = {
             ["latest"] = { ref = "3.02" },
-            ["3.02"] = "XLINGS_RES",
+            ["3.02"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "161d0bfaff53c2f9e9f3e69fd0672323ebabafd1268976a5cec11be92a19aee7",
+                    x86 = "dca7d736580aafcf88a07838bb597a4f093fa157e56ce522891e86ab0a37c949",
+                },
+            },
         },
         macosx = {
             ["latest"] = { ref = "3.02" },
-            ["3.02"] = "XLINGS_RES",
+            ["3.02"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    -- same universal-binary tar.gz for both arches (see header note)
+                    x86_64 = "440d2cf13e32b6bcce79a7d933c037bbd47b4c4ae12f030f6efda539c0e34bcd",
+                    aarch64 = "440d2cf13e32b6bcce79a7d933c037bbd47b4c4ae12f030f6efda539c0e34bcd",
+                },
+            },
         },
     },
 }
