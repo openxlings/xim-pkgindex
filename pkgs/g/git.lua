@@ -84,6 +84,26 @@ function install()
     return true
 end
 
+-- Returns the host's CA bundle when the binary's compiled-in default
+-- (/etc/ssl/cert.pem) is missing, else nil (default is already correct).
+function find_ca_bundle()
+    if os.isfile("/etc/ssl/cert.pem") then
+        return nil
+    end
+    local candidates = {
+        "/etc/ssl/certs/ca-certificates.crt",              -- Debian/Ubuntu, Arch, openSUSE
+        "/etc/pki/tls/certs/ca-bundle.crt",                -- RHEL/CentOS/Fedora
+        "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem", -- Fedora (ca-trust)
+        "/etc/ssl/ca-bundle.pem",                          -- older openSUSE
+    }
+    for _, f in ipairs(candidates) do
+        if os.isfile(f) then
+            return f
+        end
+    end
+    return nil
+end
+
 function config()
     if is_host("windows") then
         xvm.add("git", {
@@ -97,9 +117,36 @@ function config()
             "--cd-to-home"
         ))
     else
-        xvm.add("git", {
+        local config = {
             bindir = path.join(pkginfo.install_dir(), "bin")
-        })
+        }
+
+        -- CA bundle: the static-builds tarball links OpenSSL with
+        -- OPENSSLDIR=/etc/ssl, so its default cert FILE is /etc/ssl/cert.pem
+        -- (the BSD/Alpine layout). Debian/Ubuntu/RHEL ship the bundle
+        -- elsewhere and never create that file, so every HTTPS transport
+        -- dies with:
+        --   fatal: unable to access '...': error adding trust anchors
+        --   from file: /etc/ssl/cert.pem
+        -- The string lives in libexec/git-core/git-remote-https (the helper
+        -- that actually runs curl), not in bin/git.
+        --
+        -- Only GIT_SSL_CAINFO fixes it: git passes CURLOPT_CAINFO from its
+        -- compiled-in default, which overrides SSL_CERT_FILE (OpenSSL-level)
+        -- and CURL_CA_BUNDLE (curl-level); GIT_SSL_CAPATH does not help
+        -- either, because curl fails on the missing CAINFO before it would
+        -- consult a CApath.
+        --
+        -- Left untouched when /etc/ssl/cert.pem exists (Alpine/BSD, and any
+        -- host that symlinked it): there the built-in default is correct.
+        local ca_bundle = find_ca_bundle()
+        if ca_bundle then
+            config.envs = { GIT_SSL_CAINFO = ca_bundle }
+            log.info("git: pinning GIT_SSL_CAINFO to " .. ca_bundle
+                     .. " (/etc/ssl/cert.pem absent)")
+        end
+
+        xvm.add("git", config)
     end
 
     return true
