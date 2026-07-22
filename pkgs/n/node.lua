@@ -22,7 +22,13 @@ local function _mac_url(ver)
 end
 
 -- node's release dir/file token per platform+arch (used by install()).
-local function _node_arch() return ({ x86_64 = "x64", aarch64 = "arm64" })[os.arch()] or "x64" end
+-- `os.arch` is not bound in the C++ xim hook runtime (xlings >= 0.4.6x,
+-- only os.host is) and _RUNTIME.arch is empty for install hooks, so this
+-- may return nil — install() then probes both arch tokens with os.isdir.
+local function _node_arch()
+    local arch = (os.arch and os.arch()) or (_RUNTIME and _RUNTIME.arch) or ""
+    return ({ x86_64 = "x64", x64 = "x64", aarch64 = "arm64", arm64 = "arm64" })[arch]
+end
 
 -- xpkg info
 
@@ -115,11 +121,23 @@ local node_dir_template = {
 function install()
     os.tryrm(pkginfo.install_dir())
     log.debug("Installing Node.js to %s ...", pkginfo.install_dir())
-    os.mv(
-        string.format(node_dir_template[os.host()], pkginfo.version(), _node_arch()),
-        pkginfo.install_dir()
-    )
-    return true
+    -- Probe candidate dirs with os.isdir (a native binding) rather than
+    -- os.dirs: the glob shells out to `ls`, which is not on the hook PATH
+    -- in the C++ xim runtime. The downloaded asset already matches the
+    -- host arch, so at most one candidate exists; trying the detected
+    -- arch first keeps the stale-leftover case deterministic.
+    local tokens = { "x64", "arm64" }
+    local arch = _node_arch()
+    if arch then table.insert(tokens, 1, arch) end
+    for _, tok in ipairs(tokens) do
+        local extracted = string.format(node_dir_template[os.host()], pkginfo.version(), tok)
+        if os.isdir(extracted) then
+            os.mv(extracted, pkginfo.install_dir())
+            return true
+        end
+    end
+    log.error("extracted node dir not found (version %s)", pkginfo.version())
+    return false
 end
 
 function config()
