@@ -38,7 +38,14 @@ package = {
             -- res_versioned: version-bump bot tracks openxlings/xlings releases and
             -- appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "0.4.68" },
+            ["latest"] = { ref = "0.4.69" },
+            ["0.4.69"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "001da0cc4f736c64ce55433a62e88f680f17503e01149550dd81c283445f6760",
+                    x86_64 = "ad9b5057120de35fe604ed6684f532a5ba10abac933aefc5ac924759872263b4",
+                },
+            },
             ["0.4.68"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -233,7 +240,13 @@ package = {
             -- res_versioned: version-bump bot tracks openxlings/xlings releases and
             -- appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "0.4.68" },
+            ["latest"] = { ref = "0.4.69" },
+            ["0.4.69"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "91dccc072aecbc91f1a4c67ec7c1011dd390fcf33c7dce7ec214c80237eaf6cb",
+                },
+            },
             ["0.4.68"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -422,7 +435,13 @@ package = {
             -- res_versioned: version-bump bot tracks openxlings/xlings releases and
             -- appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "0.4.68" },
+            ["latest"] = { ref = "0.4.69" },
+            ["0.4.69"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "17737aa0f30a42391d8f8a1fb5b787c28362d44efced8bc5ef0972ec3e56ed05",
+                },
+            },
             ["0.4.68"] = {
                 url = "XLINGS_RES",
                 sha256 = {
