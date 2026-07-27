@@ -108,7 +108,12 @@ local function __register_as_gcc_flavor()
 
     log.info("registering aarch64-linux-musl-gcc as gcc flavor %s ...", flavor_ver)
 
-    xvm.add(root_name)
+    -- Version is explicit and MUST equal flavor_ver: xvm.add() defaults it to
+    -- pkginfo.version(), while every child binds to `<root_name>@<flavor_ver>`
+    -- — a different exact node, so the root they name would never exist.
+    -- xlings 2026.7.27.1 enforces this and rejects the batch with
+    -- `xvm-binding-root-missing`. Same fix as pkgs/m/musl-gcc.lua.
+    xvm.add(root_name, { version = flavor_ver })
     for prog, target in pairs(__gcc_flavor_progs) do
         xvm.add(prog, {
             bindir  = gcc_bindir,
@@ -124,7 +129,8 @@ local function __unregister_gcc_flavor()
     for prog, _ in pairs(__gcc_flavor_progs) do
         xvm.remove(prog, flavor_ver)
     end
-    xvm.remove(__gcc_flavor_root_name())
+    -- Versioned to match the node __register_as_gcc_flavor actually created.
+    xvm.remove(__gcc_flavor_root_name(), flavor_ver)
 end
 
 function install()

@@ -204,7 +204,24 @@ local function __register_as_gcc_flavor()
              flavor_ver, flavor_root)
 
     -- Anchor a virtual root node for this flavor's subtree.
-    xvm.add(root_name)
+    --
+    -- The version is explicit and MUST equal flavor_ver: xvm.add() defaults
+    -- `version` to pkginfo.version() ("16.1.0"), while every child below binds
+    -- to `<root_name>@<flavor_ver>` ("16.1.0-musl"). Those are different exact
+    -- nodes, so the root the children name was never registered.
+    --
+    -- xlings 2026.7.27.1 enforces this (registration.cppm: the binding root
+    -- must be an exact node in the same batch) and rejects the whole batch:
+    --
+    --   error: registration binding root is not an exact batch node
+    --     code:     xvm-binding-root-missing
+    --     provider: xim:musl-gcc@16.1.0
+    --     at:       xim-musl-gnu-gcc@16.1.0-musl
+    --
+    -- gcc.lua gets away with the bare form only because its children bind to
+    -- `xim-gnu-gcc@<pkginfo.version()>`, which is exactly what the default
+    -- fills in. This recipe's flavor suffix breaks that coincidence.
+    xvm.add(root_name, { version = flavor_ver })
 
     for prog, target in pairs(__gcc_flavor_progs(__musl_triple())) do
         xvm.add(prog, {
@@ -223,7 +240,9 @@ local function __unregister_gcc_flavor()
     end
     -- Drop the virtual root only if no other musl-gcc version still hangs
     -- registrations off it (xvm.remove on an empty target is a no-op there).
-    xvm.remove(__gcc_flavor_root_name())
+    -- Versioned to match the node __register_as_gcc_flavor actually created;
+    -- the bare form would target <root>@<pkginfo.version()>, which is not it.
+    xvm.remove(__gcc_flavor_root_name(), flavor_ver)
 end
 
 local function __remove_specs()
