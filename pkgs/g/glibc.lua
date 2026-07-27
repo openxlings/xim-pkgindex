@@ -138,7 +138,7 @@ function config()
 
     log.debug("3 - glibc config header files...")
 
-    __config_header()
+    __config_header(glibc_root_binding)
 
     return true
 end
@@ -155,21 +155,42 @@ end
 
 -- private
 
-function __config_header()
+function __config_header(binding)
+    -- Declared where the client supports it, so the 130 top-level entries
+    -- follow `xlings use` and are removed with the release instead of
+    -- outliving it. No stamp on that path: a declaration is idempotent by
+    -- construction, and unlike a stamp it survives a sysroot wipe, because
+    -- it is state xlings owns rather than a file in the tree being wiped.
+    --
+    -- glibc is the case declare_headers warns about — it scatters into
+    -- `usr/include`, the most shared namespace there is, and the semantics
+    -- change from first-claimant-keeps-it to last-one-wins. Measured before
+    -- doing it: of glibc's 130 top-level entries exactly one, `scsi`, is
+    -- also shipped by another package in the index (linux-headers). Every
+    -- other name is glibc's alone.
+    --
+    -- That one entry was already decided by install order, just invisibly:
+    -- install_headers skipped it if linux-headers got there first, and
+    -- linux-headers (declared since #425) overwrote it if it came second.
+    -- With both declared it is still order-dependent, but now *recorded* —
+    -- two packages claiming one path becomes state doctor can see rather
+    -- than a silent race.
+    if sysroot.declare_headers(pkginfo.install_dir(), "include",
+                               "usr/include", binding) then
+        return
+    end
+
     local include_dir = path.join(pkginfo.install_dir(), "include")
 
-    -- link headers to system include path
-    -- TODO: add include support for xlings (use sysroot)
+    -- Legacy path, byte-for-byte what it did before, for a client with no
+    -- `xvm.files`. Do not "clean up" the stamp here: config() runs on every
+    -- dependent xpkg install (anything listing glibc@<ver> in deps), so
+    -- without it every install of xim:gcc / fromsource:* re-cp's the whole
+    -- include tree. Same fix shape as linux-headers (commit 3718532).
     local subos_sysrootdir = system.subos_sysrootdir()
     local sysroot_usrdir = path.join(subos_sysrootdir, "usr")
     if not os.isdir(sysroot_usrdir) then os.mkdir(sysroot_usrdir) end
 
-    -- Skip the recursive header copy if a previous install of the same
-    -- version already placed it. config() runs on every dependent xpkg
-    -- install (any package that lists glibc@<ver> in deps), so without
-    -- this gate, every install of xim:gcc / fromsource:* re-cp's the
-    -- entire glibc include tree (~thousand files) — wasted I/O + log
-    -- spam. Same fix shape as linux-headers (commit 3718532).
     local stamp = path.join(sysroot_usrdir, ".glibc-" .. pkginfo.version() .. ".stamp")
     if os.isfile(stamp) then
         log.debug("glibc headers already in subos rootfs (stamp present), skipping copy.")
