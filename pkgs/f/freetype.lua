@@ -67,24 +67,55 @@ function config()
     end
 
     local sysroot = system.subos_sysrootdir()
-
-    -- headers → sysroot/usr/include/freetype2
-    local sys_inc = path.join(sysroot, "usr/include")
-    os.mkdir(sys_inc)
     local ft_inc = path.join(idir, "include/freetype2")
-    if os.isdir(ft_inc) then
-        os.cp(ft_inc, sys_inc, { force = true })
-    end
-
-    -- freetype2.pc → sysroot, with prefix rewritten to the install dir
-    local sys_pc = path.join(sysroot, "usr/lib/pkgconfig")
-    os.mkdir(sys_pc)
     local src_pc = path.join(libdir, "pkgconfig/freetype2.pc")
-    if os.isfile(src_pc) then
-        system.exec(string.format(
-            "sh -c 'sed \"s|^prefix=.*|prefix=%s|\" %s > %s/freetype2.pc'",
-            idir, src_pc, sys_pc
-        ))
+
+    -- Capability probe, not a version check: xvm.files exists only on a
+    -- client that understands type = "files" entries.
+    if xvm.files then
+        -- Headers: a payload directory, declared as-is.
+        if os.isdir(ft_inc) then
+            xvm.files{
+                src = "include/freetype2",
+                dst = "usr/include/freetype2",
+                binding = binding,
+            }
+        end
+
+        -- The .pc has to have its prefix rewritten, so it is not a payload
+        -- file to begin with -- but generating it INTO the payload makes it
+        -- one, and then it declares like anything else. The rewritten prefix
+        -- is the payload's own location, so it belongs there rather than in
+        -- the sysroot: one file per payload, not one per subos.
+        if os.isfile(src_pc) then
+            local staged = path.join(libdir, "pkgconfig/freetype2.sysroot.pc")
+            system.exec(string.format(
+                "sh -c 'sed \"s|^prefix=.*|prefix=%s|\" %s > %s'",
+                idir, src_pc, staged
+            ))
+            xvm.files{
+                src = path.join(LIBSUB, "pkgconfig/freetype2.sysroot.pc"),
+                dst = "usr/lib/pkgconfig/freetype2.pc",
+                binding = binding,
+            }
+        end
+    else
+        -- headers → sysroot/usr/include/freetype2
+        local sys_inc = path.join(sysroot, "usr/include")
+        os.mkdir(sys_inc)
+        if os.isdir(ft_inc) then
+            os.cp(ft_inc, sys_inc, { force = true })
+        end
+
+        -- freetype2.pc → sysroot, with prefix rewritten to the install dir
+        local sys_pc = path.join(sysroot, "usr/lib/pkgconfig")
+        os.mkdir(sys_pc)
+        if os.isfile(src_pc) then
+            system.exec(string.format(
+                "sh -c 'sed \"s|^prefix=.*|prefix=%s|\" %s > %s/freetype2.pc'",
+                idir, src_pc, sys_pc
+            ))
+        end
     end
 
     return true
@@ -95,8 +126,12 @@ function uninstall()
     for _, lib in ipairs(libs) do
         xvm.remove(lib)
     end
-    local sysroot = system.subos_sysrootdir()
-    os.tryrm(path.join(sysroot, "usr/include/freetype2"))
-    os.tryrm(path.join(sysroot, "usr/lib/pkgconfig/freetype2.pc"))
+    -- Declared assets go with the release; only the legacy copies need
+    -- taking out by hand.
+    if not xvm.files then
+        local sysroot = system.subos_sysrootdir()
+        os.tryrm(path.join(sysroot, "usr/include/freetype2"))
+        os.tryrm(path.join(sysroot, "usr/lib/pkgconfig/freetype2.pc"))
+    end
     return true
 end

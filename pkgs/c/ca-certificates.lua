@@ -76,12 +76,26 @@ function config()
     local pem_link  = path.join(ssl_dir, _CANONICAL_LINK)
 
     log.info("installing CA bundle to subos sysroot...")
-    os.mkdir(certs_dir)
 
-    -- Use shell cp via system.exec so behavior is consistent with how
-    -- other xpkgs stage files into the sysroot (the xpkg sandbox's
-    -- builtin os.cp dest-as-dir semantics is unreliable for some hosts).
-    system.exec(string.format("cp -f %s %s", pem_src, pem_dst))
+    -- The bundle is a plain payload file placed under a different name, so
+    -- it declares directly. Capability probe, not a version check: xvm.files
+    -- exists only on a client that understands type = "files" entries.
+    if xvm.files then
+        xvm.files{
+            src = "cacert.pem",
+            dst = path.join("etc/ssl/certs", _CANONICAL_BUNDLE),
+            binding = package.name .. "@" .. pkginfo.version(),
+        }
+    else
+        os.mkdir(certs_dir)
+        -- Use shell cp via system.exec so behavior is consistent with how
+        -- other xpkgs stage files into the sysroot (the xpkg sandbox's
+        -- builtin os.cp dest-as-dir semantics is unreliable for some hosts).
+        system.exec(string.format("cp -f %s %s", pem_src, pem_dst))
+    end
+
+    -- The alias below needs its directory either way.
+    os.mkdir(certs_dir)
 
     -- Drop a `cert.pem` alias next to it for tools (curl, FreeBSD-style
     -- toolchains) that look there. Use a relative symlink so the link
@@ -96,7 +110,13 @@ function config()
 end
 
 function uninstall()
-    os.tryrm(path.join(_sys_etc_certs_dir(), _CANONICAL_BUNDLE))
+    -- The bundle is removed with the release when it was declared; only the
+    -- legacy copy needs taking out by hand.
+    if not xvm.files then
+        os.tryrm(path.join(_sys_etc_certs_dir(), _CANONICAL_BUNDLE))
+    end
+    -- The alias is hand-made on both paths, so it is always removed here --
+    -- and it must be, or it dangles once the bundle goes.
     os.tryrm(path.join(_sys_etc_ssl_dir(), _CANONICAL_LINK))
     return true
 end
