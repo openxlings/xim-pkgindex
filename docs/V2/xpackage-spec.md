@@ -159,3 +159,58 @@ function install()
     -- ... move dir into pkginfo.install_dir()
 end
 ```
+
+## Adopting a capability older clients do not have
+
+The index serves every client version at once. Two kinds of change behave very
+differently:
+
+- **A new field on an existing shape is safe.** Unknown keys are read with
+  `j.value(key, default)` and ignored, which is why `spec = "2"` could ship as
+  a plain opt-in.
+- **A new xvm node kind is not.** An older xlings validates the kind against a
+  whitelist and aborts the whole registration:
+
+  ```
+  error: unsupported registration node kind 'files'
+         nothing was changed
+  ```
+
+There is no `min_xlings` in this index, so an old client cannot be served an
+old recipe. Adopt the capability **in the recipe**, by probing for it:
+
+```lua
+if xvm.files then
+    xvm.files{ src = "include/openssl", dst = "usr/include/openssl", binding = tag }
+else
+    sysroot.install_headers(includedir, get_sys_usr_includedir())  -- unchanged
+end
+```
+
+**Probe the capability, never the version.** libxpkg is statically linked into
+the xlings binary, so the Lua function and the C++ that consumes its node kind
+ship together: "is `xvm.files` a function" *is* "does this client support
+`type = files`". One truth source, nothing to keep in sync.
+
+Rules:
+
+1. **Probe the new function name.** `xvm.add{type = "files"}` does not work --
+   `xvm.add` exists on old clients and passes `type` straight to the whitelist.
+2. **The legacy branch stays byte-identical.** It is the old client's only
+   path, and it has no test coverage of its own.
+3. **Branch in `uninstall()` too.** The legacy path keeps its hand-written
+   cleanup; the declared path leaves removal to provider-scoped deregistration,
+   or the same files end up with two owners.
+4. **Verify against a real old binary.** `import()` returns a permissive proxy
+   stub for unknown modules, so a module resolved that way would make the probe
+   truthy everywhere and silently useless. xlings E2E-37 runs one recipe
+   through a downloaded 0.4.69 and the current build.
+5. **Compare the old-client result differentially.** Many recipes guard their
+   copy on `os.isdir(sysroot/usr/include)`, which does not exist in a fresh
+   home -- the *unmigrated* recipe places nothing either. Assert "same as
+   before the migration", not "the file is there".
+
+The probe is removed when the index drops support for clients older than the
+capability. That is a decision about shrinking the support surface, not a
+prerequisite for shipping.
+
