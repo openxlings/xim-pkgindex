@@ -81,7 +81,10 @@ local glibc_libs = {
     -- rust-lld: error: unable to find library -lrt
     "Scrt1.o",
     "libutil.a", "libutil.so.1",
-    "librt.a", "librt.so.1",
+    -- librt.so.1 is already listed above with the realtime group; a
+    -- second entry makes config() call xvm.add for the same name and
+    -- version twice.
+    "librt.a",
 }
 
 function install()
