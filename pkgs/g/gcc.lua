@@ -173,8 +173,23 @@ function __config_linux()
         local rpath = glibc_lib .. ":" .. path.join(pkginfo.install_dir(), "lib64")
         __rewrite_specs_linux(rpath, dynamic_linker)
     else
-        log.warn("glibc payload not found (deps declare xim:glibc);"
-            .. " skip specs rewrite — gcc keeps its baked build-machine paths")
+        -- Fail, do not warn and continue.
+        --
+        -- Without the rewrite the binary keeps the ELF interpreter baked in
+        -- on the build machine -- a path that does not exist here -- so what
+        -- gets installed cannot run at all. Reporting that as a successful
+        -- install hands the user a broken toolchain and a warning they have
+        -- already scrolled past; the failure shows up later as
+        -- "No such file or directory" on a binary that is plainly present.
+        --
+        -- glibc is a declared dependency of this package on linux, so
+        -- reaching here means the dependency did not get installed. That is
+        -- worth stopping for. See openxlings/xlings#415.
+        log.error("glibc payload not found, but gcc needs it to rewrite its"
+            .. " ELF interpreter away from the build machine's path.")
+        log.error("  without it the installed gcc cannot run at all.")
+        log.error("  install it first: xlings install xim:glibc@2.39")
+        return false
     end
 
     -- HEADER axis: injected only on the xvm shim aliases. gcc's header
