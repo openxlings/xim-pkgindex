@@ -65,22 +65,34 @@ function install()
 end
 
 function config()
-    local sysroot_usrdir = path.join(system.subos_sysrootdir(), "usr")
-    if not os.isdir(sysroot_usrdir) then os.mkdir(sysroot_usrdir) end
+    -- Declared where the client supports it. No stamp on that path: a
+    -- declaration is idempotent by construction (materialization skips an
+    -- entry that already points at the same payload file), so the marker
+    -- that existed purely to avoid repeating the copy has nothing left to
+    -- do -- and unlike the stamp, the declaration also survives a sysroot
+    -- wipe correctly, because it is state xlings owns rather than a file
+    -- in the tree being wiped.
+    if not sysroot.declare_headers(pkginfo.install_dir(), "include",
+                                   "usr/include",
+                                   "linux-headers@" .. pkginfo.version()) then
+        local sysroot_usrdir = path.join(system.subos_sysrootdir(), "usr")
+        if not os.isdir(sysroot_usrdir) then os.mkdir(sysroot_usrdir) end
 
-    -- Idempotent: skip the recursive header copy if this version is already
-    -- in the subos sysroot. The stamp lives next to the copied tree so that
-    -- switching subos / wiping the sysroot correctly invalidates it.
-    local stamp = path.join(sysroot_usrdir, ".linux-headers-" .. pkginfo.version() .. ".stamp")
-    if os.isfile(stamp) then
-        log.debug("Linux headers already in subos rootfs (stamp present), skipping copy.")
-    else
-        log.info("Installing linux headers into subos sysroot ...")
-        sysroot.install_headers(
-            path.join(pkginfo.install_dir(), "include"),
-            path.join(sysroot_usrdir, "include")
-        )
-        io.writefile(stamp, pkginfo.version())
+        -- Idempotent: skip the recursive header copy if this version is
+        -- already in the subos sysroot. The stamp lives next to the copied
+        -- tree so that switching subos / wiping the sysroot correctly
+        -- invalidates it.
+        local stamp = path.join(sysroot_usrdir, ".linux-headers-" .. pkginfo.version() .. ".stamp")
+        if os.isfile(stamp) then
+            log.debug("Linux headers already in subos rootfs (stamp present), skipping copy.")
+        else
+            log.info("Installing linux headers into subos sysroot ...")
+            sysroot.install_headers(
+                path.join(pkginfo.install_dir(), "include"),
+                path.join(sysroot_usrdir, "include")
+            )
+            io.writefile(stamp, pkginfo.version())
+        end
     end
 
     xvm.add("linux-headers")

@@ -75,10 +75,19 @@ function config()
         local includedir = path.join(pkginfo.install_dir(), "include")
         local sysrootdir = system.subos_sysrootdir()
         if sysrootdir and os.isdir(includedir) then
-            local sysroot_usrdir = path.join(sysrootdir, "usr")
-            if not os.isdir(sysroot_usrdir) then os.mkdir(sysroot_usrdir) end
+            -- Declared where the client supports it, so the headers follow
+            -- `xlings use` between python versions instead of being
+            -- whichever version was installed last -- which matters here,
+            -- because the directory name carries the version
+            -- (include/python3.13) and two of them can coexist.
             log.info("Linking Python dev headers into subos sysroot ...")
-            sysroot.install_headers(includedir, path.join(sysroot_usrdir, "include"))
+            if not sysroot.declare_headers(pkginfo.install_dir(), "include",
+                                           "usr/include",
+                                           "python@" .. pkginfo.version()) then
+                local sysroot_usrdir = path.join(sysrootdir, "usr")
+                if not os.isdir(sysroot_usrdir) then os.mkdir(sysroot_usrdir) end
+                sysroot.install_headers(includedir, path.join(sysroot_usrdir, "include"))
+            end
         end
     end
     return true

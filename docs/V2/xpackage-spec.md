@@ -214,3 +214,45 @@ The probe is removed when the index drops support for clients older than the
 capability. That is a decision about shrinking the support surface, not a
 prerequisite for shipping.
 
+### Dropping the probe later — and why there is no `min_xlings`
+
+A probe is temporary by design. Removing one means the recipe declares the
+capability unconditionally, and clients without it stop being able to install
+the package. Before doing that, the package needs a way to *tell* those
+clients why.
+
+**A `min_xlings` field cannot do it.** A field is only read by clients that
+implement it, and the clients that need to be told are exactly the ones that
+do not. A version floor expressed as index data can never reach them; they
+would still hit the raw failure:
+
+```
+error: unsupported registration node kind 'files'
+       nothing was changed
+```
+
+The mechanism that does reach them is one they already run: `raise` from
+`config()`. Every client back to 0.4.29 prints it verbatim.
+
+```lua
+sysroot.require_capability(xvm.files, "xvm.files", "2026.7.27.0")
+```
+
+```
+[warn] config hook failed for foo: foo.lua:16: this package needs
+       xlings >= 2026.7.27.0 (this client has no xvm.files); run: xlings self update
+[error] [foo] failed: config hook failed
+```
+
+So the sequence for retiring a probe is:
+
+1. the capability has been released long enough for adoption;
+2. replace `if cap then ... else <legacy> end` with
+   `sysroot.require_capability(cap, ...)` plus the declared path;
+3. the legacy branch goes away, and clients that cannot install the package
+   are told what to do instead of being confused.
+
+`config()` runs after download and extraction, so step 2 costs a refused
+client one download. That is deliberate: a message they can act on is worth
+more than a field they cannot read.
+

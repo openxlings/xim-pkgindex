@@ -111,27 +111,11 @@ function config()
         -- arrived together in libxpkg 0.0.47 and libxpkg is linked into
         -- xlings. An older client takes the branch below and behaves exactly
         -- as it did before this migration.
-        if xvm.files then
-            -- Declared, so the headers follow `xlings use` and are removed
-            -- with the release. Enumerated the same way uninstall() does,
-            -- because install_headers links top-level entries, not a tree.
-            for _, subdir in ipairs(os.dirs(path.join(includedir, "*"))) do
-                local name = path.filename(subdir)
-                xvm.files{
-                    src = path.join("include", name),
-                    dst = path.join("usr/include", name),
-                    binding = binding_tree_version_tag,
-                }
-            end
-            for _, file in ipairs(list_files(path.join(includedir, "*.h"))) do
-                local name = path.filename(file)
-                xvm.files{
-                    src = path.join("include", name),
-                    dst = path.join("usr/include", name),
-                    binding = binding_tree_version_tag,
-                }
-            end
-        else
+        -- declare_headers returns false on a client with no xvm.files, so
+        -- the legacy path below still runs there, byte for byte.
+        if not sysroot.declare_headers(pkginfo.install_dir(), "include",
+                                       "usr/include",
+                                       binding_tree_version_tag) then
             sysroot.install_headers(includedir, get_sys_usr_includedir())
         end
     end

@@ -10,8 +10,90 @@
 -- error — that's the right signal to bump xlings.
 
 import("xim.libxpkg.fs")
+import("xim.libxpkg.xvm")
 
 local sysroot = {}
+
+-- Immediate children of DIR, enumerated with a single shell `ls`.
+--
+-- One fork and one readdir. See install_headers below for why this is not
+-- fs.entries: under proot, ~400 std::filesystem stat() calls on a 130-entry
+-- directory is enough to poison the talloc pool.
+function sysroot.entries(dir)
+    local names = {}
+    local f = io.popen(string.format([[ls -1 "%s" 2>/dev/null]], dir))
+    if not f then return names end
+    for line in f:lines() do
+        local name = line:gsub("[\r\n]+$", "")
+        if name ~= "" then table.insert(names, name) end
+    end
+    f:close()
+    return names
+end
+
+-- Refuse, readably, on a client that lacks a capability this package needs.
+--
+-- The counterpart to declare_headers: use that while a legacy fallback is
+-- still worth carrying, use this once it has been dropped.
+--
+-- Why this and not a `min_xlings` field in the recipe: a field can only be
+-- read by clients that implement it, and the clients that need to be told
+-- are precisely the ones that do not. A version floor expressed as data can
+-- never reach them. `raise` from config() can, because every client back to
+-- 0.4.29 already runs the hook and prints the message:
+--
+--     [warn] config hook failed for <pkg>: <file>:<line>: <message>
+--     [error] [<pkg>] failed: config hook failed
+--
+-- Verified against a released 0.4.69, not assumed.
+--
+-- Caveat worth knowing: config() runs after download and extraction, so the
+-- refusal costs the user a download. That is the price of a message they can
+-- act on; a field they cannot read would cost them a confusing failure
+-- instead ("unsupported registration node kind").
+function sysroot.require_capability(present, what, since)
+    if present then return end
+    raise(string.format(
+        "this package needs xlings >= %s (this client has no %s); "
+        .. "run: xlings self update", since, what))
+end
+
+-- Declare the immediate children of INSTALL_DIR/SRC_REL as file assets, so
+-- xlings owns them: they follow `xlings use` and are removed with the
+-- release instead of by a hand-written mirror of this call in uninstall().
+--
+-- Returns false when the running client has no `xvm.files`, so the caller
+-- falls back to install_headers and behaves exactly as it did before. That
+-- probe -- capability, never version -- is the contract in
+-- docs/V2/xpackage-spec.md; `xvm.files` arrived with the node kind it
+-- declares, in a libxpkg that is linked into the xlings binary.
+--
+-- SRC_REL is relative to the payload root and DST_REL to the subos root,
+-- and both must stay relative: a payload is shared between subos, so an
+-- absolute destination recorded against it would be right for the subos
+-- that installed it and wrong for every other one.
+--
+-- ONE SEMANTIC DIFFERENCE from install_headers, and it is deliberate:
+-- install_headers skips an entry that already exists, so the first package
+-- to claim a name keeps it. A declared asset is placed unconditionally, so
+-- the last one wins -- but it is now *recorded*, which is the point: two
+-- packages claiming one path becomes visible state rather than a silent
+-- race decided by install order. Only migrate a directory whose names are
+-- yours (`openssl/`, `python3.13/`); for a package that scatters entries
+-- into a shared namespace, check what else claims them first.
+function sysroot.declare_headers(install_dir, src_rel, dst_rel, binding)
+    if not xvm.files then return false end
+    local src_dir = path.join(install_dir, src_rel)
+    if not os.isdir(src_dir) then return true end
+    for _, name in ipairs(sysroot.entries(src_dir)) do
+        xvm.files{
+            src = path.join(src_rel, name),
+            dst = path.join(dst_rel, name),
+            binding = binding,
+        }
+    end
+    return true
+end
 
 -- Install headers from SRC_DIR into DST_DIR — strictly non-recursive.
 --
@@ -52,15 +134,7 @@ function sysroot.install_headers(src_dir, dst_dir)
     -- syscalls total (one readdir + one stat per entry) and goes
     -- through proot's simpler absolute-path translation, not the
     -- dir-fd-relative openat path.
-    local f = io.popen(string.format([[ls -1 "%s" 2>/dev/null]], src_dir))
-    if not f then return end
-    local names = {}
-    for line in f:lines() do
-        local name = line:gsub("[\r\n]+$", "")
-        if name ~= "" then table.insert(names, name) end
-    end
-    f:close()
-    for _, name in ipairs(names) do
+    for _, name in ipairs(sysroot.entries(src_dir)) do
         local dst = path.join(dst_dir, name)
         -- Skip if anything already exists at dst (host bind-mount,
         -- prior package, or prior install). os.isdir/os.isfile cover
