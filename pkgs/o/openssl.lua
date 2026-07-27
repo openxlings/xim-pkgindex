@@ -106,7 +106,34 @@ function config()
 
     log.debug("Linking headers into subos sysroot ...")
     if os.isdir(includedir) then
-        sysroot.install_headers(includedir, get_sys_usr_includedir())
+        -- Capability probe, not a version check: xvm.files exists only on a
+        -- client that understands type = "files" entries, because both
+        -- arrived together in libxpkg 0.0.47 and libxpkg is linked into
+        -- xlings. An older client takes the branch below and behaves exactly
+        -- as it did before this migration.
+        if xvm.files then
+            -- Declared, so the headers follow `xlings use` and are removed
+            -- with the release. Enumerated the same way uninstall() does,
+            -- because install_headers links top-level entries, not a tree.
+            for _, subdir in ipairs(os.dirs(path.join(includedir, "*"))) do
+                local name = path.filename(subdir)
+                xvm.files{
+                    src = path.join("include", name),
+                    dst = path.join("usr/include", name),
+                    binding = binding_tree_version_tag,
+                }
+            end
+            for _, file in ipairs(list_files(path.join(includedir, "*.h"))) do
+                local name = path.filename(file)
+                xvm.files{
+                    src = path.join("include", name),
+                    dst = path.join("usr/include", name),
+                    binding = binding_tree_version_tag,
+                }
+            end
+        else
+            sysroot.install_headers(includedir, get_sys_usr_includedir())
+        end
     end
 
     xvm.add(package.name, { binding = binding_tree_version_tag })
@@ -124,8 +151,11 @@ function uninstall()
         xvm.remove(lib, package.name .. "-" .. pkginfo.version())
     end
 
+    -- Only the legacy branch placed untracked copies. Declared assets are
+    -- deregistered with the release, so cleaning them here would be a second
+    -- owner for the same files.
     local includedir = path.join(pkginfo.install_dir(), "include")
-    if os.isdir(includedir) then
+    if not xvm.files and os.isdir(includedir) then
         local sys_includedir = get_sys_usr_includedir()
         local subdirs = os.dirs(path.join(includedir, "*"))
         for _, subdir in ipairs(subdirs) do

@@ -64,11 +64,26 @@ function config()
         end
     end
 
-    -- Copy headers to sysroot
-    local sys_inc = path.join(system.subos_sysrootdir(), "usr/include")
+    -- Headers into the sysroot.
+    --
+    -- Capability probe, not a version check: xvm.files exists only on a
+    -- client that understands type = "files" entries, because both arrived
+    -- together in libxpkg 0.0.47 and libxpkg is linked into xlings. An older
+    -- client takes the else branch and behaves exactly as it did before.
     local inc_dir = path.join(pkginfo.install_dir(), "include", "libxml2")
-    if os.isdir(inc_dir) and os.isdir(sys_inc) then
-        os.cp(inc_dir, sys_inc)
+    if os.isdir(inc_dir) then
+        if xvm.files then
+            -- Declared, so the headers follow `xlings use` and go away with
+            -- the release instead of being cleaned up by hand below.
+            xvm.files{
+                src = path.join("include", "libxml2"),
+                dst = path.join("usr/include", "libxml2"),
+                binding = binding,
+            }
+        else
+            local sys_inc = path.join(system.subos_sysrootdir(), "usr/include")
+            if os.isdir(sys_inc) then os.cp(inc_dir, sys_inc) end
+        end
     end
 
     return true
@@ -81,8 +96,12 @@ function uninstall()
         xvm.remove(lib)
     end
 
-    local sys_inc = path.join(system.subos_sysrootdir(), "usr/include")
-    os.tryrm(path.join(sys_inc, "libxml2"))
+    -- Only the legacy branch left an untracked copy behind; a declared
+    -- asset is deregistered with the release.
+    if not xvm.files then
+        local sys_inc = path.join(system.subos_sysrootdir(), "usr/include")
+        os.tryrm(path.join(sys_inc, "libxml2"))
+    end
 
     return true
 end

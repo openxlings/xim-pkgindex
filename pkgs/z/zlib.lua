@@ -65,14 +65,36 @@ function config()
         end
     end
 
-    -- Copy headers to sysroot for other packages to find
-    local sys_inc = path.join(system.subos_sysrootdir(), "usr/include")
+    -- Headers, so other packages can find them.
+    --
+    -- Capability probe, not a version check: xvm.files exists only on a
+    -- client that understands type = "files" entries, because both arrived
+    -- together in libxpkg 0.0.47 and libxpkg is linked into xlings. An older
+    -- client takes the else branch and behaves exactly as it did before.
     local inc_dir = path.join(pkginfo.install_dir(), "include")
-    if os.isdir(inc_dir) and os.isdir(sys_inc) then
-        local zlib_h = path.join(inc_dir, "zlib.h")
-        local zconf_h = path.join(inc_dir, "zconf.h")
-        if os.isfile(zlib_h) then os.cp(zlib_h, sys_inc) end
-        if os.isfile(zconf_h) then os.cp(zconf_h, sys_inc) end
+    local headers = {"zlib.h", "zconf.h"}
+    if os.isdir(inc_dir) then
+        if xvm.files then
+            -- Declared, so they follow `xlings use` instead of being
+            -- whichever version happened to be installed last.
+            for _, h in ipairs(headers) do
+                if os.isfile(path.join(inc_dir, h)) then
+                    xvm.files{
+                        src = path.join("include", h),
+                        dst = path.join("usr/include", h),
+                        binding = binding,
+                    }
+                end
+            end
+        else
+            local sys_inc = path.join(system.subos_sysrootdir(), "usr/include")
+            if os.isdir(sys_inc) then
+                for _, h in ipairs(headers) do
+                    local src = path.join(inc_dir, h)
+                    if os.isfile(src) then os.cp(src, sys_inc) end
+                end
+            end
+        end
     end
 
     return true
@@ -85,9 +107,13 @@ function uninstall()
         xvm.remove(lib)
     end
 
-    local sys_inc = path.join(system.subos_sysrootdir(), "usr/include")
-    os.tryrm(path.join(sys_inc, "zlib.h"))
-    os.tryrm(path.join(sys_inc, "zconf.h"))
+    -- Only the legacy branch left untracked copies behind. Declared assets
+    -- are deregistered with the release.
+    if not xvm.files then
+        local sys_inc = path.join(system.subos_sysrootdir(), "usr/include")
+        os.tryrm(path.join(sys_inc, "zlib.h"))
+        os.tryrm(path.join(sys_inc, "zconf.h"))
+    end
 
     return true
 end

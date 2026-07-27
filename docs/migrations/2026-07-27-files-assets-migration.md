@@ -1,9 +1,9 @@
 # `type = "files"` 资产声明 —— 迁移规范
 
 **日期**: 2026-07-27
-**状态**: **能力已可用，索引尚不可迁移** —— 见 §2 的兼容性闸门
+**状态**: **可以迁移** —— §2 的闸门已由能力探测拆除（2026.7.27.1）
 **依赖**: libxpkg 0.0.47（[openxlings/libxpkg#31](https://github.com/openxlings/libxpkg/pull/31)）、
-xlings 2026.7.27.0（[openxlings/xlings#410](https://github.com/openxlings/xlings/pull/410)）
+xlings 2026.7.27.0（[#410](https://github.com/openxlings/xlings/pull/410)）、2026.7.27.1（[#413](https://github.com/openxlings/xlings/pull/413)，验证探测契约）
 **设计**: xlings `.agents/docs/2026-07-27-sysroot-files-model-design.md`
 
 ---
@@ -56,11 +56,14 @@ recipe 里那些硬编码文件名的 `os.tryrm` 可以一并删掉。
 
 ---
 
-## 2. ⛔ 兼容性闸门：**现在还不能迁移共享索引**
+## 2. 兼容性：用能力探测，不要用版本判断
 
-**这是本文最重要的一条。**
+**这一节此前写的是"现在还不能迁移"，那个结论是错的**，保留在下面以免同样的
+推理再来一次。
 
-索引由**所有版本的 xlings 客户端共用**。旧客户端读到 `type = "files"` 会**硬失败**：
+### 观测没错，从它推出的结论错了
+
+索引由所有版本的客户端共用，老客户端读到 `type = "files"` 确实**硬失败**：
 
 ```
 error: unsupported registration node kind 'files'
@@ -69,26 +72,73 @@ error: unsupported registration node kind 'files'
        nothing was changed
 ```
 
-已实测（用 2026.7.27.0 之前的二进制跑一个声明了 `files` 的 fixture）。
+原先由此判定"必须先有 `min_xlings` 才能迁移"。这默认了 **recipe 只能无条件声明
+`files`**。recipe 是 Lua，它可以先问一句这个客户端认不认识这个能力。
 
-而且 **`xim-pkgindex` 没有客户端版本下限机制** —— 没有 `min_xlings`，
-无法给老客户端发老 recipe。所以：
+### 契约
 
-> **今天把任何一个 recipe 迁到 `type = "files"`，等于让每一个还没升级的用户装不上这个包。**
+```lua
+-- 探测能力，不要判断版本。
+if xvm.files then
+    xvm.files{ src = "include/openssl", dst = "usr/include/openssl", binding = tag }
+else
+    -- legacy：保持迁移前的行为，一字不改
+    sysroot.install_headers(includedir, get_sys_usr_includedir())
+end
+```
 
-### 放行条件
+`xvm.files` 是 libxpkg 0.0.47 引入的 Lua 函数，而 **libxpkg 是静态编进 xlings
+二进制的**。所以"`xvm.files` 是不是函数"**精确等价于**"这个客户端支不支持
+`type="files"`"：没有版本号解析、没有服务端协商、没有两个可能对不上的真值来源。
 
-满足**全部**三条才可以开始迁移：
+| libxpkg | 随 xlings | `xvm.files` |
+|---|---|---|
+| ≤ 0.0.46 | ≤ 0.4.69 | `nil` |
+| ≥ 0.0.47 | ≥ 2026.7.27.0 | function |
 
-1. xlings ≥ 2026.7.27.0 已发布，且**已经过一个采纳周期**
-2. `xim-pkgindex` 引入客户端版本下限（`min_xlings`），或明确接受"低于该版本不再支持"
-3. 迁移按包逐个进行，每个包迁完在隔离 HOME 里实测安装 / 切换 / 卸载
+### 已实测，不是推理
 
-在此之前，**新写的 recipe 也不要用 `files`** —— 它同样会被老客户端拒绝。
+xlings 的 **E2E-37**（`tests/e2e/xvm_files_probe_compat_test.sh`）下载真实的
+0.4.69，把同一个按上面写法写的 recipe 在两个客户端上各跑一遍：
+
+```
+0.4.69       → legacy 分支，安装成功，头文件进 sysroot
+2026.7.27.1  → files 分支，头文件进 sysroot 且登记为可切换资产
+```
+
+并断言老客户端**从不**打印 `unsupported registration node kind` —— 那正是探测
+失效时的表现。
+
+之所以必须实测：`import()` 对未知模块返回宽容代理 stub，如果 `xvm` 走的是那条
+路，`xvm.files` 在老客户端上也会为真，探测就彻底失效。推理上不会（`xvm` 由 C++
+注册进 `_LIBXPKG_MODULES`），但这是整个方案的单点。
+
+### 三条硬规则
+
+1. **不要用 `xvm.add{type="files"}` 做迁移。** `xvm.add` 在老客户端上存在，
+   `type` 会原样传下去，照样触发白名单硬失败。只有 `xvm.files` 这个**新增的
+   函数名**才是有效探针。
+2. **legacy 分支必须保持原样。** 它是老客户端的唯一路径，任何"顺手优化"都是在
+   没有测试覆盖的地方改老用户的行为。
+3. **`uninstall()` 必须同样分流。** 新分支不再手工删文件（由 provider-scoped
+   卸载负责），老分支必须保留手工删除，否则老客户端卸载后 sysroot 留垃圾。
+
+### 探针何时可以删
+
+当索引宣布不再支持 < 2026.7.27.0 的客户端时，`else` 分支连同 `if` 一起删。那时
+才需要 `min_xlings` —— 而那是一次**收缩支持面**的决定，可以从容做，不再挡在功能
+交付前面。
+
+### 顺带：这不是新发明
+
+`libs/sysroot.lua:6-10` 已经在用能力探测做版本判断了，只不过形式是**崩溃** ——
+"老客户端 import 落到 stub，调用点撞 nil 错误，that's the right signal to bump
+xlings"。本节是同一思路的显式写法：探测点从崩溃现场提前到分支处，并且有 legacy
+分支兜底而不是让用户去升级。
 
 ---
 
-## 3. 迁移对象分类（放行后按此顺序）
+## 3. 迁移对象分类（按此顺序）
 
 索引里 118 个 recipe，**28 个**碰 sysroot 或改 payload，其余 90 个不用动。
 
