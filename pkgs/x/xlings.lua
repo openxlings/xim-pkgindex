@@ -38,7 +38,14 @@ package = {
             -- res_versioned: version-bump bot tracks openxlings/xlings releases and
             -- appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "0.4.69" },
+            ["latest"] = { ref = "2026.7.27.0" },
+            ["2026.7.27.0"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "0e3fa8ee53b69b552fee72c9f93f36af8327d01349145490eb12917b1c095bd6",
+                    x86_64 = "0764db9b338633a25bb4bfd67681a8af0de7c3ef56a60a1967917d346502dce8",
+                },
+            },
             ["0.4.69"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -240,7 +247,13 @@ package = {
             -- res_versioned: version-bump bot tracks openxlings/xlings releases and
             -- appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "0.4.69" },
+            ["latest"] = { ref = "2026.7.27.0" },
+            ["2026.7.27.0"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "c46b2538a359fb7e2d3f566c52aba1ae150dae28f35db4febe986ac5ce738c69",
+                },
+            },
             ["0.4.69"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -435,7 +448,13 @@ package = {
             -- res_versioned: version-bump bot tracks openxlings/xlings releases and
             -- appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "0.4.69" },
+            ["latest"] = { ref = "2026.7.27.0" },
+            ["2026.7.27.0"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "fb5996a85c4dfc0c757ce3b29458911bf765f75f4d28d4f043ad330622243a9d",
+                },
+            },
             ["0.4.69"] = {
                 url = "XLINGS_RES",
                 sha256 = {
