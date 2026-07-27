@@ -136,7 +136,12 @@ function config()
         end
     end
 
-    xvm.add(package.name, { binding = binding_tree_version_tag })
+    -- No xvm.add(package.name) here: "openssl" is in package.programs, so
+    -- the loop above already registered it -- with a bindir, which this
+    -- one lacked. Registering the same name and version twice is refused
+    -- since 0.4.70 (xvm-duplicate-registration), which made this package
+    -- uninstallable; 0.4.69 accepted it and silently kept the second,
+    -- bindir-less registration.
     return true
 end
 
