@@ -70,19 +70,19 @@ end
 
 function config()
     xvm.add("rustup-init")
-    -- Group placeholder: the package ships only the `rustup-init` bootstrap
-    -- binary, but xlings searches for a `rustup` entry on `xim:rustup`
-    -- install detection. Empty placeholder so the lookup succeeds.
-    -- `group` is the only kind that both avoids a bogus shim under the
-    -- package name and lets `xlings remove` find the package; removal of a
-    -- group root needs xlings >= 2026.7.x, which is why CI pins a current
-    -- client (older ones refuse the remove and leak the shims).
-    xvm.add("rustup", { type = "group" })
+    -- No placeholder under the package name on purpose. `rustup` is a real
+    -- program owned by rust.lua (registered against ~/.cargo/bin), so a second
+    -- registration here makes two packages claim one target: uninstalling
+    -- `rust` then cannot take the `rustup` shim down, because this package
+    -- still owns an entry for it.
+    --
+    -- Nothing is lost: install detection goes through this package's own
+    -- `installed()` hook, which asks for `rustup-init` -- the binary it
+    -- actually ships -- not for `rustup`.
     return true
 end
 
 function uninstall()
     xvm.remove("rustup-init")
-    xvm.remove("rustup")
     return true
 end
