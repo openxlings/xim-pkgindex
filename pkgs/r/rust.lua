@@ -18,7 +18,13 @@ package = {
     categories = {"plang", "compiler"},
     keywords = {"Reliability", "Performance", "Productivity"},
 
-    programs = { "rustc", "cargo", "rustup" },
+    -- `rustup` is deliberately NOT listed. This package does register a
+    -- `rustup` shim (below, against ~/.cargo/bin), but it does not own the
+    -- name: the `rustup` package registers it too. `programs` asserts
+    -- exclusive ownership -- it is what the index's uninstall check uses to
+    -- decide which surviving shims are a leak -- and a shim kept alive by a
+    -- second, still-installed owner is not a leak.
+    programs = { "rustc", "cargo" },
 
     xpm = {
         windows = {
