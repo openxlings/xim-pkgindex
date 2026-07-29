@@ -60,5 +60,15 @@ jobs:
           echo "XLINGS_HOME=$HOME/.xlings" >> "$GITHUB_ENV"
           echo "PATH=$HOME/.xlings/subos/current/bin:$HOME/.xlings/bin:$PATH" >> "$GITHUB_ENV"
 
+
+      # Refresh the index. The release tarball bundles a pkgindex snapshot
+      # frozen at build time, so without this a package's DEPENDENCIES resolve
+      # against a months-old index even though the package under test comes
+      # from this checkout. That is how `local:rust` failed with
+      # `sh: 1: rustup-init: not found`: its rustup dep came from the frozen
+      # snapshot, where rustup's config hook still aborted, so the shim was
+      # never registered. Nothing about rust was wrong.
+      - name: Refresh package index
+        run: xlings update
       - name: L1 Index Registration
         run: pytest tests/ -m index --tb=short -q
