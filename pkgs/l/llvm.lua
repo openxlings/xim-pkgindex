@@ -113,6 +113,16 @@ local function is_registerable_bin(pathname)
     return os.isfile(pathname)
 end
 
+-- Split a bin/ filename into the name to register and the alias to point at.
+-- Returns (name, alias) where alias is nil when the two are the same, so
+-- non-Windows registration is byte-for-byte what it was before.
+local function program_target_name(filename)
+    if os.host() == "windows" and filename:sub(-4):lower() == ".exe" then
+        return filename:sub(1, -5), filename
+    end
+    return filename, nil
+end
+
 local function collect_bin_apps(bindir)
     local apps = {}
     local cmd
@@ -341,8 +351,15 @@ function __install_macosx_cfg()
         log.warn("macOS SDK path not detected; clang may need manual --sysroot")
     end
 
+    -- clang reads <invoked-name>.cfg, so the versioned driver needs its own
+    -- copy. The major version has to come from pkginfo: hardcoding "clang-20"
+    -- put a clang-20.cfg inside the 22.1.8 install (where the driver is
+    -- clang-22), so the sysroot silently did not apply to it.
+    local major = pkginfo.version():match("^(%d+)") or ""
     io.writefile(path.join(pkginfo.install_dir(), "bin", "clang.cfg"), clang_cfg)
-    io.writefile(path.join(pkginfo.install_dir(), "bin", "clang-20.cfg"), clang_cfg)
+    if major ~= "" then
+        io.writefile(path.join(pkginfo.install_dir(), "bin", "clang-" .. major .. ".cfg"), clang_cfg)
+    end
     io.writefile(path.join(pkginfo.install_dir(), "bin", "clang++.cfg"), clangxx_cfg)
 end
 
@@ -363,8 +380,17 @@ function config()
     xvm.add(package.name)
 
     for _, app in ipairs(related_apps) do
-        xvm.add(app, {
+        -- The registered NAME must not carry the extension: users type
+        -- `clang`, and `xlings use` looks the target up by that name.
+        -- collect_bin_apps returns real filenames, which on Windows means
+        -- `clang.exe` -- registering that verbatim produced a target called
+        -- "clang.exe" and left `clang --version` reporting
+        -- "'clang' is not installed". The alias carries the filename, exactly
+        -- as the hand-written alias_apps_windows table above already does.
+        local target, alias = program_target_name(app)
+        xvm.add(target, {
             bindir = bindir,
+            alias = alias,
             binding = binding,
         })
     end
@@ -426,7 +452,11 @@ function uninstall()
     xvm.remove(package.name)
 
     for _, app in ipairs(related_apps) do
-        xvm.remove(app)
+        -- Must strip exactly as config() did, or removal asks for a target
+        -- name ("clang.exe") that was never registered and silently removes
+        -- nothing, leaving the real shim behind.
+        local target = program_target_name(app)
+        xvm.remove(target)
     end
 
     local aliases = alias_apps
