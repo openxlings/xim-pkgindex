@@ -79,11 +79,11 @@ function config()
     xvm.add("c++", config)
     xvm.add("g++", config)
 
-    -- Binding root: `mingw-w64` is an umbrella toolchain package whose
+    -- Group placeholder: `mingw-w64` is an umbrella toolchain package whose
     -- registered programs are the gcc/g++/c++ multilib triples.
     -- Empty placeholder under the package name so install detection
     -- (`xvm info mingw-w64`) finds an entry.
-    xvm.add("mingw-w64", { type = "binding" })
+    xvm.add("mingw-w64", { type = "group" })
 
     __config_mingw_bin(mingw_bindir)
 

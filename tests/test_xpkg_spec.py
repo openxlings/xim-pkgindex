@@ -12,7 +12,10 @@ import glob
 import os
 import pytest
 from tests.lib.xpkg_parser import parse_xpkg
-from tests.lib.assertions import assert_config_registers_package_name
+from tests.lib.assertions import (
+    assert_config_registers_package_name,
+    assert_valid_xvm_node_kinds,
+)
 
 
 def _discover_xpkg_files():
@@ -30,3 +33,11 @@ def test_spec_d1_package_name_registered(pkg_file):
     """[Spec D1/D3] 包必须在 config hook 中注册 package.name"""
     meta = parse_xpkg(pkg_file)
     assert_config_registers_package_name(meta)
+
+
+@pytest.mark.static
+@pytest.mark.parametrize("pkg_file", _discover_xpkg_files(), ids=lambda f: os.path.basename(f).replace(".lua", ""))
+def test_spec_xvm_node_kind_supported(pkg_file):
+    """[Spec] xvm.add() 的 type 必须是 xlings 支持的注册节点类型"""
+    meta = parse_xpkg(pkg_file)
+    assert_valid_xvm_node_kinds(meta)

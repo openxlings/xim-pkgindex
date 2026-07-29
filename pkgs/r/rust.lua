@@ -72,11 +72,11 @@ function config()
     xvm.add("rustfmt", { bindir = cargo_bin, binding = "rustc@" .. "latest" })
     xvm.add("clippy-driver", { bindir = cargo_bin, binding = "rustc@" .. "latest" })
     xvm.add("rust-analyzer", { bindir = cargo_bin, binding = "rustc@" .. "latest" })
-    -- Binding root: `rust` is an umbrella package whose `programs` are
+    -- Group placeholder: `rust` is an umbrella package whose `programs` are
     -- rustc/cargo/rustup. Empty placeholder under the package name so
     -- install detection (`xvm info rust`) finds an entry; type
     -- distinguishes it from concrete program / lib registrations.
-    xvm.add("rust", { type = "binding" })
+    xvm.add("rust", { type = "group" })
 
     return true
 end

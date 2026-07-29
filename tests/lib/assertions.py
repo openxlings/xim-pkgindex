@@ -304,3 +304,37 @@ def assert_xvm_shim_exists(target: str):
 def assert_platform_supported(meta: XpkgMeta, platform: str):
     """包支持指定平台"""
     assert platform in meta.platforms, f"不支持平台: {platform}, 支持: {list(meta.platforms.keys())}"
+
+
+# xlings validates the registration node kind in src/core/xvm/registration.cppm
+# and rejects anything outside this set with "unsupported registration node
+# kind '<x>'", which aborts the whole config hook -- taking every registration
+# made before it down too. An empty type is fine: it defaults to "program".
+#
+# This check exists because six packages (mingw-w64, rust, e2fsprogs, ripgrep,
+# rustup, vcstool) shipped invented kinds -- "binding" and "marker" -- and were
+# completely uninstallable as a result. Nothing caught it: the kind is only
+# validated on the user's machine, at install time.
+VALID_XVM_NODE_KINDS = {"program", "lib", "group", "files"}
+
+
+def assert_valid_xvm_node_kinds(meta: XpkgMeta):
+    """xvm.add() 的 type 必须是 xlings 支持的注册节点类型
+
+    用 "group" 表示"包名占位符"(umbrella / marker) —— 它不指向任何要分发的
+    产物, 正是这个用途需要的类型。
+    """
+    if meta.is_ref:
+        return
+    bad = [
+        kind for kind in re.findall(
+            r'xvm[.:]\s*add\s*\([^)]*?\btype\s*=\s*["\']([^"\']+)["\']',
+            meta.raw_content,
+        )
+        if kind not in VALID_XVM_NODE_KINDS
+    ]
+    assert not bad, (
+        f"xvm.add() 使用了 xlings 不支持的注册类型: {sorted(set(bad))}; "
+        f"合法值为 {sorted(VALID_XVM_NODE_KINDS)}。"
+        f"包名占位符请用 \"group\""
+    )

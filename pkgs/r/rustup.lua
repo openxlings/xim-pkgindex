@@ -70,10 +70,10 @@ end
 
 function config()
     xvm.add("rustup-init")
-    -- Marker: the package ships only the `rustup-init` bootstrap
+    -- Group placeholder: the package ships only the `rustup-init` bootstrap
     -- binary, but xlings searches for a `rustup` entry on `xim:rustup`
     -- install detection. Empty placeholder so the lookup succeeds.
-    xvm.add("rustup", { type = "marker" })
+    xvm.add("rustup", { type = "group" })
     return true
 end
 

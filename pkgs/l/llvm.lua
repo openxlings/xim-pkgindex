@@ -28,6 +28,15 @@ package = {
                 "xim:linux-headers@5.11.1",
                 "xim:zlib@1.3.1",
                 "xim:libxml2@2.13.5",
+                -- clang-22 links libstdc++.so.6 dynamically; clang-20 carried a
+                -- static C++ runtime and needed nothing. Nothing else in this
+                -- dep list ships libstdc++, so without this the 22.1.8 clang
+                -- cannot start at all on a machine that has no system
+                -- libstdc++ -- which is every clean machine. It has to be a
+                -- declared dep rather than a later `xlings install
+                -- gcc-runtime`: the RPATH is baked at llvm install time, so a
+                -- runtime that arrives afterwards is invisible to the loader.
+                "xim:gcc-runtime@15.1.0",
             },
             ["latest"] = { ref = "22.1.8" },
             ["20.1.7"] = "XLINGS_RES",
@@ -108,23 +117,31 @@ local function collect_bin_apps(bindir)
     local apps = {}
     local cmd
     if os.host() == "windows" then
-        cmd = 'dir /b "' .. bindir .. '" 2>nul'
+        -- Backslashes are mandatory here. `dir` is a cmd.exe builtin and
+        -- treats "/" as its switch introducer, while libxpkg's path.join
+        -- always joins with "/" regardless of host -- so the bindir handed in
+        -- looks like `C:\...\xim-x-llvm\22.1.8/bin` and cmd lists nothing.
+        -- That is how a full LLVM install ended up registering zero programs
+        -- on Windows while clang.exe sat on disk the whole time.
+        cmd = 'dir /b "' .. bindir:gsub("/", "\\") .. '" 2>nul'
     else
         cmd = 'ls -1 "' .. bindir .. '" 2>/dev/null'
     end
     local f = io.popen(cmd)
-    if f then
-        for name in f:lines() do
-            local clean = name:gsub("[\r\n]+$", "")
-            if clean ~= "" then
-                local filepath = path.join(bindir, clean)
-                if is_registerable_bin(filepath) then
-                    table.insert(apps, clean)
-                end
+    if not f then
+        log.error("llvm: cannot list bin dir (io.popen failed): " .. bindir)
+        return apps
+    end
+    for name in f:lines() do
+        local clean = name:gsub("[\r\n]+$", "")
+        if clean ~= "" then
+            local filepath = path.join(bindir, clean)
+            if is_registerable_bin(filepath) then
+                table.insert(apps, clean)
             end
         end
-        f:close()
     end
+    f:close()
     table.sort(apps)
     return apps
 end
@@ -333,6 +350,15 @@ function config()
     local bindir = path.join(pkginfo.install_dir(), "bin")
     local binding = package.name .. "@" .. pkginfo.version()
     local related_apps = collect_bin_apps(bindir)
+
+    -- A compiler toolchain that registers no programs is never correct, so
+    -- fail instead of reporting a successful install of nothing. Without this
+    -- the Windows listing bug above produced `✓ 1 package(s) installed`
+    -- followed by `xlings: 'clang' is not installed`, with no error in between.
+    if #related_apps == 0 then
+        log.error("llvm: no registerable programs found in " .. bindir)
+        return false
+    end
 
     xvm.add(package.name)
 
