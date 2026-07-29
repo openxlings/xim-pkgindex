@@ -341,11 +341,34 @@ function __install_macosx_cfg()
         end
     end
 
-    local clang_cfg = ""
-    local clangxx_cfg = "-isystem" .. cxxinc .. "\n"
+    -- Link with the bundled ld64.lld, not Apple's ld.
+    --
+    -- Handing the link to Apple's ld crashes it outright on 22.1.8:
+    --
+    --   dyld: Symbol not found: __ZdaPv
+    --     Referenced from: .../XcodeDefault.xctoolchain/usr/bin/ld
+    --     Expected in:     .../xim-x-llvm/22.1.8/lib/libc++.1.0.dylib
+    --
+    -- The driver puts this toolchain's lib dir on DYLD_LIBRARY_PATH when it
+    -- spawns the linker, so ld can pick up libLTO from the toolchain. dyld
+    -- overrides by LEAF NAME, so ld's own dependency on
+    -- /usr/lib/libc++.1.dylib is then satisfied by OUR libc++.1.dylib -- and
+    -- libc++ 22 no longer exports operator delete[], which Apple's ld needs.
+    -- The slim build does not even ship libLTO.dylib, so nothing is gained in
+    -- exchange.
+    --
+    -- 20.1.7 is poisoned exactly the same way and survives only because
+    -- libc++ 20 still happened to export what ld wanted; this is a latent
+    -- failure there, not a 22-only bug. Using our own linker removes the
+    -- host-toolchain coupling entirely, which is what a "self-contained
+    -- toolchain" was supposed to mean.
+    local usr_lld = "-fuse-ld=lld\n"
+
+    local clang_cfg = usr_lld
+    local clangxx_cfg = usr_lld .. "-isystem" .. cxxinc .. "\n"
 
     if sdkroot and sdkroot ~= "" then
-        clang_cfg = "--sysroot=" .. sdkroot .. "\n"
+        clang_cfg = "--sysroot=" .. sdkroot .. "\n" .. clang_cfg
         clangxx_cfg = "--sysroot=" .. sdkroot .. "\n" .. clangxx_cfg
     else
         log.warn("macOS SDK path not detected; clang may need manual --sysroot")
