@@ -205,7 +205,14 @@ function __config_linux()
         log.warn("subos dir is empty, skip alias sysroot injection")
     end
 
-    xvm.add("xim-gnu-gcc") -- root
+    -- Root of the release's binding group. `type = "group"` because it names
+    -- no artifact: no bindir, no alias, nothing under it to exec. As the
+    -- default `program` it got a shim at `bin/xim-gnu-gcc` that answered
+    -- `executable 'xim-gnu-gcc' not found` -- and, on any home where the name
+    -- had no active version, `self doctor` called it an orphan shim
+    -- (openxlings/xlings#452). Version stays the default: the children below
+    -- bind to `xim-gnu-gcc@<pkginfo.version()>`.
+    xvm.add("xim-gnu-gcc", { type = "group" }) -- root
 
     local config = {
         bindir = gcc_bindir,

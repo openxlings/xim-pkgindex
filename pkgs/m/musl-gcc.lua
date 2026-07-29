@@ -221,7 +221,16 @@ local function __register_as_gcc_flavor()
     -- gcc.lua gets away with the bare form only because its children bind to
     -- `xim-gnu-gcc@<pkginfo.version()>`, which is exactly what the default
     -- fills in. This recipe's flavor suffix breaks that coincidence.
-    xvm.add(root_name, { version = flavor_ver })
+    --
+    -- `type = "group"` because this node names no artifact: no bindir, no
+    -- alias, nothing to dispatch to. Left as the default `program` it got a
+    -- shim under `bin/xim-musl-gnu-gcc` that could only ever print "no active
+    -- version" -- openxlings/xlings#452, where `self doctor` called it an
+    -- orphan, `--fix` deleted it, and the next install wrote it again.
+    -- Same idiom, same reason as ripgrep.lua / rust.lua / e2fsprogs.lua.
+    -- Verified against a released 0.4.68: an old client accepts a
+    -- group-typed binding root and simply ignores it.
+    xvm.add(root_name, { version = flavor_ver, type = "group" })
 
     for prog, target in pairs(__gcc_flavor_progs(__musl_triple())) do
         xvm.add(prog, {

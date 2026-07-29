@@ -113,7 +113,10 @@ local function __register_as_gcc_flavor()
     -- — a different exact node, so the root they name would never exist.
     -- xlings 2026.7.27.1 enforces this and rejects the batch with
     -- `xvm-binding-root-missing`. Same fix as pkgs/m/musl-gcc.lua.
-    xvm.add(root_name, { version = flavor_ver })
+    --
+    -- `type = "group"` because this node names no artifact -- see
+    -- pkgs/m/musl-gcc.lua for the full note (openxlings/xlings#452).
+    xvm.add(root_name, { version = flavor_ver, type = "group" })
     for prog, target in pairs(__gcc_flavor_progs) do
         xvm.add(prog, {
             bindir  = gcc_bindir,
