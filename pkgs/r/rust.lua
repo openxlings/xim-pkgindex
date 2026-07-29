@@ -76,6 +76,10 @@ function config()
     -- rustc/cargo/rustup. Empty placeholder under the package name so
     -- install detection (`xvm info rust`) finds an entry; type
     -- distinguishes it from concrete program / lib registrations.
+    -- `group` is the only kind that both avoids a bogus shim under the
+    -- package name and lets `xlings remove` find the package; removal of a
+    -- group root needs xlings >= 2026.7.x, which is why CI pins a current
+    -- client (older ones refuse the remove and leak the shims).
     xvm.add("rust", { type = "group" })
 
     return true

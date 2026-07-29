@@ -75,6 +75,10 @@ function config()
     -- Group placeholder: the binary is `rg` but the package name is `ripgrep`.
     -- Empty placeholder so install detection (`xvm info ripgrep`)
     -- finds an entry instead of treating the package as missing.
+    -- `group` is the only kind that both avoids a bogus shim under the
+    -- package name and lets `xlings remove` find the package; removal of a
+    -- group root needs xlings >= 2026.7.x, which is why CI pins a current
+    -- client (older ones refuse the remove and leak the shims).
     xvm.add("ripgrep", { type = "group" })
     return true
 end

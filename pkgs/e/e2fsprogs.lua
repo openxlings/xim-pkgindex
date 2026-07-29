@@ -87,6 +87,10 @@ function config()
     -- are e2fsck/mke2fs/etc. The package name itself never appears in
     -- `sbin_programs`, so without this empty placeholder
     -- `xvm info e2fsprogs` returns nothing on install detection.
+    -- `group` is the only kind that both avoids a bogus shim under the
+    -- package name and lets `xlings remove` find the package; removal of a
+    -- group root needs xlings >= 2026.7.x, which is why CI pins a current
+    -- client (older ones refuse the remove and leak the shims).
     xvm.add("e2fsprogs", { type = "group" })
 
     -- mke2fs reads mke2fs.conf at runtime; the static binary has no

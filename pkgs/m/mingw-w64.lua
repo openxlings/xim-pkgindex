@@ -83,6 +83,10 @@ function config()
     -- registered programs are the gcc/g++/c++ multilib triples.
     -- Empty placeholder under the package name so install detection
     -- (`xvm info mingw-w64`) finds an entry.
+    -- `group` is the only kind that both avoids a bogus shim under the
+    -- package name and lets `xlings remove` find the package; removal of a
+    -- group root needs xlings >= 2026.7.x, which is why CI pins a current
+    -- client (older ones refuse the remove and leak the shims).
     xvm.add("mingw-w64", { type = "group" })
 
     __config_mingw_bin(mingw_bindir)

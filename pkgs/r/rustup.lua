@@ -73,6 +73,10 @@ function config()
     -- Group placeholder: the package ships only the `rustup-init` bootstrap
     -- binary, but xlings searches for a `rustup` entry on `xim:rustup`
     -- install detection. Empty placeholder so the lookup succeeds.
+    -- `group` is the only kind that both avoids a bogus shim under the
+    -- package name and lets `xlings remove` find the package; removal of a
+    -- group root needs xlings >= 2026.7.x, which is why CI pins a current
+    -- client (older ones refuse the remove and leak the shims).
     xvm.add("rustup", { type = "group" })
     return true
 end

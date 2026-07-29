@@ -99,6 +99,10 @@ function config()
     -- Group placeholder: the binary is `vcs` (upstream's CLI command) but the
     -- package name is `vcstool`. Empty placeholder so install
     -- detection (`xvm info vcstool`) finds an entry.
+    -- `group` is the only kind that both avoids a bogus shim under the
+    -- package name and lets `xlings remove` find the package; removal of a
+    -- group root needs xlings >= 2026.7.x, which is why CI pins a current
+    -- client (older ones refuse the remove and leak the shims).
     xvm.add("vcstool", { type = "group" })
     return true
 end
