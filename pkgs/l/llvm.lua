@@ -106,9 +106,20 @@ local function is_registerable_bin(pathname)
     if name:sub(-4) == ".cfg" then
         return false
     end
-    -- On Windows, skip .dll files (only register .exe)
-    if os.host() == "windows" and name:sub(-4) == ".dll" then
-        return false
+    -- What a file IS decides this, not what host we happen to be on.
+    --
+    -- Both tests below used to be gated on `os.host() == "windows"`, which
+    -- reads as "these shapes only occur there". They do not: a store carried
+    -- over from another machine, or a Windows-targeted test run against a
+    -- real home, leaves a Windows payload in a Linux store. The gate then let
+    -- `libomp.dll` and `libiomp5md.dll` be registered as PROGRAMS on Linux,
+    -- and `clang.exe` as a program named `clang.exe`, which no user will ever
+    -- type. 29 registrations, none of them runnable.
+    if name:sub(-4):lower() == ".dll" then
+        return false        -- a library is never a program, on any host
+    end
+    if os.host() ~= "windows" and name:sub(-4):lower() == ".exe" then
+        return false        -- cannot run here; registering it helps nobody
     end
     return os.isfile(pathname)
 end
@@ -117,7 +128,10 @@ end
 -- Returns (name, alias) where alias is nil when the two are the same, so
 -- non-Windows registration is byte-for-byte what it was before.
 local function program_target_name(filename)
-    if os.host() == "windows" and filename:sub(-4):lower() == ".exe" then
+    -- Host-independent for the same reason as above: the extension belongs to
+    -- the file. Non-Windows hosts no longer reach this with a `.exe` at all
+    -- (is_registerable_bin drops them), so nothing changes there.
+    if filename:sub(-4):lower() == ".exe" then
         return filename:sub(1, -5), filename
     end
     return filename, nil
@@ -423,8 +437,10 @@ function config()
         aliases = alias_apps_windows
     end
 
+    local alias_hits = 0
     for _, app in ipairs(aliases) do
         if os.isfile(path.join(bindir, app.alias)) then
+            alias_hits = alias_hits + 1
             xvm.add(app.name, {
                 bindir = bindir,
                 alias = app.alias,
@@ -433,6 +449,19 @@ function config()
         else
             log.warn("skip xvm add alias (not found): " .. app.name .. " -> " .. app.alias)
         end
+    end
+
+    -- Every alias missing is not a partial result, it is the wrong payload.
+    -- This is the complement of the `#related_apps == 0` gate above: that one
+    -- catches "no programs at all", this one catches "programs, but not the
+    -- ones this platform's alias table names" -- the exact shape a Windows
+    -- payload takes on Linux, which printed six warnings and reported
+    -- success.
+    if #aliases > 0 and alias_hits == 0 then
+        log.error("llvm: none of the " .. #aliases
+                  .. " expected tools were found in " .. bindir)
+        log.error("  the payload does not look like an llvm build for this platform")
+        return false
     end
 
     -- Register libc++ shared libraries for xvm
