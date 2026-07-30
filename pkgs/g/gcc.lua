@@ -197,10 +197,28 @@ function __config_linux()
     -- individual payloads are not — the subos is exactly xlings' FHS
     -- composite view for this purpose. Consumers that bypass the shim
     -- (e.g. mcpp) supply their own header flags.
+    --
+    -- Written as `<home>/subos/current`, not as whichever subos happens to be
+    -- active while this hook runs. The xvm database is shared by every subos
+    -- in the home, so a path naming one of them is right for the subos that
+    -- installed gcc and wrong for all the others -- the user switches subos
+    -- and their g++ keeps compiling against the old one's headers.
+    --
+    -- `subos/current` is the symlink `xlings self init` creates and
+    -- `xlings subos use --global` maintains, so it needs no placeholder and
+    -- no new xvm field: it is a path, and every client understands paths.
+    --
+    -- xlings >= 2026.7.31.1 does better still -- it lifts this flag out of
+    -- the alias at registration and re-composes it per invocation, so the
+    -- record holds the intent and no path at all. This spelling is what an
+    -- OLDER client gets, and following a symlink beats freezing at install
+    -- time. Both readings are correct; neither needs to know about the other.
     local sysroot_dir = system.subos_sysrootdir()
     local alias_args = ""
     if sysroot_dir and sysroot_dir ~= "" then
-        alias_args = string.format(' --sysroot=%s', sysroot_dir)
+        local portable = sysroot_dir:gsub("([/\\])subos([/\\])[^/\\]+",
+                                          "%1subos%2current", 1)
+        alias_args = string.format(' --sysroot=%s', portable)
     else
         log.warn("subos dir is empty, skip alias sysroot injection")
     end
