@@ -75,14 +75,25 @@ class TestSubosPath:
     """
 
     @pytest.mark.static
-    def test_alias_sysroot_uses_portable_spelling(self):
+    def test_alias_sysroot_uses_the_marker(self):
         src = open(PKG_FILE, encoding='utf-8').read()
-        assert 'subos%2current' in src, (
-            "alias 的 --sysroot 必须重写成 <home>/subos/current；"
+        assert '${XLINGS_DYNAMIC_SUBOS_DIR}' in src, (
+            "alias 的 --sysroot 必须写 xlings 的 marker；"
             "写死活动 subos 会让其他 subos 里的 g++ 用错头文件"
         )
-        # 断言它作用在 alias 上，而不是碰巧出现在注释里
-        assert 'alias_args = string.format' in src
+        # marker 必须真的进了 alias，而不是只出现在注释里
+        assert "alias_args = ' --sysroot=${XLINGS_DYNAMIC_SUBOS_DIR}'" in src
+
+    @pytest.mark.static
+    def test_alias_does_not_bake_a_concrete_subos(self):
+        """subos_sysrootdir() 求值出的是**当前**活动 subos —— 它可以用于物化
+        （往那棵树里装东西），但绝不能进 alias：alias 存在共享的版本库里。"""
+        src = open(PKG_FILE, encoding='utf-8').read()
+        alias_region = src.split('-- HEADER axis')[-1].split('xvm.add("xim-gnu-gcc"')[0]
+        assert 'subos_sysrootdir' not in alias_region, (
+            "alias 区域不得出现 subos_sysrootdir()：那会把安装时的 subos 烧进"
+            "一个所有 subos 共享的记录里"
+        )
 
     @pytest.mark.static
     def test_specs_rewrite_stays_payload_direct(self):
