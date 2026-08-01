@@ -24,7 +24,8 @@ package = {
 
     xpm = {
         windows = {
-            ["latest"] = { ref = "2026.07.24.1" },
+            ["latest"] = { ref = "2026.08.02.1" },
+            ["2026.08.02.1"] = "XLINGS_RES",
             ["2026.07.24.1"] = "XLINGS_RES",
             ["0.1.5"] = "XLINGS_RES",
             ["0.1.4"] = "XLINGS_RES",
@@ -34,7 +35,8 @@ package = {
         },
         linux = {
             deps = { "xim:glibc@2.39", "xim:openssl@3.1.5" },
-            ["latest"] = { ref = "2026.07.24.1" },
+            ["latest"] = { ref = "2026.08.02.1" },
+            ["2026.08.02.1"] = "XLINGS_RES",
             ["2026.07.24.1"] = "XLINGS_RES",
             ["0.1.5"] = "XLINGS_RES",
             ["0.1.4"] = "XLINGS_RES",
@@ -44,7 +46,8 @@ package = {
             ["0.1.0"] = "XLINGS_RES",
         },
         macosx = {
-            ["latest"] = { ref = "2026.07.24.1" },
+            ["latest"] = { ref = "2026.08.02.1" },
+            ["2026.08.02.1"] = "XLINGS_RES",
             ["2026.07.24.1"] = "XLINGS_RES",
             ["0.1.5"] = "XLINGS_RES",
             ["0.1.4"] = "XLINGS_RES",
