@@ -43,7 +43,11 @@ package = {
     programs = {"nvm"},
     xvm_enable = true,
 
-    ci = { mirror = true, update = true },
+    -- Windows tracks a different repo (coreybutler/nvm-windows) on a different
+    -- version line, so both the version checker and the mirror stay on the
+    -- linux/macosx pair -- opting windows in would trip "per-platform 'latest'
+    -- refs disagree" the moment the two upstreams released independently.
+    ci = { mirror = true, update = true, platforms = {"linux", "macosx"} },
 
     xpm = {
         linux = {

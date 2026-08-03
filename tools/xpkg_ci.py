@@ -75,6 +75,13 @@ def bool_field(body: str, name: str) -> bool:
     return re.search(rf"\b{re.escape(name)}\s*=\s*true\b", body) is not None
 
 
+def string_list_field(body: str, name: str) -> list[str] | None:
+    match = re.search(rf"\b{re.escape(name)}\s*=\s*\{{([^{{}}]*)\}}", body)
+    if not match:
+        return None
+    return re.findall(r'"([^"]+)"', match.group(1))
+
+
 def source_value(text: str) -> str | dict[str, str] | None:
     m = re.search(r"\bsource\s*=\s*\"([^\"]+)\"", text)
     if m:
@@ -233,15 +240,20 @@ def resolve_platform_arches(arches: list[str], template: str,
                             aliases: dict[str, str]) -> tuple[list[str] | None, str | None]:
     """Decide which arches to materialize for one platform's URL template.
 
-    An arch-parameterized template (``${arch}``/``{arch}``) covers every declared
-    arch.  A non-parameterized URL bakes in exactly one arch, so infer which
-    declared arch it is (by the arch name or its alias appearing in the URL) and
-    record only that one — otherwise a package like bat, which declares
-    ``{x86_64, aarch64}`` globally but ships x86_64 on linux/windows and aarch64
-    on macOS, would be mislabelled as ``arches[0]`` or rejected outright.
+    Three shapes to distinguish:
+
+    * arch-parameterized template (``${arch}``/``{arch}``) — one URL per arch,
+      covers every declared arch.
+    * arch-baked URL — no template but the URL string contains one arch's name
+      or alias (e.g. bat ships x86_64 on linux and aarch64 on macOS, so each
+      platform pins to exactly one declared arch).
+    * arch-independent URL — no template and no arch spelling appears at all
+      (e.g. nvm's pure-shell tag archive, whose bytes serve every arch). One
+      mirror asset is recorded per declared arch, all pointing at the same
+      upstream URL and sharing the same sha256.
 
     Returns ``(arches, None)`` on success or ``(None, error)`` when a
-    non-parameterized URL cannot be pinned to exactly one declared arch.
+    non-parameterized URL matches more than one declared arch (ambiguous).
     """
     if "${arch}" in template or "{arch}" in template:
         return arches, None
@@ -257,8 +269,10 @@ def resolve_platform_arches(arches: list[str], template: str,
         return False
 
     matched = [a for a in arches if present(a)]
-    if len(matched) != 1:
-        return None, (f"cannot infer arch from non-arch-templated URL "
+    if not matched:
+        return arches, None
+    if len(matched) > 1:
+        return None, (f"ambiguous arch in non-arch-templated URL "
                       f"(declared {arches}, matched {matched})")
     return matched, None
 
@@ -301,9 +315,23 @@ def materialize(args: argparse.Namespace) -> int:
         i += 1
     xpm_body = text[start:i - 1]
     arches = declared_arches(text) or ["x86_64"]
+    # `ci.platforms`, when present, narrows the mirror to a subset of the
+    # (linux, macosx, windows) blocks declared in xpm. Some packages share a
+    # recipe file across unrelated upstreams — nvm-sh/nvm on linux/macosx and
+    # coreybutler/nvm-windows on a different version line — where the "one
+    # version per package" contract can't cover every platform. Absent the
+    # field, all declared platforms mirror as before.
+    ci_platforms = string_list_field(ci_block(text), "platforms")
     assets = []
     chosen_version = args.version
+    # An arch-independent URL is materialized once per platform: the second
+    # arch reuses the file downloaded for the first. Keyed by URL, not by
+    # filename, so two versions with the same tag name across platforms would
+    # still each fetch their own bytes.
+    fetched: dict[str, dict[str, Any]] = {}
     for platform in ("linux", "macosx", "windows"):
+        if ci_platforms is not None and platform not in ci_platforms:
+            continue
         platform_match = re.search(rf'\b{platform}\s*=\s*\{{', xpm_body)
         if not platform_match:
             continue
@@ -342,6 +370,10 @@ def materialize(args: argparse.Namespace) -> int:
             final_url = expand_template(template, args.package, version, platform, arch, aliases)
             if not final_url.startswith("https://"):
                 return fail(f"{platform}/{arch}: source URL must use https")
+            cached = fetched.get(final_url)
+            if cached is not None:
+                assets.append({"os": platform, "arch": arch, **cached})
+                continue
             filename = final_url.rsplit("/", 1)[-1]
             output = Path(args.output) / filename
             output.parent.mkdir(parents=True, exist_ok=True)
@@ -365,10 +397,11 @@ def materialize(args: argparse.Namespace) -> int:
                     return fail(f"invalid archive {filename}: {archive_error}")
             sidecar = output.with_name(output.name + ".sha256")
             sidecar.write_text(f"{digest.hexdigest()}  {output.name}\n", encoding="utf-8")
-            assets.append({"os": platform, "arch": arch, "filename": filename,
-                           "size": size, "sha256": digest.hexdigest(),
-                           "source_url": final_url, "path": str(output),
-                           "sidecar_path": str(sidecar)})
+            fetched[final_url] = {"filename": filename, "size": size,
+                                  "sha256": digest.hexdigest(),
+                                  "source_url": final_url, "path": str(output),
+                                  "sidecar_path": str(sidecar)}
+            assets.append({"os": platform, "arch": arch, **fetched[final_url]})
     manifest = {"format": 1, "package": args.package, "version": chosen_version,
                 "source_repo": lua_string(text, "repo"), "assets": assets}
     errors = validate_manifest(manifest)
@@ -534,12 +567,16 @@ def cmd_mirror(args: argparse.Namespace) -> int:
     tag = str(manifest["version"])
     repo = f"xlings-res/{package}"
     gitcode_repo = f"xlings-res/{package}"
-    files = [str(path)]
+    # dict-of-None preserves order and keeps a single copy per path — an
+    # arch-independent asset (nvm's shell tar) shows up under multiple arches
+    # in the manifest but must be attached to the release only once.
+    files_index: dict[str, None] = {str(path): None}
     for asset in manifest["assets"]:
         if asset.get("path"):
-            files.append(str(asset["path"]))
+            files_index[str(asset["path"])] = None
         if asset.get("sidecar_path"):
-            files.append(str(asset["sidecar_path"]))
+            files_index[str(asset["sidecar_path"])] = None
+    files = list(files_index)
     gh_command = ["gh", "release", "create", tag, "--repo", repo, *files]
     gtc_command = ["tools/gtc", "release", "create", gitcode_repo, "--tag", tag]
     if not args.execute:
