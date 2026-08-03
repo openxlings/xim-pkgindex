@@ -14,6 +14,16 @@ package = {
     xvm_enable = true,
     xpm = {
         linux = {
+            -- libexpat.so.1 ships under lib/.  Declaring the libdir here
+            -- lets xlings' predicate-driven elfpatch append it to every
+            -- consumer's RPATH so `deps.runtime = { "xim:expat@2.6.2" }`
+            -- is enough for dlopen/DT_NEEDED to resolve libexpat without
+            -- the consumer touching LD_LIBRARY_PATH.
+            exports = {
+                runtime = {
+                    libdirs = { "lib" },
+                },
+            },
             ["latest"] = { ref = "2.6.2" },
             ["2.6.2"] = {
                 url = {

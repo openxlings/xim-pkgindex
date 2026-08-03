@@ -97,16 +97,24 @@ package = {
             --
             -- libfreetype.so.6 is dlopen'd unconditionally at startup
             -- for the editor's text rendering (fires before even
-            -- `--version` prints), so it ships as a hard runtime dep.
-            -- The remaining GUI libraries -- libGL, libX11, libwayland,
-            -- libXi -- are also dlopen'd but only after a real display
-            -- server is required; `godot --headless` works without them
-            -- and they're left to the host so we don't ship an entire
-            -- X11/mesa stack.
+            -- `--version` prints), and freetype's font enumeration
+            -- pulls in libexpat.so.1 via fontconfig -- both must be
+            -- resolvable or the shim's very first line is a loader
+            -- error. Neither is in DT_NEEDED (readelf -d), so the
+            -- resolution rides on the RPATH xlings' predicate-driven
+            -- elfpatch appends from each dep's exports.runtime.libdirs
+            -- (see freetype.lua / expat.lua).
+            --
+            -- The remaining GUI libraries (libGL, libX11, libwayland,
+            -- libXi) are also dlopen'd but only after a real display
+            -- server is required; `godot --headless` works without
+            -- them and they're left to the host so we don't ship an
+            -- entire X11/mesa stack.
             deps = {
                 runtime = {
                     "xim:glibc@2.39",
                     "xim:freetype@2.13.2",
+                    "xim:expat@2.6.2",
                 },
             },
             ["latest"] = { ref = "4.7.1" },
@@ -218,6 +226,29 @@ function install()
 end
 
 function config()
+    -- xlings' predicate-driven elfpatch has already stamped the deps'
+    -- libdirs onto godot's DT_RUNPATH by the time we get here.  Per
+    -- ld.so(8), DT_RUNPATH is consulted only for DT_NEEDED entries --
+    -- glibc's dlopen(3) implementation deliberately ignores it -- so
+    -- godot's runtime dlopen of libfreetype.so.6 and libexpat.so.1
+    -- would fall through to the system search path and fail (verified
+    -- with LD_DEBUG=libs: the DT_NEEDED lookups honour the patched
+    -- path, the dlopen ones do not).  DT_RPATH *is* searched for
+    -- dlopen, so force-convert the entry.  --set-rpath preserves the
+    -- exact path list; --force-rpath is what flips the tag from
+    -- DT_RUNPATH to DT_RPATH.
+    if os.host() == "linux" then
+        local exe = _installed_exe()
+        -- One sh -c: read the existing rpath, and if non-empty, write
+        -- it back with --force-rpath (which flips DT_RUNPATH -> DT_RPATH).
+        -- Iorunv / stdout capture aren't exposed to the xim hook runtime,
+        -- so we can't compose this in Lua directly.
+        system.exec(string.format(
+            "sh -c 'r=$(patchelf --print-rpath %q); "
+                .. "[ -n \"$r\" ] && patchelf --force-rpath --set-rpath \"$r\" %q'",
+            exe, exe
+        ))
+    end
     xvm.add("godot", { bindir = pkginfo.install_dir() })
     return true
 end
