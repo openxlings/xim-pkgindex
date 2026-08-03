@@ -94,12 +94,20 @@ package = {
             -- referenced symbol version GLIBC_2.28. Godot statically
             -- links its C++ runtime, so libstdc++/libgcc_s are NOT in
             -- NEEDED (same as griddycode.lua, itself a Godot build).
-            -- GUI libraries (libGL/libX11/libwayland/libXi) are dlopen'd
-            -- by Godot at runtime rather than via DT_NEEDED and are not
-            -- shipped by xim; `godot --headless` works without them,
-            -- opening the editor still needs a real X11/Wayland session.
+            --
+            -- libfreetype.so.6 is dlopen'd unconditionally at startup
+            -- for the editor's text rendering (fires before even
+            -- `--version` prints), so it ships as a hard runtime dep.
+            -- The remaining GUI libraries -- libGL, libX11, libwayland,
+            -- libXi -- are also dlopen'd but only after a real display
+            -- server is required; `godot --headless` works without them
+            -- and they're left to the host so we don't ship an entire
+            -- X11/mesa stack.
             deps = {
-                runtime = { "xim:glibc@2.39" },
+                runtime = {
+                    "xim:glibc@2.39",
+                    "xim:freetype@2.13.2",
+                },
             },
             ["latest"] = { ref = "4.7.1" },
             ["4.7.1"] = _linux("4.7.1",
