@@ -295,15 +295,43 @@ function config()
     if os.host() == "linux" then
         local exe = _installed_exe()
         local host_dirs = _host_gui_libdirs()
-        local extra = #host_dirs > 0 and (":" .. table.concat(host_dirs, ":")) or ""
-        -- One sh -c: read the existing rpath, append probed host GUI
-        -- dirs, write back with --force-rpath.  Iorunv / stdout capture
-        -- aren't exposed to the xim hook runtime, so we can't compose
-        -- this in Lua directly.
+
+        -- The `add` helper in the shell snippet dedupes: on a repeat
+        -- install the host dirs from the previous run are still in
+        -- the rpath, and blindly appending would grow it unboundedly.
+        --
+        -- The final `patchelf --output <tmp> ... && mv <tmp> <exe>`
+        -- pattern is deliberate.  In-place `--set-rpath <exe>` fails
+        -- with `patchelf: open: Text file busy` (ETXTBSY) when the
+        -- user reinstalls while the editor is running -- Linux
+        -- refuses to truncate a mapped, executing binary.  rename(2)
+        -- unlinks the old inode; running processes keep their own
+        -- reference and stay on the old bytes, while new invocations
+        -- pick up the new file at the same path.
+        --
+        -- Iorunv / stdout capture aren't exposed to the xim hook
+        -- runtime, so shell does the read/decide/write in one line.
+        local add_lines = {}
+        for _, d in ipairs(host_dirs) do
+            table.insert(add_lines, string.format("add %q; ", d))
+        end
         system.exec(string.format(
-            "sh -c 'r=$(patchelf --print-rpath %q); "
-                .. "[ -n \"$r\" ] && patchelf --force-rpath --set-rpath \"$r%s\" %q'",
-            exe, extra, exe
+            "sh -c 'set -e; "
+                .. "exe=%q; "
+                .. "r=$(patchelf --print-rpath \"$exe\"); "
+                .. "[ -z \"$r\" ] && exit 0; "
+                .. "new=$r; "
+                .. "add() { case \":$new:\" in *\":$1:\"*) ;; "
+                    .. "*) new=$new:$1 ;; esac; }; "
+                .. "%s"
+                .. "if [ \"$new\" = \"$r\" ] "
+                    .. "&& readelf -d \"$exe\" 2>/dev/null "
+                    .. "| grep -q \"(RPATH)\"; then exit 0; fi; "
+                .. "tmp=$exe.rpatch.$$; "
+                .. "patchelf --output \"$tmp\" --force-rpath "
+                    .. "--set-rpath \"$new\" \"$exe\"; "
+                .. "mv \"$tmp\" \"$exe\"'",
+            exe, table.concat(add_lines)
         ))
     end
     xvm.add("godot", { bindir = pkginfo.install_dir() })
