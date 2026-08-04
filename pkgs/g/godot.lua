@@ -106,10 +106,17 @@ package = {
             -- (see freetype.lua / expat.lua).
             --
             -- The remaining GUI libraries (libGL, libX11, libwayland,
-            -- libXi) are also dlopen'd but only after a real display
-            -- server is required; `godot --headless` works without
-            -- them and they're left to the host so we don't ship an
-            -- entire X11/mesa stack.
+            -- libXi, libXcursor, libXrandr, libxkbcommon, ...) are
+            -- also dlopen'd but only after a real display server is
+            -- required; `godot --headless` works without them.
+            -- Shipping a full X11/mesa/wayland stack via xim is
+            -- infeasible (libGL drags in mesa+GPU drivers, and hardware
+            -- acceleration must go through the host driver anyway), so
+            -- config() below probes standard distro lib dirs at install
+            -- time and appends whichever one holds libX11.so.6 onto
+            -- godot's RPATH.  This makes the editor start on any host
+            -- that has the GUI stack installed; a hermetic container
+            -- without X11/wayland can only run --headless.
             deps = {
                 runtime = {
                     "xim:glibc@2.39",
@@ -232,6 +239,28 @@ function install()
     return os.isfile(exe)
 end
 
+-- Standard multi-arch / lib64 / usr-lib layouts across mainstream
+-- distros.  Probing for libX11.so.6 -- the smallest indispensable GUI
+-- lib -- is enough to pin the right dir; whichever dir ships libX11
+-- also ships libwayland-client / libXi / libGL and friends.
+local _HOST_GUI_CANDIDATES = {
+    "/lib/x86_64-linux-gnu",     -- Debian / Ubuntu multi-arch
+    "/usr/lib/x86_64-linux-gnu", -- Debian / Ubuntu (some layouts)
+    "/lib64",                    -- Fedora / RHEL / CentOS
+    "/usr/lib64",                -- SUSE, some others
+    "/usr/lib",                  -- Arch, void, generic
+}
+
+local function _host_gui_libdirs()
+    local dirs = {}
+    for _, d in ipairs(_HOST_GUI_CANDIDATES) do
+        if os.isfile(path.join(d, "libX11.so.6")) then
+            table.insert(dirs, d)
+        end
+    end
+    return dirs
+end
+
 function config()
     -- xlings' predicate-driven elfpatch has already stamped the deps'
     -- libdirs onto godot's DT_RUNPATH by the time we get here.  Per
@@ -245,16 +274,26 @@ function config()
     -- exact path list; --force-rpath is what flips the tag from
     -- DT_RUNPATH to DT_RPATH.  `patchelf` is provided by the
     -- `xim:patchelf@0.18.0` build dep declared above.
+    --
+    -- The X11/wayland/GL stack lives on the host (see rationale in the
+    -- xpm.linux comment).  xim's ld.so.cache is hermetic and does NOT
+    -- see /lib/x86_64-linux-gnu et al., so we probe standard distro
+    -- lib dirs at install time and append whichever ones exist onto
+    -- the RPATH.  This is a one-shot install-time snapshot -- if the
+    -- host layout changes later, `xlings remove godot && install godot`
+    -- refreshes the probe.
     if os.host() == "linux" then
         local exe = _installed_exe()
-        -- One sh -c: read the existing rpath, and if non-empty, write
-        -- it back with --force-rpath (which flips DT_RUNPATH -> DT_RPATH).
-        -- Iorunv / stdout capture aren't exposed to the xim hook runtime,
-        -- so we can't compose this in Lua directly.
+        local host_dirs = _host_gui_libdirs()
+        local extra = #host_dirs > 0 and (":" .. table.concat(host_dirs, ":")) or ""
+        -- One sh -c: read the existing rpath, append probed host GUI
+        -- dirs, write back with --force-rpath.  Iorunv / stdout capture
+        -- aren't exposed to the xim hook runtime, so we can't compose
+        -- this in Lua directly.
         system.exec(string.format(
             "sh -c 'r=$(patchelf --print-rpath %q); "
-                .. "[ -n \"$r\" ] && patchelf --force-rpath --set-rpath \"$r\" %q'",
-            exe, exe
+                .. "[ -n \"$r\" ] && patchelf --force-rpath --set-rpath \"$r%s\" %q'",
+            exe, extra, exe
         ))
     end
     xvm.add("godot", { bindir = pkginfo.install_dir() })
