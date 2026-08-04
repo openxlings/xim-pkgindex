@@ -116,6 +116,13 @@ package = {
                     "xim:freetype@2.13.2",
                     "xim:expat@2.6.2",
                 },
+                -- config() invokes `patchelf --force-rpath` to flip the
+                -- tag elfpatch stamps in (DT_RUNPATH -> DT_RPATH) so
+                -- godot's dlopen'd libs actually see the patched path.
+                -- Declaring it as a build dep makes install order
+                -- deterministic instead of trusting patchelf to already
+                -- be on the shim PATH by virtue of some other install.
+                build = { "xim:patchelf@0.18.0" },
             },
             ["latest"] = { ref = "4.7.1" },
             ["4.7.1"] = _linux("4.7.1",
@@ -236,7 +243,8 @@ function config()
     -- path, the dlopen ones do not).  DT_RPATH *is* searched for
     -- dlopen, so force-convert the entry.  --set-rpath preserves the
     -- exact path list; --force-rpath is what flips the tag from
-    -- DT_RUNPATH to DT_RPATH.
+    -- DT_RUNPATH to DT_RPATH.  `patchelf` is provided by the
+    -- `xim:patchelf@0.18.0` build dep declared above.
     if os.host() == "linux" then
         local exe = _installed_exe()
         -- One sh -c: read the existing rpath, and if non-empty, write
