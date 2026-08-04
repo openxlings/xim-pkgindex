@@ -160,6 +160,63 @@ function install()
 end
 ```
 
+## `subos.env` — declaring an environment a subos must export
+
+Requires **libxpkg ≥ 0.0.48**. Probe it (see the next section) — and probe it
+with `type()`, because it arrives as a new module.
+
+Some things a program needs cannot be linked or PATH'd into place. A GL driver
+is found through `LIBGL_DRIVERS_PATH`, an EGL vendor through
+`__EGL_VENDOR_LIBRARY_DIRS`, a font config through `XDG_DATA_DIRS`. The process
+that has to see them is the *user's own binary*, which xlings never wraps, so
+the per-shim `envs` on `xvm.add` cannot reach it.
+
+```lua
+import("xim.libxpkg.subos")
+
+function config()
+    if type(subos.env) == "function" then
+        local tag = package.name .. "@" .. pkginfo.version()
+        subos.env{ var = "LIBGL_DRIVERS_PATH", op = "set",
+                   value = "${pkgdir}/lib/dri", binding = tag }
+        subos.env{ var = "XDG_DATA_DIRS", op = "prepend",
+                   value = "${pkgdir}/share", binding = tag }
+    end
+    return true
+end
+```
+
+| field | required | meaning |
+|---|---|---|
+| `var` | ✅ | variable name |
+| `op` | | `set` (default) or `prepend`. `append` / `set-if-unset` are not implemented and are **refused**, not silently downgraded |
+| `value` | ✅ | may contain the placeholders below |
+| `binding` | | `<name>@<version>`; defaults to this package's. Declaring for another package is refused |
+
+**Values must use placeholders.** They are expanded when the subos is entered,
+and a literal absolute path pins the manifest to the machine that wrote it:
+
+| placeholder | expands to |
+|---|---|
+| `${pkgdir}` | the declaring package's install directory |
+| `${subosdir}` | the subos root |
+| `${home}` | the user's home |
+| `${xlings_home}` | `$XLINGS_HOME` |
+
+An unresolvable placeholder is left **verbatim** rather than blanked —
+`${pkgdir}/lib/dri` collapsing to `/lib/dri` would be a real path on the host,
+outside the subos. `xlings self doctor` reports it.
+
+**Do not write cleanup in `uninstall()`.** Declarations are provider-scoped:
+xlings drops the whole section with the package. A recipe removing them itself
+would be a second owner of that state.
+
+Conflicts (two packages claiming one variable) resolve deterministically by
+binding order, never by install history, so two machines holding the same
+manifest export the same values. `doctor` reports every conflict rather than
+resolving it quietly. A variable the **user** already exported wins over a
+`set`; `prepend` still composes with it.
+
 ## Adopting a capability older clients do not have
 
 The index serves every client version at once. Two kinds of change behave very
@@ -191,6 +248,45 @@ end
 the xlings binary, so the Lua function and the C++ that consumes its node kind
 ship together: "is `xvm.files` a function" *is* "does this client support
 `type = files`". One truth source, nothing to keep in sync.
+
+#### A new module needs `type()`, not truthiness
+
+`if xvm.files then` is correct **only because `xvm` is a module older clients
+already ship.** The field really is `nil` there. A missing *module* never is:
+
+```lua
+import("xim.libxpkg.subos")     -- a client without it gets a STUB
+if subos.env then               -- ← true on EVERY client. Wrong.
+```
+
+`import()` answers an unknown module with a permissive proxy whose every key
+returns a truthy, callable table. The old client takes the new branch, calls
+the function, and the call evaporates — install succeeds, nothing is
+configured, nothing complains.
+
+For a capability introduced as a **new module**, probe the type:
+
+```lua
+if type(subos.env) == "function" then
+    subos.env{ var = "LIBGL_DRIVERS_PATH", op = "set",
+               value = "${pkgdir}/lib/dri", binding = tag }
+else
+    -- unchanged legacy path
+end
+```
+
+The stub is a `table` carrying a `__call` metamethod; the real entry point is
+a `function`. That is the only thing that separates them.
+
+| the capability is… | probe |
+|---|---|
+| a new function on an existing module (`xvm.files`) | `if xvm.files then` |
+| a new module (`subos.env`) | `if type(subos.env) == "function" then` |
+
+xlings E2E-61 runs one recipe through a real released binary and the current
+build and asserts both readings — truthiness `true` on both, `type()` `false`
+then `true`. If `import()` ever stops stubbing unknown modules, that test is
+what says the rule can be relaxed.
 
 Rules:
 
