@@ -143,6 +143,11 @@ package = {
             ["4.6.3"] = _linux("4.6.3",
                 "d0bc2113065e481c9c2c2b2c37daa4e8be3fe9e27f0ab9ab0b6096e9a37907f3",
                 "90c70382eee1542904bf507b9bdc6e62a230ac73fd214bf3887a9e0a4d85aeed"),
+            -- 4.5.x is the previous stable line; kept for projects that
+            -- haven't migrated to the 4.6 config_version yet.
+            ["4.5.2"] = _linux("4.5.2",
+                "87f6e6be292929e363d15ed9052f277b2ba4e95ed994e1e099048097be2dfd03",
+                "97ad6d1b74020bd591520e4f8810c6a07451af75eefa0932f57daeb805124618"),
         },
         windows = {
             ["latest"] = { ref = "4.7.1" },
@@ -152,6 +157,9 @@ package = {
             ["4.6.3"] = _windows("4.6.3",
                 "e39986a178d585ce7ac198fb8de6ea436366dc0cc00e594810c2e3e104c04b90",
                 "d53b5b4c1d1e4f242d490a98a0da1b3579628e4d6f98a052542599862a96b10f"),
+            ["4.5.2"] = _windows("4.5.2",
+                "3766090865330ab2a0ed33594520394b711c620b1378f9223904faeef60f2f14",
+                "cedd4cb614a1c5c51ad1cd983b5d43c37e8c545ab9b397720edb885c1bd57538"),
         },
         macosx = {
             ["latest"] = { ref = "4.7.1" },
@@ -159,6 +167,8 @@ package = {
                 "897cb7f9799796c717ae75f31446aed883dc92b1d6c3b33d893cc7843fff2fa9"),
             ["4.6.3"] = _macosx("4.6.3",
                 "30630f3e9b11e10b35c1f90ba8814185dcec43fae1a48345159be7552c64bfe8"),
+            ["4.5.2"] = _macosx("4.5.2",
+                "2a3f35cf5813b0d26e3f4c15dabc5e7c58407fceec7bae5291740772f72d141a"),
         },
     },
 }
