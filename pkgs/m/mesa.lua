@@ -3,7 +3,7 @@ package = {
 
     homepage = "https://mesa3d.org",
     name = "mesa",
-    description = "Mesa 3D — OpenGL for CPU (llvmpipe), built self-contained for xlings subos",
+    description = "Mesa 3D — OpenGL and Vulkan: llvmpipe, radeonsi, nouveau, zink, RADV",
 
     authors = {"Mesa contributors"},
     licenses = {"MIT"},
@@ -14,7 +14,7 @@ package = {
     archs = {"x86_64"},
     status = "stable",
     categories = {"graphics", "opengl", "lib"},
-    keywords = {"mesa", "opengl", "gl", "egl", "llvmpipe", "graphics"},
+    keywords = {"mesa", "opengl", "vulkan", "gl", "egl", "llvmpipe", "radeonsi", "graphics"},
 
     -- What this package is for.
     --
@@ -25,7 +25,14 @@ package = {
     -- a GL program installed through xlings renders on a host that has no
     -- graphics stack of its own.
     --
-    -- Build details, including why only llvmpipe for now:
+    -- Drivers: llvmpipe and softpipe (CPU), radeonsi (AMD), nouveau (NVIDIA
+    -- open kernel module), zink (GL over Vulkan), and RADV for Vulkan on AMD.
+    -- Intel (iris/anv) and NVK are the two upstream drivers NOT here: iris and
+    -- anv require libclc, which needs clang and the SPIR-V translator, and NVK
+    -- is Rust and needs bindgen. Both are additions to the build chain rather
+    -- than to this recipe.
+    --
+    -- Build details, per-flag, and what each one cost:
     -- https://github.com/xlings-res/mesa
     xpm = {
         linux = {
@@ -55,6 +62,14 @@ package = {
                 "xim:libxshmfence@>=1.3",
                 "xim:expat@>=2.6",
                 "xim:zlib@>=1.2",
+                -- radeonsi reads the ELF that LLVM's AMDGPU backend emits.
+                "xim:elfutils@>=0.19",
+                -- The second window-system platform. Not optional once mesa
+                -- is built with `-Dplatforms=x11,wayland`: libEGL_mesa gains a
+                -- DT_NEEDED on libwayland-client, and a missing dep here does
+                -- not fail the install -- it makes glvnd's dlopen of the
+                -- vendor fail, which EGL reports as having no vendor at all.
+                "xim:wayland@>=1.23",
                 "xim:gcc-runtime@>=15",
                 -- Pinned, alone among these, and for a client reason rather
                 -- than an ABI one. The measured floor is 2.38 (libgallium's
@@ -73,13 +88,18 @@ package = {
             exports = {
                 runtime = { libdirs = { "lib" } },
             },
-            ["latest"] = { ref = "25.0.7" },
-            ["25.0.7"] = {
+            ["latest"] = { ref = "25.0.7.1" },
+            -- 25.0.7.1: upstream is 25.0.7, the fourth component is ours.
+            -- The payload was rebuilt with the full driver set, and a payload
+            -- whose contents changed has to be a different version — a GitCode
+            -- release asset is written once and cannot be deleted, so reusing
+            -- 25.0.7 would leave two different tarballs claiming one name.
+            ["25.0.7.1"] = {
                 url = {
-                    GLOBAL = "https://github.com/xlings-res/mesa/releases/download/25.0.7/mesa-25.0.7-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/mesa/releases/download/25.0.7/mesa-25.0.7-linux-x86_64.tar.gz",
+                    GLOBAL = "https://github.com/xlings-res/mesa/releases/download/25.0.7.1/mesa-25.0.7.1-linux-x86_64.tar.gz",
+                    CN     = "https://gitcode.com/xlings-res/mesa/releases/download/25.0.7.1/mesa-25.0.7.1-linux-x86_64.tar.gz",
                 },
-                sha256 = "17ff8a09973d69ce591351fe7b38cd40896ddf3444908024807be31673ddea4a",
+                sha256 = "84789c203ead56343b64d9edb76c1ff4fe7e886ba4194e6bc79e332e66e8867b",
             },
         },
     },
@@ -94,6 +114,10 @@ import("xim.pkgindex.sysroot")
 function install()
     local dir = pkginfo.install_dir()
     os.tryrm(dir)
+    -- The tarball's top-level directory is upstream's `mesa-25.0.7`; only the
+    -- ASSET is named 25.0.7.1. Moving the wrong name leaves the download cache
+    -- as the payload and install() still returns true, which is how this was
+    -- found: a package that installed cleanly and had no `lib/` at all.
     os.mv("mesa-25.0.7", dir)
 
     -- The glvnd vendor JSON ships a bare SONAME, which is how it is shipped
@@ -107,6 +131,40 @@ function install()
         local text = io.readfile(vendor)
         io.writefile(vendor, text:gsub('"libEGL_mesa%.so%.0"',
                                        '"' .. path.join(dir, "lib/libEGL_mesa.so.0") .. '"'))
+    end
+
+    -- The Vulkan ICD manifests need the same treatment, and worse: they ship
+    -- `"library_path": "/usr/lib/libvulkan_radeon.so"` — not a bare SONAME
+    -- that happens to resolve against the host, an ABSOLUTE host path. On a
+    -- machine with mesa installed that loads the host's driver under our
+    -- loader; on one without, it fails. Neither is this package.
+    -- `ls`, not os.files: os.files is an xmake API and this hook runs in
+    -- libxpkg's plain-Lua sandbox, where it is simply absent. The call raised,
+    -- the hook aborted, and the package still reported success — with the ICDs
+    -- left pointing at /usr/lib.
+    local icddir = path.join(dir, "share/vulkan/icd.d")
+    if os.isdir(icddir) then
+        local names = {}
+        local lsf = io.popen(string.format([[ls -1 "%s"/*.json 2>/dev/null]], icddir))
+        if lsf then
+            for line in lsf:lines() do
+                local n = line:gsub("[\r\n]+$", "")
+                if n ~= "" then table.insert(names, n) end
+            end
+            lsf:close()
+        end
+        for _, icd in ipairs(names) do
+            local text = io.readfile(icd)
+            -- Matched by the value's basename rather than by a list of driver
+            -- names, so a driver added upstream is covered without an edit
+            -- here — and a list that silently stops covering a new file is
+            -- exactly the shape that ships a working-looking package.
+            io.writefile(icd, (text:gsub('("library_path"%s*:%s*")([^"]+)(")',
+                function(pre, val, post)
+                    local base = val:match("([^/]+)$") or val
+                    return pre .. path.join(dir, "lib", base) .. post
+                end)))
+        end
     end
     return true
 end

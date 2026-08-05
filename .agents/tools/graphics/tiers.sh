@@ -44,7 +44,7 @@ T2=(
 )
 
 T3=(
-  "wayland|1.23.1|https://gitlab.freedesktop.org/wayland/wayland/-/releases/1.23.1/downloads/wayland-1.23.1.tar.xz|meson|-Ddocumentation=false -Dtests=false"
+  "wayland|1.23.1|https://gitlab.freedesktop.org/wayland/wayland/-/releases/1.23.1/downloads/wayland-1.23.1.tar.xz|meson|-Ddocumentation=false -Dtests=false|libxml2 expat"
   "wayland-protocols|1.38|https://gitlab.freedesktop.org/wayland/wayland-protocols/-/releases/1.38/downloads/wayland-protocols-1.38.tar.xz|meson|-Dtests=false"
   "libxkbcommon|1.7.0|https://xkbcommon.org/download/libxkbcommon-1.7.0.tar.xz|meson|-Denable-docs=false -Denable-wayland=false -Denable-xkbregistry=false"
 )
@@ -53,6 +53,16 @@ T3=(
 # layer, so it must exist before mesa is built as a *vendor* rather than as a
 # libGL replacement. That is what lets the mesa and NVIDIA paths coexist later.
 T4=(
+  # elfutils, for its libelf alone: radeonsi links it to read the ELF that
+  # LLVM's AMDGPU backend emits for a shader. `--disable-debuginfod` and
+  # `--without-*` keep the rest of elfutils — the debuginfo tooling — out of a
+  # payload that exists to satisfy one dependency.
+  "elfutils|0.191|https://sourceware.org/elfutils/ftp/0.191/elfutils-0.191.tar.bz2|autotools|--disable-debuginfod --disable-libdebuginfod --without-bzlib --without-lzma --without-zstd --disable-nls --program-prefix=eu- CFLAGS=-Wno-error"
+  # glslang: mesa's Vulkan drivers compile built-in shaders at build time and
+  # meson looks for `glslangValidator` by name. ENABLE_OPT=OFF keeps
+  # SPIRV-Tools out of the picture — that optimiser is for glslang's own
+  # command line, and mesa does not ask for it.
+  "glslang|15.1.0|https://github.com/KhronosGroup/glslang/archive/refs/tags/15.1.0.tar.gz|cmake|-DENABLE_OPT=OFF -DGLSLANG_TESTS=OFF -DENABLE_CTEST=OFF"
   "libglvnd|1.7.0|https://gitlab.freedesktop.org/glvnd/libglvnd/-/archive/v1.7.0/libglvnd-v1.7.0.tar.gz|meson|-Dgles1=false -Dasm=enabled"
 )
 
@@ -84,22 +94,26 @@ T4=(
 # glslang is packaged. Leaving it empty is visible in the payload — no
 # libvulkan_*.so — rather than silently producing drivers that do not load.
 T5=(
-  "mesa|25.0.7|https://archive.mesa3d.org/mesa-25.0.7.tar.xz|meson|-Dgallium-drivers=llvmpipe -Dvulkan-drivers= -Dglvnd=enabled -Dplatforms=x11 -Dllvm=enabled -Dshared-llvm=enabled -Dlmsensors=disabled -Dvalgrind=disabled -Dbuild-tests=false -Dgallium-extra-hud=false"
+  "mesa|25.0.7|https://archive.mesa3d.org/mesa-25.0.7.tar.xz|meson|-Dgallium-drivers=llvmpipe,softpipe,radeonsi,nouveau,zink -Dvulkan-drivers=amd -Dglvnd=enabled -Dplatforms=x11,wayland -Dllvm=enabled -Dshared-llvm=enabled -Dlmsensors=disabled -Dvalgrind=disabled -Dbuild-tests=false -Dgallium-extra-hud=false|libxml2 expat"
 )
 
 run_tier() {  # <tier-name> <entries...>
     local tier="$1"; shift
-    local entry name version url system extra
+    local entry name version url system extra deps
     for entry in "$@"; do
-        IFS='|' read -r name version url system extra <<<"$entry"
+        # The sixth field is optional: xlings packages whose payload is a build
+        # dependency but which do not stage themselves into the subos sysroot.
+        # See build-in-subos.sh --deps.
+        IFS='|' read -r name version url system extra deps <<<"$entry"
         echo "── $tier :: $name $version ──────────────────────────────"
+        local args=(--name "$name" --version "$version" --url "$url"
+                    --system "$system")
+        [[ -n "${deps:-}" ]] && args+=(--deps "$deps")
         # shellcheck disable=SC2086
         if [[ -n "$extra" ]]; then
-            bash "$BUILD" --name "$name" --version "$version" --url "$url" \
-                 --system "$system" -- $extra || return 1
+            bash "$BUILD" "${args[@]}" -- $extra || return 1
         else
-            bash "$BUILD" --name "$name" --version "$version" --url "$url" \
-                 --system "$system" || return 1
+            bash "$BUILD" "${args[@]}" || return 1
         fi
     done
 }

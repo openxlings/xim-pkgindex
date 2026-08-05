@@ -40,6 +40,11 @@ UPSTREAM = {
     "libglvnd":     "https://gitlab.freedesktop.org/glvnd/libglvnd/-/archive/v{v}/libglvnd-v{v}.tar.gz",
     "libllvm":      "https://github.com/llvm/llvm-project/releases/download/llvmorg-{v}/llvm-project-{v}.src.tar.xz",
     "mesa":         "https://archive.mesa3d.org/mesa-{v}.tar.xz",
+    "wayland":      "https://gitlab.freedesktop.org/wayland/wayland/-/releases/{v}/downloads/wayland-{v}.tar.xz",
+    "wayland-protocols": "https://gitlab.freedesktop.org/wayland/wayland-protocols/-/releases/{v}/downloads/wayland-protocols-{v}.tar.xz",
+    "libxkbcommon": "https://xkbcommon.org/download/libxkbcommon-{v}.tar.xz",
+    "glslang":      "https://github.com/KhronosGroup/glslang/archive/refs/tags/{v}.tar.gz",
+    "elfutils":     "https://sourceware.org/elfutils/ftp/{v}/elfutils-{v}.tar.bz2",
 }
 for _n in ("libXau", "libXdmcp", "libxcb", "libX11", "libXext", "libXrender",
            "libXfixes", "libXrandr", "libXxf86vm", "libXi", "libXcursor"):
@@ -64,6 +69,43 @@ FLAGS = {
 # The decisions that are not visible in the flags and cost real time to
 # rediscover. Empty means "nothing surprising".
 NOTES = {
+    "wayland": """
+The Wayland protocol library and its scanner. `wayland-scanner` is a build
+tool the rest of the stack runs — mesa and wayland-protocols both invoke it —
+so this payload ships a binary as well as libraries, and that binary is the
+reason the build harness had to learn to patch RPATHs on the copy it installs
+into the build subos.
+
+libxml2 is a build dependency of the scanner alone (DTD validation). It is
+supplied from the xlings package rather than the sysroot, because that package
+predates the header/library declarations the rest of this stack uses.
+""",
+    "wayland-protocols": """
+XML protocol definitions, no library. mesa reads them at build time through
+`wayland-scanner`; nothing loads this at run time.
+""",
+    "libxkbcommon": """
+Keymap handling for Wayland clients. Built with `-Denable-wayland=false`: that
+option builds an extra *tool*, and enabling it would make this package depend
+on wayland-protocols for no benefit to what the stack uses it for.
+""",
+    "glslang": """
+Khronos's GLSL front end. mesa's Vulkan drivers compile built-in shaders at
+build time and meson looks for `glslangValidator` **by name**, so this has to
+be on PATH during mesa's build — not merely installed.
+
+`-DENABLE_OPT=OFF` keeps SPIRV-Tools out: that optimiser serves glslang's own
+command line, and mesa does not ask for it.
+""",
+    "elfutils": """
+Built for `libelf` and nothing else. radeonsi links it to read the ELF that
+LLVM's AMDGPU backend emits for a compiled shader.
+
+Everything else elfutils ships — the debuginfo tooling — is configured out, and
+`CFLAGS=-Wno-error` is required because 0.191 predates gcc 15 and its
+warnings-as-errors default turns new diagnostics into build failures.
+""",
+
     "libllvm": """### Why only X86 and AMDGPU
 
 Undefined-symbol analysis of mesa's `libgallium` finds `LLVMInitializeX86*`
@@ -223,6 +265,24 @@ def flags_section(name):
         return ("Standard autotools/meson configuration; the harness supplies "
                 "`--prefix=/usr --libdir=lib` and the subos toolchain.\n")
     return f"### Configuration\n\n```\n{f}\n```\n"
+
+
+def upstream_url(name, version):
+    """Upstream tarball for NAME at VERSION.
+
+    mesa ships as `25.0.7.1`: the payload was rebuilt with a wider driver set
+    while upstream stayed at 25.0.7, and a package whose contents changed has
+    to be a different version — GitCode releases cannot be deleted, so the
+    asset for a version is written once. The fourth component is ours; the
+    upstream URL takes the first three.
+    """
+    tmpl = UPSTREAM.get(name)
+    if not tmpl:
+        return None
+    v = version
+    if name == "mesa" and version.count(".") == 3:
+        v = version.rsplit(".", 1)[0]
+    return tmpl.format(v=v)
 
 
 def render(name, version, sha):

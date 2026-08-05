@@ -80,7 +80,17 @@ SPEC = {
     "libXi":        (["xim:libXext@>=1.3", "xim:libXfixes@>=6.0"], True, None),
     "libXcursor":   (["xim:libXrender@>=0.9", "xim:libXfixes@>=6.0"], True, None),
 
+    # T3 — Wayland. mesa's second window-system platform; nothing in the X11
+    # path needs these, and a Wayland client needs all three.
+    "wayland":      (["xim:libffi@>=3.4", GLIBC], True, None),
+    "wayland-protocols": ([], False, None),
+    "libxkbcommon": ([], True, None),
+
     # T4 — the graphics core.
+    # Build-time only for mesa, but a package all the same: `glslangValidator`
+    # has to be findable by name, and elfutils' libelf is linked by radeonsi.
+    "glslang":      (["xim:gcc-runtime@>=15", GLIBC], True, None),
+    "elfutils":     (["xim:zlib@>=1.2", GLIBC], True, None),
     "libglvnd":     (["xim:libX11@>=1.8", "xim:libXext@>=1.3"], True, None),
     "libllvm":      (["xim:gcc-runtime@>=15", GLIBC], True, None),
 }
@@ -104,6 +114,11 @@ MESA_DEPS = [
 ]
 
 DESCRIPTIONS = {
+    "wayland": "Wayland protocol library and scanner",
+    "wayland-protocols": "Wayland protocol extension definitions (build-time)",
+    "libxkbcommon": "Keymap handling library for Wayland and X11 clients",
+    "glslang": "Khronos reference GLSL/ESSL front end and validator (build-time)",
+    "elfutils": "ELF object file access library — libelf, for radeonsi",
     "xorgproto": "X Window System protocol headers (build-time)",
     "xcb-proto": "XML-XCB protocol descriptions (build-time)",
     "xtrans": "X transport layer macros and headers (build-time)",
@@ -204,11 +219,22 @@ end
 # `SPDX-License-Identifier: MIT` in its own meson.build.
 LICENSES = {
     "libllvm": '"Apache-2.0 WITH LLVM-exception"',
+    # wayland and libxkbcommon are MIT (the default below). glslang carries a
+    # mix that SPDX expresses as a disjunction of the three its files declare;
+    # elfutils is GPL-3.0-or-later overall, and libelf specifically is
+    # LGPL-3.0-or-later — both are stated because the payload contains both.
+    "glslang":  '"BSD-3-Clause", "Apache-2.0", "MIT"',
+    "elfutils": '"GPL-3.0-or-later", "LGPL-3.0-or-later"',
 }
 DEFAULT_LICENSE = '"MIT"'
 
 
 HOMEPAGES = {
+    "wayland": "https://wayland.freedesktop.org",
+    "wayland-protocols": "https://wayland.freedesktop.org",
+    "libxkbcommon": "https://xkbcommon.org",
+    "glslang": "https://github.com/KhronosGroup/glslang",
+    "elfutils": "https://sourceware.org/elfutils/",
     "libdrm": "https://dri.freedesktop.org/",
     "libglvnd": "https://gitlab.freedesktop.org/glvnd/libglvnd",
     "libllvm": "https://llvm.org",
@@ -219,6 +245,11 @@ HOMEPAGES = {
 # under gitlab.freedesktop.org/xorg/{lib,proto}/<name>; pointing `repo` at
 # x.org sends anyone looking for the source to a landing page.
 REPOS = {
+    "wayland": "https://gitlab.freedesktop.org/wayland/wayland",
+    "wayland-protocols": "https://gitlab.freedesktop.org/wayland/wayland-protocols",
+    "libxkbcommon": "https://github.com/xkbcommon/libxkbcommon",
+    "glslang": "https://github.com/KhronosGroup/glslang",
+    "elfutils": "https://sourceware.org/git/elfutils.git",
     "libdrm":   "https://gitlab.freedesktop.org/mesa/drm",
     "libglvnd": "https://gitlab.freedesktop.org/glvnd/libglvnd",
     "libllvm":  "https://github.com/llvm/llvm-project",
@@ -231,11 +262,16 @@ _XORG_PROTO = ("xorgproto", "xcb-proto")
 # only run one — and headers reach the sysroot only if a recipe declares them.
 # glibc is the model: its headers are in the sysroot because glibc declares
 # them, and nothing else appears there by accident.
-HEADERS = {"libglvnd", "libdrm", "libX11", "libxcb", "libXext", "libXfixes",
+HEADERS = {"wayland", "libxkbcommon", "glslang", "elfutils", "libglvnd", "libdrm", "libX11", "libxcb", "libXext", "libXfixes",
            "libXrender", "libXrandr", "libXi", "libXcursor", "libXxf86vm",
            "libXau", "libXdmcp", "libpciaccess", "libxshmfence", "xorgproto"}
 
 AUTHORS = {
+    "wayland": '"Wayland contributors"',
+    "wayland-protocols": '"Wayland contributors"',
+    "libxkbcommon": '"xkbcommon contributors"',
+    "glslang": '"The Khronos Group Inc."',
+    "elfutils": '"Red Hat, Inc.", "elfutils contributors"',
     "libllvm":  '"LLVM Project"',
     "libglvnd": '"NVIDIA Corporation", "libglvnd contributors"',
     "libdrm":   '"Mesa contributors"',
