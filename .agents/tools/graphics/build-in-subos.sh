@@ -76,6 +76,21 @@ tar xf "$TARBALL" -C "$BUILDDIR" --strip-components=1 || fail "extract failed"
 # PKG_CONFIG_PATH and the include/lib paths point ONLY at the subos, so a
 # dependency that is not packaged yet fails the configure step loudly instead
 # of being silently satisfied by the host copy.
+
+# Enter the subos the way `xlings subos use` does: its bin/ first on PATH.
+#
+# This is not a workaround for the subos mechanism — it IS the mechanism. A
+# tool invoked by absolute path (as this script does for meson and gcc) never
+# enters the subos context, so anything those tools then look up by NAME
+# resolves against the ambient PATH instead. meson's find_program('python3')
+# picked the developer's global `subos/current` python, and mesa reported its
+# mako module missing from an interpreter nobody installed it into.
+#
+# Everything the build needs is installed INTO this subos with
+# `xlings install`; putting its bin first is what makes those installs the
+# ones that get found.
+export PATH="$SUBOS/bin:$PATH"
+
 PREFIX=/usr
 # Both spellings: a payload uses a flat lib/, but a package that ignores
 # --libdir still lands in the distro multiarch path and its .pc would then be

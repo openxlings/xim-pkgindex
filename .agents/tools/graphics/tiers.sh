@@ -68,8 +68,23 @@ T4=(
 #
 # lmsensors is off — it only feeds a GPU temperature query, and enabling it
 # would add another package to the tier list for a HUD readout.
+#
+# gallium-drivers is llvmpipe ONLY for this first pass. iris pulls in libclc
+# (meson.build: with_gallium_iris => with_clc), which is another package, and
+# the acceptance criterion exercises llvmpipe. Prove the whole chain — libglvnd
+# vendor loading, libllvm's JIT, the X11 client stack, the empty-host container
+# — with one driver, then widen. A driver added to a pipeline that already
+# renders is a small change; a pipeline debugged with five drivers at once is
+# not.
+#
+# vulkan-drivers is EMPTY for now, and that is a staging decision rather than
+# a scope cut. Building them needs glslangValidator (glslang), which is one
+# more build-tool package; the acceptance criterion (S1-S4) exercises the GL
+# path through llvmpipe, so GL is proven first and Vulkan is re-enabled once
+# glslang is packaged. Leaving it empty is visible in the payload — no
+# libvulkan_*.so — rather than silently producing drivers that do not load.
 T5=(
-  "mesa|25.0.7|https://archive.mesa3d.org/mesa-25.0.7.tar.xz|meson|-Dgallium-drivers=llvmpipe,iris,radeonsi,nouveau,zink -Dvulkan-drivers=swrast,intel,amd,nouveau -Dglvnd=enabled -Dplatforms=x11 -Dllvm=enabled -Dshared-llvm=enabled -Dlmsensors=disabled -Dvalgrind=disabled -Dbuild-tests=false -Dgallium-extra-hud=false"
+  "mesa|25.0.7|https://archive.mesa3d.org/mesa-25.0.7.tar.xz|meson|-Dgallium-drivers=llvmpipe -Dvulkan-drivers= -Dglvnd=enabled -Dplatforms=x11 -Dllvm=enabled -Dshared-llvm=enabled -Dlmsensors=disabled -Dvalgrind=disabled -Dbuild-tests=false -Dgallium-extra-hud=false"
 )
 
 run_tier() {  # <tier-name> <entries...>

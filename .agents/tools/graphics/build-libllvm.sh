@@ -86,7 +86,7 @@ log "compiler: $("$BUILD_CC" --version | head -1)"
 log "configuring (X86;AMDGPU, shared libLLVM)"
 "$CMAKE" -S "$SRC/llvm" -B "$BUILD" -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
-  -DCMAKE_INSTALL_PREFIX=/usr \
+  -DCMAKE_INSTALL_PREFIX="$SUBOS/usr" \
   -DCMAKE_C_COMPILER="$BUILD_CC" \
   -DCMAKE_CXX_COMPILER="$BUILD_CXX" \
   -DCMAKE_MAKE_PROGRAM="$NINJA" \
@@ -115,7 +115,11 @@ log "configuring (X86;AMDGPU, shared libLLVM)"
 # that would otherwise have to be packaged and shipped for nobody.
 
 log "building (this is the long one)"
-"$NINJA" -C "$BUILD" LLVM > "$WORK/libllvm-build.log" 2>&1 \
+# llvm-config alongside the library: mesa's meson resolves LLVM through
+# `dependency('llvm')`, which shells out to llvm-config for the include path,
+# the library name and the component list. Without it meson falls through to
+# looking for an llvm.wrap subproject and stops.
+"$NINJA" -C "$BUILD" LLVM llvm-config > "$WORK/libllvm-build.log" 2>&1 \
   || { tail -25 "$WORK/libllvm-build.log"; fail "ninja"; }
 
 SO="$(find "$BUILD/lib" -maxdepth 1 -name 'libLLVM.so.*' ! -type l | head -1)"
@@ -136,7 +140,22 @@ log "→ $OUT  ($(du -h "$OUT" | cut -f1), unpacked $(du -sh "$PAYLOAD" | cut -f
 sha256sum "$OUT" | sed 's/^/[libllvm] sha256: /'
 
 if [[ "${XLINGS_GFX_STAGE:-1}" == "1" ]]; then
-    mkdir -p "$SUBOS/usr/lib"
+    mkdir -p "$SUBOS/usr/lib" "$SUBOS/usr/bin"
     cp -a "$PAYLOAD/lib/." "$SUBOS/usr/lib/"
-    log "  staged into $SUBOS_NAME"
+
+    # A full LLVM install is staged for the BUILD, separately from the payload.
+    #
+    # Copying llvm-config and the headers by hand is not enough: llvm-config
+    # answers `--shared-mode` by checking that the component archives it knows
+    # about are present, so against a lib/ holding only libLLVM.so it errors
+    # out per component and mesa's `dependency('llvm', method: 'config-tool')`
+    # reports LLVM missing. A runtime-only tree cannot serve as a build
+    # dependency; the tool needs a coherent installation to describe.
+    #
+    # So the subos gets the whole install and the tarball keeps only lib/ —
+    # the line distributions draw between libllvm20 and llvm-dev.
+    log "staging a full LLVM install for the build (payload stays lib-only)"
+    "$NINJA" -C "$BUILD" install >> "$WORK/libllvm-build.log" 2>&1 \
+      || { tail -15 "$WORK/libllvm-build.log"; fail "llvm install"; }
+    ln -sf ../usr/bin/llvm-config "$SUBOS/bin/llvm-config" 2>/dev/null || true
 fi
