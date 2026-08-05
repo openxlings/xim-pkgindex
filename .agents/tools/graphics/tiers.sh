@@ -49,6 +49,29 @@ T3=(
   "libxkbcommon|1.7.0|https://xkbcommon.org/download/libxkbcommon-1.7.0.tar.xz|meson|-Denable-docs=false -Denable-wayland=false -Denable-xkbregistry=false"
 )
 
+# T4 — the graphics core. libglvnd first: it is the vendor-neutral dispatch
+# layer, so it must exist before mesa is built as a *vendor* rather than as a
+# libGL replacement. That is what lets the mesa and NVIDIA paths coexist later.
+T4=(
+  "libglvnd|1.7.0|https://gitlab.freedesktop.org/glvnd/libglvnd/-/archive/v1.7.0/libglvnd-v1.7.0.tar.gz|meson|-Dgles1=false -Dasm=enabled"
+)
+
+# T5 — mesa. Everything above exists to make this line possible.
+#
+# gallium-drivers is the four hardware targets the design commits to:
+# llvmpipe (CPU), iris (Intel), radeonsi (AMD), nouveau (NVIDIA-open), plus
+# zink for Vulkan-on-GL. vulkan-drivers mirrors it.
+#
+# -Dglvnd=enabled is the load-bearing one: it makes mesa build as a libglvnd
+# *vendor* (libGLX_mesa/libEGL_mesa) rather than as a libGL replacement, which
+# is what lets the NVIDIA proprietary vendor sit alongside it in one subos.
+#
+# lmsensors is off — it only feeds a GPU temperature query, and enabling it
+# would add another package to the tier list for a HUD readout.
+T5=(
+  "mesa|25.0.7|https://archive.mesa3d.org/mesa-25.0.7.tar.xz|meson|-Dgallium-drivers=llvmpipe,iris,radeonsi,nouveau,zink -Dvulkan-drivers=swrast,intel,amd,nouveau -Dglvnd=enabled -Dplatforms=x11 -Dllvm=enabled -Dshared-llvm=enabled -Dlmsensors=disabled -Dvalgrind=disabled -Dbuild-tests=false -Dgallium-extra-hud=false"
+)
+
 run_tier() {  # <tier-name> <entries...>
     local tier="$1"; shift
     local entry name version url system extra
@@ -71,6 +94,9 @@ case "$WHICH" in
   T1)  run_tier T1 "${T1[@]}" ;;
   T2)  run_tier T2 "${T2[@]}" ;;
   T3)  run_tier T3 "${T3[@]}" ;;
-  all) run_tier T1 "${T1[@]}" && run_tier T2 "${T2[@]}" && run_tier T3 "${T3[@]}" ;;
+  T4)  run_tier T4 "${T4[@]}" ;;
+  T5)  run_tier T5 "${T5[@]}" ;;
+  all) run_tier T1 "${T1[@]}" && run_tier T2 "${T2[@]}" \
+         && run_tier T4 "${T4[@]}" && run_tier T5 "${T5[@]}" ;;
   *)   echo "usage: $0 [T1|T2|T3|all]" >&2; exit 2 ;;
 esac

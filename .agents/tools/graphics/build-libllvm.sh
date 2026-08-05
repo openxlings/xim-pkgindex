@@ -59,16 +59,29 @@ rm -rf "$BUILD"; mkdir -p "$BUILD"
 CMAKE="$SUBOS/bin/cmake"; [[ -x "$CMAKE" ]] || CMAKE="$(command -v cmake)" || fail "no cmake"
 NINJA="$SUBOS/bin/ninja";  [[ -x "$NINJA" ]] || NINJA="$(command -v ninja)"  || fail "no ninja"
 
-# clang, not gcc. gcc 16.1.0 — the subos default — ICEs with a segfault on
-# AMDGPUAsmParser.cpp, and AMDGPU is not optional here (radeonsi needs it, see
-# the target list above). LLVM is also the compiler upstream builds LLVM with,
-# so this is the better-tested path rather than a workaround.
-BUILD_CC="$SUBOS/bin/clang"
-BUILD_CXX="$SUBOS/bin/clang++"
-if [[ ! -x "$BUILD_CC" ]]; then
-    log "clang not in the subos, falling back to gcc (expect an ICE on AMDGPU)"
-    BUILD_CC="$SUBOS/bin/gcc"; BUILD_CXX="$SUBOS/bin/g++"
-fi
+# gcc 15.1.0, explicitly — not the subos default and not clang.
+#
+# The subos default is gcc 16.1.0, which ICEs with a segfault on
+# AMDGPUAsmParser.cpp at 2212/2218. AMDGPU is not droppable: it is half of why
+# libllvm exists, since radeonsi's shader compiler needs it.
+#
+# clang was the obvious alternative and is wrong for a subtler reason. The
+# xlings `llvm` package's clang defaults to libc++, and libgallium references
+# 97 mangled llvm:: symbols while mesa is built against libstdc++. Two C++
+# runtimes in one process produce symbol names that match and object layouts
+# that do not. Forcing -stdlib=libstdc++ then fails to link.
+#
+# So: build with the compiler whose runtime the ecosystem actually ships.
+# `gcc-runtime` is 15.1.0, so gcc 15.1.0 makes the C++ ABI consistent by
+# construction rather than by a flag.
+# Through the subos's shim, not the payload's bin/ directly. The shim is what
+# carries the elfpatch'd interpreter and RPATH; invoking the payload binary by
+# absolute path bypasses that and cmake's compiler probe fails to link.
+# Select the version with `xlings use gcc 15.1.0` first.
+BUILD_CC="$SUBOS/bin/gcc"
+BUILD_CXX="$SUBOS/bin/g++"
+[[ -x "$BUILD_CC" ]] || fail "no gcc shim in the subos"
+log "compiler: $("$BUILD_CC" --version | head -1)"
 
 log "configuring (X86;AMDGPU, shared libLLVM)"
 "$CMAKE" -S "$SRC/llvm" -B "$BUILD" -G Ninja \
