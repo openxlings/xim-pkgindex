@@ -80,6 +80,7 @@ import("xim.libxpkg.log")
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.elfpatch")
 import("xim.pkgindex.sysroot")
 
 -- libnss modules
@@ -308,41 +309,73 @@ function __config_header(binding)
     io.writefile(stamp, pkginfo.version())
 end
 
+-- The tarball is a prebuilt, so it carries the absolute paths of the machine
+-- that built it -- and that machine used the `.xlings_data` home layout xlings
+-- abandoned long ago, so the paths cannot exist anywhere. Both the 2.39 and the
+-- 2.44 payloads are affected; it is the build pipeline's `--prefix`, not a
+-- stale artifact (see AD-4/AD-11 in xlings/.agents/docs/
+-- 2026-08-06-subos-architecture-proposal.md).
+--
+-- This used to be done here, by hand, and it did not work:
+--
+--   * it named six files, and the payload has build paths in five, of which
+--     the one that mattered most (`bin/ldd`'s TEXTDOMAINDIR) was on the list
+--     and still went unprocessed because the pattern's tail was anchored at
+--     `/lib`;
+--   * the pattern `([^%s)]+)/<marker>/lib` matched leftward through quotes and
+--     variable names, so `RTLDLIST="` was swallowed with the path and the ldd
+--     we ship does not survive `bash -n`;
+--   * and it reported success on having written anything, so neither failure
+--     produced any output at all.
+--
+-- libxpkg 0.0.51 does it properly, for every recipe that downloads a prebuilt:
+-- enumerate the payload, anchor on a whole absolute path token, and assert
+-- afterwards that no build path survived and every rewritten script still
+-- parses.
 function __relocate()
+    local marker = "fromsource-x-" .. package.name .. "/" .. pkginfo.version()
 
-    local relocate_files = {
-        "lib/libc.so",
-        "lib/libm.so",
-        "lib/libm.a",
+    -- type(), not truthiness: an unknown field on a module proxy is truthy on
+    -- every client, so `if elfpatch.relocate_build_paths then` would be true
+    -- even where the function does not exist. This repo has fallen into that
+    -- twice (subos.env, xim.pkgindex.sysroot).
+    if type(elfpatch.relocate_build_paths) == "function" then
+        elfpatch.relocate_build_paths{ marker = marker }
+        return
+    end
 
-        "bin/ldd",
-        "bin/tzselect",
-        "bin/xtrace",
-        "bin/sotruss",
-    }
-
---[[
-  Prebuilt tarball contains absolute paths from build machine (e.g. /home/xlings/.xlings_data/...).
-  Must replace ANY path ending with fromsource-x-glibc/VERSION/lib, not just current install path.
-]]
-
-    local fromsource_glibc = "fromsource-x-" .. package.name
+    -- Older client. Do the ONE substitution that is both needed and safe here,
+    -- and say plainly what is left undone.
+    --
+    -- Only the linker scripts. In those the path is preceded by `( ` or a
+    -- space, so the greedy match has nothing to swallow, and they are what a
+    -- compiler in this subos actually reads. The `bin/` scripts are left
+    -- ALONE: the old code's output for them was not "imperfect", it was a file
+    -- bash cannot parse, and an `ldd` that still names a nonexistent directory
+    -- is strictly better than an `ldd` that does not run.
     local version_escaped = pkginfo.version():gsub("%.", "%%.")
-    -- Match any absolute path ending with fromsource-x-glibc/VERSION/lib (build path varies by machine)
-    local path_pattern = "([^%s)]+)/" .. fromsource_glibc:gsub("-", "%%-") .. "/" .. version_escaped .. "/lib"
+    local path_pattern = "([^%s)]+)/"
+        .. ("fromsource-x-" .. package.name):gsub("-", "%%-")
+        .. "/" .. version_escaped .. "/lib"
 
     local base = pkginfo.install_dir()
-    log.info("relocate glibc paths (pattern: */%s/%s/lib) -> .", fromsource_glibc, pkginfo.version())
-
-    for _, f in ipairs(relocate_files) do
+    local rewritten = 0
+    for _, f in ipairs({ "lib/libc.so", "lib/libm.so", "lib/libm.a" }) do
         local abs_f = path.join(base, f)
         if os.isfile(abs_f) then
-            log.info("relocate file: " .. f)
             local content = io.readfile(abs_f)
             local new_content, count = content:gsub(path_pattern, ".")
             if count > 0 then
                 io.writefile(abs_f, new_content)
+                rewritten = rewritten + 1
             end
         end
     end
+
+    log.warn("this xlings is too old to relocate glibc's build paths "
+             .. "(libxpkg 0.0.51 added elfpatch.relocate_build_paths); "
+             .. "rewrote %d linker script(s), and bin/ldd, bin/tzselect, "
+             .. "bin/xtrace and bin/sotruss keep the build machine's paths. "
+             .. "Run `xlings self update` and reinstall glibc to fix them.",
+             rewritten)
 end
