@@ -53,27 +53,49 @@ if [[ ! -x "$PROBE" || "$HERE/glprobe.c" -nt "$PROBE" ]]; then
     log "building glprobe against the subos"
     CC="$SUBOS_DIR/bin/gcc"
     [[ -x "$CC" ]] || CC="$(command -v gcc)" || fail "no compiler"
-    "$CC" -O1 -o "$PROBE" "$HERE/glprobe.c" \
-        -I"$SUBOS_DIR/usr/include" -L"$SUBOS_DIR/lib" \
-        -lEGL -lGL 2>&1 | head -5 \
-        || fail "cannot build glprobe against the subos (are libglvnd's headers installed?)"
+    # No pipe into head here: the exit status would be head's, and a failed
+    # compile would sail past `|| fail` to be reported later as a missing
+    # binary inside the container — which reads as an incomplete closure
+    # rather than as "it never compiled".
+    if ! "$CC" -O1 -o "$PROBE" "$HERE/glprobe.c" \
+            -I"$SUBOS_DIR/usr/include" -L"$SUBOS_DIR/lib" -L"$SUBOS_DIR/usr/lib" \
+            -Wl,-rpath,"$SUBOS_DIR/usr/lib" -Wl,-rpath,"$SUBOS_DIR/lib" \
+            -lEGL -lGL > "$SUBOS_DIR/glprobe-build.log" 2>&1; then
+        sed 's/^/    /' "$SUBOS_DIR/glprobe-build.log" | head -15
+        fail "cannot build glprobe against the subos (is libglvnd installed?)"
+    fi
 fi
 
 # ── the empty host ──────────────────────────────────────────────────────
 # No --ro-bind /usr, no /lib. /dev/dri is the kernel and /sys is how libdrm and
 # libpciaccess enumerate devices; both are on the "cannot be ours" list.
+# Mount order matters. --tmpfs /tmp goes FIRST: bwrap applies these in
+# sequence, so a tmpfs mounted after the bind would shadow anything under /tmp
+# — and an XLINGS_HOME under /tmp (a scratch home, as in CI) then vanishes,
+# surfacing as "execvp: No such file or directory" for a binary that is plainly
+# there. The ENOENT is the loader's, not the binary's, which sends you looking
+# in the wrong place.
 OUT="$(
   bwrap \
     --unshare-all --die-with-parent \
-    --ro-bind "$XHOME" "$XHOME" \
-    --dev /dev --dev-bind /dev/dri /dev/dri \
-    --ro-bind /sys /sys \
     --proc /proc --tmpfs /tmp \
+    --ro-bind "$XHOME" "$XHOME" \
+    --dev-bind /dev/dri /dev/dri \
+    --ro-bind /sys /sys \
     --setenv XLINGS_HOME "$XHOME" \
     --setenv HOME /tmp \
+    --setenv LIBGL_DRIVERS_PATH "$SUBOS_DIR/usr/lib/dri" \
+    --setenv __EGL_VENDOR_LIBRARY_DIRS "$SUBOS_DIR/usr/share/glvnd/egl_vendor.d" \
+    --setenv LD_LIBRARY_PATH "$SUBOS_DIR/usr/lib:$SUBOS_DIR/lib" \
     -- "$PROBE" 2>&1
 )"
 RC=$?
+# The three --setenv above are TEMPORARY, and their removal is the next
+# milestone rather than a cleanup. They are exactly what `mesa`'s config() will
+# declare through subos.env{} once the recipe is published — at which point
+# entering the subos sets them and this script should still pass with these
+# lines deleted. Until then they stand in for the recipe, so the stack itself
+# can be judged separately from the packaging around it.
 
 echo "$OUT" | sed 's/^/    /'
 
