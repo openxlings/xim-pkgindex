@@ -143,9 +143,22 @@ function config()
     -- permissive proxy whose every key is truthy, so `if subos.env then` is
     -- true on clients that would accept the call and discard it.
     if type(subos.env) == "function" then
-        subos.env{ var = "LIBGL_DRIVERS_PATH", op = "set",
+        -- prepend, not set, for both of these: they are colon-separated
+        -- LISTS, and mesa is not the only thing entitled to be on them.
+        -- `nvidia-gl-host-link` contributes an EGL vendor directory for the
+        -- host's proprietary driver, and glvnd is built to see several
+        -- vendors at once and pick per display -- that is what
+        -- vendor-neutral dispatch is.
+        --
+        -- A `set` here does not merely lose that, it silently discards it:
+        -- xlings resolves a variable declared `set` by one provider and
+        -- `prepend` by another in favour of the `set`, so mesa would erase
+        -- NVIDIA's entry and the machine with the GPU would quietly render
+        -- through llvmpipe. Both operations still preserve a value the user
+        -- exported themselves, so nothing is given up by using prepend.
+        subos.env{ var = "LIBGL_DRIVERS_PATH", op = "prepend",
                    value = "${pkgdir}/lib/dri", binding = tag }
-        subos.env{ var = "__EGL_VENDOR_LIBRARY_DIRS", op = "set",
+        subos.env{ var = "__EGL_VENDOR_LIBRARY_DIRS", op = "prepend",
                    value = "${pkgdir}/share/glvnd/egl_vendor.d", binding = tag }
         subos.env{ var = "XDG_DATA_DIRS", op = "prepend",
                    value = "${pkgdir}/share", binding = tag }

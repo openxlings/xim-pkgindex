@@ -119,6 +119,26 @@ skipped=0
 # with "package 'scode:linux-headers@<ver>' not found". Best-effort.
 "$XLINGS_CMD" config --index-repo "scode:https://github.com/openxlings/xim-pkgindex-scode.git" 2>/dev/null || true
 
+# Put this repo's libs/ where a locally-registered recipe can import it.
+#
+# `config --add-xpkg` copies the recipe into the LOCAL index, and
+# `import("xim.pkgindex.sysroot")` resolves against the index the recipe came
+# from. The local index has no libs/, so the import falls through to the
+# unknown-module stub — whose every field is a truthy callable that returns
+# another stub. So every sysroot call in a recipe under test succeeded and did
+# nothing, and the branch guarded by `if not sysroot.declare_headers_tree(...)`
+# never took its fallback either.
+#
+# This is why a change that replaced the whole subos sysroot with a symlink
+# into one package's payload passed install-test green: the code that would
+# have done it was inert here, and only ran once published. A test that cannot
+# execute the thing it is testing reports on nothing.
+if [[ -d "$WORKSPACE_ROOT/libs" ]]; then
+    mkdir -p "$XLINGS_HOME_DIR/data/xim-pkgindex-local/libs"
+    cp "$WORKSPACE_ROOT/libs/"*.lua \
+       "$XLINGS_HOME_DIR/data/xim-pkgindex-local/libs/" 2>/dev/null || true
+fi
+
 # Register every changed descriptor BEFORE testing any of them.
 #
 # The loop below registers each package immediately before installing it, which
