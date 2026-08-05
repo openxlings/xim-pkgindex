@@ -17,7 +17,7 @@ package = {
 
     xpm = {
         linux = {
-            deps = { "libXrender@>=0.9", "libXfixes@>=6.0" },
+            deps = { "xim:libXrender@>=0.9", "xim:libXfixes@>=6.0" },
             -- elfpatch reads this from each dependency and writes the consumer's
             -- RPATH, which is what makes the stack resolve without anyone
             -- setting LD_LIBRARY_PATH. Same mechanism `gcc-runtime` uses.
@@ -48,6 +48,13 @@ end
 
 function config()
     xvm.add(package.name)
+
+    -- Headers into the subos sysroot, so a compiler in this subos can find
+    -- them. Declared rather than copied: xlings removes them with the package.
+    if xvm.files then
+        xvm.files{ src = "include", dst = "usr/include",
+                   binding = package.name .. "@" .. pkginfo.version() }
+    end
     return true
 end
 

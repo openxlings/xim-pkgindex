@@ -30,55 +30,61 @@ import sys
 # deps use ranges by default; see the module docstring for why, and for the one
 # place that does not.
 #
-# Names are BARE, without an `xim:` prefix — the majority form in this index
-# (70 of 106 dependency entries) and the one that works. A namespaced dep can
-# only resolve from that namespace, so a batch of new packages depending on
-# each other cannot install until every one of them is published: CI registers
-# changed packages under `local` and `xim:libX11` is not there yet. A bare name
-# resolves from whichever repo has it.
+# Names carry the `xim:` namespace, and getting here took one wrong turn worth
+# recording.
+#
+# Bare names were tried first, because a namespaced dep can only resolve from
+# that namespace and these packages all depend on each other — before they were
+# published, CI registered them under `local` and `xim:libX11` was not there.
+#
+# Once published, bare names became AMBIGUOUS instead: the same package now
+# exists in `xim` and, during the install test, in `local` too, and the resolver
+# refuses to guess. Namespacing is right in both directions — it is unambiguous
+# by construction, and the unpublished-sibling case it loses is handled where it
+# belongs, by the pre-registration pass in .github/scripts/posix-test.sh.
 SPEC = {
     # T1 — protocol descriptions and the kernel interface.
     "xorgproto":    ([], False, None),
     "xcb-proto":    ([], False, None),
     "xtrans":       ([], False, None),
-    "libpciaccess": (["zlib@>=1.2"], True, None),
-    "libdrm":       (["libpciaccess@>=0.18"], True, None),
+    "libpciaccess": (["xim:zlib@>=1.2"], True, None),
+    "libdrm":       (["xim:libpciaccess@>=0.18"], True, None),
     "libxshmfence": ([], True, None),
 
     # T2 — the X11 client stack. Each layer needs the one below it at run time.
-    "libXau":       (["xorgproto@>=2024"], True, None),
-    "libXdmcp":     (["xorgproto@>=2024"], True, None),
-    "libxcb":       (["libXau@>=1.0", "libXdmcp@>=1.1"], True, None),
-    "libX11":       (["libxcb@>=1.17", "xorgproto@>=2024"], True, None),
-    "libXext":      (["libX11@>=1.8"], True, None),
-    "libXrender":   (["libX11@>=1.8"], True, None),
-    "libXfixes":    (["libX11@>=1.8"], True, None),
-    "libXrandr":    (["libXext@>=1.3", "libXrender@>=0.9"], True, None),
-    "libXxf86vm":   (["libXext@>=1.3"], True, None),
-    "libXi":        (["libXext@>=1.3", "libXfixes@>=6.0"], True, None),
-    "libXcursor":   (["libXrender@>=0.9", "libXfixes@>=6.0"], True, None),
+    "libXau":       (["xim:xorgproto@>=2024"], True, None),
+    "libXdmcp":     (["xim:xorgproto@>=2024"], True, None),
+    "libxcb":       (["xim:libXau@>=1.0", "xim:libXdmcp@>=1.1"], True, None),
+    "libX11":       (["xim:libxcb@>=1.17", "xim:xorgproto@>=2024"], True, None),
+    "libXext":      (["xim:libX11@>=1.8"], True, None),
+    "libXrender":   (["xim:libX11@>=1.8"], True, None),
+    "libXfixes":    (["xim:libX11@>=1.8"], True, None),
+    "libXrandr":    (["xim:libXext@>=1.3", "xim:libXrender@>=0.9"], True, None),
+    "libXxf86vm":   (["xim:libXext@>=1.3"], True, None),
+    "libXi":        (["xim:libXext@>=1.3", "xim:libXfixes@>=6.0"], True, None),
+    "libXcursor":   (["xim:libXrender@>=0.9", "xim:libXfixes@>=6.0"], True, None),
 
     # T4 — the graphics core.
-    "libglvnd":     (["libX11@>=1.8", "libXext@>=1.3"], True, None),
-    "libllvm":      (["gcc-runtime@>=15", "glibc@>=2.38"], True, None),
+    "libglvnd":     (["xim:libX11@>=1.8", "xim:libXext@>=1.3"], True, None),
+    "libllvm":      (["xim:gcc-runtime@>=15", "xim:glibc@>=2.38"], True, None),
 }
 
 # mesa is written separately: it is the only recipe with an exact pin, and the
 # only one that declares environment through subos.env.
 MESA_DEPS = [
-    "libllvm@20.1.7",        # exact — see the module docstring
-    "libglvnd@>=1.7",
-    "libdrm@>=2.4",
-    "libX11@>=1.8",
-    "libxcb@>=1.17",
-    "libXext@>=1.3",
-    "libXfixes@>=6.0",
-    "libXxf86vm@>=1.1",
-    "libxshmfence@>=1.3",
-    "expat@>=2.6",
-    "zlib@>=1.2",
-    "gcc-runtime@>=15",
-    "glibc@>=2.38",
+    "xim:libllvm@20.1.7",        # exact — see the module docstring
+    "xim:libglvnd@>=1.7",
+    "xim:libdrm@>=2.4",
+    "xim:libX11@>=1.8",
+    "xim:libxcb@>=1.17",
+    "xim:libXext@>=1.3",
+    "xim:libXfixes@>=6.0",
+    "xim:libXxf86vm@>=1.1",
+    "xim:libxshmfence@>=1.3",
+    "xim:expat@>=2.6",
+    "xim:zlib@>=1.2",
+    "xim:gcc-runtime@>=15",
+    "xim:glibc@>=2.38",
 ]
 
 DESCRIPTIONS = {
@@ -160,7 +166,7 @@ end
 CONFIG_LIB = '''
 function config()
     xvm.add(package.name)
-    return true
+{headers}    return true
 end
 
 function uninstall()
@@ -200,6 +206,15 @@ REPOS = {
 }
 _XORG_PROTO = ("xorgproto", "xcb-proto")
 
+# Packages whose payload carries headers a consumer compiles against. A subos
+# with the graphics stack installed should be able to BUILD a GL program, not
+# only run one — and headers reach the sysroot only if a recipe declares them.
+# glibc is the model: its headers are in the sysroot because glibc declares
+# them, and nothing else appears there by accident.
+HEADERS = {"libglvnd", "libdrm", "libX11", "libxcb", "libXext", "libXfixes",
+           "libXrender", "libXrandr", "libXi", "libXcursor", "libXxf86vm",
+           "libXau", "libXdmcp", "libpciaccess", "libxshmfence", "xorgproto"}
+
 AUTHORS = {
     "libllvm":  '"LLVM Project"',
     "libglvnd": '"NVIDIA Corporation", "libglvnd contributors"',
@@ -234,7 +249,22 @@ def render(name, version, sha, global_url, cn_url):
         exports=(EXPORTS if has_libs else ""),
     )
     out += INSTALL.format(name=name, version=version)
-    out += CONFIG_LIB
+    hdr = ""
+    if name in HEADERS:
+        # type(), not truthiness — xvm.files is a function on clients that have
+        # it and genuinely absent on those that do not, so the plain form is
+        # correct here. Kept as a probe so an older client installs the payload
+        # and simply does not get the headers, rather than aborting the whole
+        # registration on an unknown node kind.
+        hdr = ("""
+    -- Headers into the subos sysroot, so a compiler in this subos can find
+    -- them. Declared rather than copied: xlings removes them with the package.
+    if xvm.files then
+        xvm.files{ src = "include", dst = "usr/include",
+                   binding = package.name .. "@" .. pkginfo.version() }
+    end
+""")
+    out += CONFIG_LIB.format(headers=hdr)
     return out
 
 

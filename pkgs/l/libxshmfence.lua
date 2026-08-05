@@ -48,6 +48,13 @@ end
 
 function config()
     xvm.add(package.name)
+
+    -- Headers into the subos sysroot, so a compiler in this subos can find
+    -- them. Declared rather than copied: xlings removes them with the package.
+    if xvm.files then
+        xvm.files{ src = "include", dst = "usr/include",
+                   binding = package.name .. "@" .. pkginfo.version() }
+    end
     return true
 end
 

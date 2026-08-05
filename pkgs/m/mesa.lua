@@ -40,27 +40,26 @@ package = {
             -- and the consumer only needs them present and not ancient;
             -- pinning would make the whole stack one block, where a libX11
             -- patch bump means editing a dozen recipes.
-            -- Bare names, not `xim:`-prefixed. A namespaced dependency can
-            -- only resolve from that namespace, so a batch of new packages
-            -- depending on each other cannot be installed until all of them
-            -- are published — CI registers changed recipes under `local`.
+            -- Namespaced. Bare names were tried and are ambiguous once these
+            -- packages exist in `xim` and the install test also registers them
+            -- under `local`; the resolver refuses to guess between the two.
             deps = {
-                "libllvm@20.1.7",
-                "libglvnd@>=1.7",
-                "libdrm@>=2.4",
-                "libX11@>=1.8",
-                "libxcb@>=1.17",
-                "libXext@>=1.3",
-                "libXfixes@>=6.0",
-                "libXxf86vm@>=1.1",
-                "libxshmfence@>=1.3",
-                "expat@>=2.6",
-                "zlib@>=1.2",
-                "gcc-runtime@>=15",
+                "xim:libllvm@20.1.7",
+                "xim:libglvnd@>=1.7",
+                "xim:libdrm@>=2.4",
+                "xim:libX11@>=1.8",
+                "xim:libxcb@>=1.17",
+                "xim:libXext@>=1.3",
+                "xim:libXfixes@>=6.0",
+                "xim:libXxf86vm@>=1.1",
+                "xim:libxshmfence@>=1.3",
+                "xim:expat@>=2.6",
+                "xim:zlib@>=1.2",
+                "xim:gcc-runtime@>=15",
                 -- >=2.38 is the measured floor: libgallium's highest required
                 -- symbol version is GLIBC_2.38. Writing @2.39 would state a
                 -- requirement the payload does not have.
-                "glibc@>=2.38",
+                "xim:glibc@>=2.38",
             },
             exports = {
                 runtime = { libdirs = { "lib" } },
@@ -106,6 +105,12 @@ function config()
     local tag = package.name .. "@" .. pkginfo.version()
 
     xvm.add(package.name)
+
+    -- Headers into the subos sysroot, so a compiler in this subos can build
+    -- against the stack rather than only run it.
+    if xvm.files then
+        xvm.files{ src = "include", dst = "usr/include", binding = tag }
+    end
 
     -- The configuration layer. Neither PATH nor RPATH can carry these: the
     -- process that has to see them is the user's own binary, which xlings
