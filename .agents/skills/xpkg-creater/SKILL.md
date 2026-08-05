@@ -156,6 +156,57 @@ xpm = {
 - 或 `xvm.add("tool", { bindir = ..., alias = ... })`
 - 可执行文件不在安装根目录时，必须明确 `bindir`
 
+### 2.3.1 共享名与 flavor 版本（注册前必查）
+
+一个 xvm 名字（程序名或 lib 名）可能被**多个包**提供：`java` 来自每个 JDK 发行版，
+`gcc` 来自 gcc.lua 和 musl-gcc.lua，`crt1.o`/`libc.so` 来自 glibc.lua 和 musl.lua。
+用裸版本号注册共享名有**两种**失败方式，长得完全不一样：
+
+| 情况 | 结果 |
+|------|------|
+| 两个包注册**同名同版本** | xvm 直接拒绝，第二个包整批 config 失败：`another package already owns this exact name and version` |
+| 两个包注册**同名不同版本** | **接受**，名字变成双 owner。一次 `xvm use` 落到另一侧就静默改写共享 `lib/` 里的符号链接 |
+
+第二种更危险，因为安装当下一切正常。实测（musl 加入前）：
+
+```
+crt1.o = {"active": "glibc-2.39", "installed": ["glibc-2.39", "musl-1.2.5"]}
+```
+
+`crt1.o` 一旦切到 musl 那侧，该 subos 里所有 glibc C 链接全部静默挂掉。
+
+**做法**：共享名注册到 **`<version>-<flavor>`**，并在配方里把撞名集合**单独列成一张表**。
+
+```lua
+-- 和 glibc.lua 的 glibc_libs 求交集算出来的，不是眼估的
+local SHARED_LIBS = { "crt1.o", "crti.o", "crtn.o", "Scrt1.o", "libc.a",
+                      "libc.so", "libdl.a", "libm.a", "libpthread.a",
+                      "librt.a", "libutil.a" }
+local MUSL_ONLY_LIBS = { "ld-musl-x86_64.so.1", "rcrt1.o", "libcrypt.a",
+                         "libresolv.a", "libxnet.a" }
+local FLAVOR = "musl"
+local function flavor_version() return pkginfo.version() .. "-" .. FLAVOR end
+```
+
+规则：
+
+1. **撞名集合要算，不要估。** 拿对方配方里的注册表和自己 payload 里真实的目录求交集，
+   并用测试锁住这个集合 —— 上游改了文件集，测试要能发现。
+2. **撞名的必须带 flavor；不撞名的也一起带**，这样整组能被同一次 `xlings use` 切换，
+   将来第三个包进来也是撞上约定而不是撞上一个恰好空着的版本号。
+3. **绑定根用 `type = "group"`。** 根节点不对应任何可执行文件（没有 `bin/musl`），
+   留成默认的 program 类型会生成一个永远失败的 shim
+   （`subos/*/bin/musl -> bin/xlings`），`self doctor` 会把它报成 orphan
+   （openxlings/xlings#452）。
+4. **`uninstall()` 必须版本内收敛**：`xvm.remove(name, flavor_version())`。
+   用裸名删会把对方包的注册一起删掉。
+5. **头文件同理。** 两个 libc 的 `stdio.h`/`features.h` 内容不同，散进共享
+   `usr/include` 后落地的那个会静默赢下整个 subos 的编译 —— 非 system libc 的头
+   要落到自己的命名空间（`usr/include/musl`）。
+
+已有先例（新包照抄即可）：`jdk-temurin/corretto/zulu` 的 `25.0.4+7-temurin`、
+`musl-gcc.lua` 的 `16.1.0-musl`、`musl.lua` 的 `1.2.5-musl`。
+
 ### 2.4 禁止事项（隔离合规）
 
 - 不要 `os.exec("xvm add ...")` / `os.exec("xvm remove ...")`

@@ -31,6 +31,23 @@
 -- highest referenced symbol version is GLIBC_2.17 (readelf -V), i.e.
 -- every mainstream distro since 2012.
 --
+-- `xim:musl` now exists, so the obvious next thought is to ship the musl
+-- asset against it and stop depending on the host libc at all. It really
+-- does work — `<musl>/lib/ld-musl-x86_64.so.1 claude --version` prints
+-- 2.1.222, and --help / doctor / `mcp list` all run — but only by
+-- invoking the loader explicitly, and that is not free:
+--
+--   $ claude doctor                            → Running: native
+--   $ /lib64/ld-linux-x86-64.so.2 claude doctor → Running: package-manager
+--
+-- Same binary, different answer. Under explicit-loader invocation the
+-- kernel points /proc/self/exe at the LOADER, not the program (measured:
+-- it reads back as `.../lib/libc.so`), and this binary contains three
+-- references to /proc/self/exe — it is how Bun computes
+-- `process.execPath`. Everything that re-spawns the CLI from that path
+-- would exec libc.so. `--version` passing proves nothing about it. So
+-- the glibc asset stays, and the host loader with it.
+--
 -- `deps` is deliberately EMPTY on linux, and that is load-bearing.
 -- Declaring `xim:glibc@...` would hand xlings' predicate-driven elfpatch
 -- a loader provider to key off, and **patchelf destroys this binary**:
@@ -45,6 +62,12 @@
 -- aarch64-linux-musl-gcc.lua's "no deps" note — same conclusion from the
 -- other side: there the payload needs no patching because it is static,
 -- here it must not be patched at all.
+--
+-- Adding `xim:musl` to `deps` would not change this: elfpatch IS
+-- patchelf, so pointing the dep at a musl loader instead of a glibc one
+-- reaches the same SIGSEGV by the same route. The only patch-free way to
+-- redirect the loader is the explicit invocation above, and it costs
+-- `process.execPath`.
 --
 -- GLOBAL = downloads.claude.ai, the authoritative upstream.
 -- CN     = gitcode.com/xlings-res/claude, a byte-identical copy of the
