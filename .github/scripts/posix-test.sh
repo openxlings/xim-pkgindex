@@ -287,6 +287,49 @@ for rel_file in "${files[@]}"; do
         info "no new shim appeared (type='$pkg_type'; programs='$programs' may have been re-pointed)"
     fi
 
+    # A payload's loader and its libc must come from the same payload.
+    #
+    # `ld.so` and `libc.so.6` are two halves of one build, talking over
+    # GLIBC_PRIVATE symbols that promise nothing across versions. A package
+    # that got them from different payloads installs cleanly, passes every
+    # check above, and faults before `main` on the user's machine with a
+    # message naming neither package nor version.
+    #
+    # xlings 2026.8.5.3 refuses to finish such an install, so this should
+    # never fire. It is here because the check that never fires is exactly
+    # the one worth keeping: it costs one string compare per binary, and it
+    # is what turns "we believe that cannot happen" into something CI states.
+    if [[ "$HOST_OS" == "linux" ]] && command -v patchelf >/dev/null 2>&1; then
+        step "[$pkg] loader/libc same-source"
+        split_found=0
+        while IFS= read -r -d '' elf; do
+            [[ "$(head -c4 "$elf" 2>/dev/null)" == $'\x7fELF' ]] || continue
+            interp="$(patchelf --print-interpreter "$elf" 2>/dev/null)" || continue
+            [[ -n "$interp" ]] || continue
+            payload_of() { sed -E 's#(.*/xpkgs/[^/]+/[^/]+)/.*#\1#' <<<"$1"; }
+            iroot="$(payload_of "$interp")"
+            [[ "$iroot" == *"/xpkgs/"* ]] || continue
+            provider="$(sed -E 's#.*/xpkgs/([^/]+)/[^/]+$#\1#' <<<"$iroot")"
+            rp="$(patchelf --print-rpath "$elf" 2>/dev/null)"
+            same=0; other=""
+            IFS=: read -ra parts <<<"$rp"
+            for part in "${parts[@]}"; do
+                case "$part" in *"/xpkgs/$provider/"*)
+                    r="$(payload_of "$part")"
+                    [[ "$r" == "$iroot" ]] && same=1 || other="$r" ;;
+                esac
+            done
+            if [[ -n "$other" && $same -eq 0 ]]; then
+                log_fail "loader/libc split: ${elf##*/} interp=$iroot rpath=$other"
+                split_found=1
+            fi
+        done < <(find "$XPKGS_DIR" -type f ! -type l -print0 2>/dev/null)
+        if [[ $split_found -eq 1 ]]; then
+            failures+=("$rel_file (loader/libc split)"); continue
+        fi
+        log_pass "loader and libc come from one payload"
+    fi
+
     step "[$pkg] uninstall ($pkg_spec)"
     if ! "$XLINGS_CMD" remove "$pkg_spec" -y; then
         log_fail "uninstall failed"; failures+=("$rel_file (uninstall)"); continue
