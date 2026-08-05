@@ -56,10 +56,19 @@ package = {
                 "xim:expat@>=2.6",
                 "xim:zlib@>=1.2",
                 "xim:gcc-runtime@>=15",
-                -- >=2.38 is the measured floor: libgallium's highest required
-                -- symbol version is GLIBC_2.38. Writing @2.39 would state a
-                -- requirement the payload does not have.
-                "xim:glibc@>=2.38",
+                -- Pinned, alone among these, and for a client reason rather
+                -- than an ABI one. The measured floor is 2.38 (libgallium's
+                -- highest required symbol version), but before 2026.8.5.2
+                -- xlings compared a dep's version half by string equality:
+                -- `@>=2.38` matched no plan node, glibc's exports were
+                -- dropped, elfpatch found "no loader provider in deps" and
+                -- patched nothing. mesa then installed reporting success with
+                -- its libraries still on a build-time RPATH, and glvnd's
+                -- dlopen of libEGL_mesa failed to find libexpat -- surfacing
+                -- as EGL having no vendor at all. glibc is the only dep that
+                -- exports a loader, so it is the only one where the miss is
+                -- fatal. Pinning keeps this usable on clients already out.
+                "xim:glibc@2.39",
             },
             exports = {
                 runtime = { libdirs = { "lib" } },
@@ -77,8 +86,10 @@ package = {
 }
 
 import("xim.libxpkg.pkginfo")
+import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.subos")
+import("xim.pkgindex.sysroot")
 
 function install()
     local dir = pkginfo.install_dir()
@@ -106,10 +117,22 @@ function config()
 
     xvm.add(package.name)
 
+    -- Only `lib/*.so*`, so the twelve driver modules under `lib/dri/` stay
+    -- out of `<subos>/lib`: those are loaded by path through
+    -- LIBGL_DRIVERS_PATH below, and are not link targets.
+    sysroot.declare_libs(dir, "lib", tag, pkginfo.version())
+
     -- Headers into the subos sysroot, so a compiler in this subos can build
     -- against the stack rather than only run it.
-    if xvm.files then
-        xvm.files{ src = "include", dst = "usr/include", binding = tag }
+    --
+    -- _tree because `EGL/`, `GL/` and `KHR/` are libglvnd's directories that
+    -- mesa adds files to. Declaring the directory would place it whole, and a
+    -- file asset is placed by rename(2) -- mesa's four headers would replace
+    -- libglvnd's twenty rather than join them.
+    if not sysroot.declare_headers_tree(dir, "include", "usr/include", tag) then
+        sysroot.install_headers_tree(
+            path.join(dir, "include"),
+            path.join(system.subos_sysrootdir(), "usr", "include"))
     end
 
     -- The configuration layer. Neither PATH nor RPATH can carry these: the

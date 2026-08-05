@@ -29,12 +29,28 @@ int main(void) {
     // with no display server reachable, which is what an empty host looks like.
     EGLDisplay dpy = EGL_NO_DISPLAY;
 
+    // Three ways to reach a display, reported separately. Collapsing them into
+    // one "no-display" hides which layer refused: a missing client extension
+    // (the loader never advertised surfaceless), a vendor that declined the
+    // platform, and no vendor at all are three different bugs, and the first
+    // two are indistinguishable from "the stack is not there" without this.
+    const char *clientExts = eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
+    printf("EGL_CLIENT_EXTENSIONS=%s\n", clientExts ? clientExts : "(none)");
+
     PFNEGLGETPLATFORMDISPLAYEXTPROC getPlatformDisplay =
         (PFNEGLGETPLATFORMDISPLAYEXTPROC)eglGetProcAddress("eglGetPlatformDisplayEXT");
-    if (getPlatformDisplay)
+    if (getPlatformDisplay) {
         dpy = getPlatformDisplay(EGL_PLATFORM_SURFACELESS_MESA, EGL_DEFAULT_DISPLAY, NULL);
-    if (dpy == EGL_NO_DISPLAY)
+        if (dpy == EGL_NO_DISPLAY)
+            printf("EGL_NOTE=surfaceless refused, egl error 0x%x\n", eglGetError());
+    } else {
+        printf("EGL_NOTE=no eglGetPlatformDisplayEXT\n");
+    }
+    if (dpy == EGL_NO_DISPLAY) {
         dpy = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+        if (dpy == EGL_NO_DISPLAY)
+            printf("EGL_NOTE=default display refused, egl error 0x%x\n", eglGetError());
+    }
     if (dpy == EGL_NO_DISPLAY) return fail("no-display");
 
     EGLint major = 0, minor = 0;

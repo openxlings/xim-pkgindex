@@ -42,6 +42,22 @@ import sys
 # refuses to guess. Namespacing is right in both directions — it is unambiguous
 # by construction, and the unpublished-sibling case it loses is handled where it
 # belongs, by the pre-registration pass in .github/scripts/posix-test.sh.
+
+# glibc is pinned where every other dep is a range, and the reason is a client
+# bug rather than an ABI one. Before 2026.8.5.2, xlings matched a dep's version
+# half by string equality, so `xim:glibc@>=2.38` matched no plan node, glibc's
+# exports were dropped, and elfpatch concluded "no loader provider in deps" and
+# patched nothing -- the package installed reporting success and its libraries
+# kept a build-time RPATH, so anything dlopen'd out of them failed to find its
+# siblings. glibc is the only dep that carries `exports.runtime.loader`, so it
+# is the only one where the miss is fatal: for the rest, closure_lib_paths
+# falls back to the {lib64, lib} convention and the RPATH still comes out
+# right. Pinning this one keeps the stack usable on clients already released.
+#
+# The measured floor is 2.38 (libgallium's highest required symbol version).
+# Widen this to a range once the fixed client is the floor worth assuming.
+GLIBC = "xim:glibc@2.39"
+
 SPEC = {
     # T1 — protocol descriptions and the kernel interface.
     "xorgproto":    ([], False, None),
@@ -66,7 +82,7 @@ SPEC = {
 
     # T4 — the graphics core.
     "libglvnd":     (["xim:libX11@>=1.8", "xim:libXext@>=1.3"], True, None),
-    "libllvm":      (["xim:gcc-runtime@>=15", "xim:glibc@>=2.38"], True, None),
+    "libllvm":      (["xim:gcc-runtime@>=15", GLIBC], True, None),
 }
 
 # mesa is written separately: it is the only recipe with an exact pin, and the
@@ -84,7 +100,7 @@ MESA_DEPS = [
     "xim:expat@>=2.6",
     "xim:zlib@>=1.2",
     "xim:gcc-runtime@>=15",
-    "xim:glibc@>=2.38",
+    GLIBC,
 ]
 
 DESCRIPTIONS = {
@@ -143,7 +159,9 @@ HEADER = '''package = {{
 }}
 
 import("xim.libxpkg.pkginfo")
+import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.pkgindex.sysroot")
 '''
 
 EXPORTS = """            -- elfpatch reads this from each dependency and writes the consumer's
@@ -165,8 +183,10 @@ end
 
 CONFIG_LIB = '''
 function config()
+    local binding = package.name .. "@" .. pkginfo.version()
+
     xvm.add(package.name)
-{headers}    return true
+{libs}{headers}    return true
 end
 
 function uninstall()
@@ -257,14 +277,29 @@ def render(name, version, sha, global_url, cn_url):
         # and simply does not get the headers, rather than aborting the whole
         # registration on an unknown node kind.
         hdr = ("""
-    -- Headers into the subos sysroot, so a compiler in this subos can find
-    -- them. Declared rather than copied: xlings removes them with the package.
-    if xvm.files then
-        xvm.files{ src = "include", dst = "usr/include",
-                   binding = package.name .. "@" .. pkginfo.version() }
+    -- Headers into the subos sysroot, so a compiler in this subos can build
+    -- against this package, not only run it. Declared rather than copied, so
+    -- xlings removes them with the package.
+    --
+    -- _tree, not declare_headers: eight packages in this stack contribute to
+    -- one `X11/`, and declaring that directory places it as a single asset --
+    -- rename(2) over the sysroot's copy, so the last install wins and the
+    -- other seven vanish. See libs/sysroot.lua for why neither of the
+    -- non-recursive helpers can express a shared namespace.
+    if not sysroot.declare_headers_tree(pkginfo.install_dir(), "include",
+                                        "usr/include", binding) then
+        sysroot.install_headers_tree(
+            path.join(pkginfo.install_dir(), "include"),
+            path.join(system.subos_sysrootdir(), "usr", "include"))
     end
 """)
-    out += CONFIG_LIB.format(headers=hdr)
+    libs = ""
+    if has_libs:
+        # So a program in this subos can be LINKED against the stack, not only
+        # run against it. See sysroot.declare_libs.
+        libs = ("\n    sysroot.declare_libs(pkginfo.install_dir(), \"lib\", "
+                "binding, pkginfo.version())\n")
+    out += CONFIG_LIB.format(headers=hdr, libs=libs)
     return out
 
 

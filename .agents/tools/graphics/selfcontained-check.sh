@@ -51,8 +51,14 @@ SUBOS_DIR="$XHOME/subos/$SUBOS_NAME"
 PROBE="$SUBOS_DIR/bin/glprobe"
 if [[ ! -x "$PROBE" || "$HERE/glprobe.c" -nt "$PROBE" ]]; then
     log "building glprobe against the subos"
+    # The subos's compiler, or nothing. Falling back to whatever `gcc` is on
+    # PATH does not degrade the test, it invalidates it: on this machine that
+    # is the real home's musl-gcc shim, which pairs musl's <stdarg.h> with the
+    # subos's glibc <stdio.h> and fails on `va_list` -- a libc mismatch that
+    # reads as a broken graphics stack. A compiler outside the subos also
+    # cannot prove anything about a subos that is meant to be self-contained.
     CC="$SUBOS_DIR/bin/gcc"
-    [[ -x "$CC" ]] || CC="$(command -v gcc)" || fail "no compiler"
+    [[ -x "$CC" ]] || fail "no gcc in subos '$SUBOS_NAME' (xlings install gcc)"
     # No pipe into head here: the exit status would be head's, and a failed
     # compile would sail past `|| fail` to be reported later as a missing
     # binary inside the container — which reads as an incomplete closure
@@ -75,6 +81,42 @@ fi
 # surfacing as "execvp: No such file or directory" for a binary that is plainly
 # there. The ENOENT is the loader's, not the binary's, which sends you looking
 # in the wrong place.
+
+# The environment the container gets is not written here. It is read back out
+# of the subos, where `mesa`'s config() put it through subos.env{} — the same
+# `--shell` code path that sets it for a user who enters the subos, evaluated
+# for a container instead of a login shell.
+#
+# This is the assertion, not the setup. An earlier revision of this script
+# hand-wrote --setenv LIBGL_DRIVERS_PATH and passed, which proved only that
+# mesa renders when told where its drivers are. Taking the values from the
+# package's own declaration is what makes a pass mean the user gets this for
+# free; if the declaration is dropped, S0 below fails instead of the script
+# quietly supplying it.
+SUBOS_ENV="$("$XLINGS_BIN" subos use "$SUBOS_NAME" --shell sh 2>/dev/null)"
+# `set` emits `: "${VAR:=value}"; export VAR;`, `prepend` emits
+# `export VAR="value${VAR:+:$VAR}";` — both shapes, names only.
+DECLARED="$(printf '%s\n' "$SUBOS_ENV" \
+    | sed -n -e 's/^export \([A-Za-z_][A-Za-z0-9_]*\)=.*/\1/p' \
+             -e 's/^: "${\([A-Za-z_][A-Za-z0-9_]*\):=.*/\1/p' \
+    | sort -u | grep -vxE 'PATH|XLINGS_[A-Z_]*')"
+
+grep -qx "LIBGL_DRIVERS_PATH" <<<"$DECLARED" \
+  || fail "S0: subos '$SUBOS_NAME' declares no LIBGL_DRIVERS_PATH — mesa's subos.env{} did not reach the manifest"
+log "  S0 ok — the subos declares: $(tr '\n' ' ' <<<"$DECLARED")"
+
+ENVARGS=()
+while IFS= read -r name; do
+    [[ -n "$name" ]] || continue
+    # Evaluated in an empty shell so the value is the declaration's, not this
+    # shell's variable of the same name leaking in.
+    value="$(env -i sh -c "$SUBOS_ENV"$'\n'"printf '%s' \"\${$name}\"")"
+    ENVARGS+=(--setenv "$name" "$value")
+done <<<"$DECLARED"
+
+# No LD_LIBRARY_PATH either: the probe was linked with -rpath into the subos,
+# which is how any program xlings installs finds its libraries. Handing one in
+# would hide a stack that only resolves when someone sets a search path.
 OUT="$(
   bwrap \
     --unshare-all --die-with-parent \
@@ -84,18 +126,10 @@ OUT="$(
     --ro-bind /sys /sys \
     --setenv XLINGS_HOME "$XHOME" \
     --setenv HOME /tmp \
-    --setenv LIBGL_DRIVERS_PATH "$SUBOS_DIR/usr/lib/dri" \
-    --setenv __EGL_VENDOR_LIBRARY_DIRS "$SUBOS_DIR/usr/share/glvnd/egl_vendor.d" \
-    --setenv LD_LIBRARY_PATH "$SUBOS_DIR/usr/lib:$SUBOS_DIR/lib" \
+    "${ENVARGS[@]}" \
     -- "$PROBE" 2>&1
 )"
 RC=$?
-# The three --setenv above are TEMPORARY, and their removal is the next
-# milestone rather than a cleanup. They are exactly what `mesa`'s config() will
-# declare through subos.env{} once the recipe is published — at which point
-# entering the subos sets them and this script should still pass with these
-# lines deleted. Until then they stand in for the recipe, so the stack itself
-# can be judged separately from the packaging around it.
 
 echo "$OUT" | sed 's/^/    /'
 

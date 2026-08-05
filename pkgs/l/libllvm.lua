@@ -17,7 +17,7 @@ package = {
 
     xpm = {
         linux = {
-            deps = { "xim:gcc-runtime@>=15", "xim:glibc@>=2.38" },
+            deps = { "xim:gcc-runtime@>=15", "xim:glibc@2.39" },
             -- elfpatch reads this from each dependency and writes the consumer's
             -- RPATH, which is what makes the stack resolve without anyone
             -- setting LD_LIBRARY_PATH. Same mechanism `gcc-runtime` uses.
@@ -37,7 +37,9 @@ package = {
 }
 
 import("xim.libxpkg.pkginfo")
+import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.pkgindex.sysroot")
 
 function install()
     local dir = pkginfo.install_dir()
@@ -47,7 +49,11 @@ function install()
 end
 
 function config()
+    local binding = package.name .. "@" .. pkginfo.version()
+
     xvm.add(package.name)
+
+    sysroot.declare_libs(pkginfo.install_dir(), "lib", binding, pkginfo.version())
     return true
 end
 

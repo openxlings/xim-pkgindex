@@ -31,7 +31,9 @@ package = {
 }
 
 import("xim.libxpkg.pkginfo")
+import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.pkgindex.sysroot")
 
 function install()
     local dir = pkginfo.install_dir()
@@ -41,6 +43,8 @@ function install()
 end
 
 function config()
+    local binding = package.name .. "@" .. pkginfo.version()
+
     xvm.add(package.name)
     return true
 end
