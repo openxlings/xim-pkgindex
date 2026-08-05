@@ -149,6 +149,8 @@ function install()
     local dir = pkginfo.install_dir()
     os.tryrm(dir)
     os.mkdir(path.join(dir, "lib"))
+    -- Ours, kept out of the host's directory. See the loop below.
+    local depsdir = path.join(dir, "lib", "xlings-deps")
 
     local nvdir = __probe_nvidia_dir()
     if not nvdir then
@@ -166,25 +168,35 @@ function install()
         linked = linked + 1
     end
 
-    -- Complete the directory with what the vendor needs from OUR packages.
+    -- What the vendor needs from OUR packages, in its own directory.
     --
-    -- glvnd dlopens libEGL_nvidia by absolute path. Its dependencies are then
-    -- searched against the process's paths — and the vendor is the host's
-    -- file, so we cannot patch an RPATH into it the way every other library
-    -- in this stack gets one. It needs a search path, and the question is
-    -- which directory that path should name.
+    -- `lib/` above is the host's, and nothing of ours is mixed into it: a
+    -- reader, a `ls`, and `exports.runtime.libdirs` can all tell the two
+    -- apart, and only the host half is what consumers of this package are
+    -- offered. This half exists for one reader, the dynamic loader.
     --
-    -- This one, not `<subos>/lib`. Everything else in the stack resolves
-    -- through payload directories, which the dependency graph pins; the subos
-    -- lib directory holds whatever happens to be installed in the subos the
-    -- user is standing in. Installing this package into a subos without
-    -- libX11 would leave `<subos>/lib` quietly short of it, and the failure
-    -- would be the vendor not loading, three layers from the cause.
+    -- Why it has to be gathered at all. glvnd dlopens libEGL_nvidia by
+    -- absolute path, so the vendor's dependencies are searched against the
+    -- process's paths — and the vendor is the host's file, so it cannot carry
+    -- an RPATH we control the way every other library in this stack does. It
+    -- needs a search path. A search path can name several directories, so the
+    -- gathering is not for want of room; it is that `subos.env` can only
+    -- resolve `${pkgdir}` for the package making the declaration, and there
+    -- is no syntax for "a dependency's payload directory". The alternative —
+    -- writing absolute paths into the value — gives up exactly the property
+    -- the placeholders exist for, that a manifest describes more than the
+    -- machine that wrote it.
     --
-    -- So the payload becomes self-sufficient: the host's NVIDIA userspace
-    -- plus links to the exact libraries it needs from our packages. Names
-    -- already linked above are never overwritten — NVIDIA's own copy of a
-    -- name wins over ours, which is what the driver expects.
+    -- And this package's directories, not `<subos>/lib`. Everything else in
+    -- the stack resolves through payload directories, which the dependency
+    -- graph pins; the subos lib directory holds whatever that subos happens
+    -- to contain. Installed into a subos without libX11, `<subos>/lib` would
+    -- be quietly short of it and the vendor would fail to load, three layers
+    -- from the cause.
+    --
+    -- A name already present in lib/ is not shadowed: NVIDIA ships its own
+    -- copy of some of these, and the driver expects to get it.
+    os.mkdir(depsdir)
     for _, dep in ipairs({
         {"glibc",    {"libc.so.6", "libpthread.so.0", "libdl.so.2",
                       "libm.so.6", "librt.so.1"}},
@@ -206,8 +218,8 @@ function install()
         local depdir = pkginfo.dep_install_dir(dep[1])
         if depdir then
             for _, name in ipairs(dep[2]) do
-                local link = path.join(dir, "lib", name)
-                if not os.isfile(link) then
+                local link = path.join(depsdir, name)
+                if not os.isfile(path.join(dir, "lib", name)) then
                     -- glibc keeps its shared objects in lib64 on x86_64 and
                     -- everything else in lib; try both rather than encode a
                     -- layout that is true of one package.
@@ -282,7 +294,8 @@ function config()
         -- Scoped to this package: uninstalling it takes the declaration
         -- with it, and a subos with no NVIDIA in it never gets one.
         subos.env{ var = "LD_LIBRARY_PATH", op = "prepend",
-                   value = "${pkgdir}/lib", binding = tag }
+                   value = "${pkgdir}/lib:${pkgdir}/lib/xlings-deps",
+                   binding = tag }
     end
     return true
 end
