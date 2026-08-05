@@ -5,8 +5,9 @@ package = {
     name = "libllvm",
     description = "LLVM as a shared library — the code generator mesa's llvmpipe and radeonsi use",
 
+    authors = {"LLVM Project"},
     licenses = {"Apache-2.0 WITH LLVM-exception"},
-    repo = "https://llvm.org",
+    repo = "https://github.com/llvm/llvm-project",
 
     type = "package",
     archs = {"x86_64"},

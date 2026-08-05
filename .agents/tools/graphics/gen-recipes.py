@@ -111,8 +111,9 @@ HEADER = '''package = {{
     name = "{name}",
     description = "{desc}",
 
+    authors = {{{authors}}},
     licenses = {{{licenses}}},
-    repo = "{homepage}",
+    repo = "{repo}",
 
     type = "package",
     archs = {{"x86_64"}},
@@ -188,9 +189,34 @@ HOMEPAGES = {
     "mesa": "https://mesa3d.org",
 }
 
+# The source repository, which is NOT the homepage. Every X.Org library lives
+# under gitlab.freedesktop.org/xorg/{lib,proto}/<name>; pointing `repo` at
+# x.org sends anyone looking for the source to a landing page.
+REPOS = {
+    "libdrm":   "https://gitlab.freedesktop.org/mesa/drm",
+    "libglvnd": "https://gitlab.freedesktop.org/glvnd/libglvnd",
+    "libllvm":  "https://github.com/llvm/llvm-project",
+    "mesa":     "https://gitlab.freedesktop.org/mesa/mesa",
+}
+_XORG_PROTO = ("xorgproto", "xcb-proto")
+
+AUTHORS = {
+    "libllvm":  '"LLVM Project"',
+    "libglvnd": '"NVIDIA Corporation", "libglvnd contributors"',
+    "libdrm":   '"Mesa contributors"',
+}
+DEFAULT_AUTHORS = '"X.Org Foundation"'
+
 
 def homepage(name):
     return HOMEPAGES.get(name, "https://www.x.org")
+
+
+def repo(name):
+    if name in REPOS:
+        return REPOS[name]
+    kind = "proto" if name in _XORG_PROTO else "lib"
+    return f"https://gitlab.freedesktop.org/xorg/{kind}/{name}"
 
 
 def render(name, version, sha, global_url, cn_url):
@@ -201,6 +227,7 @@ def render(name, version, sha, global_url, cn_url):
     kw = ", ".join(f'"{k}"' for k in (name.lower(), "graphics", "x11" if name.startswith(("libX", "libx", "xorg", "xcb", "xtrans")) else "gl"))
     out = HEADER.format(
         homepage=homepage(name), name=name, desc=DESCRIPTIONS[name],
+        repo=repo(name), authors=AUTHORS.get(name, DEFAULT_AUTHORS),
         licenses=LICENSES.get(name, DEFAULT_LICENSE),
         keywords=kw, deps=deps_s, version=version, sha=sha,
         global_url=global_url, cn=cn_url,

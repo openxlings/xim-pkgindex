@@ -5,8 +5,9 @@ package = {
     name = "libXrender",
     description = "X Rendering Extension client library",
 
+    authors = {"X.Org Foundation"},
     licenses = {"MIT"},
-    repo = "https://www.x.org",
+    repo = "https://gitlab.freedesktop.org/xorg/lib/libXrender",
 
     type = "package",
     archs = {"x86_64"},

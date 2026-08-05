@@ -5,8 +5,9 @@ package = {
     name = "libXcursor",
     description = "X cursor management library",
 
+    authors = {"X.Org Foundation"},
     licenses = {"MIT"},
-    repo = "https://www.x.org",
+    repo = "https://gitlab.freedesktop.org/xorg/lib/libXcursor",
 
     type = "package",
     archs = {"x86_64"},

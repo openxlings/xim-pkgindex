@@ -5,8 +5,9 @@ package = {
     name = "xcb-proto",
     description = "XML-XCB protocol descriptions (build-time)",
 
+    authors = {"X.Org Foundation"},
     licenses = {"MIT"},
-    repo = "https://www.x.org",
+    repo = "https://gitlab.freedesktop.org/xorg/proto/xcb-proto",
 
     type = "package",
     archs = {"x86_64"},

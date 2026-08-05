@@ -5,8 +5,9 @@ package = {
     name = "libXfixes",
     description = "X Fixes extension client library",
 
+    authors = {"X.Org Foundation"},
     licenses = {"MIT"},
-    repo = "https://www.x.org",
+    repo = "https://gitlab.freedesktop.org/xorg/lib/libXfixes",
 
     type = "package",
     archs = {"x86_64"},

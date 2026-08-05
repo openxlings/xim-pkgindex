@@ -5,8 +5,9 @@ package = {
     name = "libXau",
     description = "X11 authorisation protocol library",
 
+    authors = {"X.Org Foundation"},
     licenses = {"MIT"},
-    repo = "https://www.x.org",
+    repo = "https://gitlab.freedesktop.org/xorg/lib/libXau",
 
     type = "package",
     archs = {"x86_64"},

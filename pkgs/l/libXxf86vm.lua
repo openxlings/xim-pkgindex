@@ -5,8 +5,9 @@ package = {
     name = "libXxf86vm",
     description = "X11 XFree86 video mode extension library",
 
+    authors = {"X.Org Foundation"},
     licenses = {"MIT"},
-    repo = "https://www.x.org",
+    repo = "https://gitlab.freedesktop.org/xorg/lib/libXxf86vm",
 
     type = "package",
     archs = {"x86_64"},

@@ -5,8 +5,9 @@ package = {
     name = "libXrandr",
     description = "X Resize, Rotate and Reflect extension library",
 
+    authors = {"X.Org Foundation"},
     licenses = {"MIT"},
-    repo = "https://www.x.org",
+    repo = "https://gitlab.freedesktop.org/xorg/lib/libXrandr",
 
     type = "package",
     archs = {"x86_64"},

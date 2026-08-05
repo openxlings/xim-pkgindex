@@ -5,8 +5,9 @@ package = {
     name = "libxcb",
     description = "X protocol C-language Binding",
 
+    authors = {"X.Org Foundation"},
     licenses = {"MIT"},
-    repo = "https://www.x.org",
+    repo = "https://gitlab.freedesktop.org/xorg/lib/libxcb",
 
     type = "package",
     archs = {"x86_64"},

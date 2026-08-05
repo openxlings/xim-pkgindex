@@ -5,8 +5,9 @@ package = {
     name = "libXdmcp",
     description = "X Display Manager Control Protocol library",
 
+    authors = {"X.Org Foundation"},
     licenses = {"MIT"},
-    repo = "https://www.x.org",
+    repo = "https://gitlab.freedesktop.org/xorg/lib/libXdmcp",
 
     type = "package",
     archs = {"x86_64"},

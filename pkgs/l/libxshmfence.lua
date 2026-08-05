@@ -5,8 +5,9 @@ package = {
     name = "libxshmfence",
     description = "Shared-memory fences for DRI3",
 
+    authors = {"X.Org Foundation"},
     licenses = {"MIT"},
-    repo = "https://www.x.org",
+    repo = "https://gitlab.freedesktop.org/xorg/lib/libxshmfence",
 
     type = "package",
     archs = {"x86_64"},

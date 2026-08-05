@@ -5,8 +5,9 @@ package = {
     name = "libX11",
     description = "Core X11 client library",
 
+    authors = {"X.Org Foundation"},
     licenses = {"MIT"},
-    repo = "https://www.x.org",
+    repo = "https://gitlab.freedesktop.org/xorg/lib/libX11",
 
     type = "package",
     archs = {"x86_64"},

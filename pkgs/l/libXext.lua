@@ -5,8 +5,9 @@ package = {
     name = "libXext",
     description = "X11 miscellaneous extensions library",
 
+    authors = {"X.Org Foundation"},
     licenses = {"MIT"},
-    repo = "https://www.x.org",
+    repo = "https://gitlab.freedesktop.org/xorg/lib/libXext",
 
     type = "package",
     archs = {"x86_64"},

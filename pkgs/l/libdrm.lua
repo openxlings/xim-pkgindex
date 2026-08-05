@@ -5,8 +5,9 @@ package = {
     name = "libdrm",
     description = "Userspace interface to the kernel DRM services",
 
+    authors = {"Mesa contributors"},
     licenses = {"MIT"},
-    repo = "https://dri.freedesktop.org/",
+    repo = "https://gitlab.freedesktop.org/mesa/drm",
 
     type = "package",
     archs = {"x86_64"},

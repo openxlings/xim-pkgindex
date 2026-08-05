@@ -5,8 +5,9 @@ package = {
     name = "xorgproto",
     description = "X Window System protocol headers (build-time)",
 
+    authors = {"X.Org Foundation"},
     licenses = {"MIT"},
-    repo = "https://www.x.org",
+    repo = "https://gitlab.freedesktop.org/xorg/proto/xorgproto",
 
     type = "package",
     archs = {"x86_64"},

@@ -5,6 +5,7 @@ package = {
     name = "libglvnd",
     description = "The GL Vendor-Neutral Dispatch library",
 
+    authors = {"NVIDIA Corporation", "libglvnd contributors"},
     licenses = {"MIT"},
     repo = "https://gitlab.freedesktop.org/glvnd/libglvnd",
 

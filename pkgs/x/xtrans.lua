@@ -5,8 +5,9 @@ package = {
     name = "xtrans",
     description = "X transport layer macros and headers (build-time)",
 
+    authors = {"X.Org Foundation"},
     licenses = {"MIT"},
-    repo = "https://www.x.org",
+    repo = "https://gitlab.freedesktop.org/xorg/lib/xtrans",
 
     type = "package",
     archs = {"x86_64"},
