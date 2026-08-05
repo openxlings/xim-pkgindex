@@ -174,7 +174,7 @@ function config()
     xvm.add("glibc")
 
     local glibc_root_binding = "glibc@" .. pkginfo.version()
-    local glibc_version = "glibc-" .. pkginfo.version()
+    local glibc_version = __version_key()
     local glibc_bindir = path.join(pkginfo.install_dir(), "bin")
     local glibc_libdir = path.join(pkginfo.install_dir(), "lib64")
 
@@ -225,7 +225,7 @@ function config()
 end
 
 function uninstall()
-    local glibc_version = "glibc-" .. pkginfo.version()
+    local glibc_version = __version_key()
     for _, lib in ipairs(glibc_libs) do
         xvm.remove(lib, glibc_version)
     end
@@ -236,6 +236,30 @@ function uninstall()
 end
 
 -- private
+
+-- The version key this package's entries are stored under.
+--
+-- xlings keys a version by namespace for every repo but the primary one, so
+-- `local:glibc` stores `local:glibc-2.39` while `xim:glibc` stores a bare
+-- `glibc-2.39`. Removing by the bare key is unambiguous only while ONE of
+-- them exists: with both installed, removal fails with
+--
+--     bare removal version 'glibc-2.39' matches 2 stored versions
+--
+-- and uninstall leaves every registered lib behind. That state was
+-- unreachable while the index shipped one glibc; adding 2.44 made it
+-- ordinary.
+--
+-- The namespace is not exposed to a hook, but the store directory is:
+-- `<data>/xpkgs/<ns>-x-glibc/<version>`. Deriving it from install_dir() keeps
+-- this to the recipe rather than waiting on a libxpkg field.
+function __version_key()
+    local store = path.filename(path.directory(pkginfo.install_dir()))
+    local ns = store:match("^(.-)%-x%-")
+    local bare = "glibc-" .. pkginfo.version()
+    if ns and ns ~= "" and ns ~= "xim" then return ns .. ":" .. bare end
+    return bare
+end
 
 function __config_header(binding)
     -- Declared where the client supports it, so the 130 top-level entries
