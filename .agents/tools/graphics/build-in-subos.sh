@@ -136,6 +136,14 @@ else
     cp -a "$STAGE/." "$PAYLOAD/"
 fi
 
+# Drop libtool archives. A .la records the absolute libdir it was built with,
+# and the next package's libtool reads that path literally — libX11 fails with
+# "'/usr/lib/libXau.la' is not a valid libtool archive" because it went looking
+# on the host root. Rewriting them is possible; deleting them is what most
+# distributions settled on, since anything still consuming a .la in 2026 is
+# also consuming the .pc that says the same thing correctly.
+find "$PAYLOAD" -name '*.la' -type f -delete
+
 # $ORIGIN so the payload's own libraries resolve each other with no absolute
 # path anywhere. xlings's elfpatch appends each dependency's libdir on top.
 while IFS= read -r -d '' f; do
@@ -189,5 +197,18 @@ sha256sum "$OUT" | sed 's/^/[gfx-build] sha256: /'
 if [[ "${XLINGS_GFX_STAGE:-1}" == "1" ]]; then
     mkdir -p "$SUBOS/usr"
     cp -a "$PAYLOAD/." "$SUBOS/usr/"
+
+    # The payload's own .pc files say prefix=/usr, and they have to: that is
+    # what makes the tarball relocatable into whatever subos installs it. But
+    # the STAGED copy is consumed right now, from $SUBOS/usr, so a consumer
+    # reading prefix=/usr resolves against the host root instead — libxcb fails
+    # with "No rule to make target '//usr/share/xcb/'", pointing at a directory
+    # that belongs to the host.
+    #
+    # Only the staged copy is rewritten. The tarball keeps /usr.
+    while IFS= read -r -d '' pc; do
+        sed -i "s|^prefix=/usr$|prefix=$SUBOS/usr|; s|=/usr/|=$SUBOS/usr/|g" "$pc"
+    done < <(find "$SUBOS/usr" -name '*.pc' -type f -print0)
+
     log "  staged into $SUBOS_NAME's sysroot for the next tier"
 fi

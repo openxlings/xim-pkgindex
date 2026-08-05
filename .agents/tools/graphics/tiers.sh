@@ -19,6 +19,11 @@ BUILD="$HERE/build-in-subos.sh"
 T1=(
   "xorgproto|2024.1|https://xorg.freedesktop.org/archive/individual/proto/xorgproto-2024.1.tar.xz|meson|"
   "xcb-proto|1.17.0|https://xorg.freedesktop.org/archive/individual/proto/xcb-proto-1.17.0.tar.xz|autotools|"
+  # xtrans is macros and headers only — no library is produced. libX11's
+  # configure demands it by pkg-config name, so it is build-time but not
+  # optional, and it is easy to leave out of a tier list derived from a
+  # runtime closure: nothing loads it, so `strace` never sees it.
+  "xtrans|1.5.2|https://xorg.freedesktop.org/archive/individual/lib/xtrans-1.5.2.tar.xz|autotools|"
   "libpciaccess|0.18.1|https://xorg.freedesktop.org/archive/individual/lib/libpciaccess-0.18.1.tar.xz|meson|"
   "libdrm|2.4.123|https://dri.freedesktop.org/libdrm/libdrm-2.4.123.tar.xz|meson|-Dintel=enabled -Dradeon=enabled -Damdgpu=enabled -Dnouveau=enabled -Dvalgrind=disabled -Dman-pages=disabled -Dtests=false"
   "libxshmfence|1.3.2|https://xorg.freedesktop.org/archive/individual/lib/libxshmfence-1.3.2.tar.xz|autotools|"
