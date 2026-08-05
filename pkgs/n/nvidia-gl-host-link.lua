@@ -68,7 +68,7 @@ package = {
                 "xim:libglvnd@>=1.7",
                 "xim:libX11@>=1.8",
                 "xim:libXext@>=1.3",
-                "xim:glibc@2.39",
+                "xim:glibc@>=2.39",
             },
             exports = {
                 runtime = { libdirs = { "lib" } },

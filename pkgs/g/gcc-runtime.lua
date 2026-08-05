@@ -39,7 +39,7 @@ package = {
             ["15.1.0"] = "XLINGS_RES",
 
             deps = {
-                runtime = { "xim:glibc@2.39" },
+                runtime = { "xim:glibc@>=2.39" },
             },
             exports = {
                 runtime = {

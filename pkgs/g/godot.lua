@@ -119,7 +119,7 @@ package = {
             -- without X11/wayland can only run --headless.
             deps = {
                 runtime = {
-                    "xim:glibc@2.39",
+                    "xim:glibc@>=2.39",
                     "xim:freetype@2.13.2",
                     "xim:expat@2.6.2",
                 },

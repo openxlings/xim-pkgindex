@@ -217,6 +217,79 @@ manifest export the same values. `doctor` reports every conflict rather than
 resolving it quietly. A variable the **user** already exported wins over a
 `set`; `prepend` still composes with it.
 
+## `resolved_deps` — what the resolver decided, for hooks that need it
+
+A recipe writes a dependency as a **question**:
+
+```lua
+deps = { "xim:glibc@>=2.38" }
+```
+
+`_RUNTIME.resolved_deps` is the **answer**, available in `install()` and
+`config()` from xlings 2026.8.5.3 / libxpkg 0.0.50:
+
+```lua
+_RUNTIME.resolved_deps["xim:glibc@>=2.38"] = {
+    name        = "xim:glibc",
+    version     = "2.44",                      -- what it resolved TO
+    install_dir = "<store>/xpkgs/xim-x-glibc/2.44",
+    libdirs     = { "<store>/xpkgs/xim-x-glibc/2.44/lib64" },
+    source      = "plan-range",                -- why this one
+}
+```
+
+**Total, unlike `deps_exports`.** Every runtime dep is here whether or not it
+declared `exports`. A dep missing from this table means the CLIENT does not
+send it, not that the dep declared nothing — those two used to be
+indistinguishable, and telling them apart is the point.
+
+### Use it instead of looking a dependency up yourself
+
+`pkginfo.dep_install_dir(name)` consults this table first, so most recipes need
+nothing new. What a recipe must NOT do is re-derive the answer:
+
+```lua
+-- WRONG: a second answer to a question that already has one.
+local dir = "<...>/xpkgs/xim-x-glibc/" .. some_version .. "/lib64"
+
+-- WRONG: also a second answer, just spelled with an API.
+for _, sub in ipairs({"lib64", "lib"}) do ... end
+```
+
+Both were real code. With two versions of a package installed they answered
+differently from the resolver, and the product was a binary whose interpreter
+came from one payload and whose RUNPATH from another — a fault before `main`
+reporting `undefined symbol: __pointer_chk_guard, version GLIBC_PRIVATE`,
+which names neither package nor version.
+
+xlings now refuses to finish an install that produced one, and `xlings doctor`
+reports existing ones. Design and the invariant:
+`xlings/.agents/docs/2026-08-05-dependency-resolution-single-source.md`
+
+### Probing for it
+
+```lua
+if type(_RUNTIME.resolved_deps) == "table" then
+    -- use it
+end
+```
+
+`type()`, never `if _RUNTIME.resolved_deps then`. See the next section — the
+same trap applies to every capability added after a client shipped.
+
+### Inspecting it after the fact
+
+Each install writes `<install_dir>/.xlings-resolution.json`, and
+
+```
+xlings why <package> [dependency]
+```
+
+reads it back: the version, the payload, and `source`. That is what makes
+"why is it 2.39 on this machine" answerable without reproducing the machine.
+
+---
+
 ## Adopting a capability older clients do not have
 
 The index serves every client version at once. Two kinds of change behave very

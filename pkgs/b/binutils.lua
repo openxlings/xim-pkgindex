@@ -30,7 +30,7 @@ package = {
 
     xpm = {
         linux = {
-            deps = { "xim:glibc@2.39" },
+            deps = { "xim:glibc@>=2.39" },
             ["latest"] = { ref = "2.42" },
             ["2.42"] = "XLINGS_RES",
         },

@@ -23,7 +23,7 @@ package = {
             -- dep declaring exports.runtime.loader the predicate never fires
             -- and the payload keeps python-build-standalone's INTERP, which is
             -- the HOST's /lib64/ld-linux-x86-64.so.2.
-            deps = { "xim:glibc@2.39" },
+            deps = { "xim:glibc@>=2.39" },
             ["latest"] = { ref = "3.13.12" },
             ["3.13.12"] = {
                 url = "https://gitcode.com/xlings-res/mirror-cn/releases/download/python/cpython-3.13.12%2B20260310-x86_64-unknown-linux-gnu-install_only.tar.gz",

@@ -44,7 +44,7 @@ package = {
             --     into each cuda_v* dir below.
             deps = {
                 runtime = {
-                    "xim:glibc@2.39",
+                    "xim:glibc@>=2.39",
                     "xim:gcc-runtime@15.1.0",
                     "xim:libcuda-host-link@0.0.1",
                 },

@@ -32,7 +32,7 @@ package = {
     xpm = {
         linux = {
             deps = {
-                "xim:glibc@2.39", "xim:binutils@2.42",
+                "xim:glibc@>=2.39", "xim:binutils@2.42",
                 -- fix xmake project --project=.  -k compile_commands
                 -- home/xlings/.xlings_data/subos/linux/usr/include/bits/errno.h:26:11: fatal error: linux/errno.h: No such file or directory
                 "xim:linux-headers@5.11.1",

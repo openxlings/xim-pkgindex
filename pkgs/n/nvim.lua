@@ -46,7 +46,7 @@ package = {
             -- (GCC unwind runtime, ships in xim:gcc-runtime). No
             -- libstdc++ — neovim itself is C, not C++.
             deps = {
-                runtime = { "xim:glibc@2.39", "xim:gcc-runtime@15.1.0" },
+                runtime = { "xim:glibc@>=2.39", "xim:gcc-runtime@15.1.0" },
             },
             source = {
                 GLOBAL = "https://github.com/neovim/neovim/releases/download/v${version}/nvim-linux-x86_64.tar.gz",
