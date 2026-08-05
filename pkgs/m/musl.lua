@@ -272,7 +272,7 @@ end
 function uninstall()
     -- Version-scoped on purpose: glibc's registration of the same eleven
     -- names, and any other installed musl release, must survive this.
-    local v = flavor_version()
+    local v = __stored_version()
     for _, set in ipairs({ SHARED_LIBS, MUSL_ONLY_LIBS }) do
         for _, lib in ipairs(set) do
             xvm.remove(lib, v)
@@ -280,6 +280,39 @@ function uninstall()
     end
     xvm.remove("musl", pkginfo.version())
     return true
+end
+
+-- The key the lib nodes are actually STORED under.
+--
+-- `xvm.add` prefixes the index namespace itself: registering
+-- `version = "1.2.5-musl"` stores a bare `1.2.5-musl` from the primary
+-- `xim` namespace but `local:1.2.5-musl` from any other. `xvm.remove`
+-- does NOT prefix — hand it the bare key from a secondary namespace and
+-- it matches nothing.
+--
+-- Measured after `xlings remove local:musl`: the package root was gone
+-- and every lib node was still there —
+--
+--     crt1.o = {"active": "glibc-2.39",
+--               "installed": ["glibc-2.39", "local:1.2.5-musl"]}
+--
+-- i.e. uninstall left musl owning eleven of glibc's names, which is the
+-- exact state the flavor tag exists to keep switchable-but-clean. It
+-- passes CI because posix-test.sh's post-uninstall check looks for
+-- leftover *shims* in `bin/`, and lib nodes make none.
+--
+-- `xim:musl` was symmetric all along, so this only ever bit secondary
+-- namespaces — which is every local test and every CI run.
+--
+-- Same shape as glibc.lua's `__version_key()`. The namespace is not
+-- exposed to a hook, but the store directory is:
+-- `<data>/xpkgs/<ns>-x-musl/<version>`.
+function __stored_version()
+    local store = path.filename(path.directory(pkginfo.install_dir()))
+    local ns = store:match("^(.-)%-x%-")
+    local bare = flavor_version()
+    if ns and ns ~= "" and ns ~= "xim" then return ns .. ":" .. bare end
+    return bare
 end
 
 -- private

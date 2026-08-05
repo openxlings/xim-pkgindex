@@ -149,9 +149,31 @@ class TestDesign:
         code = lua_code()
         assert re.search(r'local FLAVOR = "musl"', code)
         assert re.search(r'pkginfo\.version\(\)\s*\.\.\s*"-"\s*\.\.\s*FLAVOR', code)
-        # lib 注册与 uninstall 都必须走 flavor_version(),不能是裸版本号
+        # 注册走 flavor_version()
         assert re.search(r'version\s*=\s*flavor_version\(\)', code)
+
+    @pytest.mark.static
+    def test_uninstall_uses_the_namespaced_stored_key(self):
+        """卸载必须用带命名空间前缀的版本键
+
+        xvm.add 会自己补索引命名空间(`local:1.2.5-musl`),xvm.remove 不会。
+        用裸键从次级命名空间卸载匹配不到任何东西,结果是根节点删了、11 个
+        lib 节点全留下:
+
+            crt1.o = {"active": "glibc-2.39",
+                      "installed": ["glibc-2.39", "local:1.2.5-musl"]}
+
+        CI 抓不到,因为 posix-test.sh 的卸载后检查只看 bin/ 里残留的 shim,
+        而 lib 节点不产生 shim。
+        """
+        code = lua_code()
+        assert re.search(r'function __stored_version\(\)', code), \
+            "缺少命名空间感知的版本键 helper"
+        assert re.search(r'ns\s*~=\s*"xim"', code), \
+            "__stored_version 必须只在非主命名空间加前缀"
         assert re.search(r'xvm\.remove\(lib,\s*v\)', code)
+        assert re.search(r'local v = __stored_version\(\)', code), \
+            "uninstall 必须用 __stored_version(),不能用裸 flavor_version()"
 
     @pytest.mark.static
     def test_binding_root_is_a_group(self):

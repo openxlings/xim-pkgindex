@@ -198,8 +198,27 @@ local function flavor_version() return pkginfo.version() .. "-" .. FLAVOR end
    留成默认的 program 类型会生成一个永远失败的 shim
    （`subos/*/bin/musl -> bin/xlings`），`self doctor` 会把它报成 orphan
    （openxlings/xlings#452）。
-4. **`uninstall()` 必须版本内收敛**：`xvm.remove(name, flavor_version())`。
+4. **`uninstall()` 必须版本内收敛**：`xvm.remove(name, <stored key>)`。
    用裸名删会把对方包的注册一起删掉。
+
+   ⚠️ **`xvm.add` 会自己补索引命名空间前缀，`xvm.remove` 不会。**
+   从 `local:` 或任何非 `xim` 的索引仓库安装时，`version = "1.2.5-musl"` 实际存成
+   `local:1.2.5-musl`；卸载时传裸键匹配不到，根节点删了、所有 lib 节点全留下。
+   **CI 抓不到**——`posix-test.sh` 的卸载后检查只看 `bin/` 里残留的 shim，
+   而 lib 节点不产生 shim。照 glibc.lua 的 `__version_key()` 写：
+
+   ```lua
+   function __stored_version()
+       local store = path.filename(path.directory(pkginfo.install_dir()))
+       local ns = store:match("^(.-)%-x%-")   -- <data>/xpkgs/<ns>-x-<name>/<version>
+       local bare = flavor_version()
+       if ns and ns ~= "" and ns ~= "xim" then return ns .. ":" .. bare end
+       return bare
+   end
+   ```
+
+   验收方式：装完 → 看 `subos/<name>/.xlings.json` 的 `workspace` → 卸载 → 再看一次，
+   必须回到 `null`。只跑 `posix-test.sh` 不足以说明卸载干净。
 5. **头文件同理。** 两个 libc 的 `stdio.h`/`features.h` 内容不同，散进共享
    `usr/include` 后落地的那个会静默赢下整个 subos 的编译 —— 非 system libc 的头
    要落到自己的命名空间（`usr/include/musl`）。
