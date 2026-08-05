@@ -198,8 +198,36 @@ function install()
     -- copy of some of these, and the driver expects to get it.
     os.mkdir(depsdir)
     for _, dep in ipairs({
-        {"glibc",    {"libc.so.6", "libpthread.so.0", "libdl.so.2",
-                      "libm.so.6", "librt.so.1"}},
+        -- glibc, minus libc.so.6 and libm.so.6, and the omissions are the
+        -- point.
+        --
+        -- The vendor's DT_NEEDED is libpthread, librt, libc, libdl (plus its
+        -- own libnvidia-glsi). libm is not on it at all.
+        --
+        -- libc.so.6 must not be here. It cannot help: the vendor is dlopen'd
+        -- into a process that is already running, so its libc was bound long
+        -- ago by whatever its INTERP named, and an already-loaded SONAME is
+        -- resolved to the loaded object without any search. It can hurt, and
+        -- did — this directory goes on LD_LIBRARY_PATH, which every child
+        -- process inherits, including host binaries running under the HOST
+        -- loader. ld.so and libc.so.6 are two halves of one build that talk
+        -- over GLIBC_PRIVATE; handing a host binary our half killed the shell
+        -- `xlings subos use` hands back, SIGSEGV before it printed a
+        -- character, on a host whose glibc was the same upstream VERSION as
+        -- ours and merely a different build.
+        --
+        -- The three that remain are the glibc 2.34+ compatibility stubs: 27,
+        -- 13 and 9 defined symbols, because their implementations moved into
+        -- libc.so.6. Almost no ABI surface, and the vendor names all three.
+        -- libm is the opposite — 1203 symbols, real surface, and nothing here
+        -- asks for it.
+        --
+        -- Measured, one library at a time: with these three the probe reports
+        -- NVIDIA GeForce RTX 4080/PCIe/SSE2 and /bin/bash survives; with
+        -- libc.so.6 added the renderer is unchanged and bash dies; with all
+        -- of them gone the NVIDIA device disappears from the enumeration
+        -- entirely.
+        {"glibc",    {"libpthread.so.0", "librt.so.1", "libdl.so.2"}},
         {"libX11",   {"libX11.so.6", "libX11-xcb.so.1"}},
         {"libXext",  {"libXext.so.6"}},
         {"libglvnd", {"libGLdispatch.so.0"}},
@@ -220,9 +248,8 @@ function install()
             for _, name in ipairs(dep[2]) do
                 local link = path.join(depsdir, name)
                 if not os.isfile(path.join(dir, "lib", name)) then
-                    -- glibc keeps its shared objects in lib64 on x86_64 and
-                    -- everything else in lib; try both rather than encode a
-                    -- layout that is true of one package.
+                    -- Packages disagree about lib vs lib64; try both rather
+                    -- than encode a layout that is true of one of them.
                     for _, sub in ipairs({"lib", "lib64"}) do
                         local src = path.join(depdir, sub, name)
                         if os.isfile(src) then
