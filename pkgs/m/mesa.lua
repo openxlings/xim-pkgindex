@@ -71,19 +71,15 @@ package = {
                 -- vendor fail, which EGL reports as having no vendor at all.
                 "xim:wayland@>=1.23",
                 "xim:gcc-runtime@>=15",
-                -- Pinned, alone among these, and for a client reason rather
-                -- than an ABI one. The measured floor is 2.38 (libgallium's
-                -- highest required symbol version), but before 2026.8.5.2
-                -- xlings compared a dep's version half by string equality:
-                -- `@>=2.38` matched no plan node, glibc's exports were
-                -- dropped, elfpatch found "no loader provider in deps" and
-                -- patched nothing. mesa then installed reporting success with
-                -- its libraries still on a build-time RPATH, and glvnd's
-                -- dlopen of libEGL_mesa failed to find libexpat -- surfacing
-                -- as EGL having no vendor at all. glibc is the only dep that
-                -- exports a loader, so it is the only one where the miss is
-                -- fatal. Pinning keeps this usable on clients already out.
-                "xim:glibc@2.39",
+                -- A floor, and 2.38 is measured: libgallium's highest
+                -- required symbol version. It was pinned for one release
+                -- because clients before 2026.8.5.2 compared a dep's version
+                -- half by string equality and silently dropped glibc's
+                -- exports; that is fixed, and this package shipped with the
+                -- fix. A floor is also what lets a newer glibc satisfy this —
+                -- glibc is backward compatible, so a 2.44 runtime runs this
+                -- 2.39-built payload, and a pin would refuse it.
+                "xim:glibc@>=2.38",
             },
             exports = {
                 runtime = { libdirs = { "lib" } },

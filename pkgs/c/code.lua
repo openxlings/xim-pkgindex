@@ -1,11 +1,14 @@
-local function _win_url(ver)
-    return { url = string.format("https://update.code.visualstudio.com/%s/win32-x64-archive/stable", ver), sha256 = nil }
+-- sha256 is the official hash from the VS Code update API
+-- (update.code.visualstudio.com/api/update/<platform>/stable/latest). Nil for
+-- historical entries that predate checksum coverage; new versions must carry it.
+local function _win_url(ver, sha256)
+    return { url = string.format("https://update.code.visualstudio.com/%s/win32-x64-archive/stable", ver), sha256 = sha256 }
 end
-local function _linux_url(ver)
-    return { url = string.format("https://update.code.visualstudio.com/%s/linux-x64/stable", ver), sha256 = nil }
+local function _linux_url(ver, sha256)
+    return { url = string.format("https://update.code.visualstudio.com/%s/linux-x64/stable", ver), sha256 = sha256 }
 end
-local function _mac_url(ver)
-    return { url = string.format("https://update.code.visualstudio.com/%s/darwin-universal/stable", ver), sha256 = nil }
+local function _mac_url(ver, sha256)
+    return { url = string.format("https://update.code.visualstudio.com/%s/darwin-universal/stable", ver), sha256 = sha256 }
 end
 
 package = {
@@ -27,7 +30,8 @@ package = {
 
     xpm = {
         windows = {
-            ["latest"] = { ref = "1.125.1" },
+            ["latest"] = { ref = "1.132.0" },
+            ["1.132.0"] = _win_url("1.132.0", "98bd4a4721a5bd8534dbad8eaf9801f001ee36703a278c5d52d6036df8c7e503"),
             ["1.125.1"] = _win_url("1.125.1"),
             ["1.108.1"] = _win_url("1.108.1"),
             ["1.108.0"] = _win_url("1.108.0"),
@@ -40,7 +44,8 @@ package = {
             ["1.93.1"] = _win_url("1.93.1"),
         },
         linux = {
-            ["latest"] = { ref = "1.125.1" },
+            ["latest"] = { ref = "1.132.0" },
+            ["1.132.0"] = _linux_url("1.132.0", "acdaf0fa557bda1720956ff65ca0de0965e92d68f97e2db22341984400937aed"),
             ["1.125.1"] = _linux_url("1.125.1"),
             ["1.108.1"] = _linux_url("1.108.1"),
             ["1.108.0"] = _linux_url("1.108.0"),
@@ -50,7 +55,8 @@ package = {
             ["1.93.1"] = _linux_url("1.93.1"),
         },
         macosx = {
-            ["latest"] = { ref = "1.125.1" },
+            ["latest"] = { ref = "1.132.0" },
+            ["1.132.0"] = _mac_url("1.132.0", "5c9cc989a2916be9e1b83624c60e5f5e1ec9ddb1176b6b1c1e4d140ba06b9c2c"),
             ["1.125.1"] = _mac_url("1.125.1"),
             ["1.108.1"] = _mac_url("1.108.1"),
             ["1.108.0"] = _mac_url("1.108.0"),

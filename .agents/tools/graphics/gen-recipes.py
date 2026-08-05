@@ -43,20 +43,22 @@ import sys
 # by construction, and the unpublished-sibling case it loses is handled where it
 # belongs, by the pre-registration pass in .github/scripts/posix-test.sh.
 
-# glibc is pinned where every other dep is a range, and the reason is a client
-# bug rather than an ABI one. Before 2026.8.5.2, xlings matched a dep's version
-# half by string equality, so `xim:glibc@>=2.38` matched no plan node, glibc's
-# exports were dropped, and elfpatch concluded "no loader provider in deps" and
-# patched nothing -- the package installed reporting success and its libraries
-# kept a build-time RPATH, so anything dlopen'd out of them failed to find its
-# siblings. glibc is the only dep that carries `exports.runtime.loader`, so it
-# is the only one where the miss is fatal: for the rest, closure_lib_paths
-# falls back to the {lib64, lib} convention and the RPATH still comes out
-# right. Pinning this one keeps the stack usable on clients already released.
+# glibc as a floor, like every other dep here.
 #
-# The measured floor is 2.38 (libgallium's highest required symbol version).
-# Widen this to a range once the fixed client is the floor worth assuming.
-GLIBC = "xim:glibc@2.39"
+# It was pinned for one release, and the reason was a client bug rather than an
+# ABI one: before xlings 2026.8.5.2 a dep's version half was compared by string
+# equality, so `xim:glibc@>=2.38` matched no plan node, glibc's exports were
+# dropped, and elfpatch concluded "no loader provider in deps" and patched
+# nothing at all — the package installed reporting success with its libraries
+# still on a build-time RPATH. That is fixed, and these packages shipped
+# alongside the fix, so the pin has served its purpose.
+#
+# 2.38 is measured, not chosen: it is libgallium's highest required symbol
+# version. A floor is also the only expression that lets a NEWER glibc satisfy
+# the dependency, which is the direction that matters — glibc is backward
+# compatible, so a 2.44 runtime runs these 2.39-built payloads (verified), and
+# a pin would have refused it.
+GLIBC = "xim:glibc@>=2.38"
 
 SPEC = {
     # T1 — protocol descriptions and the kernel interface.
