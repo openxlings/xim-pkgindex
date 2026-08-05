@@ -16,7 +16,7 @@ package = {
 
     xpm = {
         linux = {
-            deps = { "xim:libpciaccess@>=0.18" },
+            deps = { "libpciaccess@>=0.18" },
             -- elfpatch reads this from each dependency and writes the consumer's
             -- RPATH, which is what makes the stack resolve without anyone
             -- setting LD_LIBRARY_PATH. Same mechanism `gcc-runtime` uses.

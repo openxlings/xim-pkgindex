@@ -16,7 +16,7 @@ package = {
 
     xpm = {
         linux = {
-            deps = { "xim:libXext@>=1.3", "xim:libXrender@>=0.9" },
+            deps = { "libXext@>=1.3", "libXrender@>=0.9" },
             -- elfpatch reads this from each dependency and writes the consumer's
             -- RPATH, which is what makes the stack resolve without anyone
             -- setting LD_LIBRARY_PATH. Same mechanism `gcc-runtime` uses.

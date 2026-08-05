@@ -29,49 +29,56 @@ import sys
 #
 # deps use ranges by default; see the module docstring for why, and for the one
 # place that does not.
+#
+# Names are BARE, without an `xim:` prefix — the majority form in this index
+# (70 of 106 dependency entries) and the one that works. A namespaced dep can
+# only resolve from that namespace, so a batch of new packages depending on
+# each other cannot install until every one of them is published: CI registers
+# changed packages under `local` and `xim:libX11` is not there yet. A bare name
+# resolves from whichever repo has it.
 SPEC = {
     # T1 — protocol descriptions and the kernel interface.
     "xorgproto":    ([], False, None),
     "xcb-proto":    ([], False, None),
     "xtrans":       ([], False, None),
-    "libpciaccess": (["xim:zlib@>=1.2"], True, None),
-    "libdrm":       (["xim:libpciaccess@>=0.18"], True, None),
+    "libpciaccess": (["zlib@>=1.2"], True, None),
+    "libdrm":       (["libpciaccess@>=0.18"], True, None),
     "libxshmfence": ([], True, None),
 
     # T2 — the X11 client stack. Each layer needs the one below it at run time.
-    "libXau":       (["xim:xorgproto@>=2024"], True, None),
-    "libXdmcp":     (["xim:xorgproto@>=2024"], True, None),
-    "libxcb":       (["xim:libXau@>=1.0", "xim:libXdmcp@>=1.1"], True, None),
-    "libX11":       (["xim:libxcb@>=1.17", "xim:xorgproto@>=2024"], True, None),
-    "libXext":      (["xim:libX11@>=1.8"], True, None),
-    "libXrender":   (["xim:libX11@>=1.8"], True, None),
-    "libXfixes":    (["xim:libX11@>=1.8"], True, None),
-    "libXrandr":    (["xim:libXext@>=1.3", "xim:libXrender@>=0.9"], True, None),
-    "libXxf86vm":   (["xim:libXext@>=1.3"], True, None),
-    "libXi":        (["xim:libXext@>=1.3", "xim:libXfixes@>=6.0"], True, None),
-    "libXcursor":   (["xim:libXrender@>=0.9", "xim:libXfixes@>=6.0"], True, None),
+    "libXau":       (["xorgproto@>=2024"], True, None),
+    "libXdmcp":     (["xorgproto@>=2024"], True, None),
+    "libxcb":       (["libXau@>=1.0", "libXdmcp@>=1.1"], True, None),
+    "libX11":       (["libxcb@>=1.17", "xorgproto@>=2024"], True, None),
+    "libXext":      (["libX11@>=1.8"], True, None),
+    "libXrender":   (["libX11@>=1.8"], True, None),
+    "libXfixes":    (["libX11@>=1.8"], True, None),
+    "libXrandr":    (["libXext@>=1.3", "libXrender@>=0.9"], True, None),
+    "libXxf86vm":   (["libXext@>=1.3"], True, None),
+    "libXi":        (["libXext@>=1.3", "libXfixes@>=6.0"], True, None),
+    "libXcursor":   (["libXrender@>=0.9", "libXfixes@>=6.0"], True, None),
 
     # T4 — the graphics core.
-    "libglvnd":     (["xim:libX11@>=1.8", "xim:libXext@>=1.3"], True, None),
-    "libllvm":      (["xim:gcc-runtime@>=15", "xim:glibc@>=2.38"], True, None),
+    "libglvnd":     (["libX11@>=1.8", "libXext@>=1.3"], True, None),
+    "libllvm":      (["gcc-runtime@>=15", "glibc@>=2.38"], True, None),
 }
 
 # mesa is written separately: it is the only recipe with an exact pin, and the
 # only one that declares environment through subos.env.
 MESA_DEPS = [
-    "xim:libllvm@20.1.7",        # exact — see the module docstring
-    "xim:libglvnd@>=1.7",
-    "xim:libdrm@>=2.4",
-    "xim:libX11@>=1.8",
-    "xim:libxcb@>=1.17",
-    "xim:libXext@>=1.3",
-    "xim:libXfixes@>=6.0",
-    "xim:libXxf86vm@>=1.1",
-    "xim:libxshmfence@>=1.3",
-    "xim:expat@>=2.6",
-    "xim:zlib@>=1.2",
-    "xim:gcc-runtime@>=15",
-    "xim:glibc@>=2.38",
+    "libllvm@20.1.7",        # exact — see the module docstring
+    "libglvnd@>=1.7",
+    "libdrm@>=2.4",
+    "libX11@>=1.8",
+    "libxcb@>=1.17",
+    "libXext@>=1.3",
+    "libXfixes@>=6.0",
+    "libXxf86vm@>=1.1",
+    "libxshmfence@>=1.3",
+    "expat@>=2.6",
+    "zlib@>=1.2",
+    "gcc-runtime@>=15",
+    "glibc@>=2.38",
 ]
 
 DESCRIPTIONS = {
