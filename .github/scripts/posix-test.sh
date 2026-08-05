@@ -119,6 +119,24 @@ skipped=0
 # with "package 'scode:linux-headers@<ver>' not found". Best-effort.
 "$XLINGS_CMD" config --index-repo "scode:https://github.com/openxlings/xim-pkgindex-scode.git" 2>/dev/null || true
 
+# Register every changed descriptor BEFORE testing any of them.
+#
+# The loop below registers each package immediately before installing it, which
+# is enough while a PR adds packages that only depend on already-published ones.
+# It cannot handle a PR that adds a stack: the graphics packages depend on each
+# other, so installing libX11 needs libxcb, which this PR also adds and which
+# has not been registered yet when libX11's turn comes. The failure reads as
+# "package 'libxcb@>=1.17' not found" for a recipe sitting in the same diff.
+#
+# Same reasoning as the scode line above — make the things a dependency can
+# point at resolvable first, then test. Registration is idempotent, so the
+# loop's own add-xpkg stays as it is.
+for rel_file in "${files[@]}"; do
+    [[ -n "$rel_file" ]] || continue
+    [[ -f "$WORKSPACE_ROOT/$rel_file" ]] || continue
+    "$XLINGS_CMD" config --add-xpkg "$WORKSPACE_ROOT/$rel_file" >/dev/null 2>&1 || true
+done
+
 for rel_file in "${files[@]}"; do
     [[ -n "$rel_file" ]] || continue
     lua_file="$WORKSPACE_ROOT/$rel_file"
