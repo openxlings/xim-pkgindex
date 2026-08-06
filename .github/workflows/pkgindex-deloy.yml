@@ -9,6 +9,12 @@ on:
     paths:
       - 'pkgs/**'
       - '.xpkgindex.json'
+      # The plugin decides how every package reads, the docs are rendered as
+      # site pages, and the cache is what an offline build renders from — a
+      # change to any of them changes the site as much as a descriptor does.
+      - '.xpkgindex/**'
+      - 'docs/**'
+      - '.github/workflows/pkgindex-deloy.yml'
 
   # Manual trigger for deployment
   workflow_dispatch:
@@ -26,6 +32,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          # The growth curve, the history line and the contributor list are
+          # replayed from the git log. xpkgindex detects a shallow clone and
+          # skips all three rather than replaying a truncated one, so the
+          # default depth of 1 was quietly shipping a site without them.
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -40,6 +52,9 @@ jobs:
         # in openxlings/xpkgindex (Apr 2026). When at least one is set the
         # generator emits a "Build Info" section on the About page.
         env:
+          # Raises the API rate limit and enables the author -> login mapping
+          # that merges one person's several git identities.
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           XPKGINDEX_BUILD_TIME:       ${{ github.event.head_commit.timestamp }}
           XPKGINDEX_BUILD_COMMIT:     ${{ github.sha }}
           XPKGINDEX_BUILD_COMMIT_URL: ${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}
