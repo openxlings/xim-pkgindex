@@ -141,6 +141,30 @@ if [[ -n "$LOADER" ]]; then
     esac
 fi
 
+# The prefix is a decision about the ARTIFACT, so check the artifact (R4).
+#
+# Without this, a `--prefix` that silently failed to take -- or a future edit
+# that reverts it -- produces a payload whose default search path is a real
+# directory on the build machine, and nothing anywhere says so. That is exactly
+# how the old prefix survived across several releases.
+if [[ -n "$LOADER" ]]; then
+    if strings "$LOADER" 2>/dev/null | grep -qF "$PREFIX"; then
+        log "  default search path: $PREFIX (reserved, cannot exist)"
+    else
+        echo "    the loader does not carry the reserved prefix; its default"
+        echo "    library search path is something else:"
+        strings "$LOADER" 2>/dev/null | grep -E "^/[^ ]*/lib(64)?$" | head -3 \
+            | sed 's/^/      /'
+        leaks=$((leaks+1))
+    fi
+    # And it must not name this machine. The payload is published; a build
+    # path in it is a fact about the builder's disk, not about glibc.
+    if strings "$LOADER" 2>/dev/null | grep -qF "$HOME"; then
+        echo "    the loader carries a path from this machine's \$HOME"
+        leaks=$((leaks+1))
+    fi
+fi
+
 # And libc has to load under it, which is the pairing that actually gets used.
 if [[ -n "$LOADER" && -f "$PAYLOAD/lib/libc.so.6" ]]; then
     if ! "$LOADER" --library-path "$PAYLOAD/lib" "$PAYLOAD/lib/libc.so.6" \
