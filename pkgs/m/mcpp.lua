@@ -1,4 +1,12 @@
 package = {
+
+    -- Platform version sets differ ON PURPOSE:
+    -- the early 0.0.x entries are linux-only -- macOS and Windows builds begin later in the series.
+    -- Declared so `tests/check_platform_version_parity.lua` can tell this
+    -- apart from a bump that landed in one section and was forgotten in the
+    -- others -- which reads as `<pkg>@<ver> not found` on the platforms that
+    -- lack it, against a file that contains the version string.
+    platform_versions_diverge = true,
     spec = "1",
 
     name = "mcpp",

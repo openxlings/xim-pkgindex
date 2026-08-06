@@ -1,4 +1,12 @@
 package = {
+
+    -- Platform version sets differ ON PURPOSE:
+    -- windows stays on its own `latest` (3.12.6); linux carries 3.12.13/3.13.12.
+    -- Declared so `tests/check_platform_version_parity.lua` can tell this
+    -- apart from a bump that landed in one section and was forgotten in the
+    -- others -- which reads as `<pkg>@<ver> not found` on the platforms that
+    -- lack it, against a file that contains the version string.
+    platform_versions_diverge = true,
     spec = "1",
     homepage = "https://www.python.org",
     name = "python",

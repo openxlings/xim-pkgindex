@@ -1,4 +1,12 @@
 package = {
+
+    -- Platform version sets differ ON PURPOSE:
+    -- the earliest releases were not built for every platform.
+    -- Declared so `tests/check_platform_version_parity.lua` can tell this
+    -- apart from a bump that landed in one section and was forgotten in the
+    -- others -- which reads as `<pkg>@<ver> not found` on the platforms that
+    -- lack it, against a file that contains the version string.
+    platform_versions_diverge = true,
     spec = "1",
 
     -- base info

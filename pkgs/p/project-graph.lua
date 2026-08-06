@@ -4,6 +4,14 @@
 function _linux_donwload_url(version) return string.format("https://github.com/LiRenTech/project-graph/releases/download/v%s/Project.Graph_%s_amd64.deb", version, version) end
 
 package = {
+
+    -- Platform version sets differ ON PURPOSE:
+    -- windows tracks its own `latest` (1.2.7) and stops there.
+    -- Declared so `tests/check_platform_version_parity.lua` can tell this
+    -- apart from a bump that landed in one section and was forgotten in the
+    -- others -- which reads as `<pkg>@<ver> not found` on the platforms that
+    -- lack it, against a file that contains the version string.
+    platform_versions_diverge = true,
     spec = "1",
     homepage = "https://project-graph.top",
     name = "project-graph",
