@@ -21,7 +21,7 @@
   },
   "about": {
     "project_name": "xlings",
-    "project_url": "https://xlings.d2learn.org",
+    "project_url": "https://github.com/openxlings/xlings",
     "description": "Universal package infrastructure with OS-like SubOS isolation — multi-version, rootless, decentralized index",
     "maintainers": [
       "openxlings",
@@ -78,8 +78,15 @@
     ".xpkgindex/plugins/xim.py"
   ],
   "docs": {
-    "nav_label": "Docs",
     "entries": [
+      {
+        "slug": "quick-start",
+        "title": "快速开始",
+        "path": "docs/quick-start.md",
+        "translations": {
+          "en": "docs/quick-start.en.md"
+        }
+      },
       {
         "slug": "contributing",
         "title": "贡献指南",
@@ -100,7 +107,19 @@
         "title": "文档索引",
         "path": "docs/README.md"
       }
-    ]
+    ],
+    "landing": "quick-start",
+    "cta": {
+      "eyebrow": "第一次来?",
+      "title": "快速开始",
+      "description": "装好 xlings,从这个索引里装第一个包。",
+      "lines": [
+        "xlings install gcc -y",
+        "xlings install mcpp -y",
+        "mcpp --version"
+      ],
+      "action": "查看指南"
+    }
   },
   "ecosystem": {
     "owners": [
