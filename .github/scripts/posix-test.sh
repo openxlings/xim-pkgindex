@@ -119,47 +119,43 @@ skipped=0
 # with "package 'scode:linux-headers@<ver>' not found". Best-effort.
 "$XLINGS_CMD" config --index-repo "scode:https://github.com/openxlings/xim-pkgindex-scode.git" 2>/dev/null || true
 
-# Mount THIS CHECKOUT as the primary `xim` index, instead of copying single
-# recipes into the local index with `config --add-xpkg`.
+# Put this repo's libs/ where a locally-registered recipe can import it.
 #
-# `--add-xpkg` puts the recipe in a repo whose namespace catalog.cppm hardcodes
-# to "local", so the package under test is addressed as `local:<name>` while in
-# production it ships from `xim` — and `xim` is the PRIMARY repo, whose xvm
-# version-namespace is EMPTY. The test therefore changed the identity of the
-# thing it was testing.
+# `config --add-xpkg` copies the recipe into the LOCAL index, and
+# `import("xim.pkgindex.sysroot")` resolves against the index the recipe came
+# from. The local index has no libs/, so the import falls through to the
+# unknown-module stub — whose every field is a truthy callable that returns
+# another stub. So every sysroot call in a recipe under test succeeded and did
+# nothing, and the branch guarded by `if not sysroot.declare_headers_tree(...)`
+# never took its fallback either.
 #
-# Harmless for a self-contained recipe. Not harmless for one that DELEGATES its
-# install to another package: the delegate registers under `xim` (bare version
-# key `15.1.0`) while removing the delegating package looks for `local:15.1.0`,
-# which was never created. `pkgs/g/gcc.lua` on Windows is exactly that shape —
-# it delegates to mingw-w64 — and it failed uninstall for a divergence that
-# cannot occur in production.
+# This is why a change that replaced the whole subos sysroot with a symlink
+# into one package's payload passed install-test green: the code that would
+# have done it was inert here, and only ran once published. A test that cannot
+# execute the thing it is testing reports on nothing.
+if [[ -d "$WORKSPACE_ROOT/libs" ]]; then
+    mkdir -p "$XLINGS_HOME_DIR/data/xim-pkgindex-local/libs"
+    cp "$WORKSPACE_ROOT/libs/"*.lua \
+       "$XLINGS_HOME_DIR/data/xim-pkgindex-local/libs/" 2>/dev/null || true
+fi
+
+# Register every changed descriptor BEFORE testing any of them.
 #
-# Mounting the tree is also strictly more faithful, and it removes two
-# workarounds this file used to need:
-#   * libs/ no longer has to be copied into the local index for
-#     `import("xim.pkgindex.sysroot")` to resolve — the recipe is IN the tree
-#     that owns libs/;
-#   * changed descriptors no longer need pre-registering so a PR that adds a
-#     stack can resolve its own members — they are all in the index already.
+# The loop below registers each package immediately before installing it, which
+# is enough while a PR adds packages that only depend on already-published ones.
+# It cannot handle a PR that adds a stack: the graphics packages depend on each
+# other, so installing libX11 needs libxcb, which this PR also adds and which
+# has not been registered yet when libX11's turn comes. The failure reads as
+# "package 'libxcb@>=1.17' not found" for a recipe sitting in the same diff.
 #
-# Same family as the lesson those workarounds recorded: a local-index copy is
-# not a faithful stand-in for the repo, and each unfaithfulness eventually
-# reports on something other than what was being tested.
-"$XLINGS_CMD" config --index-repo "xim:$WORKSPACE_ROOT" 2>&1 || {
-    echo "failed to mount $WORKSPACE_ROOT as the xim index" >&2
-    exit 1
-}
-# Setting the URL is not enough: the workflow ran `xlings update` BEFORE this
-# point, so the served index is still the snapshot fetched from the remote
-# artifact ("[index] updated from artifact xim-index-<sha>.tar.gz"). Without a
-# re-sync the mount changes only the NAMESPACE while the recipes under test
-# stay the published ones — a test that reports on something other than the
-# code in the diff.
-"$XLINGS_CMD" update 2>&1 || {
-    echo "failed to sync the mounted xim index from $WORKSPACE_ROOT" >&2
-    exit 1
-}
+# Same reasoning as the scode line above — make the things a dependency can
+# point at resolvable first, then test. Registration is idempotent, so the
+# loop's own add-xpkg stays as it is.
+for rel_file in "${files[@]}"; do
+    [[ -n "$rel_file" ]] || continue
+    [[ -f "$WORKSPACE_ROOT/$rel_file" ]] || continue
+    "$XLINGS_CMD" config --add-xpkg "$WORKSPACE_ROOT/$rel_file" >/dev/null 2>&1 || true
+done
 
 for rel_file in "${files[@]}"; do
     [[ -n "$rel_file" ]] || continue
@@ -186,7 +182,7 @@ for rel_file in "${files[@]}"; do
     fi
     pkg=$(printf '%s' "$meta_json"     | python3 -c "import json,sys; print(json.loads(sys.stdin.read())['name'])")
     pkg_type=$(printf '%s' "$meta_json" | python3 -c "import json,sys; print(json.loads(sys.stdin.read()).get('type','package'))")
-    pkg_ns=$(printf '%s' "$meta_json"   | python3 -c "import json,sys; print(json.loads(sys.stdin.read()).get('namespace','xim') or 'xim')")
+    pkg_ns=$(printf '%s' "$meta_json"   | python3 -c "import json,sys; print(json.loads(sys.stdin.read()).get('namespace','local') or 'local')")
     is_ref=$(printf '%s' "$meta_json"   | python3 -c "import json,sys; print(json.loads(sys.stdin.read())['is_ref'])")
     has_plat=$(printf '%s' "$meta_json" | python3 -c "import json,sys; print(json.loads(sys.stdin.read()).get('$HAS_KEY', False))")
     programs=$(printf '%s' "$meta_json" | python3 -c "import json,sys; print(' '.join(json.loads(sys.stdin.read())['programs']))")
@@ -211,9 +207,9 @@ for rel_file in "${files[@]}"; do
     tested=$((tested+1))
 
     step "[$pkg] register (type=$pkg_type)"
-    # No registration step: the whole checkout is mounted as the `xim` index
-    # above, so every recipe in it — including this one — is already
-    # resolvable under the identity it ships with.
+    if ! "$XLINGS_CMD" config --add-xpkg "$lua_file"; then
+        log_fail "config --add-xpkg failed"; failures+=("$rel_file (register)"); continue
+    fi
 
     # `namespace = "config"` is not a package — it's a bundle of system-side
     # configuration steps (hosts files, fontconfig, PowerShell policy,
@@ -231,11 +227,6 @@ for rel_file in "${files[@]}"; do
     shims_before=$(shim_set)
     info "shims before install: $(printf '%s\n' "$shims_before" | grep -c . || true)"
 
-    # A recipe that declares no namespace belongs to the PRIMARY repo, `xim`.
-    # Spell it out rather than using a bare name: bare is ambiguous once other
-    # index repos are registered (`scode` also ships a `gcc`), and `xim:` costs
-    # nothing in identity terms — it IS the primary, so its xvm version
-    # namespace is empty either way.
     pkg_spec="${pkg_ns}:${pkg}"
 
     step "[$pkg] install ($pkg_spec)"
@@ -245,7 +236,6 @@ for rel_file in "${files[@]}"; do
 
     step "[$pkg] post-install checks"
     install_dirs=$(pkg_install_dirs "$pkg")
-    installed_version=""
     if [[ -z "$install_dirs" ]]; then
         if $expect_artifacts; then
             log_fail "no install dir matching '*-x-$pkg' under $XPKGS_DIR"
@@ -265,10 +255,6 @@ for rel_file in "${files[@]}"; do
                 fi
             else
                 while IFS= read -r v; do log_pass "install dir: $v"; done <<< "$versions"
-                # Remember what THIS test installed, so the uninstall below can
-                # name it — see the removal step for why a bare name is not
-                # good enough.
-                [[ -n "$installed_version" ]] || installed_version=$(basename "$(printf '%s\n' "$versions" | head -1)")
             fi
         done <<< "$install_dirs"
     fi
@@ -344,25 +330,8 @@ for rel_file in "${files[@]}"; do
         log_pass "loader and libc come from one payload"
     fi
 
-    # Remove exactly what this test installed, not "whatever is active".
-    #
-    # A bare `remove <name>` makes xim look up the ACTIVE version of that
-    # target, and for a package registered as part of a binding group that value
-    # carries the provider annotation — `15.1.0(mingw-w64-13.0.0)` — which is a
-    # DISPLAY form. Fed back as a lookup key it yields
-    # `package 'gcc@15.1.0(mingw-w64-13.0.0)' not found`.
-    #
-    # Naming the version is also what a lifecycle test should do: it installed
-    # one specific thing, so it should uninstall that thing rather than depend
-    # on ambient active-version state it does not control.
-    if [[ -n "$installed_version" ]]; then
-        remove_spec="${pkg_spec}@${installed_version}"
-    else
-        remove_spec="$pkg_spec"
-    fi
-
-    step "[$pkg] uninstall ($remove_spec)"
-    if ! "$XLINGS_CMD" remove "$remove_spec" -y; then
+    step "[$pkg] uninstall ($pkg_spec)"
+    if ! "$XLINGS_CMD" remove "$pkg_spec" -y; then
         log_fail "uninstall failed"; failures+=("$rel_file (uninstall)"); continue
     fi
 

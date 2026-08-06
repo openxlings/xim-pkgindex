@@ -4,9 +4,7 @@
 #
 #   1. parse meta (name, has_windows, is_ref) via parse-xpkg-meta.py
 #   2. skip if the package is a thin ref or has no windows branch
-#   3. (no per-package registration: the whole checkout is mounted as the
-#      `xim` index up front, so every recipe is resolvable under the identity
-#      it ships with)
+#   3. register: `xlings config --add-xpkg <file>`
 #   4. snapshot shim + xpkgs state, install, verify new artifacts
 #   5. uninstall, verify artifacts are gone
 
@@ -28,21 +26,6 @@ function Log-Fail  { Write-Host "  [FAIL] $args" -ForegroundColor Red }
 
 $xlingsHome = $env:XLINGS_HOME
 if (-not $xlingsHome) { throw "XLINGS_HOME not set" }
-
-# Mount THIS CHECKOUT as the primary `xim` index, instead of copying single
-# recipes into the local index with `config --add-xpkg`.
-#
-# `--add-xpkg` puts the recipe in a repo whose namespace is hardcoded to
-# "local", so the package under test was addressed as `local:<name>` while in
-# production it ships from `xim` — the PRIMARY repo, whose xvm version-namespace
-# is EMPTY. The test changed the identity of the thing it was testing.
-#
-# Harmless for a self-contained recipe. Not harmless for one that DELEGATES its
-# install to another package: the delegate registers under `xim` (bare version
-# key `15.1.0`) while removing the delegating package looked for `local:15.1.0`,
-# which was never created. `pkgs/g/gcc.lua` on Windows is exactly that shape —
-# it delegates to mingw-w64 — and failed uninstall for a divergence that cannot
-# occur in production.
 $shimDir  = Join-Path $xlingsHome "subos\default\bin"
 $xpkgsDir = Join-Path $xlingsHome "data\xpkgs"
 $xlingsCmd = Join-Path $xlingsHome "bin\xlings.exe"
@@ -52,21 +35,6 @@ if (-not (Test-Path $xlingsCmd)) {
 }
 if (-not (Test-Path $xlingsCmd)) {
     throw "xlings command not found"
-}
-
-& $xlingsCmd config --index-repo "xim:$WorkspaceRoot" 2>&1 | Write-Host
-if ($LASTEXITCODE -ne 0) {
-    throw "failed to mount $WorkspaceRoot as the xim index"
-}
-# Setting the URL is not enough: the workflow ran `xlings update` BEFORE this
-# point, so the served index is still the snapshot fetched from the remote
-# artifact ("[index] updated from artifact xim-index-<sha>.tar.gz"). Without a
-# re-sync the mount changes only the NAMESPACE while the recipes under test
-# stay the published ones — a test that reports on something other than the
-# code in the diff.
-& $xlingsCmd update 2>&1 | Write-Host
-if ($LASTEXITCODE -ne 0) {
-    throw "failed to sync the mounted xim index from $WorkspaceRoot"
 }
 
 function Get-ShimSet {
@@ -142,13 +110,7 @@ foreach ($relFile in $files) {
         continue
     }
     $meta = $metaJson | ConvertFrom-Json
-    # A recipe that declares no namespace belongs to the PRIMARY repo, `xim`.
-    # Defaulting to "local" here is what used to change the identity of the
-    # thing under test — see the mount above. Not a bare name either: bare is
-    # ambiguous once other index repos are registered (`scode` also ships a
-    # `gcc`), and `xim:` costs nothing in identity terms — it IS the primary,
-    # so its xvm version namespace is empty either way.
-    $pkgNs = if ($meta.namespace) { $meta.namespace } else { "xim" }
+    $pkgNs = if ($meta.namespace) { $meta.namespace } else { "local" }
     Log-Info "name=$($meta.name)  namespace=$pkgNs  programs=[$($meta.programs -join ',')]  is_ref=$($meta.is_ref)  has_windows=$($meta.has_windows)"
 
     if ($meta.is_ref) {
@@ -177,9 +139,14 @@ foreach ($relFile in $files) {
     $pkgType = if ($meta.type) { $meta.type } else { "package" }
     $expectArtifacts = $pkgType -in @("package", "app", "lib")
 
-    # No registration step: the checkout is mounted as the `xim` index before
-    # the loop, so this recipe is already resolvable under its shipping
-    # identity.
+    # --- register ---
+    Log-Step "[$pkg] register (type=$pkgType)"
+    & $xlingsCmd config --add-xpkg $luaFile 2>&1 | Write-Host
+    if ($LASTEXITCODE -ne 0) {
+        Log-Fail "config --add-xpkg failed"
+        $failures += "$relFile (register)"
+        continue
+    }
 
     # `namespace = "config"` is not a package — it's a bundle of system-side
     # configuration steps (hosts files, fontconfig, PowerShell policy,
@@ -211,7 +178,6 @@ foreach ($relFile in $files) {
 
     # --- post-install checks ---
     Log-Step "[$pkg] post-install checks"
-    $installedVersion = ""
     $installDirs = @(Get-PkgInstallDirs -pkgName $pkg)
     if ($installDirs.Count -eq 0) {
         if ($expectArtifacts) {
@@ -232,10 +198,6 @@ foreach ($relFile in $files) {
                 }
             } else {
                 foreach ($v in $versions) { Log-Pass "install dir: $($v.FullName)" }
-                # Remember what THIS test installed, so the uninstall below can
-                # name it. See the removal step for why bare-name removal is
-                # not good enough.
-                if (-not $installedVersion) { $installedVersion = $versions[0].Name }
             }
         }
     }
@@ -266,20 +228,8 @@ foreach ($relFile in $files) {
     }
 
     # --- uninstall ---
-    # Remove exactly what this test installed, not "whatever is active".
-    #
-    # A bare `remove <name>` makes xim look up the ACTIVE version of that
-    # target, and for a package registered as part of a binding group that
-    # value carries the provider annotation — `15.1.0(mingw-w64-13.0.0)` — which
-    # is a DISPLAY form. Fed back as a lookup key it yields
-    # `package 'gcc@15.1.0(mingw-w64-13.0.0)' not found`.
-    #
-    # Naming the version is also simply what a lifecycle test should do: it
-    # installed one specific thing, so it should uninstall that thing rather
-    # than depend on ambient active-version state it does not control.
-    $removeSpec = if ($installedVersion) { "${pkgSpec}@${installedVersion}" } else { $pkgSpec }
-    Log-Step "[$pkg] uninstall ($removeSpec)"
-    & $xlingsCmd remove $removeSpec -y 2>&1 | Write-Host
+    Log-Step "[$pkg] uninstall ($pkgSpec)"
+    & $xlingsCmd remove $pkgSpec -y 2>&1 | Write-Host
     if ($LASTEXITCODE -ne 0) {
         Log-Fail "uninstall failed"
         $failures += "$relFile (uninstall)"
