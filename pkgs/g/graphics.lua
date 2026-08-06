@@ -78,7 +78,23 @@ package = {
                     "xim:nvidia-gl-host-link@>=0.1",
                     -- Sentinel: WSL2's Windows-side D3D12 userspace.
                     -- A no-op anywhere that is not WSL2.
-                    "xim:wsl-gl-host-link@>=0.1",
+                    --
+                    -- BARE, unlike its two siblings above, and the asymmetry is
+                    -- the point: `wsl-gl-host-link` is NEW in this change, so it
+                    -- does not exist in the `xim` namespace yet. CI registers a
+                    -- changed recipe under `local`, and an `xim:` prefix can only
+                    -- resolve from that one namespace -- so a batch of new
+                    -- interdependent packages can never install until every one
+                    -- of them is already published. Measured here as
+                    -- `package 'xim:wsl-gl-host-link@>=0.1' not found`; #498 hit
+                    -- the same wall and fixed it the same way.
+                    --
+                    -- `mesa` and `nvidia-gl-host-link` keep their prefix because
+                    -- they ARE published: a changed recipe exists under BOTH
+                    -- `xim` and `local` during CI, and a bare name is then
+                    -- ambiguous -- the resolver refuses to guess. New package:
+                    -- bare. Existing package: namespaced.
+                    "wsl-gl-host-link@>=0.1",
                 },
             },
             ["latest"] = { ref = "0.1.0" },

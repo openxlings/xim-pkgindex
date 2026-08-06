@@ -143,7 +143,16 @@ package = {
                     -- The GL/X11/wayland stack, and the driver bridge for
                     -- whatever GPU this host has. A lower bound, so this does
                     -- not pin the stack's version.
-                    "xim:graphics@>=0.1",
+                    --
+                    -- Bare, not `xim:`: `graphics` is new in this change and so
+                    -- exists only under `local` until it is published. An
+                    -- `xim:` prefix resolves from that namespace alone, which
+                    -- makes a new package undepend-able by its own PR. The
+                    -- three deps above keep their prefix because they are
+                    -- published -- and a published recipe that this PR also
+                    -- CHANGES exists under both namespaces, where a bare name
+                    -- would be ambiguous instead.
+                    "graphics@>=0.1",
                 },
                 -- config() invokes `patchelf --force-rpath` to flip the
                 -- tag elfpatch stamps in (DT_RUNPATH -> DT_RPATH) so
