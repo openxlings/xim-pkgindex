@@ -236,6 +236,7 @@ for rel_file in "${files[@]}"; do
 
     step "[$pkg] post-install checks"
     install_dirs=$(pkg_install_dirs "$pkg")
+    installed_version=""
     if [[ -z "$install_dirs" ]]; then
         if $expect_artifacts; then
             log_fail "no install dir matching '*-x-$pkg' under $XPKGS_DIR"
@@ -255,6 +256,7 @@ for rel_file in "${files[@]}"; do
                 fi
             else
                 while IFS= read -r v; do log_pass "install dir: $v"; done <<< "$versions"
+                [[ -n "$installed_version" ]] || installed_version=$(basename "$(printf '%s\n' "$versions" | head -1)")
             fi
         done <<< "$install_dirs"
     fi
@@ -330,8 +332,17 @@ for rel_file in "${files[@]}"; do
         log_pass "loader and libc come from one payload"
     fi
 
-    step "[$pkg] uninstall ($pkg_spec)"
-    if ! "$XLINGS_CMD" remove "$pkg_spec" -y; then
+    # Remove exactly what this test installed, not "whatever is active" — a
+    # bare removal resolves the ACTIVE version, which for a binding-group member
+    # can carry a provider annotation that is a DISPLAY form, not a key.
+    if [[ -n "$installed_version" ]]; then
+        remove_spec="${pkg_spec}@${installed_version}"
+    else
+        remove_spec="$pkg_spec"
+    fi
+
+    step "[$pkg] uninstall ($remove_spec)"
+    if ! "$XLINGS_CMD" remove "$remove_spec" -y; then
         log_fail "uninstall failed"; failures+=("$rel_file (uninstall)"); continue
     fi
 

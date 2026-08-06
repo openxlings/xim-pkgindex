@@ -178,6 +178,7 @@ foreach ($relFile in $files) {
 
     # --- post-install checks ---
     Log-Step "[$pkg] post-install checks"
+    $installedVersion = ""
     $installDirs = @(Get-PkgInstallDirs -pkgName $pkg)
     if ($installDirs.Count -eq 0) {
         if ($expectArtifacts) {
@@ -198,6 +199,7 @@ foreach ($relFile in $files) {
                 }
             } else {
                 foreach ($v in $versions) { Log-Pass "install dir: $($v.FullName)" }
+                if (-not $installedVersion) { $installedVersion = $versions[0].Name }
             }
         }
     }
@@ -228,8 +230,20 @@ foreach ($relFile in $files) {
     }
 
     # --- uninstall ---
-    Log-Step "[$pkg] uninstall ($pkgSpec)"
-    & $xlingsCmd remove $pkgSpec -y 2>&1 | Write-Host
+    # Remove exactly what this test installed, not "whatever is active".
+    #
+    # A bare `remove <name>` makes xim look up the ACTIVE version of that
+    # target, and for a package registered as part of a binding group that
+    # value can carry a provider annotation — `15.1.0(mingw-w64-13.0.0)` — which
+    # is a DISPLAY form. Fed back as a lookup key it yields
+    # `package 'gcc@15.1.0(mingw-w64-13.0.0)' not found`.
+    #
+    # Naming the version is also what a lifecycle test should do: it installed
+    # one specific thing, so it should uninstall that thing rather than depend
+    # on ambient active-version state it does not control.
+    $removeSpec = if ($installedVersion) { "${pkgSpec}@${installedVersion}" } else { $pkgSpec }
+    Log-Step "[$pkg] uninstall ($removeSpec)"
+    & $xlingsCmd remove $removeSpec -y 2>&1 | Write-Host
     if ($LASTEXITCODE -ne 0) {
         Log-Fail "uninstall failed"
         $failures += "$relFile (uninstall)"
