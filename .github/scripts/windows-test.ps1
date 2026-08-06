@@ -58,6 +58,16 @@ if (-not (Test-Path $xlingsCmd)) {
 if ($LASTEXITCODE -ne 0) {
     throw "failed to mount $WorkspaceRoot as the xim index"
 }
+# Setting the URL is not enough: the workflow ran `xlings update` BEFORE this
+# point, so the served index is still the snapshot fetched from the remote
+# artifact ("[index] updated from artifact xim-index-<sha>.tar.gz"). Without a
+# re-sync the mount changes only the NAMESPACE while the recipes under test
+# stay the published ones — a test that reports on something other than the
+# code in the diff.
+& $xlingsCmd update 2>&1 | Write-Host
+if ($LASTEXITCODE -ne 0) {
+    throw "failed to sync the mounted xim index from $WorkspaceRoot"
+}
 
 function Get-ShimSet {
     if (-not (Test-Path $shimDir)) { return @{} }

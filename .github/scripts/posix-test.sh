@@ -150,6 +150,16 @@ skipped=0
     echo "failed to mount $WORKSPACE_ROOT as the xim index" >&2
     exit 1
 }
+# Setting the URL is not enough: the workflow ran `xlings update` BEFORE this
+# point, so the served index is still the snapshot fetched from the remote
+# artifact ("[index] updated from artifact xim-index-<sha>.tar.gz"). Without a
+# re-sync the mount changes only the NAMESPACE while the recipes under test
+# stay the published ones — a test that reports on something other than the
+# code in the diff.
+"$XLINGS_CMD" update 2>&1 || {
+    echo "failed to sync the mounted xim index from $WORKSPACE_ROOT" >&2
+    exit 1
+}
 
 for rel_file in "${files[@]}"; do
     [[ -n "$rel_file" ]] || continue
