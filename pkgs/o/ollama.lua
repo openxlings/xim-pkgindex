@@ -115,8 +115,22 @@ function install()
             [[tar -xzf "%s" -C "%s"]],
             archive, pkginfo.install_dir()
         ))
-        __link_cuda_backends()
-        __install_systemd_user_service()
+        -- linux, not "not windows".
+        --
+        -- Both of these are linux-only: the CUDA sentinel
+        -- (`xim:libcuda-host-link`) is declared only in the `xpm.linux`
+        -- section, and systemd is not a thing on macOS. Running them under
+        -- `else` meant macOS took the linux path, and the first thing it did
+        -- was ask for the install dir of a package macOS never resolves.
+        --
+        -- openxlings/xlings#487. The symptom read as a path problem
+        -- ("cannot get install dir"); the cause was this branch. libxpkg
+        -- 0.0.53 makes that message name the platform instead, but the branch
+        -- is what was wrong.
+        if is_host("linux") then
+            __link_cuda_backends()
+            __install_systemd_user_service()
+        end
     end
 
     return true

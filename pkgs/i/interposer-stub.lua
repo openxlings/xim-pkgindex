@@ -1,6 +1,17 @@
 package = {
     spec = "2",
 
+    -- Explicit, because a consumer in the SAME PR names it `xim:`.
+    --
+    -- `config --add-xpkg` registers a recipe into the local index, and
+    -- without a declared namespace it lands under `local:`. CI pre-registers
+    -- every changed recipe so that a PR adding a stack can install it, but a
+    -- dep written `xim:interposer-stub` does not match a `local:` one:
+    -- "package 'xim:interposer-stub@>=0.1' not found", for a file sitting in
+    -- the same diff. Declaring the namespace makes the local registration and
+    -- the published one the same address.
+    namespace = "xim",
+
     homepage = "https://github.com/xlings-res/interposer-stub",
     name = "interposer-stub",
     description = "Prebuilt empty ELF stub that elfpatch.host_link_interposer turns into an interposer",
