@@ -64,20 +64,27 @@ package = {
             -- install() links each of these into this package's own lib dir,
             -- so declaring them is not decoration — it is where they come
             -- from. glibc is pinned for the reason mesa's is; see that recipe.
+            -- The SPLIT form, spelled out: `runtime = {...}, build = {...}`.
+            --
+            -- Not a positional list with `build` beside it. That mixed shape
+            -- reads identically and every client before libxpkg 0.0.52 takes
+            -- the legacy branch on it -- `build` is dropped and the runtime
+            -- entries are copied into build_deps in its place. Nothing
+            -- reports it; the install succeeds having done neither thing.
+            -- The split form means the same thing on every client that has
+            -- ever existed.
             deps = {
-                "xim:libglvnd@>=1.7",
-                "xim:libX11@>=1.8",
-                "xim:libXext@>=1.3",
-                "xim:glibc@>=2.39",
-                -- The empty ELF object the interposer is built from. There is
-                -- no compiler at install time and patchelf edits objects
-                -- rather than creating them, so it is shipped (AD-12).
-                "xim:interposer-stub@>=0.1",
-                -- INSIDE `deps`, not beside it. `deps.build` is the build-dep
-                -- slot; a `build` key one level up parses, reads exactly like
-                -- this one, and installs nothing -- measured, the host's
-                -- patchelf was still what ran.
-                --
+                runtime = {
+                    "xim:libglvnd@>=1.7",
+                    "xim:libX11@>=1.8",
+                    "xim:libXext@>=1.3",
+                    "xim:glibc@>=2.39",
+                    -- The empty ELF object the interposer is built from.
+                    -- There is no compiler at install time and patchelf edits
+                    -- objects rather than creating them, so it is shipped
+                    -- (AD-12).
+                    "xim:interposer-stub@>=0.1",
+                },
                 -- patchelf is what BUILDS the interposer, not merely what
                 -- tweaks an already-good object: without it there is no
                 -- vendor entry point at all. libxpkg resolves it payload-
@@ -167,7 +174,6 @@ function install()
     local dir = pkginfo.install_dir()
     os.tryrm(dir)
     os.mkdir(path.join(dir, "lib"))
-    local interposed = false
 
     local nvdir = __probe_nvidia_dir()
     if not nvdir then
@@ -278,8 +284,6 @@ function install()
             end
         end
     end
-    interposed = #done > 0
-
     -- Total, or loud. An entry point the host HAS and we did not interpose is
     -- still sitting there as a symlink into /usr/lib -- it works, by resolving
     -- the vendor's dependencies from the host, which is the thing this package
