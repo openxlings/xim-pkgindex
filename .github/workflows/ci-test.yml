@@ -1,5 +1,24 @@
 name: pkgindex test
 
+# `pull_request` as well as `push`, and the reason is not thoroughness.
+#
+# With push alone, `changed-files` compares HEAD against the PREVIOUS COMMIT,
+# so the gate only ever sees the last push's diff -- never the change the PR
+# actually proposes. A PR that adds a package in one commit and depends on it
+# in the next produces, in order:
+#
+#   commit 1  tests the new package alone
+#   commit 2  tests the consumer -- FAILS, its dep is "not found"
+#   commit 3  touches no pkgs/ file -- the step is skipped, and the check
+#             reports GREEN
+#
+# The last one is what a reviewer sees. "Every changed package installs" and
+# "no package was tested" produce the same green check. Measured on #532
+# (2026-08-06): a passing linux-install-test that ran zero packages.
+#
+# On a pull_request event changed-files diffs against the base, so the gate
+# sees the whole PR every time. The concurrency group below keeps the
+# duplicate push run from doubling the cost.
 on:
   push:
     branches:
@@ -8,7 +27,16 @@ on:
       - 'pkgs/**'
       - '.github/workflows/ci-test.yml'
       - '.github/scripts/**'
+  pull_request:
+    paths:
+      - 'pkgs/**'
+      - '.github/workflows/ci-test.yml'
+      - '.github/scripts/**'
   workflow_dispatch:
+
+concurrency:
+  group: pkgindex-test-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
 
