@@ -114,26 +114,67 @@ while IFS= read -r name; do
     ENVARGS+=(--setenv "$name" "$value")
 done <<<"$DECLARED"
 
+# The container, twice.
+#
+# S1 blames "closure incomplete" for any failure, and that is only a valid
+# reading if the probe would have succeeded in the SAME container with the host
+# present. Measured 2026-08-07: it does not. The probe renders llvmpipe fine
+# outside any container and loads zero EGL vendors inside one -- with every
+# namespace combination, and with /usr, /etc and /lib bound. So the failure was
+# not about the absence of /usr, which is the single variable this test exists to
+# isolate, and "S1: closure incomplete" was pointing at the wrong thing.
+#
+# So run a CONTROL first: the identical container with the host fully available.
+# If the control fails, this test cannot distinguish its two cases and must say
+# so instead of blaming the stack. A test that reports a wrong cause is worse
+# than one that reports nothing, because someone acts on it.
+run_in_container() {
+    # $1 = "sealed" | "control"; mount order matters -- --tmpfs /tmp must come
+    # BEFORE the home bind, or a home under /tmp is shadowed and the binary
+    # "does not exist" (see the note above).
+    local extra=()
+    if [[ "$1" == control ]]; then
+        extra=(--ro-bind /usr /usr --ro-bind /etc /etc
+               --symlink usr/lib /lib --symlink usr/lib64 /lib64)
+    fi
+    bwrap \
+        --unshare-all --die-with-parent \
+        --proc /proc --tmpfs /tmp \
+        --ro-bind "$XHOME" "$XHOME" \
+        "${extra[@]}" \
+        --dev-bind /dev/dri /dev/dri \
+        --ro-bind /sys /sys \
+        --setenv XLINGS_HOME "$XHOME" \
+        --setenv HOME /tmp \
+        "${ENVARGS[@]}" \
+        -- "$PROBE" 2>&1
+}
+
+CTRL="$(run_in_container control)"
+if ! grep -q "RESULT=ok" <<<"$CTRL"; then
+    echo "$CTRL" | sed 's/^/    /'
+    echo "[gfx-check] INCONCLUSIVE: the probe does not reach RESULT=ok even with" >&2
+    echo "  the host fully bound (/usr, /etc, /lib present). That is a broken" >&2
+    echo "  probe or a broken container, NOT evidence about self-containment --" >&2
+    echo "  the sealed run below would fail for the same reason and S1 would" >&2
+    echo "  blame the closure." >&2
+    echo "  Compare: run \$SUBOS/bin/glprobe directly, outside bwrap." >&2
+    exit 2
+fi
+log "  control ok — the probe reaches RESULT=ok in this container WITH the host"
+
 # No LD_LIBRARY_PATH either: the probe was linked with -rpath into the subos,
 # which is how any program xlings installs finds its libraries. Handing one in
 # would hide a stack that only resolves when someone sets a search path.
-OUT="$(
-  bwrap \
-    --unshare-all --die-with-parent \
-    --proc /proc --tmpfs /tmp \
-    --ro-bind "$XHOME" "$XHOME" \
-    --dev-bind /dev/dri /dev/dri \
-    --ro-bind /sys /sys \
-    --setenv XLINGS_HOME "$XHOME" \
-    --setenv HOME /tmp \
-    "${ENVARGS[@]}" \
-    -- "$PROBE" 2>&1
-)"
+OUT="$(run_in_container sealed)"
 RC=$?
 
 echo "$OUT" | sed 's/^/    /'
 
 # ── assertions ──────────────────────────────────────────────────────────
+# Now "closure incomplete" is a sound reading: the control proved the same
+# container and probe work when the host is present, so the only thing that
+# changed is the host being gone.
 [[ $RC -eq 0 ]] || fail "S1: probe exited $RC inside the empty host (closure incomplete)"
 grep -q "RESULT=ok" <<<"$OUT" || fail "S1/S4: probe did not reach RESULT=ok"
 log "  S1 ok — no loader error with no /usr present"
