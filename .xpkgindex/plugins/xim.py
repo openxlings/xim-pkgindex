@@ -20,6 +20,16 @@ from typing import Any, Dict, List, Optional
 from xpkgindex.models import Block, Facet, FacetValue, Identity, RowSpec
 from xpkgindex.plugins import Plugin
 
+def _t(zh: str, en: str, hant: str) -> Dict[str, str]:
+    """A string the site renders in the reader's language.
+
+    Field names stay untranslated — `programs`, `aliases`, `authors` are what
+    the descriptor actually calls them, and a reader comparing the page with
+    a `.lua` file needs to see the same word.
+    """
+    return {"zh": zh, "en": en, "zh-Hant": hant}
+
+
 TYPE_TONES = {
     "package": "neutral",
     "config": "module",
@@ -77,11 +87,11 @@ class XimPlugin(Plugin):
 
     def facets(self) -> List[Facet]:
         return [
-            Facet(key="type", label="kind", weight=10, values=[
+            Facet(key="type", label=_t("类型", "kind", "類型"), weight=10, values=[
                 FacetValue(key=k, label=k, tone=t) for k, t in TYPE_TONES.items()
             ]),
-            Facet(key="category", label="category", weight=30),
-            Facet(key="status", label="status", weight=40),
+            Facet(key="category", label=_t("分类", "category", "分類"), weight=30),
+            Facet(key="status", label=_t("状态", "status", "狀態"), weight=40),
         ]
 
     def row(self, pkg) -> RowSpec:
@@ -114,16 +124,19 @@ class XimPlugin(Plugin):
         if programs:
             items.append({"key": "programs", "value": ", ".join(programs), "mono": True})
         if ext.get("archs"):
-            items.append({"key": "architectures",
+            items.append({"key": _t("架构", "architectures", "架構"),
                           "value": ", ".join(str(a) for a in ext["archs"]), "mono": True})
-        items.append({"key": "xvm managed", "value": "yes" if ext.get("xvm_enable") else "no"})
+        items.append({"key": _t("xvm 管理", "xvm managed", "xvm 管理"),
+                      "value": _t("是", "yes", "是") if ext.get("xvm_enable")
+                               else _t("否", "no", "否")})
         if pkg.status:
             items.append({"key": "status", "value": pkg.status})
         if ext.get("aliases"):
             items.append({"key": "aliases",
                           "value": ", ".join(str(a) for a in ext["aliases"]), "mono": True})
         if items:
-            blocks.append(Block(kind="kv", title="Package", data={"items": items}, weight=30))
+            blocks.append(Block(kind="kv", title=_t("包信息", "Package", "套件資訊"),
+                                data={"items": items}, weight=30))
 
         people = []
         if ext.get("authors"):
@@ -134,10 +147,12 @@ class XimPlugin(Plugin):
         if ext.get("contributors"):
             people.append({"key": "contributors", "value": str(ext["contributors"])})
         if people:
-            blocks.append(Block(kind="kv", title="Credits", data={"items": people}, weight=40))
+            blocks.append(Block(kind="kv", title=_t("致谢", "Credits", "致謝"),
+                                data={"items": people}, weight=40))
 
         tags = [str(k) for k in ext.get("keywords") or []]
         if tags:
-            blocks.append(Block(kind="list", title="Keywords", collapsed=True, weight=60,
+            blocks.append(Block(kind="list", title=_t("关键词", "Keywords", "關鍵字"),
+                                collapsed=True, weight=60,
                                 data={"items": tags}))
         return blocks
