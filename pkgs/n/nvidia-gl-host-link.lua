@@ -214,6 +214,15 @@ echo "  interposers        $INTERPOSED/$ENTRYPOINTS entry points"
 if [ -z "$live" ]; then
     echo "  ! no NVIDIA kernel module loaded -- GL renders through mesa."
     echo "    That is a normal state; nothing to repair."
+elif [ -z "$stamped" ]; then
+    # Installed on a machine with no driver, and one has since appeared. Not
+    # the same thing as a version change, and the fix is the same command but
+    # the reason a user needs to hear is different: nothing is broken, there is
+    # simply a GPU here now that this payload was never told about.
+    echo "  x an NVIDIA driver ($live) appeared after this package was installed."
+    echo "    It links nothing yet, so GL still renders through mesa. Repair:"
+    echo "      xlings install graphics        # re-probes and links the driver"
+    rc=1
 elif [ "$live" != "$stamped" ]; then
     echo "  x host driver changed since install ($stamped -> $live)."
     echo "    The payload's version-named symlinks now dangle. Repair:"
@@ -223,8 +232,15 @@ fi
 
 # Dangling links are the visible symptom of the above, and they are worth
 # counting separately: a partial driver upgrade leaves some resolvable.
+#
+# The `[ -e "$f" ] || continue`-style guard on the glob itself is load-bearing:
+# with an empty lib/ (the no-driver host, where this package links nothing) an
+# unmatched glob stays LITERAL, so the loop body runs once on the pattern
+# string, `[ -e ]` is false, and the script reports one dangling entry called
+# `*` and exits 1 on a host that is in a perfectly normal state.
 dangling=0
 for f in "$PAYLOAD"/lib/*; do
+    [ "$f" = "$PAYLOAD/lib/*" ] && break        # empty dir: glob did not expand
     [ -e "$f" ] || { dangling=$((dangling+1)); echo "  x dangling  $(basename "$f")"; }
 done
 [ "$dangling" -gt 0 ] && rc=1
@@ -252,6 +268,22 @@ function install()
         log.warn("  GL programs will render through mesa (llvmpipe or an")
         log.warn("  open driver). Install the NVIDIA driver with your distro")
         log.warn("  package manager and reinstall this package to use it.")
+        -- The self-check STILL ships, and this early return is exactly why.
+        --
+        -- Declaring `programs = {"xlings-gl-doctor"}` makes xlings verify after
+        -- install that the package registered what it promised. Returning here
+        -- without writing the script failed that check on every host WITHOUT an
+        -- NVIDIA driver -- which is most of them, including every CI runner --
+        -- and took `graphics` and `godot` down with it, three failures from one
+        -- cause. Measured on the first CI run this package ever had on a
+        -- machine with no GPU; a local machine that HAS the driver cannot
+        -- reproduce it, which is the whole reason that path needs a test.
+        --
+        -- The script already handles this state: no kernel module loaded is
+        -- reported as normal, with nothing to repair. A sentinel's no-driver
+        -- path must be a complete install, not a shorter one.
+        io.writefile(path.join(dir, ".host-driver-version"), "\n")
+        __write_gl_doctor(dir, "", 0, 0)
         return true
     end
 
