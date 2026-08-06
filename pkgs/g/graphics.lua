@@ -61,7 +61,18 @@ package = {
                     -- packages below it (libglvnd, libllvm, the X11 client
                     -- libraries, wayland, libdrm, …) -- listing them here would
                     -- be a second, drifting copy of that graph.
-                    "xim:mesa@>=25.0.7",
+                    -- BARE, no range, and that is measured rather than
+                    -- stylistic: mesa's version is `25.0.7.1` -- four
+                    -- components, upstream's three plus ours, deliberately (see
+                    -- that recipe) -- and the resolver's range comparison
+                    -- cannot parse a four-component version at all. Both
+                    -- `@>=25.0.7` and `@>=25.0.7.1` resolve to
+                    -- "package not found", which reads as a missing package
+                    -- rather than an unparseable constraint.
+                    --
+                    -- A bare namespaced name means "whatever mesa this home
+                    -- resolves", which is what a lower bound was trying to say.
+                    "xim:mesa",
                     -- Sentinel: the host's proprietary NVIDIA GL userspace.
                     -- A no-op on a machine without that driver.
                     "xim:nvidia-gl-host-link@>=0.1",

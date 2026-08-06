@@ -17,6 +17,17 @@ package = {
     categories = {"graphics", "gpu", "nvidia", "lib"},
     keywords = {"nvidia", "opengl", "egl", "glx", "host-link", "sentinel"},
 
+    -- The self-check is a real program and has to be declared as one.
+    --
+    -- Measured: `xvm.add("xlings-gl-doctor", {...})` alone registers the node
+    -- with the right kind, binding and filename -- and no shim appears in
+    -- `<subos>/bin`. The declaration is what makes xlings materialise one, and it
+    -- is also what the post-install check reads when it verifies that a package
+    -- registered what it promised ("installed but registered none of the
+    -- programs it declares"). Without it the node exists and nothing can run it.
+    programs = {"xlings-gl-doctor"},
+    xvm_enable = true,
+
     -- ─────────────────────────────────────────────────────────────────────
     -- The one userspace dependency the graphics stack keeps on the host.
     --
