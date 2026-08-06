@@ -69,6 +69,10 @@ package = {
                 "xim:libX11@>=1.8",
                 "xim:libXext@>=1.3",
                 "xim:glibc@>=2.39",
+                -- The empty ELF object the interposer is built from. There is
+                -- no compiler at install time and patchelf edits objects
+                -- rather than creating them, so it is shipped (AD-12).
+                "xim:interposer-stub@>=0.1",
             },
             exports = {
                 runtime = { libdirs = { "lib" } },
@@ -89,6 +93,7 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.subos")
+import("xim.libxpkg.elfpatch")
 import("xim.pkgindex.sysroot")
 
 -- Where the host keeps its NVIDIA userspace.
@@ -149,8 +154,7 @@ function install()
     local dir = pkginfo.install_dir()
     os.tryrm(dir)
     os.mkdir(path.join(dir, "lib"))
-    -- Ours, kept out of the host's directory. See the loop below.
-    local depsdir = path.join(dir, "lib", "xlings-deps")
+    local interposed = false
 
     local nvdir = __probe_nvidia_dir()
     if not nvdir then
@@ -194,73 +198,61 @@ function install()
     -- be quietly short of it and the vendor would fail to load, three layers
     -- from the cause.
     --
-    -- A name already present in lib/ is not shadowed: NVIDIA ships its own
-    -- copy of some of these, and the driver expects to get it.
-    os.mkdir(depsdir)
-    for _, dep in ipairs({
-        -- glibc, minus libc.so.6 and libm.so.6, and the omissions are the
-        -- point.
-        --
-        -- The vendor's DT_NEEDED is libpthread, librt, libc, libdl (plus its
-        -- own libnvidia-glsi). libm is not on it at all.
-        --
-        -- libc.so.6 must not be here. It cannot help: the vendor is dlopen'd
-        -- into a process that is already running, so its libc was bound long
-        -- ago by whatever its INTERP named, and an already-loaded SONAME is
-        -- resolved to the loaded object without any search. It can hurt, and
-        -- did — this directory goes on LD_LIBRARY_PATH, which every child
-        -- process inherits, including host binaries running under the HOST
-        -- loader. ld.so and libc.so.6 are two halves of one build that talk
-        -- over GLIBC_PRIVATE; handing a host binary our half killed the shell
-        -- `xlings subos use` hands back, SIGSEGV before it printed a
-        -- character, on a host whose glibc was the same upstream VERSION as
-        -- ours and merely a different build.
-        --
-        -- The three that remain are the glibc 2.34+ compatibility stubs: 27,
-        -- 13 and 9 defined symbols, because their implementations moved into
-        -- libc.so.6. Almost no ABI surface, and the vendor names all three.
-        -- libm is the opposite — 1203 symbols, real surface, and nothing here
-        -- asks for it.
-        --
-        -- Measured, one library at a time: with these three the probe reports
-        -- NVIDIA GeForce RTX 4080/PCIe/SSE2 and /bin/bash survives; with
-        -- libc.so.6 added the renderer is unchanged and bash dies; with all
-        -- of them gone the NVIDIA device disappears from the enumeration
-        -- entirely.
-        {"glibc",    {"libpthread.so.0", "librt.so.1", "libdl.so.2"}},
-        {"libX11",   {"libX11.so.6", "libX11-xcb.so.1"}},
-        {"libXext",  {"libXext.so.6"}},
-        {"libglvnd", {"libGLdispatch.so.0"}},
-        -- libX11's own dependencies, and they have to be here too.
-        -- DT_RUNPATH is not transitive: once libX11 is found through
-        -- LD_LIBRARY_PATH, ITS libxcb is searched against the same path
-        -- rather than against the RUNPATH of whoever loaded it. A directory
-        -- that stops one level short resolves the rest from the host, which
-        -- is the leak this whole stack exists to close — and it does it
-        -- silently, because a host that has libxcb makes it look like it
-        -- worked.
-        {"libxcb",   {"libxcb.so.1"}},
-        {"libXau",   {"libXau.so.6"}},
-        {"libXdmcp", {"libXdmcp.so.6"}},
-    }) do
-        local depdir = pkginfo.dep_install_dir(dep[1])
-        if depdir then
-            for _, name in ipairs(dep[2]) do
-                local link = path.join(depsdir, name)
-                if not os.isfile(path.join(dir, "lib", name)) then
-                    -- Packages disagree about lib vs lib64; try both rather
-                    -- than encode a layout that is true of one of them.
-                    for _, sub in ipairs({"lib", "lib64"}) do
-                        local src = path.join(depdir, sub, name)
-                        if os.isfile(src) then
-                            system.exec(string.format([[ln -sf "%s" "%s"]],
-                                src, link))
-                            linked = linked + 1
-                            break
-                        end
-                    end
-                end
-            end
+    -- The interposer, in place of a gathered dependency directory.
+    --
+    -- What used to be here: a hand-written table of SONAMEs symlinked into
+    -- `lib/xlings-deps/`, put on LD_LIBRARY_PATH so the vendor could find
+    -- them. It worked, and it had two costs that could not be paid off by
+    -- getting the table right.
+    --
+    -- The table was a list of what someone thought of, and it was missing
+    -- libm, libdrm, libgbm, libgcc_s and libwayland-* -- all of which were
+    -- therefore coming from the HOST, silently, which is the leak this
+    -- package exists to close (R7).
+    --
+    -- And LD_LIBRARY_PATH has no scope. Every child of the subos shell
+    -- inherits it, and most of them are host binaries on the host loader.
+    -- That is how a libc in that directory once returned a /bin/bash that
+    -- died of SIGSEGV before printing a character.
+    --
+    -- An interposer replaces both. It is ~9 KB of empty object with the
+    -- vendor's SONAME, NEEDing the real vendor by absolute path so dlsym
+    -- still reaches its entry points, and carrying DT_RPATH -- transitive
+    -- along the load chain, where DT_RUNPATH is not -- naming the closure the
+    -- RESOLVER computed. No table, and nothing on any global variable.
+    --
+    -- Measured on this host, 2026-08-06: with LD_LIBRARY_PATH carrying only
+    -- the host driver directory, GL_RENDERER came back
+    -- `NVIDIA GeForce RTX 4080/PCIe/SSE2` and the probe read back the pixel it
+    -- drew. The same subos with neither mechanism renders on llvmpipe.
+    --
+    -- PRECONDITION: an interposer may only be loaded by a consumer whose
+    -- INTERP points into our payload. That is why only OUR vendor JSON below
+    -- names it -- the host's own glvnd keeps using the host's own vendor, and
+    -- both rules hold at once. Handing one to a host binary fails as
+    -- `librt.so.1: undefined symbol: __pointer_chk_guard, version
+    -- GLIBC_PRIVATE`, which is the loader/libc split from the direction the
+    -- same-source assertion cannot see.
+    local vendor_real = path.join(nvdir, "libEGL_nvidia.so.0")
+    if os.isfile(vendor_real) and type(elfpatch.host_link_interposer) == "function" then
+        elfpatch.host_link_interposer{
+            vendor = vendor_real,
+            out    = path.join(dir, "lib", "libEGL_nvidia.so.0"),
+            soname = "libEGL_nvidia.so.0",
+        }
+        interposed = true
+    else
+        -- No interposer: either the host has no EGL vendor (nothing to point
+        -- at) or this client's libxpkg predates the capability. Say which --
+        -- silently falling back to a gathered directory is how the old
+        -- behaviour would come back without anyone deciding to bring it.
+        if not os.isfile(vendor_real) then
+            log.warn("no libEGL_nvidia.so.0 under %s; EGL will fall back to mesa", nvdir)
+        else
+            log.warn("this xlings is too old for elfpatch.host_link_interposer "
+                     .. "(libxpkg 0.0.52); the NVIDIA vendor's dependencies "
+                     .. "will resolve from the HOST. Run `xlings self update` "
+                     .. "and reinstall this package.")
         end
     end
 
@@ -282,7 +274,12 @@ function install()
 }
 ]], path.join(dir, "lib", "libEGL_nvidia.so.0")))
 
-    log.info("nvidia-gl-host-link → %s (%d libraries) ✓", nvdir, linked)
+    -- Both numbers, and the interposer's presence explicitly. Reporting only
+    -- the symlink count would make "the vendor's dependencies resolve to our
+    -- payloads" and "they resolve to the host's" produce identical output --
+    -- and the second one still renders, just on llvmpipe.
+    log.info("nvidia-gl-host-link → %s (%d host libraries linked, interposer: %s) ✓",
+             nvdir, linked, interposed and "yes" or "NO — vendor deps come from the host")
     return true
 end
 
@@ -310,19 +307,22 @@ function config()
                    value = "${pkgdir}/share/glvnd/egl_vendor.d",
                    binding = tag }
 
-        -- The one place in this stack that needs a library SEARCH PATH
-        -- rather than an RPATH, for the same reason this is a sentinel at
-        -- all: the vendor is the host's file, and a file we do not own is a
-        -- file we cannot patch. install() made this directory sufficient on
-        -- its own, so the path names it and not `<subos>/lib` — a payload
-        -- directory is pinned by the dependency graph, where the subos lib
-        -- directory holds whatever that subos happens to contain.
+        -- No LD_LIBRARY_PATH. It used to be here, and it was the one place
+        -- in this stack that needed a library SEARCH PATH rather than an
+        -- RPATH -- because the vendor is the host's file and a file we do not
+        -- own is a file we cannot patch.
         --
-        -- Scoped to this package: uninstalling it takes the declaration
-        -- with it, and a subos with no NVIDIA in it never gets one.
-        subos.env{ var = "LD_LIBRARY_PATH", op = "prepend",
-                   value = "${pkgdir}/lib:${pkgdir}/lib/xlings-deps",
-                   binding = tag }
+        -- The interposer is a file we DO own, sitting between the loader and
+        -- the vendor, so the RPATH goes there and the search path is not
+        -- needed at all. What went away with it is the part that had no
+        -- scope: LD_LIBRARY_PATH is inherited by every child of the subos
+        -- shell, and most of them are host binaries on the host loader.
+        --
+        -- The host driver directory is NOT declared here either. The vendor
+        -- dlopens its own siblings (libnvidia-glcore, libnvidia-eglcore, …)
+        -- by bare SONAME at runtime, and those must come from the host to
+        -- match its kernel module -- but the host loader finds them through
+        -- its own ld.so cache, without help from us.
     end
     return true
 end
