@@ -21,6 +21,138 @@ remain compatible with xlings 0.4.61+. Older clients ignore new fields or may
 misinterpret root/platform `source`; keep the legacy entry form when the same
 index must be consumed by those clients.
 
+## The seven rules
+
+These are normative. They came out of two production defects with the same
+shape — a question with several answerers that agreed until they didn't — and
+every one of them has an executable criterion, because a rule that can only be
+judged by reading is a rule that drifts.
+
+The failure they exist to prevent is not "two components disagree". It is that
+**in the default configuration they agree**, so nothing is ever forced to
+reconcile them, and the disagreement arrives with the second version, the
+second home, or the second machine.
+
+### R1 — an authoritative record is total
+
+Every input item gets a record, not just the ones that had something to say. A
+loop over declarations must write a row before it `continue`s, even if the row
+says `skipped`.
+
+> **Criterion.** The difference between the declared set and the recorded set
+> must be computable without re-running anything. If answering "was this item
+> considered?" requires reproducing the run, the record is not total.
+
+`deps_exports` failed this: an absent entry meant either "this dependency
+declared nothing" or "this client does not send them", and the two were
+indistinguishable. `resolved_deps` replaced it and is total.
+
+### R2 — conventions are applied by the writer, never the reader
+
+A default belongs at the point the record is produced. A reader that fills in a
+missing value is a second author of that value.
+
+> **Criterion.** Grep the reader for a fallback. `if not X then X = <guess> end`
+> in anything that consumes a record is a violation, regardless of how good the
+> guess is.
+
+### R3 — delete an answerer, do not reconcile answerers
+
+> **Criterion.** If a fix ADDS a path rather than REMOVING one, it is a
+> workaround. Making two independent answers *more likely to agree* is not a
+> fix; removing the second answer is.
+
+libxpkg 0.0.49 failed this — it made a directory scan take the highest version
+so it would usually match `pin_target_to_active`. 0.0.50 passed: the scan is no
+longer consulted when the resolver has an answer.
+
+### R4 — assert on the artifact, not on the intent
+
+Check the result, at install time, not the plan at write time.
+
+> **Criterion.** Every transformation of a payload is followed by a check of
+> the payload. "We ran the rewrite" is not a result; "no build path remains and
+> every rewritten script parses" is.
+
+glibc's path relocation failed this for two releases: it treated "we wrote
+something" as success, so a rewrite that corrupted `bin/ldd` beyond `bash -n`
+produced exactly the output of a clean run — nothing.
+
+### R5 — a decision is persisted
+
+> **Criterion.** A decision that requires reproducing the run to inspect is not
+> traceable. `.xlings-resolution.json` and `xlings why` are the shape this
+> takes.
+
+### R6 — internal consumers bind the payload, not the view
+
+| layer | what it is | who may consume it |
+|---|---|---|
+| **payload** `data/xpkgs/<pkg>/<ver>/…` | immutable, uniquely determined | **xlings and libxpkg themselves**; RPATH / INTERP; `resolved_deps` |
+| **subos sysroot / bin / PATH** | a *selective view*: mutable, shimmed, follows `xlings use`, may belong to another home | the user, and the programs the user runs |
+| a consumer's RPATH/INTERP | frozen at install time | the dynamic loader |
+
+> **Criterion.** When xlings or libxpkg needs a tool or a directory, the
+> resolution must start at the payload. A candidate list whose first entry is a
+> subos path, a home `bin/`, or `PATH` is a violation — including when every
+> entry happens to resolve to the same file today.
+
+`elfpatch._find_tool` failed this: it located **patchelf**, the tool that
+stamps INTERP and RPATH onto every payload, by searching subos `bin/` → home
+`bin/` → `/usr/bin` → `PATH`, with the payload not a candidate at all.
+
+### R7 — a measurement covers the transitive closure
+
+> **Criterion.** A dependency list that was **written** has not satisfied R7. It
+> must be **enumerated** from the artifact.
+
+Two wrong conclusions in one review came from this: "nothing needs `libm`" (it
+is named by 16 NVIDIA libraries, including the core renderer — only
+`libEGL_nvidia`'s direct `DT_NEEDED` had been sampled), and "fixing the table
+is enough" (the table was also missing `libdrm`, `libgbm`, `libgcc_s` and
+`libwayland-*`).
+
+R1 and R7 are not the same rule: R1 says record every item you looked at, R7
+says look at every item.
+
+### Writing a contract
+
+Contract text may not say "if X is absent, fall back to Y". That single
+sentence authorises every reader to implement its own Y, and the number of
+answerers then grows with the number of readers. Write one of:
+
+- **"X must be present"** — and make the writer guarantee it (R1); or
+- **"an absent X is an error"** — and fail on it.
+
+`XLINGS_HOME` is the same sentence in another form ("unset means
+`$HOME/.xlings`"), and it produced four independent computations of "where is
+the home" that agreed only because of the default.
+
+### Privileged declarations
+
+A `subos.env` declaration of a variable that can load **code** into a process —
+`LD_LIBRARY_PATH`, `LD_PRELOAD`, `__EGL_VENDOR_LIBRARY_DIRS`,
+`LIBGL_DRIVERS_PATH`, and anything else a library reads to find its plugins —
+is a privileged operation. These variables are inherited by every child of the
+subos shell, and most of those children are **host** binaries running under the
+**host** loader.
+
+Such a declaration must carry a comment saying why RPATH cannot serve the same
+need. There is essentially one real answer: a library that `dlopen`s its own
+siblings by bare SONAME at runtime, which no RPATH mechanism can reach.
+
+xlings reports these at install time, and refuses outright to put a directory
+containing a `libc` on a loader search path. That guard exists because such a
+declaration once returned an `xlings subos use` shell that died of SIGSEGV
+before printing a character — on a host whose glibc was the same upstream
+version as ours, merely a different build.
+
+Variables that cause **data** to be found (`XDG_DATA_DIRS`, `MANPATH`,
+`PKG_CONFIG_PATH`) are ordinary: a subos supplying a default that the user can
+override is how Linux works. `PATH` is a third category — it does not inject
+code into a running process, it decides which executable runs — and is governed
+by R6.
+
 ## Arch names (canonical + aliases)
 
 Use the **canonical** spelling in `archs` and in arch keys. Aliases are
