@@ -60,65 +60,36 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
 import("xim.libxpkg.system")
+import("xim.pkgindex.hostlib")
 
 -- Probe the host for libcuda.so.1.
--- Strategy:
---   1) ldconfig -p | grep libcuda.so.1 → covers properly registered drivers
---      across distros (Debian/Ubuntu, Fedora/RHEL, Arch, openSUSE).
---   2) If ldconfig misses (containers without /etc/ld.so.cache populated,
---      or NixOS-style non-FHS), check the canonical FHS paths directly.
---   3) Return nil if none found → caller decides what to do.
+--
+-- The probe lives in `hostlib` now. It was written here first -- this package
+-- is the original sentinel -- and it was then copied into
+-- `nvidia-gl-host-link`, adapted (wrongly) into mcpp's `compat.glx-runtime`,
+-- and adapted again into `godot`. Four answers to one question, which is the
+-- shape hostlib exists to collapse.
+--
+-- What is NEW relative to what was here: the fallback paths are ELF-class
+-- checked. `/usr/lib` is the 32-BIT directory on Fedora/RHEL/SUSE, and the
+-- list below reached it third -- so on a biarch host with a 32-bit CUDA stub
+-- installed, this returned a 32-bit libcuda and the failure appeared at
+-- dlopen as `wrong ELF class: ELFCLASS32`, three layers from here. That is
+-- mcpp#352, in the package the whole pattern came from.
 local function __probe_host_libcuda()
-    -- Strategy 1: ldconfig cache (works on properly-registered drivers).
-    -- Use try{} to swallow non-zero exits (ldconfig itself, or grep with
-    -- no match). On x86_64-linux-gnu hosts the line shape is:
-    --   "\tlibcuda.so.1 (libc6,x86-64) => /lib/x86_64-linux-gnu/libcuda.so.1"
-    -- (filter for "x86-64" to skip the 32-bit i386 line.)
-    local out = try {
-        function() return os.iorun("ldconfig -p 2>/dev/null") end
-    }
-    if out and out ~= "" then
-        for line in out:gmatch("[^\n]+") do
-            if line:find("libcuda.so.1", 1, true)
-               and line:find("x86-64", 1, true) then
-                local p = line:match("=>%s*(/%S+)")
-                if p and os.isfile(p) then return p end
-            end
-        end
-    end
-    -- Strategy 2: well-known FHS paths (containers without populated
-    -- ld.so.cache, or NixOS-style non-FHS hosts where ldconfig is empty).
-    for _, p in ipairs({
-        "/usr/lib/x86_64-linux-gnu/libcuda.so.1",  -- Debian / Ubuntu / Mint
-        "/usr/lib64/libcuda.so.1",                 -- RHEL / Fedora / openSUSE / Arch
-        "/usr/lib/libcuda.so.1",                   -- Arch (older) / minimal distros
-    }) do
-        if os.isfile(p) then return p end
-    end
-    return nil
+    return hostlib.path_of("libcuda.so.1")
 end
 
 -- Choose the symlink target for the "no driver yet" case.
 -- The link target is a path the user's distro WILL provide once the
 -- nvidia-driver package is installed, so the symlink self-heals later
 -- without re-running this package's install hook.
+--
+-- This is the one question that cannot be probed -- there is no file yet, so
+-- there is no ELF class to read -- and the distro-ID table that answers it now
+-- lives in hostlib.canonical_libdir(), so layout knowledge stays in one file.
 local function __canonical_path_for_distro()
-    if os.isfile("/etc/os-release") then
-        local content = io.readfile("/etc/os-release") or ""
-        local idl = ((content:match("ID=([^\n]*)") or "") .. " " ..
-                     (content:match("ID_LIKE=([^\n]*)") or "")):lower()
-        idl = idl:gsub('"', '')
-        if idl:find("debian") or idl:find("ubuntu") or idl:find("mint") then
-            return "/usr/lib/x86_64-linux-gnu/libcuda.so.1"
-        elseif idl:find("fedora") or idl:find("rhel") or idl:find("centos")
-            or idl:find("opensuse") or idl:find("suse") then
-            return "/usr/lib64/libcuda.so.1"
-        elseif idl:find("arch") or idl:find("manjaro") then
-            return "/usr/lib/libcuda.so.1"
-        end
-    end
-    -- Default to Debian/Ubuntu layout (most common xim Linux user)
-    return "/usr/lib/x86_64-linux-gnu/libcuda.so.1"
+    return path.join(hostlib.canonical_libdir(), "libcuda.so.1")
 end
 
 function install()

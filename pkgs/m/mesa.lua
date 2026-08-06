@@ -106,6 +106,7 @@ import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.subos")
 import("xim.pkgindex.sysroot")
+import("xim.pkgindex.graphics")
 
 function install()
     local dir = pkginfo.install_dir()
@@ -189,34 +190,37 @@ function config()
             path.join(system.subos_sysrootdir(), "usr", "include"))
     end
 
-    -- The configuration layer. Neither PATH nor RPATH can carry these: the
-    -- process that has to see them is the user's own binary, which xlings
-    -- never wraps, so a per-shim environment cannot reach it.
+    -- The discovery layer, assembled into the SUBOS rather than announced from
+    -- the payload.
     --
-    -- type(), not truthiness: import() answers an unknown module with a
-    -- permissive proxy whose every key is truthy, so `if subos.env then` is
-    -- true on clients that would accept the call and discard it.
-    if type(subos.env) == "function" then
-        -- prepend, not set, for both of these: they are colon-separated
-        -- LISTS, and mesa is not the only thing entitled to be on them.
-        -- `nvidia-gl-host-link` contributes an EGL vendor directory for the
-        -- host's proprietary driver, and glvnd is built to see several
-        -- vendors at once and pick per display -- that is what
-        -- vendor-neutral dispatch is.
-        --
-        -- A `set` here does not merely lose that, it silently discards it:
-        -- xlings resolves a variable declared `set` by one provider and
-        -- `prepend` by another in favour of the `set`, so mesa would erase
-        -- NVIDIA's entry and the machine with the GPU would quietly render
-        -- through llvmpipe. Both operations still preserve a value the user
-        -- exported themselves, so nothing is given up by using prepend.
-        subos.env{ var = "LIBGL_DRIVERS_PATH", op = "prepend",
-                   value = "${pkgdir}/lib/dri", binding = tag }
-        subos.env{ var = "__EGL_VENDOR_LIBRARY_DIRS", op = "prepend",
-                   value = "${pkgdir}/share/glvnd/egl_vendor.d", binding = tag }
-        subos.env{ var = "XDG_DATA_DIRS", op = "prepend",
-                   value = "${pkgdir}/share", binding = tag }
-    end
+    -- What changed and why. These three variables used to name `${pkgdir}`
+    -- directly -- this payload -- and were declared only through `subos.env`.
+    -- Both halves were wrong:
+    --
+    --   * `${pkgdir}` pins a version directory, so upgrading mesa leaves any
+    --     recorded consumer environment naming the old one.
+    --   * `subos.env` alone is applied by `subos use` and nothing else, so
+    --     `xlings install godot && godot` in an ordinary shell got a subos on
+    --     PATH and none of these paths. That is the gap that made the whole
+    --     22-package stack unreachable from the terminal a user actually has.
+    --
+    -- So: place the driver modules and the vendor JSON into the subos view,
+    -- and declare the SUBOS paths. The view is the stable indirection -- the
+    -- same role /run/opengl-driver plays on NixOS -- and it is what lets a
+    -- consumer's shim carry the same values (graphics.consumer_envs) without
+    -- knowing anything about mesa's payload.
+    --
+    -- The vendor JSON goes into the ONE shared directory, so cross-vendor
+    -- priority is decided by filename (`10_nvidia` < `50_mesa`) as it is on the
+    -- host, rather than by which package's binding string sorts later. See
+    -- libs/graphics.lua for the libglvnd scanning rules that make that the
+    -- only correct arrangement.
+    graphics.declare_dri(dir, "lib/dri", tag)
+    graphics.declare_egl_vendor(dir, "share/glvnd/egl_vendor.d/50_mesa.json", tag)
+
+    -- And the shell scope as well, from the same table, so entering the subos
+    -- and running a program through its shim cannot disagree.
+    graphics.declare_subos_env(tag)
     return true
 end
 

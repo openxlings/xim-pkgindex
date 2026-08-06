@@ -109,19 +109,41 @@ package = {
             -- libXi, libXcursor, libXrandr, libxkbcommon, ...) are
             -- also dlopen'd but only after a real display server is
             -- required; `godot --headless` works without them.
-            -- Shipping a full X11/mesa/wayland stack via xim is
-            -- infeasible (libGL drags in mesa+GPU drivers, and hardware
-            -- acceleration must go through the host driver anyway), so
-            -- config() below probes standard distro lib dirs at install
-            -- time and appends whichever one holds libX11.so.6 onto
-            -- godot's RPATH.  This makes the editor start on any host
-            -- that has the GUI stack installed; a hermetic container
-            -- without X11/wayland can only run --headless.
+            --
+            -- WHAT THIS COMMENT USED TO SAY, AND WHY IT WAS WRONG
+            --
+            -- "Shipping a full X11/mesa/wayland stack via xim is infeasible
+            -- (libGL drags in mesa+GPU drivers, and hardware acceleration must
+            -- go through the host driver anyway)." Both halves have been
+            -- falsified since:
+            --
+            --   * The stack exists -- twenty-two packages, mesa 25.0.7 with
+            --     radeonsi/nouveau/zink/llvmpipe -- and it renders in a bwrap
+            --     container with no /usr and no /lib at all.
+            --   * Hardware acceleration does NOT have to go through a host
+            --     libGL. The only half that must come from the host is the
+            --     VENDOR (NVIDIA's `libGLX_nvidia`, WSL2's `libd3d12core`),
+            --     which `graphics` brings in through a sentinel. The dispatch
+            --     layer, the drivers and the X11 client libraries are ours.
+            --
+            -- Borrowing the host's Mesa is not merely unnecessary, it is the
+            -- failure mode: the host's Mesa is built against the host's glibc
+            -- and tracks it forever, so a bundled runtime eventually cannot
+            -- load it. That is mcpp#352 (`GLIBC_2.43 not found`).
+            --
+            -- So: depend on `graphics`. The host-directory probe stays as a
+            -- FALLBACK for a home that does not have the stack -- removing it
+            -- would break every existing install of this package -- and
+            -- config() prefers the stack when it is present.
             deps = {
                 runtime = {
                     "xim:glibc@>=2.39",
                     "xim:freetype@2.13.2",
                     "xim:expat@2.6.2",
+                    -- The GL/X11/wayland stack, and the driver bridge for
+                    -- whatever GPU this host has. A lower bound, so this does
+                    -- not pin the stack's version.
+                    "xim:graphics@>=0.1",
                 },
                 -- config() invokes `patchelf --force-rpath` to flip the
                 -- tag elfpatch stamps in (DT_RUNPATH -> DT_RPATH) so
@@ -173,9 +195,12 @@ package = {
     },
 }
 
+import("xim.libxpkg.log")
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.system")
+import("xim.pkgindex.hostlib")
+import("xim.pkgindex.graphics")
 
 -- Every asset is a .zip that expands into the hook cwd (the download
 -- dir) with no wrapper directory:
@@ -249,24 +274,33 @@ function install()
     return os.isfile(exe)
 end
 
--- Standard multi-arch / lib64 / usr-lib layouts across mainstream
--- distros.  Probing for libX11.so.6 -- the smallest indispensable GUI
--- lib -- is enough to pin the right dir; whichever dir ships libX11
--- also ships libwayland-client / libXi / libGL and friends.
-local _HOST_GUI_CANDIDATES = {
-    "/lib/x86_64-linux-gnu",     -- Debian / Ubuntu multi-arch
-    "/usr/lib/x86_64-linux-gnu", -- Debian / Ubuntu (some layouts)
-    "/lib64",                    -- Fedora / RHEL / CentOS
-    "/usr/lib64",                -- SUSE, some others
-    "/usr/lib",                  -- Arch, void, generic
-}
-
+-- Where the host keeps its GUI stack.
+--
+-- Probing for libX11.so.6 -- the smallest indispensable GUI lib -- is enough to
+-- pin the right dirs; whichever dir ships libX11 also ships
+-- libwayland-client / libXi / libGL and friends.
+--
+-- The candidate list that used to be here is gone, and the reason is not
+-- tidiness. It had no ELF-class check, so on a biarch host (Fedora/RHEL/SUSE,
+-- where /usr/lib is the 32-BIT directory) a 32-bit libX11 would put a 32-bit
+-- directory on a 64-bit binary's RPATH. This recipe happened to survive that
+-- because /usr/lib64 was listed earlier and RPATH search order made the
+-- 64-bit hit come first -- correct by accident, with nothing asserting it.
+-- The same assumption in mcpp's compat.glx-runtime, where the loop overwrote
+-- instead of ordering, is mcpp#352.
+--
+-- hostlib answers it the way the loader does: `ldconfig -p` first, ELF class
+-- checked, first-wins. All 64-bit dirs are returned because RPATH is a list and
+-- godot dlopens several libraries -- but every entry is now known to be 64-bit
+-- rather than merely early.
 local function _host_gui_libdirs()
-    local dirs = {}
-    for _, d in ipairs(_HOST_GUI_CANDIDATES) do
-        if os.isfile(path.join(d, "libX11.so.6")) then
-            table.insert(dirs, d)
-        end
+    local dirs = hostlib.dirs_of("libX11.so.6")
+    if #dirs == 0 then
+        -- Said out loud, because the alternative is a godot that installs
+        -- cleanly and dies at startup on libX11. A headless host is a legitimate
+        -- state for the INSTALL, so this is not fatal.
+        log.warn("no 64-bit libX11.so.6 on this host -- godot will not start "
+                 .. "until a GUI stack is present (or `xlings install graphics`)")
     end
     return dirs
 end
@@ -285,16 +319,34 @@ function config()
     -- DT_RUNPATH to DT_RPATH.  `patchelf` is provided by the
     -- `xim:patchelf@0.18.0` build dep declared above.
     --
-    -- The X11/wayland/GL stack lives on the host (see rationale in the
-    -- xpm.linux comment).  xim's ld.so.cache is hermetic and does NOT
-    -- see /lib/x86_64-linux-gnu et al., so we probe standard distro
-    -- lib dirs at install time and append whichever ones exist onto
-    -- the RPATH.  This is a one-shot install-time snapshot -- if the
-    -- host layout changes later, `xlings remove godot && install godot`
-    -- refreshes the probe.
+    -- Where the GL/X11 stack comes from, in preference order.
+    --
+    -- 1. OURS. `graphics` is a runtime dep, so elfpatch has already stamped
+    --    mesa/libglvnd/libX11's payload libdirs onto godot's RUNPATH from their
+    --    exports -- nothing to probe. The FALLBACK below is then not merely
+    --    unnecessary, it is harmful: putting a host lib dir on the RPATH of a
+    --    binary that runs on OUR loader is how the host's Mesa gets back in,
+    --    and the host's Mesa is built against the host's glibc (mcpp#352).
+    --
+    -- 2. THE HOST, for a home that does not have the stack. xim's ld.so.cache
+    --    is hermetic and does NOT see /lib/x86_64-linux-gnu et al., so the host
+    --    directories are probed and appended. Kept because removing it would
+    --    break every existing install of this package; a one-shot install-time
+    --    snapshot, refreshed by `xlings remove godot && install godot`.
+    --
+    -- Which one applies is decided by asking whether mesa's payload is in this
+    -- home -- the dependency resolver's own answer, not a second probe.
     if os.host() == "linux" then
         local exe = _installed_exe()
-        local host_dirs = _host_gui_libdirs()
+        local mesa_dir = pkginfo.dep_install_dir
+                         and pkginfo.dep_install_dir("mesa") or nil
+        local have_stack = mesa_dir and mesa_dir ~= ""
+                           and os.isdir(path.join(mesa_dir, "lib"))
+        local host_dirs = have_stack and {} or _host_gui_libdirs()
+        if have_stack then
+            log.info("godot: GL comes from the xlings graphics stack; "
+                     .. "not adding host library directories")
+        end
 
         -- The `add` helper in the shell snippet dedupes: on a repeat
         -- install the host dirs from the previous run are still in
@@ -334,7 +386,35 @@ function config()
             exe, table.concat(add_lines)
         ))
     end
-    xvm.add("godot", { bindir = pkginfo.install_dir() })
+    -- The discovery layer, carried by godot's OWN shim.
+    --
+    -- RPATH gets godot's libraries loaded; it cannot tell mesa which driver
+    -- module to load or glvnd which vendors exist. Those are environment
+    -- variables read by the user's process, and until now they existed only
+    -- inside a `subos use` sub-shell -- so `xlings install godot && godot` in an
+    -- ordinary terminal had the stack on RPATH and no way to find a driver.
+    --
+    -- Program scope, not shell scope: only godot and its children see these.
+    -- The same choice Nix makes with `makeWrapper` and Snap with its
+    -- `command-chain` wrapper, and the opposite of what nixGL does with
+    -- LD_LIBRARY_PATH -- which the Nix ecosystem documents as breaking every
+    -- other program the wrapped one launches.
+    --
+    -- Values are `${XLINGS_DYNAMIC_SUBOS_DIR}`-relative, so the shim resolves
+    -- them against the ACTIVE subos at dispatch rather than the one that
+    -- happened to be active at install.
+    --
+    -- Only when the stack is actually here: pointing LIBGL_DRIVERS_PATH at a
+    -- subos directory that no package fills would make mesa fall back to
+    -- software rendering with no diagnostic, which is worse than leaving the
+    -- variable unset.
+    local node = { bindir = pkginfo.install_dir() }
+    local mesa_dir = pkginfo.dep_install_dir
+                     and pkginfo.dep_install_dir("mesa") or nil
+    if mesa_dir and mesa_dir ~= "" and os.isdir(path.join(mesa_dir, "lib")) then
+        node.envs = graphics.consumer_envs()
+    end
+    xvm.add("godot", node)
     return true
 end
 

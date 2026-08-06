@@ -115,36 +115,28 @@ import("xim.libxpkg.xvm")
 import("xim.libxpkg.subos")
 import("xim.libxpkg.elfpatch")
 import("xim.pkgindex.sysroot")
+import("xim.pkgindex.hostlib")
+import("xim.pkgindex.graphics")
 
 -- Where the host keeps its NVIDIA userspace.
 --
 -- Located by finding libGLX_nvidia.so.0 rather than by guessing a distro
 -- layout: the two vendor entry points and their private dependencies are
 -- always installed together in one directory, so one hit fixes the rest.
+--
+-- The probe itself now lives in `hostlib` -- it was written here first, and
+-- three other places in this ecosystem asked the same question and answered it
+-- differently, two of them wrongly (mcpp#352 is one). One of the three rules it
+-- carries is new even here: hostlib ELF-class checks the FALLBACK paths too,
+-- so Fedora's 32-bit /usr/lib is refused rather than merely searched last.
 local function __probe_nvidia_dir()
-    -- ldconfig first — it is the answer on any distro whose driver package
-    -- registered itself, which is all of them when installed normally.
-    local out = try {
-        function() return os.iorun("ldconfig -p 2>/dev/null") end
-    }
-    if out and out ~= "" then
-        for line in out:gmatch("[^\n]+") do
-            if line:find("libGLX_nvidia.so.0", 1, true)
-               and line:find("x86-64", 1, true) then
-                local p = line:match("=>%s*(/%S+)")
-                if p and os.isfile(p) then return path.directory(p) end
-            end
-        end
-    end
-    -- Containers with no populated ld.so.cache, and non-FHS hosts.
-    for _, d in ipairs({
-        "/usr/lib/x86_64-linux-gnu",
-        "/usr/lib64",
-        "/usr/lib",
-    }) do
-        if os.isfile(path.join(d, "libGLX_nvidia.so.0")) then return d end
-    end
-    return nil
+    return hostlib.dir_of("libGLX_nvidia.so.0")
+end
+
+-- Single-quote for /bin/sh. The generated script embeds two values that come
+-- from the filesystem and from /sys, so neither is a literal in this file.
+local function __sh_quote(s)
+    return "'" .. tostring(s or ""):gsub("'", [[''"'"'']]) .. "'"
 end
 
 -- Every NVIDIA userspace file in DIR, by name.
@@ -152,22 +144,90 @@ end
 -- Enumerated rather than listed: the private libraries are named after the
 -- driver version, so a fixed list would be a list of one driver release. The
 -- prefixes are the stable part.
+--
+-- hostlib drops any 32-bit entry, which matters on a biarch host: Fedora
+-- installs `libnvidia-glcore.so.<ver>` for both ABIs into two directories, and
+-- a driver upgrade that leaves a stale 32-bit sibling in the 64-bit directory
+-- would otherwise be linked into this payload and fail at load with
+-- `wrong ELF class`.
 local function __nvidia_entries(dir)
-    local names = {}
-    local f = io.popen(string.format([[ls -1 "%s" 2>/dev/null]], dir))
-    if not f then return names end
-    for line in f:lines() do
-        local name = line:gsub("[\r\n]+$", "")
-        if name ~= "" and (name:find("^libnvidia%-")
-                        or name:find("^libGLX_nvidia%.")
-                        or name:find("^libEGL_nvidia%.")
-                        or name:find("^libGLESv1_CM_nvidia%.")
-                        or name:find("^libGLESv2_nvidia%.")) then
-            table.insert(names, name)
-        end
-    end
-    f:close()
-    return names
+    return hostlib.entries_with_prefix(dir, {
+        "^libnvidia%-",
+        "^libGLX_nvidia%.",
+        "^libEGL_nvidia%.",
+        "^libGLESv1_CM_nvidia%.",
+        "^libGLESv2_nvidia%.",
+    })
+end
+
+-- The self-check, written as a shell script into the payload.
+--
+-- WHY A PROGRAM AND NOT A DOCTOR RULE
+--
+-- `xlings self doctor` is the obvious home for this and it is the wrong one:
+-- the rule is specific to one package's relationship with one vendor's driver,
+-- it changes when that relationship does, and this repo already has three
+-- report/repair pairs that drifted because the check and the fix live in
+-- different files. A program that ships WITH the package cannot drift from it.
+--
+-- Shell rather than a compiled probe: there is no compiler at install time, and
+-- what it does is compare a file to a file.
+local function __write_gl_doctor(dir, kver, done, present)
+    local script = path.join(dir, "bin", "xlings-gl-doctor")
+    os.mkdir(path.directory(script))
+    io.writefile(script, string.format([[#!/usr/bin/env sh
+# nvidia-gl-host-link self-check. Generated at install time; do not edit.
+#
+# Exit 0 when the payload still matches the host it was built against, 1 when it
+# does not. "Does not" is not a crash -- GL usually keeps working by resolving
+# the vendor's siblings from the host's ld.so cache -- which is exactly why it
+# needs saying out loud.
+PAYLOAD=%s
+STAMP="$PAYLOAD/.host-driver-version"
+INSTALLED=%s
+INTERPOSED=%d
+ENTRYPOINTS=%d
+rc=0
+
+live=""
+[ -r /sys/module/nvidia/version ] && live=$(cat /sys/module/nvidia/version)
+stamped=""
+[ -r "$STAMP" ] && stamped=$(cat "$STAMP")
+
+echo "nvidia-gl-host-link"
+echo "  payload            $PAYLOAD"
+echo "  built for driver   ${stamped:-unknown}"
+echo "  host driver now    ${live:-none loaded}"
+echo "  interposers        $INTERPOSED/$ENTRYPOINTS entry points"
+
+if [ -z "$live" ]; then
+    echo "  ! no NVIDIA kernel module loaded -- GL renders through mesa."
+    echo "    That is a normal state; nothing to repair."
+elif [ "$live" != "$stamped" ]; then
+    echo "  x host driver changed since install ($stamped -> $live)."
+    echo "    The payload's version-named symlinks now dangle. Repair:"
+    echo "      xlings install graphics        # re-probes and relinks"
+    rc=1
+fi
+
+# Dangling links are the visible symptom of the above, and they are worth
+# counting separately: a partial driver upgrade leaves some resolvable.
+dangling=0
+for f in "$PAYLOAD"/lib/*; do
+    [ -e "$f" ] || { dangling=$((dangling+1)); echo "  x dangling  $(basename "$f")"; }
+done
+[ "$dangling" -gt 0 ] && rc=1
+
+if [ "$INTERPOSED" -lt "$ENTRYPOINTS" ]; then
+    echo "  x $((ENTRYPOINTS-INTERPOSED)) entry point(s) were not interposed --"
+    echo "    those resolve their dependencies from the HOST."
+    rc=1
+fi
+
+[ "$rc" -eq 0 ] && echo "  ok"
+exit $rc
+]], __sh_quote(dir), __sh_quote(kver), done, present))
+    system.exec(string.format([[chmod +x "%s"]], script))
 end
 
 function install()
@@ -326,6 +386,29 @@ function install()
 }
 ]], path.join(dir, "lib", "libEGL_nvidia.so.0")))
 
+    -- The driver version this payload was built against, recorded.
+    --
+    -- Everything above adapts to the host AT INSTALL TIME and is then never
+    -- re-checked. When the host driver is upgraded, every `*.550.144.03`
+    -- symlink in this payload dangles and the `4/4` printed below was computed
+    -- for a driver that is gone -- and nothing says so, because a dangling
+    -- entry on a search path is skipped in silence and the vendor's siblings
+    -- are then resolved from the host's ld.so cache instead. It usually still
+    -- renders; in a sandbox or an empty-host container it does not.
+    --
+    -- A distribution does not need this: the kernel module and its userspace
+    -- are one package version there, and DKMS rebuilds on kernel upgrade, so
+    -- the pair is an INSTALL-TIME INVARIANT. We do not own the kernel module,
+    -- so the same invariant can only be a RUN-TIME CHECK -- which is what the
+    -- stamp plus `xlings-gl-doctor` are. Flatpak reads the same file for the
+    -- same reason (`enable-if: active-gl-driver`).
+    local kver = ""
+    if os.isfile("/sys/module/nvidia/version") then
+        kver = (io.readfile("/sys/module/nvidia/version") or ""):gsub("%s+$", "")
+    end
+    io.writefile(path.join(dir, ".host-driver-version"), kver .. "\n")
+    __write_gl_doctor(dir, kver, #done, #present)
+
     -- Both numbers, and the interposers as a FRACTION of the entry points the
     -- host actually has. Reporting only the symlink count would make "the
     -- vendor's dependencies resolve to our payloads" and "they resolve to the
@@ -333,8 +416,12 @@ function install()
     -- just on llvmpipe. A bare "yes" would do the same thing one level in:
     -- one interposer out of four reads as success, and the three uncovered
     -- roots are exactly the APIs nobody probed.
-    log.info("nvidia-gl-host-link → %s (%d host libraries linked, interposers: %d/%d%s) ✓",
-             nvdir, linked, #done, #present,
+    --
+    -- With the driver version, because the fraction is only true for the driver
+    -- it was measured against.
+    log.info("nvidia-gl-host-link → %s (driver %s, %d host libraries linked, "
+             .. "interposers: %d/%d%s) ✓",
+             nvdir, kver ~= "" and kver or "unknown", linked, #done, #present,
              #present > 0 and "" or " — no vendor, GL falls back to mesa")
     return true
 end
@@ -353,33 +440,57 @@ function config()
     -- and the subos lib directory is where it lives.
     sysroot.declare_libs(dir, "lib", tag, pkginfo.version())
 
-    if type(subos.env) == "function" then
-        -- prepend, where mesa's declaration for the same variable is `set`.
-        -- Both vendors have to be visible at once: glvnd picks per display,
-        -- so a machine with an NVIDIA GPU and a software fallback needs both
-        -- directories on the list. A second `set` would collide with mesa's
-        -- and one of the two would lose.
-        subos.env{ var = "__EGL_VENDOR_LIBRARY_DIRS", op = "prepend",
-                   value = "${pkgdir}/share/glvnd/egl_vendor.d",
-                   binding = tag }
-
-        -- No LD_LIBRARY_PATH. It used to be here, and it was the one place
-        -- in this stack that needed a library SEARCH PATH rather than an
-        -- RPATH -- because the vendor is the host's file and a file we do not
-        -- own is a file we cannot patch.
-        --
-        -- The interposer is a file we DO own, sitting between the loader and
-        -- the vendor, so the RPATH goes there and the search path is not
-        -- needed at all. What went away with it is the part that had no
-        -- scope: LD_LIBRARY_PATH is inherited by every child of the subos
-        -- shell, and most of them are host binaries on the host loader.
-        --
-        -- The host driver directory is NOT declared here either. The vendor
-        -- dlopens its own siblings (libnvidia-glcore, libnvidia-eglcore, …)
-        -- by bare SONAME at runtime, and those must come from the host to
-        -- match its kernel module -- but the host loader finds them through
-        -- its own ld.so cache, without help from us.
+    -- The self-check, on PATH inside the subos.
+    --
+    -- Registered only when it exists: install() writes it unconditionally, but
+    -- a payload from an older release will not have it and `xvm.add` on a
+    -- missing file registers a program that fails to dispatch.
+    if os.isfile(path.join(dir, "bin", "xlings-gl-doctor")) then
+        xvm.add("xlings-gl-doctor", {
+            bindir   = path.join(dir, "bin"),
+            filename = "xlings-gl-doctor",
+            binding  = tag,
+        })
     end
+
+    -- The vendor JSON into the ONE shared directory in the subos, not this
+    -- payload's own.
+    --
+    -- What this fixes. libglvnd scans `__EGL_VENDOR_LIBRARY_DIRS` in list order
+    -- and sorts files WITHIN a directory by name -- so with two directories the
+    -- `10_nvidia` < `50_mesa` convention meant nothing, and NVIDIA-before-mesa
+    -- held only because xlings sorts providers by binding string and
+    -- `mesa@...` < `nvidia-gl-host-link@...`. Correct by alphabet. One shared
+    -- directory puts the decision back on the filename, which is what the
+    -- number in `10_nvidia.json` is for and how the host does it.
+    graphics.declare_egl_vendor(dir,
+        "share/glvnd/egl_vendor.d/10_nvidia.json", tag)
+
+    -- Vendor directory only. This package has no driver modules and no
+    -- `share/` tree, so declaring LIBGL_DRIVERS_PATH or XDG_DATA_DIRS from
+    -- here would name paths it does not fill. mesa declares those.
+    --
+    -- prepend, and both packages declaring the same value is intended:
+    -- `prepend` de-duplicates, and either package being absent must not remove
+    -- the directory for the other.
+    graphics.declare_subos_env(tag, graphics.EGL_VENDOR_ONLY)
+
+    -- No LD_LIBRARY_PATH. It used to be here, and it was the one place
+    -- in this stack that needed a library SEARCH PATH rather than an
+    -- RPATH -- because the vendor is the host's file and a file we do not
+    -- own is a file we cannot patch.
+    --
+    -- The interposer is a file we DO own, sitting between the loader and
+    -- the vendor, so the RPATH goes there and the search path is not
+    -- needed at all. What went away with it is the part that had no
+    -- scope: LD_LIBRARY_PATH is inherited by every child of the subos
+    -- shell, and most of them are host binaries on the host loader.
+    --
+    -- The host driver directory is NOT declared here either. The vendor
+    -- dlopens its own siblings (libnvidia-glcore, libnvidia-eglcore, …)
+    -- by bare SONAME at runtime, and those must come from the host to
+    -- match its kernel module -- but the host loader finds them through
+    -- its own ld.so cache, without help from us.
     return true
 end
 

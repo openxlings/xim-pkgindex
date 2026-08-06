@@ -26,9 +26,14 @@ SYS="$HOME_DIR/subos/$SUBOS"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORK="$(mktemp -d)"; trap 'rm -rf "$WORK"' EXIT
 
-pass=0; fail=0
+pass=0; fail=0; skipped=0
 ok()   { echo "  ✓ $*"; pass=$((pass+1)); }
 bad()  { echo "  ✗ $*"; fail=$((fail+1)); }
+# A check that did not run is its own outcome, counted and reported in the
+# verdict. Before this, three places in this script skipped in a `·` line that
+# the summary never mentioned -- so "PASS: 12 checks" was compatible with two of
+# them never having executed.
+skip() { echo "  ! $*"; skipped=$((skipped+1)); }
 sect() { echo; echo "── $* ─────────────────────────────"; }
 
 XB="${XLINGS_BIN:-}"
@@ -63,7 +68,7 @@ if [[ -z "$NVLIB" ]]; then
 else
   for f in libEGL_nvidia.so.0 libGLX_nvidia.so.0 libGLESv1_CM_nvidia.so.1 libGLESv2_nvidia.so.2; do
     if [[ ! -e "$NVLIB/$f" ]]; then
-      echo "  · $f absent on this host, skipped"
+      skip "$f absent on this host — that entry point is unproven"
     elif [[ -L "$NVLIB/$f" ]]; then
       bad "$f is a symlink into $(readlink "$NVLIB/$f") — its deps resolve from the host"
     else
@@ -106,7 +111,7 @@ fi
 
 sect "2. GLX renders, through our payload"
 if [[ -z "${DISPLAY:-}" ]]; then
-  echo "  · DISPLAY unset, GLX skipped (this leaves entry point 2 of 4 unproven)"
+  skip "DISPLAY unset, GLX skipped — this leaves entry point 2 of 4 unproven"
 else
   if "$CC" -O0 -o "$WORK/glxprobe" "$HERE/glxprobe.c" -ldl \
         -Wl,--dynamic-linker="$SYS/lib/ld-linux-x86-64.so.2" \
@@ -132,20 +137,68 @@ envout="$("$XB" subos use "$SUBOS" --cmd 'echo "LLP=[${LD_LIBRARY_PATH}]"' 2>/de
   || bad "the subos sets $envout — the results above do not isolate DT_RPATH"
 
 sect "4. the host's driver files were not modified"
-hostbad=0
-for f in libEGL_nvidia.so.0 libGLX_nvidia.so.0; do
-  p="/usr/lib/x86_64-linux-gnu/$f"
-  [[ -e "$p" ]] || continue
-  # An interposer written over a followed symlink would land HERE. The shape
-  # is the check: the host's vendor names its own private libs, never an
-  # absolute path into a store.
-  if patchelf --print-needed "$p" 2>/dev/null | grep -q '^/'; then
-    bad "$p has an absolute DT_NEEDED — it was overwritten"
-    hostbad=1
-  fi
-done
-[[ $hostbad -eq 0 ]] && ok "host vendor libraries are untouched"
+# The vendor directory is PROBED, not written down.
+#
+# This used to say `/usr/lib/x86_64-linux-gnu/$f` with `[[ -e "$p" ]] || continue`
+# -- the Debian multiarch path, skipped in silence everywhere else. On Fedora,
+# RHEL or SUSE (64-bit in /usr/lib64) and on Arch (64-bit in /usr/lib) the check
+# therefore examined NOTHING and still printed a ✓ and counted toward PASS.
+# That is the same layout assumption as mcpp#352, one layer worse: this file
+# exists to prove something.
+#
+# Same three rules as libs/hostlib.lua, in shell: `ldconfig -p` with the ABI
+# token first, then the three layouts, ELF class checked, first hit wins.
+host_vendor_dir() {
+  local soname="$1" p d
+  while read -r p; do
+    [[ -f "$p" ]] || continue
+    [[ "$(od -An -tu1 -j4 -N1 "$p" 2>/dev/null | tr -d ' ')" == 2 ]] || continue
+    dirname "$p"; return 0
+  done < <(ldconfig -p 2>/dev/null \
+             | awk -v s="$soname" 'index($0, s) && /x86-64/ {print $NF}')
+  for d in /usr/lib/x86_64-linux-gnu /lib/x86_64-linux-gnu \
+           /usr/lib64 /lib64 /usr/lib /lib; do
+    p="$d/$soname"
+    [[ -f "$p" ]] || continue
+    [[ "$(od -An -tu1 -j4 -N1 "$p" 2>/dev/null | tr -d ' ')" == 2 ]] || continue
+    echo "$d"; return 0
+  done
+  return 1
+}
+
+NVHOST="$(host_vendor_dir libGLX_nvidia.so.0 || true)"
+if [[ -z "$NVHOST" ]]; then
+  # NOT a silent skip. A run that could not find the host's vendor cannot make
+  # any claim about it, and saying nothing reads identically to "checked, fine".
+  skip "no 64-bit host NVIDIA vendor found — check 4 NOT PERFORMED"
+else
+  echo "  · host vendor dir: $NVHOST"
+  hostbad=0
+  for f in libEGL_nvidia.so.0 libGLX_nvidia.so.0; do
+    p="$NVHOST/$f"
+    [[ -e "$p" ]] || continue
+    # An interposer written over a followed symlink would land HERE. The shape
+    # is the check: the host's vendor names its own private libs, never an
+    # absolute path into a store.
+    if patchelf --print-needed "$p" 2>/dev/null | grep -q '^/'; then
+      bad "$p has an absolute DT_NEEDED — it was overwritten"
+      hostbad=1
+    fi
+  done
+  [[ $hostbad -eq 0 ]] && ok "host vendor libraries are untouched"
+fi
 
 echo
-if [[ $fail -eq 0 ]]; then echo "PASS: $pass checks"; exit 0
-else echo "FAIL: $fail failed, $pass passed"; exit 1; fi
+# Skips are reported in the verdict, not only next to the check they replaced.
+# A reader who sees "PASS: 12 checks" and does not scroll up must still learn
+# that one of them did not happen.
+if [[ $skipped -gt 0 ]]; then
+  echo "NOT PERFORMED: $skipped check(s) — see the ! lines above"
+fi
+if [[ $fail -eq 0 ]]; then
+  echo "PASS: $pass checks$([[ $skipped -gt 0 ]] && echo ", $skipped not performed")"
+  exit 0
+else
+  echo "FAIL: $fail failed, $pass passed$([[ $skipped -gt 0 ]] && echo ", $skipped not performed")"
+  exit 1
+fi
