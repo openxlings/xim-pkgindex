@@ -198,9 +198,12 @@ def test_resolve_platform_arches():
     # jq-linux-amd64 / jq-macos-arm64, archs = {x86_64, aarch64}, aliases = {})
     assert r(["x86_64", "aarch64"], "u/jq-linux-amd64", {}) == (["x86_64"], None)
     assert r(["x86_64", "aarch64"], "u/jq-macos-arm64", {}) == (["aarch64"], None)
-    # non-parameterized URL with no matchable arch -> error, fail closed
-    arches, err = r(["x86_64", "aarch64"], "u/foo-universal.tar.gz", {})
-    assert arches is None and err and "cannot infer arch" in err, (arches, err)
+    # non-parameterized URL with no arch spelling at all -> arch-independent:
+    # mirror once, expose to every declared arch (nvm's pure-shell tar shape).
+    assert r(["x86_64", "aarch64"], "u/nvm-v0.40.6.tar.gz", {}) == (["x86_64", "aarch64"], None)
+    # multiple declared arches both matched -> genuinely ambiguous, fail closed
+    arches, err = r(["x86_64", "aarch64"], "u/foo-x86_64-aarch64.tar.gz", {})
+    assert arches is None and err and "ambiguous arch" in err, (arches, err)
 
 
 def test_archive_suffix_gate():

@@ -35,7 +35,7 @@ package = {
             -- ship; users on hermetic distros won't be able to run
             -- griddycode anyway without an X11/Wayland session.
             deps = {
-                runtime = { "xim:glibc@2.39" },
+                runtime = { "xim:glibc@>=2.39" },
             },
             url_template = "https://github.com/face-hh/griddycode/releases/download/v{version}/Linux.zip",
             ["latest"] = { ref = "1.2.2" },

@@ -1,4 +1,12 @@
 package = {
+
+    -- Platform version sets differ ON PURPOSE:
+    -- windows tracks its own `latest` (15.1.0) and does not carry the linux lineage's newer builds; the Windows toolchain is served by mingw-w64.
+    -- Declared so `tests/check_platform_version_parity.lua` can tell this
+    -- apart from a bump that landed in one section and was forgotten in the
+    -- others -- which reads as `<pkg>@<ver> not found` on the platforms that
+    -- lack it, against a file that contains the version string.
+    platform_versions_diverge = true,
     spec = "1",
 
     -- base info
@@ -32,7 +40,7 @@ package = {
     xpm = {
         linux = {
             deps = {
-                "xim:glibc@2.39", "xim:binutils@2.42",
+                "xim:glibc@>=2.39", "xim:binutils@2.42",
                 -- fix xmake project --project=.  -k compile_commands
                 -- home/xlings/.xlings_data/subos/linux/usr/include/bits/errno.h:26:11: fatal error: linux/errno.h: No such file or directory
                 "xim:linux-headers@5.11.1",

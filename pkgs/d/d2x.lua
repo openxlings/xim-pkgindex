@@ -1,4 +1,12 @@
 package = {
+
+    -- Platform version sets differ ON PURPOSE:
+    -- the earliest releases were not built for every platform.
+    -- Declared so `tests/check_platform_version_parity.lua` can tell this
+    -- apart from a bump that landed in one section and was forgotten in the
+    -- others -- which reads as `<pkg>@<ver> not found` on the platforms that
+    -- lack it, against a file that contains the version string.
+    platform_versions_diverge = true,
     spec = "1",
 
     -- base info
@@ -24,7 +32,9 @@ package = {
 
     xpm = {
         windows = {
-            ["latest"] = { ref = "2026.07.24.1" },
+            ["latest"] = { ref = "2026.08.02.2" },
+            ["2026.08.02.2"] = "XLINGS_RES",
+            ["2026.08.02.1"] = "XLINGS_RES",
             ["2026.07.24.1"] = "XLINGS_RES",
             ["0.1.5"] = "XLINGS_RES",
             ["0.1.4"] = "XLINGS_RES",
@@ -33,8 +43,10 @@ package = {
             ["0.1.1"] = "XLINGS_RES",
         },
         linux = {
-            deps = { "xim:glibc@2.39", "xim:openssl@3.1.5" },
-            ["latest"] = { ref = "2026.07.24.1" },
+            deps = { "xim:glibc@>=2.39", "xim:openssl@3.1.5" },
+            ["latest"] = { ref = "2026.08.02.2" },
+            ["2026.08.02.2"] = "XLINGS_RES",
+            ["2026.08.02.1"] = "XLINGS_RES",
             ["2026.07.24.1"] = "XLINGS_RES",
             ["0.1.5"] = "XLINGS_RES",
             ["0.1.4"] = "XLINGS_RES",
@@ -44,7 +56,9 @@ package = {
             ["0.1.0"] = "XLINGS_RES",
         },
         macosx = {
-            ["latest"] = { ref = "2026.07.24.1" },
+            ["latest"] = { ref = "2026.08.02.2" },
+            ["2026.08.02.2"] = "XLINGS_RES",
+            ["2026.08.02.1"] = "XLINGS_RES",
             ["2026.07.24.1"] = "XLINGS_RES",
             ["0.1.5"] = "XLINGS_RES",
             ["0.1.4"] = "XLINGS_RES",

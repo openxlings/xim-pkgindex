@@ -41,3 +41,7 @@ luac.out
 
 .xlings
 .worktrees/
+
+# Python bytecode from running the test suite locally.
+__pycache__/
+*.pyc

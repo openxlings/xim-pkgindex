@@ -1,4 +1,12 @@
 package = {
+
+    -- Platform version sets differ ON PURPOSE:
+    -- windows stays on its own `latest` (3.12.6); linux carries 3.12.13/3.13.12.
+    -- Declared so `tests/check_platform_version_parity.lua` can tell this
+    -- apart from a bump that landed in one section and was forgotten in the
+    -- others -- which reads as `<pkg>@<ver> not found` on the platforms that
+    -- lack it, against a file that contains the version string.
+    platform_versions_diverge = true,
     spec = "1",
     homepage = "https://www.python.org",
     name = "python",
@@ -19,6 +27,11 @@ package = {
 
     xpm = {
         linux = {
+            -- glibc, so elfpatch has a loader provider to key off. Without a
+            -- dep declaring exports.runtime.loader the predicate never fires
+            -- and the payload keeps python-build-standalone's INTERP, which is
+            -- the HOST's /lib64/ld-linux-x86-64.so.2.
+            deps = { "xim:glibc@>=2.39" },
             ["latest"] = { ref = "3.13.12" },
             ["3.13.12"] = {
                 url = "https://gitcode.com/xlings-res/mirror-cn/releases/download/python/cpython-3.13.12%2B20260310-x86_64-unknown-linux-gnu-install_only.tar.gz",

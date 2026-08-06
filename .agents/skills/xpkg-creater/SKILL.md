@@ -130,6 +130,37 @@ xpm = {
 
 测试也应默认锁定这条边界：import 只能来自 `xim.libxpkg.*`，路径、错误处理、文件 IO 优先用标准 Lua 或 `libxpkg` 可移植封装。
 
+**hook runtime 里没绑定的东西会静默毁掉安装。** 已确认不可用的：
+
+| 写法 | 现象 | 换成 |
+|------|------|------|
+| `os.exists(p)` | `attempt to call a nil value (field 'exists')` | `os.isdir(p) or os.isfile(p)` |
+| `os.arch()` | 返回 nil / `_RUNTIME.arch` 为空 | 从 `pkginfo.install_file()` 推导 |
+
+危险的地方在于**表现形式**：install hook 抛错之后，安装目录里往往只剩一个 `.xpkg.lua`、
+没有 payload，而外层可能仍然打印 `✓ N package(s) installed`。所以
+`install()` 结尾一定要断言真正的产物存在（`raise(...)` 或 `return os.isfile(exe)`），
+别只 `return true`；验收时也要真的去 `ls` 安装目录，不要只看安装命令的退出码。
+
+注意 `raise()` 本身也不进汇总 —— 它不会让外层报失败；而 hook 里的 **Lua 运行时错误会**
+浮出来（`[error] [pkg] failed: ...`）。所以 `raise` 只是给读日志的人看的，不能当成保护。
+
+#### "安装目录是空的"最常见的原因不是 hook 有问题
+
+**xlings 在同名同版本已经装在另一个 namespace 下时，会整个跳过 install hook，并且照样
+打印成功。** `xim:foo@1.2.3` 已装的情况下，每一次 `local:foo@1.2.3` 安装都是静默 no-op，
+只写下 `.xpkg.lua` —— 看起来和 install hook 坏掉一模一样。测之前先清两边：
+
+```bash
+rm -rf ~/.xlings/data/xpkgs/{xim,local}-x-<pkg>/<version>
+```
+
+（这条是用 hook 里塞 `io.writefile` 探针确认的：日志文件根本没生成。曾因此把一个好端端的
+`os.mv` 误判成 bug —— 实测 xlings 会重新解压、归档没了也会重新下载，`os.mv` 连装两次没问题。）
+
+另外：往 local index 里放两个 `package.name` 相同的文件，会让**整个 local repo 静默从搜索
+路径消失**（`package 'local:foo' not found, searched repos: [xim, scode]`）。删掉重复文件即恢复。
+
 ### 2.1.2 配置型包的 Lua 边界
 
 对 `type = "config"` 且会写入用户工具配置的包（例如 Claude/LLM 配置）：
@@ -155,6 +186,76 @@ xpm = {
 - 使用 `xvm.add("tool")`
 - 或 `xvm.add("tool", { bindir = ..., alias = ... })`
 - 可执行文件不在安装根目录时，必须明确 `bindir`
+
+### 2.3.1 共享名与 flavor 版本（注册前必查）
+
+一个 xvm 名字（程序名或 lib 名）可能被**多个包**提供：`java` 来自每个 JDK 发行版，
+`gcc` 来自 gcc.lua 和 musl-gcc.lua，`crt1.o`/`libc.so` 来自 glibc.lua 和 musl.lua。
+用裸版本号注册共享名有**两种**失败方式，长得完全不一样：
+
+| 情况 | 结果 |
+|------|------|
+| 两个包注册**同名同版本** | xvm 直接拒绝，第二个包整批 config 失败：`another package already owns this exact name and version` |
+| 两个包注册**同名不同版本** | **接受**，名字变成双 owner。一次 `xvm use` 落到另一侧就静默改写共享 `lib/` 里的符号链接 |
+
+第二种更危险，因为安装当下一切正常。实测（musl 加入前）：
+
+```
+crt1.o = {"active": "glibc-2.39", "installed": ["glibc-2.39", "musl-1.2.5"]}
+```
+
+`crt1.o` 一旦切到 musl 那侧，该 subos 里所有 glibc C 链接全部静默挂掉。
+
+**做法**：共享名注册到 **`<version>-<flavor>`**，并在配方里把撞名集合**单独列成一张表**。
+
+```lua
+-- 和 glibc.lua 的 glibc_libs 求交集算出来的，不是眼估的
+local SHARED_LIBS = { "crt1.o", "crti.o", "crtn.o", "Scrt1.o", "libc.a",
+                      "libc.so", "libdl.a", "libm.a", "libpthread.a",
+                      "librt.a", "libutil.a" }
+local MUSL_ONLY_LIBS = { "ld-musl-x86_64.so.1", "rcrt1.o", "libcrypt.a",
+                         "libresolv.a", "libxnet.a" }
+local FLAVOR = "musl"
+local function flavor_version() return pkginfo.version() .. "-" .. FLAVOR end
+```
+
+规则：
+
+1. **撞名集合要算，不要估。** 拿对方配方里的注册表和自己 payload 里真实的目录求交集，
+   并用测试锁住这个集合 —— 上游改了文件集，测试要能发现。
+2. **撞名的必须带 flavor；不撞名的也一起带**，这样整组能被同一次 `xlings use` 切换，
+   将来第三个包进来也是撞上约定而不是撞上一个恰好空着的版本号。
+3. **绑定根用 `type = "group"`。** 根节点不对应任何可执行文件（没有 `bin/musl`），
+   留成默认的 program 类型会生成一个永远失败的 shim
+   （`subos/*/bin/musl -> bin/xlings`），`self doctor` 会把它报成 orphan
+   （openxlings/xlings#452）。
+4. **`uninstall()` 必须版本内收敛**：`xvm.remove(name, <stored key>)`。
+   用裸名删会把对方包的注册一起删掉。
+
+   ⚠️ **`xvm.add` 会自己补索引命名空间前缀，`xvm.remove` 不会。**
+   从 `local:` 或任何非 `xim` 的索引仓库安装时，`version = "1.2.5-musl"` 实际存成
+   `local:1.2.5-musl`；卸载时传裸键匹配不到，根节点删了、所有 lib 节点全留下。
+   **CI 抓不到**——`posix-test.sh` 的卸载后检查只看 `bin/` 里残留的 shim，
+   而 lib 节点不产生 shim。照 glibc.lua 的 `__version_key()` 写：
+
+   ```lua
+   function __stored_version()
+       local store = path.filename(path.directory(pkginfo.install_dir()))
+       local ns = store:match("^(.-)%-x%-")   -- <data>/xpkgs/<ns>-x-<name>/<version>
+       local bare = flavor_version()
+       if ns and ns ~= "" and ns ~= "xim" then return ns .. ":" .. bare end
+       return bare
+   end
+   ```
+
+   验收方式：装完 → 看 `subos/<name>/.xlings.json` 的 `workspace` → 卸载 → 再看一次，
+   必须回到 `null`。只跑 `posix-test.sh` 不足以说明卸载干净。
+5. **头文件同理。** 两个 libc 的 `stdio.h`/`features.h` 内容不同，散进共享
+   `usr/include` 后落地的那个会静默赢下整个 subos 的编译 —— 非 system libc 的头
+   要落到自己的命名空间（`usr/include/musl`）。
+
+已有先例（新包照抄即可）：`jdk-temurin/corretto/zulu` 的 `25.0.4+7-temurin`、
+`musl-gcc.lua` 的 `16.1.0-musl`、`musl.lua` 的 `1.2.5-musl`。
 
 ### 2.4 禁止事项（隔离合规）
 

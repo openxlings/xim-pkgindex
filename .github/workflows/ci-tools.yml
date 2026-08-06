@@ -1,0 +1,55 @@
+name: tools test
+
+# The publishing scripts had NO coverage in this repo: every workflow filters on
+# `pkgs/**`, so a change under tools/ triggered nothing at all. Those scripts are
+# what writes the index pointer every client reads -- breaking one is silent
+# until a publish goes out wrong.
+on:
+  workflow_dispatch:
+  push:
+    branches: [ '**' ]
+    paths:
+      - 'tools/**'
+      - 'tests/scripts/**'
+      - '.github/workflows/ci-tools.yml'
+  pull_request:
+    paths:
+      - 'tools/**'
+      - 'tests/scripts/**'
+      - '.github/workflows/ci-tools.yml'
+
+jobs:
+  tools:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Shell scripts parse
+        run: |
+          for f in tools/*.sh; do bash -n "$f" || exit 1; done
+          echo "all tools/*.sh parse"
+
+      - name: Pointer history retention policy
+        run: python3 tests/scripts/test_index_pointer_history.py
+
+      # Builds a real artifact from THIS tree and checks the manifest shape,
+      # which is the step that carries the client contract.
+      - name: Build an index artifact from this tree
+        run: |
+          bash tools/build_xim_index_artifact.sh --version citest --out build/index --src .
+          python3 - <<'PY'
+          import json, pathlib, sys
+          m = json.load(open("build/index/xim-index-citest.manifest.json"))
+          for key in ("index_version", "artifact", "requires"):
+              if key not in m:
+                  sys.exit(f"manifest is missing {key}: {sorted(m)}")
+          if not m["artifact"].get("sha256"):
+              sys.exit("manifest artifact carries no sha256")
+          print(f"manifest ok: requires={m['requires']}")
+          PY
+
+      # Reports what floor this tree would need. Informational on purpose: the
+      # floor must not be declared until the pointer has history to route back
+      # to, so failing here would push a maintainer into doing it too early.
+      - name: Report the client floor this tree implies
+        run: python3 tools/check_index_compat.py . || true

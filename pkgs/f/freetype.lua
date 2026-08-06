@@ -18,6 +18,19 @@ package = {
 
     xpm = {
         linux = {
+            -- The prebuilt tarball's shared objects live at
+            -- lib/x86_64-linux-musl/ (a from-source build convention --
+            -- see LIBSUB below; the SONAME is still libc.so.6 so glibc
+            -- consumers load it fine).  xlings' predicate-driven elfpatch
+            -- appends this to consumers' RPATH so `deps.runtime =
+            -- { "xim:freetype@2.13.2" }` is enough to make godot and
+            -- friends resolve libfreetype.so.6 without any
+            -- LD_LIBRARY_PATH plumbing in the consumer.
+            exports = {
+                runtime = {
+                    libdirs = { "lib/x86_64-linux-musl" },
+                },
+            },
             ["latest"] = { ref = "2.13.2" },
             ["2.13.2"] = {
                 url = {

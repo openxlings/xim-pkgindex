@@ -119,6 +119,44 @@ skipped=0
 # with "package 'scode:linux-headers@<ver>' not found". Best-effort.
 "$XLINGS_CMD" config --index-repo "scode:https://github.com/openxlings/xim-pkgindex-scode.git" 2>/dev/null || true
 
+# Put this repo's libs/ where a locally-registered recipe can import it.
+#
+# `config --add-xpkg` copies the recipe into the LOCAL index, and
+# `import("xim.pkgindex.sysroot")` resolves against the index the recipe came
+# from. The local index has no libs/, so the import falls through to the
+# unknown-module stub — whose every field is a truthy callable that returns
+# another stub. So every sysroot call in a recipe under test succeeded and did
+# nothing, and the branch guarded by `if not sysroot.declare_headers_tree(...)`
+# never took its fallback either.
+#
+# This is why a change that replaced the whole subos sysroot with a symlink
+# into one package's payload passed install-test green: the code that would
+# have done it was inert here, and only ran once published. A test that cannot
+# execute the thing it is testing reports on nothing.
+if [[ -d "$WORKSPACE_ROOT/libs" ]]; then
+    mkdir -p "$XLINGS_HOME_DIR/data/xim-pkgindex-local/libs"
+    cp "$WORKSPACE_ROOT/libs/"*.lua \
+       "$XLINGS_HOME_DIR/data/xim-pkgindex-local/libs/" 2>/dev/null || true
+fi
+
+# Register every changed descriptor BEFORE testing any of them.
+#
+# The loop below registers each package immediately before installing it, which
+# is enough while a PR adds packages that only depend on already-published ones.
+# It cannot handle a PR that adds a stack: the graphics packages depend on each
+# other, so installing libX11 needs libxcb, which this PR also adds and which
+# has not been registered yet when libX11's turn comes. The failure reads as
+# "package 'libxcb@>=1.17' not found" for a recipe sitting in the same diff.
+#
+# Same reasoning as the scode line above — make the things a dependency can
+# point at resolvable first, then test. Registration is idempotent, so the
+# loop's own add-xpkg stays as it is.
+for rel_file in "${files[@]}"; do
+    [[ -n "$rel_file" ]] || continue
+    [[ -f "$WORKSPACE_ROOT/$rel_file" ]] || continue
+    "$XLINGS_CMD" config --add-xpkg "$WORKSPACE_ROOT/$rel_file" >/dev/null 2>&1 || true
+done
+
 for rel_file in "${files[@]}"; do
     [[ -n "$rel_file" ]] || continue
     lua_file="$WORKSPACE_ROOT/$rel_file"
@@ -247,6 +285,49 @@ for rel_file in "${files[@]}"; do
     fi
     if [[ -z "$new_shims" ]]; then
         info "no new shim appeared (type='$pkg_type'; programs='$programs' may have been re-pointed)"
+    fi
+
+    # A payload's loader and its libc must come from the same payload.
+    #
+    # `ld.so` and `libc.so.6` are two halves of one build, talking over
+    # GLIBC_PRIVATE symbols that promise nothing across versions. A package
+    # that got them from different payloads installs cleanly, passes every
+    # check above, and faults before `main` on the user's machine with a
+    # message naming neither package nor version.
+    #
+    # xlings 2026.8.5.3 refuses to finish such an install, so this should
+    # never fire. It is here because the check that never fires is exactly
+    # the one worth keeping: it costs one string compare per binary, and it
+    # is what turns "we believe that cannot happen" into something CI states.
+    if [[ "$HOST_OS" == "linux" ]] && command -v patchelf >/dev/null 2>&1; then
+        step "[$pkg] loader/libc same-source"
+        split_found=0
+        while IFS= read -r -d '' elf; do
+            [[ "$(head -c4 "$elf" 2>/dev/null)" == $'\x7fELF' ]] || continue
+            interp="$(patchelf --print-interpreter "$elf" 2>/dev/null)" || continue
+            [[ -n "$interp" ]] || continue
+            payload_of() { sed -E 's#(.*/xpkgs/[^/]+/[^/]+)/.*#\1#' <<<"$1"; }
+            iroot="$(payload_of "$interp")"
+            [[ "$iroot" == *"/xpkgs/"* ]] || continue
+            provider="$(sed -E 's#.*/xpkgs/([^/]+)/[^/]+$#\1#' <<<"$iroot")"
+            rp="$(patchelf --print-rpath "$elf" 2>/dev/null)"
+            same=0; other=""
+            IFS=: read -ra parts <<<"$rp"
+            for part in "${parts[@]}"; do
+                case "$part" in *"/xpkgs/$provider/"*)
+                    r="$(payload_of "$part")"
+                    [[ "$r" == "$iroot" ]] && same=1 || other="$r" ;;
+                esac
+            done
+            if [[ -n "$other" && $same -eq 0 ]]; then
+                log_fail "loader/libc split: ${elf##*/} interp=$iroot rpath=$other"
+                split_found=1
+            fi
+        done < <(find "$XPKGS_DIR" -type f ! -type l -print0 2>/dev/null)
+        if [[ $split_found -eq 1 ]]; then
+            failures+=("$rel_file (loader/libc split)"); continue
+        fi
+        log_pass "loader and libc come from one payload"
     fi
 
     step "[$pkg] uninstall ($pkg_spec)"

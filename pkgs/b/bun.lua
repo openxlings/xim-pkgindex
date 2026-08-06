@@ -26,7 +26,7 @@ package = {
             -- (NEEDED libc.so.6 / libdl.so.2 / libm.so.6 /
             -- libpthread.so.0; no libgcc_s/libstdc++).
             deps = {
-                runtime = { "xim:glibc@2.39" },
+                runtime = { "xim:glibc@>=2.39" },
                 build   = { "xim:node", "xim:npm" },
             },
             ["latest"] = { ref = "1.3.11" },

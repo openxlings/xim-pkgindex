@@ -42,7 +42,7 @@ package = {
             -- which ship C++ panic-unwind + std). Same as xim:node /
             -- xim:ollama deps shape.
             deps = {
-                runtime = { "xim:glibc@2.39", "xim:gcc-runtime@15.1.0" },
+                runtime = { "xim:glibc@>=2.39", "xim:gcc-runtime@15.1.0" },
             },
             url_template = "https://github.com/pnpm/pnpm/releases/download/v{version}/pnpm-linux-x64.tar.gz",
             ["latest"] = { ref = "11.12.0" },

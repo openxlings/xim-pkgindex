@@ -55,7 +55,7 @@ jobs:
       - name: Install xlings
         run: |
           export XLINGS_NON_INTERACTIVE=1
-          export XLINGS_VERSION=v2026.7.29.0
+          export XLINGS_VERSION=v2026.8.5.2
           curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
           echo "XLINGS_HOME=$HOME/.xlings" >> "$GITHUB_ENV"
           echo "PATH=$HOME/.xlings/subos/current/bin:$HOME/.xlings/bin:$PATH" >> "$GITHUB_ENV"

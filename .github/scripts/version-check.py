@@ -184,6 +184,67 @@ def parse_github_repo(repo_url: str) -> tuple[str, str] | None:
     return (m.group(1), m.group(2)) if m else None
 
 
+# How many recent releases the backfill considers. Bounded on purpose: the
+# index keeps very old entries (0.3.x) deliberately, so "older than the oldest
+# entry" is not a usable floor -- measured, it let the chain run back through
+# the whole release history, sixteen entries each costing a sha256 download.
+BACKFILL_WINDOW = int(os.environ.get("XIM_BACKFILL_WINDOW", "10"))
+
+
+def github_releases(owner: str, name: str, token: str | None,
+                    pages: int = 3) -> list[dict[str, Any]]:
+    """Every published release, newest first.
+
+    `releases/latest` (singular) is what this script used to ask for, and it is
+    why the index could sit two releases behind: the bump PRs stacked unmerged,
+    each proposing only the newest version, so any release skipped in the
+    meantime never got an entry at all.
+
+    Drafts and prereleases are excluded -- the index publishes what users
+    install.
+    """
+    out: list[dict[str, Any]] = []
+    for page in range(1, pages + 1):
+        url = (f"https://api.github.com/repos/{owner}/{name}/releases"
+               f"?per_page=100&page={page}")
+        req = urllib.request.Request(
+            url, headers={"User-Agent": "xim-pkgindex-version-check"})
+        if token:
+            req.add_header("Authorization", f"Bearer {token}")
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            batch = json.loads(resp.read())
+        if not batch:
+            break
+        out.extend(r for r in batch
+                   if not r.get("draft") and not r.get("prerelease"))
+        if len(batch) < 100:
+            break
+    return out
+
+
+def version_sort_key(v: str) -> tuple:
+    """Order dotted versions numerically, non-numeric components as text.
+
+    Deliberately tolerant: xlings releases are date-stamped with four
+    components (2026.8.6.1) while other packages are semver, and both have to
+    order correctly here. A plain string sort puts "0.4.11" before "0.4.9".
+    """
+    parts: list[tuple[int, Any]] = []
+    for comp in v.split("."):
+        parts.append((0, int(comp)) if comp.isdigit() else (1, comp))
+    return tuple(parts)
+
+
+def extract_version_entries(platform_body: str) -> set[str]:
+    """Every `["x.y.z"]` key already present in a platform block.
+
+    `["latest"]` is a pointer, not a version, and is excluded by the leading
+    digit -- counting it would make a missing set look complete.
+    """
+    return {m.group(1)
+            for m in re.finditer(r'\["([0-9][^"]*)"\]\s*=', platform_body)}
+
+
 def github_latest_release(owner: str, name: str, token: str | None) -> dict[str, Any]:
     url = f"https://api.github.com/repos/{owner}/{name}/releases/latest"
     req = urllib.request.Request(url, headers={"User-Agent": "xim-pkgindex-version-check"})
@@ -246,12 +307,14 @@ def check_package(lua_path: Path, token: str | None) -> dict[str, Any] | None:
             continue
         tmpl = extract_url_template(body) or extract_source_template(xpm, body)
         res = extract_res_versioned(body)
+        entries = extract_version_entries(body)
         ref = extract_latest_ref(body)
         if tmpl or res or ref:
             platforms[plat] = {
                 "url_template": tmpl,
                 "source_map": extract_source_map(body) or extract_source_map(xpm),
                 "res_versioned": res,
+                "entries": entries,
                 "ref": ref,
             }
 
@@ -341,21 +404,56 @@ def check_package(lua_path: Path, token: str | None) -> dict[str, Any] | None:
         "upstream": upstream,
     }
 
-    if upstream == current:
+    # NOT `if upstream == current: up-to-date`. "Up to date" has to mean
+    # "nothing missing", not "the latest pointer matches" -- those are
+    # different sets and the difference is the entire defect. Once `latest`
+    # reached 2026.8.6.1 the versions skipped on the way there (2026.8.5.2,
+    # 2026.8.5.3) were no longer newer than it, so a pointer-equality check
+    # returned early and never looked at them again.
+    present: set[str] = set()
+    for info in platforms.values():
+        present |= info.get("entries") or set()
+
+    try:
+        published = [normalize_version(r.get("tag_name", ""))
+                     for r in github_releases(owner, name, token)]
+        published = [v for v in published if v]
+        window = sorted(published, key=version_sort_key,
+                        reverse=True)[:BACKFILL_WINDOW]
+        chain = sorted({v for v in window if v not in present},
+                       key=version_sort_key)
+    except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError):
+        # Degrading to the previous behaviour beats failing a release.
+        chain = [] if upstream == current else [upstream]
+
+    record["missing_chain"] = chain
+    if not chain:
         record["status"] = "up-to-date"
         return record
-
     record["status"] = "update-available"
+
+    # The newest version this run will add. Equal to `upstream` in the ordinary
+    # case, and NOT equal when the index is current on its pointer but behind
+    # on entries.
+    upstream = chain[-1]
+    record["upstream"] = upstream
+
     proposed: dict[str, str] = {}
     proposed_source_maps: list[str] = []
     res_platforms: list[str] = []
+    url_templates: dict[str, str] = {}
     for plat, info in platforms.items():
         if info.get("url_template"):
+            url_templates[plat] = info["url_template"]
             proposed[plat] = expand_version_template(info["url_template"], upstream)
             if info.get("source_map"):
                 proposed_source_maps.append(plat)
         elif info.get("res_versioned"):
             res_platforms.append(plat)
+    # The TEMPLATE, not just the expanded URL: backfilling an intermediate
+    # version has to download THAT version's artifact, and `proposed_urls`
+    # names the newest one only.
+    record["url_templates"] = url_templates
     record["proposed_urls"] = proposed
     record["proposed_source_maps"] = proposed_source_maps
     record["proposed_res"] = res_platforms
@@ -731,16 +829,41 @@ def main() -> int:
         for rec in records:
             if rec["status"] != "update-available":
                 continue
-            applied = apply_bump(
-                Path(rec["path"]),
-                rec["current"],
-                rec["upstream"],
-                rec["proposed_urls"],
-                args.token,
-                rec.get("proposed_res", []),
-                rec.get("proposed_source_maps", []),
-            )
-            rec["apply"] = applied
+            # One apply_bump per missing version, ascending, each seeing the
+            # previous step's result as its `current`. apply_bump is built
+            # around a single current -> upstream transition (it locates
+            # `["latest"] = { ref = "<current>" }` and rewrites it), so calling
+            # it repeatedly reuses that tested path rather than introducing a
+            # second insertion routine -- which would be one more answerer to
+            # the question this script exists to answer once.
+            chain = rec.get("missing_chain") or [rec["upstream"]]
+            steps: list[dict[str, Any]] = []
+            prev = rec["current"]
+            for ver in chain:
+                templates = rec.get("url_templates") or {}
+                urls = ({plat: expand_version_template(tpl, ver)
+                         for plat, tpl in templates.items()}
+                        if templates else dict(rec.get("proposed_urls", {})))
+                applied = apply_bump(
+                    Path(rec["path"]),
+                    prev,
+                    ver,
+                    urls,
+                    args.token,
+                    rec.get("proposed_res", []),
+                    rec.get("proposed_source_maps", []),
+                )
+                applied["version"] = ver
+                steps.append(applied)
+                if applied.get("status") != "applied":
+                    # Stop at the first failure and keep what landed. A partial
+                    # backfill that says where it stopped beats one that
+                    # silently skips the middle.
+                    break
+                prev = ver
+            rec["apply"] = steps[-1] if steps else {
+                "status": "error", "reason": "empty chain"}
+            rec["apply_steps"] = steps
 
     summary = {
         "scanned": len(records) + skipped,

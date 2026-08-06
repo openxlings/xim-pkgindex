@@ -27,7 +27,7 @@ package = {
             -- libc/libdl/librt/libpthread/libm from glibc. No libstdc++
             -- (statically linked into the binary).
             deps = {
-                runtime = { "xim:glibc@2.39" },
+                runtime = { "xim:glibc@>=2.39" },
             },
             ["latest"] = { ref = "4.0.2" },
             ["4.0.2"] = "XLINGS_RES",

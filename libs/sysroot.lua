@@ -95,6 +95,57 @@ function sysroot.declare_headers(install_dir, src_rel, dst_rel, binding)
     return true
 end
 
+-- declare_headers, but for a directory whose names are NOT yours.
+--
+-- declare_headers stops at the immediate children, which is right when the
+-- package owns those names (`openssl/`, `python3.13/`, glibc's 130). The X11
+-- stack is the case it cannot express: eight packages -- xorgproto, libX11,
+-- libXau, libXdmcp, libXext, libXfixes, libXxf86vm, libxshmfence -- each ship
+-- part of one `X11/` directory. Declaring that child places the whole
+-- directory as a single asset, and a file asset is placed by rename(2), so
+-- the eighth package to install REPLACES the other seven. install_headers
+-- fails the same case from the other side: it skips a name that already
+-- exists, so the first package wins and the other seven are dropped.
+--
+-- Neither is a merge, and `usr/include` shared by eight packages needs one.
+--
+-- So: recurse, and declare at the leaves. Directories are never declared,
+-- which is the whole point -- xlings creates the parent of each asset, so
+-- `usr/include/X11/` becomes a real directory holding symlinks contributed by
+-- all eight, exactly as a distribution's /usr/include is assembled. Only two
+-- packages shipping the same *file* now collide, and that collision is
+-- recorded per file rather than swallowing a directory.
+--
+-- Cost is one node per header: 270 for the whole graphics stack. Use
+-- declare_headers when the names are yours -- it is one node per directory --
+-- and this when they are not.
+function sysroot.declare_headers_tree(install_dir, src_rel, dst_rel, binding)
+    if not xvm.files then return false end
+    if not os.isdir(path.join(install_dir, src_rel)) then return true end
+    sysroot.__declare_tree(install_dir, src_rel, dst_rel, binding, 0)
+    return true
+end
+
+function sysroot.__declare_tree(install_dir, src_rel, dst_rel, binding, depth)
+    -- Header trees are three or four deep (`X11/extensions/`, `libdrm/`).
+    -- The cap is a stop for a payload that symlinks a directory back to an
+    -- ancestor, which would otherwise walk until Lua runs out of stack.
+    if depth > 8 then return end
+    for _, name in ipairs(sysroot.entries(path.join(install_dir, src_rel))) do
+        local child = path.join(src_rel, name)
+        if os.isdir(path.join(install_dir, child)) then
+            sysroot.__declare_tree(install_dir, child,
+                                   path.join(dst_rel, name), binding, depth + 1)
+        else
+            xvm.files{
+                src = child,
+                dst = path.join(dst_rel, name),
+                binding = binding,
+            }
+        end
+    end
+end
+
 -- Install headers from SRC_DIR into DST_DIR — strictly non-recursive.
 --
 -- Only the immediate children of SRC_DIR are processed. Each entry
@@ -144,6 +195,65 @@ function sysroot.install_headers(src_dir, dst_dir)
         else
             local src = path.join(src_dir, name)
             fs.symlink(src, dst)
+        end
+    end
+end
+
+-- The legacy fallback for declare_headers_tree: same recursive merge, done
+-- by hand for a client with no `xvm.files`.
+--
+-- Where install_headers skips a name that already exists, this descends into
+-- it. A directory present on both sides is made a real directory in the
+-- sysroot and both contents land in it; only at a *file* that already exists
+-- does the first claimant still win. Without that descent an existing `X11/`
+-- -- from the host bind-mount or from whichever package installed first --
+-- hides every other package's X11 headers.
+function sysroot.install_headers_tree(src_dir, dst_dir, depth)
+    if not os.isdir(src_dir) then return end
+    if (depth or 0) > 8 then return end
+    fs.mkdir_p(dst_dir)
+    for _, name in ipairs(sysroot.entries(src_dir)) do
+        local src = path.join(src_dir, name)
+        local dst = path.join(dst_dir, name)
+        if os.isdir(src) then
+            sysroot.install_headers_tree(src, dst, (depth or 0) + 1)
+        elseif not (os.isdir(dst) or os.isfile(dst)) then
+            fs.symlink(src, dst)
+        end
+    end
+end
+
+-- Register a payload's shared libraries so they appear in `<subos>/lib`.
+--
+-- Headers alone do not make a sysroot. A package installed through xlings
+-- RUNS without this -- elfpatch writes the consumer's RPATH from
+-- exports.runtime.libdirs, straight into the payload -- but nothing can be
+-- LINKED against it: `gcc -lEGL` searches the subos's lib directory, and the
+-- payload is not on that path. The stack was in the odd position of shipping
+-- headers a compiler could find and libraries it could not.
+--
+-- Same mechanism zlib and glibc use, enumerated instead of hand-listed: at
+-- eighteen packages a per-package list is a place for a name to go missing,
+-- and the failure (one undefined symbol at link time) does not name the list.
+--
+-- Immediate children only, which is what keeps mesa's `lib/dri/*.so` out --
+-- those are driver modules loaded by path through LIBGL_DRIVERS_PATH, not
+-- link targets, and registering them would put twelve drivers in `<subos>/lib`
+-- for anything to link against by accident.
+function sysroot.declare_libs(install_dir, src_rel, binding, version)
+    local libdir = path.join(install_dir, src_rel)
+    if not os.isdir(libdir) then return end
+    for _, name in ipairs(sysroot.entries(libdir)) do
+        if (name:find("%.so$") or name:find("%.so%."))
+           and os.isfile(path.join(libdir, name)) then
+            xvm.add(name, {
+                version = version,
+                type = "lib",
+                bindir = libdir,
+                filename = name,
+                alias = name,
+                binding = binding,
+            })
         end
     end
 end
