@@ -38,7 +38,28 @@ package = {
             -- res_versioned: version-bump bot tracks openxlings/xlings releases and
             -- appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "2026.8.6.1" },
+            ["latest"] = { ref = "2026.8.6.2" },
+            ["2026.8.6.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "b8dbb120d83084b23029af1e51f9425911e298f0da6ed93bdef6f4ddc6e167bc",
+                    x86_64 = "6732dabbf49630ad8d26f1b6ca493d21265da616733e197237f1274cf03400f8",
+                },
+            },
+            ["2026.8.5.3"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "5a4398cdc0a60b424abedd42821eaf070c929b8befe83238b7278b035ecc2ed4",
+                    x86_64 = "fb58863685598f6f7de9ab014d402c7945fd19fddbccbfa0f911e49d505eff7f",
+                },
+            },
+            ["2026.8.5.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "a63cb586ddf7e8c92f67bd890136147e1e17cd58a21548ad6339eeba4e4e6654",
+                    x86_64 = "a894befe69c773e9cffdce252623e6463c3e29a1824dd54a0f6102496fc822a8",
+                },
+            },
             ["2026.8.6.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -408,7 +429,25 @@ package = {
             -- res_versioned: version-bump bot tracks openxlings/xlings releases and
             -- appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "2026.8.6.1" },
+            ["latest"] = { ref = "2026.8.6.2" },
+            ["2026.8.6.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "49708dbce39d199157e767aad37b561ec1cb153ea3b57f4c09536a3b5dafeed8",
+                },
+            },
+            ["2026.8.5.3"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "3b04610ca28e1a634c960012a3c2296be90d3543738b48b522013c937eda5a53",
+                },
+            },
+            ["2026.8.5.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "8dbe4ec69239034a8180ca394b1bfc1e1f7e53a4d4c640e4464920007df8e917",
+                },
+            },
             ["2026.8.6.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -747,7 +786,25 @@ package = {
             -- res_versioned: version-bump bot tracks openxlings/xlings releases and
             -- appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "2026.8.6.1" },
+            ["latest"] = { ref = "2026.8.6.2" },
+            ["2026.8.6.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "b628a89af6a6045e8f8a4e6652a0c54d1543660bf4321ea284d4ea62aae4c5af",
+                },
+            },
+            ["2026.8.5.3"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "0739a51c2510641c0e381f19ae6a7f63f43402300b669f4165ae97cdc9f8fe47",
+                },
+            },
+            ["2026.8.5.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "b78ed8a9590e9d35f4d40b154cf46b8a4179b5f03cf080032920a8b4dcff0711",
+                },
+            },
             ["2026.8.6.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
