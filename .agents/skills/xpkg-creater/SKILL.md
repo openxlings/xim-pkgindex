@@ -130,6 +130,18 @@ xpm = {
 
 测试也应默认锁定这条边界：import 只能来自 `xim.libxpkg.*`，路径、错误处理、文件 IO 优先用标准 Lua 或 `libxpkg` 可移植封装。
 
+**hook runtime 里没绑定的东西会静默毁掉安装。** 已确认不可用的：
+
+| 写法 | 现象 | 换成 |
+|------|------|------|
+| `os.exists(p)` | `attempt to call a nil value (field 'exists')` | `os.isdir(p) or os.isfile(p)` |
+| `os.arch()` | 返回 nil / `_RUNTIME.arch` 为空 | 从 `pkginfo.install_file()` 推导 |
+
+危险的地方在于**表现形式**：install hook 抛错之后，安装目录里往往只剩一个 `.xpkg.lua`、
+没有 payload，而外层可能仍然打印 `✓ N package(s) installed`。所以
+`install()` 结尾一定要断言真正的产物存在（`raise(...)` 或 `return os.isfile(exe)`），
+别只 `return true`；验收时也要真的去 `ls` 安装目录，不要只看安装命令的退出码。
+
 ### 2.1.2 配置型包的 Lua 边界
 
 对 `type = "config"` 且会写入用户工具配置的包（例如 Claude/LLM 配置）：
