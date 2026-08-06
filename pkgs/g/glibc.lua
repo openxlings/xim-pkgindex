@@ -333,14 +333,35 @@ end
 -- afterwards that no build path survived and every rewritten script still
 -- parses.
 function __relocate()
-    local marker = "fromsource-x-" .. package.name .. "/" .. pkginfo.version()
+    -- TWO markers, because the build pipeline changed and the tarballs did not
+    -- change with it.
+    --
+    -- Releases up to and including 2.44 were configured with the build
+    -- machine's own path -- `/home/xlings/.xlings_data/.../fromsource-x-glibc/
+    -- <ver>` -- which leaked the builder's disk layout into every artifact.
+    -- AD-11 replaced it with an explicitly reserved placeholder
+    -- (.agents/tools/graphics/build-glibc.sh).
+    --
+    -- Both have to be handled here, and for a while both will be: an already
+    -- published tarball still carries the old one, and the next build will
+    -- carry the new one. Dropping the old marker the day the pipeline changes
+    -- would leave every existing release unrelocated, with nothing to say so.
+    local markers = {
+        "fromsource-x-" .. package.name .. "/" .. pkginfo.version(),
+        "/nonexistent/xlings-use-rpath-not-default-search",
+    }
 
     -- type(), not truthiness: an unknown field on a module proxy is truthy on
     -- every client, so `if elfpatch.relocate_build_paths then` would be true
     -- even where the function does not exist. This repo has fallen into that
     -- twice (subos.env, xim.pkgindex.sysroot).
     if type(elfpatch.relocate_build_paths) == "function" then
-        elfpatch.relocate_build_paths{ marker = marker }
+        -- One call each. A marker that is not present rewrites nothing and
+        -- asserts nothing remains, which is the correct outcome for a payload
+        -- built by the other pipeline -- not an error.
+        for _, marker in ipairs(markers) do
+            elfpatch.relocate_build_paths{ marker = marker }
+        end
         return
     end
 
@@ -353,6 +374,10 @@ function __relocate()
     -- ALONE: the old code's output for them was not "imperfect", it was a file
     -- bash cannot parse, and an `ldd` that still names a nonexistent directory
     -- is strictly better than an `ldd` that does not run.
+    -- Legacy path only ever saw the legacy marker, and the placeholder prefix
+    -- needs no leftward match at all -- it is already an absolute path token
+    -- with nothing before it. A client this old will simply not relocate a
+    -- payload from the new pipeline, and says so below.
     local version_escaped = pkginfo.version():gsub("%.", "%%.")
     local path_pattern = "([^%s)]+)/"
         .. ("fromsource-x-" .. package.name):gsub("-", "%%-")

@@ -12,9 +12,9 @@
 #     whose dependency's dependency has no RUNPATH dies on `libm.so.6: cannot
 #     open shared object file` while `objdump -p` shows a path containing it.
 #     There is no prefix that is right on every machine — xlings rewrites
-#     INTERP and RPATH at install time, which is what actually resolves this —
-#     so the value here only has to be inert, never accidentally present on a
-#     user's disk, and consistent with what shipped before.
+#     INTERP and RPATH at install time, which is what actually resolves this.
+#     Since AD-11 the value is an explicitly reserved placeholder rather than
+#     whatever the build host happened to be; see the PREFIX assignment below.
 #   * it is the one package whose payload cannot be patched by elfpatch: it IS
 #     the loader. Its own layout has to be right at build time.
 #
@@ -39,7 +39,31 @@ rm -rf "$STAGE"; mkdir -p "$SRC" "$STAGE" "$DIST"
 
 # Same shape as the published 2.39, so a home holding both resolves them the
 # same way. Nothing is expected to exist at this path.
-PREFIX="/home/xlings/.xlings_data/xim/xpkgs/fromsource-x-$NAME/$VERSION"
+# The default library search path compiled into ld.so, and the INTERP of
+# glibc's own binaries. See AD-11 in
+# xlings/.agents/docs/2026-08-06-subos-architecture-proposal.md.
+#
+# It must not exist, and it must be DELIBERATE about not existing. For a
+# relocatable package the build prefix can never equal the install path, so a
+# default search that finds nothing is structural, not an accident: everything
+# has to come from DT_RPATH, which is rule 2 stated as a property of the
+# artifact rather than as an intention.
+#
+# What was wrong with the old value is not that it pointed nowhere. It is that
+# it pointed at the BUILD MACHINE -- `/home/xlings/.xlings_data/...`, a home
+# layout xlings abandoned years ago -- so the artifact leaked the builder's
+# disk layout, and the next person to read it could not tell a deliberate dead
+# path from a stale one. The current name says which it is without a document.
+#
+# `/nonexistent` has distribution precedent (Debian gives it to system users),
+# so nobody creates one by accident.
+#
+# Consequences, all of them intended:
+#   * an unpatched binary fails LOUDLY at execve with ENOENT, rather than
+#     silently picking up the host's loader and mispairing GLIBC_PRIVATE
+#   * ld.so.cache never hits; we do not use ldconfig
+#   * `--prefix` and DESTDIR are separate, so the install layout is unaffected
+PREFIX="/nonexistent/xlings-use-rpath-not-default-search"
 
 TARBALL="$SRC/glibc-$VERSION.tar.xz"
 [[ -f "$TARBALL" ]] || {
