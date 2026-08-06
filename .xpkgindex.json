@@ -1,33 +1,119 @@
 {
   "site": {
     "title": "XIM Package Index",
-    "description": "Official package index for xlings package manager",
-    "logo": "XIM Package Index"
+    "description": "Official package index for the xlings package manager",
+    "logo": "xim index"
   },
   "links": {
-    "github": "https://github.com/d2learn/xim-pkgindex",
+    "github": "https://github.com/openxlings/xim-pkgindex",
     "forum": "https://forum.d2learn.org",
-    "docs": "https://d2learn.org",
+    "docs": "https://xlings.d2learn.org",
     "custom": [
-      {"label": "xpkgindex Tool", "url": "https://github.com/d2learn/xpkgindex"},
-      {"label": "xlings", "url": "https://github.com/d2learn/xlings"}
+      {
+        "label": "libxpkg",
+        "url": "https://github.com/mcpplibs/libxpkg"
+      },
+      {
+        "label": "xpkgindex",
+        "url": "https://github.com/openxlings/xpkgindex"
+      }
     ]
   },
   "about": {
     "project_name": "xlings",
     "project_url": "https://xlings.d2learn.org",
-    "description": "Highly abstract package manager — multi-version management, everything is a package",
-    "maintainers": ["d2learn", "Sunrisepeak"],
+    "description": "Universal package infrastructure with OS-like SubOS isolation — multi-version, rootless, decentralized index",
+    "maintainers": [
+      "openxlings",
+      "Sunrisepeak"
+    ],
     "license": "Apache-2.0"
   },
   "theme": {
-    "primary_color": "#00d4ff",
-    "style": "dark"
+    "accent": "#0e7490",
+    "style": "auto",
+    "tones": {
+      "module": "#0e7490",
+      "header": "#4b5563",
+      "tool": "#a16207",
+      "neutral": "#64748b"
+    },
+    "dark": {
+      "accent": "#22d3ee",
+      "tones": {
+        "module": "#22d3ee",
+        "header": "#a3b1c2",
+        "tool": "#e3b341",
+        "neutral": "#8b9bad"
+      }
+    }
   },
-  "install_command_template": "xlings install {name}@{version}",
   "pkgs_dir": "pkgs",
-  "install_commands": {
-    "unix": "curl -fsSL https://d2learn.org/xlings-install.sh | bash",
-    "windows": "irm https://d2learn.org/xlings-install.ps1.txt | iex"
+  "list": {
+    "variant": "card"
+  },
+  "base_url": "https://openxlings.github.io/xim-pkgindex",
+  "languages": [
+    "zh",
+    "en",
+    "zh-Hant"
+  ],
+  "install_command_template": "xlings install {ref}@{version}",
+  "install": {
+    "label": "Install xlings",
+    "os": [
+      {
+        "id": "unix",
+        "os": "Linux / macOS",
+        "command": "curl -fsSL https://d2learn.org/xlings-install.sh | bash"
+      },
+      {
+        "id": "windows",
+        "os": "Windows · PowerShell",
+        "command": "irm https://d2learn.org/xlings-install.ps1.txt | iex"
+      }
+    ]
+  },
+  "plugins": [
+    ".xpkgindex/plugins/xim.py"
+  ],
+  "guides": {
+    "nav_label": "Contribute",
+    "entries": [
+      {
+        "slug": "contributing",
+        "title": "贡献指南",
+        "path": "docs/contributing.md"
+      },
+      {
+        "slug": "xpackage-spec",
+        "title": "XPackage V2 规范",
+        "path": "docs/V2/xpackage-spec.md"
+      },
+      {
+        "slug": "add-xpackage",
+        "title": "新增一个包",
+        "path": "docs/V1/add-xpackage.md"
+      },
+      {
+        "slug": "docs-index",
+        "title": "文档索引",
+        "path": "docs/README.md"
+      }
+    ]
+  },
+  "ecosystem": {
+    "owners": [
+      "openxlings",
+      "d2learn",
+      "Sunrisepeak",
+      "mcpplibs",
+      "mcpp-community"
+    ],
+    "repos": [
+      "openxlings/xlings",
+      "openxlings/xim-pkgindex",
+      "mcpp-community/mcpp"
+    ]
   }
 }
