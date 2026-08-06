@@ -73,6 +73,19 @@ package = {
                 -- no compiler at install time and patchelf edits objects
                 -- rather than creating them, so it is shipped (AD-12).
                 "xim:interposer-stub@>=0.1",
+                -- INSIDE `deps`, not beside it. `deps.build` is the build-dep
+                -- slot; a `build` key one level up parses, reads exactly like
+                -- this one, and installs nothing -- measured, the host's
+                -- patchelf was still what ran.
+                --
+                -- patchelf is what BUILDS the interposer, not merely what
+                -- tweaks an already-good object: without it there is no
+                -- vendor entry point at all. libxpkg resolves it payload-
+                -- first, but only if the payload is in this home's store;
+                -- otherwise it falls back to the host's and says so.
+                -- Declaring it is what makes the fallback unnecessary rather
+                -- than merely reported.
+                build = { "xim:patchelf@0.18.0" },
             },
             exports = {
                 runtime = { libdirs = { "lib" } },
@@ -233,27 +246,62 @@ function install()
     -- `librt.so.1: undefined symbol: __pointer_chk_guard, version
     -- GLIBC_PRIVATE`, which is the loader/libc split from the direction the
     -- same-source assertion cannot see.
-    local vendor_real = path.join(nvdir, "libEGL_nvidia.so.0")
-    if os.isfile(vendor_real) and type(elfpatch.host_link_interposer) == "function" then
-        elfpatch.host_link_interposer{
-            vendor = vendor_real,
-            out    = path.join(dir, "lib", "libEGL_nvidia.so.0"),
-            soname = "libEGL_nvidia.so.0",
-        }
-        interposed = true
-    else
-        -- No interposer: either the host has no EGL vendor (nothing to point
-        -- at) or this client's libxpkg predates the capability. Say which --
-        -- silently falling back to a gathered directory is how the old
-        -- behaviour would come back without anyone deciding to bring it.
-        if not os.isfile(vendor_real) then
-            log.warn("no libEGL_nvidia.so.0 under %s; EGL will fall back to mesa", nvdir)
-        else
+    --
+    -- EVERY entry point, not the one that was tested. glvnd dlopens each
+    -- vendor library BY NAME, so each is the ROOT of its own load chain, and
+    -- DT_RPATH is transitive only DOWN a chain -- never across to another
+    -- root. Interposing libEGL alone left GLX, GLESv1 and GLESv2 as plain
+    -- symlinks into /usr/lib, and an EGL probe could not see it: EGL passed
+    -- while `glxinfo` still resolved the vendor's deps from the host.
+    -- libGLX_nvidia.so.0 is also the Vulkan ICD, so that one root carries two
+    -- APIs.
+    local ENTRY_POINTS = {
+        "libEGL_nvidia.so.0",
+        "libGLX_nvidia.so.0",        -- GLX vendor AND Vulkan ICD: same file
+        "libGLESv1_CM_nvidia.so.1",
+        "libGLESv2_nvidia.so.2",
+    }
+
+    local has_interposer = type(elfpatch.host_link_interposer) == "function"
+    local present, done = {}, {}
+    for _, name in ipairs(ENTRY_POINTS) do
+        local vendor_real = path.join(nvdir, name)
+        if os.isfile(vendor_real) then
+            table.insert(present, name)
+            if has_interposer then
+                elfpatch.host_link_interposer{
+                    vendor = vendor_real,
+                    out    = path.join(dir, "lib", name),
+                    soname = name,
+                }
+                table.insert(done, name)
+            end
+        end
+    end
+    interposed = #done > 0
+
+    -- Total, or loud. An entry point the host HAS and we did not interpose is
+    -- still sitting there as a symlink into /usr/lib -- it works, by resolving
+    -- the vendor's dependencies from the host, which is the thing this package
+    -- exists to stop. That must not be reported the same way as success.
+    if #done < #present then
+        local missed = {}
+        for _, name in ipairs(present) do
+            local ok = false
+            for _, d in ipairs(done) do if d == name then ok = true end end
+            if not ok then table.insert(missed, name) end
+        end
+        if not has_interposer then
             log.warn("this xlings is too old for elfpatch.host_link_interposer "
                      .. "(libxpkg 0.0.52); the NVIDIA vendor's dependencies "
                      .. "will resolve from the HOST. Run `xlings self update` "
                      .. "and reinstall this package.")
         end
+        log.warn("not interposed: %s -- these resolve their dependencies from "
+                 .. "the host", table.concat(missed, ", "))
+    end
+    if #present == 0 then
+        log.warn("no NVIDIA vendor libraries under %s; GL will fall back to mesa", nvdir)
     end
 
     -- The glvnd vendor JSON, written rather than linked.
@@ -274,12 +322,16 @@ function install()
 }
 ]], path.join(dir, "lib", "libEGL_nvidia.so.0")))
 
-    -- Both numbers, and the interposer's presence explicitly. Reporting only
-    -- the symlink count would make "the vendor's dependencies resolve to our
-    -- payloads" and "they resolve to the host's" produce identical output --
-    -- and the second one still renders, just on llvmpipe.
-    log.info("nvidia-gl-host-link → %s (%d host libraries linked, interposer: %s) ✓",
-             nvdir, linked, interposed and "yes" or "NO — vendor deps come from the host")
+    -- Both numbers, and the interposers as a FRACTION of the entry points the
+    -- host actually has. Reporting only the symlink count would make "the
+    -- vendor's dependencies resolve to our payloads" and "they resolve to the
+    -- host's" produce identical output -- and the second one still renders,
+    -- just on llvmpipe. A bare "yes" would do the same thing one level in:
+    -- one interposer out of four reads as success, and the three uncovered
+    -- roots are exactly the APIs nobody probed.
+    log.info("nvidia-gl-host-link → %s (%d host libraries linked, interposers: %d/%d%s) ✓",
+             nvdir, linked, #done, #present,
+             #present > 0 and "" or " — no vendor, GL falls back to mesa")
     return true
 end
 

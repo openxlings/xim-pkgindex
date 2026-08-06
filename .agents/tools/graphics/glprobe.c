@@ -10,16 +10,52 @@
 //   GL_VENDOR / GL_RENDERER / GL_VERSION
 //   PIXEL=RRGGBB
 //   RESULT=ok|fail:<why>
+//   LOADED=<abs path>            one per GL/vendor object actually mapped
+//
+// LOADED is not decoration. "GL_RENDERER=NVIDIA GeForce RTX 4080" is printed
+// just as happily by the HOST's stack running inside a subos that overrode
+// nothing -- the host binary under the host loader gives exactly that line.
+// Only the path each object was mapped from can tell "our payload drove this"
+// apart from "we measured the host". Measured 2026-08-06: a `glxinfo` run
+// inside a subos printed the NVIDIA renderer while every single object came
+// from /usr/lib.
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
 #include <GL/gl.h>
 #include <stdio.h>
 #include <string.h>
 
+// Every GL/vendor object mapped into this process, by the path it came from.
+static void dump_loaded(void) {
+    FILE *f = fopen("/proc/self/maps", "r");
+    if (!f) { printf("LOADED=<maps unreadable>\n"); return; }
+    char line[4096], seen[64][512];
+    int n = 0;
+    while (fgets(line, sizeof line, f)) {
+        char *p = strchr(line, '/');
+        if (!p) continue;
+        p[strcspn(p, "\n")] = 0;
+        const char *base = strrchr(p, '/');
+        base = base ? base + 1 : p;
+        if (!(strstr(base, "_nvidia.so") || strstr(base, "libnvidia-")
+              || strstr(base, "_mesa.so")  || strstr(base, "libgallium")
+              || strstr(base, "libGLX.so") || strstr(base, "libEGL.so")
+              || strstr(base, "libGLdispatch") || strstr(base, "libGL.so")))
+            continue;
+        int dup = 0;
+        for (int i = 0; i < n; i++) if (!strcmp(seen[i], p)) { dup = 1; break; }
+        if (dup || n >= 64) continue;
+        snprintf(seen[n++], sizeof seen[0], "%s", p);
+    }
+    fclose(f);
+    for (int i = 0; i < n; i++) printf("LOADED=%s\n", seen[i]);
+}
+
 #define W 64
 #define H 64
 
 static int fail(const char *why) {
+    dump_loaded();
     printf("RESULT=fail:%s\n", why);
     return 1;
 }
@@ -99,6 +135,7 @@ int main(void) {
         px[2] < 151 || px[2] > 155) {
         return fail("pixel-mismatch");
     }
+    dump_loaded();
     printf("RESULT=ok\n");
     return 0;
 }
