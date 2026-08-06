@@ -142,10 +142,13 @@ foreach ($relFile in $files) {
         continue
     }
     $meta = $metaJson | ConvertFrom-Json
-    # No declared namespace means the recipe ships from the PRIMARY repo, so
-    # it is addressed by its bare name. Defaulting to "local" here is what used
-    # to change the identity of the thing under test — see the mount below.
-    $pkgNs = if ($meta.namespace) { $meta.namespace } else { "" }
+    # A recipe that declares no namespace belongs to the PRIMARY repo, `xim`.
+    # Defaulting to "local" here is what used to change the identity of the
+    # thing under test — see the mount above. Not a bare name either: bare is
+    # ambiguous once other index repos are registered (`scode` also ships a
+    # `gcc`), and `xim:` costs nothing in identity terms — it IS the primary,
+    # so its xvm version namespace is empty either way.
+    $pkgNs = if ($meta.namespace) { $meta.namespace } else { "xim" }
     Log-Info "name=$($meta.name)  namespace=$pkgNs  programs=[$($meta.programs -join ',')]  is_ref=$($meta.is_ref)  has_windows=$($meta.has_windows)"
 
     if ($meta.is_ref) {
@@ -195,7 +198,7 @@ foreach ($relFile in $files) {
     $shimsBefore = Get-ShimSet
     Log-Info "shims before install: $($shimsBefore.Count)"
 
-    $pkgSpec = if ($pkgNs) { "${pkgNs}:${pkg}" } else { $pkg }
+    $pkgSpec = "${pkgNs}:${pkg}"
 
     # --- install ---
     Log-Step "[$pkg] install ($pkgSpec)"

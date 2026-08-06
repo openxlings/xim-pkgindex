@@ -186,7 +186,7 @@ for rel_file in "${files[@]}"; do
     fi
     pkg=$(printf '%s' "$meta_json"     | python3 -c "import json,sys; print(json.loads(sys.stdin.read())['name'])")
     pkg_type=$(printf '%s' "$meta_json" | python3 -c "import json,sys; print(json.loads(sys.stdin.read()).get('type','package'))")
-    pkg_ns=$(printf '%s' "$meta_json"   | python3 -c "import json,sys; print(json.loads(sys.stdin.read()).get('namespace','') or '')")
+    pkg_ns=$(printf '%s' "$meta_json"   | python3 -c "import json,sys; print(json.loads(sys.stdin.read()).get('namespace','xim') or 'xim')")
     is_ref=$(printf '%s' "$meta_json"   | python3 -c "import json,sys; print(json.loads(sys.stdin.read())['is_ref'])")
     has_plat=$(printf '%s' "$meta_json" | python3 -c "import json,sys; print(json.loads(sys.stdin.read()).get('$HAS_KEY', False))")
     programs=$(printf '%s' "$meta_json" | python3 -c "import json,sys; print(' '.join(json.loads(sys.stdin.read())['programs']))")
@@ -231,10 +231,12 @@ for rel_file in "${files[@]}"; do
     shims_before=$(shim_set)
     info "shims before install: $(printf '%s\n' "$shims_before" | grep -c . || true)"
 
-    # Bare name when the recipe declares no namespace: it then ships from the
-    # PRIMARY repo, and addressing it as `<ns>:<pkg>` is what used to change
-    # its identity (see the mount comment above).
-    if [[ -n "$pkg_ns" ]]; then pkg_spec="${pkg_ns}:${pkg}"; else pkg_spec="$pkg"; fi
+    # A recipe that declares no namespace belongs to the PRIMARY repo, `xim`.
+    # Spell it out rather than using a bare name: bare is ambiguous once other
+    # index repos are registered (`scode` also ships a `gcc`), and `xim:` costs
+    # nothing in identity terms — it IS the primary, so its xvm version
+    # namespace is empty either way.
+    pkg_spec="${pkg_ns}:${pkg}"
 
     step "[$pkg] install ($pkg_spec)"
     if ! "$XLINGS_CMD" install "$pkg_spec" -y; then
