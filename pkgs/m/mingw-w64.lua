@@ -71,9 +71,30 @@ function config()
     xvm.add("x86_64-w64-mingw32-g++", config)
     xvm.add("x86_64-w64-mingw32-c++", config)
 
-    config.version = string.format([[%s(mingw-w64-%s)]],
-        gcc_version_map[pkginfo.version()], pkginfo.version()
-    )
+    -- The gcc version, and ONLY the gcc version.
+    --
+    -- This used to be `15.1.0(mingw-w64-13.0.0)` — the provenance annotated
+    -- into the version string. That reads well and is unusable as what it
+    -- actually is: xvm's version is an IDENTIFIER, the key a target's versions
+    -- are selected and removed by. With the annotation baked in, no address
+    -- can ever name this entry:
+    --
+    --   xlings remove gcc@15.1.0  -> removal version is not registered
+    --   xlings remove gcc         -> resolves the active version to the
+    --                                annotated string, then looks up a package
+    --                                by it: package 'gcc@15.1.0(mingw-w64-13.0.0)'
+    --                                not found
+    --
+    -- So gcc could be installed on Windows and never uninstalled — in
+    -- production, not only under test. It surfaced through xim-pkgindex's
+    -- windows-test, which had never exercised this recipe before (the CI only
+    -- tests CHANGED packages).
+    --
+    -- Nothing is lost: WHO provided this version is already first-class in
+    -- xvm's binding group (`provider` / `providerVersion`), which is where a
+    -- consumer that wants to show it should read it from. Provenance belongs
+    -- beside the identifier, not inside it.
+    config.version = gcc_version_map[pkginfo.version()]
 
     xvm.add("gcc", config)
     xvm.add("c++", config)
@@ -99,9 +120,10 @@ function uninstall()
     xvm.remove("x86_64-w64-mingw32-g++")
     xvm.remove("x86_64-w64-mingw32-c++")
 
-    local version = string.format([[%s(mingw-w64-%s)]],
-        gcc_version_map[pkginfo.version()], pkginfo.version()
-    )
+    -- Must stay the SAME spelling config() registered: this is the key those
+    -- entries live under, and the two composing it independently is how they
+    -- drift. Both now say "the gcc version" and nothing else.
+    local version = gcc_version_map[pkginfo.version()]
     xvm.remove("gcc", version)
     xvm.remove("g++", version)
     xvm.remove("c++", version)
