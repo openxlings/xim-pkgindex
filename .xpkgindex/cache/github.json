@@ -1,0 +1,1770 @@
+{
+  "entries": {
+    "https://api.github.com/repos/2412322029/seeme": {
+      "at": 1786030672,
+      "body": {
+        "description": "让别人知道你在干什么",
+        "homepage": "http://i.not404.cc/",
+        "language": "Python",
+        "license": "",
+        "owner": "2412322029",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/74493337?v=4",
+        "owner_url": "https://github.com/2412322029",
+        "slug": "2412322029/seeme",
+        "stars": 4,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/AnInsomniacy/aria2-next": {
+      "at": 1786030613,
+      "body": {
+        "description": "Maintained aria2 fork with extensive bug fixes and modernized architecture",
+        "homepage": "",
+        "language": "C++",
+        "license": "GPL-2.0",
+        "owner": "AnInsomniacy",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/62804262?v=4",
+        "owner_url": "https://github.com/AnInsomniacy",
+        "slug": "AnInsomniacy/aria2-next",
+        "stars": 224,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/BurntSushi/ripgrep": {
+      "at": 1786030669,
+      "body": {
+        "description": "ripgrep recursively searches directories for a regex pattern while respecting your gitignore",
+        "homepage": "",
+        "language": "Rust",
+        "license": "Unlicense",
+        "owner": "BurntSushi",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/456674?v=4",
+        "owner_url": "https://github.com/BurntSushi",
+        "slug": "BurntSushi/ripgrep",
+        "stars": 67051,
+        "topics": [
+          "cli",
+          "command-line",
+          "command-line-tool",
+          "gitignore",
+          "grep",
+          "recursively-search",
+          "regex",
+          "ripgrep",
+          "rust",
+          "search"
+        ]
+      }
+    },
+    "https://api.github.com/repos/CoatiSoftware/Sourcetrail": {
+      "at": 1786030673,
+      "body": {
+        "description": "Sourcetrail - free and open-source interactive source explorer",
+        "homepage": "https://www.sourcetrail.com/",
+        "language": "C++",
+        "license": "GPL-3.0",
+        "owner": "CoatiSoftware",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/16224233?v=4",
+        "owner_url": "https://github.com/CoatiSoftware",
+        "slug": "CoatiSoftware/Sourcetrail",
+        "stars": 16491,
+        "topics": [
+          "c",
+          "cpp",
+          "java",
+          "python"
+        ]
+      }
+    },
+    "https://api.github.com/repos/Homebrew/brew": {
+      "at": 1786030614,
+      "body": {
+        "description": "🍺 The Package Manager for Everywhere",
+        "homepage": "https://brew.sh",
+        "language": "Ruby",
+        "license": "BSD-2-Clause",
+        "owner": "Homebrew",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/1503512?v=4",
+        "owner_url": "https://github.com/Homebrew",
+        "slug": "Homebrew/brew",
+        "stars": 49096,
+        "topics": [
+          "brew",
+          "homebrew",
+          "macos",
+          "package-manager",
+          "ruby"
+        ]
+      }
+    },
+    "https://api.github.com/repos/KhronosGroup/glslang": {
+      "at": 1786030631,
+      "body": {
+        "description": "Khronos-reference front end for GLSL/ESSL, partial front end for HLSL, and a SPIR-V generator.",
+        "homepage": "",
+        "language": "C++",
+        "license": "NOASSERTION",
+        "owner": "KhronosGroup",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/1608701?v=4",
+        "owner_url": "https://github.com/KhronosGroup",
+        "slug": "KhronosGroup/glslang",
+        "stars": 3563,
+        "topics": [
+          "compiler",
+          "essl",
+          "glsl",
+          "glslang",
+          "glslangvalidator",
+          "hlsl",
+          "shader",
+          "spir-v",
+          "validator"
+        ]
+      }
+    },
+    "https://api.github.com/repos/Kitware/CMake": {
+      "at": 1786030619,
+      "body": {
+        "description": "Mirror of CMake upstream repository",
+        "homepage": "https://gitlab.kitware.com/cmake/cmake",
+        "language": "C",
+        "license": "BSD-3-Clause",
+        "owner": "Kitware",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/87549?v=4",
+        "owner_url": "https://github.com/Kitware",
+        "slug": "Kitware/CMake",
+        "stars": 8018,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/LiRenTech/project-graph": {
+      "at": 1786030667,
+      "body": {
+        "description": "A node-based visual tool for organizing thoughts and notes in a non-linear way.",
+        "homepage": "https://graphif.dev",
+        "language": "TypeScript",
+        "license": "",
+        "owner": "graphif",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/220486351?v=4",
+        "owner_url": "https://github.com/graphif",
+        "slug": "graphif/project-graph",
+        "stars": 4269,
+        "topics": [
+          "canvas",
+          "canvas2d",
+          "canvasjs",
+          "cross-platform",
+          "graph-algorithms",
+          "project-graph",
+          "reactjs",
+          "reactjs-project",
+          "tailwind",
+          "tailwind-css",
+          "tauri-app",
+          "vite",
+          "vitejs"
+        ]
+      }
+    },
+    "https://api.github.com/repos/NanmiCoder/MediaCrawler": {
+      "at": 1786030653,
+      "body": {
+        "description": "小红书笔记 | 评论爬虫、抖音视频 | 评论爬虫、快手视频 | 评论爬虫、B 站视频 ｜ 评论爬虫、微博帖子 ｜ 评论爬虫、百度贴吧帖子 ｜ 百度贴吧评论回复爬虫  | 知乎问答文章｜评论爬虫",
+        "homepage": "https://nanmicoder.github.io/MediaCrawler/",
+        "language": "Python",
+        "license": "NOASSERTION",
+        "owner": "NanmiCoder",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/47178017?v=4",
+        "owner_url": "https://github.com/NanmiCoder",
+        "slug": "NanmiCoder/MediaCrawler",
+        "stars": 60164,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/NixOS/patchelf": {
+      "at": 1786030663,
+      "body": {
+        "description": "A small utility to modify the dynamic linker and RPATH of ELF executables",
+        "homepage": "",
+        "language": "C",
+        "license": "GPL-3.0",
+        "owner": "NixOS",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/487568?v=4",
+        "owner_url": "https://github.com/NixOS",
+        "slug": "NixOS/patchelf",
+        "stars": 4234,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/NousResearch/hermes-agent": {
+      "at": 1786030639,
+      "body": {
+        "description": "The agent that grows with you",
+        "homepage": "https://hermes-agent.nousresearch.com",
+        "language": "Python",
+        "license": "MIT",
+        "owner": "NousResearch",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/134168893?v=4",
+        "owner_url": "https://github.com/NousResearch",
+        "slug": "NousResearch/hermes-agent",
+        "stars": 226471,
+        "topics": [
+          "ai",
+          "ai-agent",
+          "ai-agents",
+          "anthropic",
+          "chatgpt",
+          "claude",
+          "claude-code",
+          "clawdbot",
+          "codex",
+          "hermes",
+          "hermes-agent",
+          "llm",
+          "moltbot",
+          "nous-research",
+          "openai",
+          "openclaw"
+        ]
+      }
+    },
+    "https://api.github.com/repos/PCRE2Project/pcre2": {
+      "at": 1786030664,
+      "body": {
+        "description": "PCRE2 development is based here.",
+        "homepage": "https://pcre2project.github.io/pcre2/",
+        "language": "C",
+        "license": "NOASSERTION",
+        "owner": "PCRE2Project",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/104020533?v=4",
+        "owner_url": "https://github.com/PCRE2Project",
+        "slug": "PCRE2Project/pcre2",
+        "stars": 1331,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/Perl/perl5": {
+      "at": 1786030665,
+      "body": {
+        "description": "🐪 The Perl programming language",
+        "homepage": "https://dev.perl.org/perl5/",
+        "language": "Perl",
+        "license": "NOASSERTION",
+        "owner": "Perl",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/3585411?v=4",
+        "owner_url": "https://github.com/Perl",
+        "slug": "Perl/perl5",
+        "stars": 2310,
+        "topics": [
+          "cpan",
+          "hacktoberfest",
+          "perl",
+          "perl5"
+        ]
+      }
+    },
+    "https://api.github.com/repos/SagerNet/sing-box": {
+      "at": 1786030672,
+      "body": {
+        "description": "The universal proxy platform",
+        "homepage": "https://sing-box.sagernet.org/",
+        "language": "Go",
+        "license": "NOASSERTION",
+        "owner": "SagerNet",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/83217677?v=4",
+        "owner_url": "https://github.com/SagerNet",
+        "slug": "SagerNet/sing-box",
+        "stars": 36767,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/Sunrisepeak/KHistory": {
+      "at": 1786030646,
+      "body": {
+        "description": "An elegant keyboard/gamepad key detection and visualization tool | 🔥一个优雅&跨平台的 键盘/🎮手柄按键 检测及历史记录显示工具, 无需安装单可执行文件(约900kb大小)即点即用",
+        "homepage": "https://github.com/Sunrisepeak/KHistory",
+        "language": "C++",
+        "license": "GPL-3.0",
+        "owner": "Sunrisepeak",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/38786181?v=4",
+        "owner_url": "https://github.com/Sunrisepeak",
+        "slug": "Sunrisepeak/KHistory",
+        "stars": 84,
+        "topics": [
+          "cross-platform",
+          "dstruct",
+          "dsvisual",
+          "gamepad",
+          "imgui",
+          "keyboard",
+          "keylogger"
+        ]
+      }
+    },
+    "https://api.github.com/repos/adoptium/temurin25-binaries": {
+      "at": 1786030643,
+      "body": {
+        "description": "Temurin 25 binaries",
+        "homepage": "https://adoptium.net",
+        "language": "",
+        "license": "",
+        "owner": "adoptium",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/67165372?v=4",
+        "owner_url": "https://github.com/adoptium",
+        "slug": "adoptium/temurin25-binaries",
+        "stars": 51,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/ajeetdsouza/zoxide": {
+      "at": 1786030679,
+      "body": {
+        "description": "A smarter cd command. Supports all major shells.",
+        "homepage": "https://crates.io/crates/zoxide",
+        "language": "Rust",
+        "license": "MIT",
+        "owner": "ajeetdsouza",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/1777663?v=4",
+        "owner_url": "https://github.com/ajeetdsouza",
+        "slug": "ajeetdsouza/zoxide",
+        "stars": 38520,
+        "topics": [
+          "autojump",
+          "bash",
+          "cli",
+          "command-line",
+          "command-line-tool",
+          "elvish",
+          "fasd",
+          "fish",
+          "fish-shell",
+          "fzf",
+          "hacktoberfest",
+          "jump",
+          "nushell",
+          "powershell",
+          "rust",
+          "shell",
+          "xonsh",
+          "xontrib",
+          "z",
+          "zsh"
+        ]
+      }
+    },
+    "https://api.github.com/repos/anthropics/claude-code": {
+      "at": 1786030618,
+      "body": {
+        "description": "Claude Code is an agentic coding tool that lives in your terminal, understands your codebase, and helps you code faster by executing routine tasks, explaining complex code, and handling git workflows - all through natural language commands.",
+        "homepage": "https://code.claude.com/docs/en/overview",
+        "language": "Python",
+        "license": "",
+        "owner": "anthropics",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/76263028?v=4",
+        "owner_url": "https://github.com/anthropics",
+        "slug": "anthropics/claude-code",
+        "stars": 140472,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/astral-sh/uv": {
+      "at": 1786030675,
+      "body": {
+        "description": "An extremely fast Python package and project manager, written in Rust.",
+        "homepage": "https://docs.astral.sh/uv",
+        "language": "Rust",
+        "license": "Apache-2.0",
+        "owner": "astral-sh",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/115962839?v=4",
+        "owner_url": "https://github.com/astral-sh",
+        "slug": "astral-sh/uv",
+        "stars": 88430,
+        "topics": [
+          "packaging",
+          "python",
+          "resolver",
+          "uv"
+        ]
+      }
+    },
+    "https://api.github.com/repos/brechtsanders/winlibs_mingw": {
+      "at": 1786030654,
+      "body": {
+        "description": "winlibs standalone build of GCC compiler and MinGW-w64",
+        "homepage": "",
+        "language": "",
+        "license": "",
+        "owner": "brechtsanders",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/17645177?v=4",
+        "owner_url": "https://github.com/brechtsanders",
+        "slug": "brechtsanders/winlibs_mingw",
+        "stars": 1319,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/chenhg5/cc-connect": {
+      "at": 1786030617,
+      "body": {
+        "description": "Bridge local AI coding agents (Claude Code, Cursor, Gemini CLI, Codex) to messaging platforms (Feishu/Lark, DingTalk, Slack, Telegram, Discord, LINE, WeChat Work). Chat with your AI dev assistant from anywhere — no public IP required for most platforms.",
+        "homepage": "",
+        "language": "Go",
+        "license": "",
+        "owner": "chenhg5",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/4344486?v=4",
+        "owner_url": "https://github.com/chenhg5",
+        "slug": "chenhg5/cc-connect",
+        "stars": 14739,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/cli/cli": {
+      "at": 1786030629,
+      "body": {
+        "description": "GitHub’s official command line tool",
+        "homepage": "https://cli.github.com",
+        "language": "Go",
+        "license": "MIT",
+        "owner": "cli",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/59704711?v=4",
+        "owner_url": "https://github.com/cli",
+        "slug": "cli/cli",
+        "stars": 45698,
+        "topics": [
+          "cli",
+          "git",
+          "github-api-v4",
+          "golang"
+        ]
+      }
+    },
+    "https://api.github.com/repos/containers/bubblewrap": {
+      "at": 1786030616,
+      "body": {
+        "description": "Low-level unprivileged sandboxing tool used by Flatpak and similar projects",
+        "homepage": "",
+        "language": "C",
+        "license": "NOASSERTION",
+        "owner": "containers",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/5874934?v=4",
+        "owner_url": "https://github.com/containers",
+        "slug": "containers/bubblewrap",
+        "stars": 8266,
+        "topics": [
+          "linux-containers",
+          "user-namespaces"
+        ]
+      }
+    },
+    "https://api.github.com/repos/corretto/corretto-25": {
+      "at": 1786030641,
+      "body": {
+        "description": "",
+        "homepage": "",
+        "language": "Java",
+        "license": "GPL-2.0",
+        "owner": "corretto",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/44104058?v=4",
+        "owner_url": "https://github.com/corretto",
+        "slug": "corretto/corretto-25",
+        "stars": 38,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/d2learn/d2x": {
+      "at": 1786030623,
+      "body": {
+        "description": "一个交互式教程项目搭建工具",
+        "homepage": "",
+        "language": "C++",
+        "license": "Apache-2.0",
+        "owner": "d2learn",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/178715260?v=4",
+        "owner_url": "https://github.com/d2learn",
+        "slug": "d2learn/d2x",
+        "stars": 2,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/dirk-thomas/vcstool": {
+      "at": 1786030675,
+      "body": {
+        "description": "Vcstool is a command line tool designed to make working with multiple repositories easier",
+        "homepage": "",
+        "language": "Python",
+        "license": "Apache-2.0",
+        "owner": "dirk-thomas",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/1335366?v=4",
+        "owner_url": "https://github.com/dirk-thomas",
+        "slug": "dirk-thomas/vcstool",
+        "stars": 501,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/dotnet/sdk": {
+      "at": 1786030623,
+      "body": {
+        "description": "Core functionality needed to create .NET Core projects, that is shared between Visual Studio and CLI",
+        "homepage": "https://dot.net/core",
+        "language": "C#",
+        "license": "MIT",
+        "owner": "dotnet",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/9141961?v=4",
+        "owner_url": "https://github.com/dotnet",
+        "slug": "dotnet/sdk",
+        "stars": 3181,
+        "topics": [
+          "cli",
+          "dotnet",
+          "sdk",
+          "visual-studio"
+        ]
+      }
+    },
+    "https://api.github.com/repos/face-hh/griddycode": {
+      "at": 1786030637,
+      "body": {
+        "description": "A code editor made with Godot. Code has never been more lit!",
+        "homepage": "",
+        "language": "Lua",
+        "license": "Apache-2.0",
+        "owner": "face-hh",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/69168154?v=4",
+        "owner_url": "https://github.com/face-hh",
+        "slug": "face-hh/griddycode",
+        "stars": 2200,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/farion1231/cc-switch": {
+      "at": 1786030617,
+      "body": {
+        "description": "A cross-platform desktop All-in-One assistant for Claude Code, Codex, OpenCode, OpenClaw, Grok Build & Hermes Agent. Only official website: ccswitch.io",
+        "homepage": "https://ccswitch.io",
+        "language": "Rust",
+        "license": "MIT",
+        "owner": "farion1231",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/44939412?v=4",
+        "owner_url": "https://github.com/farion1231",
+        "slug": "farion1231/cc-switch",
+        "stars": 125089,
+        "topics": [
+          "ai-tools",
+          "claude-code",
+          "codex",
+          "desktop-app",
+          "grok",
+          "grokbuild",
+          "hermes",
+          "hermes-agent",
+          "mcp",
+          "open-source",
+          "openclaw",
+          "openclaw-ui",
+          "opencode",
+          "provider-management",
+          "rust",
+          "skills",
+          "skills-management",
+          "tauri",
+          "typescript",
+          "wsl-support"
+        ]
+      }
+    },
+    "https://api.github.com/repos/fish-shell/fish-shell": {
+      "at": 1786030625,
+      "body": {
+        "description": "The user-friendly command line shell.",
+        "homepage": "https://fishshell.com",
+        "language": "Rust",
+        "license": "NOASSERTION",
+        "owner": "fish-shell",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/1828073?v=4",
+        "owner_url": "https://github.com/fish-shell",
+        "slug": "fish-shell/fish-shell",
+        "stars": 33986,
+        "topics": [
+          "fish",
+          "rust",
+          "shell",
+          "terminal"
+        ]
+      }
+    },
+    "https://api.github.com/repos/fribidi/fribidi": {
+      "at": 1786030626,
+      "body": {
+        "description": "GNU FriBidi",
+        "homepage": "",
+        "language": "C",
+        "license": "LGPL-2.1",
+        "owner": "fribidi",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/24780864?v=4",
+        "owner_url": "https://github.com/fribidi",
+        "slug": "fribidi/fribidi",
+        "stars": 430,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/gcc-mirror/gcc": {
+      "at": 1786030612,
+      "body": {
+        "description": "",
+        "homepage": "",
+        "language": "C++",
+        "license": "GPL-2.0",
+        "owner": "gcc-mirror",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/8382043?v=4",
+        "owner_url": "https://github.com/gcc-mirror",
+        "slug": "gcc-mirror/gcc",
+        "stars": 11119,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/git/git": {
+      "at": 1786030627,
+      "body": {
+        "description": "Git Source Code Mirror - This is a publish-only repository but pull requests can be turned into patches to the mailing list via GitGitGadget (https://gitgitgadget.github.io/). Please follow Documentation/SubmittingPatches procedure for any of your improvements.",
+        "homepage": "",
+        "language": "C",
+        "license": "NOASSERTION",
+        "owner": "git",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/18133?v=4",
+        "owner_url": "https://github.com/git",
+        "slug": "git/git",
+        "stars": 62432,
+        "topics": [
+          "c",
+          "hacktoberfest",
+          "shell"
+        ]
+      }
+    },
+    "https://api.github.com/repos/glennrp/libpng": {
+      "at": 1786030649,
+      "body": {
+        "description": "LIBPNG: Portable Network Graphics support, official libpng repository",
+        "homepage": "http://libpng.sf.net",
+        "language": "C",
+        "license": "NOASSERTION",
+        "owner": "pnggroup",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/48779779?v=4",
+        "owner_url": "https://github.com/pnggroup",
+        "slug": "pnggroup/libpng",
+        "stars": 1637,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/godotengine/godot": {
+      "at": 1786030636,
+      "body": {
+        "description": "Godot Engine – Multi-platform 2D and 3D game engine",
+        "homepage": "https://godotengine.org",
+        "language": "C++",
+        "license": "MIT",
+        "owner": "godotengine",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/6318500?v=4",
+        "owner_url": "https://github.com/godotengine",
+        "slug": "godotengine/godot",
+        "stars": 115252,
+        "topics": [
+          "game-development",
+          "game-engine",
+          "gamedev",
+          "godot",
+          "godotengine",
+          "multi-platform",
+          "open-source"
+        ]
+      }
+    },
+    "https://api.github.com/repos/golang/go": {
+      "at": 1786030634,
+      "body": {
+        "description": "The Go programming language",
+        "homepage": "https://go.dev",
+        "language": "Go",
+        "license": "BSD-3-Clause",
+        "owner": "golang",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/4314092?v=4",
+        "owner_url": "https://github.com/golang",
+        "slug": "golang/go",
+        "stars": 135651,
+        "topics": [
+          "go",
+          "golang",
+          "language",
+          "programming-language"
+        ]
+      }
+    },
+    "https://api.github.com/repos/harfbuzz/harfbuzz": {
+      "at": 1786030637,
+      "body": {
+        "description": "HarfBuzz text shaping engine",
+        "homepage": "http://harfbuzz.github.io/",
+        "language": "C++",
+        "license": "NOASSERTION",
+        "owner": "harfbuzz",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/33817416?v=4",
+        "owner_url": "https://github.com/harfbuzz",
+        "slug": "harfbuzz/harfbuzz",
+        "stars": 5979,
+        "topics": [
+          "aat",
+          "c",
+          "c-plus-plus",
+          "fonts",
+          "gpu",
+          "opentype",
+          "text-rendering",
+          "text-shaping",
+          "typography",
+          "unicode",
+          "variable-fonts"
+        ]
+      }
+    },
+    "https://api.github.com/repos/ip7z/7zip": {
+      "at": 1786030611,
+      "body": {
+        "description": "7-Zip",
+        "homepage": "",
+        "language": "C++",
+        "license": "",
+        "owner": "ip7z",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/87184205?v=4",
+        "owner_url": "https://github.com/ip7z",
+        "slug": "ip7z/7zip",
+        "stars": 3658,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/jqlang/jq": {
+      "at": 1786030646,
+      "body": {
+        "description": "Command-line JSON processor",
+        "homepage": "https://jqlang.org",
+        "language": "C",
+        "license": "NOASSERTION",
+        "owner": "jqlang",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/104800540?v=4",
+        "owner_url": "https://github.com/jqlang",
+        "slug": "jqlang/jq",
+        "stars": 35404,
+        "topics": [
+          "jq"
+        ]
+      }
+    },
+    "https://api.github.com/repos/junegunn/fzf": {
+      "at": 1786030626,
+      "body": {
+        "description": ":cherry_blossom: A command-line fuzzy finder",
+        "homepage": "https://junegunn.github.io/fzf/",
+        "language": "Go",
+        "license": "MIT",
+        "owner": "junegunn",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/700826?v=4",
+        "owner_url": "https://github.com/junegunn",
+        "slug": "junegunn/fzf",
+        "stars": 82397,
+        "topics": [
+          "bash",
+          "cli",
+          "fish",
+          "fzf",
+          "go",
+          "neovim",
+          "tmux",
+          "unix",
+          "vim",
+          "zsh"
+        ]
+      }
+    },
+    "https://api.github.com/repos/libexpat/libexpat": {
+      "at": 1786030624,
+      "body": {
+        "description": ":herb: Fast streaming XML parser written in C99 with >90% test coverage; moved from SourceForge to GitHub",
+        "homepage": "https://libexpat.github.io/",
+        "language": "C",
+        "license": "MIT",
+        "owner": "libexpat",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/20887397?v=4",
+        "owner_url": "https://github.com/libexpat",
+        "slug": "libexpat/libexpat",
+        "stars": 1362,
+        "topics": [
+          "c",
+          "c99",
+          "expat",
+          "expat-xml-parser",
+          "library",
+          "siphash",
+          "streaming-parser",
+          "xml",
+          "xml-parser",
+          "xml-parser-library",
+          "xml-parsing"
+        ]
+      }
+    },
+    "https://api.github.com/repos/libffi/libffi": {
+      "at": 1786030647,
+      "body": {
+        "description": "A portable foreign-function interface library.",
+        "homepage": "http://sourceware.org/libffi",
+        "language": "C",
+        "license": "NOASSERTION",
+        "owner": "libffi",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/7063475?v=4",
+        "owner_url": "https://github.com/libffi",
+        "slug": "libffi/libffi",
+        "stars": 4339,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/llvm/llvm-project": {
+      "at": 1786030648,
+      "body": {
+        "description": "The LLVM Project is a collection of modular and reusable compiler and toolchain technologies.",
+        "homepage": "http://llvm.org",
+        "language": "LLVM",
+        "license": "NOASSERTION",
+        "owner": "llvm",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/17149993?v=4",
+        "owner_url": "https://github.com/llvm",
+        "slug": "llvm/llvm-project",
+        "stars": 39656,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/madler/zlib": {
+      "at": 1786030678,
+      "body": {
+        "description": "A massively spiffy yet delicately unobtrusive compression library.",
+        "homepage": "http://zlib.net/",
+        "language": "C",
+        "license": "NOASSERTION",
+        "owner": "madler",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/240717?v=4",
+        "owner_url": "https://github.com/madler",
+        "slug": "madler/zlib",
+        "stars": 7001,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/mcpp-community/mcpp": {
+      "at": 1786030652,
+      "body": {
+        "description": "A modern C++ module-first build tool — written in pure C++23 modules, fully self-hosted / 一个 现代C++ 模块化构建工具 — 纯 C++23 模块编写(已实现自举) ",
+        "homepage": "",
+        "language": "C++",
+        "license": "Apache-2.0",
+        "owner": "mcpp-community",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/247994312?v=4",
+        "owner_url": "https://github.com/mcpp-community",
+        "slug": "mcpp-community/mcpp",
+        "stars": 91,
+        "topics": [
+          "build-tool",
+          "cpp",
+          "cpp23",
+          "mcpp",
+          "toolchain"
+        ]
+      }
+    },
+    "https://api.github.com/repos/mcpp-community/mcpp/contributors?per_page=30": {
+      "at": 1786030690,
+      "body": [
+        {
+          "avatar": "https://avatars.githubusercontent.com/u/38786181?v=4",
+          "contributions": 434,
+          "login": "Sunrisepeak",
+          "url": "https://github.com/Sunrisepeak"
+        },
+        {
+          "avatar": "https://avatars.githubusercontent.com/u/248744407?v=4",
+          "contributions": 30,
+          "login": "speak-agent",
+          "url": "https://github.com/speak-agent"
+        },
+        {
+          "avatar": "https://avatars.githubusercontent.com/u/194236111?v=4",
+          "contributions": 4,
+          "login": "ZheFeng7110",
+          "url": "https://github.com/ZheFeng7110"
+        },
+        {
+          "avatar": "https://avatars.githubusercontent.com/u/96378453?v=4",
+          "contributions": 2,
+          "login": "wellwei",
+          "url": "https://github.com/wellwei"
+        },
+        {
+          "avatar": "https://avatars.githubusercontent.com/u/86313530?v=4",
+          "contributions": 1,
+          "login": "xv1rcn",
+          "url": "https://github.com/xv1rcn"
+        },
+        {
+          "avatar": "https://avatars.githubusercontent.com/u/67222274?v=4",
+          "contributions": 1,
+          "login": "HalfAnElephant",
+          "url": "https://github.com/HalfAnElephant"
+        },
+        {
+          "avatar": "https://avatars.githubusercontent.com/u/119092375?v=4",
+          "contributions": 1,
+          "login": "yizhinailong",
+          "url": "https://github.com/yizhinailong"
+        }
+      ]
+    },
+    "https://api.github.com/repos/microsoft/vscode": {
+      "at": 1786030620,
+      "body": {
+        "description": "Visual Studio Code",
+        "homepage": "https://code.visualstudio.com",
+        "language": "TypeScript",
+        "license": "MIT",
+        "owner": "microsoft",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/6154722?v=4",
+        "owner_url": "https://github.com/microsoft",
+        "slug": "microsoft/vscode",
+        "stars": 188438,
+        "topics": [
+          "editor",
+          "electron",
+          "microsoft",
+          "typescript",
+          "visual-studio-code"
+        ]
+      }
+    },
+    "https://api.github.com/repos/mingw-w64/mingw-w64": {
+      "at": 1786030654,
+      "body": {
+        "description": "(Unofficial) Mirror of mingw-w64-code",
+        "homepage": "https://mingw-w64.org/",
+        "language": "C",
+        "license": "NOASSERTION",
+        "owner": "mingw-w64",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/12658362?v=4",
+        "owner_url": "https://github.com/mingw-w64",
+        "slug": "mingw-w64/mingw-w64",
+        "stars": 580,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/neovim/neovim": {
+      "at": 1786030659,
+      "body": {
+        "description": "Vim-fork focused on extensibility and usability",
+        "homepage": "https://neovim.io",
+        "language": "Vim Script",
+        "license": "NOASSERTION",
+        "owner": "neovim",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/6471485?v=4",
+        "owner_url": "https://github.com/neovim",
+        "slug": "neovim/neovim",
+        "stars": 101652,
+        "topics": [
+          "api",
+          "c",
+          "lua",
+          "neovim",
+          "nvim",
+          "text-editor",
+          "vim"
+        ]
+      }
+    },
+    "https://api.github.com/repos/netwide-assembler/nasm": {
+      "at": 1786030656,
+      "body": {
+        "description": "A cross-platform x86 assembler with an Intel-like syntax",
+        "homepage": "https://www.nasm.us/",
+        "language": "Assembly",
+        "license": "NOASSERTION",
+        "owner": "netwide-assembler",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/38181986?v=4",
+        "owner_url": "https://github.com/netwide-assembler",
+        "slug": "netwide-assembler/nasm",
+        "stars": 3278,
+        "topics": [
+          "assembler",
+          "assembler-x86",
+          "assemblers",
+          "nasm",
+          "nasm-assembler",
+          "nasm-language",
+          "x86"
+        ]
+      }
+    },
+    "https://api.github.com/repos/ninja-build/ninja": {
+      "at": 1786030657,
+      "body": {
+        "description": "a small build system with a focus on speed",
+        "homepage": "https://ninja-build.org/",
+        "language": "C++",
+        "license": "Apache-2.0",
+        "owner": "ninja-build",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/11653218?v=4",
+        "owner_url": "https://github.com/ninja-build",
+        "slug": "ninja-build/ninja",
+        "stars": 13120,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/nodejs/node": {
+      "at": 1786030658,
+      "body": {
+        "description": "Node.js JavaScript runtime ✨🐢🚀✨",
+        "homepage": "https://nodejs.org",
+        "language": "JavaScript",
+        "license": "NOASSERTION",
+        "owner": "nodejs",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/9950313?v=4",
+        "owner_url": "https://github.com/nodejs",
+        "slug": "nodejs/node",
+        "stars": 118803,
+        "topics": [
+          "javascript",
+          "js",
+          "linux",
+          "macos",
+          "mit",
+          "node",
+          "nodejs",
+          "runtime",
+          "windows"
+        ]
+      }
+    },
+    "https://api.github.com/repos/npm/cli": {
+      "at": 1786030659,
+      "body": {
+        "description": "the package manager for JavaScript",
+        "homepage": "https://docs.npmjs.com/cli/",
+        "language": "JavaScript",
+        "license": "NOASSERTION",
+        "owner": "npm",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/6078720?v=4",
+        "owner_url": "https://github.com/npm",
+        "slug": "npm/cli",
+        "stars": 10004,
+        "topics": [
+          "javascript",
+          "nodejs",
+          "npm",
+          "npm-cli",
+          "package-manager",
+          "tools"
+        ]
+      }
+    },
+    "https://api.github.com/repos/nvm-sh/nvm": {
+      "at": 1786030660,
+      "body": {
+        "description": "Node Version Manager - POSIX-compliant bash script to manage multiple active node.js versions",
+        "homepage": "",
+        "language": "Shell",
+        "license": "MIT",
+        "owner": "nvm-sh",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/49963700?v=4",
+        "owner_url": "https://github.com/nvm-sh",
+        "slug": "nvm-sh/nvm",
+        "stars": 94353,
+        "topics": [
+          "bash",
+          "install",
+          "lts",
+          "node",
+          "node-js",
+          "nodejs",
+          "nvm",
+          "nvmrc",
+          "posix",
+          "posix-compliant",
+          "shell",
+          "version-manager",
+          "zsh"
+        ]
+      }
+    },
+    "https://api.github.com/repos/ollama/ollama": {
+      "at": 1786030661,
+      "body": {
+        "description": "Get up and running with Kimi-K2.6, GLM-5.2, MiniMax, DeepSeek, gpt-oss, Qwen, Gemma and other models.",
+        "homepage": "https://ollama.com",
+        "language": "Go",
+        "license": "MIT",
+        "owner": "ollama",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/151674099?v=4",
+        "owner_url": "https://github.com/ollama",
+        "slug": "ollama/ollama",
+        "stars": 177930,
+        "topics": [
+          "deepseek",
+          "gemma",
+          "gemma3",
+          "glm",
+          "go",
+          "golang",
+          "gpt-oss",
+          "llama",
+          "llama3",
+          "llm",
+          "llms",
+          "minimax",
+          "mistral",
+          "ollama",
+          "qwen"
+        ]
+      }
+    },
+    "https://api.github.com/repos/openai/codex": {
+      "at": 1786030621,
+      "body": {
+        "description": "Lightweight coding agent that runs in your terminal",
+        "homepage": "",
+        "language": "Rust",
+        "license": "Apache-2.0",
+        "owner": "openai",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/14957082?v=4",
+        "owner_url": "https://github.com/openai",
+        "slug": "openai/codex",
+        "stars": 104388,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/openclaw/openclaw": {
+      "at": 1786030662,
+      "body": {
+        "description": "Your own personal AI assistant. Any OS. Any Platform. The lobster way. 🦞 ",
+        "homepage": "https://openclaw.ai",
+        "language": "TypeScript",
+        "license": "NOASSERTION",
+        "owner": "openclaw",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/252820863?v=4",
+        "owner_url": "https://github.com/openclaw",
+        "slug": "openclaw/openclaw",
+        "stars": 385362,
+        "topics": [
+          "ai",
+          "assistant",
+          "crustacean",
+          "molty",
+          "openclaw",
+          "own-your-data",
+          "personal"
+        ]
+      }
+    },
+    "https://api.github.com/repos/openssl/openssl": {
+      "at": 1786030663,
+      "body": {
+        "description": "General purpose TLS and crypto library",
+        "homepage": "https://openssl-library.org/",
+        "language": "C",
+        "license": "Apache-2.0",
+        "owner": "openssl",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/3279138?v=4",
+        "owner_url": "https://github.com/openssl",
+        "slug": "openssl/openssl",
+        "stars": 30566,
+        "topics": [
+          "cryptography",
+          "decryption",
+          "encryption",
+          "openssl",
+          "ssl",
+          "tls"
+        ]
+      }
+    },
+    "https://api.github.com/repos/openxlings/xim-pkgindex": {
+      "at": 1786030622,
+      "body": {
+        "description": "xim package index",
+        "homepage": "https://xlings.d2learn.org",
+        "language": "Lua",
+        "license": "Apache-2.0",
+        "owner": "openxlings",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/266796665?v=4",
+        "owner_url": "https://github.com/openxlings",
+        "slug": "openxlings/xim-pkgindex",
+        "stars": 7,
+        "topics": [
+          "configuration",
+          "installer",
+          "package-index",
+          "package-manager",
+          "xim",
+          "xlings"
+        ]
+      }
+    },
+    "https://api.github.com/repos/openxlings/xim-pkgindex/commits?per_page=100&page=1": {
+      "at": 1786030681,
+      "body": {
+        "FarnaHerry|108510510+FarnaHerry@users.noreply.github.com": "FarnaHerry",
+        "SPeak|speakshen@163.com": "Sunrisepeak",
+        "Sunrisepeak|x.d2learn.org@gmail.com": "speak-agent"
+      }
+    },
+    "https://api.github.com/repos/openxlings/xim-pkgindex/commits?per_page=100&page=2": {
+      "at": 1786030683,
+      "body": {
+        "Heptazero|109618330+Heptazero@users.noreply.github.com": "Heptazero",
+        "SPeak|speakshen@163.com": "Sunrisepeak",
+        "sunrisepeak|x.d2learn.org@gmail.com": "speak-agent"
+      }
+    },
+    "https://api.github.com/repos/openxlings/xim-pkgindex/commits?per_page=100&page=3": {
+      "at": 1786030685,
+      "body": {
+        "SPeak|speakshen@163.com": "Sunrisepeak",
+        "Sunrisepeak|x.d2learn.org@gmail.com": "speak-agent",
+        "sunrisepeak|speakshen@163.com": "Sunrisepeak",
+        "sunrisepeak|x.d2learn.org@gmail.com": "speak-agent"
+      }
+    },
+    "https://api.github.com/repos/openxlings/xim-pkgindex/commits?per_page=100&page=4": {
+      "at": 1786030686,
+      "body": {
+        "SPeak|speakshen@163.com": "Sunrisepeak",
+        "sunrisepeak|speakshen@163.com": "Sunrisepeak"
+      }
+    },
+    "https://api.github.com/repos/openxlings/xim-pkgindex/commits?per_page=100&page=5": {
+      "at": 1786030687,
+      "body": {
+        "SPeak|speakshen@163.com": "Sunrisepeak",
+        "github-actions[bot]|41898282+github-actions[bot]@users.noreply.github.com": "github-actions[bot]",
+        "sunrisepeak|speakshen@163.com": "Sunrisepeak"
+      }
+    },
+    "https://api.github.com/repos/openxlings/xim-pkgindex/contributors?per_page=30": {
+      "at": 1786030689,
+      "body": [
+        {
+          "avatar": "https://avatars.githubusercontent.com/u/38786181?v=4",
+          "contributions": 699,
+          "login": "Sunrisepeak",
+          "url": "https://github.com/Sunrisepeak"
+        },
+        {
+          "avatar": "https://avatars.githubusercontent.com/u/248744407?v=4",
+          "contributions": 22,
+          "login": "speak-agent",
+          "url": "https://github.com/speak-agent"
+        },
+        {
+          "avatar": "https://avatars.githubusercontent.com/in/15368?v=4",
+          "contributions": 7,
+          "login": "github-actions[bot]",
+          "url": "https://github.com/apps/github-actions"
+        },
+        {
+          "avatar": "https://avatars.githubusercontent.com/u/64307394?v=4",
+          "contributions": 6,
+          "login": "MoYingJi",
+          "url": "https://github.com/MoYingJi"
+        },
+        {
+          "avatar": "https://avatars.githubusercontent.com/u/108510510?v=4",
+          "contributions": 4,
+          "login": "FarnaHerry",
+          "url": "https://github.com/FarnaHerry"
+        },
+        {
+          "avatar": "https://avatars.githubusercontent.com/u/74493337?v=4",
+          "contributions": 2,
+          "login": "2412322029",
+          "url": "https://github.com/2412322029"
+        },
+        {
+          "avatar": "https://avatars.githubusercontent.com/u/109618330?v=4",
+          "contributions": 1,
+          "login": "Heptazero",
+          "url": "https://github.com/Heptazero"
+        }
+      ]
+    },
+    "https://api.github.com/repos/openxlings/xlings": {
+      "at": 1786030688,
+      "body": {
+        "description": "Universal package infrastructure with OS-like SubOS isolation - Multi-version · Rootless · Decentralized Index · Agent-ready.",
+        "homepage": "https://openxlings.github.io",
+        "language": "C++",
+        "license": "Apache-2.0",
+        "owner": "openxlings",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/266796665?v=4",
+        "owner_url": "https://github.com/openxlings",
+        "slug": "openxlings/xlings",
+        "stars": 599,
+        "topics": [
+          "ai",
+          "auto-configuration",
+          "auto-detect",
+          "d2x",
+          "demos",
+          "installer",
+          "llm-application",
+          "package-manager",
+          "project-management",
+          "tools",
+          "version-manager",
+          "xlings"
+        ]
+      }
+    },
+    "https://api.github.com/repos/openxlings/xlings/contributors?per_page=30": {
+      "at": 1786030689,
+      "body": [
+        {
+          "avatar": "https://avatars.githubusercontent.com/u/38786181?v=4",
+          "contributions": 619,
+          "login": "Sunrisepeak",
+          "url": "https://github.com/Sunrisepeak"
+        },
+        {
+          "avatar": "https://avatars.githubusercontent.com/u/248744407?v=4",
+          "contributions": 25,
+          "login": "speak-agent",
+          "url": "https://github.com/speak-agent"
+        },
+        {
+          "avatar": "https://avatars.githubusercontent.com/u/64307394?v=4",
+          "contributions": 6,
+          "login": "MoYingJi",
+          "url": "https://github.com/MoYingJi"
+        },
+        {
+          "avatar": "https://avatars.githubusercontent.com/in/1143301?v=4",
+          "contributions": 1,
+          "login": "Copilot",
+          "url": "https://github.com/apps/copilot-swe-agent"
+        },
+        {
+          "avatar": "https://avatars.githubusercontent.com/u/33739170?v=4",
+          "contributions": 1,
+          "login": "zzxzzk115",
+          "url": "https://github.com/zzxzzk115"
+        },
+        {
+          "avatar": "https://avatars.githubusercontent.com/u/194236111?v=4",
+          "contributions": 1,
+          "login": "ZheFeng7110",
+          "url": "https://github.com/ZheFeng7110"
+        }
+      ]
+    },
+    "https://api.github.com/repos/oven-sh/bun": {
+      "at": 1786030615,
+      "body": {
+        "description": "Incredibly fast JavaScript runtime, bundler, test runner, and package manager – all in one",
+        "homepage": "https://bun.com",
+        "language": "Rust",
+        "license": "NOASSERTION",
+        "owner": "oven-sh",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/108928776?v=4",
+        "owner_url": "https://github.com/oven-sh",
+        "slug": "oven-sh/bun",
+        "stars": 95300,
+        "topics": [
+          "bun",
+          "bundler",
+          "javascript",
+          "javascriptcore",
+          "jsx",
+          "nodejs",
+          "npm",
+          "react",
+          "rust",
+          "rust-lang",
+          "transpiler",
+          "typescript"
+        ]
+      }
+    },
+    "https://api.github.com/repos/pnpm/pnpm": {
+      "at": 1786030666,
+      "body": {
+        "description": "Fast, disk space efficient package manager",
+        "homepage": "https://pnpm.io",
+        "language": "Rust",
+        "license": "MIT",
+        "owner": "pnpm",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/21320719?v=4",
+        "owner_url": "https://github.com/pnpm",
+        "slug": "pnpm/pnpm",
+        "stars": 35988,
+        "topics": [
+          "dependency-manager",
+          "install",
+          "javascript",
+          "modules",
+          "node",
+          "nodejs",
+          "npm",
+          "package-manager"
+        ]
+      }
+    },
+    "https://api.github.com/repos/proot-me/proot": {
+      "at": 1786030668,
+      "body": {
+        "description": "chroot, mount --bind, and binfmt_misc without privilege/setup for Linux",
+        "homepage": "https://proot-me.github.io",
+        "language": "C",
+        "license": "GPL-2.0",
+        "owner": "proot-me",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/12125707?v=4",
+        "owner_url": "https://github.com/proot-me",
+        "slug": "proot-me/proot",
+        "stars": 2570,
+        "topics": [
+          "c",
+          "chroot",
+          "chroot-environment",
+          "hacktoberfest",
+          "linux",
+          "ptrace",
+          "rootfs",
+          "syscalls",
+          "userland-exec"
+        ]
+      }
+    },
+    "https://api.github.com/repos/python/cpython": {
+      "at": 1786030669,
+      "body": {
+        "description": "The Python programming language",
+        "homepage": "https://www.python.org",
+        "language": "Python",
+        "license": "NOASSERTION",
+        "owner": "python",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/1525981?v=4",
+        "owner_url": "https://github.com/python",
+        "slug": "python/cpython",
+        "stars": 74213,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/richfelker/musl-cross-make": {
+      "at": 1786030655,
+      "body": {
+        "description": "Simple makefile-based build for musl cross compiler",
+        "homepage": "",
+        "language": "Makefile",
+        "license": "MIT",
+        "owner": "richfelker",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/10458007?v=4",
+        "owner_url": "https://github.com/richfelker",
+        "slug": "richfelker/musl-cross-make",
+        "stars": 1574,
+        "topics": [
+          "binutils",
+          "cross-compiler",
+          "gcc",
+          "musl",
+          "musl-cross",
+          "target-musl",
+          "toolchain"
+        ]
+      }
+    },
+    "https://api.github.com/repos/ros-infrastructure/rosdep": {
+      "at": 1786030671,
+      "body": {
+        "description": "rosdep multi-package manager system dependency tool",
+        "homepage": "http://ros.org/wiki/rosdep",
+        "language": "Python",
+        "license": "BSD-3-Clause",
+        "owner": "ros-infrastructure",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/2328632?v=4",
+        "owner_url": "https://github.com/ros-infrastructure",
+        "slug": "ros-infrastructure/rosdep",
+        "stars": 93,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/ros2/ros2": {
+      "at": 1786030670,
+      "body": {
+        "description": "The Robot Operating System, is a meta operating system for robots.",
+        "homepage": "https://docs.ros.org",
+        "language": "",
+        "license": "",
+        "owner": "ros2",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/3979232?v=4",
+        "owner_url": "https://github.com/ros2",
+        "slug": "ros2/ros2",
+        "stars": 5864,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/rust-lang/mdBook": {
+      "at": 1786030652,
+      "body": {
+        "description": "Create book from markdown files. Like Gitbook but implemented in Rust",
+        "homepage": "https://rust-lang.github.io/mdBook/",
+        "language": "Rust",
+        "license": "MPL-2.0",
+        "owner": "rust-lang",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/5430905?v=4",
+        "owner_url": "https://github.com/rust-lang",
+        "slug": "rust-lang/mdBook",
+        "stars": 22049,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/ryanoasis/nerd-fonts": {
+      "at": 1786030645,
+      "body": {
+        "description": "Iconic font aggregator, collection, & patcher. 3,600+ icons, 50+ patched fonts: Hack, Source Code Pro, more. Glyph collections: Font Awesome, Material Design Icons, Octicons, & more",
+        "homepage": "https://NerdFonts.com",
+        "language": "CSS",
+        "license": "NOASSERTION",
+        "owner": "ryanoasis",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/8083459?v=4",
+        "owner_url": "https://github.com/ryanoasis",
+        "slug": "ryanoasis/nerd-fonts",
+        "stars": 64017,
+        "topics": [
+          "font",
+          "font-awesome",
+          "fonts",
+          "hacktoberfest",
+          "icon-font",
+          "iconic-fonts",
+          "octicons",
+          "patched-fonts",
+          "patcher",
+          "powerline",
+          "python",
+          "shell",
+          "statusline"
+        ]
+      }
+    },
+    "https://api.github.com/repos/sansan0/TrendRadar": {
+      "at": 1786030674,
+      "body": {
+        "description": "⭐AI-driven public opinion & trend monitor with multi-platform aggregation, RSS, and smart alerts.🎯 告别信息过载，你的 AI 舆情监控助手与热点筛选工具！聚合多平台热点 +  RSS 订阅，支持关键词精准筛选。AI 智能筛选新闻 + AI 翻译 +  AI 分析简报直推手机，也支持接入 MCP 架构，赋能 AI 自然语言对话分析、情感洞察与趋势预测等。支持 Docker ，数据本地/云端自持。集成微信/飞书/钉钉/Telegram/邮件/ntfy/bark/slack 等渠道智能推送。",
+        "homepage": "https://trendradar.sandev.cc",
+        "language": "Python",
+        "license": "GPL-3.0",
+        "owner": "sansan0",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/77180927?v=4",
+        "owner_url": "https://github.com/sansan0",
+        "slug": "sansan0/TrendRadar",
+        "stars": 61222,
+        "topics": [
+          "ai",
+          "bark",
+          "data-analysis",
+          "docker",
+          "hot-news",
+          "llm",
+          "mail",
+          "mcp",
+          "mcp-server",
+          "news",
+          "ntfy",
+          "python",
+          "rss",
+          "trending-topics",
+          "wechat",
+          "wework"
+        ]
+      }
+    },
+    "https://api.github.com/repos/sharkdp/bat": {
+      "at": 1786030614,
+      "body": {
+        "description": "A cat(1) clone with wings.",
+        "homepage": "",
+        "language": "Rust",
+        "license": "Apache-2.0",
+        "owner": "sharkdp",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/4209276?v=4",
+        "owner_url": "https://github.com/sharkdp",
+        "slug": "sharkdp/bat",
+        "stars": 60125,
+        "topics": [
+          "cli",
+          "command-line",
+          "git",
+          "hacktoberfest",
+          "rust",
+          "syntax-highlighting",
+          "terminal",
+          "tool"
+        ]
+      }
+    },
+    "https://api.github.com/repos/sxyazi/yazi": {
+      "at": 1786030678,
+      "body": {
+        "description": "💥 Blazing fast terminal file manager written in Rust, based on async I/O.",
+        "homepage": "https://yazi-rs.github.io",
+        "language": "Rust",
+        "license": "MIT",
+        "owner": "sxyazi",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/17523360?v=4",
+        "owner_url": "https://github.com/sxyazi",
+        "slug": "sxyazi/yazi",
+        "stars": 41103,
+        "topics": [
+          "android",
+          "asyncio",
+          "cli",
+          "command-line",
+          "concurrency",
+          "cross-platform",
+          "developer-tools",
+          "file-explorer",
+          "file-manager",
+          "filesystem",
+          "linux",
+          "macos",
+          "neovim",
+          "productivity",
+          "rust",
+          "terminal",
+          "tui",
+          "vim",
+          "windows"
+        ]
+      }
+    },
+    "https://api.github.com/repos/torvalds/linux": {
+      "at": 1786030651,
+      "body": {
+        "description": "Linux kernel source tree",
+        "homepage": "",
+        "language": "C",
+        "license": "NOASSERTION",
+        "owner": "torvalds",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/1024025?v=4",
+        "owner_url": "https://github.com/torvalds",
+        "slug": "torvalds/linux",
+        "stars": 241970,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/vim/vim": {
+      "at": 1786030676,
+      "body": {
+        "description": "The official Vim repository",
+        "homepage": "https://www.vim.org",
+        "language": "Vim Script",
+        "license": "Vim",
+        "owner": "vim",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/11618545?v=4",
+        "owner_url": "https://github.com/vim",
+        "slug": "vim/vim",
+        "stars": 40730,
+        "topics": [
+          "c",
+          "cross-platform",
+          "text-editor",
+          "vim"
+        ]
+      }
+    },
+    "https://api.github.com/repos/xkbcommon/libxkbcommon": {
+      "at": 1786030650,
+      "body": {
+        "description": "keymap handling library for toolkits and window systems",
+        "homepage": "https://xkbcommon.org",
+        "language": "C",
+        "license": "NOASSERTION",
+        "owner": "xkbcommon",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/4028784?v=4",
+        "owner_url": "https://github.com/xkbcommon",
+        "slug": "xkbcommon/libxkbcommon",
+        "stars": 366,
+        "topics": [
+          "keyboard",
+          "keyboard-layout",
+          "keymap",
+          "wayland",
+          "x11",
+          "xkb",
+          "xkbcommon"
+        ]
+      }
+    },
+    "https://api.github.com/repos/xlings-res/interposer-stub": {
+      "at": 1786030640,
+      "body": {
+        "description": "Prebuilt empty ELF stubs for elfpatch.host_link_interposer (AD-12). One per arch; libc-agnostic (-nostdlib, no DT_NEEDED).",
+        "homepage": "",
+        "language": "",
+        "license": "",
+        "owner": "xlings-res",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/209817236?v=4",
+        "owner_url": "https://github.com/xlings-res",
+        "slug": "xlings-res/interposer-stub",
+        "stars": 0,
+        "topics": []
+      }
+    },
+    "https://api.github.com/repos/xmake-io/xmake": {
+      "at": 1786030677,
+      "body": {
+        "description": "🔥 A cross-platform build utility based on Lua",
+        "homepage": "https://xmake.io",
+        "language": "Lua",
+        "license": "Apache-2.0",
+        "owner": "xmake-io",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/47437979?v=4",
+        "owner_url": "https://github.com/xmake-io",
+        "slug": "xmake-io/xmake",
+        "stars": 12132,
+        "topics": [
+          "build",
+          "build-tool",
+          "c",
+          "c-plus-plus",
+          "cmake",
+          "cross-toolchains",
+          "linux",
+          "lua",
+          "makefile",
+          "objective-c",
+          "package-manager",
+          "tbox",
+          "visual-studio",
+          "wdk",
+          "xmake"
+        ]
+      }
+    },
+    "https://api.github.com/repos/zulu-openjdk/zulu-openjdk": {
+      "at": 1786030644,
+      "body": {
+        "description": "Dockerfiles for Zulu OpenJDK",
+        "homepage": "https://registry.hub.docker.com/u/azul/",
+        "language": "Dockerfile",
+        "license": "BSD-3-Clause-Clear",
+        "owner": "zulu-openjdk",
+        "owner_avatar": "https://avatars.githubusercontent.com/u/8518023?v=4",
+        "owner_url": "https://github.com/zulu-openjdk",
+        "slug": "zulu-openjdk/zulu-openjdk",
+        "stars": 286,
+        "topics": []
+      }
+    }
+  },
+  "fetched_at": 1786030690,
+  "schema": 1
+}
