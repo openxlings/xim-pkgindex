@@ -7,7 +7,10 @@ package and what programs to look for afterwards.
 Fields in the output:
   name         package name (string)
   type         package type (e.g. package, app, lib, script, bugfix)
-  namespace    package namespace (defaults to "local" when not declared);
+  namespace    package namespace, EMPTY when not declared — an undeclared
+               namespace means the recipe ships from the primary index repo and
+               is addressed by its bare name (see the mount comment in
+               posix-test.sh);
                install/remove specs must use "<namespace>:<name>"
   programs     list of program names declared by the package
   is_ref       true if this file is a thin ref to another package
@@ -33,7 +36,7 @@ def main() -> int:
     print(json.dumps({
         "name": meta.name,
         "type": meta.pkg_type,
-        "namespace": meta.namespace or "local",
+        "namespace": meta.namespace or "",
         "programs": list(meta.programs),
         "is_ref": bool(meta.is_ref),
         "has_linux": bool(meta.platforms.get("linux")),

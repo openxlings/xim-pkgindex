@@ -4,7 +4,9 @@
 #
 #   1. parse meta (name, has_windows, is_ref) via parse-xpkg-meta.py
 #   2. skip if the package is a thin ref or has no windows branch
-#   3. register: `xlings config --add-xpkg <file>`
+#   3. (no per-package registration: the whole checkout is mounted as the
+#      `xim` index up front, so every recipe is resolvable under the identity
+#      it ships with)
 #   4. snapshot shim + xpkgs state, install, verify new artifacts
 #   5. uninstall, verify artifacts are gone
 
@@ -26,6 +28,21 @@ function Log-Fail  { Write-Host "  [FAIL] $args" -ForegroundColor Red }
 
 $xlingsHome = $env:XLINGS_HOME
 if (-not $xlingsHome) { throw "XLINGS_HOME not set" }
+
+# Mount THIS CHECKOUT as the primary `xim` index, instead of copying single
+# recipes into the local index with `config --add-xpkg`.
+#
+# `--add-xpkg` puts the recipe in a repo whose namespace is hardcoded to
+# "local", so the package under test was addressed as `local:<name>` while in
+# production it ships from `xim` — the PRIMARY repo, whose xvm version-namespace
+# is EMPTY. The test changed the identity of the thing it was testing.
+#
+# Harmless for a self-contained recipe. Not harmless for one that DELEGATES its
+# install to another package: the delegate registers under `xim` (bare version
+# key `15.1.0`) while removing the delegating package looked for `local:15.1.0`,
+# which was never created. `pkgs/g/gcc.lua` on Windows is exactly that shape —
+# it delegates to mingw-w64 — and failed uninstall for a divergence that cannot
+# occur in production.
 $shimDir  = Join-Path $xlingsHome "subos\default\bin"
 $xpkgsDir = Join-Path $xlingsHome "data\xpkgs"
 $xlingsCmd = Join-Path $xlingsHome "bin\xlings.exe"
@@ -35,6 +52,11 @@ if (-not (Test-Path $xlingsCmd)) {
 }
 if (-not (Test-Path $xlingsCmd)) {
     throw "xlings command not found"
+}
+
+& $xlingsCmd config --index-repo "xim:$WorkspaceRoot" 2>&1 | Write-Host
+if ($LASTEXITCODE -ne 0) {
+    throw "failed to mount $WorkspaceRoot as the xim index"
 }
 
 function Get-ShimSet {
@@ -110,7 +132,10 @@ foreach ($relFile in $files) {
         continue
     }
     $meta = $metaJson | ConvertFrom-Json
-    $pkgNs = if ($meta.namespace) { $meta.namespace } else { "local" }
+    # No declared namespace means the recipe ships from the PRIMARY repo, so
+    # it is addressed by its bare name. Defaulting to "local" here is what used
+    # to change the identity of the thing under test — see the mount below.
+    $pkgNs = if ($meta.namespace) { $meta.namespace } else { "" }
     Log-Info "name=$($meta.name)  namespace=$pkgNs  programs=[$($meta.programs -join ',')]  is_ref=$($meta.is_ref)  has_windows=$($meta.has_windows)"
 
     if ($meta.is_ref) {
@@ -139,14 +164,9 @@ foreach ($relFile in $files) {
     $pkgType = if ($meta.type) { $meta.type } else { "package" }
     $expectArtifacts = $pkgType -in @("package", "app", "lib")
 
-    # --- register ---
-    Log-Step "[$pkg] register (type=$pkgType)"
-    & $xlingsCmd config --add-xpkg $luaFile 2>&1 | Write-Host
-    if ($LASTEXITCODE -ne 0) {
-        Log-Fail "config --add-xpkg failed"
-        $failures += "$relFile (register)"
-        continue
-    }
+    # No registration step: the checkout is mounted as the `xim` index before
+    # the loop, so this recipe is already resolvable under its shipping
+    # identity.
 
     # `namespace = "config"` is not a package — it's a bundle of system-side
     # configuration steps (hosts files, fontconfig, PowerShell policy,
@@ -165,7 +185,7 @@ foreach ($relFile in $files) {
     $shimsBefore = Get-ShimSet
     Log-Info "shims before install: $($shimsBefore.Count)"
 
-    $pkgSpec = "${pkgNs}:${pkg}"
+    $pkgSpec = if ($pkgNs) { "${pkgNs}:${pkg}" } else { $pkg }
 
     # --- install ---
     Log-Step "[$pkg] install ($pkgSpec)"
