@@ -77,8 +77,8 @@
   "plugins": [
     ".xpkgindex/plugins/xim.py"
   ],
-  "guides": {
-    "nav_label": "Contribute",
+  "docs": {
+    "nav_label": "Docs",
     "entries": [
       {
         "slug": "contributing",
