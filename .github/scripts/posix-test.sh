@@ -233,6 +233,7 @@ for rel_file in "${files[@]}"; do
 
     step "[$pkg] post-install checks"
     install_dirs=$(pkg_install_dirs "$pkg")
+    installed_version=""
     if [[ -z "$install_dirs" ]]; then
         if $expect_artifacts; then
             log_fail "no install dir matching '*-x-$pkg' under $XPKGS_DIR"
@@ -252,6 +253,10 @@ for rel_file in "${files[@]}"; do
                 fi
             else
                 while IFS= read -r v; do log_pass "install dir: $v"; done <<< "$versions"
+                # Remember what THIS test installed, so the uninstall below can
+                # name it — see the removal step for why a bare name is not
+                # good enough.
+                [[ -n "$installed_version" ]] || installed_version=$(basename "$(printf '%s\n' "$versions" | head -1)")
             fi
         done <<< "$install_dirs"
     fi
@@ -327,8 +332,25 @@ for rel_file in "${files[@]}"; do
         log_pass "loader and libc come from one payload"
     fi
 
-    step "[$pkg] uninstall ($pkg_spec)"
-    if ! "$XLINGS_CMD" remove "$pkg_spec" -y; then
+    # Remove exactly what this test installed, not "whatever is active".
+    #
+    # A bare `remove <name>` makes xim look up the ACTIVE version of that
+    # target, and for a package registered as part of a binding group that value
+    # carries the provider annotation — `15.1.0(mingw-w64-13.0.0)` — which is a
+    # DISPLAY form. Fed back as a lookup key it yields
+    # `package 'gcc@15.1.0(mingw-w64-13.0.0)' not found`.
+    #
+    # Naming the version is also what a lifecycle test should do: it installed
+    # one specific thing, so it should uninstall that thing rather than depend
+    # on ambient active-version state it does not control.
+    if [[ -n "$installed_version" ]]; then
+        remove_spec="${pkg_spec}@${installed_version}"
+    else
+        remove_spec="$pkg_spec"
+    fi
+
+    step "[$pkg] uninstall ($remove_spec)"
+    if ! "$XLINGS_CMD" remove "$remove_spec" -y; then
         log_fail "uninstall failed"; failures+=("$rel_file (uninstall)"); continue
     fi
 
