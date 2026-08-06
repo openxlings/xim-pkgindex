@@ -132,6 +132,20 @@ class TestDesign:
         assert re.search(r'raise\(', code), "install() 必须在 payload 不完整时 raise"
 
     @pytest.mark.static
+    def test_payload_is_copied_not_moved(self):
+        """不能从下载/解压目录 os.mv 出来
+
+        那是 xlings 的共享缓存。第二次装同一个版本时归档还在缓存里、不会被
+        重新解压,上一次 mv 走的东西就永远没了 —— 第一次装成功、之后每次都失败,
+        而且是静默的:安装目录里只剩 `.xpkg.lua`,外层照样打印
+        `✓ 1 package(s) installed`。
+        """
+        code = lua_code()
+        assert not re.search(r'os\.mv\(\s*src\b', code), \
+            "payload 必须 os.cp 而不是 os.mv, 否则重装会失败"
+        assert re.search(r'os\.cp\(\s*src\b', code)
+
+    @pytest.mark.static
     def test_no_os_exists_in_hooks(self):
         """`os.exists` 在 xim hook runtime 里没有绑定
 

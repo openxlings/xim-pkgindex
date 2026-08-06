@@ -215,14 +215,24 @@ function install()
     os.tryrm(pkginfo.install_dir())
     os.mkdir(pkginfo.install_dir())
 
+    -- COPY, never move. That directory is xlings' shared download and
+    -- extraction cache, and it is reused: on a second install of the
+    -- same version the archive is still cached and is NOT re-extracted,
+    -- so anything a previous install moved out is simply gone. Moving
+    -- made the first install work and every later one fail — and fail
+    -- invisibly, because the raise below does not reach the summary and
+    -- the outer command still prints `✓ 1 package(s) installed` over an
+    -- install dir holding nothing but `.xpkg.lua`. Reproduced by
+    -- installing twice: the second run found no `bin/` because the first
+    -- had taken it, and clearing the cache made it pass again.
     for _, entry in ipairs(_PAYLOAD) do
         local src = path.join(download_dir, entry)
         -- `os.exists` is NOT bound in the xim hook runtime — calling it
         -- fails the install with `attempt to call a nil value (field
-        -- 'exists')`, and what you see is an install dir holding only
-        -- `.xpkg.lua`. Ask about the two kinds separately.
+        -- 'exists')`, and what you see is the same empty install dir.
+        -- Ask about the two kinds separately.
         if os.isdir(src) or os.isfile(src) then
-            os.mv(src, path.join(pkginfo.install_dir(), entry))
+            os.cp(src, path.join(pkginfo.install_dir(), entry), { force = true })
         end
     end
 
