@@ -142,6 +142,25 @@ xpm = {
 `install()` 结尾一定要断言真正的产物存在（`raise(...)` 或 `return os.isfile(exe)`），
 别只 `return true`；验收时也要真的去 `ls` 安装目录，不要只看安装命令的退出码。
 
+注意 `raise()` 本身也不进汇总 —— 它不会让外层报失败；而 hook 里的 **Lua 运行时错误会**
+浮出来（`[error] [pkg] failed: ...`）。所以 `raise` 只是给读日志的人看的，不能当成保护。
+
+#### "安装目录是空的"最常见的原因不是 hook 有问题
+
+**xlings 在同名同版本已经装在另一个 namespace 下时，会整个跳过 install hook，并且照样
+打印成功。** `xim:foo@1.2.3` 已装的情况下，每一次 `local:foo@1.2.3` 安装都是静默 no-op，
+只写下 `.xpkg.lua` —— 看起来和 install hook 坏掉一模一样。测之前先清两边：
+
+```bash
+rm -rf ~/.xlings/data/xpkgs/{xim,local}-x-<pkg>/<version>
+```
+
+（这条是用 hook 里塞 `io.writefile` 探针确认的：日志文件根本没生成。曾因此把一个好端端的
+`os.mv` 误判成 bug —— 实测 xlings 会重新解压、归档没了也会重新下载，`os.mv` 连装两次没问题。）
+
+另外：往 local index 里放两个 `package.name` 相同的文件，会让**整个 local repo 静默从搜索
+路径消失**（`package 'local:foo' not found, searched repos: [xim, scode]`）。删掉重复文件即恢复。
+
 ### 2.1.2 配置型包的 Lua 边界
 
 对 `type = "config"` 且会写入用户工具配置的包（例如 Claude/LLM 配置）：

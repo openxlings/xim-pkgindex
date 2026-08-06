@@ -132,18 +132,16 @@ class TestDesign:
         assert re.search(r'raise\(', code), "install() 必须在 payload 不完整时 raise"
 
     @pytest.mark.static
-    def test_payload_is_copied_not_moved(self):
-        """不能从下载/解压目录 os.mv 出来
+    def test_documents_the_cross_namespace_skip(self):
+        """必须写清楚"同名同版本已装在另一个 namespace 会跳过 install hook"
 
-        那是 xlings 的共享缓存。第二次装同一个版本时归档还在缓存里、不会被
-        重新解压,上一次 mv 走的东西就永远没了 —— 第一次装成功、之后每次都失败,
-        而且是静默的:安装目录里只剩 `.xpkg.lua`,外层照样打印
-        `✓ 1 package(s) installed`。
+        这是真正会让人误判的地方:装出来只剩 `.xpkg.lua`、外层却打印
+        `✓ 1 package(s) installed`,看起来像 install hook 坏了,其实 hook
+        根本没跑。#526 就是因此把 os.mv 误判成 bug 的。
         """
-        code = lua_code()
-        assert not re.search(r'os\.mv\(\s*src\b', code), \
-            "payload 必须 os.cp 而不是 os.mv, 否则重装会失败"
-        assert re.search(r'os\.cp\(\s*src\b', code)
+        content = open(PKG_FILE, encoding='utf-8').read()
+        assert "namespace" in content and "skips install()" in content, \
+            "install() 上方必须保留 cross-namespace skip 的说明"
 
     @pytest.mark.static
     def test_no_os_exists_in_hooks(self):

@@ -197,6 +197,20 @@ local function _installed_exe()
     return path.join(_bindir(), os.host() == "windows" and "codex.exe" or "codex")
 end
 
+-- A note for whoever verifies a change to this hook, because it cost a
+-- day: **xlings skips install() entirely when the same name and version
+-- is already installed under another namespace, and still prints
+-- `✓ 1 package(s) installed`.** With `xim:codex@0.146.1` present, every
+-- `local:codex@0.146.1` install was a silent no-op that left an install
+-- dir holding only `.xpkg.lua` — which reads exactly like a broken
+-- install hook. Clear both before testing:
+--
+--     rm -rf ~/.xlings/data/xpkgs/{xim,local}-x-codex/<version>
+--
+-- Related: a `raise()` in here does not reach the summary either, so a
+-- genuinely failed install can still be reported as succeeding. A Lua
+-- *runtime* error does surface. Verify by listing the install directory,
+-- never by the exit code.
 function install()
     -- Idempotent across xim engines: never wipe install_dir before a
     -- replacement payload is confirmed, and never report success unless
@@ -215,24 +229,29 @@ function install()
     os.tryrm(pkginfo.install_dir())
     os.mkdir(pkginfo.install_dir())
 
-    -- COPY, never move. That directory is xlings' shared download and
-    -- extraction cache, and it is reused: on a second install of the
-    -- same version the archive is still cached and is NOT re-extracted,
-    -- so anything a previous install moved out is simply gone. Moving
-    -- made the first install work and every later one fail — and fail
-    -- invisibly, because the raise below does not reach the summary and
-    -- the outer command still prints `✓ 1 package(s) installed` over an
-    -- install dir holding nothing but `.xpkg.lua`. Reproduced by
-    -- installing twice: the second run found no `bin/` because the first
-    -- had taken it, and clearing the cache made it pass again.
+    -- `os.mv`, the same as every other recipe in the index. #526 changed
+    -- this to `os.cp` on the theory that moving consumed a shared cache
+    -- xlings would not re-extract; that theory is wrong. Measured after
+    -- the fact: delete `bin/` out of the download directory and install
+    -- again and xlings puts it straight back — it re-extracts, and it
+    -- re-downloads when the archive itself is gone. `os.mv` installs
+    -- cleanly twice in a row. godot.lua and cc-switch.lua, suspected of
+    -- the same "bug", were tested and are fine too.
+    --
+    -- What actually produced the empty install directories was the trap
+    -- documented at the top of install(): xlings skips the install hook
+    -- entirely when the same name and version is already installed under
+    -- another namespace, and still reports success. Proven with an
+    -- `io.writefile` probe inside the hook — the log file was never
+    -- created.
     for _, entry in ipairs(_PAYLOAD) do
         local src = path.join(download_dir, entry)
         -- `os.exists` is NOT bound in the xim hook runtime — calling it
         -- fails the install with `attempt to call a nil value (field
-        -- 'exists')`, and what you see is the same empty install dir.
-        -- Ask about the two kinds separately.
+        -- 'exists')`, and what you see is an install dir holding only
+        -- `.xpkg.lua`. Ask about the two kinds separately.
         if os.isdir(src) or os.isfile(src) then
-            os.cp(src, path.join(pkginfo.install_dir(), entry), { force = true })
+            os.mv(src, path.join(pkginfo.install_dir(), entry))
         end
     end
 
