@@ -20,7 +20,22 @@ package = {
             ["latest"] = { ref = "0.0.1" },
             ["0.0.1"] = {}
         },
-        macosx = { ref = "linux" },
+        -- NOT `ref = "linux"`. That inherited linux's `deps` as well as its
+        -- versions, and two of them -- `make` and `gcc` -- have no macosx
+        -- section in this index at all. On macOS both come from the Xcode
+        -- command line tools, which is where this script's `./configure` and
+        -- `make -j20` have always found them.
+        --
+        -- It only looked fine because the names were bare: an unqualified dep
+        -- that resolves to nothing was tolerated, so the declaration was
+        -- inert rather than correct. Namespacing them made the same
+        -- declaration a hard resolve and macos-install-test failed on the
+        -- first run -- the latent bug becoming visible, not a new one.
+        macosx = {
+            deps = { "xim:xpkg-helper" },
+            ["latest"] = { ref = "0.0.1" },
+            ["0.0.1"] = {}
+        },
     },
 }
 
