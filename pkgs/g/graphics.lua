@@ -128,6 +128,9 @@ package = {
                     "xim:libXrender@>=0.9",
                     "xim:libxkbcommon@>=1.7",
                     "xim:fontconfig@>=2.14",
+                    -- Non-fatal when absent (single-screen fallback), which is
+                    -- exactly why it went unnoticed until a real toolkit ran.
+                    "libXinerama@>=1.1",
                 },
             },
             ["latest"] = { ref = "0.1.0" },

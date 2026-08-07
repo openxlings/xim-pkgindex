@@ -189,7 +189,22 @@ for dep in $DEPS; do
         fail "--deps $dep: not installed in $XHOME (xlings install $dep)"
     fi
     log "  dep $dep -> ${depdir#"$XHOME"/data/xpkgs/}"
-    if [[ -d "$depdir/lib/pkgconfig" ]]; then
+    # BOTH pkgconfig locations, and the second one is not a nicety.
+    #
+    # `lib/pkgconfig` is where a library puts its .pc. A PROTOCOL-ONLY package
+    # installs no library at all and puts its .pc in `share/pkgconfig` --
+    # xorgproto ships 40 of them there (xineramaproto, damageproto, ...), and
+    # xcb-proto is the same shape.
+    #
+    # Looking only at `lib/` therefore made every protocol package invisible to
+    # pkg-config while its HEADERS were still spliced in by `-I` below. That
+    # combination is why the gap survived: mesa builds fine, because it includes
+    # the headers and never asks pkg-config for a protocol module. libXinerama
+    # does ask, and dies on `XINERAMA_CFLAGS ... no such package` for a package
+    # that is sitting right there and whose headers are already on the command
+    # line.
+    for pcsrc in "$depdir/lib/pkgconfig" "$depdir/share/pkgconfig"; do
+        [[ -d "$pcsrc" ]] || continue
         # Rewrite `prefix=` into a scratch copy rather than use the payload's
         # .pc as-is. libxml2's ships `prefix=/tmp/libxml2-install` — the
         # directory it was built in, on a machine that no longer exists — so
@@ -202,12 +217,15 @@ for dep in $DEPS; do
         # as far as a build is concerned.
         pcdir="$WORK/pc/$dep"
         mkdir -p "$pcdir"
-        for pc in "$depdir"/lib/pkgconfig/*.pc; do
+        for pc in "$pcsrc"/*.pc; do
             [[ -e "$pc" ]] || continue
             sed "s#^prefix=.*#prefix=${depdir%/}#" "$pc" > "$pcdir/$(basename "$pc")"
         done
-        PKG_CONFIG_LIBDIR="$PKG_CONFIG_LIBDIR:$pcdir"
-    fi
+        case ":$PKG_CONFIG_LIBDIR:" in
+            *":$pcdir:"*) ;;
+            *) PKG_CONFIG_LIBDIR="$PKG_CONFIG_LIBDIR:$pcdir" ;;
+        esac
+    done
     [[ -d "$depdir/include" ]] && CPPFLAGS="$CPPFLAGS -I$depdir/include"
     if [[ -d "$depdir/lib" ]]; then
         # A staged copy with an RPATH, not the payload itself.
