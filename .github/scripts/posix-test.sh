@@ -151,10 +151,80 @@ fi
 # Same reasoning as the scode line above — make the things a dependency can
 # point at resolvable first, then test. Registration is idempotent, so the
 # loop's own add-xpkg stays as it is.
+# A recipe under test SHADOWS its published copy; it does not coexist with it.
+#
+# `config --add-xpkg` registers the changed recipe under `local:`, while the
+# published one stays in the `xim:` index. Two candidates for one package is a
+# state that never exists after merge, and it breaks the run in two ways that
+# both look like bugs in the diff:
+#
+#   1. AMBIGUITY. Any recipe -- including a PUBLISHED one this PR cannot edit --
+#      that names a dep WITHOUT a namespace now has two candidates and fails
+#      with "package 'expat@2.6.2' is ambiguous". Published `xim:fontconfig`
+#      says `expat@2.6.2`, so merely touching expat broke fontconfig AND
+#      graphics. Whether a PR passes then depends on which OTHER packages it
+#      happens to touch.
+#
+#   2. DOUBLE INSTALL FROM ONE EXTRACTION. `xim:libffi` gets pulled in as some
+#      other package's dependency and its install hook MOVES the extracted
+#      source tree into place. When `local:libffi` is then installed for its own
+#      test, there is no download artifact and therefore no extraction, the
+#      recipe's `os.mv` finds nothing, `install()` returns true anyway, and
+#      xlings prints a tick over an EMPTY payload directory. The only complaint
+#      came from the config hook two steps later, about pkgconfig globs.
+#
+# So the recipe under test is written OVER the published one, in place, in the
+# same namespace. One candidate, and it is the PR's -- exactly the state the
+# merge produces.
+#
+# Deleting the published copy instead is not equivalent and was tried: it also
+# leaves one candidate, but it removes the `xim:` NAME, so every dep that
+# qualifies itself -- `xim:expat@2.6.2`, `xim:libffi@>=3.4` -- stops resolving.
+# Overlay keeps the name and changes only the content.
+#
+# Guarded to a real directory: when the index path is a symlink (a developer
+# pointing their home at this very checkout) the copy would write back into the
+# source tree. In that case, and if the overlay fails for any other reason, the
+# caller falls back to the old `--add-xpkg` behaviour rather than skipping the
+# package.
+# Only for a recipe that ALREADY EXISTS upstream — i.e. a change to a published
+# package. That is precisely the case that produces the duplicate, and it is the
+# only case overlay can serve.
+#
+# A package the PR ADDS is not in the index, so asking for it by its index name
+# makes xlings say `'xim:<pkg>' not in current index; refreshing index...` and
+# re-fetch the whole index — which overwrites the file that was just placed
+# there, and the install then fails with `not found`. New packages therefore
+# keep the `--add-xpkg` / `local:` path, where they are unambiguous anyway:
+# nothing published shares the name, so there is no second candidate.
+#
+# This also matches the namespace rule the index already follows — a new package
+# is referenced bare, a changed published one with `xim:`.
+INDEX_DIR="$XLINGS_HOME_DIR/data/xim-pkgindex"
+overlay_recipe() {
+    local rel_file="$1"
+    [[ -d "$INDEX_DIR" && ! -L "$INDEX_DIR" ]] || return 1
+    [[ -f "$INDEX_DIR/$rel_file" ]] || return 1   # not published: not ours to overlay
+    cp -f "$WORKSPACE_ROOT/$rel_file" "$INDEX_DIR/$rel_file" || return 1
+    return 0
+}
+
+# The same reasoning applies to libs/: a recipe overlaid into the xim index
+# imports `xim.pkgindex.*` from THAT index, so the PR's helpers have to be there
+# too. Without this the imports fall through to the permissive stub and every
+# helper call is a truthy no-op -- the failure mode already described above for
+# the local index.
+if [[ -d "$WORKSPACE_ROOT/libs" && -d "$INDEX_DIR" && ! -L "$INDEX_DIR" ]]; then
+    mkdir -p "$INDEX_DIR/libs"
+    cp "$WORKSPACE_ROOT/libs/"*.lua "$INDEX_DIR/libs/" 2>/dev/null || true
+fi
+
 for rel_file in "${files[@]}"; do
     [[ -n "$rel_file" ]] || continue
     [[ -f "$WORKSPACE_ROOT/$rel_file" ]] || continue
-    "$XLINGS_CMD" config --add-xpkg "$WORKSPACE_ROOT/$rel_file" >/dev/null 2>&1 || true
+    if ! overlay_recipe "$rel_file"; then
+        "$XLINGS_CMD" config --add-xpkg "$WORKSPACE_ROOT/$rel_file" >/dev/null 2>&1 || true
+    fi
 done
 
 for rel_file in "${files[@]}"; do
@@ -207,7 +277,12 @@ for rel_file in "${files[@]}"; do
     tested=$((tested+1))
 
     step "[$pkg] register (type=$pkg_type)"
-    if ! "$XLINGS_CMD" config --add-xpkg "$lua_file"; then
+    # Overlay wins; `--add-xpkg` is the fallback for a home whose index copy is
+    # not writable. `pkg_ns` is corrected below to match whichever ran.
+    if overlay_recipe "$rel_file"; then
+        [[ "$pkg_ns" == "local" ]] && pkg_ns="xim"
+        info "overlaid into the index as ${pkg_ns}:${pkg}"
+    elif ! "$XLINGS_CMD" config --add-xpkg "$lua_file"; then
         log_fail "config --add-xpkg failed"; failures+=("$rel_file (register)"); continue
     fi
 

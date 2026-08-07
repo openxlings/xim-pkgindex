@@ -128,6 +128,13 @@ package = {
                     "xim:libXrender@>=0.9",
                     "xim:libxkbcommon@>=1.7",
                     "xim:fontconfig@>=2.14",
+                    -- Non-fatal when absent (single-screen fallback), which is
+                    -- exactly why it went unnoticed until a real toolkit ran.
+                    "libXinerama@>=1.1",
+                    -- An ICD is a driver; a driver needs a loader. mesa ships
+                    -- RADV and its manifest, and without libvulkan.so.1 nothing
+                    -- ever reads it -- which also leaves zink dead.
+                    "vulkan-loader@>=1.4",
                 },
             },
             ["latest"] = { ref = "0.1.0" },

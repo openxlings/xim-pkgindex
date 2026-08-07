@@ -62,6 +62,7 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.pkgindex.selfcontain")
 
 function install()
     -- Tarball extracts to gcc-runtime-<ver>-linux-x86_64/lib64/. Move
@@ -72,6 +73,10 @@ function install()
     local srcdir = pkginfo.install_file():replace(".tar.gz", "")
     os.tryrm(pkginfo.install_dir())
     os.mv(srcdir, pkginfo.install_dir())
+
+    -- Stamp this payload's own dependency closure onto its libraries, so they
+    -- resolve from our payloads and not from the host's ld.so.cache.
+    selfcontain.seal(pkginfo.install_dir())
     return true
 end
 

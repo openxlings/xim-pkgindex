@@ -17,7 +17,7 @@ package = {
 
     xpm = {
         linux = {
-            deps = { "xim:libXext@>=1.3", "xim:libXfixes@>=6.0" },
+            deps = { "xim:libXext@>=1.3", "xim:libXfixes@>=6.0", "xim:glibc", "xim:libX11" },
             -- elfpatch reads this from each dependency and writes the consumer's
             -- RPATH, which is what makes the stack resolve without anyone
             -- setting LD_LIBRARY_PATH. Same mechanism `gcc-runtime` uses.
@@ -40,11 +40,16 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
 import("xim.pkgindex.sysroot")
+import("xim.pkgindex.selfcontain")
 
 function install()
     local dir = pkginfo.install_dir()
     os.tryrm(dir)
     os.mv("libXi-1.8.2", dir)
+
+    -- Stamp this payload's own dependency closure onto its libraries, so
+    -- they resolve from our payloads and not from the host's ld.so.cache.
+    selfcontain.seal(pkginfo.install_dir())
     return true
 end
 
