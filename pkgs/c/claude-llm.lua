@@ -122,7 +122,33 @@ local function __existing_deepseek_api_key(env)
     return existing_api_key
 end
 
+-- A secret has to be suppliable without a prompt.
+--
+-- `io.read()` in an install hook does not degrade when nobody is there to
+-- answer -- it blocks forever. Unattended installs (CI, a Dockerfile, a
+-- provisioning script) then hang instead of failing, which is strictly worse:
+-- there is no error to read and no way to tell "slow" from "stuck". A rust
+-- recipe with the same shape parked a windows-test job for four hours before
+-- anyone could see why.
+--
+-- So take the key from the environment when it is there, and fail with a clear
+-- message rather than block when there is no terminal to ask on.
 local function __read_deepseek_api_key(existing_api_key)
+    local from_env = os.getenv("DEEPSEEK_API_KEY")
+    if from_env and __trim(from_env) ~= "" then
+        log.info("using DeepSeek API key from DEEPSEEK_API_KEY")
+        return __trim(from_env), false
+    end
+
+    if os.getenv("XLINGS_NON_INTERACTIVE") or os.getenv("CI") then
+        if existing_api_key then
+            log.warn("no terminal to ask on; reusing the existing DeepSeek key")
+            return existing_api_key, true
+        end
+        error("no DeepSeek API key: there is no terminal to prompt on. "
+              .. "Set DEEPSEEK_API_KEY and re-run.", 0)
+    end
+
     print("请先在 DeepSeek 平台创建或复制 API Key:")
     print("")
     print("  -> https://platform.deepseek.com/api_keys")
