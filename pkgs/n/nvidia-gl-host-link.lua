@@ -108,12 +108,29 @@ package = {
             exports = {
                 runtime = { libdirs = { "lib" } },
             },
-            ["latest"] = { ref = "0.1.0" },
+            ["latest"] = { ref = "0.1.1" },
             -- No payload: everything this package installs is a symlink it
             -- creates at install time from what it finds on the host. The
             -- version is the recipe's, not the driver's — the driver version
             -- is whatever the host has, and pinning it here would make the
             -- package wrong on every machine but one.
+            --
+            -- 0.1.1: install() now also writes `.host-driver-version` and
+            -- `bin/xlings-gl-doctor`, so what this package PUTS ON DISK changed
+            -- even though nothing is downloaded. A recipe whose output changed
+            -- has to be a new version for the ordinary reason -- but here it is
+            -- also load-bearing for CI, which is how the need surfaced:
+            --
+            --   `graphics` depends on `xim:nvidia-gl-host-link`, and in CI that
+            --   prefix resolves to the PUBLISHED 0.1.0. So installing `graphics`
+            --   first put published-0.1.0 on disk under that exact name@version,
+            --   and the later `local:nvidia-gl-host-link@0.1.0` step found it
+            --   already installed, skipped install() entirely, and failed the
+            --   `programs` check with no doctor script and no diagnostic --
+            --   not even the "no NVIDIA driver" warning, because the hook never
+            --   ran. A distinct version makes local and published different
+            --   packages again.
+            ["0.1.1"] = { },
             ["0.1.0"] = { },
         },
     },
