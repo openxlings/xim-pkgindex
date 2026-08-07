@@ -31,7 +31,7 @@ package = {
     -- gap that survives every test that only asks "did it run".
     xpm = {
         linux = {
-            deps = { "xim:libX11@>=1.8", "xim:libXext@>=1.3" },
+            deps = { "xim:libX11@>=1.8", "xim:libXext@>=1.3", "xim:glibc" },
             -- elfpatch reads this from each dependency and writes the consumer's
             -- RPATH, which is what makes the stack resolve without anyone
             -- setting LD_LIBRARY_PATH.
@@ -58,11 +58,16 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
 import("xim.pkgindex.sysroot")
+import("xim.pkgindex.selfcontain")
 
 function install()
     local dir = pkginfo.install_dir()
     os.tryrm(dir)
     os.mv("libXinerama-1.1.5", dir)
+
+    -- Stamp this payload's own dependency closure onto its libraries, so
+    -- they resolve from our payloads and not from the host's ld.so.cache.
+    selfcontain.seal(pkginfo.install_dir())
     return true
 end
 

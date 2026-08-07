@@ -14,6 +14,7 @@ package = {
     xvm_enable = true,
     xpm = {
         linux = {
+            deps = { "xim:glibc" },
             ["latest"] = { ref = "3.4.4" },
             ["3.4.4"] = {
                 url = {
@@ -29,6 +30,7 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.pkgindex.selfcontain")
 
 local libs = { "libffi.so", "libffi.so.7" }
 
@@ -36,6 +38,10 @@ function install()
     local srcdir = pkginfo.name() .. "-" .. pkginfo.version() .. "-linux-x86_64"
     os.tryrm(pkginfo.install_dir())
     os.mv(srcdir, pkginfo.install_dir())
+
+    -- Stamp this payload's own dependency closure onto its libraries, so
+    -- they resolve from our payloads and not from the host's ld.so.cache.
+    selfcontain.seal(pkginfo.install_dir())
     return true
 end
 

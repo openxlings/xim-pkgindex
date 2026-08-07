@@ -40,11 +40,16 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
 import("xim.pkgindex.sysroot")
+import("xim.pkgindex.selfcontain")
 
 function install()
     local dir = pkginfo.install_dir()
     os.tryrm(dir)
     os.mv("libXxf86vm-1.1.6", dir)
+
+    -- Stamp this payload's own dependency closure onto its libraries, so they
+    -- resolve from our payloads and not from the host's ld.so.cache.
+    selfcontain.seal(pkginfo.install_dir())
     return true
 end
 

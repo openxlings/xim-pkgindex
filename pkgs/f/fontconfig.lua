@@ -14,7 +14,7 @@ package = {
     xvm_enable = true,
     xpm = {
         linux = {
-            deps = { "freetype@2.13.2", "expat@2.6.2" },
+            deps = { "freetype@2.13.2", "expat@2.6.2", "xim:glibc" },
             ["latest"] = { ref = "2.15.0" },
             ["2.15.0"] = {
                 url = {
@@ -30,6 +30,7 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.pkgindex.selfcontain")
 
 local libs = { "libfontconfig.so", "libfontconfig.so.1" }
 
@@ -37,6 +38,10 @@ function install()
     local srcdir = pkginfo.name() .. "-" .. pkginfo.version() .. "-linux-x86_64"
     os.tryrm(pkginfo.install_dir())
     os.mv(srcdir, pkginfo.install_dir())
+
+    -- Stamp this payload's own dependency closure onto its libraries, so
+    -- they resolve from our payloads and not from the host's ld.so.cache.
+    selfcontain.seal(pkginfo.install_dir())
     return true
 end
 

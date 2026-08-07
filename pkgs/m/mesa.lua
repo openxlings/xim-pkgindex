@@ -106,6 +106,7 @@ import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.subos")
 import("xim.pkgindex.sysroot")
+import("xim.pkgindex.selfcontain")
 import("xim.pkgindex.graphics")
 
 function install()
@@ -163,6 +164,10 @@ function install()
                 end)))
         end
     end
+
+    -- Stamp this payload's own dependency closure onto its libraries, so they
+    -- resolve from our payloads and not from the host's ld.so.cache.
+    selfcontain.seal(pkginfo.install_dir())
     return true
 end
 
