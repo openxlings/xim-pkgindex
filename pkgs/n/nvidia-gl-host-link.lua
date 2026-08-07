@@ -130,8 +130,22 @@ package = {
             --   not even the "no NVIDIA driver" warning, because the hook never
             --   ran. A distinct version makes local and published different
             --   packages again.
+            --
+            -- And 0.1.0 is GONE rather than kept alongside, which is safe
+            -- exactly because there is no payload: an old version of this
+            -- package cannot be reproduced anyway -- it links whatever the host
+            -- has today, so "0.1.0" names a recipe, not an artifact anyone can
+            -- get back. Nothing pins it (`graphics` asks for `>=0.1`), and an
+            -- existing install keeps its files untouched.
+            --
+            -- Keeping it was also what made the bump useless. `pkg_spec` in the
+            -- install test carries no version, and the resolver prefers a
+            -- version already installed over the index's newest
+            -- (pin_target_to_active) -- so with `graphics` having already pulled
+            -- the published 0.1.0, a bare `local:nvidia-gl-host-link` resolved
+            -- straight back to 0.1.0 and skipped the hook again. Removing the
+            -- entry leaves the local index with one answer.
             ["0.1.1"] = { },
-            ["0.1.0"] = { },
         },
     },
 }
