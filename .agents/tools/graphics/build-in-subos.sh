@@ -63,7 +63,19 @@ rm -rf "$STAGE"
 mkdir -p "$SRC" "$STAGE"
 
 # ── fetch ───────────────────────────────────────────────────────────────
-TARBALL="$SRC/$(basename "$URL")"
+# Cached under NAME-VERSION, not under the URL's basename.
+#
+# Every GitHub archive URL is `.../archive/refs/tags/v<tag>.tar.gz`, so the
+# basename carries the tag and nothing about the project. Vulkan-Headers and
+# Vulkan-Loader are both released as v1.4.313, so the second build found the
+# first one's `v1.4.313.tar.gz` already in $SRC, skipped the download, and
+# configured, built, staged, leak-checked and PACKAGED the wrong source --
+# producing a `vulkan-loader` payload containing Vulkan-Headers, with every step
+# reporting success. It was caught only because the resulting package had no
+# lib/ directory.
+#
+# The basename is kept as a suffix so the file is still recognisable on disk.
+TARBALL="$SRC/${NAME}-${VERSION}-$(basename "$URL")"
 [[ -f "$TARBALL" ]] || {
     log "fetching $(basename "$URL")"
     curl -fsSL --retry 3 -o "$TARBALL" "$URL" || fail "download failed"
