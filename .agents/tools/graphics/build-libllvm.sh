@@ -35,8 +35,12 @@ WORK="${XLINGS_GFX_WORK:-${TMPDIR:-/tmp}/xlings-gfx}"
 
 log()  { echo "[libllvm] $*"; }
 fail() { echo "[libllvm] FAIL: $*" >&2; exit 1; }
+# 3, not 1: a missing subos, cmake, ninja or compiler means the build never
+# started. 1 is reserved for "it started and broke", which is the only signal
+# worth reading the logs for. Contract: .agents/tools/README.md.
+skip() { echo "[libllvm] SKIP: $*" >&2; exit 3; }
 
-[[ -d "$SUBOS" ]] || fail "subos '$SUBOS_NAME' not found"
+[[ -d "$SUBOS" ]] || skip "subos '$SUBOS_NAME' not found — xlings subos new $SUBOS_NAME"
 mkdir -p "$WORK/src" "$WORK/dist"
 
 SRC="$WORK/src/llvm-$VERSION"
@@ -56,8 +60,8 @@ fi
 BUILD="$WORK/src/llvm-$VERSION-build"
 rm -rf "$BUILD"; mkdir -p "$BUILD"
 
-CMAKE="$SUBOS/bin/cmake"; [[ -x "$CMAKE" ]] || CMAKE="$(command -v cmake)" || fail "no cmake"
-NINJA="$SUBOS/bin/ninja";  [[ -x "$NINJA" ]] || NINJA="$(command -v ninja)"  || fail "no ninja"
+CMAKE="$SUBOS/bin/cmake"; [[ -x "$CMAKE" ]] || CMAKE="$(command -v cmake)" || skip "no cmake"
+NINJA="$SUBOS/bin/ninja";  [[ -x "$NINJA" ]] || NINJA="$(command -v ninja)"  || skip "no ninja"
 
 # gcc 15.1.0, explicitly — not the subos default and not clang.
 #
@@ -80,7 +84,7 @@ NINJA="$SUBOS/bin/ninja";  [[ -x "$NINJA" ]] || NINJA="$(command -v ninja)"  || 
 # Select the version with `xlings use gcc 15.1.0` first.
 BUILD_CC="$SUBOS/bin/gcc"
 BUILD_CXX="$SUBOS/bin/g++"
-[[ -x "$BUILD_CC" ]] || fail "no gcc shim in the subos"
+[[ -x "$BUILD_CC" ]] || skip "no gcc shim in the subos (xlings install gcc, then xlings use gcc 15.1.0)"
 log "compiler: $("$BUILD_CC" --version | head -1)"
 
 log "configuring (X86;AMDGPU, shared libLLVM)"
