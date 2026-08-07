@@ -1,0 +1,337 @@
+#!/usr/bin/env bash
+# Verify the xlings graphics stack on THIS machine, in a dedicated subos.
+#
+#   verify-stack.sh [--subos NAME] [--home DIR] [--keep] [--json]
+#
+# WHY THIS EXISTS
+#
+# Verification of this stack was three scripts that each covered one slice:
+# verify-host-link.sh (NVIDIA only, needs a GPU), selfcontained-check.sh
+# (empty host, needs bwrap and a subos compiler), and whatever the developer
+# typed that day. Each had its own setup, none knew about the others, and the
+# union was never reported anywhere. So "the ecosystem works" rested on one
+# machine with one GPU -- an RTX 4080 -- and every other cell of the matrix was
+# untested in a way that produced no output at all.
+#
+# THE RULE THIS ENCODES
+#
+# A cell that could not be exercised HERE is a third outcome, not a pass and
+# not a failure. It is printed, counted, and carried into the summary. Anything
+# else makes "we do not have that hardware" and "it works" look identical --
+# which is the failure mode this whole stack keeps producing and keeps having to
+# re-learn (see project_silent_success_pattern).
+#
+# HOW COVERAGE IS MEANT TO ACCUMULATE
+#
+# No single machine can cover the matrix: nobody has an NVIDIA, an AMD, an Intel
+# and a WSL2 host at once. So this script is designed to be run by DIFFERENT
+# people and its summary pasted into an issue. The union of runs is the
+# ecosystem's coverage, and the SKIP lines are the recruitment list.
+#
+# Design: xlings/.agents/docs/2026-08-07-graphics-experience-industry-survey-and-plan.md §10
+set -uo pipefail
+
+SUBOS="gfxverify"; KEEP=0; JSON=0; XHOME_ARG=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --subos) SUBOS="$2"; shift 2 ;;
+    --home)  XHOME_ARG="$2"; shift 2 ;;
+    --keep)  KEEP=1; shift ;;
+    --json)  JSON=1; shift ;;
+    -h|--help) sed -n '2,8p' "$0"; exit 0 ;;
+    *) echo "unknown argument: $1" >&2; exit 2 ;;
+  esac
+done
+
+XB="${XLINGS_BIN:-$(command -v xlings 2>/dev/null)}"
+[[ -x "$XB" ]] || { echo "no xlings on PATH; set XLINGS_BIN" >&2; exit 2; }
+export XLINGS_HOME="${XHOME_ARG:-${XLINGS_HOME:-$HOME/.xlings}}"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+S="$XLINGS_HOME/subos/$SUBOS"
+
+pass=0; fail=0; skip=0
+declare -a ROWS
+ok()   { printf '  \033[0;32m✓\033[0m %-34s %s\n' "$1" "${2:-}"; pass=$((pass+1)); ROWS+=("PASS|$1|${2:-}"); }
+bad()  { printf '  \033[0;31m✗\033[0m %-34s %s\n' "$1" "${2:-}"; fail=$((fail+1)); ROWS+=("FAIL|$1|${2:-}"); }
+# A skip carries its REASON into the summary. "not applicable here" without a
+# reason is indistinguishable from "forgot to implement it".
+na()   { printf '  \033[0;33m·\033[0m %-34s %s\n' "$1" "not here: ${2}"; skip=$((skip+1)); ROWS+=("SKIP|$1|$2"); }
+sect() { printf '\n\033[1;36m── %s\033[0m\n' "$1"; }
+
+# ── what this host is ───────────────────────────────────────────────────
+sect "0. host capability probe"
+
+# Every probe below answers "is this cell exercisable here", and each one is a
+# FACT about the machine rather than a guess from /etc/os-release.
+has_nvidia=0; [[ -r /sys/module/nvidia/version ]] && has_nvidia=1
+nv_ver=""; [[ $has_nvidia -eq 1 ]] && nv_ver=$(cat /sys/module/nvidia/version)
+has_dxg=0;  [[ -e /dev/dxg ]] && has_dxg=1
+has_dri=0;  [[ -d /dev/dri ]] && has_dri=1
+has_bwrap=0; command -v bwrap >/dev/null 2>&1 && has_bwrap=1
+has_display=0; [[ -n "${DISPLAY:-}" ]] && has_display=1
+has_wayland=0; [[ -n "${WAYLAND_DISPLAY:-}" ]] && has_wayland=1
+
+# GPU vendors by PCI class, from /sys — not from lspci, which may be absent.
+vendors=""
+for d in /sys/class/drm/card*/device/vendor; do
+  [[ -r "$d" ]] || continue
+  case "$(cat "$d")" in
+    0x10de) vendors="$vendors nvidia" ;;
+    0x1002) vendors="$vendors amd" ;;
+    0x8086) vendors="$vendors intel" ;;
+  esac
+done
+vendors="$(tr ' ' '\n' <<<"$vendors" | sort -u | tr '\n' ' ' | sed 's/^ *//')"
+
+echo "  xlings        $("$XB" --version 2>/dev/null | head -1)"
+echo "  home          $XLINGS_HOME"
+echo "  subos         $SUBOS"
+echo "  DRM vendors   ${vendors:-none}"
+echo "  nvidia kmod   ${nv_ver:-none}"
+echo "  /dev/dxg      $([[ $has_dxg -eq 1 ]] && echo present || echo absent)  (WSL2)"
+echo "  DISPLAY       ${DISPLAY:-unset}      WAYLAND_DISPLAY ${WAYLAND_DISPLAY:-unset}"
+echo "  bwrap         $([[ $has_bwrap -eq 1 ]] && echo yes || echo no)"
+
+# ── the stack ───────────────────────────────────────────────────────────
+sect "1. the stack installs into a subos"
+
+"$XB" subos new "$SUBOS" >/dev/null 2>&1   # idempotent; ignore "exists"
+if ! "$XB" subos use "$SUBOS" --cmd 'true' >/dev/null 2>&1; then
+  bad "subos '$SUBOS' usable" "could not enter it"
+  echo; echo "cannot continue without a subos"; exit 1
+fi
+ok "subos '$SUBOS' created/usable"
+
+if "$XB" install graphics -y >/tmp/gfxverify-install.log 2>&1; then
+  n=$(grep -cE "✓ (xim|local):" /tmp/gfxverify-install.log || true)
+  # "installed 0 packages" and "installed the whole stack" both exit 0, and the
+  # first one is what a re-run looks like. Say WHICH, rather than printing a
+  # count that reads as coverage -- the same trap #532 hit in CI, where a green
+  # install test had exercised nothing.
+  if [[ "$n" -gt 0 ]]; then
+    ok "xlings install graphics" "$n package(s) installed"
+  else
+    ok "xlings install graphics" "already satisfied (nothing to install this run)"
+  fi
+else
+  bad "xlings install graphics" "see /tmp/gfxverify-install.log"
+fi
+
+sect "2. the discovery layer is declared, not assumed"
+envout="$("$XB" subos use "$SUBOS" --shell sh 2>/dev/null)"
+for v in LIBGL_DRIVERS_PATH __EGL_VENDOR_LIBRARY_DIRS XDG_DATA_DIRS; do
+  if grep -q "$v" <<<"$envout"; then ok "$v declared"; else bad "$v declared" "no package declares it"; fi
+done
+
+# The shared vendor directory is what makes 10_nvidia < 50_mesa mean anything;
+# with one directory per package the order came from xlings' binding sort.
+VD="$S/share/glvnd/egl_vendor.d"
+if [[ -d "$VD" ]]; then
+  ok "one shared glvnd vendor dir" "$(ls "$VD" 2>/dev/null | tr '\n' ' ')"
+else
+  bad "one shared glvnd vendor dir" "$VD absent"
+fi
+[[ -d "$S/usr/lib/dri" ]] \
+  && ok "dri modules in the subos" "$(ls "$S/usr/lib/dri" | wc -l | tr -d ' ') modules" \
+  || bad "dri modules in the subos" "$S/usr/lib/dri absent"
+
+# ── rendering, per driver path ──────────────────────────────────────────
+sect "3. rendering"
+
+CC="${CC:-}"; [[ -n "$CC" ]] || for c in /usr/bin/gcc /usr/bin/cc /usr/bin/clang; do
+  [[ -x "$c" ]] && { CC="$c"; break; }
+done
+PROBE=""
+if [[ -n "$CC" && -f "$HERE/glprobe.c" ]]; then
+  INC="$(find "$XLINGS_HOME/data/xpkgs" -maxdepth 4 -type d -path '*libglvnd*/include' 2>/dev/null | head -1)"
+  if "$CC" -O0 -o /tmp/gfxverify-probe "$HERE/glprobe.c" ${INC:+-I"$INC"} \
+        -L"$S/lib" -lEGL -lGL -Wl,--dynamic-linker="$S/lib/ld-linux-x86-64.so.2" \
+        -Wl,-rpath,"$S/lib" -Wl,--disable-new-dtags 2>/tmp/gfxverify-probe.log; then
+    PROBE=/tmp/gfxverify-probe
+  fi
+fi
+
+run_probe() {  # $1..: extra env assignments
+  [[ -n "$PROBE" ]] || return 1
+  env -u LD_LIBRARY_PATH \
+      LIBGL_DRIVERS_PATH="$S/usr/lib/dri" \
+      __EGL_VENDOR_LIBRARY_DIRS="$VD" \
+      "$@" "$PROBE" 2>&1
+}
+
+if [[ -z "$PROBE" ]]; then
+  na "software rendering (llvmpipe)"  "no host compiler to build the probe"
+else
+  out="$(run_probe __EGL_VENDOR_LIBRARY_FILENAMES="$VD/50_mesa.json")"
+  if grep -q "^RESULT=ok" <<<"$out" && grep -qi "llvmpipe" <<<"$out"; then
+    ok "software rendering (llvmpipe)" "$(sed -n 's/^GL_RENDERER=//p' <<<"$out")"
+  else
+    bad "software rendering (llvmpipe)" "$(sed -n 's/^GL_RENDERER=//p' <<<"$out" || echo 'no renderer')"
+  fi
+fi
+
+# NVIDIA proprietary -- delegated to the dedicated verifier, which checks
+# provenance rather than the renderer string.
+if [[ $has_nvidia -eq 1 ]]; then
+  if [[ -x "$HERE/verify-host-link.sh" ]]; then
+    if XLINGS_BIN="$XB" CC="$CC" bash "$HERE/verify-host-link.sh" "$XLINGS_HOME" "$SUBOS" >/tmp/gfxverify-nv.log 2>&1; then
+      ok "NVIDIA proprietary (interposed)" "$(grep -oE 'PASS: [0-9]+ checks' /tmp/gfxverify-nv.log | head -1)"
+    else
+      bad "NVIDIA proprietary (interposed)" "$(grep -oE 'FAIL:.*' /tmp/gfxverify-nv.log | head -1)"
+    fi
+  else
+    na "NVIDIA proprietary (interposed)" "verify-host-link.sh not present"
+  fi
+else
+  na "NVIDIA proprietary (interposed)" "no nvidia kernel module on this host"
+fi
+
+# The open-driver cells. Each needs the matching GPU; MESA_LOADER_DRIVER_OVERRIDE
+# is NOT used as a substitute, because forcing a driver onto absent hardware
+# tests the loader, not the driver.
+for pair in "amd:radeonsi" "intel:iris" "nvidia:nouveau"; do
+  v="${pair%%:*}"; drv="${pair##*:}"
+  if ! grep -qw "$v" <<<"$vendors"; then
+    na "$drv (hardware $v)" "no $v GPU in /sys/class/drm"
+  elif [[ ! -e "$S/usr/lib/dri/${drv}_dri.so" ]]; then
+    bad "$drv (hardware $v)" "GPU present but ${drv}_dri.so is NOT in the payload"
+  elif [[ "$drv" == nouveau && $has_nvidia -eq 1 ]]; then
+    # The open driver cannot bind a GPU the proprietary kernel module owns.
+    na "$drv (hardware $v)" "proprietary nvidia.ko is bound to this GPU"
+  elif [[ -z "$PROBE" ]]; then
+    na "$drv (hardware $v)" "no compiler to build the probe"
+  else
+    out="$(run_probe __EGL_VENDOR_LIBRARY_FILENAMES="$VD/50_mesa.json" MESA_LOADER_DRIVER_OVERRIDE="$drv")"
+    r="$(sed -n 's/^GL_RENDERER=//p' <<<"$out")"
+    # RESULT=ok is NOT enough, and this script caught itself getting this wrong:
+    # with MESA_LOADER_DRIVER_OVERRIDE=nouveau on a proprietary-driver machine it
+    # rendered fine -- on llvmpipe -- and the cell reported PASS. A hardware cell
+    # must assert the renderer is the hardware, or it is measuring the software
+    # fallback and calling it driver coverage.
+    if ! grep -q "^RESULT=ok" <<<"$out"; then
+      bad "$drv (hardware $v)" "${r:-did not render}"
+    elif grep -qi "llvmpipe\|softpipe\|swrast" <<<"$r"; then
+      bad "$drv (hardware $v)" "fell back to software: $r"
+    else
+      ok "$drv (hardware $v)" "$r"
+    fi
+  fi
+done
+
+# WSL2
+if [[ $has_dxg -eq 1 ]]; then
+  if [[ ! -e "$S/usr/lib/dri/d3d12_dri.so" ]]; then
+    bad "WSL2 d3d12" "/dev/dxg present but d3d12_dri.so is NOT in the payload"
+  elif [[ -z "$PROBE" ]]; then
+    na "WSL2 d3d12" "no compiler to build the probe"
+  else
+    out="$(run_probe GALLIUM_DRIVER=d3d12 __EGL_VENDOR_LIBRARY_FILENAMES="$VD/50_mesa.json")"
+    grep -q "^RESULT=ok" <<<"$out" \
+      && ok "WSL2 d3d12" "$(sed -n 's/^GL_RENDERER=//p' <<<"$out")" \
+      || bad "WSL2 d3d12" "$(sed -n 's/^GL_RENDERER=//p' <<<"$out" || echo 'did not render')"
+  fi
+else
+  na "WSL2 d3d12" "/dev/dxg absent (not WSL2)"
+fi
+
+# ── APIs and window systems ─────────────────────────────────────────────
+sect "4. APIs and window systems"
+
+if [[ -e "$S/lib/libvulkan.so.1" ]]; then
+  icds=$(ls "$S/share/vulkan/icd.d"/*.json 2>/dev/null | wc -l | tr -d ' ')
+  ok "Vulkan loader + ICDs" "$icds ICD manifest(s)"
+else
+  na "Vulkan" "no vulkan-loader package in the stack yet"
+fi
+
+if [[ $has_display -eq 1 ]]; then
+  if [[ -n "$PROBE" && -f "$HERE/glxprobe.c" ]]; then
+    ok "X11 / GLX reachable" "DISPLAY=$DISPLAY (depth checked by verify-host-link)"
+  else
+    na "X11 / GLX reachable" "no glxprobe to build"
+  fi
+else
+  na "X11 / GLX reachable" "DISPLAY unset"
+fi
+[[ $has_wayland -eq 1 ]] \
+  && na "Wayland" "WAYLAND_DISPLAY set but no Wayland probe exists yet (O4)" \
+  || na "Wayland" "WAYLAND_DISPLAY unset"
+
+# ── a real application ──────────────────────────────────────────────────
+sect "5. a real GUI application, not a probe"
+
+# The distinction this section exists for: mesa's dependency closure is a
+# RENDERING library's closure. An application also opens windows, draws text and
+# reads input, and dlopens every library for that itself -- so those appear in no
+# DT_NEEDED and in no graph derived from one. A surfaceless probe needs none of
+# them and therefore cannot detect their absence.
+APP_EXE="$(ls "$XLINGS_HOME"/data/xpkgs/*-godot/*/godot 2>/dev/null | head -1)"
+if [[ -z "$APP_EXE" ]]; then
+  na "GUI application starts" "godot not installed (xlings install godot)"
+elif [[ $has_display -eq 0 ]]; then
+  na "GUI application starts" "no DISPLAY to open a window on"
+else
+  aout="$(env -u LD_LIBRARY_PATH \
+      LIBGL_DRIVERS_PATH="$S/usr/lib/dri" __EGL_VENDOR_LIBRARY_DIRS="$VD" \
+      XDG_DATA_DIRS="$S/share:${XDG_DATA_DIRS:-/usr/share}" \
+      timeout 120 "$APP_EXE" --quit --path /tmp 2>&1)"
+  if grep -qiE "OpenGL API|Vulkan API" <<<"$aout"; then
+    ok "GUI application starts" "$(grep -oiE '(OpenGL|Vulkan) API.*' <<<"$aout" | head -1 | cut -c1-64)"
+  else
+    bad "GUI application starts" "$(grep -oE '[a-z0-9+_-]+\.so[.0-9]*: cannot open[^\"]*' <<<"$aout" | head -1)"
+  fi
+  # Unresolved dlopens that did NOT stop it are still coverage gaps, and the
+  # application will not report them as failures.
+  miss=$(grep -oE '^lib[a-z0-9+_.-]+\.so[.0-9]*' <<<"$aout" | sort -u | tr '\n' ' ')
+  [[ -n "$miss" ]] && printf '    \033[0;33m!\033[0m non-fatal unresolved dlopen: %s\n' "$miss"
+
+  # The claim A7 rests on: with the stack present, no host directory is on the
+  # application's RPATH. A renderer string cannot show this.
+  hostdirs=$(patchelf --print-rpath "$APP_EXE" 2>/dev/null | tr ':' '\n' | grep -cE '^/usr/lib|^/lib' || true)
+  [[ "${hostdirs:-0}" -eq 0 ]] \
+    && ok "app RPATH free of host dirs" "0 host directories" \
+    || bad "app RPATH free of host dirs" "$hostdirs host directories still on it"
+fi
+
+# ── self-containment ────────────────────────────────────────────────────
+sect "6. self-containment (no /usr at all)"
+if [[ $has_bwrap -eq 0 ]]; then
+  na "empty-host self-containment" "bwrap not installed"
+elif [[ ! -x "$HERE/selfcontained-check.sh" ]]; then
+  na "empty-host self-containment" "selfcontained-check.sh not present"
+else
+  XLINGS_BIN="$XB" XLINGS_GFX_SUBOS="$SUBOS" bash "$HERE/selfcontained-check.sh" >/tmp/gfxverify-sc.log 2>&1
+  rc=$?
+  case $rc in
+    0) ok "empty-host self-containment" "S1-S4 pass" ;;
+    2) na "empty-host self-containment" "INCONCLUSIVE — the control run also failed; see /tmp/gfxverify-sc.log" ;;
+    *) bad "empty-host self-containment" "$(grep -oE 'FAIL:.*' /tmp/gfxverify-sc.log | head -1)" ;;
+  esac
+fi
+
+# ── summary ─────────────────────────────────────────────────────────────
+sect "summary"
+printf '  pass %d   fail %d   not-exercised-here %d\n\n' "$pass" "$fail" "$skip"
+if [[ $skip -gt 0 ]]; then
+  echo "  Cells this machine could not exercise — someone with that hardware must:"
+  for r in "${ROWS[@]}"; do
+    [[ "${r%%|*}" == SKIP ]] || continue
+    n="${r#SKIP|}"; echo "    · ${n%%|*}  (${n#*|})"
+  done
+  echo
+fi
+if [[ $JSON -eq 1 ]]; then
+  printf '{"host":{"vendors":"%s","nvidia":"%s","dxg":%s},"results":[' \
+    "$vendors" "${nv_ver:-}" "$([[ $has_dxg -eq 1 ]] && echo true || echo false)"
+  sep=""
+  for r in "${ROWS[@]}"; do
+    st="${r%%|*}"; n="${r#*|}"
+    printf '%s{"status":"%s","cell":"%s","note":"%s"}' "$sep" "$st" "${n%%|*}" "${n#*|}"; sep=","
+  done
+  printf ']}\n'
+fi
+
+[[ $KEEP -eq 1 ]] || echo "  (subos '$SUBOS' kept; remove with: xlings subos remove $SUBOS)"
+# Skips do not fail the run. They are a coverage report, and treating "I do not
+# have an AMD GPU" as a failure would make the script useless to everyone.
+[[ $fail -eq 0 ]] && exit 0 || exit 1
