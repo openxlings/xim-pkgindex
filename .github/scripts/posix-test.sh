@@ -420,8 +420,16 @@ for rel_file in "${files[@]}"; do
     # reported and skipped, not folded into log_pass. See .agents/tools/README.md.
     if [[ "$HOST_OS" == "linux" && -n "$installed_version" ]]; then
         step "[$pkg] declared deps vs DT_NEEDED"
+        # `examined` exists because the first version of this block could print
+        # its header and then nothing at all. A script-type package has no
+        # payload directory, so `install_dirs` is empty, `<<<` still feeds the
+        # loop one empty line, the -d test skips it, and the step reported
+        # neither pass nor skip -- a check announcing itself and going silent,
+        # which is the exact shape the check was added to remove.
+        examined=0
         while IFS= read -r dir; do
-            [[ -d "$dir/$installed_version" ]] || continue
+            [[ -n "$dir" && -d "$dir/$installed_version" ]] || continue
+            examined=$((examined + 1))
             "$WORKSPACE_ROOT/.github/scripts/dep-closure-check.sh" \
                 "$dir/$installed_version" "$lua_file" "$HOST_OS" "$XPKGS_DIR"
             case $? in
@@ -431,6 +439,8 @@ for rel_file in "${files[@]}"; do
                    failures+=("$rel_file (dep-closure)") ;;
             esac
         done <<< "$install_dirs"
+        [[ $examined -eq 0 ]] \
+            && info "no payload directory for '$pkg' (type=$pkg_type); nothing to check"
     fi
 
     # Remove exactly what this test installed, not "whatever is active" — a
