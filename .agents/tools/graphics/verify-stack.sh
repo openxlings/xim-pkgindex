@@ -162,11 +162,21 @@ run_probe() {  # $1..: extra env assignments
 if [[ -z "$PROBE" ]]; then
   na "software rendering (llvmpipe)"  "no host compiler to build the probe"
 else
-  out="$(run_probe __EGL_VENDOR_LIBRARY_FILENAMES="$VD/50_mesa.json")"
-  if grep -q "^RESULT=ok" <<<"$out" && grep -qi "llvmpipe" <<<"$out"; then
-    ok "software rendering (llvmpipe)" "$(sed -n 's/^GL_RENDERER=//p' <<<"$out")"
+  # LIBGL_ALWAYS_SOFTWARE, not just "pick the mesa vendor".
+  #
+  # Selecting mesa is not the same as selecting SOFTWARE. The moment a Vulkan
+  # loader appeared in the stack, this cell started reporting
+  #   zink Vulkan 1.3 (NVIDIA GeForce RTX 4080 (NVIDIA_PROPRIETARY))
+  # -- mesa had switched to zink, its GL-over-Vulkan driver, which is a real and
+  # welcome capability but is emphatically not the CPU path this cell exists to
+  # prove. The cell was named for llvmpipe and was measuring "whatever mesa
+  # chose".
+  out="$(run_probe __EGL_VENDOR_LIBRARY_FILENAMES="$VD/50_mesa.json" LIBGL_ALWAYS_SOFTWARE=1)"
+  r="$(sed -n 's/^GL_RENDERER=//p' <<<"$out")"
+  if grep -q "^RESULT=ok" <<<"$out" && grep -qiE "llvmpipe|softpipe|swrast" <<<"$r"; then
+    ok "software rendering (llvmpipe)" "$r"
   else
-    bad "software rendering (llvmpipe)" "$(sed -n 's/^GL_RENDERER=//p' <<<"$out" || echo 'no renderer')"
+    bad "software rendering (llvmpipe)" "${r:-no renderer}"
   fi
 fi
 
@@ -237,11 +247,21 @@ fi
 # ── APIs and window systems ─────────────────────────────────────────────
 sect "4. APIs and window systems"
 
-if [[ -e "$S/lib/libvulkan.so.1" ]]; then
-  icds=$(ls "$S/share/vulkan/icd.d"/*.json 2>/dev/null | wc -l | tr -d ' ')
-  ok "Vulkan loader + ICDs" "$icds ICD manifest(s)"
+if [[ ! -e "$S/lib/libvulkan.so.1" ]]; then
+  na "Vulkan loader + our ICD" "no vulkan-loader package in the stack yet"
 else
-  na "Vulkan" "no vulkan-loader package in the stack yet"
+  # A loader with none of OUR ICDs in the subos is not Vulkan support -- it is a
+  # loader that will find the HOST's ICDs and report success. Exactly the
+  # boundary the GL side needed interposers for, one API over. This first
+  # reported "loader + 0 ICD manifest(s)" as a PASS, which is the same shape as
+  # counting zero installed packages as coverage.
+  icds=$(ls "$S/share/vulkan/icd.d"/*.json 2>/dev/null | wc -l | tr -d ' ')
+  if [[ "${icds:-0}" -gt 0 ]]; then
+    ok "Vulkan loader + our ICD" "$icds ICD manifest(s) in the subos"
+  else
+    bad "Vulkan loader + our ICD" \
+        "libvulkan.so.1 present but NO ICD of ours in $S/share/vulkan/icd.d — any Vulkan here is the host's"
+  fi
 fi
 
 if [[ $has_display -eq 1 ]]; then

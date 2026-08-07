@@ -74,6 +74,9 @@ local graphics = {}
 graphics.DRI_DIR        = "usr/lib/dri"
 graphics.EGL_VENDOR_DIR = "share/glvnd/egl_vendor.d"
 graphics.SHARE_DIR      = "share"
+-- Where the Vulkan loader looks, relative to the subos: it searches
+-- $XDG_DATA_DIRS/vulkan/icd.d and mesa puts ${subosdir}/share on that list.
+graphics.VULKAN_ICD_DIR = "share/vulkan/icd.d"
 
 -- The variables, once. Keys are variable names; values are subos-relative
 -- paths, with no placeholder syntax -- the two emitters below add their own.
@@ -184,6 +187,41 @@ function graphics.declare_egl_vendor(install_dir, rel_json, tag)
         binding = tag,
     }
     return true
+end
+
+-- Place a Vulkan ICD manifest into the subos, where the loader looks.
+--
+-- The loader searches `$XDG_DATA_DIRS/vulkan/icd.d`, and mesa's declaration
+-- already puts `${subosdir}/share` on that variable -- so the manifest has to be
+-- under the SUBOS's share, not only in the payload. Without this the loader
+-- installs, starts, finds the HOST's ICDs and reports success: `vulkaninfo`
+-- works, zink works, and none of it is ours. That is the same boundary the GL
+-- side needed interposers for, one API over, and it looks like a pass from every
+-- angle except asking whose ICD answered.
+--
+-- Same shared-directory shape as the glvnd vendor JSON, and for the same reason:
+-- one directory, filenames decide, several packages may contribute.
+function graphics.declare_vulkan_icd(install_dir, rel_dir, tag)
+    if not xvm.files then return false end
+    local dir = path.join(install_dir, rel_dir)
+    if not os.isdir(dir) then return true end   -- a build with no Vulkan driver
+    local f = io.popen(string.format([[ls -1 "%s"/*.json 2>/dev/null]], dir))
+    if not f then return false end
+    local n = 0
+    for line in f:lines() do
+        local p = line:gsub("[\r\n]+$", "")
+        if p ~= "" then
+            local base = p:match("([^/]+)$")
+            xvm.files{
+                src = path.join(rel_dir, base),
+                dst = path.join(graphics.VULKAN_ICD_DIR, base),
+                binding = tag,
+            }
+            n = n + 1
+        end
+    end
+    f:close()
+    return n > 0
 end
 
 -- Place the DRI driver modules where LIBGL_DRIVERS_PATH points.

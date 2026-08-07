@@ -218,6 +218,12 @@ function config()
     graphics.declare_dri(dir, "lib/dri", tag)
     graphics.declare_egl_vendor(dir, "share/glvnd/egl_vendor.d/50_mesa.json", tag)
 
+    -- The Vulkan ICD manifests, into the subos for the same reason the vendor
+    -- JSON goes there: the loader reads $XDG_DATA_DIRS/vulkan/icd.d, and a
+    -- manifest that stays in the payload is never found -- the loader silently
+    -- serves the HOST's ICDs instead.
+    graphics.declare_vulkan_icd(dir, "share/vulkan/icd.d", tag)
+
     -- And the shell scope as well, from the same table, so entering the subos
     -- and running a program through its shim cannot disagree.
     graphics.declare_subos_env(tag)
