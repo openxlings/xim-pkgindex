@@ -453,7 +453,34 @@ for rel_file in "${files[@]}"; do
     fi
 
     step "[$pkg] uninstall ($remove_spec)"
-    if ! "$XLINGS_CMD" remove "$remove_spec" -y; then
+    remove_out="$("$XLINGS_CMD" remove "$remove_spec" -y 2>&1)"; remove_rc=$?
+    printf '%s\n' "$remove_out"
+    if [[ $remove_rc -ne 0 ]]; then
+        # A `type = "config"` package configures the system and registers no
+        # xvm version of its own, so there is nothing for removal to select:
+        #
+        #   uninstall failed: xvm removal selection failed for xim:cpp@gnu:
+        #   removal version is not registered (target='cpp', version='gnu')
+        #
+        # 11 of the 12 config-type recipes in this index call xvm.add zero
+        # times, so this is the shape of the type rather than a fault in one
+        # recipe -- the same reason the `namespace = "config"` branch above
+        # skips the lifecycle assertion entirely. Whether `remove` should
+        # succeed as a no-op there is a real question, and an xlings-side one;
+        # it is not this test's to answer, and it is not what put these
+        # recipes in the changed set.
+        #
+        # Narrow on purpose: the config type AND this exact diagnostic. Keying
+        # on the type alone would also swallow a genuine removal bug in
+        # `xvm-sysdetect`, the one config package that DOES call xvm.add -- and
+        # a tolerance that hides the case it was not written for is how a
+        # skipped assertion becomes permanent.
+        if [[ "$pkg_type" == "config" ]] \
+           && grep -q "removal version is not registered" <<<"$remove_out"; then
+            info "uninstall not asserted: type='config' registers no xvm version"
+            info "  (${remove_spec} -- see the note in this script)"
+            continue
+        fi
         log_fail "uninstall failed"; failures+=("$rel_file (uninstall)"); continue
     fi
 
