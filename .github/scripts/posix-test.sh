@@ -481,6 +481,27 @@ for rel_file in "${files[@]}"; do
             info "  (${remove_spec} -- see the note in this script)"
             continue
         fi
+
+        # Removing xlings when it is the only installed version is refused by
+        # design -- that binary is the one running the command, and there is a
+        # separate `xlings self uninstall` built for it.
+        #
+        # This only started happening to bump PRs after #543. Before it, a
+        # changed recipe was registered via `config --add-xpkg` and installed
+        # as `local:xlings`, which the running-binary guard does not match;
+        # #543 made CI overlay the recipe into the index instead, so it now
+        # installs as `xim:xlings` and the guard fires. PR #541 (the previous
+        # bump) shows `local:xlings@2026.8.7.1` in its log and passed; #548
+        # shows `xim:xlings@2026.8.8.1` and did not. Nothing about xlings or
+        # about the recipe changed in between.
+        #
+        # Every future bump PR touches pkgs/x/xlings.lua, so this would be red
+        # on all of them.
+        if grep -q "cannot remove the running binary itself" <<<"$remove_out"; then
+            info "uninstall not asserted: this IS the running xlings, and it is"
+            info "  the only installed version (use \`xlings self uninstall\`)"
+            continue
+        fi
         log_fail "uninstall failed"; failures+=("$rel_file (uninstall)"); continue
     fi
 
