@@ -91,6 +91,15 @@ LUA="$(command -v lua5.4 || command -v lua || true)"
 # scoped rows are included: a dep declared only under one version still governs
 # that version's closure, and this runs against exactly one installed version.
 rel_recipe="${RECIPE#"$ROOT"/}"
+# A recipe outside this checkout produces no rows from --list, which would leave
+# `declared` empty and make every soname look undeclared. That fails closed, so
+# it is not dangerous -- but it reports a dependency defect for what is really
+# a wrong argument, and someone would go edit the deps. Say which it is.
+case "$rel_recipe" in
+    pkgs/*) ;;
+    *) echo "  [SKIP] recipe is not inside this index ($RECIPE); cannot read its deps"
+       exit 3 ;;
+esac
 declared=""
 while IFS=$'\t' read -r f plat _scope kind _idx dep; do
     [[ "$f" == "$rel_recipe" ]] || continue
@@ -152,6 +161,13 @@ while IFS= read -r so; do SELF["${so##*/}"]=1; done \
 # and a check that fires on correct recipes gets switched off.
 declare -A NEEDED_BY
 ours_interp=""; sealed=0; scanned=0
+# Only executables and *.so* are considered, and that is a rule rather than a
+# sample: DT_NEEDED is resolved by soname, so a shared object has to be
+# `.so`-named for anything to ask for it, and a program has to be executable
+# for anything to run it. A file that is neither cannot participate in the
+# loader's work no matter what its ELF header says. Scanning everything instead
+# meant an `od` per file over payloads like godot and llvm -- minutes each, in a
+# check that runs per package in CI.
 while IFS= read -r -d '' f; do
     # `od`, not `head -c4` in a command substitution: a payload is full of
     # non-ELF files (.jar, .png, .dat) whose first bytes contain NUL, and bash
@@ -170,7 +186,8 @@ while IFS= read -r -d '' f; do
         [[ -n "${SELF[$n]:-}" ]] && continue
         NEEDED_BY["$n"]="${NEEDED_BY[$n]:-}${NEEDED_BY[$n]:+ }${f##*/}"
     done < <(readelf -d "$f" 2>/dev/null | grep -oP 'Shared library: \[\K[^\]]+')
-done < <(find "$PAYLOAD" -type f ! -type l -print0 2>/dev/null)
+done < <(find "$PAYLOAD" -type f ! -type l \
+             \( -perm -u+x -o -name '*.so' -o -name '*.so.*' \) -print0 2>/dev/null)
 
 if [[ $scanned -eq 0 ]]; then
     # Not a pass. A payload with no ELF in it (a header-only package, a data
