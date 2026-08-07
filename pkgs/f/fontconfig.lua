@@ -14,7 +14,14 @@ package = {
     xvm_enable = true,
     xpm = {
         linux = {
-            deps = { "freetype@2.13.2", "expat@2.6.2", "xim:glibc" },
+            -- `xim:`-qualified, not bare. A bare name resolves fine while only
+            -- one index provides it -- and CI registers every CHANGED recipe a
+            -- second time under `local:`, so the moment expat is touched in the
+            -- same PR the bare name becomes ambiguous and fontconfig's install
+            -- fails with a candidate list. That is a property of the PR, not of
+            -- the recipe, so it stays latent until some unrelated change hits
+            -- both packages at once.
+            deps = { "xim:freetype@2.13.2", "xim:expat@2.6.2", "xim:glibc" },
             ["latest"] = { ref = "2.15.0" },
             ["2.15.0"] = {
                 url = {
