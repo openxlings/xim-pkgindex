@@ -39,15 +39,11 @@ package = {
                 runtime = { libdirs = { "lib" } },
             },
             ["latest"] = { ref = "1.1.5" },
-            -- GLOBAL only, and that is a known gap rather than an oversight:
-            -- `gtc` can publish a RELEASE into an existing GitCode project but
-            -- cannot create the project itself, and `xlings-res/libXinerama`
-            -- does not exist on GitCode yet. A CN URL pointing at a missing
-            -- project would be worse than none -- it fails at download time
-            -- instead of falling back. Add the mirror table once the project is
-            -- created; the payload is byte-identical either way (sha256 below).
             ["1.1.5"] = {
-                url = "https://github.com/xlings-res/libXinerama/releases/download/1.1.5/libXinerama-1.1.5-linux-x86_64.tar.gz",
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/libXinerama/releases/download/1.1.5/libXinerama-1.1.5-linux-x86_64.tar.gz",
+                    CN     = "https://gitcode.com/xlings-res/libXinerama/releases/download/1.1.5/libXinerama-1.1.5-linux-x86_64.tar.gz",
+                },
                 sha256 = "8dfb7eb3459d920f6cc8209ee7db0a1b84cb3b4687f23f7a70442ee5c69802b3",
             },
         },

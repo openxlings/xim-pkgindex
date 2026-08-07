@@ -22,12 +22,11 @@ package = {
                 runtime = { libdirs = { "lib" } },
             },
             ["latest"] = { ref = "1.4.313" },
-            -- GLOBAL only for now: `gtc` can publish a release into an existing
-            -- GitCode project but cannot create one, and this project does not
-            -- exist there yet. A CN URL naming a missing project fails at
-            -- download instead of falling back, which is worse than none.
             ["1.4.313"] = {
-                url = "https://github.com/xlings-res/vulkan-headers/releases/download/1.4.313/vulkan-headers-1.4.313-linux-x86_64.tar.gz",
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/vulkan-headers/releases/download/1.4.313/vulkan-headers-1.4.313-linux-x86_64.tar.gz",
+                    CN     = "https://gitcode.com/xlings-res/vulkan-headers/releases/download/1.4.313/vulkan-headers-1.4.313-linux-x86_64.tar.gz",
+                },
                 sha256 = "bb305ab10c4d5c5ce5935099b4b8f364376e360bea53fee85a5e86370cef860a",
             },
         },
