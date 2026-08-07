@@ -20,7 +20,7 @@ package = {
 
     xpm = {
         windows = {
-            deps = { "shortcut-tool", "windows-acp" },
+            deps = { "xim:shortcut-tool", "xim:windows-acp" },
             ["latest"] = { ref = "5.11" },
             ["5.11"] = {
                 url = "https://gitcode.com/xlings-res/dev-cpp/releases/download/5.11/dev-cpp-5.11-windows-x86_64.zip",

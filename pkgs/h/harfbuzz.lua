@@ -14,7 +14,7 @@ package = {
     xvm_enable = true,
     xpm = {
         linux = {
-            deps = { "freetype@2.13.2" },
+            deps = { "xim:freetype@2.13.2" },
             ["latest"] = { ref = "8.3.0" },
             ["8.3.0"] = {
                 url = {

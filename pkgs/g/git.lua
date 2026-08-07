@@ -30,7 +30,7 @@ package = {
 
     xpm = {
         windows = {
-            deps = { "shortcut-tool" },
+            deps = { "xim:shortcut-tool" },
             ["latest"] = { ref = "2.51.1" },
             ["2.51.1"] = "XLINGS_RES",
         },
