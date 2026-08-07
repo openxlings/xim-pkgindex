@@ -117,7 +117,16 @@ function install()
     __write_wrapper("trendradar")
     __write_wrapper("trendradar-mcp")
 
-    __xvm_add()
+    -- Registration lives in config(), which xlings runs right after this, and
+    -- calling __xvm_add() here too registered the same name and version twice:
+    --
+    --   [error] duplicate exact registration node
+    --           at: trendradar@6.6.1   field: /nodes/2
+    --
+    -- Pre-existing since the package was added (#81) and platform-independent
+    -- -- reproduced on Linux as well as macOS. It stayed invisible because this
+    -- recipe had never been in a PR's changed set, so the install test had
+    -- never run it.
     __write_subos_shim("trendradar")
     __write_subos_shim("trendradar-mcp")
     return true
