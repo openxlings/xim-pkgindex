@@ -35,6 +35,25 @@ package = {
             -- (regenerated post 2026-05-02 design) reads this and patches
             -- consumer ELFs automatically. `abi` is the disambiguation tag
             -- when a subos hosts both glibc and musl xpkgs.
+            --
+            -- WHAT DECLARING THIS COSTS THE CONSUMER, because it is not
+            -- obvious and it is not reversible at runtime: our ld.so carries
+            -- the build machine's cache path,
+            -- `/home/xlings/.xlings_data/.../etc/ld.so.cache`, which exists on
+            -- no machine (`strings` it; the host's says `/etc/ld.so.cache`).
+            -- On a multiarch distro essentially every system library lives in
+            -- /usr/lib/<triple> and is reachable ONLY through that cache, so a
+            -- payload whose PT_INTERP points here has no host fallback at all.
+            --
+            -- That is the intended end state — the 2.44 build prefix is
+            -- literally `/nonexistent/xlings-use-rpath-not-default-search` —
+            -- but it makes the declaration all-or-nothing. A consumer's closure
+            -- must cover every library it will ever load, dlopen'd ones
+            -- included. Reasoning "the missing ones are optional, so behaviour
+            -- degrades no further than today" is false: today they resolve off
+            -- the host, afterwards they resolve nowhere. Measured on
+            -- jdk-temurin, where it is the difference between a working AWT and
+            -- UnsatisfiedLinkError; see that recipe.
             exports = {
                 runtime = {
                     loader = "lib64/ld-linux-x86-64.so.2",
@@ -168,6 +187,8 @@ function install()
     log.info("Relocating glibc files(path) ...")
     __relocate()
 
+    __check_nss_coverage()
+
     return true
 end
 
@@ -237,6 +258,74 @@ function uninstall()
 end
 
 -- private
+
+-- Does the NSS module set we ship cover what this host's nsswitch.conf asks for?
+--
+-- glibc does not link its name-service backends; it dlopens `libnss_<mod>.so.2`
+-- at the moment of the first lookup, and the module MUST come from the same
+-- glibc as the caller. So a process that switched to our loader stops using the
+-- host's modules and starts using ours — for `getpwnam`, `getaddrinfo`, group
+-- lookups, everything.
+--
+-- We ship compat, db, dns, files and hesiod. A host configured with systemd's
+-- (`systemd`, `resolve`, `myhostname`, `mymachines`), Avahi's (`mdns4_minimal`)
+-- or NIS's modules names backends we do not have.
+--
+-- Warn, do not fail. On an ordinary machine the user is in /etc/passwd and
+-- `files` answers, so the missing modules never get consulted and the install
+-- is fine; failing here would break the common case to report the rare one.
+-- The rare one is real though — LDAP, NIS or systemd-homed users are resolved
+-- by exactly the modules we lack, and the failure mode is not an error but an
+-- empty answer: `getpwuid` returns nothing and the caller reports something
+-- else entirely (a missing home directory, a numeric username, a failed
+-- lookup). `xlings doctor` has a cell for the other half of this — whether
+-- getpwuid actually resolves in a home that has already switched.
+function __check_nss_coverage()
+    local conf = "/etc/nsswitch.conf"
+    if not os.isfile(conf) then
+        -- Not a pass. Say which one it is, or "no warnings" reads as "checked".
+        log.debug("no %s on this host; NSS coverage not compared", conf)
+        return
+    end
+
+    local content = io.readfile(conf)
+    if not content or content == "" then
+        log.debug("%s is empty or unreadable; NSS coverage not compared", conf)
+        return
+    end
+
+    local libdir = path.join(pkginfo.install_dir(), "lib64")
+    local seen, missing = {}, {}
+    for line in content:gmatch("[^\r\n]+") do
+        -- Comments off first, then the `db: mod [STATUS=action] mod` shape.
+        -- The bracketed reactions are control flow, not modules; leaving them
+        -- in would report `NOTFOUND` and `UNAVAIL` as missing backends.
+        local body = line:gsub("#.*", "")
+        local _, rest = body:match("^%s*([%w_]+)%s*:%s*(.*)$")
+        if rest then
+            rest = rest:gsub("%[.-%]", " ")
+            for mod in rest:gmatch("[%w_%-]+") do
+                if not seen[mod] then
+                    seen[mod] = true
+                    if not os.isfile(path.join(libdir, "libnss_" .. mod .. ".so.2")) then
+                        table.insert(missing, mod)
+                    end
+                end
+            end
+        end
+    end
+
+    if #missing == 0 then
+        log.info("NSS: every backend named in %s is present in this payload", conf)
+        return
+    end
+
+    log.warn("NSS: %s names backend(s) this glibc does not ship: %s. "
+             .. "Programs that switch to this loader will not consult them — "
+             .. "harmless if your users resolve via `files`, but users defined "
+             .. "only by those backends will silently not be found.",
+             conf, table.concat(missing, ", "))
+end
 
 -- The version key this package's entries are stored under.
 --

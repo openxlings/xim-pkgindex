@@ -81,6 +81,39 @@ package = {
     -- is relocatable as shipped. Alpine / distroless support means an
     -- INTERP rewrite across that tree; that is a separate, real-machine
     -- verified change, not something to declare blind here.
+    --
+    -- That change has now been measured, and it does NOT work yet. Declaring
+    -- `xim:glibc` would be enough to trigger it — elfpatch's predicate keys off
+    -- the loader glibc exports — and the headless result is perfect: patching a
+    -- copy of this payload to our loader with the dependency closure as RPATH
+    -- gives a working `java -version`, `javac`, libzip, libnet,
+    -- `InetAddress.getByName`, NSS `user.name`, UTF-8 default charset. The
+    -- `$ORIGIN` entries are not even missed: 14 libraries in lib/ name
+    -- libjvm.so from lib/server/ and resolve it anyway, because libjli has
+    -- already loaded it into the global scope by then.
+    --
+    -- AWT is what breaks, and it breaks hard (verified against an unpatched
+    -- control on the same machine, DISPLAY=:1):
+    --
+    --   unpatched   Toolkit.getDefaultToolkit() -> ok, 2560x1440
+    --   patched     UnsatisfiedLinkError: libawt_xawt.so: libX11.so.6:
+    --               cannot open shared object file
+    --
+    -- The reason is general and worth knowing before switching ANY package: our
+    -- glibc's ld.so has the build machine's cache path compiled in
+    -- (`/home/xlings/.xlings_data/.../etc/ld.so.cache`), which exists on no
+    -- machine. On a multiarch distro libX11 lives in /usr/lib/x86_64-linux-gnu
+    -- and is reachable ONLY through that cache. So moving PT_INTERP does not
+    -- merely stop us from *shipping* those libraries — it removes the host
+    -- fallback entirely. "Only dlopen'd on demand, so no worse than today" is
+    -- false: today they resolve off the host, afterwards they resolve nowhere.
+    --
+    -- So the closure has to be complete for soft deps too. libX11, libXext,
+    -- libXi and libXrender are already in this index (the graphics work); the
+    -- blockers are `libXtst` and `libasound`, which are not. When both exist,
+    -- declare glibc plus those six and the switch is a one-line change.
+    -- Until then this stays on the host loader deliberately, because a
+    -- self-contained JVM that cannot open a window is a regression.
     xpm = {
         linux = {
             ["latest"] = { ref = "25.0.4+7" },
