@@ -16,8 +16,8 @@ package = {
         linux = {
             -- fromsource 漏了 glib/fribidi, 这里补全(pango 运行时确需)
             deps = {
-                "glib@2.80.0", "harfbuzz@8.3.0", "fribidi@1.0.13",
-                "cairo@1.18.0", "freetype@2.13.2", "fontconfig@2.15.0",
+                "xim:glib@2.80.0", "xim:harfbuzz@8.3.0", "xim:fribidi@1.0.13",
+                "xim:cairo@1.18.0", "xim:freetype@2.13.2", "xim:fontconfig@2.15.0",
             },
             ["latest"] = { ref = "1.52.1" },
             ["1.52.1"] = {

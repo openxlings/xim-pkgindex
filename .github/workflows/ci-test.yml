@@ -60,6 +60,27 @@ jobs:
           chmod +x .github/scripts/check-no-direct-ld-libpath.sh
           .github/scripts/check-no-direct-ld-libpath.sh
 
+      # A bare dep name (`expat@2.6.2` rather than `xim:expat@2.6.2`) resolves
+      # fine while exactly one index provides that package -- and CI registers
+      # every CHANGED recipe a second time under `local:`, so the moment a PR
+      # touches both the consumer and the dependency, resolution reports
+      # `package 'expat@2.6.2' is ambiguous` and the install stops. Latent by
+      # construction: the failure is a property of the changed set, not of the
+      # recipe, so it surfaces by accident (fontconfig, #497) rather than on
+      # the PR that introduced it.
+      #
+      # lua5.4 is installed because the check LOADS each recipe as Lua and
+      # walks the deps tables. A dep list spans lines, repeats under several
+      # `xpm.<platform>` sections and has two legal shapes, so a line sweep
+      # both misses entries and mis-attributes them -- and reports clean while
+      # doing it. Sub-second once the interpreter is there.
+      - name: Lint xpkg dep namespace
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends lua5.4
+          chmod +x .github/scripts/check-dep-namespace.sh
+          .github/scripts/check-dep-namespace.sh
+
       - name: version-check unit tests (url_template + XLINGS_RES bump)
         run: python3 .github/scripts/test_version_check.py
 

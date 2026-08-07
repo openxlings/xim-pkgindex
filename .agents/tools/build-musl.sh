@@ -36,8 +36,12 @@ DIST="$WORK/dist"
 
 log()  { echo "[build:$NAME] $*"; }
 fail() { echo "[build:$NAME] FAIL: $*" >&2; exit 1; }
+# 3, not 1. Exit-code contract: .agents/tools/README.md. "this machine is the
+# wrong architecture" is not a failed build, and a matrix driver that reads 1 as
+# a build failure would open a bug against musl for a working script.
+skip() { echo "[build:$NAME] SKIP: $*" >&2; exit 3; }
 
-[[ "$ARCH" == "x86_64" ]] || fail "this script only builds the x86_64 payload (host is $ARCH)"
+[[ "$ARCH" == "x86_64" ]] || skip "this script only builds the x86_64 payload (host is $ARCH)"
 
 rm -rf "$STAGE"; mkdir -p "$SRC" "$STAGE" "$DIST"
 

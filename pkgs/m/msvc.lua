@@ -11,7 +11,7 @@ package = {
 
     xpm = {
         windows = {
-            deps = { "vs-buildtools@2022" },
+            deps = { "xim:vs-buildtools@2022" },
             ["latest"] = { ref = "2022" },
             ["2022"] = {}, -- v143
         },

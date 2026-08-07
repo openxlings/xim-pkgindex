@@ -16,7 +16,7 @@ package = {
 
     xpm = {
         linux = {
-            deps = { "make", "gcc", "xpkg-helper" },
+            deps = { "xim:make", "xim:gcc", "xim:xpkg-helper" },
             ["latest"] = { ref = "0.0.1" },
             ["0.0.1"] = {}
         },

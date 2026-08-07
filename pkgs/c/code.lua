@@ -43,6 +43,26 @@ package = {
             },
             ["1.93.1"] = _win_url("1.93.1"),
         },
+        -- INTENTIONALLY ON THE HOST LOADER. This is a decision, not an
+        -- unfinished migration, and it is recorded here so the next sweep for
+        -- payloads still using the host's ld-linux does not "fix" it.
+        --
+        -- Measured on the 1.108.0 payload: 27 external sonames with no provider
+        -- in this index — libgtk-3, libgdk-3, libatk, libatk-bridge, libatspi,
+        -- libdbus-1, libgbm, libsecret-1, libsoup-3.0, libwebkit2gtk-4.1,
+        -- libnss3/libnspr4/libsmime3/libnssutil3, libudev, libcurl, libasound,
+        -- libxkbfile, libXcomposite, libXdamage and friends. That is a desktop
+        -- environment, not a dependency list.
+        --
+        -- Electron is designed to use the host's desktop stack: the portals,
+        -- the theme, the a11y bus, the keyring and the GPU compositor all have
+        -- to be the ones the user is logged into. Vendoring them would not make
+        -- this package self-contained, it would make it a second, worse desktop.
+        --
+        -- And switching the interpreter without vendoring them is not a partial
+        -- win either. Our glibc's ld.so has a cache path that exists on no
+        -- machine, so PT_INTERP moving to it removes the host fallback outright
+        -- (see jdk-temurin.lua for the measurement). `code` would stop starting.
         linux = {
             ["latest"] = { ref = "1.132.0" },
             ["1.132.0"] = _linux_url("1.132.0", "acdaf0fa557bda1720956ff65ca0de0965e92d68f97e2db22341984400937aed"),

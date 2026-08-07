@@ -17,7 +17,7 @@ package = {
     -- until someone asks for non-Linux deployment.
     xpm = {
         linux = {
-            deps = {"sing-box"},
+            deps = {"xim:sing-box"},
             ["1.0.0"] = {},
         },
     },

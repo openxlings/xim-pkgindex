@@ -28,15 +28,15 @@ package = {
 
     xpm = {
         windows = {
-            deps = {"rustup", "rustup-mirror"},
+            deps = {"xim:rustup", "xim:rustup-mirror"},
             ["latest"] = { }
         },
         linux = {
-            deps = {"rustup", "rustup-mirror"},
+            deps = {"xim:rustup", "xim:rustup-mirror"},
             ["latest"] = { }
         },
         macosx = {
-            deps = {"rustup", "rustup-mirror"},
+            deps = {"xim:rustup", "xim:rustup-mirror"},
             ["latest"] = { }
         },
     },

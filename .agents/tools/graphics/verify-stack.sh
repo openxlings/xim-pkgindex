@@ -3,6 +3,9 @@
 #
 #   verify-stack.sh [--subos NAME] [--home DIR] [--keep] [--json]
 #
+#   exit 0 everything that ran passed · 1 something failed · 3 nothing ran
+#   sending a run back from hardware we do not have: graphics/collect-matrix.md
+#
 # WHY THIS EXISTS
 #
 # Verification of this stack was three scripts that each covered one slice:
@@ -38,13 +41,17 @@ while [[ $# -gt 0 ]]; do
     --home)  XHOME_ARG="$2"; shift 2 ;;
     --keep)  KEEP=1; shift ;;
     --json)  JSON=1; shift ;;
-    -h|--help) sed -n '2,8p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,7p' "$0"; exit 0 ;;
     *) echo "unknown argument: $1" >&2; exit 2 ;;
   esac
 done
 
 XB="${XLINGS_BIN:-$(command -v xlings 2>/dev/null)}"
-[[ -x "$XB" ]] || { echo "no xlings on PATH; set XLINGS_BIN" >&2; exit 2; }
+# 3, not 2: without xlings not one cell below can be attempted. See the exit-code
+# contract in .agents/tools/README.md -- a caller must count this as "not run",
+# never as a pass. (An unknown flag above stays 2: the run produced no verdict
+# either way, and both are outside the pass/fail axis.)
+[[ -x "$XB" ]] || { echo "no xlings on PATH; set XLINGS_BIN" >&2; exit 3; }
 export XLINGS_HOME="${XHOME_ARG:-${XLINGS_HOME:-$HOME/.xlings}}"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 S="$XLINGS_HOME/subos/$SUBOS"
@@ -142,7 +149,16 @@ CC="${CC:-}"; [[ -n "$CC" ]] || for c in /usr/bin/gcc /usr/bin/cc /usr/bin/clang
   [[ -x "$c" ]] && { CC="$c"; break; }
 done
 PROBE=""
+# Why the reason is a variable: every cell below skips on `-z "$PROBE"` and each
+# one used to print "no compiler to build the probe". There are three ways to get
+# here and only one of them is that. A machine with gcc where the probe fails to
+# LINK (no libEGL in the subos, say) was told it had no compiler, which is a
+# wrong cause -- and a wrong cause is worse than no cause, because someone acts
+# on it.
+PROBE_WHY="no host compiler to build the probe"
+[[ -n "$CC" && ! -f "$HERE/glprobe.c" ]] && PROBE_WHY="glprobe.c is not next to this script"
 if [[ -n "$CC" && -f "$HERE/glprobe.c" ]]; then
+  PROBE_WHY="the probe did not build against this subos — see /tmp/gfxverify-probe.log"
   INC="$(find "$XLINGS_HOME/data/xpkgs" -maxdepth 4 -type d -path '*libglvnd*/include' 2>/dev/null | head -1)"
   if "$CC" -O0 -o /tmp/gfxverify-probe "$HERE/glprobe.c" ${INC:+-I"$INC"} \
         -L"$S/lib" -lEGL -lGL -Wl,--dynamic-linker="$S/lib/ld-linux-x86-64.so.2" \
@@ -161,7 +177,7 @@ run_probe() {  # $1..: extra env assignments
 }
 
 if [[ -z "$PROBE" ]]; then
-  na "software rendering (llvmpipe)"  "no host compiler to build the probe"
+  na "software rendering (llvmpipe)"  "$PROBE_WHY"
 else
   # LIBGL_ALWAYS_SOFTWARE, not just "pick the mesa vendor".
   #
@@ -185,11 +201,20 @@ fi
 # provenance rather than the renderer string.
 if [[ $has_nvidia -eq 1 ]]; then
   if [[ -x "$HERE/verify-host-link.sh" ]]; then
-    if XLINGS_BIN="$XB" CC="$CC" bash "$HERE/verify-host-link.sh" "$XLINGS_HOME" "$SUBOS" >/tmp/gfxverify-nv.log 2>&1; then
-      ok "NVIDIA proprietary (interposed)" "$(grep -oE 'PASS: [0-9]+ checks' /tmp/gfxverify-nv.log | head -1)"
-    else
-      bad "NVIDIA proprietary (interposed)" "$(grep -oE 'FAIL:.*' /tmp/gfxverify-nv.log | head -1)"
-    fi
+    # `if cmd; then ok; else bad; fi` is the caller half of the same bug: it
+    # reads every non-zero as failure, so verify-host-link's 3 (no host
+    # compiler, so no probe was ever built) painted this cell red. Match on the
+    # code, and pass the whole PASS line through -- it carries ", N not
+    # performed", which the old `PASS: [0-9]+ checks` pattern cut off, leaving a
+    # green cell that hid four unproven entry points.
+    XLINGS_BIN="$XB" CC="$CC" bash "$HERE/verify-host-link.sh" "$XLINGS_HOME" "$SUBOS" >/tmp/gfxverify-nv.log 2>&1
+    rc=$?
+    case $rc in
+      0) ok "NVIDIA proprietary (interposed)" "$(grep -oE 'PASS:.*' /tmp/gfxverify-nv.log | head -1)" ;;
+      2) na "NVIDIA proprietary (interposed)" "INCONCLUSIVE — see /tmp/gfxverify-nv.log" ;;
+      3) na "NVIDIA proprietary (interposed)" "$(grep -oE '(NOT RUN|no host compiler).*' /tmp/gfxverify-nv.log | head -1)" ;;
+      *) bad "NVIDIA proprietary (interposed)" "$(grep -oE 'FAIL:.*' /tmp/gfxverify-nv.log | head -1)" ;;
+    esac
   else
     na "NVIDIA proprietary (interposed)" "verify-host-link.sh not present"
   fi
@@ -210,7 +235,7 @@ for pair in "amd:radeonsi" "intel:iris" "nvidia:nouveau"; do
     # The open driver cannot bind a GPU the proprietary kernel module owns.
     na "$drv (hardware $v)" "proprietary nvidia.ko is bound to this GPU"
   elif [[ -z "$PROBE" ]]; then
-    na "$drv (hardware $v)" "no compiler to build the probe"
+    na "$drv (hardware $v)" "$PROBE_WHY"
   else
     out="$(run_probe __EGL_VENDOR_LIBRARY_FILENAMES="$VD/50_mesa.json" MESA_LOADER_DRIVER_OVERRIDE="$drv")"
     r="$(sed -n 's/^GL_RENDERER=//p' <<<"$out")"
@@ -234,7 +259,7 @@ if [[ $has_dxg -eq 1 ]]; then
   if [[ ! -e "$S/usr/lib/dri/d3d12_dri.so" ]]; then
     bad "WSL2 d3d12" "/dev/dxg present but d3d12_dri.so is NOT in the payload"
   elif [[ -z "$PROBE" ]]; then
-    na "WSL2 d3d12" "no compiler to build the probe"
+    na "WSL2 d3d12" "$PROBE_WHY"
   else
     out="$(run_probe GALLIUM_DRIVER=d3d12 __EGL_VENDOR_LIBRARY_FILENAMES="$VD/50_mesa.json")"
     grep -q "^RESULT=ok" <<<"$out" \
@@ -308,10 +333,20 @@ else
 
   # The claim A7 rests on: with the stack present, no host directory is on the
   # application's RPATH. A renderer string cannot show this.
-  hostdirs=$(patchelf --print-rpath "$APP_EXE" 2>/dev/null | tr ':' '\n' | grep -cE '^/usr/lib|^/lib' || true)
-  [[ "${hostdirs:-0}" -eq 0 ]] \
-    && ok "app RPATH free of host dirs" "0 host directories" \
-    || bad "app RPATH free of host dirs" "$hostdirs host directories still on it"
+  #
+  # The patchelf probe is not decoration. Without it this pipeline read an empty
+  # RPATH from a command that does not exist, counted zero host directories in
+  # it, and printed ✓ app RPATH free of host dirs -- the strongest-sounding cell
+  # in the section, produced by running nothing. 2>/dev/null and `|| true`
+  # between them erased both the "command not found" and the non-zero status.
+  if ! command -v patchelf >/dev/null 2>&1; then
+    na "app RPATH free of host dirs" "no patchelf to read the RPATH with"
+  else
+    hostdirs=$(patchelf --print-rpath "$APP_EXE" 2>/dev/null | tr ':' '\n' | grep -cE '^/usr/lib|^/lib' || true)
+    [[ "${hostdirs:-0}" -eq 0 ]] \
+      && ok "app RPATH free of host dirs" "0 host directories" \
+      || bad "app RPATH free of host dirs" "$hostdirs host directories still on it"
+  fi
 fi
 
 # ── self-containment ────────────────────────────────────────────────────
@@ -356,4 +391,18 @@ fi
 [[ $KEEP -eq 1 ]] || echo "  (subos '$SUBOS' kept; remove with: xlings subos remove $SUBOS)"
 # Skips do not fail the run. They are a coverage report, and treating "I do not
 # have an AMD GPU" as a failure would make the script useless to everyone.
+#
+# But `fail -eq 0` alone exits 0 for a machine where every cell was skipped, and
+# pass 0 / fail 0 is not a pass. Both counters, in this order: a run where
+# everything genuinely failed is broken (1), not could-not-run (3).
+#
+# As the sections stand this cannot fire — section 1 either records a pass or
+# exits early — so it is a guard rather than a live path. It is here because the
+# next `na` added above section 1, or a --no-install flag, would silently make
+# "ran nothing" exit 0 again, which is the one outcome this script exists to
+# rule out.
+if [[ $pass -eq 0 && $fail -eq 0 ]]; then
+  echo "  nothing was proven on this machine — reporting could-not-run, not success"
+  exit 3
+fi
 [[ $fail -eq 0 ]] && exit 0 || exit 1

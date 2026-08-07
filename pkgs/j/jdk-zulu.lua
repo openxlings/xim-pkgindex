@@ -52,7 +52,15 @@ package = {
     -- ARCH / PLATFORM COVERAGE — linux and macosx ship x86_64 + aarch64,
     -- windows ships x86_64 only.
     --
-    -- RUNTIME DEPS — none, for the reason recorded in jdk-temurin.lua.
+    -- RUNTIME DEPS — none, for the reason recorded in jdk-temurin.lua, which
+    -- now includes the measured result of trying the interpreter switch: it is
+    -- clean headless and breaks AWT, because our loader has no host fallback.
+    -- Zulu measures the same as Temurin with one addition — its libjli.so,
+    -- libsplashscreen.so and libinstrument.so name `libz.so.1`, which Temurin's
+    -- do not. libjli is loaded by `bin/java` itself, so when this package does
+    -- switch, `xim:zlib` is a HARD dep here, not an optional one: leave it out
+    -- and `java` fails to start rather than degrading. Same blockers otherwise
+    -- (`libXtst`, `libasound`).
     xpm = {
         linux = {
             ["latest"] = { ref = "25.0.4" },

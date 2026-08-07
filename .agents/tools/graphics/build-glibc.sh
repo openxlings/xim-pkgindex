@@ -33,8 +33,11 @@ DIST="$WORK/dist"
 
 log()  { echo "[gfx-build:$NAME] $*"; }
 fail() { echo "[gfx-build:$NAME] FAIL: $*" >&2; exit 1; }
+# 3, not 1: nothing was built because there was nowhere to build it. See the
+# exit-code contract in .agents/tools/README.md.
+skip() { echo "[gfx-build:$NAME] SKIP: $*" >&2; exit 3; }
 
-[[ -d "$SUBOS" ]] || fail "subos '$SUBOS_NAME' not found"
+[[ -d "$SUBOS" ]] || skip "subos '$SUBOS_NAME' not found — xlings subos new $SUBOS_NAME"
 rm -rf "$STAGE"; mkdir -p "$SRC" "$STAGE" "$DIST"
 
 # Same shape as the published 2.39, so a home holding both resolves them the

@@ -79,22 +79,22 @@ package = {
                     -- Sentinel: WSL2's Windows-side D3D12 userspace.
                     -- A no-op anywhere that is not WSL2.
                     --
-                    -- BARE, unlike its two siblings above, and the asymmetry is
-                    -- the point: `wsl-gl-host-link` is NEW in this change, so it
-                    -- does not exist in the `xim` namespace yet. CI registers a
-                    -- changed recipe under `local`, and an `xim:` prefix can only
-                    -- resolve from that one namespace -- so a batch of new
-                    -- interdependent packages can never install until every one
-                    -- of them is already published. Measured here as
+                    -- This was BARE, unlike its two siblings above, while
+                    -- `wsl-gl-host-link` was NEW: CI registers a changed recipe
+                    -- under `local`, and an `xim:` prefix resolves from that one
+                    -- namespace alone -- so a batch of new interdependent
+                    -- packages can never install until every one of them is
+                    -- already published. Measured then as
                     -- `package 'xim:wsl-gl-host-link@>=0.1' not found`; #498 hit
                     -- the same wall and fixed it the same way.
                     --
-                    -- `mesa` and `nvidia-gl-host-link` keep their prefix because
-                    -- they ARE published: a changed recipe exists under BOTH
-                    -- `xim` and `local` during CI, and a bare name is then
-                    -- ambiguous -- the resolver refuses to guess. New package:
-                    -- bare. Existing package: namespaced.
-                    "wsl-gl-host-link@>=0.1",
+                    -- That exemption lasts exactly until the package ships, and
+                    -- then inverts. #540 published it. A published recipe that a
+                    -- PR also CHANGES exists under BOTH `xim` and `local`, and a
+                    -- bare name is ambiguous there -- the resolver refuses to
+                    -- guess. New package: bare, and say so here. Published
+                    -- package: namespaced, which is what CI now enforces.
+                    "xim:wsl-gl-host-link@>=0.1",
 
                     -- The rest of what a GUI PROGRAM needs, as opposed to what
                     -- mesa needs.
@@ -130,11 +130,11 @@ package = {
                     "xim:fontconfig@>=2.14",
                     -- Non-fatal when absent (single-screen fallback), which is
                     -- exactly why it went unnoticed until a real toolkit ran.
-                    "libXinerama@>=1.1",
+                    "xim:libXinerama@>=1.1",
                     -- An ICD is a driver; a driver needs a loader. mesa ships
                     -- RADV and its manifest, and without libvulkan.so.1 nothing
                     -- ever reads it -- which also leaves zink dead.
-                    "vulkan-loader@>=1.4",
+                    "xim:vulkan-loader@>=1.4",
                 },
             },
             ["latest"] = { ref = "0.1.0" },

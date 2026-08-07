@@ -407,6 +407,32 @@ for rel_file in "${files[@]}"; do
         log_pass "loader and libc come from one payload"
     fi
 
+    # Declared deps vs the payload's real DT_NEEDED.
+    #
+    # Runs here, on the freshly installed payload, because that is the only
+    # place both halves exist at once: the recipe's declaration and the bytes
+    # xlings produced from it. A static check of the recipe cannot see what the
+    # binaries need, and a check of the binaries alone cannot see what was
+    # promised.
+    #
+    # Exit 3 is "this machine could not evaluate it" (no readelf, no lua, a
+    # payload with no ELF in it) and must not be read as a pass -- so it is
+    # reported and skipped, not folded into log_pass. See .agents/tools/README.md.
+    if [[ "$HOST_OS" == "linux" && -n "$installed_version" ]]; then
+        step "[$pkg] declared deps vs DT_NEEDED"
+        while IFS= read -r dir; do
+            [[ -d "$dir/$installed_version" ]] || continue
+            "$WORKSPACE_ROOT/.github/scripts/dep-closure-check.sh" \
+                "$dir/$installed_version" "$lua_file" "$HOST_OS" "$XPKGS_DIR"
+            case $? in
+                0) log_pass "dependency closure complete" ;;
+                3) info "not evaluated on this machine (exit 3)" ;;
+                *) log_fail "dependency closure incomplete"
+                   failures+=("$rel_file (dep-closure)") ;;
+            esac
+        done <<< "$install_dirs"
+    fi
+
     # Remove exactly what this test installed, not "whatever is active" — a
     # bare removal resolves the ACTIVE version, which for a binding-group member
     # can carry a provider annotation that is a DISPLAY form, not a key.

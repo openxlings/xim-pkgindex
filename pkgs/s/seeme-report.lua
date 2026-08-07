@@ -23,7 +23,7 @@ package = {
 
     xpm = {
         windows = {
-            deps = {"python@3"},
+            deps = {"xim:python@3"},
             ["latest"] = { ref = "0.0.2" },
             ["0.0.2"] = {
                 url = "https://github.com/2412322029/seeme/releases/download/pub/seeme-report.zip",

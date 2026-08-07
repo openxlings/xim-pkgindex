@@ -20,7 +20,7 @@ package = {
 
     xpm = {
         linux = {
-            deps = {"python"},
+            deps = {"xim:python"},
             ["latest"] = { ref = "2026.4.23" },
             ["2026.4.23"] = {
                 url = "https://github.com/NousResearch/hermes-agent/archive/refs/tags/v2026.4.23.tar.gz",
@@ -32,7 +32,7 @@ package = {
             },
         },
         macosx = {
-            deps = {"python"},
+            deps = {"xim:python"},
             ["latest"] = { ref = "2026.4.23" },
             ["2026.4.23"] = {
                 url = "https://github.com/NousResearch/hermes-agent/archive/refs/tags/v2026.4.23.tar.gz",

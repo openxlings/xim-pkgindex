@@ -48,6 +48,7 @@ fail() { echo "[gfx-check] FAIL: $*" >&2; exit 1; }
 # itself before calling here — every other skip was live.
 #
 # 0 = proven, 1 = broken, 2 = inconclusive, 3 = could not be exercised here.
+# The contract, and every caller's obligation under it: .agents/tools/README.md.
 skip() { echo "[gfx-check] SKIP: $*"; exit 3; }
 
 command -v bwrap  >/dev/null || skip "bwrap not available (xlings install bwrap)"
@@ -56,7 +57,12 @@ XLINGS_BIN="${XLINGS_BIN:-$(command -v xlings)}"
 
 XHOME="${XLINGS_HOME:-$HOME/.xlings}"
 SUBOS_DIR="$XHOME/subos/$SUBOS_NAME"
-[[ -d "$SUBOS_DIR" ]] || fail "subos '$SUBOS_NAME' does not exist — create it and install \`mesa\` into it first"
+# skip, not fail. verify-stack.sh creates the subos before calling here, so this
+# only fires when the script is run on its own -- and "you have not built the
+# thing yet" is not evidence that the thing is not self-contained. As `fail` it
+# exited 1, which verify-stack's default branch renders as
+# ✗ empty-host self-containment, a red cell for a check with no subject.
+[[ -d "$SUBOS_DIR" ]] || skip "subos '$SUBOS_NAME' does not exist — create it and install \`mesa\` into it first"
 
 # ── the probe ───────────────────────────────────────────────────────────
 # Built against the SUBOS's headers and libraries, not the host's. Building it

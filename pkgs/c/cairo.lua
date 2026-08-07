@@ -14,7 +14,7 @@ package = {
     xvm_enable = true,
     xpm = {
         linux = {
-            deps = { "freetype@2.13.2", "fontconfig@2.15.0", "libpng@1.6.43", "pixman@0.42.2" },
+            deps = { "xim:freetype@2.13.2", "xim:fontconfig@2.15.0", "xim:libpng@1.6.43", "xim:pixman@0.42.2" },
             ["latest"] = { ref = "1.18.0" },
             ["1.18.0"] = {
                 url = {

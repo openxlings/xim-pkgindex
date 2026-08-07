@@ -14,7 +14,7 @@ package = {
     xvm_enable = true,
     xpm = {
         linux = {
-            deps = { "zlib@1.3.1" },
+            deps = { "xim:zlib@1.3.1" },
             ["latest"] = { ref = "1.6.43" },
             ["1.6.43"] = {
                 url = {

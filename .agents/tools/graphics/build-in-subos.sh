@@ -13,22 +13,45 @@
 # So every build runs with the subos supplying the compiler, the sysroot and
 # the libraries, and the result is checked before it is allowed to ship:
 #
-#   * no DT_NEEDED that resolves outside the subos or the package itself
 #   * no RPATH/RUNPATH naming a host path
 #   * no absolute host path baked into a .pc, .la or config script
+#
+# and, since 2026-08-08, the other half of the same question:
+#
+#   * nothing the build was CONFIGURED against came from the host either
+#
+# That last one is not a refinement of the first two, it is the gap they left.
+# See "the check on the INPUTS" below for the two shipped packages that walked
+# straight through the payload check.
+#
+# KNOWN GAP. This list used to open with "no DT_NEEDED that resolves outside
+# the subos or the package itself". No such check has ever existed in this file
+# — grep it. It is the one that would catch an autotools package that picked up
+# a host library through a bare `-lfoo`: no absolute path for the input check
+# to see, and a bare SONAME for the payload check to shrug at. Recorded here
+# rather than quietly deleted, because it is the complement of the input check
+# and not a duplicate of it.
 #
 # That check is the reason this script exists rather than a README saying
 # "build it in the subos". A leaked host path does not fail the build; it fails
 # months later on someone else's machine.
+#
+# Exit codes (the contract in .agents/tools/README.md):
+#   0  proven — built, and neither its inputs nor its payload reach the host
+#   1  broken — a host reference, in the inputs or in the payload
+#   2  inconclusive — could not read what the build linked against
+#   3  could not be exercised here — a precondition this machine does not meet
 #
 # Usage:
 #   build-in-subos.sh --name libXau --version 1.0.11 \
 #       --url https://.../libXau-1.0.11.tar.xz \
 #       [--system autotools|meson|cmake] [--deps 'xorgproto libX11'] \
 #       [-- <extra configure/meson args>]
+#
+#   build-in-subos.sh --check-inputs <builddir>      # just the input check
 set -uo pipefail
 
-NAME= VERSION= URL= SYSTEM=auto DEPS= EXTRA=()
+NAME= VERSION= URL= SYSTEM=auto DEPS= EXTRA=() CHECK_INPUTS=
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --name)    NAME="$2"; shift 2 ;;
@@ -36,12 +59,20 @@ while [[ $# -gt 0 ]]; do
         --url)     URL="$2"; shift 2 ;;
         --system)  SYSTEM="$2"; shift 2 ;;
         --deps)    DEPS="$2"; shift 2 ;;
+        # Run the input check alone, against a build tree that already exists.
+        #
+        # A check that can only be exercised by rerunning a two-hour mesa build
+        # is a check nobody reruns, and both builds that motivated it are
+        # already sitting in $XLINGS_GFX_WORK/src. Being able to point it at
+        # one of those is what makes its verdict evidence rather than a claim.
+        --check-inputs) CHECK_INPUTS="$2"; NAME="${NAME:-inputs}"; shift 2 ;;
         --)        shift; EXTRA=("$@"); break ;;
         *) echo "unknown argument: $1" >&2; exit 2 ;;
     esac
 done
-[[ -n "$NAME" && -n "$VERSION" && -n "$URL" ]] || {
+[[ -n "$CHECK_INPUTS" || ( -n "$NAME" && -n "$VERSION" && -n "$URL" ) ]] || {
     echo "usage: $0 --name N --version V --url U [--system auto|autotools|meson|cmake] [--deps '...'] [-- args]" >&2
+    echo "       $0 --check-inputs <builddir>" >&2
     exit 2
 }
 
@@ -54,8 +85,278 @@ SRC="$WORK/src"
 
 log()  { echo "[gfx-build:$NAME] $*"; }
 fail() { echo "[gfx-build:$NAME] FAIL: $*" >&2; exit 1; }
+# 2 and 3 are not decoration. `fail` says the package is broken; these two say
+# the check did not get to run, which is a different thing to act on, and
+# neither of them is 0.
+inconclusive() { echo "[gfx-build:$NAME] INCONCLUSIVE: $*" >&2; exit 2; }
+skip()         { echo "[gfx-build:$NAME] SKIP: $*" >&2; exit 3; }
 
-[[ -d "$SUBOS" ]] || fail "subos '$SUBOS_NAME' not found — xlings subos new $SUBOS_NAME"
+# ══ the check on the INPUTS ═════════════════════════════════════════════
+#
+# Everything else in this script inspects the PAYLOAD. That is necessary and it
+# is not sufficient, and two shipped packages are the proof:
+#
+#   * mesa 25.0.7.1 cannot have been built against the index's `llvm` package.
+#     That package ships bin/llvm-config and none of the ~40 component .a files
+#     and no LLVM API headers, so neither of meson's two detection methods can
+#     succeed against it. The published mesa was built against the HOST's LLVM.
+#     The payload check reported "no host references" — correctly, on its own
+#     terms: a static .a leaves no DT_NEEDED at all, and a shared libLLVM
+#     leaves a bare SONAME with no path in it.
+#
+#   * building LLVM here on 2026-08-07, cmake resolved zstd to the host's
+#     /usr/lib/x86_64-linux-gnu/libzstd.so. There is no zstd package in this
+#     home at all. Nothing in the build said so; a runtime failure on another
+#     machine did.
+#
+# Both builds were configured against something that will not exist on the
+# user's machine, and the files they produced said nothing about it. So this
+# asks the other half of the question: what went IN.
+#
+# ── why this reads logs instead of sealing the container ────────────────
+#
+# The check you would rather have is the one selfcontained-check.sh uses for
+# runtime: run the build inside bwrap with no /usr bound, so the host cannot be
+# consumed because it is not there. Measured on this machine 2026-08-08, that
+# cannot work for a BUILD, for two independent reasons:
+#
+#   * the subos carries no POSIX userland. sh, sed, grep, awk, m4, install, ln,
+#     mkdir, cp, env, make, pkg-config — every one of those resolves to /usr on
+#     a gfxbuild subos with the full graphics stack installed. `./configure` is
+#     a /bin/sh script and `<subos>/bin/meson` begins `#!/bin/sh`; with /usr
+#     gone, neither can start.
+#
+#   * the subos's own toolchain entries are xlings shims that dispatch through
+#     xvm, and dispatching needs the host. Measured, with $XLINGS_HOME bound
+#     and `<subos>/bin/gcc --version` as the whole command:
+#
+#         /usr + /bin + /lib64 present  → rc 0, prints the version
+#         any subset of those           → rc 127, nothing on stdout or stderr
+#
+#     The real gcc under data/xpkgs/ runs sealed perfectly well. It is the shim
+#     layer that does not, so a sealed build cannot reach `gcc --version`.
+#
+# A sealed build would therefore not measure host leakage, it would measure
+# whether bwrap started — and it would fail identically for a clean package and
+# a dirty one, which is the exact failure mode this whole file exists to avoid.
+# Reading what the build wrote down is weaker: it can only see inputs the build
+# recorded. But what it does see is real.
+#
+# ── probed-and-rejected vs resolved-and-used ────────────────────────────
+#
+# The reason this is a parser and not a grep for "/usr". mesa's meson-log.txt
+# is 4711 lines and 841 of them contain "/usr"; flag those and the check is
+# commented out inside a week. Three separate things produce that noise, and
+# each needs its own rule:
+#
+#   1. the subos's own paths END in /usr — `<subos>/usr/lib/pkgconfig`. So a
+#      path only counts when it starts at the filesystem root. That alone takes
+#      mesa from 841 to 328.
+#
+#   2. of those 328: /usr/bin/pkg-config (321), /usr/bin/bison, /usr/bin/flex,
+#      /usr/bin/ln — host PROGRAMS the build ran. A clean autotools config.log
+#      is the same story: xz's resolved-variables section holds 12 /usr paths
+#      and all 12 are grep, sed, msgfmt, install, mkdir. Programs generate
+#      source and do not end up in the result.
+#
+#   3. and /usr/lib/gbm, /usr/lib/dri, /usr/lib/libvulkan_radeon.so — mesa's
+#      own INSTALL destinations, because --prefix is /usr. Under this script
+#      every install path looks exactly like a host path.
+#
+#   So the rule is not "a /usr path appears" but "a path was handed to the
+#   compiler as a search path, or to the linker as a file": -I, -isystem,
+#   -iquote, -idirafter, -L, and absolute *.so/*.a arguments. Neither a program
+#   nor an install destination ever takes that shape. Library FILES get one
+#   extra test — the file must exist — because that is what separates
+#   /usr/lib/libvulkan_radeon.so, where mesa will install, from
+#   /usr/lib/x86_64-linux-gnu/libzstd.so, which cmake actually linked.
+#
+#   The records themselves are filtered before any of that: meson logs every
+#   subprocess with its exit status, and a `-> 1` block is a dependency it
+#   probed and was told no; cmake writes *-NOTFOUND for the same thing, and
+#   LLVM's cache here has ZLIB_LIBRARY_DEBUG:FILEPATH=ZLIB_LIBRARY_DEBUG-NOTFOUND
+#   sitting two lines from a real one.
+#
+#   Be honest about the meson half of that, though: measured against mesa's
+#   log, dropping the `-> 1` blocks changes the verdict not at all. 4711 lines
+#   become 541; the 105 lines of rejected blocks contain no -I or -L path that
+#   is not also in an accepted one, and the only root-/usr path in them is
+#   /usr/bin/pkg-config, which the shape rule already ignores. The filter is
+#   kept because a rejected `llvm-config --libs` or `pkg-config --cflags` can
+#   still print a -L before failing, and because reading a rejected probe as an
+#   input is the kind of wrong answer that gets a check deleted. It is not
+#   carrying the noise reduction — rules 1 to 3 above are.
+#
+#   CMakeFiles/CMakeError.log is deliberately NOT read. It is by definition the
+#   record of probes that failed, so every path in it is one the build did not
+#   use; parsing it would manufacture the noise the rest of this is avoiding.
+#
+# ── an allowlist of ours, not a denylist of theirs ──────────────────────
+#
+# "/usr, /lib, /lib64" is one distro wide. The mesa tree in this work dir right
+# now resolves LLVM to
+#     -I/tmp/.../scratchpad/llvmsrc/out/include
+#     -L/tmp/.../scratchpad/llvmsrc/out/lib
+# a scratch build tree that is neither /usr nor XLINGS_HOME and that ships
+# every bit as badly — that is the mesa/LLVM instance above, caught in the act.
+# /opt/rocm, /nix/store and ~/.local are the same shape. So the test is the
+# other way round: a resolved input is inside XLINGS_HOME, or inside this
+# script's own work tree, or it is a leak.
+
+# -I/-L/-isystem/-iquote/-idirafter search paths, absolute only.
+_gfx_search_paths() {   # <record-stream-file>
+    { grep -oE -- '-(I|L)/[-A-Za-z0-9_.+@%~/]*'                 "$1"
+      grep -oE -- '-i(system|quote|dirafter)[ =]*/[-A-Za-z0-9_.+@%~/]*' "$1"
+    } 2>/dev/null | sed -E 's/^-(I|L|i(system|quote|dirafter)[ =]*)//' | sort -u
+}
+# Absolute library files named on a command line. The leading class keeps this
+# from matching the tail of a longer path (a subos path ends in .so too).
+_gfx_lib_files() {      # <record-stream-file>
+    grep -oE -- '(^|[^-A-Za-z0-9_.+@%~/])/[-A-Za-z0-9_.+@%~/]*\.(so|a)(\.[0-9]+)*' "$1" \
+        2>/dev/null | sed -E 's#^[^/]*##' | sort -u
+}
+
+check_build_inputs() {   # <builddir> → 0 clean, 1 host input, 2 no record read
+    local bd="$1" tmpd real f p line n=0 leaks=0
+    tmpd="$(mktemp -d "${TMPDIR:-/tmp}/gfx-inputs.XXXXXX")" || {
+        echo "[gfx-build:$NAME] INCONCLUSIVE: cannot create a temp dir" >&2; return 2; }
+
+    # Ours: XLINGS_HOME covers the subos and data/xpkgs; WORK covers src/,
+    # deplib/ (the rpath-patched dependency copies) and pc/ (the rewritten .pc
+    # files) — all three are this script's own and none of them ship.
+    local -a allow=("$XHOME" "$WORK")
+    for real in "$XHOME" "$WORK"; do
+        p="$(readlink -f "$real" 2>/dev/null)"
+        [[ -n "$p" && "$p" != "$real" ]] && allow+=("$p")
+    done
+
+    # ── the records, one filtered stream per source ──
+    local -a used=()          # what we actually read, for the pass line
+    local -a origin=()        # parallel: which file each stream came from
+    local -a mode=()          # parallel: flags | values
+
+    # meson. Every subprocess is logged as
+    #     Called: `<argv>` -> <rc>  /  stdout: … / -----------
+    # and only rc 0 is a resolution. The argv is kept as well as the output:
+    # llvm-config's own -I/-L come back on stdout, but a compiler check that
+    # SUCCEEDED with a host include path put it in the argv.
+    for f in "$bd/_b/meson-logs/meson-log.txt" "$bd/meson-logs/meson-log.txt"; do
+        [[ -f "$f" ]] || continue
+        awk '/^Called: `.*` -> [0-9]+$/ { keep = /-> 0$/ }
+             keep                       { print }
+             /^-+$/                     { keep = 0 }' "$f" > "$tmpd/meson-log"
+        used+=("$tmpd/meson-log"); origin+=("$f"); mode+=(flags); break
+    done
+
+    # meson and cmake both emit build.ninja, and it is the stronger record:
+    # meson-log.txt says what was detected, build.ninja is the command line
+    # that will actually run.
+    for f in "$bd/_b/build.ninja" "$bd/build.ninja"; do
+        [[ -f "$f" ]] || continue
+        used+=("$f"); origin+=("$f"); mode+=(flags); break
+    done
+
+    # cmake's cache, for the entries that hold a resolved path. -NOTFOUND is
+    # cmake's way of saying it looked and did not find, and CMAKE_INSTALL_* is
+    # a destination — neither matches the name pattern.
+    for f in "$bd/_b/CMakeCache.txt" "$bd/CMakeCache.txt"; do
+        [[ -f "$f" ]] || continue
+        grep -E '^[A-Za-z_][A-Za-z0-9_]*(_LIBRARY|_LIBRARIES|_LIBRARY_DIR|_LIBRARY_DIRS|_LIBRARY_PATH|_INCLUDE_DIR|_INCLUDE_DIRS|_INCLUDE_PATH)(_[A-Z0-9]+)?:[A-Z]+=' "$f" \
+            | grep -vi 'NOTFOUND' | sed -E 's/^[^=]*=//' | tr ';' '\n' > "$tmpd/cmake-cache"
+        grep -E '^[A-Za-z_][A-Za-z0-9_]*FLAGS[A-Za-z0-9_]*:[A-Z]+=' "$f" > "$tmpd/cmake-flags"
+        used+=("$tmpd/cmake-cache" "$tmpd/cmake-flags")
+        origin+=("$f" "$f"); mode+=(values flags); break
+    done
+
+    # autotools. The transcript above the cache is every probe, successful or
+    # not; the two sections at the end are what configure SETTLED on. Only
+    # variables that carry compiler or linker arguments — which is why
+    # `oldincludedir='/usr/include'`, an install default no build ever uses,
+    # does not come through: it is lowercase and it is not a flags variable.
+    if [[ -f "$bd/config.log" ]]; then
+        awk '/^## Cache variables/{s=1} /^## confdefs.h/{s=0} s' "$bd/config.log" \
+            | grep -E '^[A-Za-z_][A-Za-z0-9_]*(CFLAGS|CPPFLAGS|CXXFLAGS|LDFLAGS|LIBS|INCLUDES)[A-Za-z0-9_]*=' \
+            > "$tmpd/config-log"
+        used+=("$tmpd/config-log"); origin+=("$bd/config.log"); mode+=(flags)
+    fi
+
+    if [[ ${#used[@]} -eq 0 ]]; then
+        echo "[gfx-build:$NAME] INCONCLUSIVE: no configure record under $bd" >&2
+        echo "    looked for: _b/meson-logs/meson-log.txt, _b/build.ninja," >&2
+        echo "                _b/CMakeCache.txt, config.log" >&2
+        echo "    the build's inputs are UNCHECKED. That is not a pass." >&2
+        rm -rf "$tmpd"; return 2
+    fi
+
+    log "checking what the build linked AGAINST"
+    local i
+    for ((i = 0; i < ${#used[@]}; i++)); do
+        local stream="${used[$i]}" src="${origin[$i]}"
+        local -a paths=()
+        if [[ "${mode[$i]}" == values ]]; then
+            # Already one bare path per line.
+            mapfile -t paths < <(grep -E '^/' "$stream" | sort -u)
+        else
+            mapfile -t paths < <(_gfx_search_paths "$stream")
+            # A library file only counts if it is on the disk: with --prefix=/usr
+            # this build's own install destinations are spelled the same way as
+            # a host library, and they do not exist yet.
+            while IFS= read -r p; do
+                [[ -e "$p" ]] && paths+=("$p")
+            done < <(_gfx_lib_files "$stream")
+        fi
+        for p in "${paths[@]}"; do
+            [[ -n "$p" ]] || continue
+            n=$((n + 1))
+            local ok=1 a
+            for a in "${allow[@]}"; do
+                [[ -n "$a" && ( "$p" == "$a" || "$p" == "$a"/* ) ]] && { ok=0; break; }
+            done
+            [[ $ok -eq 0 ]] && continue
+            line="$(grep -nF -m1 -- "$p" "$src" 2>/dev/null | cut -d: -f1)"
+            echo "    $p"
+            echo "        ← ${src#"$bd"/}${line:+:$line}"
+            leaks=$((leaks + 1))
+        done
+    done
+    rm -rf "$tmpd"
+
+    # Say what was read and how much was checked, on the way past. A pass that
+    # prints only "ok" is indistinguishable from a pass that examined nothing,
+    # and this file has already shipped that bug once.
+    local names=""
+    for ((i = 0; i < ${#origin[@]}; i++)); do names="$names ${origin[$i]#"$bd"/}"; done
+    log "  read:$(echo "$names" | tr ' ' '\n' | sort -u | tr '\n' ' ')"
+
+    if [[ $leaks -gt 0 ]]; then
+        echo "[gfx-build:$NAME] FAIL: $leaks of $n resolved input path(s) are outside" >&2
+        echo "    XLINGS_HOME ($XHOME) and this script's work tree ($WORK)." >&2
+        echo "    The build consumed something that will not exist on the user's" >&2
+        echo "    machine. The payload can still come out clean — that is how" >&2
+        echo "    mesa 25.0.7.1 shipped against the host's LLVM." >&2
+        return 1
+    fi
+    log "  all $n resolved input path(s) are ours"
+    return 0
+}
+
+# --check-inputs: just that, against a tree already on disk. Before the subos
+# and fetch preconditions below, because none of them apply.
+if [[ -n "$CHECK_INPUTS" ]]; then
+    [[ -d "$CHECK_INPUTS" ]] || skip "no such build directory: $CHECK_INPUTS"
+    check_build_inputs "$CHECK_INPUTS"
+    exit $?
+fi
+
+# A missing subos is not a broken package — it is this machine not being set up
+# to answer the question, which is exit 3.
+[[ -d "$SUBOS" ]] || skip "subos '$SUBOS_NAME' not found — xlings subos new $SUBOS_NAME"
+# And patchelf, before anything relies on it. Every use of it below is
+# `patchelf … 2>/dev/null || true`, which is right for a file it cannot rewrite
+# and disastrous for a machine that does not have it: the payload check reads
+# `patchelf --print-rpath` into an empty string and an empty RPATH is precisely
+# what "clean" looks like. Absent tool, silent pass — probe for it instead.
+command -v patchelf >/dev/null || skip "no patchelf (xlings install patchelf)"
 # STAGE is wiped, not just created: a previous run with a different --libdir
 # leaves its own tree here, and `make install DESTDIR=` only adds. The stale
 # copy then rides into the payload and ships two layouts of the same library.
@@ -122,7 +423,7 @@ export CPPFLAGS="-I$SUBOS/usr/include"
 export LDFLAGS="-L$SUBOS/lib -L$SUBOS/usr/lib -Wl,-rpath-link,$SUBOS/usr/lib -Wl,-rpath-link,$SUBOS/lib -Wl,-rpath,\$ORIGIN"
 export CC="$SUBOS/bin/gcc"
 export CXX="$SUBOS/bin/g++"
-[[ -x "$CC" ]] || fail "no gcc in the subos — xlings install gcc"
+[[ -x "$CC" ]] || skip "no gcc in the subos — xlings install gcc"
 
 # So the binaries the BUILD runs can actually run.
 #
@@ -198,7 +499,7 @@ BUILD_ENV=()
 for dep in $DEPS; do
     depdir="$(ls -d "$XHOME"/data/xpkgs/*-"$dep"/*/ 2>/dev/null | head -1)"
     if [[ -z "$depdir" ]]; then
-        fail "--deps $dep: not installed in $XHOME (xlings install $dep)"
+        skip "--deps $dep: not installed in $XHOME (xlings install $dep)"
     fi
     log "  dep $dep -> ${depdir#"$XHOME"/data/xpkgs/}"
     # BOTH pkgconfig locations, and the second one is not a nicety.
@@ -227,11 +528,41 @@ for dep in $DEPS; do
         #
         # The payload is not touched: it is shared between subos and read-only
         # as far as a build is concerned.
+        #
+        # `prefix=` alone is not enough, and that took the input check below to
+        # notice. A payload built by THIS script was configured with
+        # --prefix=/usr --libdir=/usr/lib, so its .pc reads
+        #
+        #     prefix=<rewritten>
+        #     libdir=/usr/lib          ← absolute, does not use ${prefix}
+        #     includedir=${prefix}/include
+        #
+        # and pkg-config duly answers `-L/usr/lib -lelf`. mesa's build was
+        # handed a host library search path for elfutils, libxcb, libX11,
+        # libXext, libXi, libXrender, libXcursor, libxshmfence and the rest —
+        # 40 of the .pc copies in the work tree carried it. It linked the
+        # right libraries anyway, but only because Debian puts them in
+        # /usr/lib/x86_64-linux-gnu; on Arch, where /usr/lib IS the library
+        # directory, that link picks up the host's copy and nothing says so.
+        # The payload check cannot see it either: it wants `/usr/lib/` with a
+        # trailing slash, so `libdir=/usr/lib` reads as clean.
+        #
+        # And running pkg-config by hand does not show it. pkg-config drops a
+        # -L for a directory it considers a system one, so `pkg-config --libs
+        # libelf` prints `-lelf` and looks fine — while meson, which sets
+        # PKG_CONFIG_ALLOW_SYSTEM_LIBS=1 on purpose, gets `-L/usr/lib -lelf`.
+        # Measured both ways against elfutils' .pc on 2026-08-08.
+        #
+        # So every absolute /usr in the copy is rewritten, not just prefix.
         pcdir="$WORK/pc/$dep"
         mkdir -p "$pcdir"
         for pc in "$pcsrc"/*.pc; do
             [[ -e "$pc" ]] || continue
-            sed "s#^prefix=.*#prefix=${depdir%/}#" "$pc" > "$pcdir/$(basename "$pc")"
+            sed -e "s#^prefix=.*#prefix=${depdir%/}#" \
+                -e "s#=/usr\$#=${depdir%/}#" \
+                -e "s#=/usr/#=${depdir%/}/#g" \
+                -e "s#\(-[IL]\)/usr/#\1${depdir%/}/#g" \
+                "$pc" > "$pcdir/$(basename "$pc")"
         done
         case ":$PKG_CONFIG_LIBDIR:" in
             *":$pcdir:"*) ;;
@@ -321,6 +652,18 @@ case "$SYSTEM" in
   *) fail "unknown build system '$SYSTEM'" ;;
 esac
 
+# Inputs before payload, and before anything is packaged.
+#
+# Ordering, not taste: a host input is the cause and a host path in the payload
+# is one of its symptoms, so reporting the cause first is what stops someone
+# patching an RPATH and calling it fixed. And failing here means no tarball is
+# written — the mesa that shipped against the host's LLVM had already been
+# packaged and staged by the time anyone looked.
+#
+# Its exit code is this script's exit code: 1 for a host input, 2 for "could
+# not read what the build linked against". Neither becomes 0.
+check_build_inputs "$BUILDDIR" || exit $?
+
 # ── flatten DESTDIR/usr into the payload root ───────────────────────────
 PAYLOAD="$WORK/payload/$NAME-$VERSION"
 rm -rf "$PAYLOAD"; mkdir -p "$PAYLOAD"
@@ -356,7 +699,9 @@ while IFS= read -r -d '' f; do
     esac
 done < <(find "$PAYLOAD" -type f ! -type l -print0)
 
-# ── the check that makes this worth scripting ───────────────────────────
+# ── the check on the OUTPUT ─────────────────────────────────────────────
+# The inputs were checked above. This is the payload: what a host path in here
+# breaks is the NEXT machine, not this one.
 leaks=0
 report_leak() { echo "    $*"; leaks=$((leaks+1)); }
 

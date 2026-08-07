@@ -36,7 +36,11 @@ class TestStatic:
 
     @pytest.mark.static
     def test_depends_on_virtualbox(self, meta):
-        assert 'deps = { "virtualbox" }' in meta.raw_content
+        # Namespaced, not bare: a bare name is ambiguous the moment a second
+        # index offers `virtualbox`, and CI registers every CHANGED recipe a
+        # second time under `local:`. Enforced index-wide by
+        # .github/scripts/check-dep-namespace.sh.
+        assert 'deps = { "xim:virtualbox" }' in meta.raw_content
 
 
 class TestIndex:
