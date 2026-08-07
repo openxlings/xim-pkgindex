@@ -26,7 +26,7 @@ package = {
 
     xpm = {
         windows = {
-            deps = { "shortcut-tool" },
+            deps = { "xim:shortcut-tool" },
             -- 默认安装简体中文版; 英文版: xlings install vc6@english
             ["latest"] = { ref = "chinese" },
             ["chinese"] = {

@@ -19,7 +19,7 @@ package = {
 }
 
 os_common = {
-    deps = { "node" },
+    deps = { "xim:node" },
     ["latest"] = { ref = "11.2.0" },
     ["11.2.0"] = { },
     ["11.0.0"] = { },
