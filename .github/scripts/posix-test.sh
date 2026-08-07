@@ -187,11 +187,24 @@ fi
 # source tree. In that case, and if the overlay fails for any other reason, the
 # caller falls back to the old `--add-xpkg` behaviour rather than skipping the
 # package.
+# Only for a recipe that ALREADY EXISTS upstream — i.e. a change to a published
+# package. That is precisely the case that produces the duplicate, and it is the
+# only case overlay can serve.
+#
+# A package the PR ADDS is not in the index, so asking for it by its index name
+# makes xlings say `'xim:<pkg>' not in current index; refreshing index...` and
+# re-fetch the whole index — which overwrites the file that was just placed
+# there, and the install then fails with `not found`. New packages therefore
+# keep the `--add-xpkg` / `local:` path, where they are unambiguous anyway:
+# nothing published shares the name, so there is no second candidate.
+#
+# This also matches the namespace rule the index already follows — a new package
+# is referenced bare, a changed published one with `xim:`.
 INDEX_DIR="$XLINGS_HOME_DIR/data/xim-pkgindex"
 overlay_recipe() {
     local rel_file="$1"
     [[ -d "$INDEX_DIR" && ! -L "$INDEX_DIR" ]] || return 1
-    mkdir -p "$INDEX_DIR/$(dirname "$rel_file")" || return 1
+    [[ -f "$INDEX_DIR/$rel_file" ]] || return 1   # not published: not ours to overlay
     cp -f "$WORKSPACE_ROOT/$rel_file" "$INDEX_DIR/$rel_file" || return 1
     return 0
 }
