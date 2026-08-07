@@ -246,6 +246,43 @@ local function index_packages(root)
     return set
 end
 
+-- name -> { ns = <declared namespace or nil>, plats = { linux = true, ... } }
+--
+-- Both facts come from loading the recipe, and both are needed to tell a
+-- correct dep from one that merely looks correct:
+--
+--   * `namespace = "config"` on the provider means `xim:<name>` names nothing.
+--     `config:rustup-mirror` is a real package; `xim:rustup-mirror` is not.
+--   * a provider with no section for the platform doing the depending cannot
+--     satisfy it there, whatever prefix is on the front.
+local function index_facts(root)
+    local facts = {}
+    for _, f in ipairs(recipe_files(root)) do
+        local name = f:match("([^/]+)%.lua$")
+        local pkg = name and load_recipe(f) or nil
+        if pkg then
+            local plats = {}
+            local xpm = rawget(pkg, "xpm")
+            if type(xpm) == "table" then
+                for k in pairs(xpm) do plats[tostring(k)] = true end
+            end
+            local ns = rawget(pkg, "namespace")
+            facts[name] = { ns = (type(ns) == "string" and ns ~= "") and ns or nil,
+                            plats = plats }
+        end
+    end
+    return facts
+end
+
+-- Platform keys the client can actually select.
+--
+-- `detect_platform()` in xlings returns `build_os()`, which is one of these
+-- three and nothing else -- so an `xpm.debian` or `xpm.ubuntu` section is never
+-- chosen and a dep declared inside one cannot fail at install time. Reporting
+-- those would be reporting on dead code, and a check with unfixable findings
+-- gets ignored wholesale.
+local SELECTABLE = { linux = true, macosx = true, windows = true }
+
 -- ── the dep spec ───────────────────────────────────────────────────────
 -- "xim:expat@2.6.2" -> namespace "xim", name "expat", version "2.6.2"
 local function split_dep(dep)
@@ -286,12 +323,30 @@ end
 
 local function mode_check(root)
     local provided = index_packages(root)
+    local facts = index_facts(root)
     local violations, unresolved, exempted = {}, {}, {}
+    local wrong_ns, no_plat = {}, {}
     local seen = 0
 
     local bad = each_row(root, function(row)
         seen = seen + 1
         local namespace, name = split_dep(row.dep)
+        local fact = facts[name]
+
+        -- Checks that apply to a QUALIFIED dep. Both of these shipped as CI
+        -- failures on this branch's first run, from a sweep that assumed every
+        -- package is `xim:` and lives on every platform.
+        if namespace and fact then
+            local want = fact.ns or "xim"
+            if namespace ~= want then
+                wrong_ns[#wrong_ns + 1] = { row = row, name = name, want = want }
+            end
+            if SELECTABLE[row.platform] and next(fact.plats)
+               and not fact.plats[row.platform] then
+                no_plat[#no_plat + 1] = { row = row, name = name, plats = fact.plats }
+            end
+        end
+
         if namespace then return end
         if not provided[name] then
             unresolved[#unresolved + 1] = { row = row, name = name }
@@ -320,6 +375,28 @@ local function mode_check(root)
             v.name, v.path, r.dep, r.dep, v.name, "check-dep-namespace.lua"))
     end
 
+    for _, v in ipairs(wrong_ns) do
+        local r = v.row
+        io.write(string.format(
+            "::error file=%s::dep `%s` (xpm.%s%s) uses the wrong namespace. `%s` declares "
+            .. "`namespace = \"%s\"`, so the package is `%s:%s` and `%s` names nothing at all.\n",
+            r.file, r.dep, r.platform, r.scope ~= "-" and ("." .. r.scope) or "",
+            v.name, v.want, v.want, v.name, r.dep))
+    end
+
+    for _, v in ipairs(no_plat) do
+        local r = v.row
+        local list = {}
+        for p in pairs(v.plats) do list[#list + 1] = p end
+        table.sort(list)
+        io.write(string.format(
+            "::error file=%s::dep `%s` is declared under xpm.%s%s, but `%s` has sections for "
+            .. "[%s] only -- it cannot be resolved on %s. Drop the dep for this platform, or add "
+            .. "a %s section to %s.\n",
+            r.file, r.dep, r.platform, r.scope ~= "-" and ("." .. r.scope) or "",
+            v.name, table.concat(list, ", "), r.platform, r.platform, v.name))
+    end
+
     if #exempted > 0 then
         io.write(string.format("note: %d bare dep(s) exempted as not-yet-published:\n", #exempted))
         for _, e in ipairs(exempted) do
@@ -339,9 +416,11 @@ local function mode_check(root)
         end
     end
 
-    if #bad > 0 or #violations > 0 then
-        io.write(string.format("xpkg dep namespace check: FAIL (%d bare dep(s), %d unreadable recipe(s))\n",
-            #violations, #bad))
+    if #bad > 0 or #violations > 0 or #wrong_ns > 0 or #no_plat > 0 then
+        io.write(string.format(
+            "xpkg dep check: FAIL (%d bare, %d wrong-namespace, %d platform-missing, "
+            .. "%d unreadable recipe(s))\n",
+            #violations, #wrong_ns, #no_plat, #bad))
         return 1
     end
     -- The count is part of the result on purpose. A check that read nothing

@@ -22,7 +22,7 @@ package = {
 
     xpm = {
         windows = {
-            deps = { "xim:virtualbox" },
+            -- xim:virtualbox ships linux only, so this dep resolved to nothing here.
             ["latest"] = { ref = "24.04.4" },
             ["24.04.4"] = {
                 url = {
@@ -45,7 +45,7 @@ package = {
         },
         ubuntu = { ref = "linux" },
         macosx = {
-            deps = { "xim:virtualbox" },
+            -- xim:virtualbox ships linux only, so this dep resolved to nothing here.
             ["latest"] = { ref = "24.04.4" },
             ["24.04.4"] = {
                 url = {

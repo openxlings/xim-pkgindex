@@ -28,7 +28,8 @@ package = {
             },
         },
         macosx = {
-            deps = {"xim:python"},
+            -- No python dep on macOS: xim:python has no macosx section, so this
+            -- resolves to nothing. macOS ships python3 in the CLT / system.
             ["latest"] = { ref = "0.3.0" },
             ["0.3.0"] = {
                 url = "https://files.pythonhosted.org/packages/6c/d5/4aca2c05481a0fb74bd2660b14b0dd0ea975e4f38bc150511a64c55af986/vcstool-0.3.0-py3-none-any.whl",
