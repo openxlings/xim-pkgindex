@@ -1,0 +1,63 @@
+name: site-check
+
+# Builds the package index site on a pull request without publishing it. The
+# other checks prove a descriptor installs; this proves it still renders — a
+# descriptor that parses fine can collide with another package's URL, and the
+# plugin reads fields no install test looks at.
+#
+# Deliberately offline: a pull request should not spend the API rate limit,
+# and the result should depend only on what is in the repository.
+
+on:
+  pull_request:
+    paths:
+      - 'pkgs/**'
+      - '.xpkgindex.json'
+      - '.xpkgindex/**'
+      - 'docs/**'
+      - '.github/workflows/site-check.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0        # --strict checks the replayed history against the tree
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install xpkgindex
+        run: pip install git+https://github.com/openxlings/xpkgindex.git
+
+      - name: Build the site
+        # --strict turns the growth reconciliation warning into an error: if
+        # the replayed history disagrees with the tree, the curve on the site
+        # would be wrong, and that is worth failing a pull request over.
+        run: xpkgindex generate . --output /tmp/site --offline --strict | tee /tmp/build.log
+
+      - name: No warnings
+        run: |
+          if grep -q 'warning:' /tmp/build.log; then
+            echo "::error::the site build reported warnings"
+            grep 'warning:' /tmp/build.log
+            exit 1
+          fi
+
+      - name: The pages a reader lands on exist
+        run: |
+          set -e
+          for f in index.html index.json stats/index.html contributors/index.html \
+                   about/index.html docs/quick-start/index.html \
+                   en/index.html zh-Hant/index.html; do
+            test -s "/tmp/site/$f" || { echo "::error::missing $f"; exit 1; }
+          done
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: site
+          path: /tmp/site
+          retention-days: 7
