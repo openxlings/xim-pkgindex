@@ -51,7 +51,14 @@ package = {
             -- res_versioned: version-bump bot tracks mcpp-community/mcpp releases
             -- and appends checked XLINGS_RES entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "2026.8.7.1" },
+            ["latest"] = { ref = "2026.8.8.1" },
+            ["2026.8.8.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "c82269b245034386d465bb496acaf86c1dc153245ad053e0b8e917e48249d076",
+                    x86_64 = "6dda4845a19ae8748b1d3ee2752361e95a470728deb70bb73fcbfa2738bba5bf",
+                },
+            },
             ["2026.8.7.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -475,7 +482,13 @@ package = {
             -- res_versioned: version-bump bot tracks mcpp-community/mcpp releases
             -- and appends checked XLINGS_RES entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "2026.8.7.1" },
+            ["latest"] = { ref = "2026.8.8.1" },
+            ["2026.8.8.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "8c78110629ceda5f7a6714c247ce8adfc02242f26be5fa259f69e1140dbf8e9c",
+                },
+            },
             ["2026.8.7.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -836,7 +849,13 @@ package = {
             -- res_versioned: version-bump bot tracks mcpp-community/mcpp releases
             -- and appends checked XLINGS_RES entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "2026.8.7.1" },
+            ["latest"] = { ref = "2026.8.8.1" },
+            ["2026.8.8.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "e8e7f87cb1f5bc84d50002119d1479a4c79abdf4c7d5b3c7044fa0e0d439b928",
+                },
+            },
             ["2026.8.7.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
