@@ -95,6 +95,39 @@ package = {
                     -- ambiguous -- the resolver refuses to guess. New package:
                     -- bare. Existing package: namespaced.
                     "wsl-gl-host-link@>=0.1",
+
+                    -- The rest of what a GUI PROGRAM needs, as opposed to what
+                    -- mesa needs.
+                    --
+                    -- This distinction cost a regression. `godot` stops adding
+                    -- host library directories to its RPATH when this package is
+                    -- present -- correct, that is the point -- and then failed to
+                    -- start on a machine where it used to work:
+                    --
+                    --   libfontconfig.so.1: cannot open shared object file
+                    --   libXcursor.so.1:    cannot open shared object file
+                    --   libxkbcommon.so.0:  cannot open shared object file
+                    --   ERROR: Can't load XCursor dynamically.
+                    --   ERROR: Could not initialize the Wayland thread.
+                    --
+                    -- mesa's dependency closure is the closure of a RENDERING
+                    -- library: libX11/libxcb to talk to the server, libdrm for
+                    -- the kernel, wayland because libEGL_mesa NEEDs it. An
+                    -- application also opens windows, draws text and reacts to
+                    -- input, and every library for that is dlopen'd by the app
+                    -- itself -- so it appears in no DT_NEEDED and in no
+                    -- dependency graph derived from one.
+                    --
+                    -- They were all already in the index. Nothing pulled them,
+                    -- because nothing had ever tried to RUN a GUI application
+                    -- out of this stack; the acceptance criterion up to now was
+                    -- a surfaceless probe, which needs none of them.
+                    "xim:libXcursor@>=1.2",
+                    "xim:libXi@>=1.8",
+                    "xim:libXrandr@>=1.5",
+                    "xim:libXrender@>=0.9",
+                    "xim:libxkbcommon@>=1.7",
+                    "xim:fontconfig@>=2.14",
                 },
             },
             ["latest"] = { ref = "0.1.0" },
