@@ -146,7 +146,8 @@ if [[ -n "$CC" && -f "$HERE/glprobe.c" ]]; then
   INC="$(find "$XLINGS_HOME/data/xpkgs" -maxdepth 4 -type d -path '*libglvnd*/include' 2>/dev/null | head -1)"
   if "$CC" -O0 -o /tmp/gfxverify-probe "$HERE/glprobe.c" ${INC:+-I"$INC"} \
         -L"$S/lib" -lEGL -lGL -Wl,--dynamic-linker="$S/lib/ld-linux-x86-64.so.2" \
-        -Wl,-rpath,"$S/lib" -Wl,--disable-new-dtags 2>/tmp/gfxverify-probe.log; then
+        -Wl,-rpath,"$S/lib" -Wl,-rpath-link,"$S/lib" -Wl,-rpath-link,"$S/usr/lib" \
+        -Wl,--disable-new-dtags 2>/tmp/gfxverify-probe.log; then
     PROBE=/tmp/gfxverify-probe
   fi
 fi
@@ -325,6 +326,7 @@ else
   case $rc in
     0) ok "empty-host self-containment" "S1-S4 pass" ;;
     2) na "empty-host self-containment" "INCONCLUSIVE — the control run also failed; see /tmp/gfxverify-sc.log" ;;
+    3) na "empty-host self-containment" "$(grep -oE 'SKIP:.*' /tmp/gfxverify-sc.log | head -1 | sed 's/^SKIP: //')" ;;
     *) bad "empty-host self-containment" "$(grep -oE 'FAIL:.*' /tmp/gfxverify-sc.log | head -1)" ;;
   esac
 fi
