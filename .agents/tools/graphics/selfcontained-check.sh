@@ -34,7 +34,21 @@ SUBOS_NAME="${XLINGS_GFX_SUBOS:-gfxcheck}"
 
 log()  { echo "[gfx-check] $*"; }
 fail() { echo "[gfx-check] FAIL: $*" >&2; exit 1; }
-skip() { echo "[gfx-check] SKIP: $*"; exit 0; }
+
+# Exit 3, not 0.
+#
+# `skip` used to exit 0, and 0 is what the caller reads as "S1-S4 pass". So a
+# machine without bwrap, or without xlings on PATH, made verify-stack print
+#
+#     ✓ empty-host self-containment      S1-S4 pass
+#
+# for a check that ran nothing at all. That is the bug class this whole tool
+# exists to catch, sitting inside the tool: not-run and succeeded produced the
+# same output. It was masked only because verify-stack happens to probe bwrap
+# itself before calling here — every other skip was live.
+#
+# 0 = proven, 1 = broken, 2 = inconclusive, 3 = could not be exercised here.
+skip() { echo "[gfx-check] SKIP: $*"; exit 3; }
 
 command -v bwrap  >/dev/null || skip "bwrap not available (xlings install bwrap)"
 XLINGS_BIN="${XLINGS_BIN:-$(command -v xlings)}"
@@ -58,7 +72,9 @@ if [[ ! -x "$PROBE" || "$HERE/glprobe.c" -nt "$PROBE" ]]; then
     # reads as a broken graphics stack. A compiler outside the subos also
     # cannot prove anything about a subos that is meant to be self-contained.
     CC="$SUBOS_DIR/bin/gcc"
-    [[ -x "$CC" ]] || fail "no gcc in subos '$SUBOS_NAME' (xlings install gcc)"
+    # skip, not fail: a subos without a compiler cannot exercise this cell,
+    # which is a different statement from "the stack is not self-contained".
+    [[ -x "$CC" ]] || skip "no gcc in subos '$SUBOS_NAME' (xlings install gcc)"
     # No pipe into head here: the exit status would be head's, and a failed
     # compile would sail past `|| fail` to be reported later as a missing
     # binary inside the container — which reads as an incomplete closure
@@ -66,6 +82,7 @@ if [[ ! -x "$PROBE" || "$HERE/glprobe.c" -nt "$PROBE" ]]; then
     if ! "$CC" -O1 -o "$PROBE" "$HERE/glprobe.c" \
             -I"$SUBOS_DIR/usr/include" -L"$SUBOS_DIR/lib" -L"$SUBOS_DIR/usr/lib" \
             -Wl,-rpath,"$SUBOS_DIR/usr/lib" -Wl,-rpath,"$SUBOS_DIR/lib" \
+            -Wl,-rpath-link,"$SUBOS_DIR/lib" -Wl,-rpath-link,"$SUBOS_DIR/usr/lib" \
             -lEGL -lGL > "$SUBOS_DIR/glprobe-build.log" 2>&1; then
         sed 's/^/    /' "$SUBOS_DIR/glprobe-build.log" | head -15
         fail "cannot build glprobe against the subos (is libglvnd installed?)"
