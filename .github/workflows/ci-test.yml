@@ -60,6 +60,18 @@ jobs:
           chmod +x .github/scripts/check-no-direct-ld-libpath.sh
           .github/scripts/check-no-direct-ld-libpath.sh
 
+      # An install hook that calls io.read() blocks forever when nobody is
+      # there to answer. `rust`'s windows hook parked a windows-test job for
+      # four hours on "please input (1 or 2):" -- against a normal runtime of
+      # under three minutes -- and GitHub serves no logs for an in-progress
+      # job, so the prompt was invisible until someone watched the runner.
+      # A hang is worse than a failure: there is no error, and from outside
+      # "slow" and "stuck" look the same.
+      - name: Lint xpkg blocking stdin reads
+        run: |
+          chmod +x .github/scripts/check-no-blocking-input.sh
+          .github/scripts/check-no-blocking-input.sh
+
       - name: version-check unit tests (url_template + XLINGS_RES bump)
         run: python3 .github/scripts/test_version_check.py
 

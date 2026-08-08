@@ -28,15 +28,15 @@ package = {
 
     xpm = {
         windows = {
-            deps = {"rustup", "rustup-mirror"},
+            deps = {"xim:rustup", "config:rustup-mirror"},
             ["latest"] = { }
         },
         linux = {
-            deps = {"rustup", "rustup-mirror"},
+            deps = {"xim:rustup", "config:rustup-mirror"},
             ["latest"] = { }
         },
         macosx = {
-            deps = {"rustup", "rustup-mirror"},
+            deps = {"xim:rustup", "config:rustup-mirror"},
             ["latest"] = { }
         },
     },
@@ -105,8 +105,47 @@ end
 ---------------------- private
 
 -- host toolchain abi -- only for windows
+--
+-- The choice has to be expressible WITHOUT a prompt, because `io.read()` in an
+-- install hook does not degrade -- it blocks forever. On a CI runner stdin
+-- stays open and never delivers a line, so the install hangs rather than
+-- failing: observed at 4 hours on a windows-test job, parked on
+--
+--     please input (1 or 2):
+--
+-- with no way to tell "slow" from "stuck" from the outside. Any unattended
+-- install (a Dockerfile, a provisioning script, `xlings install rust -y`) has
+-- the same shape.
+--
+-- It went unnoticed because this line was unreachable in CI: rust declared a
+-- dep on `rustup-mirror` that resolved to nothing, so the install aborted at
+-- dependency resolution before ever getting here. Fixing that namespace is
+-- what let the hook run for the first time.
+--
+-- So: honour XLINGS_RUST_ABI when set, take the default when nobody can answer,
+-- and only prompt when there is a human present.
 function _choice_toolchain()
     local toolchain_abi = "x86_64-pc-windows-gnu"
+
+    local want = os.getenv("XLINGS_RUST_ABI")
+    if want == "msvc" or want == "x86_64-pc-windows-msvc" then
+        log.info("XLINGS_RUST_ABI=%s -- using the msvc toolchain", want)
+        pkgmanager.install("msvc@onlycompiler")
+        return "x86_64-pc-windows-msvc"
+    elseif want == "gnu" or want == "x86_64-pc-windows-gnu" then
+        log.info("XLINGS_RUST_ABI=%s -- using the gnu toolchain", want)
+        return toolchain_abi
+    elseif want then
+        log.warn("XLINGS_RUST_ABI='%s' is not 'gnu' or 'msvc'; ignoring it", want)
+    end
+
+    if os.getenv("XLINGS_NON_INTERACTIVE") or os.getenv("CI") then
+        log.warn("no terminal to ask on; defaulting to %s. "
+                 .. "Set XLINGS_RUST_ABI=msvc to choose the other one.",
+                 toolchain_abi)
+        return toolchain_abi
+    end
+
     log.debug("[xlings:xim]: Select toolchain ABI:")
     log.debug([[
 
