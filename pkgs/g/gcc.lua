@@ -275,7 +275,12 @@ function __config_linux()
     local glibc_lib, dynamic_linker = __find_glibc_runtime()
     if glibc_lib then
         local rpath = glibc_lib .. ":" .. path.join(pkginfo.install_dir(), "lib64")
-        __rewrite_specs_linux(rpath, dynamic_linker)
+        -- Propagate the failure. This used to be called for effect with its
+        -- result discarded, so a rewrite that did not take hold still reported
+        -- a successful install.
+        if not __rewrite_specs_linux(rpath, dynamic_linker) then
+            return false
+        end
     else
         -- Fail, do not warn and continue.
         --
@@ -403,6 +408,74 @@ end
 -- stamp lives inside install_dir and is wiped on `xim reinstall
 -- gcc` along with the rest of the payload, so version bumps and
 -- forced reinstalls naturally re-rewrite.
+-- Does the rewritten specs name an ELF interpreter that EXISTS on this machine?
+--
+-- That is the postcondition the rewrite exists for, checked directly instead of
+-- inferred from "the command exited 0".
+--
+-- Deliberately NOT "compile a probe and run it". That was the first version and
+-- CI rejected it, correctly: at config() time the sysroot is not necessarily
+-- assembled, so a full link can fail
+--
+--   collect2: error: ld returned 1 exit status
+--
+-- while the specs are perfectly correct. RPATH is a RUNTIME search path;
+-- linking needs -L. Conflating "are the specs right" with "can this toolchain
+-- link right now" fails every fresh install -- which is exactly what it did.
+--
+-- Reading the interpreter out of the specs needs neither a linker nor a
+-- sysroot, and it is precisely the thing that goes wrong: a loader path that is
+-- valid on the packaging machine and absent here. `execve` then reports ENOENT
+-- against the BINARY rather than the missing loader, which is why that failure
+-- is so consistently misread -- openxlings/xlings#509 spent 16 CI runs and four
+-- wrong fixes on it.
+--
+-- Returns ok, reason.
+function __specs_interp_exists(gcc_bin, dynamic_linker)
+    if not dynamic_linker or dynamic_linker == "" then
+        return true, nil     -- nothing was asked for; nothing to verify
+    end
+
+    -- The loader must exist. This is the whole failure mode: a path that is
+    -- valid where the payload was built and absent here.
+    if not os.isfile(dynamic_linker) then
+        return false, "the requested ELF interpreter does not exist: "
+            .. dynamic_linker
+    end
+
+    local libgcc = os.iorun(gcc_bin .. " -print-libgcc-file-name")
+    if not libgcc or libgcc:trim() == "" then
+        -- Cannot locate the specs. Do not invent a failure out of not knowing.
+        return true, nil
+    end
+    local specs_file = path.join(path.directory(libgcc:trim()), "specs")
+    if not os.isfile(specs_file) then
+        return false, "no specs file at " .. specs_file
+    end
+
+    -- Is OUR loader actually in there? Checked by exact string, not by scanning
+    -- for any `ld-*` path.
+    --
+    -- Scanning was the first attempt and it is WRONG: gcc's specs legitimately
+    -- carry alternates for other targets --
+    --
+    --   /lib/ld-musl-i386.so.1   /lib/ld-musl-x32.so.1   /libx32/ld-linux-x32.so.2
+    --
+    -- which are selected by -m32/-mx32/-mmusl and are absent on a perfectly
+    -- healthy machine. Asserting "every ld-* path exists" fails a good
+    -- toolchain, which is worse than the bug it was meant to catch.
+    --
+    -- `grep -a`: a specs file carries escape bytes; without it grep calls the
+    -- file binary and prints nothing -- a silent empty result reading as "fine".
+    local hit = os.iorun("grep -acF -- '" .. dynamic_linker .. "' '"
+        .. specs_file .. "'")
+    if not hit or hit:trim() == "" or hit:trim() == "0" then
+        return false, "the specs do not name the requested interpreter ("
+            .. dynamic_linker .. "), so the rewrite did not land"
+    end
+    return true, nil
+end
+
 function __rewrite_specs_linux(rpath, dynamic_linker)
     -- The "-payload" suffix versions the specs SCHEMA: pre-existing installs
     -- carry the old subos-form stamp, which no longer matches, so the next
@@ -411,12 +484,31 @@ function __rewrite_specs_linux(rpath, dynamic_linker)
         pkginfo.install_dir(),
         ".specs-rewritten-" .. pkginfo.version() .. "-payload.stamp"
     )
+    local gcc_bin = path.join(pkginfo.install_dir(), "bin/gcc")
+
+    -- The stamp is a cache, NOT the decision.
+    --
+    -- It used to be the decision -- "have we run?" -- and that is a different
+    -- question from "is the result correct". A specs file corrupted by any
+    -- means (an interrupted run, a hand edit, or another home writing into a
+    -- payload this one shares) was then frozen that way forever, because the
+    -- stamp said the work was done. Observed: PT_INTERP stuck on glibc 2.39
+    -- while the rpath had moved to 2.44, surfacing as
+    --
+    --   libc.so.6: undefined symbol: __pointer_chk_guard, version GLIBC_PRIVATE
+    --
+    -- which names nothing relevant. So a present stamp still has to survive the
+    -- probe; if it does not, we rewrite and repair.
     if os.isfile(stamp) then
-        log.debug("gcc specs already rewritten (stamp present), skipping.")
-        return
+        local ok = __specs_interp_exists(gcc_bin, dynamic_linker)
+        if ok then
+            log.debug("gcc specs already rewritten and verified, skipping.")
+            return true
+        end
+        log.warn("gcc specs stamp is present but this gcc cannot produce a "
+            .. "runnable binary -- rewriting to repair it.")
     end
 
-    local gcc_bin = path.join(pkginfo.install_dir(), "bin/gcc")
     local specs_config_bin = path.join(system.bindir(), "gcc-specs-config")
 
     log.info("Rewriting gcc specs to payload-direct paths via gcc-specs-config...")
@@ -425,7 +517,23 @@ function __rewrite_specs_linux(rpath, dynamic_linker)
         specs_config_bin, gcc_bin, dynamic_linker, rpath
     ))
 
+    -- Fail, do not warn and continue -- the same reasoning as the missing-glibc
+    -- branch in __config_linux. A gcc that installs "successfully" and cannot
+    -- produce a runnable binary hands the user a toolchain whose failures point
+    -- at the wrong file entirely.
+    local ok, why = __specs_interp_exists(gcc_bin, dynamic_linker)
+    if not ok then
+        log.error("gcc specs rewrite did not take effect: %s", why)
+        log.error("  dynamic-linker: %s", dynamic_linker)
+        log.error("  rpath:          %s", rpath)
+        log.error("  the installed gcc cannot produce a working binary.")
+        return false
+    end
+
+    -- Only now. A stamp written on an unverified rewrite is how the failure
+    -- above became permanent in the first place.
     io.writefile(stamp, pkginfo.version())
+    return true
 end
 
 -- Locate the glibc payload runtime (this package's own dep, xim:glibc) via
