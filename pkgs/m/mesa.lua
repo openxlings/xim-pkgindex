@@ -3,7 +3,7 @@ package = {
 
     homepage = "https://mesa3d.org",
     name = "mesa",
-    description = "Mesa 3D — OpenGL and Vulkan: llvmpipe, radeonsi, nouveau, zink, RADV",
+    description = "Mesa 3D — OpenGL and Vulkan: llvmpipe, radeonsi, iris, nouveau, zink, d3d12, RADV",
 
     authors = {"Mesa contributors"},
     licenses = {"MIT"},
@@ -25,12 +25,26 @@ package = {
     -- a GL program installed through xlings renders on a host that has no
     -- graphics stack of its own.
     --
-    -- Drivers: llvmpipe and softpipe (CPU), radeonsi (AMD), nouveau (NVIDIA
-    -- open kernel module), zink (GL over Vulkan), and RADV for Vulkan on AMD.
-    -- Intel (iris/anv) and NVK are the two upstream drivers NOT here: iris and
-    -- anv require libclc, which needs clang and the SPIR-V translator, and NVK
-    -- is Rust and needs bindgen. Both are additions to the build chain rather
-    -- than to this recipe.
+    -- Drivers: llvmpipe and softpipe (CPU), radeonsi (AMD), iris (Intel),
+    -- nouveau (NVIDIA open kernel module), zink (GL over Vulkan), d3d12 (WSL2 /
+    -- Windows via DirectX 12), and RADV for Vulkan on AMD.
+    --
+    -- iris and d3d12 arrived in 25.0.7.2, and what they cost was five packages
+    -- rather than a flag:
+    --
+    --   iris   -> with_gallium_iris implies with_clc (meson.build:841), so
+    --             libclc + LLVMSPIRVLib + clang-cpp (llvm-dev) AND SPIRV-Tools
+    --   d3d12  -> dependency('DirectX-Headers') (meson.build:606)
+    --
+    -- None of them appear in `deps` below, and that is the point: they are
+    -- BUILD-time inputs. The payload was checked rather than assumed --
+    -- libclang-cpp, libLLVMSPIRVLib, libSPIRV-Tools and libclc appear zero times
+    -- in it, and no DT_NEEDED anywhere in the payload names any of them. iris and
+    -- d3d12 add exactly one library between them, `libgbm.so.1`, which mesa ships
+    -- itself. So the external closure is unchanged from 25.0.7.1.
+    --
+    -- anv (Intel Vulkan) and NVK are still NOT here: anv wants the same clc
+    -- chain plus more, and NVK is Rust and needs bindgen.
     --
     -- Build details, per-flag, and what each one cost:
     -- https://github.com/xlings-res/mesa
@@ -84,7 +98,27 @@ package = {
             exports = {
                 runtime = { libdirs = { "lib" } },
             },
-            ["latest"] = { ref = "25.0.7.1" },
+            ["latest"] = { ref = "25.0.7.2" },
+            -- 25.0.7.2: upstream is 25.0.7, the fourth component is ours. Adds
+            -- iris and d3d12 to gallium-drivers; nothing else about the build
+            -- changed, and the external DT_NEEDED closure is byte-for-byte the
+            -- same set as 25.0.7.1.
+            --
+            -- The source needed ONE patch to build at all:
+            -- `.agents/tools/graphics/patches/mesa-25.0.7-glibc-2.42-c11-threads.patch`.
+            -- ISO C23 moved once_flag/call_once into <stdlib.h>, glibc >= 2.42
+            -- followed, and mesa's own src/c11 shim redefines both -- so 25.0.7
+            -- cannot compile against the glibc 2.44 in this index, and 25.0.7 is
+            -- the last release of its series. 25.0.7.1 was built when this sysroot
+            -- was glibc 2.39; the same source and command now fail without the
+            -- patch. Worth knowing before anyone tries to reproduce the payload.
+            ["25.0.7.2"] = {
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/mesa/releases/download/25.0.7.2/mesa-25.0.7.2-linux-x86_64.tar.gz",
+                    CN     = "https://gitcode.com/xlings-res/mesa/releases/download/25.0.7.2/mesa-25.0.7.2-linux-x86_64.tar.gz",
+                },
+                sha256 = "b589513ea1834ba995456680ad57a117428ba38299d8cc37d8fe301e5f6e6c9b",
+            },
             -- 25.0.7.1: upstream is 25.0.7, the fourth component is ours.
             -- The payload was rebuilt with the full driver set, and a payload
             -- whose contents changed has to be a different version — a GitCode
