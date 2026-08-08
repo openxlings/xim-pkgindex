@@ -113,7 +113,27 @@ function Invoke-XlingsWithTimeout {
                           -NoNewWindow -PassThru `
                           -RedirectStandardOutput $out -RedirectStandardError $err
 
-    if (-not $proc.WaitForExit($TimeoutSec * 1000)) {
+    # Stream while waiting, instead of printing only at the end.
+    #
+    # Redirecting to a file bounded the run but destroyed live output: the log
+    # showed "==> [vc6] install" and then nothing for as long as the install
+    # took, which is the exact ambiguity the bound was added to remove -- just
+    # moved. So tail the file as it grows.
+    $shown = 0
+    $deadline = (Get-Date).AddSeconds($TimeoutSec)
+    while (-not $proc.HasExited) {
+        if ((Get-Date) -gt $deadline) { break }
+        Start-Sleep -Milliseconds 500
+        try {
+            $all = @(Get-Content $out -ErrorAction SilentlyContinue)
+            if ($all.Count -gt $shown) {
+                $all[$shown..($all.Count - 1)] | ForEach-Object { Write-Host $_ }
+                $shown = $all.Count
+            }
+        } catch { }
+    }
+
+    if (-not $proc.HasExited) {
         Write-Host ""
         Write-Host "[TIMEOUT] $Label did not finish within $TimeoutSec s" -ForegroundColor Red
         Write-Host "          last 40 lines of its output -- the stall is at the end:" -ForegroundColor Red
@@ -126,7 +146,12 @@ function Invoke-XlingsWithTimeout {
         return 124
     }
 
-    try { Get-Content $out -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_ } } catch { }
+    # Only the tail the streaming loop had not reached yet -- it exits as soon as
+    # the process does, so a final burst can still be unread.
+    try {
+        $all = @(Get-Content $out -ErrorAction SilentlyContinue)
+        if ($all.Count -gt $shown) { $all[$shown..($all.Count - 1)] | ForEach-Object { Write-Host $_ } }
+    } catch { }
     try { Get-Content $err -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_ } } catch { }
     $code = $proc.ExitCode
     Remove-Item $out, $err -ErrorAction SilentlyContinue
