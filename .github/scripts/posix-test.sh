@@ -380,7 +380,15 @@ for rel_file in "${files[@]}"; do
         step "[$pkg] loader/libc same-source"
         split_found=0
         while IFS= read -r -d '' elf; do
-            [[ "$(head -c4 "$elf" 2>/dev/null)" == $'\x7fELF' ]] || continue
+            # `od`, not `head -c4` in a command substitution. This walks the
+            # WHOLE store, which is full of non-ELF files whose first four
+            # bytes contain NUL, and bash strips those with
+            #
+            #   warning: command substitution: ignored null byte in input
+            #
+            # once per file -- hundreds of lines of it, burying the actual
+            # result. Compare the magic as hex instead.
+            [[ "$(od -An -tx1 -N4 "$elf" 2>/dev/null | tr -d ' ')" == "7f454c46" ]] || continue
             interp="$(patchelf --print-interpreter "$elf" 2>/dev/null)" || continue
             [[ -n "$interp" ]] || continue
             payload_of() { sed -E 's#(.*/xpkgs/[^/]+/[^/]+)/.*#\1#' <<<"$1"; }
@@ -407,6 +415,42 @@ for rel_file in "${files[@]}"; do
         log_pass "loader and libc come from one payload"
     fi
 
+    # Declared deps vs the payload's real DT_NEEDED.
+    #
+    # Runs here, on the freshly installed payload, because that is the only
+    # place both halves exist at once: the recipe's declaration and the bytes
+    # xlings produced from it. A static check of the recipe cannot see what the
+    # binaries need, and a check of the binaries alone cannot see what was
+    # promised.
+    #
+    # Exit 3 is "this machine could not evaluate it" (no readelf, no lua, a
+    # payload with no ELF in it) and must not be read as a pass -- so it is
+    # reported and skipped, not folded into log_pass. See .agents/tools/README.md.
+    if [[ "$HOST_OS" == "linux" && -n "$installed_version" ]]; then
+        step "[$pkg] declared deps vs DT_NEEDED"
+        # `examined` exists because the first version of this block could print
+        # its header and then nothing at all. A script-type package has no
+        # payload directory, so `install_dirs` is empty, `<<<` still feeds the
+        # loop one empty line, the -d test skips it, and the step reported
+        # neither pass nor skip -- a check announcing itself and going silent,
+        # which is the exact shape the check was added to remove.
+        examined=0
+        while IFS= read -r dir; do
+            [[ -n "$dir" && -d "$dir/$installed_version" ]] || continue
+            examined=$((examined + 1))
+            "$WORKSPACE_ROOT/.github/scripts/dep-closure-check.sh" \
+                "$dir/$installed_version" "$lua_file" "$HOST_OS" "$XPKGS_DIR"
+            case $? in
+                0) log_pass "dependency closure complete" ;;
+                3) info "not evaluated on this machine (exit 3)" ;;
+                *) log_fail "dependency closure incomplete"
+                   failures+=("$rel_file (dep-closure)") ;;
+            esac
+        done <<< "$install_dirs"
+        [[ $examined -eq 0 ]] \
+            && info "no payload directory for '$pkg' (type=$pkg_type); nothing to check"
+    fi
+
     # Remove exactly what this test installed, not "whatever is active" — a
     # bare removal resolves the ACTIVE version, which for a binding-group member
     # can carry a provider annotation that is a DISPLAY form, not a key.
@@ -417,7 +461,55 @@ for rel_file in "${files[@]}"; do
     fi
 
     step "[$pkg] uninstall ($remove_spec)"
-    if ! "$XLINGS_CMD" remove "$remove_spec" -y; then
+    remove_out="$("$XLINGS_CMD" remove "$remove_spec" -y 2>&1)"; remove_rc=$?
+    printf '%s\n' "$remove_out"
+    if [[ $remove_rc -ne 0 ]]; then
+        # A `type = "config"` package configures the system and registers no
+        # xvm version of its own, so there is nothing for removal to select:
+        #
+        #   uninstall failed: xvm removal selection failed for xim:cpp@gnu:
+        #   removal version is not registered (target='cpp', version='gnu')
+        #
+        # 11 of the 12 config-type recipes in this index call xvm.add zero
+        # times, so this is the shape of the type rather than a fault in one
+        # recipe -- the same reason the `namespace = "config"` branch above
+        # skips the lifecycle assertion entirely. Whether `remove` should
+        # succeed as a no-op there is a real question, and an xlings-side one;
+        # it is not this test's to answer, and it is not what put these
+        # recipes in the changed set.
+        #
+        # Narrow on purpose: the config type AND this exact diagnostic. Keying
+        # on the type alone would also swallow a genuine removal bug in
+        # `xvm-sysdetect`, the one config package that DOES call xvm.add -- and
+        # a tolerance that hides the case it was not written for is how a
+        # skipped assertion becomes permanent.
+        if [[ "$pkg_type" == "config" ]] \
+           && grep -q "removal version is not registered" <<<"$remove_out"; then
+            info "uninstall not asserted: type='config' registers no xvm version"
+            info "  (${remove_spec} -- see the note in this script)"
+            continue
+        fi
+
+        # Removing xlings when it is the only installed version is refused by
+        # design -- that binary is the one running the command, and there is a
+        # separate `xlings self uninstall` built for it.
+        #
+        # This only started happening to bump PRs after #543. Before it, a
+        # changed recipe was registered via `config --add-xpkg` and installed
+        # as `local:xlings`, which the running-binary guard does not match;
+        # #543 made CI overlay the recipe into the index instead, so it now
+        # installs as `xim:xlings` and the guard fires. PR #541 (the previous
+        # bump) shows `local:xlings@2026.8.7.1` in its log and passed; #548
+        # shows `xim:xlings@2026.8.8.1` and did not. Nothing about xlings or
+        # about the recipe changed in between.
+        #
+        # Every future bump PR touches pkgs/x/xlings.lua, so this would be red
+        # on all of them.
+        if grep -q "cannot remove the running binary itself" <<<"$remove_out"; then
+            info "uninstall not asserted: this IS the running xlings, and it is"
+            info "  the only installed version (use \`xlings self uninstall\`)"
+            continue
+        fi
         log_fail "uninstall failed"; failures+=("$rel_file (uninstall)"); continue
     fi
 

@@ -11,13 +11,23 @@
 #
 # Usage:  verify-toolchain.sh TARBALL [--loader LD]
 # Default loader: the xim glibc loader on this machine.
+#
+# Exit codes follow .agents/tools/README.md: 0 proven, 1 broken, 2 inconclusive,
+# 3 could-not-run. Both SKIPs below used to be `exit 0`, so a machine with no
+# usable loader, and a tarball with no compiler in it at all, reported the same
+# status as a toolchain that compiled and ran a program. There is no way for a
+# caller to tell those apart from 0.
 set -uo pipefail
+
+skip() { echo "SKIP: $*"; exit 3; }
 
 TARBALL="${1:-}"; shift || true
 LOADER="$HOME/.xlings/data/xpkgs/xim-x-glibc/2.39/lib64/ld-linux-x86-64.so.2"
 while [ $# -gt 0 ]; do case "$1" in --loader) LOADER="$2"; shift 2;; *) shift;; esac; done
 [ -f "$TARBALL" ] || { echo "error: tarball not found: $TARBALL" >&2; exit 2; }
-command -v patchelf >/dev/null || { echo "error: patchelf required" >&2; exit 1; }
+# 3, not 1: an absent patchelf says nothing about the tarball, and 1 here sends
+# the reader to look for a corrupt artifact.
+command -v patchelf >/dev/null || skip "patchelf required, not on PATH"
 
 T="$(mktemp -d)"; trap 'rm -rf "$T"' EXIT
 tar -xzf "$TARBALL" -C "$T" || { echo "FAIL: tarball does not extract" >&2; exit 1; }
@@ -28,7 +38,7 @@ GLIBC_LIB="$(dirname "$LOADER")"
 CXX="$(find "$ROOT" -maxdepth 2 -path '*/bin/g++' | head -1)"
 [ -n "$CXX" ] || CXX="$(find "$ROOT" -maxdepth 2 -path '*/bin/*-musl-g++' | head -1)"
 [ -n "$CXX" ] || CXX="$(find "$ROOT" -maxdepth 2 -path '*/bin/clang++' | head -1)"
-[ -n "$CXX" ] || { echo "SKIP: no g++/clang++ in $TARBALL"; exit 0; }
+[ -n "$CXX" ] || skip "no g++/clang++ in $TARBALL — nothing here compiles anything"
 
 is_musl=0
 case "$CXX" in *musl*) is_musl=1;; esac
@@ -39,7 +49,7 @@ if [ "$is_musl" = 1 ]; then
   ML="$(find "$ROOT" -path '*-linux-musl/lib/libc.so' -o -name 'ld-musl-x86_64.so.1' 2>/dev/null | head -1)"
   [ -n "$ML" ] && LOADER="$ML" && GLIBC_LIB="$(dirname "$ML")"
 fi
-[ -e "$LOADER" ] || { echo "SKIP: loader not available: $LOADER (cannot run on this machine)"; exit 0; }
+[ -e "$LOADER" ] || skip "loader not available: $LOADER (cannot run on this machine)"
 echo "verify: $(basename "$TARBALL")  flavor=$([ $is_musl = 1 ] && echo musl || echo glibc)  loader=$LOADER"
 
 # patch interp + rpath on driver and backend executables (throwaway copy only).

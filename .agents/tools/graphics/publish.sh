@@ -25,7 +25,8 @@ warn() { echo "[publish] WARN: $*" >&2; }
 fail() { echo "[publish] FAIL: $*" >&2; exit 1; }
 
 command -v gh  >/dev/null || fail "gh not found"
-command -v gtc >/dev/null || warn "gtc not found — CN mirror will be skipped"
+HAVE_GTC=1
+command -v gtc >/dev/null || { HAVE_GTC=0; warn "gtc not found — CN mirror will be skipped"; }
 
 shopt -s nullglob
 FILES=("$DIST"/*.tar.gz)
@@ -35,6 +36,7 @@ README_DIR="${XLINGS_GFX_README_DIR:-/tmp/xlings-res-readme}"
 
 MANIFEST="$DIST/RECIPE-DATA.txt"
 : > "$MANIFEST"
+BADGLOBAL=0
 
 for f in "${FILES[@]}"; do
     base="$(basename "$f")"                       # name-version-linux-x86_64.tar.gz
@@ -119,9 +121,24 @@ for f in "${FILES[@]}"; do
        && cmp -s "$TMP/c.bin" "$f"; then ok_cn=yes; fi
 
     log "  GLOBAL=$ok_global  CN=$ok_cn  sha256=${sha:0:16}…"
-    [[ "$ok_global" == yes ]] || warn "$name: GLOBAL asset does not match the local file"
+    [[ "$ok_global" == yes ]] || { warn "$name: GLOBAL asset does not match the local file"; BADGLOBAL=$((BADGLOBAL+1)); }
 
     printf '%s|%s|%s|%s|%s|%s\n' "$name" "$version" "$sha" "$GLOBAL" "$CN" "$ok_cn" >> "$MANIFEST"
 done
 
 log "recipe data → $MANIFEST"
+
+# Every failure above was a `warn` and a `continue`, and the script then ended
+# on a success line. So a run where GitHub refused all twenty-two releases and
+# one where all twenty-two verified byte-for-byte both exited 0 — and the exit
+# code is the only part a caller reads.
+#
+# 1 if a GLOBAL asset does not match what we uploaded; 3 if the CN half was
+# never attempted (a publish that reached one region of two is not a publish).
+if [[ "$BADGLOBAL" -gt 0 ]]; then
+    fail "$BADGLOBAL package(s): the GLOBAL asset does not match the local file"
+fi
+if [[ $HAVE_GTC -eq 0 ]]; then
+    echo "[publish] NOT DONE: no gtc, so the CN mirror was not published or verified" >&2
+    exit 3
+fi

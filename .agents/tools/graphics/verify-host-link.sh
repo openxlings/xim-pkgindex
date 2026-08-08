@@ -18,6 +18,9 @@
 # Usage: verify-host-link.sh <XLINGS_HOME> [subos]
 # Requires: the home already has nvidia-gl-host-link installed, an X server on
 # $DISPLAY, and an NVIDIA driver on the host.
+#
+# Exit codes follow .agents/tools/README.md: 0 proven, 1 broken, 2 inconclusive,
+# 3 could-not-run.
 set -euo pipefail
 
 HOME_DIR="${1:?usage: verify-host-link.sh <XLINGS_HOME> [subos]}"
@@ -50,7 +53,17 @@ if [[ -z "$CC" ]]; then
     [[ -x "$c" ]] && { CC="$c"; break; }
   done
 fi
-[[ -n "$CC" ]] || { echo "no host compiler (/usr/bin/gcc); set CC=" >&2; exit 2; }
+# 3, not 2: no compiler means no probe was ever built, which is a property of
+# this machine and not an ambiguous result. verify-stack.sh called this in an
+# `if`, so the old 2 landed in the else branch and painted the NVIDIA cell red.
+[[ -n "$CC" ]] || { echo "no host compiler (/usr/bin/gcc); set CC=" >&2; exit 3; }
+
+# patchelf reads the artifact in checks 0 and 4, and its absence is not visible
+# in either of their results: `patchelf --print-needed | grep -q '^/'` on a
+# missing patchelf greps empty input, answers no, and check 4 then prints
+# ✓ host vendor libraries are untouched having examined nothing. Probe once and
+# route both to `skip`.
+HAVE_PATCHELF=1; command -v patchelf >/dev/null 2>&1 || HAVE_PATCHELF=0
 
 # Headers come from the payloads, not the sysroot: the subos's own
 # `usr/include` is glibc's, and libglvnd's EGL/GL headers are not linked into
@@ -71,6 +84,8 @@ else
       skip "$f absent on this host — that entry point is unproven"
     elif [[ -L "$NVLIB/$f" ]]; then
       bad "$f is a symlink into $(readlink "$NVLIB/$f") — its deps resolve from the host"
+    elif [[ $HAVE_PATCHELF -eq 0 ]]; then
+      skip "$f is a real file, but with no patchelf its soname/DT_NEEDED cannot be read — the interposer shape is unproven"
     else
       # An interposer is not just "a real file": assert the shape patchelf
       # was asked to produce, on the artifact.
@@ -171,6 +186,8 @@ if [[ -z "$NVHOST" ]]; then
   # NOT a silent skip. A run that could not find the host's vendor cannot make
   # any claim about it, and saying nothing reads identically to "checked, fine".
   skip "no 64-bit host NVIDIA vendor found — check 4 NOT PERFORMED"
+elif [[ $HAVE_PATCHELF -eq 0 ]]; then
+  skip "no patchelf — check 4 NOT PERFORMED (an unreadable DT_NEEDED reads exactly like a clean one)"
 else
   echo "  · host vendor dir: $NVHOST"
   hostbad=0
@@ -195,7 +212,12 @@ echo
 if [[ $skipped -gt 0 ]]; then
   echo "NOT PERFORMED: $skipped check(s) — see the ! lines above"
 fi
-if [[ $fail -eq 0 ]]; then
+if [[ $fail -eq 0 && $pass -eq 0 ]]; then
+  # Nothing failed because nothing ran. "PASS: 0 checks" is the whole bug class
+  # in one line, so this is a 3 and the caller must render it as not-run.
+  echo "NOT RUN: 0 checks executed, $skipped not performed"
+  exit 3
+elif [[ $fail -eq 0 ]]; then
   echo "PASS: $pass checks$([[ $skipped -gt 0 ]] && echo ", $skipped not performed")"
   exit 0
 else

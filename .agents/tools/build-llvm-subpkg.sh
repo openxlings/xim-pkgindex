@@ -30,6 +30,9 @@ set -euo pipefail
 
 die() { echo "error: $*" >&2; exit 1; }
 log() { echo ">> $*" >&2; }
+# 3 = this machine cannot do the work; 1 = it tried and the work is wrong.
+# Contract: .agents/tools/README.md.
+skip() { echo "SKIP: $*" >&2; exit 3; }
 
 IN="" PKG="" VERSION="" PLATFORM="" ARCH="" OUT="$PWD" FORMATS=""
 while [ $# -gt 0 ]; do
@@ -208,8 +211,10 @@ do_libcxx() {
         cxxdir=$(dirname "$(find "$DEST/lib" -maxdepth 2 -name 'libc++.so.1' 2>/dev/null | head -1)")
         [ -n "$cxxdir" ] && [ -d "$cxxdir" ] \
             || die "libatomic: cannot locate libc++ triple lib dir under $DEST/lib"
+        # 3, not 1: the carve is fine, this host just has no GCC to source
+        # libatomic from. Producing the package here is impossible, not wrong.
         command -v gcc >/dev/null 2>&1 \
-            || die "libatomic: gcc not on build host (needed to source libatomic for self-containment)"
+            || skip "libatomic: gcc not on build host (needed to source libatomic for self-containment)"
         atomic_real=$(readlink -f "$(gcc -print-file-name=libatomic.so.1)" 2>/dev/null)
         [ -n "$atomic_real" ] && [ -e "$atomic_real" ] \
             || die "libatomic: 'gcc -print-file-name=libatomic.so.1' did not resolve to a real file"
@@ -239,6 +244,11 @@ esac
 
 # --- macOS self-containment check (Mach-O LC_LOAD_DYLIB) -------------------
 if [ "$PLATFORM" = "macosx" ] && [ -d "$DEST/bin" ]; then
+    # Without this probe a missing python3 exits 127 through the `|| die` below
+    # and the carve reports "self-containment check failed" -- a specific and
+    # entirely wrong claim about the bundle. The Mach-O reader never ran.
+    command -v python3 >/dev/null 2>&1 \
+        || skip "no python3 — the macOS self-containment check was NOT performed on this bundle"
     log "verifying macOS binaries are self-contained (system-only dylibs) ..."
     # only real Mach-O files (skip symlinks)
     mapfile -t MACHO < <(find "$DEST/bin" -type f)

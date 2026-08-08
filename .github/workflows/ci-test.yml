@@ -190,10 +190,27 @@ jobs:
         with:
           files: pkgs/**/*.lua
 
+      # patchelf/binutils and lua5.4 are what the post-install dependency
+      # closure check needs (dep-closure-check.sh: readelf for DT_NEEDED,
+      # lua to read the recipe's deps structurally).
+      #
+      # This is a SEPARATE job from linux-test, on its own runner, so a lua5.4
+      # installed there is not here. Without this step the check finds no
+      # interpreter and exits 3 -- correctly reported as "not evaluated", but a
+      # guard that never evaluates anything is not a guard, and the job still
+      # goes green.
+      - name: Install ELF + Lua tooling for the closure check
+        if: steps.changed-files.outputs.any_changed == 'true'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends binutils patchelf lua5.4
+          readelf --version | head -1
+          lua5.4 -v
+
       - name: Linux install/uninstall test (changed packages)
         if: steps.changed-files.outputs.any_changed == 'true'
         run: |
-          chmod +x .github/scripts/posix-test.sh
+          chmod +x .github/scripts/posix-test.sh .github/scripts/dep-closure-check.sh
           .github/scripts/posix-test.sh \
             "${{ steps.changed-files.outputs.all_changed_files }}" \
             "${{ github.workspace }}" \

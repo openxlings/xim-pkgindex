@@ -30,6 +30,9 @@ set -euo pipefail
 
 die() { echo "error: $*" >&2; exit 1; }
 log() { echo ">> $*" >&2; }
+# 3 = this machine cannot do the work; 1 = it tried and the work is wrong.
+# Contract: .agents/tools/README.md.
+skip() { echo "SKIP: $*" >&2; exit 3; }
 
 IN="" VERSION="" PLATFORM="" ARCH="" OUT="$PWD" FMT="tar.xz"
 while [ $# -gt 0 ]; do
@@ -108,6 +111,12 @@ log "  + lib/clang/${RESVER}/include  ($(du -sh "$WORK/$BUNDLE/lib/clang/${RESVE
 
 # --- macOS self-containment check (Mach-O LC_LOAD_DYLIB) -------------------
 if [ "$PLATFORM" = "macosx" ]; then
+    # Without this probe a missing python3 exits 127 through the `|| die`, and
+    # the carve reports "self-containment check failed" -- a specific,
+    # actionable and entirely wrong claim about the bundle. The Mach-O reader
+    # never ran.
+    command -v python3 >/dev/null 2>&1 \
+        || skip "no python3 — the macOS self-containment check was NOT performed on this bundle"
     log "verifying macOS binaries are self-contained (system-only dylibs) ..."
     python3 - "$WORK/$BUNDLE/bin"/* <<'PY' || die "self-containment check failed"
 import struct, sys

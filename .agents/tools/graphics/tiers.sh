@@ -109,11 +109,15 @@ run_tier() {  # <tier-name> <entries...>
         local args=(--name "$name" --version "$version" --url "$url"
                     --system "$system")
         [[ -n "${deps:-}" ]] && args+=(--deps "$deps")
+        # `|| return $?`, not `|| return 1`: this is a pass-through, and
+        # rewriting the child's status to 1 erases the difference between "the
+        # build broke" and "this machine could not start it" (exit 3, see
+        # .agents/tools/README.md). The tier still stops either way.
         # shellcheck disable=SC2086
         if [[ -n "$extra" ]]; then
-            bash "$BUILD" "${args[@]}" -- $extra || return 1
+            bash "$BUILD" "${args[@]}" -- $extra || return $?
         else
-            bash "$BUILD" "${args[@]}" || return 1
+            bash "$BUILD" "${args[@]}" || return $?
         fi
     done
 }
