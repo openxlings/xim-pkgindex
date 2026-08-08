@@ -72,3 +72,50 @@ jobs:
         run: xlings update
       - name: L1 Index Registration
         run: pytest tests/ -m index --tb=short -q
+
+  # L3 + L4: 生命周期 + 功能验证 —— 首次进 CI (2026-08-09)。
+  #
+  # 此前这条流水线止步于 L1: L3/L4 会真装包, 全量跑意味着每次 push 下载
+  # 若干 GB, 所以一直只在真机上手跑。这里只挑闭环验收的关键包 jdk-zulu:
+  # 它是 D5-1 (leaf 闭包 + leaf RUNPATH) 的落点, 其 verify 层带着
+  # test_font_stack_provenance —— 基于 LD_DEBUG 的 provenance 断言, 是唯一
+  # 能看见 dlopen 级宿主泄漏的验收 (fontconfig 由 libfontmanager dlopen,
+  # 任何静态清单都看不到; #578 就是靠 System.loadLibrary 的 LOAD_OK 误判
+  # 「装载了」=「装载的是我们的」才带病发布的)。
+  #
+  # 注意: 本 job 装的是已发布索引里的 xim:jdk-zulu (xlings update 拉的是
+  # 发布 artifact, 不是本 checkout), 所以对 recipe 的改动要等索引发布后
+  # 这里才看得见 —— 也因此它守的是「发布出去的东西」而不是「写在 PR 里的
+  # 东西」, 这正是 L4 该守的口径。
+  closure-lifecycle:
+    runs-on: ubuntu-latest
+    needs: index-registration
+    # jdk tarball ~230MB + 10 个 leaf 依赖, 冷缓存下载 + 解包给足预算
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Install xlings
+        run: |
+          export XLINGS_NON_INTERACTIVE=1
+          export XLINGS_VERSION=v2026.8.8.2
+          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
+          echo "XLINGS_HOME=$HOME/.xlings" >> "$GITHUB_ENV"
+          echo "PATH=$HOME/.xlings/subos/current/bin:$HOME/.xlings/bin:$PATH" >> "$GITHUB_ENV"
+
+      - name: Refresh package index
+        run: xlings update
+
+      # lifecycle 先装包, verify 再对装出来的东西做断言; -x 让装包失败时
+      # 立即停 —— 后面的 verify 全是同一个因的噪音
+      - name: L3 + L4 closure lifecycle (jdk-zulu)
+        run: pytest tests/j/test_jdk_zulu.py -m "lifecycle or verify" --tb=short -q -x
