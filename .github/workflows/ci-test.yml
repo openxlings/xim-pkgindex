@@ -72,6 +72,37 @@ jobs:
           chmod +x .github/scripts/check-no-blocking-input.sh
           .github/scripts/check-no-blocking-input.sh
 
+      # A bare dep name (`expat@2.6.2` rather than `xim:expat@2.6.2`) resolves
+      # while exactly one index provides that package -- and CI registers every
+      # CHANGED recipe a second time under `local:`, so the moment a PR touches
+      # both the consumer and the dependency, resolution reports
+      # `package 'expat@2.6.2' is ambiguous` and the install stops. Latent by
+      # construction: it is a property of the changed set, not of the recipe,
+      # so it surfaces on an unrelated PR (fontconfig, #497) rather than the one
+      # that introduced it.
+      #
+      # Two further assertions over QUALIFIED deps, both of which shipped as red
+      # CI before they existed: the prefix must match the provider's own
+      # declared namespace (rustup-mirror is `config:`, so `xim:` names
+      # nothing), and the provider must have a section for the platform doing
+      # the depending (xim:python is linux+windows, so a macosx dep on it can
+      # never resolve).
+      #
+      # xpm.debian / xpm.ubuntu are deliberately NOT reported: detect_platform()
+      # returns build_os(), which is linux/macosx/windows and nothing else, so
+      # those sections are never selected and a dep inside one cannot fail. A
+      # check with unfixable findings gets ignored wholesale.
+      #
+      # lua5.4 because the check LOADS each recipe rather than grepping it: a dep
+      # list spans lines, repeats under several xpm sections and has two legal
+      # shapes, and npm assigns one table to three platforms after the literal.
+      - name: Lint xpkg dep namespace
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends lua5.4
+          chmod +x .github/scripts/check-dep-namespace.sh
+          .github/scripts/check-dep-namespace.sh
+
       - name: version-check unit tests (url_template + XLINGS_RES bump)
         run: python3 .github/scripts/test_version_check.py
 

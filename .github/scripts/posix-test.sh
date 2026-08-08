@@ -340,6 +340,11 @@ for rel_file in "${files[@]}"; do
 
     pkg_spec="${pkg_ns}:${pkg}"
 
+    # Marker for the loader/libc scan below: everything this install writes is
+    # newer than this file, which is how that check stops re-walking the whole
+    # store once per package.
+    install_marker="$(mktemp)"
+
     step "[$pkg] install ($pkg_spec)"
     # Bounded, for the same reason the Windows leg is: a hook that blocks --
     # an interactive prompt, a GUI-mode script host, an installer waiting on a
@@ -454,7 +459,19 @@ for rel_file in "${files[@]}"; do
                 log_fail "loader/libc split: ${elf##*/} interp=$iroot rpath=$other"
                 split_found=1
             fi
-        done < <(find "$XPKGS_DIR" -type f ! -type l -print0 2>/dev/null)
+        # Scoped to what THIS install wrote, not the whole store.
+        #
+        # It used to walk every file under xpkgs for every package, which is
+        # quadratic in a run that installs 25 of them: by the late alphabet the
+        # store holds every earlier payload, and the step sat for minutes with
+        # its header printed and nothing after it -- indistinguishable from a
+        # hang, and reported as one. (It was not: the job passed in 21m48s.)
+        #
+        # -newer than the pre-install marker covers the package AND the deps
+        # pulled in with it, which is exactly the set this install could have
+        # broken. A split in an older payload is still caught, on the run where
+        # that package is the one under test.
+        done < <(find "$XPKGS_DIR" -type f ! -type l -newer "$install_marker" -print0 2>/dev/null)
         if [[ $split_found -eq 1 ]]; then
             failures+=("$rel_file (loader/libc split)"); continue
         fi
