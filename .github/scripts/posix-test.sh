@@ -305,7 +305,17 @@ for rel_file in "${files[@]}"; do
     pkg_spec="${pkg_ns}:${pkg}"
 
     step "[$pkg] install ($pkg_spec)"
-    if ! "$XLINGS_CMD" install "$pkg_spec" -y; then
+    # Bounded, for the same reason the Windows leg is: a hook that blocks --
+    # an interactive prompt, a GUI-mode script host, an installer waiting on a
+    # dialog -- otherwise holds the runner to GitHub's 6-hour ceiling, and no
+    # log is served for an in-progress job, so there is nothing to look at
+    # while it happens. 124 is timeout(1)'s own code for "killed on time".
+    timeout 1200 "$XLINGS_CMD" install "$pkg_spec" -y; rc=$?
+    if [[ $rc -eq 124 ]]; then
+        log_fail "install TIMED OUT after 1200s (a hook is blocking)"
+        failures+=("$rel_file (install-timeout)"); continue
+    fi
+    if [[ $rc -ne 0 ]]; then
         log_fail "install failed"; failures+=("$rel_file (install)"); continue
     fi
 
@@ -461,7 +471,12 @@ for rel_file in "${files[@]}"; do
     fi
 
     step "[$pkg] uninstall ($remove_spec)"
-    remove_out="$("$XLINGS_CMD" remove "$remove_spec" -y 2>&1)"; remove_rc=$?
+    remove_out="$(timeout 1200 "$XLINGS_CMD" remove "$remove_spec" -y 2>&1)"; remove_rc=$?
+    if [[ $remove_rc -eq 124 ]]; then
+        printf '%s\n' "$remove_out"
+        log_fail "uninstall TIMED OUT after 1200s (a hook is blocking)"
+        failures+=("$rel_file (uninstall-timeout)"); continue
+    fi
     printf '%s\n' "$remove_out"
     if [[ $remove_rc -ne 0 ]]; then
         # A `type = "config"` package configures the system and registers no
