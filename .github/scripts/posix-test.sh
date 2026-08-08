@@ -498,7 +498,43 @@ for rel_file in "${files[@]}"; do
             [[ -n "$interp" ]] || continue
             payload_of() { sed -E 's#(.*/xpkgs/[^/]+/[^/]+)/.*#\1#' <<<"$1"; }
             iroot="$(payload_of "$interp")"
-            [[ "$iroot" == *"/xpkgs/"* ]] || continue
+
+            # HOST interpreter + one of OUR libcs in RPATH.
+            #
+            # This used to `continue` here, which skipped every binary still on
+            # the host loader -- and that is precisely the combination that
+            # segfaults. The host's ld.so resolves libc.so.6 through this
+            # RPATH, gets ours, and the process dies before main:
+            #
+            #   $ java -version
+            #   __vdso_gettimeofdaySegmentation fault (core dumped)
+            #
+            # Shipped and reverted on 2026-08-09 (openxlings/xim-pkgindex#578,
+            # reverted by #580): declaring `xim:glibc` as a runtime dep put
+            # glibc's lib64 into the JDK's RPATH while PT_INTERP stayed the
+            # host's. The install reported success and this very step printed
+            # "loader and libc come from one payload".
+            #
+            # The old check only asked "if you use OUR loader, is the libc from
+            # the same payload". The converse -- "if you use the HOST loader,
+            # you must not pull in our libc" -- is the half that actually
+            # crashes, and it was the one being skipped.
+            if [[ "$iroot" != *"/xpkgs/"* ]]; then
+                rp_host="$(patchelf --print-rpath "$elf" 2>/dev/null)"
+                IFS=: read -ra hparts <<<"$rp_host"
+                for hp in "${hparts[@]}"; do
+                    case "$hp" in *"/xpkgs/"*)
+                        # Only a libc-providing payload matters here; pulling
+                        # our libX11 under the host loader is fine and common.
+                        if compgen -G "$hp/libc.so.6" >/dev/null 2>&1 \
+                           || compgen -G "$hp/ld-linux-*.so.*" >/dev/null 2>&1; then
+                            log_fail "host loader + our libc: ${elf##*/} interp=$interp rpath=$hp"
+                            split_found=1
+                        fi ;;
+                    esac
+                done
+                continue
+            fi
             provider="$(sed -E 's#.*/xpkgs/([^/]+)/[^/]+$#\1#' <<<"$iroot")"
             rp="$(patchelf --print-rpath "$elf" 2>/dev/null)"
             same=0; other=""
