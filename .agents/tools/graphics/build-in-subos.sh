@@ -467,6 +467,40 @@ export CPPFLAGS="-I$SUBOS/usr/include"
 # libpciaccess) is only searched along -rpath-link. Without it the link fails
 # on transitive symbols with the library sitting right there.
 export LDFLAGS="-L$SUBOS/lib -L$SUBOS/usr/lib -Wl,-rpath-link,$SUBOS/usr/lib -Wl,-rpath-link,$SUBOS/lib -Wl,-rpath,\$ORIGIN"
+
+# Libraries that must WIN over the subos farm, by SONAME.
+#
+# XLINGS_GFX_LDFLAGS_FIRST is prepended, so its -Wl,-rpath entries precede every
+# subos path in the resulting RPATH. RPATH is first-wins, and that ordering is the
+# whole point of this hook.
+#
+# The case that forced it: TWO payloads ship `libLLVM.so.20.1` with the same
+# SONAME and different contents.
+#
+#   libllvm 20.1.7    X86;AMDGPU          LLVMInitializeSPIRVTarget: 0 symbols
+#   llvm-dev 20.1.7.1 X86;AMDGPU;SPIRV    LLVMInitializeSPIRVTarget: 3 symbols
+#
+# mesa links `mesa_clc` against llvm-dev (llvm-config's libdir) but the subos farm
+# carries libllvm's copy, and it came FIRST in the RPATH. So mesa_clc linked
+# against one library and loaded the other:
+#
+#   ldd mesa_clc -> libLLVM.so.20.1 => <subos>/lib/libLLVM.so.20.1
+#   mesa_clc: symbol lookup error: undefined symbol: LLVMInitializeSPIRVTarget,
+#             version LLVM_20.1
+#
+# 1348 targets in, with an error naming a symbol rather than a library, and
+# nothing in the link step warned -- both files satisfy the same SONAME, so the
+# linker had no reason to object. Same shape as the runtime `one question, many
+# answerers` cases: two things answer, and only order decides.
+#
+# Deliberately not fixed by putting SPIRV into libllvm. That library is what every
+# user loads; SPIRV is needed only by a build tool, and widening the runtime
+# payload to serve the build would be paying every install for it.
+if [[ -n "${XLINGS_GFX_LDFLAGS_FIRST:-}" ]]; then
+    LDFLAGS="$XLINGS_GFX_LDFLAGS_FIRST $LDFLAGS"
+    export LDFLAGS
+    log "ldflags (first): $XLINGS_GFX_LDFLAGS_FIRST"
+fi
 export CC="$SUBOS/bin/gcc"
 export CXX="$SUBOS/bin/g++"
 [[ -x "$CC" ]] || skip "no gcc in the subos — xlings install gcc"

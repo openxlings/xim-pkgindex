@@ -17,7 +17,36 @@ package = {
 
     xpm = {
         linux = {
-            deps = { "xim:libffi@>=3.4", "xim:glibc@>=2.38" },
+            -- libxml2 and expat are for `bin/wayland-scanner`, not for the
+            -- libraries, and that is why they were missing for so long.
+            --
+            -- Measured on the 1.23.1 payload, 2026-08-08. Its full DT_NEEDED set
+            -- across every ELF member is:
+            --
+            --   libc.so.6  libffi.so.8  libwayland-client.so.0
+            --   libexpat.so.1  libxml2.so.2
+            --
+            -- and the payload itself ships neither expat nor libxml2. Only
+            -- libffi and glibc were declared, so `xlings install wayland` on a
+            -- clean machine produced a wayland-scanner that cannot start:
+            --
+            --   wayland-scanner: error while loading shared libraries:
+            --   libxml2.so.2: cannot open shared object file
+            --
+            -- It went unnoticed because the LIBRARY half is fine --
+            -- libwayland-client needs only libffi and libc -- so a GL or EGL
+            -- program works and nothing hints that the code generator is broken.
+            -- It only surfaced when mesa's build invoked wayland-scanner, 1957
+            -- targets in, with an error naming neither wayland nor mesa.
+            --
+            -- Floors, not pins: both are ABI-stable and the consumer only needs
+            -- them present. 2.13.5 and 2.6.x are what the index carries.
+            deps = {
+                "xim:libffi@>=3.4",
+                "xim:libxml2@>=2.12",
+                "xim:expat@>=2.6",
+                "xim:glibc@>=2.38",
+            },
             -- elfpatch reads this from each dependency and writes the consumer's
             -- RPATH, which is what makes the stack resolve without anyone
             -- setting LD_LIBRARY_PATH. Same mechanism `gcc-runtime` uses.

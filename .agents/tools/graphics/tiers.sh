@@ -66,7 +66,7 @@ T4=(
   "libglvnd|1.7.0|https://gitlab.freedesktop.org/glvnd/libglvnd/-/archive/v1.7.0/libglvnd-v1.7.0.tar.gz|meson|-Dgles1=false -Dasm=enabled"
 )
 
-# ── T4b — the three packages that are NOT built by this file ────────────
+# ── T4b — the four packages that are NOT built by this file ─────────────
 #
 # Each has its own script because each needs something run_tier() cannot express.
 # They are listed here so the build order is readable in one place.
@@ -75,13 +75,16 @@ T4=(
 #                                                  sequence (llvm+clang, the
 #                                                  SPIR-V translator, libclc),
 #                                                  each consuming the last
+#   spirv-tools        build-spirv-tools.sh        SPIRV-Headers at the revision
+#                                                  SPIRV-Tools' own DEPS pins,
+#                                                  then SPIRV-Tools; static only
 #   directx-headers    build-directx-headers.sh    no meson in this index (#562),
 #                                                  and its whole Linux install is
 #                                                  two static_library() calls
 #   wayland-protocols  build-wayland-protocols.sh  data only; no compiler runs
 #
-# llvm-dev and directx-headers are `status = "dev"`; wayland-protocols was already
-# `stable` and stays that way.
+# llvm-dev, spirv-tools and directx-headers are `status = "dev"`; wayland-protocols
+# was already `stable` and stays that way.
 #
 # Both directx-headers and wayland-protocols were HOST INPUTS to the shipped mesa
 # 25.0.7.1 -- but for two different reasons, and the second is the instructive one:
@@ -137,8 +140,15 @@ T4=(
 # because a build recipe that does not reproduce the build is worse than no
 # recipe: it costs the next person the same afternoon and looks authoritative.
 #
-# libxml2 is NOT in the list and was not needed -- mesa 25.0 generates its GL
-# dispatch with python, not xsltproc.
+# libxml2 IS in the list, and my first version of this comment said it "was not
+# needed" -- wrong, and wrong in the same way as the list it was correcting.
+#
+# mesa's own codegen does not use it (that is python now). `wayland-scanner` does:
+# the wayland payload's bin/wayland-scanner has DT_NEEDED on libxml2.so.2 and
+# libexpat.so.1, and pkgs/w/wayland.lua declared neither until this branch. So the
+# dependency is real but it belongs to a BUILD TOOL from another package, which is
+# why reading mesa's build files could not find it -- it surfaced 1957 targets in,
+# with an error naming neither wayland nor mesa.
 T5=(
   "mesa|25.0.7|https://archive.mesa3d.org/mesa-25.0.7.tar.xz|meson|-Dgallium-drivers=llvmpipe,softpipe,radeonsi,nouveau,zink,iris,d3d12 -Dvulkan-drivers=amd -Dglvnd=enabled -Dplatforms=x11,wayland -Dllvm=enabled -Dshared-llvm=enabled -Dmesa-clc=enabled -Dgallium-d3d12-video=disabled -Dlmsensors=disabled -Dvalgrind=disabled -Dbuild-tests=false -Dgallium-extra-hud=false|glslang libglvnd libdrm libX11 libxcb libXext libXfixes libXxf86vm libxshmfence wayland zlib expat elfutils xorgproto libpciaccess libXrandr libXau libXdmcp libXrender"
 )
