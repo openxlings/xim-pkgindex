@@ -44,6 +44,14 @@ package = {
     --   chain. So a symlink in the subos lib directory is enough: no interposer,
     --   no LD_LIBRARY_PATH.
     --
+    --   The RPATH half is measured and holds: `d3d12_dri.so` is a symlink to
+    --   `libdril_dri.so`, whose RPATH ends in `<subos>/lib` -- checked on both
+    --   25.0.7.1 and 25.0.7.2. The FILE half did not hold until 25.0.7.2:
+    --   25.0.7.1 shipped no `d3d12_dri.so` at all, so "verified on the shipped
+    --   payload" was never true of the very driver this package exists to feed.
+    --   config() now checks for the file rather than assuming it
+    --   (mcpp-community/mcpp#382).
+    --
     -- WHY THE LINKS MUST BE OURS AND NOT THE HOST'S ld.so.cache
     --   WSL makes /usr/lib/wsl/lib visible to the HOST loader through
     --   /etc/ld.so.conf.d. Our processes run on our own glibc with its own
@@ -245,13 +253,51 @@ function config()
     -- host needs no conditional syntax in the consumer, only a package that is
     -- a no-op elsewhere.
     --
-    -- `set`, not `prepend`: this is a single value, not a list. A user who
-    -- exported GALLIUM_DRIVER themselves keeps it (UC-1), so
-    -- `GALLIUM_DRIVER=llvmpipe` remains the escape hatch when the GPU path
-    -- misbehaves -- and that escape is why forcing the value here is safe.
+    -- ONLY if the driver module is actually there.
+    --
+    -- This used to force the value unconditionally, on the reasoning that
+    -- "`GALLIUM_DRIVER=llvmpipe` remains the escape hatch ... and that escape is
+    -- why forcing the value here is safe". **Both halves were wrong**, and an
+    -- external report (mcpp-community/mcpp#382) is what showed it.
+    --
+    -- Wrong half one: mesa 25.0.7.1 shipped no d3d12 driver at all. Not in
+    -- `lib/dri/`, and not in libgallium's GALLIUM_DRIVER selector table either --
+    -- `strings libgallium-25.0.7.so` gives `iris llvmpipe radeonsi softpipe`.
+    -- Forcing a driver that does not exist does not degrade, it hard-fails:
+    --
+    --   glx: failed to create drisw screen      (exit 255)
+    --
+    -- and the message names neither this package nor mesa. mesa 25.0.7.2 adds
+    -- d3d12, but a sentinel must not assume the version of a dep it declares as a
+    -- bare `xim:mesa` -- which is exactly what "whatever mesa this home has" means.
+    --
+    -- Wrong half two: the escape hatch does not exist. `subos.env` has two ops,
+    -- `set` and `prepend` (xlings src/core/subos/manifest.cppm:45-46), and neither
+    -- is conditional -- `set` overwrites a value the user exported. Verified in the
+    -- report: `export GALLIUM_DRIVER=llvmpipe; mcpp run` still failed. So the
+    -- safety argument rested on a capability that was never implemented, and an
+    -- `if-unset` op is filed separately (openxlings/xlings#508).
+    --
+    -- The check reads the SUBOS view, not mesa's payload, and that is deliberate:
+    -- `usr/lib/dri` is an `xvm.files` symlink to the ACTIVE mesa, so this asks
+    -- "what will actually be loaded" rather than "what some installed payload
+    -- contains". mesa is a dep, so it is configured before this runs.
+    local dri_d3d12 = path.join(system.subos_sysrootdir(), "usr", "lib", "dri", "d3d12_dri.so")
+    if not os.isfile(dri_d3d12) then
+        log.warn("wsl-gl-host-link: this is a WSL host, but the active mesa has no "
+                 .. "d3d12_dri.so -- NOT forcing GALLIUM_DRIVER=d3d12")
+        log.warn("  forcing it would turn a missing driver into "
+                 .. "`glx: failed to create drisw screen` (mcpp-community/mcpp#382);")
+        log.warn("  GL still works through llvmpipe. For GPU acceleration install "
+                 .. "mesa >= 25.0.7.2, which ships the d3d12 driver.")
+        return true
+    end
+
+    -- `set`, not `prepend`: this is a single value, not a list.
     if type(subos.env) == "function" then
         subos.env{ var = "GALLIUM_DRIVER", op = "set",
                    value = "d3d12", binding = tag }
+        log.info("wsl-gl-host-link: GALLIUM_DRIVER=d3d12 (d3d12_dri.so present)")
     end
     return true
 end
