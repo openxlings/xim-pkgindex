@@ -70,26 +70,54 @@ function install()
     return true
 end
 
+-- Traced step by step, because this hook stalls on a CI runner and three
+-- guesses at which call did it were all wrong.
+--
+-- What is known from the instrumented run (windows-test, #554): the harness
+-- reported `pkgs\v\vc6.lua (install-timeout)` at 1200s, and the last output
+-- before twenty minutes of silence was vc6's own payload tick -- so the stall
+-- is in HERE, after install() returned, and not in the download.
+--
+-- Ruled out with evidence rather than intuition:
+--   * `reg add` -- it uses /f, so no overwrite prompt, and earlier runs show it
+--     printing "The operation completed successfully." before the stall.
+--   * wscript in shortcut-tool -- real defect, fixed, and the job that hung had
+--     the fix in it (head_sha 293a1a7b) and stalled identically.
+--   * the state lock, for the nested xlings that `shortcut-tool` becomes -- the
+--     lock detects an ancestor holding the same home and skips, and a genuine
+--     wait errors out after 30s rather than hanging.
+--
+-- So the next run has to say which line it reached. These logs are the whole
+-- point of the change; do not "tidy" them away until the cause is known.
 function config()
     local msdev_path = path.join(pkginfo.install_dir(), MSDEV_REL)
 
-    -- Set Windows XP SP3 compatibility mode + RunAsAdmin via registry
+    log.info("vc6 config 1/4: compat mode (reg add) for %s", msdev_path)
     __setup_compat_mode(msdev_path)
 
-    -- Register package.name as binding root
+    log.info("vc6 config 2/4: xvm.add(%s)", package.name)
     xvm.add(package.name)
 
-    -- Register IDE launcher to xvm
+    log.info("vc6 config 3/4: xvm.add(msdev)")
     xvm.add("msdev", {
         bindir = path.join(pkginfo.install_dir(), "Common", "MSDev98", "BIN"),
         binding = package.name .. "@" .. pkginfo.version(),
     })
 
-    -- Create desktop + start menu shortcut
-    system.exec(string.format(
+    -- Desktop + start menu shortcut, and NOT allowed to fail the install.
+    --
+    -- `shortcut-tool` is a script package with no payload of its own, so this
+    -- line re-enters xlings through its shim. A cosmetic shortcut is not worth
+    -- failing an install over, and pcall also means a non-zero exit here stops
+    -- being indistinguishable from the stall while that is still open.
+    log.info("vc6 config 4/4: shortcut-tool create (re-enters xlings)")
+    local ok, err = pcall(system.exec, string.format(
         [[shortcut-tool create --name "%s" --target "%s" --icon "%s"]],
         __shortcut_name(), msdev_path, msdev_path
     ))
+    if not ok then
+        log.warn("shortcut creation failed (not fatal): %s", tostring(err))
+    end
 
     log.info("VC++ 6.0 installed with Windows XP SP3 compatibility mode")
 
