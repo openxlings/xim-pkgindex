@@ -51,7 +51,21 @@ package = {
             -- res_versioned: version-bump bot tracks mcpp-community/mcpp releases
             -- and appends checked XLINGS_RES entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "2026.8.8.2" },
+            ["latest"] = { ref = "2026.8.8.4" },
+            ["2026.8.8.4"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "e0d63de0f6e0111f47df00e9135baf437aed2bcdb883dbb658880d9ee4418e27",
+                    x86_64 = "a8f30fc73fae75381cdd734d204e6c04a24c55365cdf8bb6da07c3aa663c8f9f",
+                },
+            },
+            ["2026.8.8.3"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "cbfd110d626676de70f4e92de4e26898e5ba42726e8dc126b55c0248bc54cb0c",
+                    x86_64 = "c7ce7cebf978e9ae06a06f36ca7186774d32d9d79ca931937dede79f3da25268",
+                },
+            },
             ["2026.8.8.2"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -489,7 +503,19 @@ package = {
             -- res_versioned: version-bump bot tracks mcpp-community/mcpp releases
             -- and appends checked XLINGS_RES entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "2026.8.8.2" },
+            ["latest"] = { ref = "2026.8.8.4" },
+            ["2026.8.8.4"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "7d05662996f5ba1550fe2b1677ca80236d01dbf4c9f3e30d41f63d472b986f3a",
+                },
+            },
+            ["2026.8.8.3"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "c43eba6178296ad12a1c6218e775297a3ed0ee3cf762e91df1bdbfd1203054ed",
+                },
+            },
             ["2026.8.8.2"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -862,7 +888,19 @@ package = {
             -- res_versioned: version-bump bot tracks mcpp-community/mcpp releases
             -- and appends checked XLINGS_RES entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "2026.8.8.2" },
+            ["latest"] = { ref = "2026.8.8.4" },
+            ["2026.8.8.4"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "e0a6ad7b39dabb85bb97d2e989b3c50010f370c0594aeaeecf21b93b3f0760d3",
+                },
+            },
+            ["2026.8.8.3"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "f8ba3571e2211ec176095cd04e236689f321c40b58116190b168f7f558d9a716",
+                },
+            },
             ["2026.8.8.2"] = {
                 url = "XLINGS_RES",
                 sha256 = {
