@@ -742,13 +742,16 @@ export PKG_CONFIG_LIBDIR PKG_CONFIG_PATH="$PKG_CONFIG_LIBDIR" CPPFLAGS LDFLAGS
 
 # Resolve a meson to drive the build with.
 #
-# There is NO `meson` package in this index -- `xlings install meson` answers
-# "package 'meson' not found". This line used to read `"$SUBOS/bin/meson"`
-# unconditionally, which means every meson build here (mesa included) has in fact
-# been driven by whatever meson the developer's host happened to have on PATH,
-# usually a `pip --user` install. That is a build input nobody named or pinned,
-# and it is the same class of thing the host-leakage audit below exists to catch
-# -- the audit just never looked at the DRIVER, only at what the driver found.
+# `meson` IS a package now (pkgs/m/meson.lua, 1.8.2 -- #562), so branch 1 below is
+# the normal path and the vendored copy is the fallback for a home without it.
+#
+# The history is why this function exists at all: the line used to read
+# `"$SUBOS/bin/meson"` unconditionally while NO such package existed, so every
+# meson build here -- mesa included -- was driven by whatever meson the developer's
+# host happened to have on PATH, usually a `pip --user` install. That is a build
+# input nobody named or pinned, and it is the same class of thing the host-leakage
+# audit below exists to catch -- the audit just never looked at the DRIVER, only at
+# what the driver found.
 #
 # Order of preference:
 #   1. `$SUBOS/bin/meson` — if meson ever becomes a package, it wins with no
@@ -756,11 +759,10 @@ export PKG_CONFIG_LIBDIR PKG_CONFIG_PATH="$PKG_CONFIG_LIBDIR" CPPFLAGS LDFLAGS
 #   2. a pinned meson fetched into the work directory and run under the SUBOS's
 #      python. Reproducible and version-stated, which host meson is not.
 #
-# A vendored copy rather than a new package because meson contributes no code and
-# no linkage to the payload: it reads meson.build and writes build.ninja. ninja
-# and the compiler, which do touch the output, are already packages. Packaging
-# meson is still worth doing (openxlings/xim-pkgindex#562) -- this makes the
-# build honest in the meantime instead of silently depending on the host.
+# The fallback stays now that the package exists: `MESON_PIN` and the package track
+# the same version (1.8.2) deliberately, so which COPY a build uses cannot change
+# which VERSION it uses -- and a home that has not installed meson still gets a
+# reproducible driver instead of the host's.
 MESON_PIN="${MESON_PIN:-1.8.2}"
 __resolve_meson() {
     if [[ -x "$SUBOS/bin/meson" ]]; then
