@@ -532,31 +532,29 @@ for rel_file in "${files[@]}"; do
     fi
     printf '%s\n' "$remove_out"
     if [[ $remove_rc -ne 0 ]]; then
-        # A `type = "config"` package configures the system and registers no
-        # xvm version of its own, so there is nothing for removal to select:
+        # The `type = "config"` tolerance that used to live here is GONE.
         #
-        #   uninstall failed: xvm removal selection failed for xim:cpp@gnu:
-        #   removal version is not registered (target='cpp', version='gnu')
+        # It skipped the uninstall assertion when a config-type package failed
+        # with `removal version is not registered` -- a package that registers
+        # no xvm version had nothing for removal to select. Its own note said
+        # "whether `remove` should succeed as a no-op there is a real question,
+        # and an xlings-side one".
         #
-        # 11 of the 12 config-type recipes in this index call xvm.add zero
-        # times, so this is the shape of the type rather than a fault in one
-        # recipe -- the same reason the `namespace = "config"` branch above
-        # skips the lifecycle assertion entirely. Whether `remove` should
-        # succeed as a no-op there is a real question, and an xlings-side one;
-        # it is not this test's to answer, and it is not what put these
-        # recipes in the changed set.
+        # It has been answered on the xlings side: openxlings/xlings#506 makes
+        # removal of a package that registered no version succeed and run the
+        # recipe's uninstall() hook. That shipped in 2026.8.8.2, which is the
+        # client this CI installs since the pin bump.
         #
-        # Narrow on purpose: the config type AND this exact diagnostic. Keying
-        # on the type alone would also swallow a genuine removal bug in
-        # `xvm-sysdetect`, the one config package that DOES call xvm.add -- and
-        # a tolerance that hides the case it was not written for is how a
-        # skipped assertion becomes permanent.
-        if [[ "$pkg_type" == "config" ]] \
-           && grep -q "removal version is not registered" <<<"$remove_out"; then
-            info "uninstall not asserted: type='config' registers no xvm version"
-            info "  (${remove_spec} -- see the note in this script)"
-            continue
-        fi
+        # (openxlings/xlings#511 -- removal reporting success while leaving the
+        # payload on disk -- is a DIFFERENT, earlier gate and ships in
+        # 2026.8.8.3. It is not what this assertion exercises, and this
+        # tolerance never covered it.)
+        #
+        # Deleting this is the acceptance for that work, and it is the only one
+        # available: the changed branch cannot be reached from a local fixture
+        # (see #511 for the earlier gate that catches an overlapping
+        # population), so a green run here IS the test. If it goes red, the fix
+        # does not work -- do not re-add the tolerance.
 
         # Removing xlings when it is the only installed version is refused by
         # design -- that binary is the one running the command, and there is a
