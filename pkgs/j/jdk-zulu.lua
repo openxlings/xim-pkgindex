@@ -70,18 +70,37 @@ package = {
             --   libXtst.so.6 libXi.so.6 libXext.so.6 libX11.so.6 libXrender.so.1
             --   libasound.so.2 libfreetype.so libz.so.1
             --
-            -- libX11/libXext/libXi arrive transitively through libXtst, so only
-            -- the roots are listed. fontconfig is here because the font path
-            -- dlopens it -- it is not in any DT_NEEDED, which is exactly why
-            -- DT_NEEDED alone is not a sufficient dependency list.
+            -- EVERY soname is listed DIRECTLY, including ones reachable
+            -- transitively. The index's dep-closure check rejects the
+            -- transitive form, and it is right to: "a transitive dep does NOT
+            -- put its libdir in this payload's RPATH closure -- only direct
+            -- deps do." An earlier revision listed only libXtst and was failed
+            -- for exactly libX11/libXext/libXi.
             --
-            -- glibc is deliberately ABSENT. Declaring it would make the
-            -- predicate-driven elfpatch switch PT_INTERP, and that must not
-            -- happen until the closure resolves to us first: our loader has no
-            -- host fallback (its baked ld.so.cache path exists nowhere), so
-            -- switching early takes AWT down. Measured in 2026.8.8.1:
-            -- `UnsatisfiedLinkError: libawt_xawt.so: libX11.so.6`.
+            -- glibc IS declared, and that does NOT switch PT_INTERP here.
+            -- Declaring it would normally trip elfpatch's predicate-driven path
+            -- into rewriting the interpreter, which must not happen until the
+            -- rest of the closure resolves to us (our loader has no host
+            -- fallback -- its baked ld.so.cache path exists nowhere -- so
+            -- switching early takes AWT down: 2026.8.8.1 measured
+            -- `UnsatisfiedLinkError: libawt_xawt.so: libX11.so.6`). The
+            -- explicit `elfpatch.set({ rpath = ... })` in install() overrides
+            -- that predicate entirely -- "once set is called, the
+            -- predicate-driven auto path stops" -- and supplies rpath only.
+            -- So the dep can be declared honestly while the interpreter stays
+            -- put, which is what this step needs.
+            --
+            -- fontconfig and freetype draw a "declares X, but nothing in the
+            -- payload names a soname it provides" warning, and both stay:
+            -- fontconfig is **dlopen'd** by the font path so no DT_NEEDED names
+            -- it, and libfontmanager.so names `libfreetype.so` (the linker
+            -- name) rather than the `libfreetype.so.6` soname the check looks
+            -- for. Both are genuinely loaded at runtime -- measured with
+            -- LD_DEBUG -- which is precisely why DT_NEEDED alone is not a
+            -- sufficient dependency list.
             deps = {
+                "xim:glibc",
+                "xim:libX11", "xim:libXext", "xim:libXi",
                 "xim:libXtst", "xim:libXrender", "xim:alsa-lib",
                 "xim:freetype", "xim:fontconfig", "xim:zlib",
             },
