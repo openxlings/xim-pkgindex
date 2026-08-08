@@ -18,6 +18,26 @@ package = {
 
     xpm = {
         linux = {
+            -- These three are the payload's ENTIRE external closure, measured
+            -- rather than guessed: every bin/ ELF here needs exactly
+            -- libm/libc/ld-linux (glibc), libstdc++/libgcc_s (gcc-runtime) and
+            -- libz (zlib), and lib/ holds only clang's header tree, no
+            -- libraries at all.
+            --
+            -- Declaring glibc is also what switches the interpreter. elfpatch's
+            -- predicate fires when a runtime dep exports `runtime.loader`, which
+            -- glibc does; xlings then rewrites PT_INTERP and sets RPATH to the
+            -- dependency closure at install time. Without the declaration the
+            -- payload keeps upstream's INTERP, the HOST's ld-linux.
+            --
+            -- The other two are not optional extras once the interpreter moves.
+            -- Our loader's compiled-in cache path is the build machine's
+            -- (`/home/xlings/.xlings_data/.../etc/ld.so.cache`) and exists
+            -- nowhere, so after the switch there is NO host fallback: a library
+            -- absent from the closure is not found, full stop. Declaring only
+            -- glibc here would leave libstdc++ and libz unresolvable and the
+            -- tools would not start.
+            deps = { "xim:glibc", "xim:gcc-runtime", "xim:zlib" },
             ["latest"] = { ref = "22.1.8" },
             ["20.1.7"] = {
                 url = {
