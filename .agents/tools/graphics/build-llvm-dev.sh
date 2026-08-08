@@ -40,18 +40,63 @@
 # which means they have to be built reproducibly and named. `status = "dev"`
 # keeps it out of a user's way without making it unreproducible.
 #
-# TARGETS
+# TARGETS — X86;AMDGPU;SPIRV
 #
-# X86 for the host tool, plus SPIRV because libclc compiles its bitcode with
-# `clang -target spirv64-unknown-unknown`. AMDGPU is deliberately NOT here:
-# that is libllvm's axis (radeonsi's runtime shader compiler), and building it
-# twice would double an already long build for nothing.
+# X86 for the host tool. SPIRV because libclc compiles its bitcode with
+# `clang -target spirv64-unknown-unknown`.
+#
+# AMDGPU was excluded in 20.1.7 with this reasoning: "that is libllvm's axis
+# (radeonsi's runtime shader compiler), and building it twice would double an
+# already long build for nothing." **That was wrong**, and measuring the mesa
+# build is what showed it:
+#
+#   $ ls <libllvm payload>/            ->  lib
+#
+# The libllvm payload is a lib/ directory and nothing else -- no headers, no
+# lib/cmake/llvm/LLVMConfig.cmake, no bin/llvm-config. meson has exactly two ways
+# to find LLVM (a config tool, or cmake package files) and libllvm offers
+# neither, so libllvm can never be a BUILD input. It is a pure runtime artifact.
+#
+# Which means the two axes are not "runtime" and "build-time tools" -- they are
+# "the shared library a user loads" and "everything a build needs", and the
+# second one has to include every target the first one does. Otherwise mesa
+# configures against an LLVM without AMDGPU and radeonsi silently loses its
+# shader compiler.
+#
+# The visible consequence of getting this wrong: with X86;SPIRV only, mesa's
+# meson skipped past our llvm-config entirely and reported
+#
+#   llvm-config found: YES (/usr/bin/llvm-config) 18.1.3
+#
+# picking up the HOST's LLVM 18 -- while the index's libllvm is 20.1.7. A
+# libgallium linked that way needs libLLVM.so.18.1, which this index does not
+# ship, so the payload could not have loaded at all.
+#
+# This is also why gcc 15.1.0 is now REQUIRED rather than merely allowed: AMDGPU
+# is the translation unit that ICEs gcc 16 (see the compiler note below).
 #
 # Exit codes follow .agents/tools/README.md:
 #   0 built and packaged · 1 the build broke · 3 it never started
 set -uo pipefail
 
-VERSION="${1:-20.1.7}"
+# Default is 20.1.7.1, not 20.1.7. The published 20.1.7 payload has no AMDGPU;
+# this script no longer produces it, so defaulting to that version would hand you
+# a tarball whose name claims to be something already released with different
+# contents.
+VERSION="${1:-20.1.7.1}"
+
+# The package version and the upstream tag are two different things.
+#
+# This index's convention is that a fourth component is OURS: when a payload's
+# contents change but upstream did not, the asset has to get a new version,
+# because a GitCode release asset is written once and cannot be deleted. So
+# `20.1.7.1` is llvm-project 20.1.7 rebuilt by us (here: with AMDGPU added).
+#
+# Conflating them was a real failure, not a hypothetical: passing `20.1.7.1`
+# built a URL for `llvmorg-20.1.7.1` and died on a 404 before compiling anything.
+# UPSTREAM is derived rather than passed so the two cannot drift apart.
+UPSTREAM="${UPSTREAM:-$(echo "$VERSION" | cut -d. -f1-3)}"
+
 SPIRV_TAG="${SPIRV_TAG:-v20.1.0}"
 SUBOS_NAME="${XLINGS_GFX_SUBOS:-gfxbuild}"
 XHOME="${XLINGS_HOME:-$HOME/.xlings}"
@@ -81,56 +126,73 @@ NINJA="$SUBOS/bin/ninja"; [[ -x "$NINJA" ]] || skip "no ninja in subos '$SUBOS_N
 # Through the subos's shim, not the payload's bin/ directly. Only the shim
 # carries the elfpatch'd interpreter and RPATH; an absolute path into the
 # payload makes cmake's compiler probe fail to link. Select the compiler first
-# with `xlings use gcc 16.1.0` — see the version note below for why 16 and not 15.
+# with `xlings use gcc 15.1.0` — see the version note below for why 15 and not 16.
 BUILD_CC="$SUBOS/bin/gcc"
 BUILD_CXX="$SUBOS/bin/g++"
 [[ -x "$BUILD_CC" && -x "$BUILD_CXX" ]] || skip "no gcc/g++ in subos '$SUBOS_NAME'"
 
-# gcc 16.x here, NOT the 15.1.0 that build-libllvm.sh insists on. Both halves of
-# that constraint were checked rather than inherited.
+# gcc 15.1.0 — the same version build-libllvm.sh insists on, and this gate was
+# INVERTED in 20.1.7. The history matters because both halves moved.
 #
-# Why 15.1.0 is required THERE: 16.1.0 ICEs with a segfault on
-# AMDGPUAsmParser.cpp (2212/2218), and libllvm cannot drop AMDGPU because that
-# is radeonsi's runtime shader compiler. **This build has no AMDGPU** — it is
-# X86;SPIRV, because the only consumer is a host tool that turns OpenCL C into
-# SPIR-V. So the ICE cannot be reached from here.
+# 20.1.7 required 16.x and refused 15.x, for a measured reason: the gcc 15.1.0
+# payload shipped `lib/gcc/x86_64-linux-gnu/15.1.0/include-fixed/pthread.h`, a
+# fixincludes snapshot that precedes the sysroot in the search order and so
+# SHADOWED the live `pthread.h`. libstdc++'s own `ext/concurrence.h:257` then
+# failed with "cannot convert '<brace-enclosed initializer list>' to 'unsigned
+# int'", stopping the build at 13/4049 with an error naming neither gcc nor the
+# header that shadowed.
 #
-# Why 15.1.0 is actively WRONG here, measured 2026-08-08: the gcc 15.1.0 payload
-# ships `lib/gcc/x86_64-linux-gnu/15.1.0/include-fixed/pthread.h`, a fixincludes
-# copy baked against the glibc of whatever machine built gcc. include-fixed
-# precedes the sysroot in the search order, so it SHADOWS our
-# `usr/include/bits/pthreadtypes.h` and `__gthread_cond_t` resolves to
-# `unsigned int`. libstdc++'s own `ext/concurrence.h` then fails to compile:
+# That is now fixed at the source (openxlings/xim-pkgindex#560): the snapshot was
+# frozen against glibc 2.39 while the sysroot moved to 2.44, and pkgs/g/gcc.lua
+# prunes any fixincludes-bannered header at install. Re-measured with 15.1.0
+# actually selected -- the first attempt at this measurement used the subos shim
+# while it still pointed at 16, and proved nothing:
 #
-#   ext/concurrence.h:257: cannot convert '<brace-enclosed initializer list>'
-#                          to 'unsigned int' in initialization
+#   frozen header present -> 1 error, -H shows include-fixed/pthread.h winning
+#   frozen header pruned  -> 0 errors, -H shows the sysroot's pthread.h winning
 #
-# which stops the LLVM build at 13/4049 with an error that names neither gcc nor
-# the header that shadowed. 16.1.0 compiles the same translation unit clean.
+# And 15.x is now REQUIRED rather than merely permitted, because this build
+# gained AMDGPU: 16.1.0 ICEs with a segfault on AMDGPUAsmParser.cpp (2212/2218),
+# which is the exact translation unit that forced 15.1.0 on build-libllvm.sh. The
+# two scripts now agree, which is the right end state -- they produce the
+# build-time and runtime halves of ONE LLVM and had no business disagreeing about
+# the compiler.
 #
-# The C++ ABI argument that binds libllvm does NOT bind this package: with
-# `-Dmesa-clc=system` mesa consumes a mesa_clc BINARY and never links clang, so
-# llvm-dev only has to be self-consistent. clang is still wrong as the build
-# compiler, for the reason build-libllvm.sh gives: the xlings `llvm` package's
-# clang defaults to libc++ while everything else here is libstdc++.
+# clang is still wrong as the build compiler, for the reason build-libllvm.sh
+# gives: the xlings `llvm` package's clang defaults to libc++ while everything
+# else here is libstdc++.
 cc_ver="$("$BUILD_CC" -dumpfullversion 2>/dev/null || echo unknown)"
 case "$cc_ver" in
-  16.*) log "compiler gcc $cc_ver" ;;
-  15.*) skip "subos gcc is $cc_ver, whose include-fixed/pthread.h shadows the sysroot and breaks libstdc++ threading headers; run \`xlings use gcc 16.1.0\`" ;;
-  *)    skip "subos gcc is $cc_ver; this build wants 16.x (see the note above)" ;;
+  15.*) log "compiler gcc $cc_ver" ;;
+  16.*) skip "subos gcc is $cc_ver, which ICEs on AMDGPUAsmParser.cpp; run \`xlings use gcc 15.1.0\`" ;;
+  *)    skip "subos gcc is $cc_ver; this build wants 15.x (see the note above)" ;;
 esac
+
+# The #560 precondition, checked on the compiler's BEHAVIOUR not on the file.
+#
+# Asserting "include-fixed/pthread.h is absent" would test the fix's mechanism;
+# this tests its effect, so it stays correct if the fix ever moves. Without it
+# the build dies 13 targets in, blaming libstdc++.
+__probe="$WORK/src/.llvmdev-cxx-probe.cpp"
+mkdir -p "$WORK/src"
+printf '#include <ext/concurrence.h>\nint main(){return 0;}\n' > "$__probe"
+"$BUILD_CXX" -std=c++17 -fno-exceptions -c "$__probe" -o /dev/null 2>"$__probe.log" || {
+    echo "---- compiler probe ----" >&2; cat "$__probe.log" >&2
+    fail "g++ $cc_ver cannot compile <ext/concurrence.h> -- the gcc payload still ships a frozen fixincludes header (openxlings/xim-pkgindex#560). Reinstall gcc with the pkgs/g/gcc.lua fix."
+}
+rm -f "$__probe" "$__probe.log"
 
 PREFIX="$WORK/dist/llvm-dev-$VERSION"
 rm -rf "$PREFIX"; mkdir -p "$PREFIX"
 
 # ── 1. LLVM + clang, shared ─────────────────────────────────────────────
-SRC="$WORK/src/llvm-$VERSION"
-TARBALL="$WORK/src/llvm-project-$VERSION.src.tar.xz"
+SRC="$WORK/src/llvm-$UPSTREAM"
+TARBALL="$WORK/src/llvm-project-$UPSTREAM.src.tar.xz"
 if [[ ! -d "$SRC" ]]; then
     [[ -f "$TARBALL" ]] || {
-        log "fetching llvm-project $VERSION (~130 MB)"
+        log "fetching llvm-project $UPSTREAM (~130 MB)"
         curl -fsSL --retry 3 -o "$TARBALL" \
-          "https://github.com/llvm/llvm-project/releases/download/llvmorg-$VERSION/llvm-project-$VERSION.src.tar.xz" \
+          "https://github.com/llvm/llvm-project/releases/download/llvmorg-$UPSTREAM/llvm-project-$UPSTREAM.src.tar.xz" \
           || fail "download failed"
     }
     log "extracting"
@@ -141,7 +203,7 @@ fi
 BUILD="$WORK/src/llvm-dev-$VERSION-build"
 rm -rf "$BUILD"; mkdir -p "$BUILD"
 
-log "configuring llvm+clang (X86;SPIRV, shared, no tests/docs)"
+log "configuring llvm+clang (X86;AMDGPU;SPIRV, shared, no tests/docs)"
 "$CMAKE" -S "$SRC/llvm" -B "$BUILD" -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_C_COMPILER="$BUILD_CC" \
@@ -150,7 +212,7 @@ log "configuring llvm+clang (X86;SPIRV, shared, no tests/docs)"
   -DCMAKE_INSTALL_RPATH='$ORIGIN/../lib' \
   -DCMAKE_BUILD_WITH_INSTALL_RPATH=ON \
   -DLLVM_ENABLE_PROJECTS="clang" \
-  -DLLVM_TARGETS_TO_BUILD="X86" \
+  -DLLVM_TARGETS_TO_BUILD="X86;AMDGPU" \
   -DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD="SPIRV" \
   -DLLVM_BUILD_LLVM_DYLIB=ON \
   -DLLVM_LINK_LLVM_DYLIB=ON \

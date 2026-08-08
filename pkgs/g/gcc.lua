@@ -126,6 +126,7 @@ function install()
             symlink = true,
             verbose = true,
         })
+        __prune_stale_fixincludes()
     end
     return true
 end
@@ -165,6 +166,77 @@ function uninstall()
 end
 
 -- private
+
+-- Drop the headers fixincludes froze at gcc-build time.
+--
+-- When gcc is built, `fixincludes` copies system headers it judges broken into
+-- `lib/gcc/<triple>/<ver>/include-fixed/` and patches them. That directory
+-- precedes the sysroot in the search order, so the copies WIN over the live
+-- headers -- which is the whole point when the sysroot never moves, and exactly
+-- wrong for a relocatable toolchain whose sysroot is a package we upgrade.
+--
+-- Measured on the 15.1.0 payload, 2026-08-08 (openxlings/xim-pkgindex#560):
+--
+--   include-fixed/pthread.h  was frozen from
+--       /home/xlings/.xlings_data/subos/linux/usr/include/pthread.h
+--   i.e. from OUR OWN sysroot as it stood at gcc build time -- glibc 2.39. The
+--   sysroot is now glibc 2.44, and 2.44 changed the layout of pthread_cond_t:
+--
+--     2.39  #define PTHREAD_COND_INITIALIZER { { {0}, {0}, {0,0}, {0,0}, 0, 0, {0,0} } }
+--     2.44  #define PTHREAD_COND_INITIALIZER { { {0}, {0}, {0,0}, 0, 0, {0,0}, 0, 0 } }
+--
+--   The frozen macro is fed to the live type, so libstdc++'s own
+--   `ext/concurrence.h:257` stops compiling:
+--
+--     cannot convert '<brace-enclosed initializer list>' to 'unsigned int'
+--
+--   Any C++ translation unit reaching that header fails, which is most of them.
+--   It took down an LLVM build at 13/4049 with an error naming neither gcc nor
+--   the header that shadowed. With the file removed, `-H` shows the sysroot's
+--   pthread.h winning and the same unit compiles clean.
+--
+-- So this is not host leakage -- it is VERSION SKEW against our own glibc, and
+-- it recurs on every glibc bump for any gcc that ships an include-fixed copy.
+--
+-- The discriminator is the fixincludes banner, not a filename list. gcc also
+-- puts genuinely-generated headers here (`limits.h`, `syslimits.h`) which carry
+-- no banner and must stay; a filename allowlist would need editing every time
+-- fixincludes decides to freeze something new, and the failure mode of guessing
+-- wrong is silent. 16.1.0's include-fixed holds only README, so this is a no-op
+-- there -- which is the shape to want: the fix is not conditioned on a version.
+function __prune_stale_fixincludes()
+    local banner = "auto-edited by fixincludes"
+    local pruned = 0
+
+    -- Walked with `os.files("*")` + `os.dirs("*")` rather than a `**` glob.
+    -- fixincludes nests its copies (bits/, sys/), so the scan has to recurse --
+    -- but `**` has no other user in this index, and the failure mode of a
+    -- pattern that quietly matches nothing here is indistinguishable from a
+    -- healthy payload. These two primitives are used by other recipes already.
+    local function scan(d)
+        for _, f in ipairs(os.files(path.join(d, "*"))) do
+            local content = io.readfile(f)
+            if content and content:find(banner, 1, true) then
+                os.tryrm(f)
+                pruned = pruned + 1
+                log.info("gcc: pruned frozen fixincludes header " .. path.filename(f)
+                         .. " (see #560) -- the sysroot's own copy now wins")
+            end
+        end
+        for _, sub in ipairs(os.dirs(path.join(d, "*"))) do scan(sub) end
+    end
+
+    for _, dir in ipairs(os.dirs(path.join(pkginfo.install_dir(),
+                                           "lib", "gcc", "*", "*", "include-fixed"))) do
+        scan(dir)
+    end
+    -- Deliberately not an error when zero: a payload built with a fixincludes
+    -- that found nothing to fix is the healthy case, not a missing fix.
+    if pruned > 0 then
+        log.warn("gcc: removed " .. pruned .. " header(s) frozen against an older "
+                 .. "sysroot; C++ threading headers would not have compiled")
+    end
+end
 
 function __config_linux()
     local gcc_bindir = path.join(pkginfo.install_dir(), "bin")
