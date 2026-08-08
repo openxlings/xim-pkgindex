@@ -1,0 +1,17 @@
+--- a/misc/Makefile.in
++++ b/misc/Makefile.in
+@@ -128,9 +128,13 @@
+ 
+ NCURSES_CONFIG	= ncurses@DFT_ARG_SUFFIX@@cf_cv_abi_version@@cf_config_suffix@-config
+ 
++# xlings payload: do not install the *-config script. It hard-codes the build
++# prefix (/usr) and the default terminfo path as answers for the NEXT build's
++# configure -- exactly the host-path class build-in-subos.sh's payload check
++# rejects. Consumers use the .pc files, which the --deps hook rewrites.
+ install \
+ install.libs :: $(DESTDIR)$(bindir) ncurses-config
+-	$(INSTALL_SCRIPT) ncurses-config $(DESTDIR)$(bindir)/$(NCURSES_CONFIG)
++	@echo "xlings: skipping $(NCURSES_CONFIG) install (host-prefix config script)"
+ 
+ # Make a list of the files that gen-pkgconfig might create:
+ @MAKE_PC_FILES@PC_FILES = \
