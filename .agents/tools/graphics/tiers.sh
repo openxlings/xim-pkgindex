@@ -78,9 +78,11 @@ T4=(
 #   spirv-tools        build-spirv-tools.sh        SPIRV-Headers at the revision
 #                                                  SPIRV-Tools' own DEPS pins,
 #                                                  then SPIRV-Tools; static only
-#   directx-headers    build-directx-headers.sh    no meson in this index (#562),
-#                                                  and its whole Linux install is
-#                                                  two static_library() calls
+#   directx-headers    build-directx-headers.sh    its whole Linux install is two
+#                                                  static_library() calls, so meson
+#                                                  buys nothing here
+#   meson              build-meson.sh              pure Python; a repack, not a
+#                                                  build (#562)
 #   wayland-protocols  build-wayland-protocols.sh  data only; no compiler runs
 #
 # llvm-dev, spirv-tools and directx-headers are `status = "dev"`; wayland-protocols
