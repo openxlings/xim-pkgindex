@@ -275,7 +275,12 @@ function __config_linux()
     local glibc_lib, dynamic_linker = __find_glibc_runtime()
     if glibc_lib then
         local rpath = glibc_lib .. ":" .. path.join(pkginfo.install_dir(), "lib64")
-        __rewrite_specs_linux(rpath, dynamic_linker)
+        -- Propagate the failure. This used to be called for effect with its
+        -- result discarded, so a rewrite that did not take hold still reported
+        -- a successful install.
+        if not __rewrite_specs_linux(rpath, dynamic_linker) then
+            return false
+        end
     else
         -- Fail, do not warn and continue.
         --
@@ -403,6 +408,40 @@ end
 -- stamp lives inside install_dir and is wiped on `xim reinstall
 -- gcc` along with the rest of the payload, so version bumps and
 -- forced reinstalls naturally re-rewrite.
+-- Does this gcc actually produce a binary that RUNS?
+--
+-- The postcondition the specs rewrite exists for, tested directly rather than
+-- inferred. Compile an empty main and execute it: if PT_INTERP names a loader
+-- that is not on this machine, `execve` fails -- and it fails with ENOENT
+-- against the BINARY, not the missing loader, which is why that failure is so
+-- consistently misread (openxlings/xlings#509 burned 16 CI runs and four wrong
+-- fixes on exactly this).
+--
+-- Returns ok, reason.
+function __gcc_produces_runnable(gcc_bin)
+    local dir = pkginfo.install_dir()
+    local src = path.join(dir, ".xlings-specs-probe.c")
+    local exe = path.join(dir, ".xlings-specs-probe.bin")
+    os.tryrm(exe)
+    if not io.writefile(src, "int main(void){return 0;}\n") then
+        return false, "could not write the probe source"
+    end
+    local function ok_(r) return r == true or r == 0 end
+    local compiled = os.exec(string.format('%s "%s" -o "%s"', gcc_bin, src, exe))
+    if not ok_(compiled) then
+        os.tryrm(src)
+        return false, "the probe did not compile"
+    end
+    local ran = os.exec(string.format('"%s"', exe))
+    os.tryrm(src)
+    os.tryrm(exe)
+    if not ok_(ran) then
+        return false, "the probe compiled but could not be executed -- its "
+            .. "ELF interpreter is not present on this machine"
+    end
+    return true
+end
+
 function __rewrite_specs_linux(rpath, dynamic_linker)
     -- The "-payload" suffix versions the specs SCHEMA: pre-existing installs
     -- carry the old subos-form stamp, which no longer matches, so the next
@@ -411,12 +450,31 @@ function __rewrite_specs_linux(rpath, dynamic_linker)
         pkginfo.install_dir(),
         ".specs-rewritten-" .. pkginfo.version() .. "-payload.stamp"
     )
+    local gcc_bin = path.join(pkginfo.install_dir(), "bin/gcc")
+
+    -- The stamp is a cache, NOT the decision.
+    --
+    -- It used to be the decision -- "have we run?" -- and that is a different
+    -- question from "is the result correct". A specs file corrupted by any
+    -- means (an interrupted run, a hand edit, or another home writing into a
+    -- payload this one shares) was then frozen that way forever, because the
+    -- stamp said the work was done. Observed: PT_INTERP stuck on glibc 2.39
+    -- while the rpath had moved to 2.44, surfacing as
+    --
+    --   libc.so.6: undefined symbol: __pointer_chk_guard, version GLIBC_PRIVATE
+    --
+    -- which names nothing relevant. So a present stamp still has to survive the
+    -- probe; if it does not, we rewrite and repair.
     if os.isfile(stamp) then
-        log.debug("gcc specs already rewritten (stamp present), skipping.")
-        return
+        local ok = __gcc_produces_runnable(gcc_bin)
+        if ok then
+            log.debug("gcc specs already rewritten and verified, skipping.")
+            return true
+        end
+        log.warn("gcc specs stamp is present but this gcc cannot produce a "
+            .. "runnable binary -- rewriting to repair it.")
     end
 
-    local gcc_bin = path.join(pkginfo.install_dir(), "bin/gcc")
     local specs_config_bin = path.join(system.bindir(), "gcc-specs-config")
 
     log.info("Rewriting gcc specs to payload-direct paths via gcc-specs-config...")
@@ -425,7 +483,23 @@ function __rewrite_specs_linux(rpath, dynamic_linker)
         specs_config_bin, gcc_bin, dynamic_linker, rpath
     ))
 
+    -- Fail, do not warn and continue -- the same reasoning as the missing-glibc
+    -- branch in __config_linux. A gcc that installs "successfully" and cannot
+    -- produce a runnable binary hands the user a toolchain whose failures point
+    -- at the wrong file entirely.
+    local ok, why = __gcc_produces_runnable(gcc_bin)
+    if not ok then
+        log.error("gcc specs rewrite did not take effect: %s", why)
+        log.error("  dynamic-linker: %s", dynamic_linker)
+        log.error("  rpath:          %s", rpath)
+        log.error("  the installed gcc cannot produce a working binary.")
+        return false
+    end
+
+    -- Only now. A stamp written on an unverified rewrite is how the failure
+    -- above became permanent in the first place.
     io.writefile(stamp, pkginfo.version())
+    return true
 end
 
 -- Locate the glibc payload runtime (this package's own dep, xim:glibc) via
