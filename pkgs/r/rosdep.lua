@@ -20,7 +20,7 @@ package = {
 
     xpm = {
         linux = {
-            deps = {"python"},
+            deps = {"xim:python"},
             ["latest"] = { ref = "0.26.0" },
             ["0.26.0"] = {
                 url = "https://files.pythonhosted.org/packages/bd/c1/15c5c296f41e6a290e6c3515316b2676be580c66b10e26372200a0ecbdd7/rosdep-0.26.0-py3-none-any.whl",
@@ -28,7 +28,8 @@ package = {
             },
         },
         macosx = {
-            deps = {"python"},
+            -- No python dep on macOS: xim:python has no macosx section, so this
+            -- resolves to nothing. macOS ships python3 in the CLT / system.
             ["latest"] = { ref = "0.26.0" },
             ["0.26.0"] = {
                 url = "https://files.pythonhosted.org/packages/bd/c1/15c5c296f41e6a290e6c3515316b2676be580c66b10e26372200a0ecbdd7/rosdep-0.26.0-py3-none-any.whl",
@@ -36,7 +37,7 @@ package = {
             },
         },
         windows = {
-            deps = {"python"},
+            deps = {"xim:python"},
             ["latest"] = { ref = "0.26.0" },
             ["0.26.0"] = {
                 url = "https://files.pythonhosted.org/packages/bd/c1/15c5c296f41e6a290e6c3515316b2676be580c66b10e26372200a0ecbdd7/rosdep-0.26.0-py3-none-any.whl",
