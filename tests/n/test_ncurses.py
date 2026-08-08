@@ -123,7 +123,15 @@ class TestLifecycle:
     @pytest.mark.lifecycle
     @skip_if_not('linux')
     def test_install(self):
-        assert_install_succeeds(PKG)
+        # 显式 local:, 不用裸名也不用 xim: —— 三个口径里唯一在「发布前后」
+        # 都成立的一个:
+        #   * 裸名 "ncurses" 在 scode:ncurses (from-source 子索引) 并存时
+        #     歧义, 一旦 local: 注册过更是必歧义;
+        #   * xim:ncurses 在索引发布前不存在, 而新名字无法被 overlay 进
+        #     编译好的 catalog (解析 miss 还会触发自动 refresh 盖掉 overlay);
+        # 跑本测试前先 `xlings config --add-xpkg pkgs/n/ncurses.lua`
+        # (closure-lifecycle job 就是这么做的)。
+        assert_install_succeeds(f"local:{PKG}")
 
 
 # ── L4 helpers — 都直接读盘/跑载荷, 不经 shim ───────────────────────────
