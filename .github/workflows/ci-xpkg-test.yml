@@ -83,10 +83,15 @@ jobs:
   # 任何静态清单都看不到; #578 就是靠 System.loadLibrary 的 LOAD_OK 误判
   # 「装载了」=「装载的是我们的」才带病发布的)。
   #
-  # 注意: 本 job 装的是已发布索引里的 xim:jdk-zulu (xlings update 拉的是
-  # 发布 artifact, 不是本 checkout), 所以对 recipe 的改动要等索引发布后
-  # 这里才看得见 —— 也因此它守的是「发布出去的东西」而不是「写在 PR 里的
-  # 东西」, 这正是 L4 该守的口径。
+  # 门禁口径: 测的是本 PR 的内容, 不是已发布索引。做法照抄 posix-test.sh
+  # 的 overlay 机制 (不发明第二种): update 拉到发布索引后, 把 checkout 的
+  # recipe 原位覆盖进 home 的索引 —— 同名同 xim: namespace, 恰好是合并后
+  # 才会存在的那个状态; libs/ 一并覆盖, 否则 recipe 里 import 的
+  # xim.pkgindex.* (selfcontain.seal!) 落到吞调用的 stub 上, seal 静默
+  # no-op (--add-xpkg 的 local: 路径就是这样把测试测空的)。合并到 main 后
+  # checkout 与待发布内容一致, main 上的同一 job / 索引发布后的 re-run
+  # 即是「守发布物」—— 那份职责不在 PR 门禁上, 否则任何给已发布包加版本
+  # 键的 PR 都结构性首红。
   closure-lifecycle:
     runs-on: ubuntu-latest
     needs: index-registration
@@ -112,8 +117,24 @@ jobs:
           echo "XLINGS_HOME=$HOME/.xlings" >> "$GITHUB_ENV"
           echo "PATH=$HOME/.xlings/subos/current/bin:$HOME/.xlings/bin:$PATH" >> "$GITHUB_ENV"
 
+      # 先 update 再 overlay, 且之后不得再 update —— update 会重拉发布
+      # artifact 把覆盖进去的文件盖回去 (posix-test.sh 对新包早有记录)。
+      # 同理, overlay 之后的每次解析必须一击即中: 任何 resolve miss 都会
+      # 触发 install 的单次自动 refresh (commands.cppm C2/#366), 它同样把
+      # overlay 盖回发布态 —— 隔离 home 重放时实测踩到。这也是 jdk-zulu 的
+      # fontconfig dep 用精确 @2.15.0.1 而不用 range 的第二个理由 (第一个:
+      # semver 拒绝第 4 段, range 永远选不到这个键, 见 recipe 注释)。
       - name: Refresh package index
         run: xlings update
+
+      - name: Overlay this checkout onto the index (posix-test.sh mechanism)
+        run: |
+          IDX="$HOME/.xlings/data/xim-pkgindex"
+          test -d "$IDX" && test ! -L "$IDX"
+          cp -rf pkgs/. "$IDX/pkgs/"
+          mkdir -p "$IDX/libs"
+          cp -f libs/*.lua "$IDX/libs/"
+          echo "index now serves this checkout's recipes + libs ($IDX)"
 
       # lifecycle 先装包, verify 再对装出来的东西做断言; -x 让装包失败时
       # 立即停 —— 后面的 verify 全是同一个因的噪音

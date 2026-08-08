@@ -139,7 +139,12 @@ class TestLifecycle:
     def test_install(self):
         # The Zulu 25 tarball is ~230MB; the default 180s can be tight on a
         # cold cache.
-        assert_install_succeeds(PKG, timeout=420)
+        #
+        # `xim:` 显式限定, 不用裸名: 裸名在「不止一个索引提供这个名字」的
+        # 那一刻起歧义 (scode 侧、CI 的 local: 注册都制造过这种时刻), 而
+        # jdk-zulu 的正主一直是 xim: —— closure-lifecycle 的 overlay 也是
+        # 覆盖在 xim: 名下。
+        assert_install_succeeds(f"xim:{PKG}", timeout=420)
 
 
 # ═══════════════════════════════════════════════════════════════════════
