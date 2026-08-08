@@ -299,9 +299,79 @@ if [[ $has_display -eq 1 ]]; then
 else
   na "X11 / GLX reachable" "DISPLAY unset"
 fi
-[[ $has_wayland -eq 1 ]] \
-  && na "Wayland" "WAYLAND_DISPLAY set but no Wayland probe exists yet (O4)" \
-  || na "Wayland" "WAYLAND_DISPLAY unset"
+# O4: EGL on Wayland, against OUR vendor library.
+#
+# This cell used to report `na` in BOTH directions -- "compositor present and it
+# works" and "no compositor" produced the same non-answer -- which is how the
+# Wayland question stayed open long enough for me to misclassify it three times
+# (unwritten probe -> hardware -> mesa build option -> back to unwritten probe).
+# It was always the probe.
+#
+# The compositor is started here rather than required from the environment: a
+# headless one is enough to exercise the platform, and demanding that the
+# developer already be in a Wayland session would leave this cell `na` on every
+# X11 machine -- which is most of them. Started, used, killed.
+#
+# GL_RENDERER is llvmpipe under a headless compositor by nature: the client gets
+# no DRM master, so mesa falls back from the dri2 screen. That is expected and
+# NOT what this cell asserts. What it asserts is that the WAYLAND EGL platform
+# path works and that every object driving it came from our payload.
+wl_probe() {
+  local comp; comp="$(command -v mutter || command -v weston || command -v sway || true)"
+  [[ -n "$comp" ]] || { na "Wayland" "no compositor to start (mutter/weston/sway)"; return; }
+  [[ -f "$HERE/wlprobe.c" ]] || { na "Wayland" "no wlprobe.c"; return; }
+  [[ -n "$PROBE" ]] || { na "Wayland" "$PROBE_WHY"; return; }
+
+  local rt="${XDG_RUNTIME_DIR:-}"
+  [[ -n "$rt" && -d "$rt" ]] || { na "Wayland" "no XDG_RUNTIME_DIR for a compositor socket"; return; }
+
+  local wlbin="$S/bin/wlprobe" wlname="xlings-verify-wl"
+  local ffi; ffi="$(ls -d "$XLINGS_HOME"/data/xpkgs/*-x-libffi/*/ 2>/dev/null | head -1)"
+  local wl;  wl="$(ls -d "$XLINGS_HOME"/data/xpkgs/*-x-wayland/*/ 2>/dev/null | head -1)"
+  [[ -n "$wl" ]] || { na "Wayland" "no wayland package in the stack"; return; }
+
+  # -rpath-link for libffi: libwayland-client needs it INDIRECTLY, and without
+  # it the link fails on ffi_* symbols in a way that reads as a broken wayland
+  # package rather than a short link line.
+  if ! "$S/bin/gcc" -O1 -o "$wlbin" "$HERE/wlprobe.c" \
+        -I"$S/usr/include" -I"$wl/include" \
+        -L"$S/usr/lib" -L"$S/lib" -L"$wl/lib" \
+        -Wl,-rpath,"$S/usr/lib" -Wl,-rpath,"$S/lib" -Wl,-rpath,"$wl/lib" \
+        -Wl,-rpath-link,"$S/lib" -Wl,-rpath-link,"$S/usr/lib" \
+        ${ffi:+-Wl,-rpath-link,"$ffi/lib"} \
+        -lEGL -lGLESv2 -lwayland-client >"$S/wlprobe-build.log" 2>&1; then
+    bad "Wayland" "wlprobe failed to build (see $S/wlprobe-build.log)"; return
+  fi
+
+  "$comp" --headless --wayland --wayland-display="$wlname" --no-x11 \
+      >"$S/wl-compositor.log" 2>&1 &
+  local cpid=$!
+  local i=0
+  while [[ $i -lt 20 && ! -S "$rt/$wlname" ]]; do sleep 0.5; i=$((i+1)); done
+  if [[ ! -S "$rt/$wlname" ]]; then
+    kill $cpid 2>/dev/null
+    na "Wayland" "$(basename "$comp") did not create a socket (see $S/wl-compositor.log)"
+    return
+  fi
+
+  local out; out="$(WAYLAND_DISPLAY="$wlname" timeout 60 "$wlbin" 2>&1)"; local rc=$?
+  kill $cpid 2>/dev/null; wait $cpid 2>/dev/null
+
+  if [[ $rc -ne 0 ]] || ! grep -q "^RESULT=ok" <<<"$out"; then
+    bad "Wayland" "$(grep -m1 '^RESULT=' <<<"$out" || echo "probe exited $rc")"; return
+  fi
+  if ! grep -q "^PIXEL=336699$" <<<"$out"; then
+    bad "Wayland" "pixel readback $(sed -n 's/^PIXEL=//p' <<<"$out")"; return
+  fi
+  # The assertion that separates our stack from the host's: no mapped object may
+  # come from outside XLINGS_HOME.
+  local hostobjs; hostobjs="$(sed -n 's/^LOADED=//p' <<<"$out" | grep -cv "^$XLINGS_HOME" || true)"
+  if [[ "${hostobjs:-0}" -gt 0 ]]; then
+    bad "Wayland" "$hostobjs mapped object(s) came from the host, not our payload"; return
+  fi
+  ok "Wayland" "EGL on Wayland, $(sed -n 's/^LOADED=//p' <<<"$out" | wc -l) objects all ours"
+}
+wl_probe
 
 # ── a real application ──────────────────────────────────────────────────
 sect "5. a real GUI application, not a probe"
