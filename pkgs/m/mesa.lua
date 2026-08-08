@@ -211,7 +211,7 @@ function config()
 
     xvm.add(package.name)
 
-    -- Only `lib/*.so*`, so the twelve driver modules under `lib/dri/` stay
+    -- Only `lib/*.so*`, so the driver modules under `lib/dri/` stay
     -- out of `<subos>/lib`: those are loaded by path through
     -- LIBGL_DRIVERS_PATH below, and are not link targets.
     sysroot.declare_libs(dir, "lib", tag, pkginfo.version())
