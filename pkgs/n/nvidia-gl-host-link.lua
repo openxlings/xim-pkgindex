@@ -453,6 +453,24 @@ function install()
                     os.exec(string.format(
                         [[patchelf --force-rpath --set-rpath %q %q]], rp, out))
                 end
+                -- Say so when it did not happen.
+                --
+                -- Both steps above are inside `try` or depend on a patchelf
+                -- this install did not put on PATH, and a silent skip here
+                -- reproduces the exact failure this change exists to remove --
+                -- with nothing in the log to distinguish it from success. The
+                -- symptom is three layers away by then (`GLX: No GLXFBConfigs
+                -- returned`, from glvnd, which swallows the dlopen error).
+                local tag = try { function()
+                    return os.iorun(string.format(
+                        [[readelf -d "%s"]], out))
+                end }
+                if not (tag and tag:find("RPATH", 1, true)) then
+                    log.warn("nvidia-gl-host-link: " .. name ..
+                             " still carries DT_RUNPATH; GL will fall back to")
+                    log.warn("  software rendering on this host. patchelf is a")
+                    log.warn("  declared build dep -- check it is on PATH.")
+                end
                 table.insert(done, name)
             end
         end
