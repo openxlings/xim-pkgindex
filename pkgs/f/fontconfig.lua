@@ -32,9 +32,11 @@ package = {
             -- installed" is a success, not a refresh — so the only way to
             -- get a SEALED payload onto a machine holding an unsealed one is
             -- a new version key. jdk-zulu depends on
-            -- `xim:fontconfig@>=2.15.0.1` for exactly this: pin-to-active
-            -- cannot satisfy the floor with an old active 2.15.0, so the
-            -- resolver installs this key and install() seals it.
+            -- `xim:fontconfig@2.15.0.1` — EXACT, because semver rejects a
+            -- fourth component, so no range can ever select this key (see
+            -- the note in jdk-zulu.lua) — and pin-to-active cannot satisfy
+            -- that with an old active 2.15.0, so the resolver installs this
+            -- key and install() seals it.
             ["2.15.0.1"] = {
                 url = {
                     GLOBAL = "https://github.com/xlings-res/fontconfig/releases/download/2.15.0/fontconfig-2.15.0-linux-x86_64.tar.gz",

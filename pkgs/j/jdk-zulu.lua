@@ -108,16 +108,27 @@ package = {
             -- elfpatch.skip() in install() for why that must not happen and
             -- how it is prevented.
             --
-            -- fontconfig floor >= 2.15.0.1: fontconfig is dlopen'd by
-            -- libfontmanager (no DT_NEEDED names it), and a fontconfig
+            -- fontconfig pinned EXACTLY to 2.15.0.1: fontconfig is dlopen'd
+            -- by libfontmanager (no DT_NEEDED names it), and a fontconfig
             -- payload from the 2.15.0 era predates selfcontain.seal — it
             -- carries no RUNPATH, so ITS OWN freetype/expat resolve from the
             -- host's ld.so cache and the host font stack rides back in
             -- through the side door. 2.15.0.1 is the same artifact re-keyed
-            -- to force a sealed install; the floor is what pierces
+            -- to force a sealed install; the pin is what pierces
             -- pin-to-active on a machine holding an old unsealed 2.15.0
-            -- (the pin cannot satisfy >= 2.15.0.1, so the resolver installs
-            -- the sealed one).
+            -- (an active 2.15.0 does not satisfy @2.15.0.1, so the resolver
+            -- installs the sealed one).
+            --
+            -- Exact, not `@>=2.15.0.1`, and this is measured rather than
+            -- style: semver.cppm rejects anything past three components
+            -- ("trailing content after 3 components is invalid"), so a
+            -- 4-component version can neither appear in a range constraint
+            -- nor be SELECTED by one — `>=2.15.0.1` resolves to "package
+            -- not found" with the key sitting in this very index, and even
+            -- `>=2.15.0` would select the unsealed 2.15.0. The exact form
+            -- takes the direct version-key lookup, which is the only path
+            -- that reaches a 4-component key. When fontconfig next bumps
+            -- for real, this pin is bumped with it, deliberately.
             --
             -- fontconfig and freetype draw the "declares X, but nothing in
             -- the payload names a soname it provides" warning, and both
@@ -131,7 +142,7 @@ package = {
                 "xim:glibc",
                 "xim:libX11", "xim:libXext", "xim:libXi",
                 "xim:libXtst", "xim:libXrender", "xim:alsa-lib",
-                "xim:freetype", "xim:fontconfig@>=2.15.0.1", "xim:zlib",
+                "xim:freetype", "xim:fontconfig@2.15.0.1", "xim:zlib",
             },
             ["latest"] = { ref = "25.0.4" },
             ["25.0.4"] = {
