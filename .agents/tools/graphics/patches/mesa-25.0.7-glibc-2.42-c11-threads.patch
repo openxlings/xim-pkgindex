@@ -1,0 +1,78 @@
+--- a/src/c11/threads.h
++++ b/src/c11/threads.h
+@@ -37,6 +37,23 @@
+ #include <limits.h>
+ #include <stdlib.h>
+ 
++/* glibc >= 2.42 owns once_flag / call_once.
++ *
++ * ISO C23 moved them from <threads.h> into <stdlib.h>, and glibc followed. With
++ * _GNU_SOURCE (which mesa builds with) <stdlib.h> therefore declares both, and
++ * the definitions below collide:
++ *
++ *   error: conflicting types for 'once_flag'; have 'pthread_once_t' {aka 'int'}
++ *   error: conflicting types for 'call_once'; have 'void(int *, void (*)(void))'
++ *
++ * <stdlib.h> is included just above, so ONCE_FLAG_INIT is already visible here
++ * whenever the libc provides it -- which makes this test deterministic rather
++ * than dependent on include order in the translation unit.
++ */
++#ifdef ONCE_FLAG_INIT
++#  define MESA_LIBC_OWNS_ONCE_FLAG 1
++#endif
++
+ #if defined(_WIN32) && !defined(HAVE_PTHREAD)
+ #  include <io.h> /* close */
+ #  include <process.h> /* _exit */
+@@ -107,19 +124,23 @@
+    void *LockSemaphore;
+    uintptr_t SpinCount;
+ } mtx_t; /* Mock of CRITICAL_SECTION */
++#  ifndef MESA_LIBC_OWNS_ONCE_FLAG
+ typedef struct
+ {
+    volatile uintptr_t status;
+ } once_flag;
+-#  define ONCE_FLAG_INIT {0}
++#    define ONCE_FLAG_INIT {0}
++#  endif
+ #  define TSS_DTOR_ITERATIONS 1
+ #elif defined(HAVE_PTHREAD)
+ typedef pthread_cond_t  cnd_t;
+ typedef pthread_t       thrd_t;
+ typedef pthread_key_t   tss_t;
+ typedef pthread_mutex_t mtx_t;
++#  ifndef MESA_LIBC_OWNS_ONCE_FLAG
+ typedef pthread_once_t  once_flag;
+-#  define ONCE_FLAG_INIT PTHREAD_ONCE_INIT
++#    define ONCE_FLAG_INIT PTHREAD_ONCE_INIT
++#  endif
+ #  ifdef PTHREAD_DESTRUCTOR_ITERATIONS
+ #    define TSS_DTOR_ITERATIONS PTHREAD_DESTRUCTOR_ITERATIONS
+ #  else
+@@ -148,7 +169,9 @@
+ 
+ /*-------------------------- functions --------------------------*/
+ 
++#ifndef MESA_LIBC_OWNS_ONCE_FLAG
+ void call_once(once_flag *, void (*)(void));
++#endif
+ int cnd_broadcast(cnd_t *);
+ void cnd_destroy(cnd_t *);
+ int cnd_init(cnd_t *);
+--- a/src/c11/impl/threads_posix.c
++++ b/src/c11/impl/threads_posix.c
+@@ -46,11 +46,13 @@
+ 
+ /*--------------- 7.25.2 Initialization functions ---------------*/
+ // 7.25.2.1
++#ifndef MESA_LIBC_OWNS_ONCE_FLAG
+ void
+ call_once(once_flag *flag, void (*func)(void))
+ {
+     pthread_once(flag, func);
+ }
++#endif
+ 
+ 
+ /*------------- 7.25.3 Condition variable functions -------------*/

@@ -76,6 +76,16 @@ done
     exit 2
 }
 
+# This script's own directory, for `patches/` below.
+#
+# Resolved from BASH_SOURCE rather than $0 so it is correct when the script is
+# sourced or invoked through a symlink. Worth stating because the first version of
+# the patch hook referenced an undefined $HERE, which expanded to `/patches` --
+# a directory that does not exist, so the glob matched nothing, no patch applied,
+# and the build failed with the exact error the patch removes. A missing patch is
+# invisible; that is why this line is here and not inlined.
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 SUBOS_NAME="${XLINGS_GFX_SUBOS:-gfxbuild}"
 XHOME="${XLINGS_HOME:-$HOME/.xlings}"
 SUBOS="$XHOME/subos/$SUBOS_NAME"
@@ -384,6 +394,42 @@ TARBALL="$SRC/${NAME}-${VERSION}-$(basename "$URL")"
 BUILDDIR="$SRC/$NAME-$VERSION"
 rm -rf "$BUILDDIR"; mkdir -p "$BUILDDIR"
 tar xf "$TARBALL" -C "$BUILDDIR" --strip-components=1 || fail "extract failed"
+
+# ── patches, by convention ──────────────────────────────────────────────
+#
+# `patches/<name>-<version>-*.patch` next to this script, applied in sorted
+# order with `patch -p1`. Nothing to declare at the call site: a patch exists
+# for a (package, version) pair or it does not.
+#
+# Needed because upstream releases go stale against a MOVING sysroot. mesa
+# 25.0.7 is the last of its series and cannot compile against glibc 2.44: ISO
+# C23 moved once_flag/call_once into <stdlib.h>, glibc >= 2.42 followed, and
+# mesa's own src/c11 shim redefines both --
+#
+#   error: conflicting types for 'once_flag'; have 'pthread_once_t' {aka 'int'}
+#
+# The shipped mesa 25.0.7.1 was built when this sysroot was glibc 2.39, so the
+# same source and the same command now fail where they once worked. That is a
+# recurring shape here, not a one-off, and it deserves a mechanism rather than a
+# hand-edit somebody has to remember.
+#
+# Applied with --forward and treated as fatal on failure. A patch that no longer
+# applies means the source moved under it, and continuing would build something
+# nobody described -- the silent-success shape this tree keeps finding.
+PATCHDIR="$HERE/patches"
+if [[ -d "$PATCHDIR" ]]; then
+    shopt -s nullglob
+    patches=("$PATCHDIR/$NAME-$VERSION"-*.patch)
+    shopt -u nullglob
+    if [[ ${#patches[@]} -gt 0 ]]; then
+        command -v patch >/dev/null || fail "${#patches[@]} patch(es) apply to $NAME $VERSION but \`patch\` is not available"
+        for p in "${patches[@]}"; do
+            log "patch: $(basename "$p")"
+            ( cd "$BUILDDIR" && patch -p1 --forward --silent < "$p" ) \
+                || fail "applying $(basename "$p") -- the source moved under it; re-generate the patch rather than skipping it"
+        done
+    fi
+fi
 
 # ── the subos as the build environment ──────────────────────────────────
 # PKG_CONFIG_PATH and the include/lib paths point ONLY at the subos, so a
