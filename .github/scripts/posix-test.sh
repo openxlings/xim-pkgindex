@@ -102,6 +102,42 @@ metadata_only_owner_migration() {
     return 0
 }
 
+# Bound a command's wall clock, on both Linux and macOS.
+#
+# `timeout` is GNU coreutils and is NOT on a stock macOS runner -- adding it
+# unconditionally turned every macos-install-test install into
+# `timeout: command not found` inside 19 seconds. Homebrew's coreutils installs
+# it as `gtimeout`, which may or may not be there.
+#
+# So: use whichever exists, and when neither does, do it in shell rather than
+# silently dropping the bound -- an unbounded run is the failure mode this was
+# added to prevent, and "no timeout available" must not read as "no timeout
+# needed". Returns 124 on expiry, matching timeout(1).
+TIMEOUT_BIN="$(command -v timeout 2>/dev/null || command -v gtimeout 2>/dev/null || true)"
+
+run_bounded() {
+    local secs="$1"; shift
+    if [[ -n "$TIMEOUT_BIN" ]]; then
+        "$TIMEOUT_BIN" "$secs" "$@"
+        return $?
+    fi
+    "$@" &
+    local pid=$! waited=0
+    while kill -0 "$pid" 2>/dev/null; do
+        if [[ $waited -ge $secs ]]; then
+            kill -TERM "$pid" 2>/dev/null
+            sleep 2
+            kill -KILL "$pid" 2>/dev/null
+            wait "$pid" 2>/dev/null
+            return 124
+        fi
+        sleep 2
+        waited=$((waited + 2))
+    done
+    wait "$pid"
+    return $?
+}
+
 read -r -a files <<< "$CHANGED_FILES"
 if [[ "${#files[@]}" -eq 0 ]]; then
     echo "No changed .lua files. Nothing to test."
@@ -305,7 +341,17 @@ for rel_file in "${files[@]}"; do
     pkg_spec="${pkg_ns}:${pkg}"
 
     step "[$pkg] install ($pkg_spec)"
-    if ! "$XLINGS_CMD" install "$pkg_spec" -y; then
+    # Bounded, for the same reason the Windows leg is: a hook that blocks --
+    # an interactive prompt, a GUI-mode script host, an installer waiting on a
+    # dialog -- otherwise holds the runner to GitHub's 6-hour ceiling, and no
+    # log is served for an in-progress job, so there is nothing to look at
+    # while it happens. 124 is timeout(1)'s own code for "killed on time".
+    run_bounded 1200 "$XLINGS_CMD" install "$pkg_spec" -y; rc=$?
+    if [[ $rc -eq 124 ]]; then
+        log_fail "install TIMED OUT after 1200s (a hook is blocking)"
+        failures+=("$rel_file (install-timeout)"); continue
+    fi
+    if [[ $rc -ne 0 ]]; then
         log_fail "install failed"; failures+=("$rel_file (install)"); continue
     fi
 
@@ -461,7 +507,12 @@ for rel_file in "${files[@]}"; do
     fi
 
     step "[$pkg] uninstall ($remove_spec)"
-    remove_out="$("$XLINGS_CMD" remove "$remove_spec" -y 2>&1)"; remove_rc=$?
+    remove_out="$(run_bounded 1200 "$XLINGS_CMD" remove "$remove_spec" -y 2>&1)"; remove_rc=$?
+    if [[ $remove_rc -eq 124 ]]; then
+        printf '%s\n' "$remove_out"
+        log_fail "uninstall TIMED OUT after 1200s (a hook is blocking)"
+        failures+=("$rel_file (uninstall-timeout)"); continue
+    fi
     printf '%s\n' "$remove_out"
     if [[ $remove_rc -ne 0 ]]; then
         # A `type = "config"` package configures the system and registers no

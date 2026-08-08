@@ -69,8 +69,32 @@ for hit in "${hits[@]:-}"; do
     bad=$((bad + 1))
 done
 
+# wscript: the GUI-mode Windows Script Host.
+#
+# Same class as io.read, one layer down. wscript needs a window station; in a
+# non-interactive session (CI, a service, WinRM, a scheduled task) it does not
+# get one and never returns, so the install hangs with nothing printed. cscript
+# is the console host and is what automation wants.
+#
+# Measured: vc6's config() calls `shortcut-tool create`, which ran
+# `wscript <vbs>`, and a windows-test job stopped dead right after the
+# compat-mode `reg add` printed its success line and sat there until cancelled.
+# A second copy of the same call was in code.lua. Neither had ever been
+# install-tested on Windows, because the per-package test only runs recipes in a
+# PR's changed set.
+while IFS= read -r hit; do
+    [[ -n "$hit" ]] || continue
+    file="${hit%%:*}"
+    body="${hit#*:*:}"
+    [[ "$body" =~ ^[[:space:]]*-- ]] && continue
+    echo "::error file=$file::$hit"
+    echo "       wscript is the GUI-mode script host and blocks forever in a"
+    echo "       non-interactive session. Use: cscript //Nologo //B <script>"
+    bad=$((bad + 1))
+done < <(grep -rnE '(^|[^a-zA-Z])wscript' pkgs/ libs/ 2>/dev/null || true)
+
 if [[ $bad -gt 0 ]]; then
-    echo "xpkg blocking-input check: FAIL ($bad unguarded io.read across $scanned recipes)"
+    echo "xpkg blocking-input check: FAIL ($bad unguarded blocking call(s) across $scanned recipes)"
     exit 1
 fi
 # The count is part of the result: a check that matched nothing prints the same

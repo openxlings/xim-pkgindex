@@ -271,7 +271,13 @@ shortcut.Save
     file:close()
 
     -- 执行 .vbs 文件以创建快捷方式
-    os.exec("wscript " .. vbs_path)
+    --
+    -- cscript, NOT wscript, for the reason spelled out in shortcut-tool.lua:
+    -- wscript is the GUI-mode script host, needs a window station, and in a
+    -- non-interactive session never returns -- so the install hangs with
+    -- nothing printed. Same call, same defect, found by sweeping for it after
+    -- vc6 parked a windows-test job on shortcut-tool's copy.
+    os.exec("cscript //Nologo //B " .. vbs_path)
 
     -- 删除临时的 .vbs 文件
     os.tryrm(vbs_path)

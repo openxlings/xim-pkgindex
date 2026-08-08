@@ -21,7 +21,7 @@ package = {
 
     xpm = {
         linux = {
-            deps = { "make", "gcc" }, -- musl-gcc ?
+            deps = { "xim:make", "xim:gcc" }, -- musl-gcc ?
             ["latest"] = { ref = "0.0.1" },
             ["0.0.1"] = {
                 url = {

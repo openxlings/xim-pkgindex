@@ -19,7 +19,7 @@ package = {
 
     xpm = {
         linux = {
-            deps = {"node", "npm"},
+            deps = {"xim:node", "xim:npm"},
             ["latest"] = { ref = "2026.5.7" },
             ["2026.5.7"] = {},
             ["2026.2.26"] = {},
@@ -32,13 +32,13 @@ package = {
             -- system libs to be reachable. Linux/Windows users typically
             -- install those via the distro/winget; macOS is the platform
             -- where brew is the de-facto answer.
-            deps = {"node", "npm", "brew"},
+            deps = {"xim:node", "xim:npm", "xim:brew"},
             ["latest"] = { ref = "2026.5.7" },
             ["2026.5.7"] = {},
             ["2026.2.26"] = {},
         },
         windows = {
-            deps = {"node", "npm"},
+            deps = {"xim:node", "xim:npm"},
             ["latest"] = { ref = "2026.5.7" },
             ["2026.5.7"] = {},
             ["2026.2.26"] = {},

@@ -86,6 +86,53 @@ $skipped  = 0
 # Best-effort.
 & $xlingsCmd config --index-repo "scode:https://github.com/openxlings/xim-pkgindex-scode.git" 2>&1 | Out-Null
 
+# Run xlings with a wall-clock limit, and make a hang report itself.
+#
+# `& $xlingsCmd install ... | Write-Host` has no timeout. When a hook blocks --
+# an interactive prompt, a GUI-mode script host, an installer waiting on a
+# dialog -- the job sits there until GitHub's 6-hour ceiling, and because
+# GitHub serves no logs for an in-progress job there is NOTHING to look at
+# while it happens. That is how vc6 cost two full runs: the visible log ended
+# mid-package and "slow" was indistinguishable from "stuck".
+#
+# So: redirect to a file, wait with a limit, then always print what was
+# captured. On timeout, kill the tree and fail with the package name and the
+# tail -- the tail is the evidence, because the last line before the stall is
+# the call that stalled.
+function Invoke-XlingsWithTimeout {
+    param(
+        [Parameter(Mandatory=$true)][string]$XlingsCmd,
+        [Parameter(Mandatory=$true)][string[]]$XlingsArgs,
+        [int]$TimeoutSec = 1200,
+        [string]$Label = "xlings"
+    )
+
+    $out = [System.IO.Path]::GetTempFileName()
+    $err = [System.IO.Path]::GetTempFileName()
+    $proc = Start-Process -FilePath $XlingsCmd -ArgumentList $XlingsArgs `
+                          -NoNewWindow -PassThru `
+                          -RedirectStandardOutput $out -RedirectStandardError $err
+
+    if (-not $proc.WaitForExit($TimeoutSec * 1000)) {
+        Write-Host ""
+        Write-Host "[TIMEOUT] $Label did not finish within $TimeoutSec s" -ForegroundColor Red
+        Write-Host "          last 40 lines of its output -- the stall is at the end:" -ForegroundColor Red
+        try { Get-Content $out -Tail 40 | ForEach-Object { Write-Host "    $_" } } catch { }
+        try { Get-Content $err -Tail 20 | ForEach-Object { Write-Host "    [err] $_" } } catch { }
+        # Kill the tree: the blocked thing is usually a CHILD (cscript, an
+        # installer), so killing only xlings leaves the runner occupied.
+        try { taskkill /T /F /PID $proc.Id 2>&1 | Out-Null } catch { }
+        Remove-Item $out, $err -ErrorAction SilentlyContinue
+        return 124
+    }
+
+    try { Get-Content $out -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_ } } catch { }
+    try { Get-Content $err -ErrorAction SilentlyContinue | ForEach-Object { Write-Host $_ } } catch { }
+    $code = $proc.ExitCode
+    Remove-Item $out, $err -ErrorAction SilentlyContinue
+    return $code
+}
+
 foreach ($relFile in $files) {
     $luaFile = Join-Path $WorkspaceRoot $relFile
     if (-not (Test-Path $luaFile)) {
@@ -169,8 +216,14 @@ foreach ($relFile in $files) {
 
     # --- install ---
     Log-Step "[$pkg] install ($pkgSpec)"
-    & $xlingsCmd install $pkgSpec -y 2>&1 | Write-Host
-    if ($LASTEXITCODE -ne 0) {
+    $rc = Invoke-XlingsWithTimeout -XlingsCmd $xlingsCmd `
+              -XlingsArgs @("install", $pkgSpec, "-y") -Label "[$pkg] install"
+    if ($rc -eq 124) {
+        Log-Fail "install TIMED OUT (a hook is blocking; see the tail above)"
+        $failures += "$relFile (install-timeout)"
+        continue
+    }
+    if ($rc -ne 0) {
         Log-Fail "install failed"
         $failures += "$relFile (install)"
         continue
@@ -243,8 +296,14 @@ foreach ($relFile in $files) {
     # on ambient active-version state it does not control.
     $removeSpec = if ($installedVersion) { "${pkgSpec}@${installedVersion}" } else { $pkgSpec }
     Log-Step "[$pkg] uninstall ($removeSpec)"
-    & $xlingsCmd remove $removeSpec -y 2>&1 | Write-Host
-    if ($LASTEXITCODE -ne 0) {
+    $rc = Invoke-XlingsWithTimeout -XlingsCmd $xlingsCmd `
+              -XlingsArgs @("remove", $removeSpec, "-y") -Label "[$pkg] uninstall"
+    if ($rc -eq 124) {
+        Log-Fail "uninstall TIMED OUT (a hook is blocking; see the tail above)"
+        $failures += "$relFile (uninstall-timeout)"
+        continue
+    }
+    if ($rc -ne 0) {
         Log-Fail "uninstall failed"
         $failures += "$relFile (uninstall)"
         continue

@@ -81,7 +81,24 @@ function create_windows_shortcut(name, target, icon, args)
     file:close()
 
     -- 执行 .vbs 文件以创建快捷方式
-    system.exec("wscript " .. vbs_path)
+    --
+    -- cscript, NOT wscript. wscript is the GUI-mode Windows Script Host: it
+    -- needs a window station, and in a non-interactive session (CI, a service,
+    -- WinRM, a scheduled task) it does not get one and never returns. The
+    -- caller has no timeout, so the whole install hangs -- no error, nothing
+    -- printed, indistinguishable from a slow download.
+    --
+    -- Measured on a windows-test runner: vc6's config() calls
+    -- `shortcut-tool create`, the job stopped dead after the compat-mode
+    -- `reg add` printed "The operation completed successfully.", and sat there
+    -- until it was cancelled. vc6 had never been install-tested on Windows
+    -- before -- the per-package test only runs recipes in a PR's changed set --
+    -- so this had been latent since the recipe was written.
+    --
+    -- //Nologo drops the banner; //B is batch mode, which suppresses the
+    -- script-level prompts and error dialogs that would block for the same
+    -- reason one level down.
+    system.exec("cscript //Nologo //B " .. vbs_path)
 
     -- 删除临时的 .vbs 文件
     os.tryrm(vbs_path)

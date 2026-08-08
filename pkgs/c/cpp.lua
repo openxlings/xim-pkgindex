@@ -16,18 +16,18 @@ package = {
 
     xpm = {
         windows = {
-            deps = { "mingw-w64@13" },
+            deps = { "xim:mingw-w64@13" },
             ["latest"] = { ref = "mingw" },
             ["mingw"] = {},
             ["msvc"] = {},
         },
         linux = {
-            deps = { "gcc" },
+            deps = { "xim:gcc" },
             ["latest"] = { ref = "gnu" },
             ["gnu"] = {},
         },
         macosx = {
-            deps = { "brew" },
+            deps = { "xim:brew" },
             ["latest"] = {},
         },
     },
