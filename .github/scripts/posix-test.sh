@@ -62,6 +62,34 @@ shim_set() {
     } | sort
 }
 
+# Post-uninstall shim-leak check, shared by the in-loop path and the
+# deferred fixed-point path below. Only shims OWNED by the package (named in
+# its `programs` list) count as a leak: shims that arrived with the deps are
+# the deps' own lifecycle and remain installed by design.
+check_shim_leak() {
+    local rel_file="$1" new_shims="$2" programs="$3"
+    local shims_final survived leftover shim prog
+    shims_final=$(shim_set)
+    survived=$(comm -12 <(printf '%s\n' "$new_shims") <(printf '%s\n' "$shims_final"))
+    leftover=""
+    if [[ -n "$survived" && -n "$programs" ]]; then
+        for shim in $survived; do
+            for prog in $programs; do
+                if [[ "$shim" == "$prog" ]]; then
+                    leftover="${leftover}${leftover:+ }${shim}"
+                    break
+                fi
+            done
+        done
+    fi
+    if [[ -n "$leftover" ]]; then
+        log_fail "shims still present after uninstall: $leftover"
+        failures+=("$rel_file (leftover-shim)")
+    else
+        log_pass "all shims cleaned"
+    fi
+}
+
 # xlings stores installs under <xpkgs>/<ns>-x-<name>/<version>/.
 # macOS ships BSD find without GNU's -regextype, so do the regex match
 # in bash and stay portable across both systems.
@@ -147,6 +175,31 @@ fi
 failures=()
 tested=0
 skipped=0
+
+# Deferred uninstalls, retried to a fixed point after the main loop.
+#
+# The per-package flow removes only the package under test; its DEPS stay
+# installed for the rest of the run. So when the changed set contains both a
+# library and its consumer (glibc + ncurses, glibc + jdk), the library's turn
+# can come first and its removal is refused by the reverse-dependency guard —
+# the guard being RIGHT and the fixed order being naive. Those removals are
+# deferred and retried in rounds once every changed package has had its own
+# uninstall; see the fixed-point block after the loop.
+deferred_files=()
+deferred_pkgs=()
+deferred_specs=()
+deferred_shims=()
+deferred_programs=()
+deferred_errs=()
+# Bare names of every changed package this run actually install-tested —
+# the discriminator for the fixed point's terminal state. `uninstalled_pkgs`
+# holds the ones whose own uninstall assertion already PASSED: a later
+# package may re-install one of those as its dependency (xmake pulls ncurses
+# back in after ncurses' own turn), and a resident re-install blocking the
+# fixed point is the harness's leave-deps-installed design, not an ordering
+# bug — its uninstall was already proven.
+changed_pkgs=()
+uninstalled_pkgs=()
 
 # Register official sub-indexes so packages that delegate to them resolve.
 # e.g. xim:linux-headers is a thin delegator whose payload lives in
@@ -311,6 +364,7 @@ for rel_file in "${files[@]}"; do
     esac
 
     tested=$((tested+1))
+    changed_pkgs+=("$pkg")
 
     step "[$pkg] register (type=$pkg_type)"
     # Overlay wins; `--add-xpkg` is the fallback for a home whose index copy is
@@ -576,37 +630,135 @@ for rel_file in "${files[@]}"; do
             info "  the only installed version (use \`xlings self uninstall\`)"
             continue
         fi
+
+        # Reverse-dependency refusal: the guard is right and the fixed order
+        # is naive — another package installed by THIS run still depends on
+        # the one under test (glibc's turn comes before its consumers').
+        # Defer, do not fail: retried to a fixed point after the loop, and
+        # only the fixed point's terminal state decides pass/fail.
+        if grep -q "is required by .* installed package" <<<"$remove_out"; then
+            info "uninstall deferred: blocked by installed dependents right now;"
+            info "  retried after every changed package has had its own uninstall"
+            deferred_files+=("$rel_file")
+            deferred_pkgs+=("$pkg")
+            deferred_specs+=("$remove_spec")
+            deferred_shims+=("$new_shims")
+            deferred_programs+=("$programs")
+            deferred_errs+=("$remove_out")
+            continue
+        fi
         log_fail "uninstall failed"; failures+=("$rel_file (uninstall)"); continue
     fi
 
     step "[$pkg] post-uninstall checks"
-    shims_final=$(shim_set)
-    survived=$(comm -12 <(printf '%s\n' "$new_shims") <(printf '%s\n' "$shims_final"))
+    uninstalled_pkgs+=("$pkg")
+    check_shim_leak "$rel_file" "$new_shims" "$programs"
+done
 
-    # Only flag survivals that are owned by this package — i.e. shims
-    # whose name appears in the package's `programs` list. Shims that
-    # arrived as a side effect of installing the package's `deps` are
-    # the deps' own lifecycle (they remain installed even when this
-    # package goes away) and are not a leak.
-    leftover=""
-    if [[ -n "$survived" && -n "$programs" ]]; then
-        for shim in $survived; do
-            for prog in $programs; do
-                if [[ "$shim" == "$prog" ]]; then
-                    leftover="${leftover}${leftover:+ }${shim}"
-                    break
+# ── Deferred uninstalls: dependency-agnostic fixed point ────────────────────
+#
+# Each round retries every remaining removal; a success unblocks its
+# dependents for the NEXT round, so any dependency ordering among the changed
+# packages converges without this script knowing the graph. Rounds are capped
+# at the set size (a chain of N unblocks at most one per round). Failures are
+# accounted ONLY at the terminal state, never mid-round.
+#
+# Terminal state, measured before designed: the test home keeps every DEP
+# payload installed on purpose (only the package under test is removed), so a
+# changed library that resident deps require — glibc while expat/zlib sit in
+# the store — is structurally unremovable here, however many rounds run. That
+# is the reverse-dependency guard working as designed on packages OUTSIDE the
+# changed set, not a defect in the recipe under test, so it is reported loudly
+# and not failed. A blocker INSIDE the changed set at the terminal state is a
+# real failure: the fixed point already removed everything removable, so what
+# remains is an ordering bug or a dependency cycle in the diff itself.
+if [[ ${#deferred_specs[@]} -gt 0 ]]; then
+    step "deferred uninstalls: fixed point over ${#deferred_specs[@]} package(s)"
+    max_rounds=${#deferred_specs[@]}
+    round=0
+    while [[ ${#deferred_specs[@]} -gt 0 && $round -lt $max_rounds ]]; do
+        round=$((round + 1))
+        progressed=0
+        keep_files=(); keep_pkgs=(); keep_specs=()
+        keep_shims=(); keep_programs=(); keep_errs=()
+        i=0
+        while [[ $i -lt ${#deferred_specs[@]} ]]; do
+            spec="${deferred_specs[$i]}"
+            step "[${deferred_pkgs[$i]}] uninstall retry (round $round: $spec)"
+            remove_out="$(run_bounded 1200 "$XLINGS_CMD" remove "$spec" -y 2>&1)"; remove_rc=$?
+            if [[ $remove_rc -eq 0 ]]; then
+                printf '%s\n' "$remove_out"
+                progressed=1
+                uninstalled_pkgs+=("${deferred_pkgs[$i]}")
+                check_shim_leak "${deferred_files[$i]}" "${deferred_shims[$i]}" "${deferred_programs[$i]}"
+            else
+                info "still blocked (kept for the next round)"
+                keep_files+=("${deferred_files[$i]}")
+                keep_pkgs+=("${deferred_pkgs[$i]}")
+                keep_specs+=("$spec")
+                keep_shims+=("${deferred_shims[$i]}")
+                keep_programs+=("${deferred_programs[$i]}")
+                keep_errs+=("$remove_out")
+            fi
+            i=$((i + 1))
+        done
+        deferred_files=(${keep_files[@]+"${keep_files[@]}"})
+        deferred_pkgs=(${keep_pkgs[@]+"${keep_pkgs[@]}"})
+        deferred_specs=(${keep_specs[@]+"${keep_specs[@]}"})
+        deferred_shims=(${keep_shims[@]+"${keep_shims[@]}"})
+        deferred_programs=(${keep_programs[@]+"${keep_programs[@]}"})
+        deferred_errs=(${keep_errs[@]+"${keep_errs[@]}"})
+        [[ $progressed -eq 0 ]] && break
+    done
+
+    i=0
+    while [[ $i -lt ${#deferred_specs[@]} ]]; do
+        spec="${deferred_specs[$i]}"
+        remove_out="${deferred_errs[$i]}"
+        step "[${deferred_pkgs[$i]}] uninstall blocked at the fixed point ($spec)"
+        printf '%s\n' "$remove_out"
+        if grep -q "is required by .* installed package" <<<"$remove_out"; then
+            # Dependents named in the refusal, reduced to bare names.
+            blockers="$(printf '%s\n' "$remove_out" \
+                | sed -n 's/^[[:space:]]\{1,\}\([^@ ]\{1,\}\)@.*/\1/p' \
+                | sed 's/.*://' | sort -u)"
+            blocked_by_changed=""
+            for b in $blockers; do
+                b_is_changed=0
+                for c in ${changed_pkgs[@]+"${changed_pkgs[@]}"}; do
+                    [[ "$b" == "$c" ]] && b_is_changed=1
+                done
+                # A changed blocker whose OWN uninstall already passed is a
+                # resident re-install (a later package's dependency), not an
+                # ordering bug — see the note at uninstalled_pkgs.
+                for u in ${uninstalled_pkgs[@]+"${uninstalled_pkgs[@]}"}; do
+                    [[ "$b" == "$u" ]] && b_is_changed=0
+                done
+                if [[ $b_is_changed -eq 1 ]]; then
+                    blocked_by_changed="${blocked_by_changed}${blocked_by_changed:+ }$b"
                 fi
             done
-        done
-    fi
-
-    if [[ -n "$leftover" ]]; then
-        log_fail "shims still present after uninstall: $leftover"
-        failures+=("$rel_file (leftover-shim)")
-    else
-        log_pass "all shims cleaned"
-    fi
-done
+            if [[ -n "$blocked_by_changed" ]]; then
+                log_fail "still required by changed package(s) after the fixed point: $blocked_by_changed"
+                failures+=("${deferred_files[$i]} (uninstall-blocked)")
+            else
+                info "uninstall not asserted: still required by installed package(s)"
+                info "  this run rightly leaves in place ($(printf '%s' "$blockers" | tr '\n' ' '))"
+                info "  — each is either outside the change set, or already had its own"
+                info "  uninstall asserted and was re-installed as a later package's"
+                info "  dependency. That is the reverse-dependency guard working as"
+                info "  designed: deps pulled in for a package's test are never removed"
+                info "  by this harness, so a changed package they depend on cannot be"
+                info "  removed here. Its uninstall hook is exercised on runs where it"
+                info "  is not a resident dependency's target."
+            fi
+        else
+            log_fail "uninstall failed"
+            failures+=("${deferred_files[$i]} (uninstall)")
+        fi
+        i=$((i + 1))
+    done
+fi
 
 echo
 echo "=================================="
