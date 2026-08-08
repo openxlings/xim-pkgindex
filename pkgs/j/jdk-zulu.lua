@@ -52,58 +52,17 @@ package = {
     -- ARCH / PLATFORM COVERAGE — linux and macosx ship x86_64 + aarch64,
     -- windows ships x86_64 only.
     --
-    -- RUNTIME DEPS — declared on linux since 2026-08-08; see the note on the
-    -- `deps` table below for the measured closure and for why glibc is NOT in
-    -- it. This supersedes the earlier "none" recorded here, which was correct
-    -- only while `libXtst` and `libasound` were unpackaged.
-    --
-    -- Zulu differs from Temurin in one way that matters: its libjli.so,
+    -- RUNTIME DEPS — none, for the reason recorded in jdk-temurin.lua, which
+    -- now includes the measured result of trying the interpreter switch: it is
+    -- clean headless and breaks AWT, because our loader has no host fallback.
+    -- Zulu measures the same as Temurin with one addition — its libjli.so,
     -- libsplashscreen.so and libinstrument.so name `libz.so.1`, which Temurin's
-    -- do not. libjli is loaded by `bin/java` itself, so `xim:zlib` is a HARD dep
-    -- here rather than an optional one — leave it out and `java` fails to start
-    -- rather than degrading.
+    -- do not. libjli is loaded by `bin/java` itself, so when this package does
+    -- switch, `xim:zlib` is a HARD dep here, not an optional one: leave it out
+    -- and `java` fails to start rather than degrading. Same blockers otherwise
+    -- (`libXtst`, `libasound`).
     xpm = {
         linux = {
-            -- RUNTIME DEPS — the JDK's own NEEDED closure, measured rather than
-            -- guessed. Every external SONAME its .so files name:
-            --
-            --   libXtst.so.6 libXi.so.6 libXext.so.6 libX11.so.6 libXrender.so.1
-            --   libasound.so.2 libfreetype.so libz.so.1
-            --
-            -- EVERY soname is listed DIRECTLY, including ones reachable
-            -- transitively. The index's dep-closure check rejects the
-            -- transitive form, and it is right to: "a transitive dep does NOT
-            -- put its libdir in this payload's RPATH closure -- only direct
-            -- deps do." An earlier revision listed only libXtst and was failed
-            -- for exactly libX11/libXext/libXi.
-            --
-            -- glibc IS declared, and that does NOT switch PT_INTERP here.
-            -- Declaring it would normally trip elfpatch's predicate-driven path
-            -- into rewriting the interpreter, which must not happen until the
-            -- rest of the closure resolves to us (our loader has no host
-            -- fallback -- its baked ld.so.cache path exists nowhere -- so
-            -- switching early takes AWT down: 2026.8.8.1 measured
-            -- `UnsatisfiedLinkError: libawt_xawt.so: libX11.so.6`). The
-            -- explicit `elfpatch.set({ rpath = ... })` in install() overrides
-            -- that predicate entirely -- "once set is called, the
-            -- predicate-driven auto path stops" -- and supplies rpath only.
-            -- So the dep can be declared honestly while the interpreter stays
-            -- put, which is what this step needs.
-            --
-            -- fontconfig and freetype draw a "declares X, but nothing in the
-            -- payload names a soname it provides" warning, and both stay:
-            -- fontconfig is **dlopen'd** by the font path so no DT_NEEDED names
-            -- it, and libfontmanager.so names `libfreetype.so` (the linker
-            -- name) rather than the `libfreetype.so.6` soname the check looks
-            -- for. Both are genuinely loaded at runtime -- measured with
-            -- LD_DEBUG -- which is precisely why DT_NEEDED alone is not a
-            -- sufficient dependency list.
-            deps = {
-                "xim:glibc",
-                "xim:libX11", "xim:libXext", "xim:libXi",
-                "xim:libXtst", "xim:libXrender", "xim:alsa-lib",
-                "xim:freetype", "xim:fontconfig", "xim:zlib",
-            },
             ["latest"] = { ref = "25.0.4" },
             ["25.0.4"] = {
                 x86_64 = {
@@ -200,7 +159,6 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
-import("xim.libxpkg.elfpatch")
 
 local PROGRAMS = { "java", "javac", "jar", "javadoc", "jshell" }
 local FLAVOR = "zulu"
@@ -253,43 +211,6 @@ function install()
                   staged, tostring(payload))
         return false
     end
-
-    -- RPATH only, deliberately no loader.
-    --
-    -- The JDK's own .so files carry RPATH=$ORIGIN and nothing else, so
-    -- libXtst / libasound / freetype / fontconfig resolve through the HOST's
-    -- ld.so.cache. Measured with `LD_DEBUG=libs` on a headless Toolkit + font +
-    -- audio run: 15 of the 27 objects loaded came from /lib/x86_64-linux-gnu.
-    -- A `System.loadLibrary` probe reports LOAD_OK for all of them, so "it
-    -- loaded" does not mean "it loaded ours" -- read `calling init:` or
-    -- /proc/self/maps instead.
-    --
-    -- Writing our libdirs into the JDK's RUNPATH is the step that has to come
-    -- BEFORE any interpreter switch: our loader has no host fallback, so the
-    -- moment PT_INTERP points at us, anything still resolving from the host
-    -- becomes unreachable. Doing it in the other order is what took AWT down in
-    -- 2026.8.8.1.
-    --
-    -- elfpatch's predicate-driven path keys off a dep exporting
-    -- `runtime.loader` (i.e. glibc) and would switch PT_INTERP too, which is
-    -- exactly what must not happen yet -- hence the explicit rpath-only
-    -- override, the form the elfpatch docs prescribe for this case.
-    if os.host() == "linux" then
-        local libpaths = elfpatch.closure_lib_paths()
-        if libpaths and #libpaths > 0 then
-            elfpatch.set({ rpath = libpaths })
-            log.info("jdk-zulu: RUNPATH will be set to %d dep libdir(s); "
-                     .. "PT_INTERP left alone on purpose", #libpaths)
-        else
-            -- Do not fall through quietly: an empty closure means the deps did
-            -- not export libdirs, and the JDK would keep resolving from the
-            -- host while this install reported success.
-            log.warn("jdk-zulu: dependency closure produced no libdirs; the "
-                     .. "JDK will keep resolving X11/ALSA/font libs from the "
-                     .. "host. Not fatal today, but it blocks the loader switch.")
-        end
-    end
-
     return true
 end
 
