@@ -29,7 +29,18 @@ T1=(
   "libxshmfence|1.3.2|https://xorg.freedesktop.org/archive/individual/lib/libxshmfence-1.3.2.tar.xz|autotools|"
 )
 
+# libXtst and alsa-lib are here for the JDK, not for graphics: `libawt_xawt.so`
+# has a hard DT_NEEDED on libXtst.so.6 and `libjsound.so` on libasound.so.2, and a
+# PT_INTERP switch to our loader removes all host fallback -- so the JDK cannot be
+# switched until its whole closure is ours (openxlings/xim-pkgindex#568).
+#
+# libXtst needs libXfixes AT BUILD TIME ONLY: `xi.pc` carries `Requires: xfixes`,
+# and leaving it out of --deps fails configure with `Package 'xfixes', required by
+# 'xi', not found` -- an error naming neither libXtst nor libXi. The payload does
+# not link it, so the recipe does not declare it.
 T2=(
+  "libXtst|1.2.5|https://xorg.freedesktop.org/archive/individual/lib/libXtst-1.2.5.tar.xz|autotools||xorgproto libX11 libXext libXi libXfixes libXau libXdmcp libxcb libXrender"
+  "alsa-lib|1.2.11|https://www.alsa-project.org/files/pub/lib/alsa-lib-1.2.11.tar.bz2|autotools|--disable-python --disable-topology --disable-ucm"
   "libXau|1.0.11|https://xorg.freedesktop.org/archive/individual/lib/libXau-1.0.11.tar.xz|autotools|"
   "libXdmcp|1.1.5|https://xorg.freedesktop.org/archive/individual/lib/libXdmcp-1.1.5.tar.xz|autotools|"
   "libxcb|1.17.0|https://xorg.freedesktop.org/archive/individual/lib/libxcb-1.17.0.tar.xz|autotools|"
