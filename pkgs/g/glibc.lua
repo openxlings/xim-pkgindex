@@ -61,24 +61,34 @@ package = {
                     -- libdirs not declared → falls back to {lib64, lib} convention
                 },
             },
-            -- `latest` stays 2.39, deliberately.
+            -- `latest` is 2.44 — and from now on it TRACKS the highest glibc
+            -- of any distribution we support, as a standing policy rather
+            -- than a per-version judgement call. Decided 2026-08-09
+            -- (ecosystem-closure design, §C5/§C1):
             --
-            -- glibc is backward compatible and not forward compatible: a
-            -- binary built against 2.39 runs on 2.44, and one built against
-            -- 2.44 does not run on 2.39. Every payload in the index today was
-            -- built against 2.39, so 2.39 is the version that runs all of
-            -- them. Moving `latest` to 2.44 would be safe for the same reason
-            -- — but it would also silently change which glibc every existing
-            -- home resolves to, and that is a decision to make deliberately
-            -- rather than as a side effect of adding a version.
+            -- The target form is X-complete — loader, libc and libraries all
+            -- ours — with exactly one permanent exception: host closed-source
+            -- hardware libraries, carried in via the `*-host-link` sentinels
+            -- (nvidia-gl-host-link, libcuda-host-link, ...). Those libraries
+            -- are compiled against the HOST's glibc and need its symbols, so
+            -- as long as the exception exists, host-built objects can appear
+            -- in our closures — which makes `our_glibc >= host_glibc` a
+            -- PERMANENT constraint, not a transition-period one. A `latest`
+            -- pinned below the newest supported distro's glibc is therefore
+            -- a guaranteed failure, not a conservative default:
+            -- mcpp-community/mcpp#392 is exactly the old 2.39 floor meeting a
+            -- 2.43 host, and it recurs with every new distro release.
             --
-            -- What 2.44 is FOR is the other direction: a newer runtime hosts
-            -- MORE prebuilt binaries. Anything built elsewhere against a
-            -- glibc up to 2.44 — a vendor's binary, a distro's, the host's
-            -- NVIDIA userspace that nvidia-gl-host-link links to — loads under
-            -- it and does not under 2.39. Ask for it with `xlings install
-            -- glibc@2.44` or `xlings subos new <name> --runtime glibc@2.44`.
-            ["latest"] = { ref = "2.39" },
+            -- Existing subos are NOT affected by this bump: the runtime is
+            -- bound in each subos's subos_info, and the resolver's
+            -- pin-to-active keeps an already-activated 2.39 pinned. `latest`
+            -- decides only version-less explicit installs and NEW subos.
+            --
+            -- Backward compatibility is what makes the move safe in the other
+            -- direction: glibc runs older binaries on newer libc, never the
+            -- reverse, so every 2.39-built payload in the index runs
+            -- unchanged under 2.44.
+            ["latest"] = { ref = "2.44" },
             ["2.39"] = "XLINGS_RES",
             -- Built from source, not XLINGS_RES: the sha256 is checked, which
             -- an XLINGS_RES entry cannot do. Build recipe and the reason its
