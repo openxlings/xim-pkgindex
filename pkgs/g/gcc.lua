@@ -408,38 +408,72 @@ end
 -- stamp lives inside install_dir and is wiped on `xim reinstall
 -- gcc` along with the rest of the payload, so version bumps and
 -- forced reinstalls naturally re-rewrite.
--- Does this gcc actually produce a binary that RUNS?
+-- Does the rewritten specs name an ELF interpreter that EXISTS on this machine?
 --
--- The postcondition the specs rewrite exists for, tested directly rather than
--- inferred. Compile an empty main and execute it: if PT_INTERP names a loader
--- that is not on this machine, `execve` fails -- and it fails with ENOENT
--- against the BINARY, not the missing loader, which is why that failure is so
--- consistently misread (openxlings/xlings#509 burned 16 CI runs and four wrong
--- fixes on exactly this).
+-- That is the postcondition the rewrite exists for, checked directly instead of
+-- inferred from "the command exited 0".
+--
+-- Deliberately NOT "compile a probe and run it". That was the first version and
+-- CI rejected it, correctly: at config() time the sysroot is not necessarily
+-- assembled, so a full link can fail
+--
+--   collect2: error: ld returned 1 exit status
+--
+-- while the specs are perfectly correct. RPATH is a RUNTIME search path;
+-- linking needs -L. Conflating "are the specs right" with "can this toolchain
+-- link right now" fails every fresh install -- which is exactly what it did.
+--
+-- Reading the interpreter out of the specs needs neither a linker nor a
+-- sysroot, and it is precisely the thing that goes wrong: a loader path that is
+-- valid on the packaging machine and absent here. `execve` then reports ENOENT
+-- against the BINARY rather than the missing loader, which is why that failure
+-- is so consistently misread -- openxlings/xlings#509 spent 16 CI runs and four
+-- wrong fixes on it.
 --
 -- Returns ok, reason.
-function __gcc_produces_runnable(gcc_bin)
-    local dir = pkginfo.install_dir()
-    local src = path.join(dir, ".xlings-specs-probe.c")
-    local exe = path.join(dir, ".xlings-specs-probe.bin")
-    os.tryrm(exe)
-    if not io.writefile(src, "int main(void){return 0;}\n") then
-        return false, "could not write the probe source"
+function __specs_interp_exists(gcc_bin, dynamic_linker)
+    if not dynamic_linker or dynamic_linker == "" then
+        return true, nil     -- nothing was asked for; nothing to verify
     end
-    local function ok_(r) return r == true or r == 0 end
-    local compiled = os.exec(string.format('%s "%s" -o "%s"', gcc_bin, src, exe))
-    if not ok_(compiled) then
-        os.tryrm(src)
-        return false, "the probe did not compile"
+
+    -- The loader must exist. This is the whole failure mode: a path that is
+    -- valid where the payload was built and absent here.
+    if not os.isfile(dynamic_linker) then
+        return false, "the requested ELF interpreter does not exist: "
+            .. dynamic_linker
     end
-    local ran = os.exec(string.format('"%s"', exe))
-    os.tryrm(src)
-    os.tryrm(exe)
-    if not ok_(ran) then
-        return false, "the probe compiled but could not be executed -- its "
-            .. "ELF interpreter is not present on this machine"
+
+    local libgcc = os.iorun(gcc_bin .. " -print-libgcc-file-name")
+    if not libgcc or libgcc:trim() == "" then
+        -- Cannot locate the specs. Do not invent a failure out of not knowing.
+        return true, nil
     end
-    return true
+    local specs_file = path.join(path.directory(libgcc:trim()), "specs")
+    if not os.isfile(specs_file) then
+        return false, "no specs file at " .. specs_file
+    end
+
+    -- Is OUR loader actually in there? Checked by exact string, not by scanning
+    -- for any `ld-*` path.
+    --
+    -- Scanning was the first attempt and it is WRONG: gcc's specs legitimately
+    -- carry alternates for other targets --
+    --
+    --   /lib/ld-musl-i386.so.1   /lib/ld-musl-x32.so.1   /libx32/ld-linux-x32.so.2
+    --
+    -- which are selected by -m32/-mx32/-mmusl and are absent on a perfectly
+    -- healthy machine. Asserting "every ld-* path exists" fails a good
+    -- toolchain, which is worse than the bug it was meant to catch.
+    --
+    -- `grep -a`: a specs file carries escape bytes; without it grep calls the
+    -- file binary and prints nothing -- a silent empty result reading as "fine".
+    local hit = os.iorun("grep -acF -- '" .. dynamic_linker .. "' '"
+        .. specs_file .. "'")
+    if not hit or hit:trim() == "" or hit:trim() == "0" then
+        return false, "the specs do not name the requested interpreter ("
+            .. dynamic_linker .. "), so the rewrite did not land"
+    end
+    return true, nil
 end
 
 function __rewrite_specs_linux(rpath, dynamic_linker)
@@ -466,7 +500,7 @@ function __rewrite_specs_linux(rpath, dynamic_linker)
     -- which names nothing relevant. So a present stamp still has to survive the
     -- probe; if it does not, we rewrite and repair.
     if os.isfile(stamp) then
-        local ok = __gcc_produces_runnable(gcc_bin)
+        local ok = __specs_interp_exists(gcc_bin, dynamic_linker)
         if ok then
             log.debug("gcc specs already rewritten and verified, skipping.")
             return true
@@ -487,7 +521,7 @@ function __rewrite_specs_linux(rpath, dynamic_linker)
     -- branch in __config_linux. A gcc that installs "successfully" and cannot
     -- produce a runnable binary hands the user a toolchain whose failures point
     -- at the wrong file entirely.
-    local ok, why = __gcc_produces_runnable(gcc_bin)
+    local ok, why = __specs_interp_exists(gcc_bin, dynamic_linker)
     if not ok then
         log.error("gcc specs rewrite did not take effect: %s", why)
         log.error("  dynamic-linker: %s", dynamic_linker)
