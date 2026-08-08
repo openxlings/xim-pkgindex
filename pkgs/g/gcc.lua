@@ -206,36 +206,60 @@ end
 -- there -- which is the shape to want: the fix is not conditioned on a version.
 function __prune_stale_fixincludes()
     local banner = "auto-edited by fixincludes"
+    local root = path.join(pkginfo.install_dir(), "lib", "gcc")
+    if not os.isdir(root) then return end
+
+    -- Found with `grep -rl`, not with a Lua directory walk.
+    --
+    -- This took three wrong primitives to get right, and all three failed the
+    -- same way -- an install hook dying on "attempt to call a nil value":
+    --
+    --   os.files     nil in the recipe sandbox (already recorded in
+    --                pkgs/m/musl-gcc.lua, and written here anyway)
+    --   os.exists    nil
+    --   os.filedirs  nil -- despite pkgs/i/interposer-stub.lua:86 calling it,
+    --                which means that error path has never run either
+    --
+    -- os.dirs works but lists only directories, and this needs FILES, recursively
+    -- (fixincludes nests into bits/, sys/). `os.iorun` is attested by 36 recipes,
+    -- and grep does the recursion and the file discrimination in one call -- so
+    -- there is nothing left to get wrong about the traversal.
+    --
+    -- `|| true` because grep exits 1 when it matches nothing, which is the
+    -- healthy case here, and os.iorun raises on a non-zero exit.
+    local out = os.iorun(string.format(
+        "sh -c 'grep -rlF %s %s 2>/dev/null || true'",
+        __shq(banner), __shq(root)))
+
     local pruned = 0
-
-    -- Walked with `os.files("*")` + `os.dirs("*")` rather than a `**` glob.
-    -- fixincludes nests its copies (bits/, sys/), so the scan has to recurse --
-    -- but `**` has no other user in this index, and the failure mode of a
-    -- pattern that quietly matches nothing here is indistinguishable from a
-    -- healthy payload. These two primitives are used by other recipes already.
-    local function scan(d)
-        for _, f in ipairs(os.files(path.join(d, "*"))) do
-            local content = io.readfile(f)
-            if content and content:find(banner, 1, true) then
-                os.tryrm(f)
-                pruned = pruned + 1
-                log.info("gcc: pruned frozen fixincludes header " .. path.filename(f)
-                         .. " (see #560) -- the sysroot's own copy now wins")
-            end
+    for _, line in ipairs((out or ""):split("\n", { plain = true })) do
+        local f = line:trim()
+        -- Only under an include-fixed directory. grep is pointed at lib/gcc, and
+        -- narrowing here rather than in the pattern keeps the check readable and
+        -- refuses to delete anything outside the one directory this is about.
+        if f ~= "" and f:find("include-fixed", 1, true) and os.isfile(f) then
+            os.tryrm(f)
+            pruned = pruned + 1
+            log.info("gcc: pruned frozen fixincludes header " .. path.filename(f)
+                     .. " (see #560) -- the sysroot's own copy now wins")
         end
-        for _, sub in ipairs(os.dirs(path.join(d, "*"))) do scan(sub) end
     end
 
-    for _, dir in ipairs(os.dirs(path.join(pkginfo.install_dir(),
-                                           "lib", "gcc", "*", "*", "include-fixed"))) do
-        scan(dir)
-    end
     -- Deliberately not an error when zero: a payload built with a fixincludes
-    -- that found nothing to fix is the healthy case, not a missing fix.
+    -- that found nothing to fix is the healthy case, not a missing fix. 16.1.0 is
+    -- exactly that -- its include-fixed holds only README.
     if pruned > 0 then
         log.warn("gcc: removed " .. pruned .. " header(s) frozen against an older "
                  .. "sysroot; C++ threading headers would not have compiled")
     end
+end
+
+-- Single-quote for `sh -c`. The paths here are ours and the banner is a literal,
+-- so this is belt-and-braces rather than a live injection concern -- but a build
+-- path containing a quote would otherwise turn a prune into an unparseable
+-- command, and the recipe would report success having pruned nothing.
+function __shq(s)
+    return "'" .. tostring(s):gsub("'", "'\\''") .. "'"
 end
 
 function __config_linux()

@@ -122,20 +122,34 @@ function install()
     -- Count them, because "the directory exists" is a different claim.
     --
     -- A truncated extraction leaves the tree present and nearly empty, and every
-    -- path assertion above still passes. 1.38 ships 50 files and 1.45 ships 57,
-    -- so the floor is set below both rather than pinned to either.
+    -- path assertion above still passes.
+    --
+    -- Counted with os.dirs, which is the only enumerator this sandbox actually
+    -- has. `os.files`, `os.exists` and `os.filedirs` are all nil here -- each was
+    -- tried and each died as "attempt to call a nil value". pkgs/m/musl-gcc.lua
+    -- already recorded the first; pkgs/i/interposer-stub.lua:86 calls the third,
+    -- so that error path has never run.
+    --
+    -- Counting directories is not a workaround for the missing file enumerator --
+    -- it is the better measure anyway. Upstream ships one directory per protocol
+    -- (stable/xdg-shell/, staging/fifo-v1/, unstable/linux-dmabuf/), and some hold
+    -- several versioned .xml files, so directories count PROTOCOLS while files
+    -- count revisions.
+    --
+    -- 1.45 has 53; the floor is set well below so a version bump does not need
+    -- this number edited, which is the point of a floor.
     local n = 0
     for _, sub in ipairs({"stable", "staging", "unstable"}) do
-        for _, d in ipairs(os.dirs(path.join(dir, "share", "wayland-protocols", sub, "*"))) do
-            for _, f in ipairs(os.files(path.join(d, "*.xml"))) do n = n + 1 end
+        for _, e in ipairs(os.dirs(path.join(dir, "share", "wayland-protocols", sub, "*"))) do
+            n = n + 1
         end
     end
-    if n < 40 then
-        raise("only " .. n .. " protocol XML files in the payload; 1.38 ships 50 and "
-              .. "1.45 ships 57 -- the tarball is truncated or the layout changed")
+    if n < 30 then
+        raise("only " .. n .. " protocol entries in the payload; 1.45 has 53 across "
+              .. "stable/staging/unstable -- the tarball is truncated or the layout changed")
     end
 
-    log.info("wayland-protocols: " .. n .. " protocol files in place")
+    log.info("wayland-protocols: " .. n .. " protocols in place")
     return true
 end
 
