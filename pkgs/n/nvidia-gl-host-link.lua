@@ -409,11 +409,50 @@ function install()
         if os.isfile(vendor_real) then
             table.insert(present, name)
             if has_interposer then
+                local out = path.join(dir, "lib", name)
                 elfpatch.host_link_interposer{
                     vendor = vendor_real,
-                    out    = path.join(dir, "lib", name),
+                    out    = out,
                     soname = name,
                 }
+                -- DT_RPATH, not DT_RUNPATH. One word, and the whole package
+                -- turns on it.
+                --
+                -- The comment above already says why: RPATH is transitive
+                -- along the load chain, RUNPATH is not. The interposer NEEDs
+                -- the real vendor by absolute path, so the object that then
+                -- looks up libnvidia-glsi / libX11 / libc is the HOST's
+                -- vendor library -- which has no search path of its own
+                -- (`readelf -d` on it: zero RPATH/RUNPATH entries). With
+                -- RUNPATH the interposer's paths do not reach that lookup at
+                -- all, and glibc falls back to a cache baked with the build
+                -- machine's prefix plus an empty system path. Nothing is
+                -- found, glvnd swallows the dlopen error, and the only thing
+                -- a user sees is `GLX: No GLXFBConfigs returned`.
+                --
+                -- `elfpatch.host_link_interposer` emits RUNPATH today
+                -- (xlings), so this restores the tag the design calls for.
+                -- Measured on an NVIDIA 550.144.03 host, driving an imgui +
+                -- GLFW window through the hermetic stack:
+                --
+                --   RUNPATH (as emitted) : GLFW error 65542, exit 11
+                --   RPATH   (this line)  : exit 0, libGLX_nvidia initialised
+                --
+                -- Nothing else changed between those two runs.
+                -- `--print-rpath` prints DT_RUNPATH too, so this reads what
+                -- the interposer got and writes it back under the other tag.
+                -- Deliberately not a hand-built path list: the value is the
+                -- closure the RESOLVER computed, and a second copy of that
+                -- computation here would drift from it.
+                local rp = try { function()
+                    return os.iorun(string.format(
+                        [[patchelf --print-rpath "%s"]], out))
+                end }
+                rp = rp and rp:trim() or ""
+                if #rp > 0 then
+                    os.exec(string.format(
+                        [[patchelf --force-rpath --set-rpath %q %q]], rp, out))
+                end
                 table.insert(done, name)
             end
         end
