@@ -76,6 +76,16 @@ done
     exit 2
 }
 
+# This script's own directory, for `patches/` below.
+#
+# Resolved from BASH_SOURCE rather than $0 so it is correct when the script is
+# sourced or invoked through a symlink. Worth stating because the first version of
+# the patch hook referenced an undefined $HERE, which expanded to `/patches` --
+# a directory that does not exist, so the glob matched nothing, no patch applied,
+# and the build failed with the exact error the patch removes. A missing patch is
+# invisible; that is why this line is here and not inlined.
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 SUBOS_NAME="${XLINGS_GFX_SUBOS:-gfxbuild}"
 XHOME="${XLINGS_HOME:-$HOME/.xlings}"
 SUBOS="$XHOME/subos/$SUBOS_NAME"
@@ -385,6 +395,42 @@ BUILDDIR="$SRC/$NAME-$VERSION"
 rm -rf "$BUILDDIR"; mkdir -p "$BUILDDIR"
 tar xf "$TARBALL" -C "$BUILDDIR" --strip-components=1 || fail "extract failed"
 
+# ── patches, by convention ──────────────────────────────────────────────
+#
+# `patches/<name>-<version>-*.patch` next to this script, applied in sorted
+# order with `patch -p1`. Nothing to declare at the call site: a patch exists
+# for a (package, version) pair or it does not.
+#
+# Needed because upstream releases go stale against a MOVING sysroot. mesa
+# 25.0.7 is the last of its series and cannot compile against glibc 2.44: ISO
+# C23 moved once_flag/call_once into <stdlib.h>, glibc >= 2.42 followed, and
+# mesa's own src/c11 shim redefines both --
+#
+#   error: conflicting types for 'once_flag'; have 'pthread_once_t' {aka 'int'}
+#
+# The shipped mesa 25.0.7.1 was built when this sysroot was glibc 2.39, so the
+# same source and the same command now fail where they once worked. That is a
+# recurring shape here, not a one-off, and it deserves a mechanism rather than a
+# hand-edit somebody has to remember.
+#
+# Applied with --forward and treated as fatal on failure. A patch that no longer
+# applies means the source moved under it, and continuing would build something
+# nobody described -- the silent-success shape this tree keeps finding.
+PATCHDIR="$HERE/patches"
+if [[ -d "$PATCHDIR" ]]; then
+    shopt -s nullglob
+    patches=("$PATCHDIR/$NAME-$VERSION"-*.patch)
+    shopt -u nullglob
+    if [[ ${#patches[@]} -gt 0 ]]; then
+        command -v patch >/dev/null || fail "${#patches[@]} patch(es) apply to $NAME $VERSION but \`patch\` is not available"
+        for p in "${patches[@]}"; do
+            log "patch: $(basename "$p")"
+            ( cd "$BUILDDIR" && patch -p1 --forward --silent < "$p" ) \
+                || fail "applying $(basename "$p") -- the source moved under it; re-generate the patch rather than skipping it"
+        done
+    fi
+fi
+
 # ── the subos as the build environment ──────────────────────────────────
 # PKG_CONFIG_PATH and the include/lib paths point ONLY at the subos, so a
 # dependency that is not packaged yet fails the configure step loudly instead
@@ -421,6 +467,40 @@ export CPPFLAGS="-I$SUBOS/usr/include"
 # libpciaccess) is only searched along -rpath-link. Without it the link fails
 # on transitive symbols with the library sitting right there.
 export LDFLAGS="-L$SUBOS/lib -L$SUBOS/usr/lib -Wl,-rpath-link,$SUBOS/usr/lib -Wl,-rpath-link,$SUBOS/lib -Wl,-rpath,\$ORIGIN"
+
+# Libraries that must WIN over the subos farm, by SONAME.
+#
+# XLINGS_GFX_LDFLAGS_FIRST is prepended, so its -Wl,-rpath entries precede every
+# subos path in the resulting RPATH. RPATH is first-wins, and that ordering is the
+# whole point of this hook.
+#
+# The case that forced it: TWO payloads ship `libLLVM.so.20.1` with the same
+# SONAME and different contents.
+#
+#   libllvm 20.1.7    X86;AMDGPU          LLVMInitializeSPIRVTarget: 0 symbols
+#   llvm-dev 20.1.7.1 X86;AMDGPU;SPIRV    LLVMInitializeSPIRVTarget: 3 symbols
+#
+# mesa links `mesa_clc` against llvm-dev (llvm-config's libdir) but the subos farm
+# carries libllvm's copy, and it came FIRST in the RPATH. So mesa_clc linked
+# against one library and loaded the other:
+#
+#   ldd mesa_clc -> libLLVM.so.20.1 => <subos>/lib/libLLVM.so.20.1
+#   mesa_clc: symbol lookup error: undefined symbol: LLVMInitializeSPIRVTarget,
+#             version LLVM_20.1
+#
+# 1348 targets in, with an error naming a symbol rather than a library, and
+# nothing in the link step warned -- both files satisfy the same SONAME, so the
+# linker had no reason to object. Same shape as the runtime `one question, many
+# answerers` cases: two things answer, and only order decides.
+#
+# Deliberately not fixed by putting SPIRV into libllvm. That library is what every
+# user loads; SPIRV is needed only by a build tool, and widening the runtime
+# payload to serve the build would be paying every install for it.
+if [[ -n "${XLINGS_GFX_LDFLAGS_FIRST:-}" ]]; then
+    LDFLAGS="$XLINGS_GFX_LDFLAGS_FIRST $LDFLAGS"
+    export LDFLAGS
+    log "ldflags (first): $XLINGS_GFX_LDFLAGS_FIRST"
+fi
 export CC="$SUBOS/bin/gcc"
 export CXX="$SUBOS/bin/g++"
 [[ -x "$CC" ]] || skip "no gcc in the subos — xlings install gcc"
@@ -502,6 +582,31 @@ for dep in $DEPS; do
         skip "--deps $dep: not installed in $XHOME (xlings install $dep)"
     fi
     log "  dep $dep -> ${depdir#"$XHOME"/data/xpkgs/}"
+
+    # A dep's bin/ goes on PATH, because some deps are BUILD TOOLS.
+    #
+    # mesa wants `glslangValidator` (meson.build:648) to compile its Vulkan
+    # drivers' built-in shaders. The glslang payload ships bin/glslangValidator,
+    # bin/glslang and bin/spirv-remap -- but its recipe registers only a release
+    # anchor, so the single shim in the subos is `glslang` and the name mesa
+    # actually asks for is unreachable. Configure then dies with
+    #
+    #   ERROR: Program 'glslangValidator' not found or not executable
+    #
+    # while the tool sits in an installed payload.
+    #
+    # Fixed here rather than in glslang.lua on purpose. Registering the two extra
+    # names as `programs` would put user-facing shims on them and change shim
+    # OWNERSHIP -- a semantics change, audited by the orphan-shim check -- to
+    # solve what is purely a build-time lookup. Deps of a build are exactly the
+    # things whose tools that build may invoke, so PATH is where this belongs,
+    # and it now works for any future dep that ships one.
+    #
+    # Prepended, so a dep's tool beats a host one of the same name.
+    if [[ -d "${depdir%/}/bin" ]]; then
+        PATH="${depdir%/}/bin:$PATH"
+        export PATH
+    fi
     # BOTH pkgconfig locations, and the second one is not a nicety.
     #
     # `lib/pkgconfig` is where a library puts its .pc. A PROTOCOL-ONLY package
@@ -599,7 +704,174 @@ for dep in $DEPS; do
         LDFLAGS="$LDFLAGS -L$deplib -Wl,-rpath-link,$deplib -Wl,-rpath,$deplib"
     fi
 done
+# Build-only packages, which the --deps path deliberately cannot reach.
+#
+# `--deps` resolves a name to a payload and rewrites its .pc files, but it only
+# looks at packages the SUBOS SYSROOT links, and a `status = "dev"` package is
+# precisely one that does not link itself into the sysroot -- llvm-dev exports no
+# programs, no sysroot headers and no libdirs a consumer would ever see. So
+# mesa's `dependency('libclc')` cannot be satisfied through --deps without making
+# llvm-dev pretend to be a runtime package, which would defeat the reason it is
+# a separate package at all.
+#
+# Hence an explicit hook. It takes payload-absolute pkgconfig directories:
+#
+#   XLINGS_GFX_PKGCONFIG_EXTRA=/path/llvm-dev/share/pkgconfig:/path/dxh/share/pkgconfig
+#
+# These are still OUR artifacts -- a published package payload or this tree's own
+# build output -- so the host-leakage audit downstream stays meaningful. It is
+# appended AFTER the subos entries so it can add names, never shadow one.
+if [[ -n "${XLINGS_GFX_PKGCONFIG_EXTRA:-}" ]]; then
+    IFS=':' read -r -a __extra_pc <<< "$XLINGS_GFX_PKGCONFIG_EXTRA"
+    for d in "${__extra_pc[@]}"; do
+        [[ -n "$d" ]] || continue
+        [[ -d "$d" ]] || fail "XLINGS_GFX_PKGCONFIG_EXTRA names '$d', which is not a directory"
+        # Refuse a host path outright. The whole point of this hook is to add
+        # our own build-only inputs; letting it name /usr/lib/pkgconfig would
+        # turn it into the exact hole the audit is here to close.
+        case "$d" in
+            "$XHOME"/*|"$WORK"/*) ;;
+            *) fail "XLINGS_GFX_PKGCONFIG_EXTRA may only name paths under XLINGS_HOME ($XHOME) or the work dir ($WORK); got '$d'" ;;
+        esac
+        PKG_CONFIG_LIBDIR="$PKG_CONFIG_LIBDIR:$d"
+        log "extra pkgconfig: $d ($(ls "$d"/*.pc 2>/dev/null | xargs -r -n1 basename | tr '\n' ' '))"
+    done
+fi
+
 export PKG_CONFIG_LIBDIR PKG_CONFIG_PATH="$PKG_CONFIG_LIBDIR" CPPFLAGS LDFLAGS
+
+# Resolve a meson to drive the build with.
+#
+# There is NO `meson` package in this index -- `xlings install meson` answers
+# "package 'meson' not found". This line used to read `"$SUBOS/bin/meson"`
+# unconditionally, which means every meson build here (mesa included) has in fact
+# been driven by whatever meson the developer's host happened to have on PATH,
+# usually a `pip --user` install. That is a build input nobody named or pinned,
+# and it is the same class of thing the host-leakage audit below exists to catch
+# -- the audit just never looked at the DRIVER, only at what the driver found.
+#
+# Order of preference:
+#   1. `$SUBOS/bin/meson` — if meson ever becomes a package, it wins with no
+#      further change here.
+#   2. a pinned meson fetched into the work directory and run under the SUBOS's
+#      python. Reproducible and version-stated, which host meson is not.
+#
+# A vendored copy rather than a new package because meson contributes no code and
+# no linkage to the payload: it reads meson.build and writes build.ninja. ninja
+# and the compiler, which do touch the output, are already packages. Packaging
+# meson is still worth doing (openxlings/xim-pkgindex#562) -- this makes the
+# build honest in the meantime instead of silently depending on the host.
+MESON_PIN="${MESON_PIN:-1.8.2}"
+__resolve_meson() {
+    if [[ -x "$SUBOS/bin/meson" ]]; then
+        MESON=("$SUBOS/bin/meson")
+        log "meson: $("$SUBOS/bin/meson" --version 2>/dev/null || echo '?') (packaged)"
+        return
+    fi
+
+    local py=""
+    for c in "$SUBOS/bin/python3" "$SUBOS/bin/python"; do
+        [[ -x "$c" ]] && { py="$c"; break; }
+    done
+    [[ -n "$py" ]] || skip "no meson and no python in subos '$SUBOS_NAME'; a meson build needs one of them (install python, or see #562)"
+
+    local root="$WORK/tools/meson-$MESON_PIN"
+    if [[ ! -f "$root/meson.py" ]]; then
+        mkdir -p "$WORK/tools"
+        local tb="$WORK/tools/meson-$MESON_PIN.tar.gz"
+        [[ -f "$tb" ]] || curl -fsSL --retry 3 -o "$tb" \
+            "https://github.com/mesonbuild/meson/releases/download/$MESON_PIN/meson-$MESON_PIN.tar.gz" \
+            || fail "fetching pinned meson $MESON_PIN"
+        tar -C "$WORK/tools" -xzf "$tb" || fail "extracting meson $MESON_PIN"
+    fi
+    [[ -f "$root/meson.py" ]] || fail "meson $MESON_PIN tarball has no meson.py"
+
+    MESON=("$py" "$root/meson.py")
+    log "meson: $MESON_PIN vendored, driven by $("$py" --version 2>&1 | head -1)"
+
+    __vendor_python_modules "$py"
+}
+
+# Python modules a meson build needs at CODEGEN time.
+#
+# mesa generates a large amount of C from Mako templates, so its meson probes
+# `import mako` and refuses to configure without it. Our python payload is a bare
+# interpreter -- no mako -- so this is the same gap as meson itself (#562) and
+# gets the same answer: pinned, fetched, under OUR interpreter, on PYTHONPATH
+# rather than installed into the payload.
+#
+# Not installed into site-packages on purpose. The python payload is shared
+# between subos and is content-addressed by the index; mutating it would make an
+# installed package differ from its published bytes, and every self-containment
+# check that hashes a payload would start disagreeing with the recipe.
+#
+# `--target` into the work dir keeps it per-build and disposable. mako pulls
+# MarkupSafe, whose C extension gets compiled by our own gcc against our own
+# python -- in-tree, and it falls back to pure Python if that fails.
+# `packaging` is not optional here, and the reason is a dead fallback.
+#
+# mesa's probe (meson.build:943) is:
+#
+#   try:    from packaging.version import Version
+#   except: from distutils.version import StrictVersion as Version
+#   import mako
+#   assert Version(mako.__version__) >= Version("0.8.0")
+#
+# distutils was REMOVED in Python 3.12, and our payload is 3.13.12 -- so on this
+# interpreter the `except` branch raises too, and the whole snippet exits
+# non-zero even when mako is perfectly importable. mesa then reports
+#
+#   Python (3.x) mako module >= 0.8.0 required to build mesa
+#
+# which names the one module that is NOT the problem. Vendoring mako alone
+# reproduces exactly that: measured 2026-08-08, `import mako` succeeded and
+# printed 1.3.10 while mesa's configure still failed on the same line.
+# Enumerated from the consumer, not discovered one build at a time.
+#
+# mesa has exactly two python module gates -- `grep -n 'required to build mesa'`
+# gives meson.build:954 (mako) and :963 (yaml) and nothing else. Finding them by
+# rebuilding until it stops complaining costs one full configure per module and
+# stops at the first one that happens to be satisfied on the machine you tried.
+MAKO_PIN="${MAKO_PIN:-1.3.10}"
+PACKAGING_PIN="${PACKAGING_PIN:-25.0}"
+PYYAML_PIN="${PYYAML_PIN:-6.0.2}"
+__vendor_python_modules() {
+    local py="$1"
+    local vendor="$WORK/tools/pyvendor"
+
+    # mesa's OWN predicates, verbatim, as the probe -- not `import mako`.
+    #
+    # Checking the mechanism instead of the effect is what hid the `packaging`
+    # problem for a whole build cycle: `import mako` printed 1.3.10 and the
+    # consumer still refused, because mesa's snippet needs packaging too.
+    local probe='
+try:
+  from packaging.version import Version
+except:
+  from distutils.version import StrictVersion as Version
+import mako
+assert Version(mako.__version__) >= Version("0.8.0")
+import yaml
+'
+    if "$py" -c "$probe" 2>/dev/null; then
+        log "python: mesa's module predicates already satisfied"
+        return
+    fi
+
+    if [[ ! -d "$vendor/mako" || ! -d "$vendor/packaging" || ! -d "$vendor/yaml" ]]; then
+        log "python: vendoring mako $MAKO_PIN + packaging $PACKAGING_PIN + PyYAML $PYYAML_PIN into $vendor"
+        "$py" -m pip install --quiet --disable-pip-version-check \
+              --target "$vendor" "Mako==$MAKO_PIN" "packaging==$PACKAGING_PIN" "PyYAML==$PYYAML_PIN" \
+              >"$WORK/pyvendor.log" 2>&1 \
+            || { tail -20 "$WORK/pyvendor.log" >&2; fail "vendoring python modules (see $WORK/pyvendor.log)"; }
+    fi
+    export PYTHONPATH="${vendor}${PYTHONPATH:+:$PYTHONPATH}"
+
+    "$py" -c "$probe" || fail "mesa's python module predicates still fail after vendoring; PYTHONPATH=$PYTHONPATH"
+    log "python: mako $("$py" -c 'import mako;print(mako.__version__)')," \
+        "packaging $("$py" -c 'import packaging;print(packaging.__version__)')," \
+        "yaml $("$py" -c 'import yaml;print(yaml.__version__)')"
+}
 
 if [[ "$SYSTEM" == auto ]]; then
     if   [[ -f "$BUILDDIR/meson.build" ]]; then SYSTEM=meson
@@ -625,12 +897,13 @@ case "$SYSTEM" in
         || { tail -30 "$WORK/$NAME-build.log"; fail "make install"; }
     ;;
   meson)
-    "$SUBOS/bin/meson" setup _b --prefix="$PREFIX" --libdir=lib \
+    __resolve_meson
+    "${MESON[@]}" setup _b --prefix="$PREFIX" --libdir=lib \
         --buildtype=release -Ddefault_library=shared "${EXTRA[@]}" > "$WORK/$NAME-configure.log" 2>&1 \
         || { tail -30 "$WORK/$NAME-configure.log"; fail "meson setup"; }
     "${BUILD_ENV[@]}" "$SUBOS/bin/ninja" -C _b > "$WORK/$NAME-build.log" 2>&1 \
         || { tail -30 "$WORK/$NAME-build.log"; fail "ninja"; }
-    DESTDIR="$STAGE" "$SUBOS/bin/meson" install -C _b >> "$WORK/$NAME-build.log" 2>&1 \
+    DESTDIR="$STAGE" "${MESON[@]}" install -C _b >> "$WORK/$NAME-build.log" 2>&1 \
         || { tail -30 "$WORK/$NAME-build.log"; fail "meson install"; }
     ;;
   cmake)

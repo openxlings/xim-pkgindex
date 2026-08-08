@@ -31,29 +31,63 @@ package = {
 
     xpm = {
         linux = {
-            -- gcc 16, not gcc-runtime.
+            -- gcc-runtime, and this is the promised payoff of the #560 fix.
             --
-            -- This payload was compiled by gcc 16.1.0, so its libstdc++ ABI is
-            -- 16's, while `gcc-runtime` in this index is 15.1.0 -- declaring the
-            -- latter would resolve and then fail at load on a
-            -- GLIBCXX_3.4.3x symbol.
+            -- 20.1.7 had to declare the whole `xim:gcc@16.1.0` toolchain, because
+            -- that payload was compiled by gcc 16 (its libstdc++ ABI was 16's)
+            -- and gcc 15.1.0 could not build LLVM here at all -- its frozen
+            -- include-fixed/pthread.h shadowed the sysroot and libstdc++'s own
+            -- <ext/concurrence.h> stopped compiling.
             --
-            -- It is 16 rather than 15 because gcc 15.1.0 cannot build LLVM in
-            -- this ecosystem at all: its include-fixed/pthread.h shadows the
-            -- sysroot and libstdc++'s own <ext/concurrence.h> stops compiling
-            -- (openxlings/xim-pkgindex#560). When that is fixed, rebuilding this
-            -- with 15.1.0 lets the dep become the much lighter gcc-runtime.
-            deps = { "xim:gcc@16.1.0", "xim:glibc@>=2.38" },
+            -- pkgs/g/gcc.lua now prunes that header, so 20.1.7.1 is built by gcc
+            -- 15.1.0 and the dep is the runtime libraries alone. Measured on the
+            -- payload rather than assumed:
+            --
+            --   objdump -p lib/libLLVM.so | grep GLIBCXX_  ->  max 3.4.30
+            --
+            -- which gcc-runtime 15.1.0 satisfies comfortably. A floor, not a pin:
+            -- libstdc++ is backward compatible, so a newer runtime also serves.
+            deps = { "xim:gcc-runtime@>=15", "xim:glibc@>=2.38" },
             exports = {
                 runtime = { libdirs = { "lib" } },
             },
-            ["latest"] = { ref = "20.1.7" },
-            ["20.1.7"] = {
+            ["latest"] = { ref = "20.1.7.1" },
+            -- 20.1.7.1: upstream llvm-project is 20.1.7, the fourth component is
+            -- ours. It is a different payload, not a rebuild of the same thing:
+            --
+            --   20.1.7    X86;SPIRV,        built by gcc 16.1.0
+            --   20.1.7.1  X86;AMDGPU;SPIRV, built by gcc 15.1.0
+            --
+            -- AMDGPU is the load-bearing addition. 20.1.7 was built on the theory
+            -- that AMDGPU "is libllvm's axis" -- but the libllvm payload is a
+            -- lib/ directory with no headers, no LLVMConfig.cmake and no
+            -- llvm-config, so meson's two LLVM detection methods can never find
+            -- it. libllvm cannot be a BUILD input at all.
+            --
+            -- So mesa's configure walked past it and reported
+            -- `llvm-config found: YES (/usr/bin/llvm-config) 18.1.3` -- the
+            -- HOST's LLVM 18, while this index ships libllvm 20.1.7. A libgallium
+            -- linked that way needs libLLVM.so.18.1, which does not exist here,
+            -- so the payload could not have loaded.
+            --
+            -- 20.1.7 is REPLACED here, not kept alongside, and that is a
+            -- limitation of the recipe rather than a judgement about the payload.
+            --
+            -- `deps` is declared per PLATFORM, not per version. 20.1.7 was built
+            -- by gcc 16 and genuinely needs gcc 16's libstdc++; 20.1.7.1 needs
+            -- only gcc-runtime@>=15. One `deps` list cannot be true of both, and
+            -- offering a version whose declared deps are wrong is worse than not
+            -- offering it -- it resolves, installs, and fails at load on a
+            -- GLIBCXX symbol.
+            --
+            -- The published asset is untouched and still downloadable; anything
+            -- that pinned it keeps working. Only this index stops advertising it.
+            ["20.1.7.1"] = {
                 url = {
-                    GLOBAL = "https://github.com/xlings-res/llvm-dev/releases/download/20.1.7/llvm-dev-20.1.7-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/llvm-dev/releases/download/20.1.7/llvm-dev-20.1.7-linux-x86_64.tar.gz",
+                    GLOBAL = "https://github.com/xlings-res/llvm-dev/releases/download/20.1.7.1/llvm-dev-20.1.7.1-linux-x86_64.tar.gz",
+                    CN     = "https://gitcode.com/xlings-res/llvm-dev/releases/download/20.1.7.1/llvm-dev-20.1.7.1-linux-x86_64.tar.gz",
                 },
-                sha256 = "b0cdaaad773584dbbaa2f1acf788098c33dacf2013c50605efaf4333f8d134bf",
+                sha256 = "5a00dd63168c7520d972f142dabf3f3ae79edc38f58a3f4740999e9264c3a99e",
             },
         },
     },
