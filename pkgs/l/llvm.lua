@@ -207,7 +207,10 @@ end
 -- contents (any `ld-*.so*`), mirroring glibc.lua's `exports.runtime.loader`
 -- declaration, so nothing here hardcodes an architecture.
 function __find_glibc_runtime()
-    local glibc_dir = pkginfo.dep_install_dir("glibc")
+    -- Namespaced: see the note in pkgs/g/gcc.lua. A bare name is not
+    -- resolvable against explicit dependency stores, and this package
+    -- declares "xim:glibc@>=2.39".
+    local glibc_dir = pkginfo.dep_install_dir("xim:glibc")
     if not glibc_dir then return nil, nil end
 
     for _, libname in ipairs({"lib64", "lib"}) do
@@ -235,7 +238,7 @@ end
 -- cfg then omits the kernel-header line; compiles that need <linux/*.h>
 -- surface a clear missing-header error instead of a broken install).
 function __find_linux_headers_include()
-    for _, name in ipairs({"linux-headers", "scode:linux-headers"}) do
+    for _, name in ipairs({"xim:linux-headers", "scode:linux-headers"}) do
         local dir = pkginfo.dep_install_dir(name)
         if dir and os.isfile(path.join(dir, "include", "linux", "limits.h")) then
             return path.join(dir, "include")
