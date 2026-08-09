@@ -53,12 +53,18 @@ package = {
             --   (History: an earlier x86_64 asset was glibc-DYNAMIC with a baked
             --    sandbox INTERP; on a cold sandbox its g++ died with exit 127.
             --    Rebuilt musl-static so "no deps" is now actually true.)
-            -- XLINGS_RES picks the host-matching asset:
-            -- riscv64-linux-musl-gcc-<ver>-linux-x86_64.tar.gz
+            -- Asset hosted on the builder repo release (16.1.0) until the
+            -- maintainers mirror it to xlings-res/riscv64-linux-musl-gcc (the
+            -- org-owned location XLINGS_RES normally points at — that repo does
+            -- not exist yet, so an explicit URL is required for xlings to fetch
+            -- and verify the artifact today).
             ["latest"] = { ref = "16.1.0" },
             -- gcc 16: fixes the GCC-15 module-instantiation link bug that
             -- forced an anchor workaround in mcpp (remediation doc A2).
-            ["16.1.0"] = "XLINGS_RES",
+            ["16.1.0"] = {
+                url    = "https://github.com/lildengzi/riscv64-linux-musl-gcc/releases/download/16.1.0/riscv64-linux-musl-gcc-16.1.0-linux-x86_64.tar.gz",
+                sha256 = "dc85b0a63a6e4582e3122d9f64025d324b1f69c8dc57bb093ceba40a25aae5b2",
+            },
         },
     },
 }
