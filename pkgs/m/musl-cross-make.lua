@@ -205,6 +205,7 @@ local gcc_version_list = {
     "12.4.0", -- debian12~
     "13.3.0", -- ubuntu24.04
     "15.1.0",
+    "16.1.0",
     -- more...
 }
 
@@ -212,6 +213,7 @@ local target_list = {
     "i486-linux-musl",
     "x86_64-linux-musl",
     "aarch64-linux-musl",
+    "riscv64-linux-musl",
     "arm-linux-musleabi",
     "arm-linux-musleabihf",
     "sh2eb-linux-muslfdpic",
