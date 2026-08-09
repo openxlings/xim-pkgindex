@@ -556,7 +556,14 @@ end
 -- contents (any `ld-*.so*`) — no architecture hardcodes, no directory
 -- layout assumptions. Same helper shape as llvm.lua's.
 function __find_glibc_runtime()
-    local glibc_dir = pkginfo.dep_install_dir("glibc")
+    -- Namespaced, because that is how this package DECLARES it
+    -- ("xim:glibc@>=2.39" above). A bare name cannot be resolved against
+    -- the host's explicit dependency stores -- it does not say which
+    -- namespace -- so libxpkg >= 0.0.55 answers nil, and under xlings
+    -- 2026.8.10.1 this hook reported "glibc payload not found" on homes
+    -- where glibc was installed. The namespaced form resolves through
+    -- the resolved-dependency record, which is the single source.
+    local glibc_dir = pkginfo.dep_install_dir("xim:glibc")
     if not glibc_dir then return nil, nil end
 
     for _, libname in ipairs({"lib64", "lib"}) do
