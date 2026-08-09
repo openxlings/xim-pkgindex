@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "2",
     -- base info
     name = "riscv64-linux-musl-gcc",
     description = "Cross GCC toolchain: host -> riscv64-linux-musl (musl, static-capable)",
@@ -41,29 +41,37 @@ package = {
 
     xpm = {
         linux = {
-            -- No deps: a fully self-contained toolchain. BOTH host assets are
-            -- musl-static — their host ELFs (gcc/g++/cc1plus/as/ld/...) have no
-            -- PT_INTERP and no NEEDED libs, so they need neither a libc loader
-            -- in the sandbox (no xim:glibc) nor elfpatch relocation; the install
-            -- hook just unpacks. Built via musl-cross-make with the musl host
-            -- compiler and `-static --static` (the double flag pierces binutils'
-            -- libtool so even as-new/ld come out static) + `-g0 -Os`/`LDFLAGS=-s`
-            -- to strip. This is what keeps xlings hermetic: the toolchain leans
-            -- on neither host nor sandbox glibc.
-            --   (History: an earlier x86_64 asset was glibc-DYNAMIC with a baked
-            --    sandbox INTERP; on a cold sandbox its g++ died with exit 127.
-            --    Rebuilt musl-static so "no deps" is now actually true.)
-            -- Asset hosted on the builder repo release (16.1.0) until the
-            -- maintainers mirror it to xlings-res/riscv64-linux-musl-gcc (the
-            -- org-owned location XLINGS_RES normally points at — that repo does
-            -- not exist yet, so an explicit URL is required for xlings to fetch
-            -- and verify the artifact today).
+            -- No deps: a fully self-contained toolchain. The single host asset
+            -- (x86_64) is FULLY STATIC — its host ELFs (gcc/g++/cc1plus/as/ld/
+            -- ...) have no PT_INTERP and no NEEDED libs, so they need neither a
+            -- libc loader in the sandbox (no xim:glibc) nor elfpatch relocation;
+            -- the install hook just unpacks. Built via musl-cross-make with
+            -- `CC/CXX="gcc -static --static"` (the double flag pierces binutils'
+            -- libtool so even as-new/ld come out static).
+            --   Unlike aarch64-linux-musl-gcc this one is glibc-static, not
+            --   musl-static: the host compiler was the plain glibc gcc. That is
+            --   fine here — verified no PT_INTERP/NEEDED and zero libnss_/__nss
+            --   references, so nothing dlopens a host libc at runtime. The cost
+            --   is size (141MB vs aarch64's 114MB: -O2, not -Os). Switch the
+            --   builder to <host>-linux-musl-gcc + `-g0 -Os`/`LDFLAGS=-s` on the
+            --   next rebuild to match the other toolchains.
+            --   (History on aarch64: an earlier asset was glibc-DYNAMIC with a
+            --    baked sandbox INTERP; on a cold sandbox its g++ died with exit
+            --    127. Static — either libc — is what makes "no deps" true.)
+            -- XLINGS_RES auto-URLs the host-matching asset
+            -- <name>-<version>-<os>-<arch>.tar.gz off the res server, i.e.
+            -- riscv64-linux-musl-gcc-16.1.0-linux-x86_64.tar.gz.
+            -- The spec-2 per-arch `sha256` is what makes that verifiable: a
+            -- bare ["ver"] = "XLINGS_RES" entry carries no checksum and would
+            -- install this 141MB toolchain unverified.
             ["latest"] = { ref = "16.1.0" },
             -- gcc 16: fixes the GCC-15 module-instantiation link bug that
             -- forced an anchor workaround in mcpp (remediation doc A2).
             ["16.1.0"] = {
-                url    = "https://github.com/lildengzi/riscv64-linux-musl-gcc/releases/download/16.1.0/riscv64-linux-musl-gcc-16.1.0-linux-x86_64.tar.gz",
-                sha256 = "dc85b0a63a6e4582e3122d9f64025d324b1f69c8dc57bb093ceba40a25aae5b2",
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "dc85b0a63a6e4582e3122d9f64025d324b1f69c8dc57bb093ceba40a25aae5b2",
+                },
             },
         },
     },
