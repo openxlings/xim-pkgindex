@@ -342,29 +342,20 @@ foreach ($relFile in $files) {
         # passes — the log shows the shims appearing — and only removal has
         # nothing to point at.
         #
-        # Pre-existing, and newly VISIBLE rather than newly broken: this file's
-        # tests only run for recipes in the changed set, and before now gcc.lua
-        # had never been in it while this assertion existed. The same shape as
-        # openxlings/xlings#503, filed as openxlings/xlings#506; whether `remove`
-        # should succeed as a no-op against a delegated package is an xlings-side
-        # question, not this test's.
+        # A tolerance used to sit here and skip the assertion for exactly that
+        # shape. It is gone: xlings 2026.8.10.1 decides removal ownership by the
+        # provider whose uninstall hook is executing, so another provider's
+        # version under the same target neither blocks this hook nor enters its
+        # removal set. The pinned XLINGS_VERSION was bumped to it in the commit
+        # before this one -- this assertion cannot hold against an xlings that
+        # predates the fix.
         #
-        # Narrow on purpose, mirroring the `type = "config"` tolerance in
-        # posix-test.sh: the recipe must actually delegate (a `pkgmanager.install`
-        # call in its source) AND the failure must be in uninstall, which is the
-        # only branch this sits in. Keying on "uninstall failed" alone would
-        # swallow a genuine removal bug in any delegating recipe, and a tolerance
-        # that hides the case it was not written for is how a skipped assertion
-        # becomes permanent.
-        $delegates = $false
-        try {
-            $delegates = (Get-Content $luaFile -Raw) -match 'pkgmanager\.install\('
-        } catch { }
-        if ($delegates) {
-            Log-Info "uninstall not asserted: this recipe delegates its Windows install"
-            Log-Info "  ($removeSpec registers no xvm version of its own -- see the note in this script)"
-            continue
-        }
+        # Note what the `continue` also skipped: it sat BEFORE the post-uninstall
+        # shim checks, so a delegating recipe's shim cleanup was never asserted
+        # either. That half is now covered too -- and it is the right assertion,
+        # not a false positive: gcc.lua's `programs` is exactly the set it
+        # delegates to mingw-w64, so the delegated uninstall is what has to
+        # remove them.
         Log-Fail "uninstall failed"
         $failures += "$relFile (uninstall)"
         continue

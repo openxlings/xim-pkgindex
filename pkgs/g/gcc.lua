@@ -142,6 +142,21 @@ end
 
 function uninstall()
     if os.host() == "windows" then
+        -- Delegated, like install(). This package registers no xvm version of
+        -- its own on Windows -- every shim under `gcc`, `g++`, `c++` belongs to
+        -- mingw-w64 -- so removal has nothing of its own to select, and it used
+        -- to fail with `exact removal version is not registered`
+        -- (openxlings/xlings#506).
+        --
+        -- xlings 2026.8.10.1 answered that on its side: removal decides
+        -- ownership by the provider whose uninstall hook is running, so another
+        -- provider's version under the same target neither blocks this hook nor
+        -- enters its removal set. The tolerance that used to skip this case in
+        -- windows-test.ps1 is removed in the same change as this comment.
+        --
+        -- Which means the shim cleanup below is now asserted rather than
+        -- skipped: `programs` above IS the mingw-w64-provided set, so this
+        -- delegation is what has to take those shims away.
         pkgmanager.uninstall("mingw-w64@" .. version_map_gcc2mingw[pkginfo.version()])
         return true
     end
