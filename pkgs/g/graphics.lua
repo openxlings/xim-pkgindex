@@ -157,7 +157,7 @@ package = {
                     "xim:libglvnd@>=1.7.0.1",
                 },
             },
-            ["latest"] = { ref = "0.1.3" },
+            ["latest"] = { ref = "0.1.4" },
             -- No payload. This package is its dependency list and the report
             -- below; there is nothing to download.
             --
@@ -173,6 +173,13 @@ package = {
             -- never fires again and the corrected verdict reaches only fresh
             -- installs -- silently, which is the failure this stack keeps
             -- producing and the reason every one of these keys exists.
+            -- 0.1.4 re-runs config() so an already-assembled home re-records
+            -- wiring that no longer says `native` about two things it never
+            -- examined: a vendor whose dynamic section could not be read, and
+            -- a vendor that is a bare symlink to the host driver. Measured on
+            -- a real home, ALL SIX vendors were recorded `native` -- a pass --
+            -- while the stack was wired to nothing.
+            ["0.1.4"] = { },
             ["0.1.3"] = { },
             ["0.1.2"] = { },
             ["0.1.1"] = { },
@@ -250,11 +257,21 @@ function __wire_glx_vendors()
                 local soname = string.format(pat, v.vendor)
                 local lib = path.join(dir, "lib", soname)
                 if os.isfile(lib) then
-                    local host = graphics.host_vendor_behind(lib)
-                    if not host then
-                        -- No absolute DT_NEEDED: this vendor is OURS, built
-                        -- against our payloads. There is no host closure to
-                        -- check, which is not the same as a failed check.
+                    local host, form = graphics.host_vendor_behind(lib)
+                    if form == "unreadable" then
+                        -- The tool did not run. That is not a fact about this
+                        -- library, and it used to be recorded as `native` --
+                        -- which the panel shows as a PASS. An absent
+                        -- observation must never be spent as a verdict.
+                        table.insert(lines, "vendor=" .. soname .. " state=unverified")
+                        log.warn("%s: cannot read its dynamic section (readelf "
+                                 .. "unavailable); its wiring is unknown, not "
+                                 .. "healthy", soname)
+                    elseif form == "native" then
+                        -- No absolute DT_NEEDED and the file resolves inside
+                        -- our store: this vendor is OURS, built against our
+                        -- payloads. There is no host closure to check, which
+                        -- is not the same as a failed check.
                         table.insert(lines, "vendor=" .. soname .. " state=native")
                     else
                         local gaps = graphics.vendor_closure_gaps(lib, host)
