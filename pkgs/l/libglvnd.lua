@@ -138,8 +138,20 @@ function __wire_glx_vendor_search_path()
 
     -- --print-rpath prints DT_RUNPATH too, so this reads whatever tag is
     -- actually there.
+    -- patchelf by ABSOLUTE PATH. It is a BUILD dep, so xlings places it in the
+    -- store WITHOUT activating it in the subos workspace -- it is not on PATH
+    -- here. `os.iorun` returns "" on failure and swallows stderr, so a bare
+    -- name fails silently and looks exactly like "nothing to do". CI caught
+    -- this: the install aborted with "patchelf missing or refused" on a runner
+    -- where patchelf was installed the whole time.
+    local pe = "patchelf"
+    local bd = pkginfo.build_dep and pkginfo.build_dep("patchelf")
+    if bd and bd.bin and os.isfile(path.join(bd.bin, "patchelf")) then
+        pe = path.join(bd.bin, "patchelf")
+    end
+
     local current = os.iorun(string.format(
-        [[patchelf --print-rpath "%s"]], dispatch))
+        [[%s --print-rpath "%s"]], pe, dispatch))
     current = current and current:gsub("%s+$", "") or ""
 
     if current:find(want, 1, true) then return true end
@@ -164,14 +176,14 @@ function __wire_glx_vendor_search_path()
     -- SINGLE quotes. `$ORIGIN` must reach patchelf literally, and `os.exec`
     -- goes through a shell. `__shq` handles a path containing a quote, which
     -- would otherwise turn the command into something unparseable.
-    os.exec(string.format([[patchelf --force-rpath --set-rpath %s %s]],
-                          __shq(merged), __shq(dispatch)))
+    os.exec(string.format([[%s --force-rpath --set-rpath %s %s]],
+                          pe, __shq(merged), __shq(dispatch)))
 
     -- Assert the result, do not assume it. patchelf may be absent, and a
     -- skipped rewrite here is indistinguishable from a working one until a GL
     -- program fails two layers away with a message about FBConfigs.
     local after = os.iorun(string.format(
-        [[patchelf --print-rpath "%s"]], dispatch))
+        [[%s --print-rpath "%s"]], pe, dispatch))
     if not (after and after:find(want, 1, true)) then
         log.error("failed to add %s to libGLX.so.0's RPATH (patchelf missing "
                   .. "or refused). GLX programs would find no vendor and "
