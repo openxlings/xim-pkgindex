@@ -242,7 +242,21 @@ function config()
     log.info("installing llvm-tools@%s for clangd", ver)
     pkgmanager.install("llvm-tools@" .. ver)
 
-    local tools_dir = pkginfo.dep_install_dir("llvm-tools", ver)
+    -- `tool_payload_dir`, not `dep_install_dir`, and namespaced.
+    --
+    -- This asked for a BARE `llvm-tools`, which returned nil once xlings
+    -- 2026.8.10.1 supplied explicit dependency store roots -- they key on a
+    -- namespaced coordinate -- and clangd configuration was skipped with a
+    -- warning (openxlings/xlings#524).
+    --
+    -- Namespacing alone would fix today's call, because `ver` is an exact
+    -- version by the time we get here. But llvm-tools is installed by the
+    -- line above rather than declared in this package's `deps`, so there is
+    -- no resolver record for it and there never should be. That is precisely
+    -- what `tool_payload_dir` is for: it keeps its own scan, so this does not
+    -- silently become nil again the day `ver` is a range or `latest`, and it
+    -- does not pretend a self-fetched payload was a declared dependency.
+    local tools_dir = pkginfo.tool_payload_dir("xim:llvm-tools", ver)
     if not tools_dir then
         log.warn("failed to locate llvm-tools@%s install dir; skipping clangd configuration", ver)
         return true

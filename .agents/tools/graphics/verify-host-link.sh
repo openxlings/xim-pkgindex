@@ -23,6 +23,33 @@
 # 3 could-not-run.
 set -euo pipefail
 
+# DT_RUNPATH, the default -- NOT --disable-new-dtags.
+#
+# These probes used to pass `-Wl,--disable-new-dtags`, which emits DT_RPATH.
+# DT_RPATH is searched TRANSITIVELY up the load chain, so the probe's own
+# rpath ended up serving glvnd's dlopen of the vendor from inside
+# libGLX.so.0. That works, and no real consumer does it: every build system
+# emits plain `-Wl,-rpath` with the modern default, which is DT_RUNPATH, and
+# DT_RUNPATH is not transitive. So every green GLX check here was bought with
+# a flag nobody passes -- openxlings/xlings#525, where mcpp's imgui template
+# got "GLX: No GLXFBConfigs returned" on a host whose own glxinfo was fine.
+#
+# Vendor reachability now lives where it belongs: libglvnd's own libGLX.so.0
+# carries $ORIGIN/glx-vendor. These probes therefore link the way a real
+# consumer links, and a failure here is a real failure.
+#
+# XLINGS_GFX_LEGACY_DTAGS=1 restores the old flag. Keep it for diagnosis
+# only: if the legacy build passes and the default one fails, the vendor
+# directory is the thing that is broken, not the rest of the stack.
+#
+# An `if`, not `[[ ... ]] && ...`: this script runs under `set -e`, where a
+# top-level test that evaluates false is a failing command and kills the whole
+# script with no output at all.
+DTAGS=()
+if [[ -n "${XLINGS_GFX_LEGACY_DTAGS:-}" ]]; then
+  DTAGS=(-Wl,--disable-new-dtags)
+fi
+
 HOME_DIR="${1:?usage: verify-host-link.sh <XLINGS_HOME> [subos]}"
 SUBOS="${2:-default}"
 SYS="$HOME_DIR/subos/$SUBOS"
@@ -107,7 +134,7 @@ if [[ -e "$SYS/lib/libEGL.so.1" ]]; then
   if "$CC" -O0 -o "$WORK/glprobe" "$HERE/glprobe.c" \
         ${GLVND_INC:+-I"$GLVND_INC"} -L"$SYS/lib" -lEGL -lGL \
         -Wl,--dynamic-linker="$SYS/lib/ld-linux-x86-64.so.2" \
-        -Wl,-rpath,"$SYS/lib" -Wl,--disable-new-dtags 2>"$WORK/egl.build"; then
+        -Wl,-rpath,"$SYS/lib" "${DTAGS[@]}" 2>"$WORK/egl.build"; then
     out="$(env -u LD_LIBRARY_PATH "$WORK/glprobe" 2>&1 || true)"
     grep -q "^RESULT=ok" <<<"$out" && ok "EGL rendered ($(grep -m1 '^PIXEL=' <<<"$out"))" \
       || bad "EGL: $(grep -m1 '^RESULT=' <<<"$out" || echo 'no RESULT line')"
@@ -130,7 +157,7 @@ if [[ -z "${DISPLAY:-}" ]]; then
 else
   if "$CC" -O0 -o "$WORK/glxprobe" "$HERE/glxprobe.c" -ldl \
         -Wl,--dynamic-linker="$SYS/lib/ld-linux-x86-64.so.2" \
-        -Wl,-rpath,"$SYS/lib" -Wl,--disable-new-dtags 2>"$WORK/glx.build"; then
+        -Wl,-rpath,"$SYS/lib" "${DTAGS[@]}" 2>"$WORK/glx.build"; then
     out="$(env -u LD_LIBRARY_PATH "$WORK/glxprobe" 2>&1 || true)"
     grep -qi "GLX GL_RENDERER:.*NVIDIA" <<<"$out" \
       && ok "GLX renderer: $(grep -m1 'GLX GL_RENDERER:' <<<"$out" | sed 's/.*: //')" \

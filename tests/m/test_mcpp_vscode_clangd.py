@@ -81,7 +81,24 @@ class TestStatic:
         # clangd/llvm-tools version follows the explicitly selected package version
         assert "pkginfo.version()" in meta.raw_content
         assert 'pkgmanager.install("llvm-tools@" .. ver)' in meta.raw_content
-        assert 'pkginfo.dep_install_dir("llvm-tools", ver)' in meta.raw_content
+        # `tool_payload_dir`, namespaced -- NOT `dep_install_dir`.
+        #
+        # llvm-tools is installed by the line above rather than declared in
+        # `deps` (the test right above asserts exactly that), so the resolver
+        # has no record of it. `dep_install_dir` answers from that record or
+        # from explicit dependency store roots; neither knows about a payload a
+        # hook fetched for itself, and the bare name this used to pass returned
+        # nil outright once xlings 2026.8.10.1 supplied those roots -- clangd
+        # configuration was then skipped with a warning (openxlings/xlings#524).
+        # `tool_payload_dir` is the entry point for a self-fetched payload and
+        # keeps its own scan, so this does not become nil again if `ver` ever
+        # stops being an exact version.
+        #
+        # Only the positive assertion. "dep_install_dir must not appear"
+        # matches the explanatory comment above the call as readily as a real
+        # call -- tests/test_dep_query_coordinates.py makes that judgement with
+        # comments stripped, which is where it belongs.
+        assert 'pkginfo.tool_payload_dir("xim:llvm-tools", ver)' in meta.raw_content
         # the default-toolchain-mutating side effect is gone
         assert "mcpp toolchain install" not in meta.raw_content
 

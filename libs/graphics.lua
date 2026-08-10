@@ -58,6 +58,8 @@
 import("xim.libxpkg.log")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.subos")
+import("xim.libxpkg.pkginfo")
+import("xim.libxpkg.fs")
 
 local graphics = {}
 
@@ -73,6 +75,41 @@ local graphics = {}
 -- stack's headers already live.
 graphics.DRI_DIR        = "usr/lib/dri"
 graphics.EGL_VENDOR_DIR = "share/glvnd/egl_vendor.d"
+
+-- The GLX vendor directory — and why it is NOT next to the two above.
+--
+-- Those are subos-relative, because an ENVIRONMENT VARIABLE points at them.
+-- GLX has no such variable. Measured on a host libglvnd 1.7:
+--
+--   libEGL.so.1   __EGL_VENDOR_LIBRARY_DIRS, __EGL_VENDOR_LIBRARY_FILENAMES,
+--                 a default search path, and a JSON `library_path` that may be
+--                 an ABSOLUTE path (our recipes rewrite it to one).
+--   libGLX.so.0   `libGLX_%s.so.0` and `__GLX_VENDOR_LIBRARY_NAME`. That is
+--                 all of it. A NAME, never a path, never a directory.
+--
+-- So GLX vendor discovery is a bare-SONAME `dlopen` from inside libGLX.so.0,
+-- and glibc serves that from exactly four places: the calling object's
+-- DT_RPATH (transitive up its load chain) or DT_RUNPATH (not transitive),
+-- LD_LIBRARY_PATH, and ld.so.cache. LD_LIBRARY_PATH is out -- it is
+-- process-global and loads our payload into host binaries, which is the
+-- `__pointer_chk_guard` crash xim's own install warning describes. Our
+-- loader's cache path exists nowhere. What is left is the search path of the
+-- object that CALLS dlopen: libGLX.so.0, which is ours.
+--
+-- Hence a directory inside libglvnd's OWN payload, reached by `$ORIGIN`:
+-- home-relocatable, and one directory serves every subos in the home, with
+-- per-subos vendor SELECTION staying where glvnd already put it
+-- (`__GLX_VENDOR_LIBRARY_NAME`). A subos-absolute path would pin the shared
+-- payload to whichever subos installed it last.
+--
+-- A subdirectory, not `lib/` itself: `lib/` is published into the subos by
+-- `sysroot.declare_libs`, and vendor libraries are dlopen'd plugins, not link
+-- targets. This also keeps the farm out of it -- `<subos>/lib` holds
+-- libc.so.6 and ld-linux symlinks, and that directory in an RPATH is a known
+-- landmine.
+--
+-- Relative to libglvnd's install_dir. openxlings/xlings#525.
+graphics.GLX_VENDOR_SUBDIR = "lib/glx-vendor"
 graphics.SHARE_DIR      = "share"
 -- Where the Vulkan loader looks, relative to the subos: it searches
 -- $XDG_DATA_DIRS/vulkan/icd.d and mesa puts ${subosdir}/share on that list.
@@ -245,6 +282,61 @@ function graphics.declare_dri(install_dir, rel_dir, tag)
     end
     xvm.files{ src = rel_dir, dst = graphics.DRI_DIR, binding = tag }
     return true
+end
+
+-- ─────────────────────────────────────────────────────────────────────
+-- GLX vendor registration — the counterpart `declare_egl_vendor` has and
+-- GLX did not. See GLX_VENDOR_SUBDIR above for why it is a directory plus an
+-- RPATH rather than a variable: glvnd offers no GLX variable to point.
+-- ─────────────────────────────────────────────────────────────────────
+
+-- Populate libglvnd's vendor directory from the vendors in this stack.
+--
+-- WHY THE ASSEMBLER DOES THIS, AND NOT EACH VENDOR
+--
+-- Per-vendor self-registration is the obvious shape -- it mirrors
+-- `declare_egl_vendor` exactly -- and it has an ordering hole that this
+-- ecosystem has been bitten by before. The directory lives in libglvnd's
+-- payload, and a libglvnd reinstall does `os.tryrm(install_dir)`: every
+-- registration disappears. The vendors do not reinstall just because their
+-- dependency did, so nothing puts them back. The stack would come up with an
+-- empty vendor directory and render on llvmpipe, reporting success -- the
+-- precise failure this whole mechanism exists to remove.
+--
+-- `graphics` cannot have that hole. It declares every vendor AND the
+-- dispatch, so it installs strictly after all of them, and re-running it
+-- rewires the whole set from scratch. One writer, one moment, no ordering
+-- assumption.
+--
+-- `vendors` is a list of {dir, soname} -- the payload directory and the
+-- library's SONAME, which is also the filename glvnd builds and dlopens.
+-- Returns the number registered.
+-- `fs.*`, not `os.*`. The recipe sandbox's `os` table is the one prelude.lua
+-- builds -- isfile/isdir/dirs/mkdir/mv/cp/tryrm/exec/iorun and nothing else.
+-- `os.ln` and `os.files` do not exist there, and calling one raises from
+-- inside a hook rather than failing a check.
+function graphics.wire_glx_vendors(dispatch_dir, vendors)
+    local vendor_dir = path.join(dispatch_dir, graphics.GLX_VENDOR_SUBDIR)
+    fs.mkdir_p(vendor_dir)
+
+    -- Rebuild, do not merge. A vendor dropped from the stack must not leave a
+    -- dangling entry: glvnd would dlopen it, fail, and swallow the error.
+    for _, stale in ipairs(fs.files(vendor_dir) or {}) do
+        fs.remove(stale)
+    end
+
+    local n = 0
+    for _, v in ipairs(vendors) do
+        local src = path.join(v.dir, "lib", v.soname)
+        if os.isfile(src) then
+            -- Absolute symlink: the target is a different payload in the same
+            -- home, so a relative one would break if either moved.
+            fs.symlink(src, path.join(vendor_dir, v.soname))
+            n = n + 1
+            log.info("GLX vendor: %s", v.soname)
+        end
+    end
+    return n
 end
 
 return graphics

@@ -113,7 +113,11 @@ end
 -- else was switched -- but it does mean `xlings use python <other>` does not move
 -- meson, and a python REMOVAL leaves this shim pointing at a gone payload.
 function config()
-    local py = pkginfo.dep_install_dir("python")
+    -- Namespaced, as declared (`xim:python@>=3.9`). The bare form has no
+    -- answer under explicit dependency store roots, and this hook `raise()`s
+    -- on nil -- so under openxlings/xlings#524 meson could not install on any
+    -- cold home either, the same hard failure gcc had.
+    local py = pkginfo.dep_install_dir("xim:python")
     if not py then
         raise("meson: cannot locate the python dependency's payload; "
               .. "the shim would have no interpreter to exec")

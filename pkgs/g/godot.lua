@@ -153,6 +153,22 @@ package = {
                     -- namespaces, and the bare name is then ambiguous. So it
                     -- carries the prefix, like its three siblings above.
                     "xim:graphics@>=0.1",
+                    -- config() asks for mesa's payload directly, so mesa is
+                    -- declared directly. It used to ride in transitively
+                    -- through `graphics` while the query said `mesa` -- and
+                    -- the resolver only records a package's OWN declared
+                    -- runtime deps, so there was never a record to find.
+                    -- Before explicit dependency store roots a store scan
+                    -- covered for that; after them the query returns nil,
+                    -- `have_stack` goes false, and this package silently
+                    -- falls back to the host's GL directories -- which is
+                    -- mcpp#352, the exact failure the dependency above exists
+                    -- to prevent, arriving with no diagnostic at all
+                    -- (openxlings/xlings#524).
+                    --
+                    -- A lower bound, like `graphics`: this must not pin the
+                    -- stack's version.
+                    "xim:mesa@>=25",
                 },
                 -- config() invokes `patchelf --force-rpath` to flip the
                 -- tag elfpatch stamps in (DT_RUNPATH -> DT_RPATH) so
@@ -348,7 +364,7 @@ function config()
     if os.host() == "linux" then
         local exe = _installed_exe()
         local mesa_dir = pkginfo.dep_install_dir
-                         and pkginfo.dep_install_dir("mesa") or nil
+                         and pkginfo.dep_install_dir("xim:mesa") or nil
         local have_stack = mesa_dir and mesa_dir ~= ""
                            and os.isdir(path.join(mesa_dir, "lib"))
         local host_dirs = have_stack and {} or _host_gui_libdirs()
@@ -419,7 +435,7 @@ function config()
     -- variable unset.
     local node = { bindir = pkginfo.install_dir() }
     local mesa_dir = pkginfo.dep_install_dir
-                     and pkginfo.dep_install_dir("mesa") or nil
+                     and pkginfo.dep_install_dir("xim:mesa") or nil
     if mesa_dir and mesa_dir ~= "" and os.isdir(path.join(mesa_dir, "lib")) then
         node.envs = graphics.consumer_envs()
     end

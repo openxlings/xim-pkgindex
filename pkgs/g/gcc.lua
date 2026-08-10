@@ -297,7 +297,14 @@ function __config_linux()
         log.error("glibc payload not found, but gcc needs it to rewrite its"
             .. " ELF interpreter away from the build machine's path.")
         log.error("  without it the installed gcc cannot run at all.")
-        log.error("  install it first: xlings install xim:glibc@2.39")
+        -- Name the coordinate this package actually declares. This line used
+        -- to be the literal `xim:glibc@2.39` regardless of what was declared
+        -- or resolved, and on openxlings/xlings#524 -- where the resolver had
+        -- correctly picked 2.44 -- the mismatch read as a resolution bug and
+        -- sent the report down a false lead. A constant cannot describe a
+        -- resolved dependency.
+        log.error("  it is declared as %s; install it first: xlings install %s",
+            table.concat(pkginfo.deps_list(), ", "), "xim:glibc")
         return false
     end
 
@@ -541,7 +548,14 @@ end
 -- contents (any `ld-*.so*`) — no architecture hardcodes, no directory
 -- layout assumptions. Same helper shape as llvm.lua's.
 function __find_glibc_runtime()
-    local glibc_dir = pkginfo.dep_install_dir("glibc")
+    -- Ask with the coordinate this package DECLARED (`xim:glibc@>=2.39`), not
+    -- a bare name. The resolver keys its record by that coordinate, and a bare
+    -- name additionally cannot be looked up in the explicit dependency store
+    -- roots, which need a namespace to know which `*-x-glibc` is meant.
+    -- openxlings/xlings#524: the bare form returned nil on every cold home
+    -- once xlings 2026.8.10.1 began supplying those roots, and gcc reported
+    -- "glibc payload not found" with glibc sitting installed next to it.
+    local glibc_dir = pkginfo.dep_install_dir("xim:glibc")
     if not glibc_dir then return nil, nil end
 
     for _, libname in ipairs({"lib64", "lib"}) do
