@@ -144,8 +144,20 @@ function __wire_glx_vendor_search_path()
     -- name fails silently and looks exactly like "nothing to do". CI caught
     -- this: the install aborted with "patchelf missing or refused" on a runner
     -- where patchelf was installed the whole time.
+    -- Asked for BY THE COORDINATE AS DECLARED (`xim:patchelf@0.18.0` above),
+    -- with the bare name as a fallback for clients older than libxpkg 0.0.57.
+    -- That version refuses a bare name against explicit dependency stores --
+    -- it does not say which namespace -- and the refusal reaches this recipe
+    -- as a config hook that returns false, which is the same "looks like
+    -- nothing to do" shape the comment above already warns about, one layer up.
     local pe = "patchelf"
-    local bd = pkginfo.build_dep and pkginfo.build_dep("patchelf")
+    local bd = nil
+    if pkginfo.build_dep then
+        bd = try { function() return pkginfo.build_dep("xim:patchelf") end }
+        if not (bd and bd.bin) then
+            bd = try { function() return pkginfo.build_dep("patchelf") end }
+        end
+    end
     if bd and bd.bin and os.isfile(path.join(bd.bin, "patchelf")) then
         pe = path.join(bd.bin, "patchelf")
     end
