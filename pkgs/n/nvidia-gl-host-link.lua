@@ -467,8 +467,28 @@ function install()
                 -- reports no FBConfig. Flipping the one tag, changing nothing
                 -- else, produced `GL_RENDERER: NVIDIA GeForce RTX 4080/PCIe/SSE2`
                 -- through our own interposer.
+                -- Asked for BY THE COORDINATE AS DECLARED, with the bare name
+                -- as a fallback.
+                --
+                -- libxpkg 0.0.57 refuses a bare name against explicit
+                -- dependency stores -- it does not say which namespace -- and
+                -- the refusal surfaced here as `config hook returned false`
+                -- with the interposer left at DT_RUNPATH, i.e. the exact
+                -- silent-software-rendering failure the block below exists to
+                -- prevent, arriving through the code meant to prevent it.
+                --
+                -- Both spellings are tried because this recipe is served to
+                -- clients older than that change too, and those resolve the
+                -- bare name and nothing else. Order matters: qualified first,
+                -- so a current client never depends on the legacy path.
                 local pe = "patchelf"
-                local bd = pkginfo.build_dep and pkginfo.build_dep("patchelf")
+                local bd = nil
+                if pkginfo.build_dep then
+                    bd = try { function() return pkginfo.build_dep("xim:patchelf") end }
+                    if not (bd and bd.bin) then
+                        bd = try { function() return pkginfo.build_dep("patchelf") end }
+                    end
+                end
                 if bd and bd.bin then pe = path.join(bd.bin, "patchelf") end
 
                 local rp = try { function()
