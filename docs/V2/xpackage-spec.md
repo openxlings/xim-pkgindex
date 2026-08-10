@@ -398,6 +398,45 @@ xlings now refuses to finish an install that produced one, and `xlings doctor`
 reports existing ones. Design and the invariant:
 `xlings/.agents/docs/2026-08-05-dependency-resolution-single-source.md`
 
+### Ask with the coordinate you declared
+
+```lua
+deps = { "xim:glibc@>=2.39" }
+
+local dir = pkginfo.dep_install_dir("xim:glibc")   -- RIGHT
+local dir = pkginfo.dep_install_dir("glibc")       -- fragile
+local dir = pkginfo.dep_install_dir("xim:mesa")    -- WRONG unless mesa is in deps
+```
+
+Two things answer this call, and both want a **namespaced** name. The resolver
+record is keyed by the declared spec. The explicit dependency store roots
+locate `<root>/<ns>-x-<bare>/<ver>`, so a bare name does not say which
+`*-x-glibc` is meant — and refusing to guess between `compat-x-zlib` and
+`other-x-zlib` is the whole point of those roots.
+
+A bare name still works when the record set answers it uniquely, and fails
+closed naming both providers when it does not. Treat that as a safety net, not
+as the contract: it disappears the moment a second package with the same bare
+name enters your dep list.
+
+**Omit the version**, or pass the range you declared. The record holds what the
+resolver chose; restating a concrete version just invents a second opinion, and
+a range is matched as a range (`>=2.39` matches the chosen `2.44`).
+
+**Only what you declared.** A transitive dependency has no record — xlings
+records a node's own runtime deps, not its whole closure — so asking for one
+returns nil. If a hook uses a package's payload, that package is a dependency:
+declare it. For a payload the hook installed *itself* (`pkgmanager.install`),
+use `pkginfo.tool_payload_dir`, which keeps its own store scan.
+
+Measured (openxlings/xlings#524): six of the seven `dep_install_dir` call sites
+in this index passed a bare name while declaring a namespaced, ranged one. They
+worked while a store scan covered for it; when xlings 2026.8.10.1 began
+supplying explicit store roots, gcc and meson stopped installing on any cold
+home, godot silently fell back to the host's GL, and the graphics banner
+started reporting `unknown`. `tests/test_dep_query_coordinates.py` now enforces
+this rule structurally.
+
 ### Probing for it
 
 ```lua
