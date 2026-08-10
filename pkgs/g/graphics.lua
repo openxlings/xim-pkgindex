@@ -172,6 +172,27 @@ package = {
             ["0.1.1"] = { },
             ["0.1.0"] = { },
         },
+        -- Not "unimplemented" -- NOT APPLICABLE, and the difference matters to
+        -- whoever reads the error.
+        --
+        -- This package assembles a glvnd-based GL stack. glvnd is a Linux
+        -- mechanism: macOS resolves GL through its own frameworks (and has
+        -- deprecated it in favour of Metal), Windows through WGL/DXGI. There
+        -- is no port of this design to either -- mcpp's `compat.*` packages
+        -- link the system libraries directly there, which is the right answer
+        -- on those platforms, not a workaround.
+        --
+        -- Declared rather than omitted so the failure names the situation.
+        -- Omitting the block makes `xlings install graphics` fail as
+        -- "not found", which reads as a broken index or a typo.
+        -- Every version key the linux block carries, or the parity guard is
+        -- right to complain: a version present on one platform and absent on
+        -- another reads as "not found" rather than "not applicable here",
+        -- which is the exact confusion this block exists to remove.
+        macosx  = { ["latest"] = { ref = "0.1.2" },
+                    ["0.1.2"] = { }, ["0.1.1"] = { }, ["0.1.0"] = { } },
+        windows = { ["latest"] = { ref = "0.1.2" },
+                    ["0.1.2"] = { }, ["0.1.1"] = { }, ["0.1.0"] = { } },
     },
 }
 
@@ -299,6 +320,33 @@ function __wire_glx_vendors()
 end
 
 function install()
+    -- Say what is true, on the platform where it is not.
+    --
+    -- Every package in this stack is linux/x86_64. On anything else the honest
+    -- answer is that there is no stack here yet -- not a resolution failure,
+    -- and not a half-assembled subos. Refusing in install() rather than
+    -- omitting the platform block means the user gets the reason and the
+    -- alternative instead of "package not found".
+    if os.host() ~= "linux" then
+        log.error("xim:graphics assembles a glvnd-based GL stack, and glvnd is "
+                  .. "a Linux mechanism. On %s, GL comes from the system "
+                  .. "(frameworks on macOS, WGL/DXGI on Windows) and mcpp's "
+                  .. "compat.* packages link it directly -- that is the "
+                  .. "supported path there, not this package.", os.host())
+        return false
+    end
+    if os.arch() ~= "x86_64" then
+        log.error("xim:graphics is x86_64-only today: mesa, libglvnd and both "
+                  .. "host-driver bridges are built for it and nothing in the "
+                  .. "stack has been verified on %s.", os.arch())
+        log.error("  the driver bridge is the blocker, not mesa -- an NVIDIA "
+                  .. "aarch64 driver lays its libraries out differently, and "
+                  .. "the host-library probe has never been run against one.")
+        log.error("  until then, use the host's GL: install without this "
+                  .. "package and let the application link the system stack.")
+        return false
+    end
+
     local dir = pkginfo.install_dir()
     os.tryrm(dir)
     os.mkdir(dir)
