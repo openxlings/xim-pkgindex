@@ -75,7 +75,15 @@ package = {
                     "xim:mesa",
                     -- Sentinel: the host's proprietary NVIDIA GL userspace.
                     -- A no-op on a machine without that driver.
-                    "xim:nvidia-gl-host-link@>=0.1",
+                    -- >=0.1.2, not >=0.1. The interposer's DT_RPATH fix is in
+                    -- 0.1.2, and 0.1.1 already satisfies `>=0.1` -- so an
+                    -- already-installed home would keep the broken build and
+                    -- stay on software rendering with nothing to say so.
+                    -- Measured: after bumping the recipe, the home reported
+                    -- "installed, but 'nvidia-gl-host-link' still resolves to
+                    -- 0.1.1" and needed a manual `xlings use` to switch. A
+                    -- lower bound only pulls what it excludes.
+                    "xim:nvidia-gl-host-link@>=0.1.2",
                     -- Sentinel: WSL2's Windows-side D3D12 userspace.
                     -- A no-op anywhere that is not WSL2.
                     --
