@@ -290,6 +290,108 @@ end
 -- RPATH rather than a variable: glvnd offers no GLX variable to point.
 -- ─────────────────────────────────────────────────────────────────────
 
+-- Can this vendor library actually load, and if not, WHICH dependency is
+-- missing?
+--
+-- glvnd swallows a vendor's dlopen failure. The user sees GL rendering --
+-- through somebody else's driver -- and nothing else. Measured on an NVIDIA
+-- 550.144.03 host: `libEGL_nvidia.so.0` never loaded, EGL silently fell back
+-- to zink, and the acceptance script could only say "did NOT load our
+-- interposer". The actual cause took a hand-written dlopen probe to find:
+--
+--   dlopen FAILED: libpthread.so.0: cannot open shared object file
+--
+-- The host's vendor declares DT_NEEDED on libpthread/librt/libdl -- the
+-- libraries glibc merged into libc in 2.34 -- and the host vendor carries no
+-- search path of its own, so only a TRANSITIVE tag on our interposer reaches
+-- them.
+--
+-- So: resolve the HOST vendor's own DT_NEEDED against the search path our
+-- interposer provides, and name anything that does not resolve. That is a
+-- string operation over `readelf -d` plus `os.isfile` -- no compiler, no
+-- dlopen, no subprocess per candidate.
+--
+-- Returns a list of unresolved SONAMEs (empty when the closure is complete).
+-- An empty list is NOT proof of success when the tools are missing, so a
+-- caller that cannot read anything is told separately via `ok`.
+function graphics.vendor_closure_gaps(interposer, host_vendor)
+    local out = { ok = false, missing = {}, reason = nil }
+
+    local dyn = os.iorun(string.format([[readelf -d "%s"]], host_vendor))
+    -- `os.iorun` returns "" on failure and swallows stderr, so an empty
+    -- result is the ONLY signal the tool did not run. It is not evidence of
+    -- an empty closure.
+    if dyn == "" then return out end
+
+    -- The TAG first, because it decides whether the path is reachable at all.
+    --
+    -- The host vendor behind the interposer carries no search path of its own.
+    -- Its DT_NEEDED is resolved using the interposer's path only if that path
+    -- is TRANSITIVE -- DT_RPATH. Under DT_RUNPATH the interposer's directories
+    -- are not consulted for it, so the file being present on that path proves
+    -- nothing.
+    --
+    -- A first version of this probe checked only presence and reported
+    -- `libEGL_nvidia.so.0 state=ok` for a library measured to fail with
+    -- `libpthread.so.0: cannot open shared object file`. Presence was true and
+    -- reachability was false.
+    local tags = os.iorun(string.format([[readelf -d "%s"]], interposer))
+    if tags == "" then return out end
+    if not tags:find("(RPATH)", 1, true) then
+        out.ok = true
+        out.reason = "tag"
+        return out
+    end
+
+    local search = {}
+    local rp = os.iorun(string.format([[patchelf --print-rpath "%s"]], interposer))
+    for dir in (((rp or "") .. ":"):gmatch("([^:\n]*):")) do
+        if dir ~= "" then table.insert(search, dir) end
+    end
+    if #search == 0 then return out end
+
+    out.ok = true
+    for soname in dyn:gmatch("Shared library:%s*%[([^%]]+)%]") do
+        -- An absolute DT_NEEDED is the interposer naming the host vendor
+        -- itself; it needs no search path.
+        if soname:sub(1, 1) ~= "/" then
+            local found = false
+            for _, dir in ipairs(search) do
+                if os.isfile(path.join(dir, soname)) then found = true break end
+            end
+            if not found then table.insert(out.missing, soname) end
+        end
+    end
+    return out
+end
+
+-- The host driver library an interposer stands in front of.
+--
+-- The interposer names it by ABSOLUTE path in its own DT_NEEDED -- that is the
+-- whole design: we do not copy the host's driver, which must stay paired with
+-- the running kernel module. So the absolute entry IS the host vendor.
+function graphics.host_vendor_behind(interposer)
+    local dyn = os.iorun(string.format([[readelf -d "%s"]], interposer))
+    if dyn == "" then return nil end
+    for soname in dyn:gmatch("Shared library:%s*%[([^%]]+)%]") do
+        if soname:sub(1, 1) == "/" then return soname end
+    end
+    return nil
+end
+
+-- Record what was wired, next to what was wired.
+--
+-- So no reader ever has to probe. `xlings subos info` reaching for patchelf
+-- would break the contract that local queries answer instantly, and a second
+-- probe is a second answer to a question this function already answered.
+-- Plain key=value: it is read by a C++ command, and a format that needs a
+-- parser is a format that can fail to parse.
+function graphics.record_wiring(dispatch_dir, lines)
+    local f = path.join(dispatch_dir, graphics.GLX_VENDOR_SUBDIR, ".wiring")
+    io.writefile(f, table.concat(lines, "\n") .. "\n")
+    return os.isfile(f)
+end
+
 -- Populate libglvnd's vendor directory from the vendors in this stack.
 --
 -- WHY THE ASSEMBLER DOES THIS, AND NOT EACH VENDOR
