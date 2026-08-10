@@ -395,13 +395,52 @@ end
 -- The interposer names it by ABSOLUTE path in its own DT_NEEDED -- that is the
 -- whole design: we do not copy the host's driver, which must stay paired with
 -- the running kernel module. So the absolute entry IS the host vendor.
+--
+-- Returns `host_path, form` where form is one of:
+--
+--   "interposed"  a stub of ours with the host driver named absolutely
+--   "direct"      the host's own driver, symlinked into the payload with no
+--                 stub in front of it
+--   "native"      our own build; there is no host closure to complete
+--   "unreadable"  readelf did not run. NOT a verdict about the library.
+--
+-- WHY THIS RETURNS FOUR THINGS AND NOT A POINTER-OR-NIL
+--
+-- It used to return nil for three of these, and the caller turned every nil
+-- into `state=native` -- which the panel reports as a PASS. Measured on a real
+-- home, ALL SIX vendors were recorded `native`, including an EGL interposer
+-- that plainly has an absolute DT_NEEDED and three GLX/GLES entries that are
+-- bare symlinks to `/lib/x86_64-linux-gnu/`. The stack was wired to nothing
+-- and four independent channels said it was fine.
+--
+-- Two distinct conflations produced that:
+--
+--   * `os.iorun` returns "" when the tool is missing, and "the tool did not
+--     run" became "this is ours, nothing to check". The sibling function
+--     `vendor_closure_gaps` guards exactly this case and says so in its own
+--     comment -- the guard existed, one function away.
+--   * since 0.1.2 the GLX and GLES vendors are DIRECT SYMLINKS to the host
+--     driver. A host library has no absolute DT_NEEDED (it names its
+--     siblings by soname), so the old test read "no absolute entry" as "our
+--     own build". It is literally the host driver. The verdict was inverted
+--     for precisely the vendors that most needed checking.
 function graphics.host_vendor_behind(interposer)
     local dyn = os.iorun(string.format([[readelf -d "%s"]], interposer))
-    if dyn == "" then return nil end
+    -- "" is the ONLY signal os.iorun gives for a tool that did not run, and
+    -- it is not evidence about the library.
+    if dyn == "" then return nil, "unreadable" end
     for soname in dyn:gmatch("Shared library:%s*%[([^%]]+)%]") do
-        if soname:sub(1, 1) == "/" then return soname end
+        if soname:sub(1, 1) == "/" then return soname, "interposed" end
     end
-    return nil
+    -- No stub in front of it. Follow the file: a vendor that resolves outside
+    -- our store is the host's driver wearing our filename, and its closure is
+    -- every bit as unchecked as an interposer's.
+    local real = os.iorun(string.format([[readlink -f "%s"]], interposer))
+    real = (real or ""):gsub("%s+$", "")
+    if real ~= "" and not real:find("xpkgs", 1, true) then
+        return real, "direct"
+    end
+    return nil, "native"
 end
 
 -- Record what was wired, next to what was wired.
