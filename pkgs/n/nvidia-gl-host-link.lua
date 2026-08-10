@@ -612,9 +612,79 @@ function install()
     return true
 end
 
+-- Re-assert DT_RPATH on every interposer, at CONFIG time.
+--
+-- install() already does this rewrite, and it does not survive: xlings runs
+-- its declarative elfpatch pass AFTER the install hook, and that pass emits
+-- DT_RUNPATH. So the tag this package depends on is set, then silently
+-- reverted, and the package reports success.
+--
+-- Measured (openxlings/xlings#525): after a full install the interposer still
+-- carried DT_RUNPATH with no error and no warning, while running the recipe's
+-- exact patchelf command by hand flipped it and produced
+-- `GL_RENDERER: NVIDIA GeForce RTX 4080/PCIe/SSE2`. The asymmetry that names
+-- the cause: libglvnd's RPATH edit, which lives in config(), persisted -- this
+-- one, in install(), did not.
+--
+-- RUNPATH is not transitive, and the host vendor behind the interposer has no
+-- search path of its own, so with the wrong tag it resolves none of its own
+-- closure -- `libnvidia-glsi` against an empty system path -- and glvnd
+-- swallows the dlopen error. The only symptom is a missing FBConfig, three
+-- layers away.
+--
+-- Idempotent: a file already carrying DT_RPATH is left alone.
+function __force_rpath_on_interposers(dir)
+    local pe = "patchelf"
+    local bd = pkginfo.build_dep and pkginfo.build_dep("patchelf")
+    if bd and bd.bin and os.isfile(path.join(bd.bin, "patchelf")) then
+        pe = path.join(bd.bin, "patchelf")
+    end
+
+    local names = {
+        "libEGL_nvidia.so.0", "libGLX_nvidia.so.0",
+        "libGLESv1_CM_nvidia.so.1", "libGLESv2_nvidia.so.2",
+    }
+    for _, name in ipairs(names) do
+        local f = path.join(dir, "lib", name)
+        if os.isfile(f) then
+            -- `os.iorun` returns "" on failure, never nil, and hides stderr --
+            -- so an empty result is the ONLY signal that the tool did not run.
+            local before = os.iorun(string.format([[readelf -d "%s"]], f))
+            if before == "" then
+                log.warn("cannot read %s's dynamic tags; if it kept DT_RUNPATH "
+                         .. "GL renders in software", name)
+            elseif not before:find("(RPATH)", 1, true) then
+                local rp = os.iorun(string.format([[%s --print-rpath "%s"]], pe, f))
+                rp = rp and rp:trim() or ""
+                if rp == "" then
+                    log.error("cannot read %s's RPATH (patchelf not usable at "
+                              .. "%s); the interposer would keep DT_RUNPATH and "
+                              .. "GL would render in software", name, pe)
+                    return false
+                end
+                os.exec(string.format([[%s --force-rpath --set-rpath %q %q]],
+                                      pe, rp, f))
+                local after = os.iorun(string.format([[readelf -d "%s"]], f))
+                if not (after ~= "" and after:find("(RPATH)", 1, true)) then
+                    log.error("%s still carries DT_RUNPATH after the rewrite; "
+                              .. "the host vendor behind it cannot resolve its "
+                              .. "own dependencies and GL falls back to "
+                              .. "software rendering", name)
+                    return false
+                end
+                log.info("interposer tag: %s -> DT_RPATH", name)
+            end
+        end
+    end
+    return true
+end
+
 function config()
     local dir = pkginfo.install_dir()
     local tag = package.name .. "@" .. pkginfo.version()
+
+    -- Before anything else: without the right tag nothing below matters.
+    if not __force_rpath_on_interposers(dir) then return false end
 
     xvm.add(package.name)
 
