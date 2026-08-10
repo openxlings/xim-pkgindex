@@ -157,7 +157,7 @@ package = {
                     "xim:libglvnd@>=1.7.0.1",
                 },
             },
-            ["latest"] = { ref = "0.1.2" },
+            ["latest"] = { ref = "0.1.3" },
             -- No payload. This package is its dependency list and the report
             -- below; there is nothing to download.
             --
@@ -168,6 +168,12 @@ package = {
             -- 0.1.2 re-runs config() on an already-assembled home so it
             -- probes its vendors and records the wiring. Same payload-less
             -- recipe; the hook that consumes it is what changed.
+            -- 0.1.3 re-runs config() so an already-assembled home re-records
+            -- its wiring with the third state. Without a new key the hook
+            -- never fires again and the corrected verdict reaches only fresh
+            -- installs -- silently, which is the failure this stack keeps
+            -- producing and the reason every one of these keys exists.
+            ["0.1.3"] = { },
             ["0.1.2"] = { },
             ["0.1.1"] = { },
             ["0.1.0"] = { },
@@ -259,15 +265,36 @@ function __wire_glx_vendors()
                                      .. "is incomplete, GL renders through another "
                                      .. "driver and says nothing", soname)
                         elseif gaps.reason == "tag" then
+                            -- NOT `broken`: the verdict depends on WHO OPENS
+                            -- IT. A consumer's DT_RPATH is transitive and
+                            -- covers this whole chain, so an INSTALLED program
+                            -- (elfpatch stamps DT_RPATH since libxpkg 0.0.57)
+                            -- reaches the GPU through this vendor, while a
+                            -- program the user builds in this subos still
+                            -- cannot -- those get DT_RUNPATH
+                            -- (openxlings/xlings#532).
+                            --
+                            -- Measured on one home, one interposer, changing
+                            -- only the consumer: DT_RUNPATH cannot open
+                            -- libEGL_nvidia, DT_RPATH loads it and renders on
+                            -- the GPU.
+                            --
+                            -- `broken` was accurate before 0.0.57, when nearly
+                            -- every executable was DT_RUNPATH. It now
+                            -- UNDER-reports, which is the worse direction: it
+                            -- sends someone to fix a problem that is not there
+                            -- and hides the one that is
+                            -- (openxlings/xlings#537).
                             table.insert(lines, "vendor=" .. soname
-                                         .. " state=broken reason=runpath-not-transitive")
-                            log.warn("%s cannot load the host driver behind it: "
-                                     .. "this interposer carries DT_RUNPATH, "
-                                     .. "which is not transitive, so the host "
-                                     .. "driver reaches none of our payloads. "
-                                     .. "glvnd falls back to another vendor "
-                                     .. "WITHOUT saying so -- GL still renders, "
-                                     .. "just not on this driver.", soname)
+                                         .. " state=needs-transitive-consumer")
+                            log.warn("%s carries DT_RUNPATH. Installed "
+                                     .. "programs still reach it -- their own "
+                                     .. "DT_RPATH is transitive and covers this "
+                                     .. "chain -- but a program built in this "
+                                     .. "subos gets DT_RUNPATH and cannot load "
+                                     .. "it, so its GL silently renders "
+                                     .. "elsewhere (openxlings/xlings#532).",
+                                     soname)
                         elseif #gaps.missing > 0 then
                             table.insert(lines, "vendor=" .. soname
                                          .. " state=broken missing="
