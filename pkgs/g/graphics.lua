@@ -157,7 +157,7 @@ package = {
                     "xim:libglvnd@>=1.7.0.1",
                 },
             },
-            ["latest"] = { ref = "0.1.1" },
+            ["latest"] = { ref = "0.1.2" },
             -- No payload. This package is its dependency list and the report
             -- below; there is nothing to download.
             --
@@ -165,6 +165,10 @@ package = {
             -- picks up the GLX vendor wiring. Without a new key the hook never
             -- fires again and the fix reaches only fresh installs -- silently,
             -- which is the failure mode this stack keeps producing.
+            -- 0.1.2 re-runs config() on an already-assembled home so it
+            -- probes its vendors and records the wiring. Same payload-less
+            -- recipe; the hook that consumes it is what changed.
+            ["0.1.2"] = { },
             ["0.1.1"] = { },
             ["0.1.0"] = { },
         },
@@ -194,8 +198,8 @@ import("xim.pkgindex.graphics")
 -- listed. A vendor whose library is absent (a sentinel on a host without that
 -- driver) is skipped, not an error.
 local _GLX_VENDORS = {
-    { dep = "xim:mesa",                 soname = "libGLX_mesa.so.0" },
-    { dep = "xim:nvidia-gl-host-link",  soname = "libGLX_nvidia.so.0" },
+    { dep = "xim:mesa",                soname = "libGLX_mesa.so.0",   vendor = "mesa" },
+    { dep = "xim:nvidia-gl-host-link", soname = "libGLX_nvidia.so.0", vendor = "nvidia" },
 }
 
 function __wire_glx_vendors()
@@ -215,6 +219,75 @@ function __wire_glx_vendors()
     end
 
     local n = graphics.wire_glx_vendors(dispatch, found)
+
+    -- Probe every entry point each vendor ships, and RECORD the result.
+    --
+    -- Every entry point, not just the GLX one we wired above: glvnd dlopens
+    -- each vendor library by name, so each is its own load-chain root and each
+    -- can fail on its own. Measured on an NVIDIA 550.144.03 host -- GLX loaded
+    -- and rendered on the GPU while `libEGL_nvidia.so.0` never loaded at all
+    -- and EGL silently fell back to zink. A probe that only covered what the
+    -- GLX wiring touches would have reported a healthy stack.
+    --
+    -- The record exists so nothing probes again later. A reader that
+    -- re-derives this is a second answerer, and the sentinels in this same
+    -- file already set the precedent: read the state, do not re-measure.
+    local ENTRY_POINTS = {
+        "libEGL_%s.so.0", "libGLX_%s.so.0",
+        "libGLESv1_CM_%s.so.1", "libGLESv2_%s.so.2",
+    }
+    local lines = { "dispatch=" .. dispatch }
+    for _, v in ipairs(_GLX_VENDORS) do
+        local dir = pkginfo.dep_install_dir(v.dep)
+        if dir and dir ~= "" then
+            for _, pat in ipairs(ENTRY_POINTS) do
+                local soname = string.format(pat, v.vendor)
+                local lib = path.join(dir, "lib", soname)
+                if os.isfile(lib) then
+                    local host = graphics.host_vendor_behind(lib)
+                    if not host then
+                        -- No absolute DT_NEEDED: this vendor is OURS, built
+                        -- against our payloads. There is no host closure to
+                        -- check, which is not the same as a failed check.
+                        table.insert(lines, "vendor=" .. soname .. " state=native")
+                    else
+                        local gaps = graphics.vendor_closure_gaps(lib, host)
+                        if not gaps.ok then
+                            table.insert(lines, "vendor=" .. soname .. " state=unverified")
+                            log.warn("%s: cannot verify its dependency closure "
+                                     .. "(readelf or patchelf unavailable); if it "
+                                     .. "is incomplete, GL renders through another "
+                                     .. "driver and says nothing", soname)
+                        elseif gaps.reason == "tag" then
+                            table.insert(lines, "vendor=" .. soname
+                                         .. " state=broken reason=runpath-not-transitive")
+                            log.warn("%s cannot load the host driver behind it: "
+                                     .. "this interposer carries DT_RUNPATH, "
+                                     .. "which is not transitive, so the host "
+                                     .. "driver reaches none of our payloads. "
+                                     .. "glvnd falls back to another vendor "
+                                     .. "WITHOUT saying so -- GL still renders, "
+                                     .. "just not on this driver.", soname)
+                        elseif #gaps.missing > 0 then
+                            table.insert(lines, "vendor=" .. soname
+                                         .. " state=broken missing="
+                                         .. table.concat(gaps.missing, ","))
+                            log.warn("%s cannot load: the host driver behind it "
+                                     .. "needs %s, which nothing on its search "
+                                     .. "path provides. glvnd falls back to "
+                                     .. "another vendor WITHOUT saying so -- GL "
+                                     .. "still renders, just not on this driver.",
+                                     soname, table.concat(gaps.missing, ", "))
+                        else
+                            table.insert(lines, "vendor=" .. soname .. " state=ok")
+                        end
+                    end
+                end
+            end
+        end
+    end
+    graphics.record_wiring(dispatch, lines)
+
     if n == 0 then
         -- Not fatal: a stack with no GLX vendor still runs, on llvmpipe. It
         -- must not do that quietly -- llvmpipe and an RTX 4080 draw the same
