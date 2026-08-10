@@ -135,11 +135,29 @@ package = {
                     -- RADV and its manifest, and without libvulkan.so.1 nothing
                     -- ever reads it -- which also leaves zink dead.
                     "xim:vulkan-loader@>=1.4",
+                    -- The GL dispatch. It arrives transitively through mesa
+                    -- anyway; it is declared HERE because config() wires the
+                    -- GLX vendor libraries into its payload, and a transitive
+                    -- dependency has no resolver record to ask for -- the
+                    -- query would just return nil (openxlings/xlings#524).
+                    --
+                    -- The lower bound is the version that carries the vendor
+                    -- directory and the `$ORIGIN/glx-vendor` RPATH, so a home
+                    -- upgrading from an older stack actually re-runs
+                    -- libglvnd's config instead of keeping a libGLX.so.0 that
+                    -- can reach no vendor at all.
+                    "xim:libglvnd@>=1.7.0.1",
                 },
             },
-            ["latest"] = { ref = "0.1.0" },
+            ["latest"] = { ref = "0.1.1" },
             -- No payload. This package is its dependency list and the report
             -- below; there is nothing to download.
+            --
+            -- 0.1.1 exists so an already-assembled home re-runs config() and
+            -- picks up the GLX vendor wiring. Without a new key the hook never
+            -- fires again and the fix reaches only fresh installs -- silently,
+            -- which is the failure mode this stack keeps producing.
+            ["0.1.1"] = { },
             ["0.1.0"] = { },
         },
     },
@@ -148,6 +166,56 @@ package = {
 import("xim.libxpkg.log")
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.pkgindex.graphics")
+
+-- Wire every GLX vendor in this stack into the dispatch's vendor directory.
+--
+-- glvnd dlopens `libGLX_<vendor>.so.0` by name from inside libGLX.so.0, and
+-- there is no GLX counterpart to `egl_vendor.d` to point at -- see
+-- libs/graphics.lua GLX_VENDOR_SUBDIR. libglvnd's config gives its own
+-- libGLX.so.0 an `$ORIGIN/glx-vendor` RPATH; this fills that directory.
+--
+-- Done by the assembler rather than by each vendor because a libglvnd
+-- reinstall wipes its payload, taking every registration with it, and the
+-- vendors do not reinstall just because their dependency did. This package
+-- declares all of them, so it installs last and can rebuild the whole set.
+--
+-- mesa is the software/AMD/Intel path; nvidia-gl-host-link bridges the
+-- proprietary driver. The WSL2 sentinel has no GLX vendor of its own -- it
+-- renders through mesa's d3d12 driver behind libGLX_mesa -- so it is not
+-- listed. A vendor whose library is absent (a sentinel on a host without that
+-- driver) is skipped, not an error.
+local _GLX_VENDORS = {
+    { dep = "xim:mesa",                 soname = "libGLX_mesa.so.0" },
+    { dep = "xim:nvidia-gl-host-link",  soname = "libGLX_nvidia.so.0" },
+}
+
+function __wire_glx_vendors()
+    local dispatch = pkginfo.dep_install_dir("xim:libglvnd")
+    if not dispatch or dispatch == "" then
+        log.error("cannot locate the libglvnd payload; GLX programs will find "
+                  .. "no vendor and fall back to software rendering")
+        return false
+    end
+
+    local found = {}
+    for _, v in ipairs(_GLX_VENDORS) do
+        local dir = pkginfo.dep_install_dir(v.dep)
+        if dir and dir ~= "" then
+            table.insert(found, { dir = dir, soname = v.soname })
+        end
+    end
+
+    local n = graphics.wire_glx_vendors(dispatch, found)
+    if n == 0 then
+        -- Not fatal: a stack with no GLX vendor still runs, on llvmpipe. It
+        -- must not do that quietly -- llvmpipe and an RTX 4080 draw the same
+        -- pixels, and this is the one place that difference is visible.
+        log.warn("no GLX vendor library was registered; GL will render in "
+                 .. "software. `xlings install xim:mesa` provides one.")
+    end
+    return true
+end
 
 function install()
     local dir = pkginfo.install_dir()
@@ -158,6 +226,10 @@ end
 
 function config()
     xvm.add(package.name)
+
+    -- Before the report below, so the banner describes a stack that is
+    -- actually wired rather than one that is only installed.
+    if not __wire_glx_vendors() then return false end
 
     -- Say which path this host actually took.
     --
@@ -180,8 +252,13 @@ function config()
         return (io.readfile(f) or ""):gsub("%s+$", "")
     end
 
-    local nv  = __sentinel_state("nvidia-gl-host-link", ".host-driver-version")
-    local wsl = __sentinel_state("wsl-gl-host-link", ".wsl-host")
+    -- Namespaced, as declared above. Bare names returned nil under explicit
+    -- dependency store roots (openxlings/xlings#524), and this one fails
+    -- SILENTLY: both sentinels read as absent, so the banner says "unknown"
+    -- and the user cannot tell a GPU install from an llvmpipe one -- which is
+    -- precisely the pair this banner exists to distinguish.
+    local nv  = __sentinel_state("xim:nvidia-gl-host-link", ".host-driver-version")
+    local wsl = __sentinel_state("xim:wsl-gl-host-link", ".wsl-host")
 
     log.info("graphics stack installed. On this host:")
     if nv and nv ~= "" then

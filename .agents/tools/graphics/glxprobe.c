@@ -12,20 +12,29 @@
 // about whose libGLX_nvidia was loaded -- the host binary under the host
 // loader prints exactly that whether or not our interposer exists.
 //
-// BUILD REQUIREMENT -- DT_RPATH, not DT_RUNPATH:
+// BUILD IT THE WAY A REAL CONSUMER BUILDS -- default dtags:
 //
 //   gcc -o glxprobe glxprobe.c -ldl \
 //       -Wl,--dynamic-linker=<subos>/lib/ld-linux-x86-64.so.2 \
-//       -Wl,-rpath,<subos>/lib -Wl,--disable-new-dtags
+//       -Wl,-rpath,<subos>/lib
 //
-// glvnd's dlopen of the vendor is served by the CALLING object's search
-// path, and libGLX.so.0's own RPATH is `$ORIGIN` -- it cannot see the vendor
-// package. What makes it resolve is that DT_RPATH is searched transitively up
-// the load chain to the executable, so the consumer's own RPATH serves the
-// dlopen. DT_RUNPATH is NOT transitive: build the same probe with
-// --enable-new-dtags (the default on many distros) and glvnd finds no vendor
-// at all -- `glXQueryServerString` returns null with the X connection and the
-// GLX extension both fine.
+// glvnd's dlopen of the vendor is served by the CALLING object's search path,
+// and the calling object is libGLX.so.0 -- not this probe.
+//
+// This comment used to state the opposite as a BUILD REQUIREMENT: add
+// `-Wl,--disable-new-dtags`, because DT_RPATH is searched transitively up the
+// load chain to the executable while DT_RUNPATH is not, so the consumer's own
+// rpath would serve the dlopen. The mechanism is real. Making it a
+// requirement on the CONSUMER was the defect: every build system emits plain
+// `-Wl,-rpath`, whose modern default is DT_RUNPATH, so the contract was one
+// no consumer could honour. It held only for hand-built probes -- which is to
+// say, only here. openxlings/xlings#525: mcpp's imgui template got
+// `GLX: No GLXFBConfigs returned` on a host whose own glxinfo was fine, and
+// every GLX check in this directory was green at the time.
+//
+// libglvnd's own libGLX.so.0 now carries `$ORIGIN/glx-vendor`, so the
+// reachability travels with the object that needs it. Build this probe with
+// the default and it is testing what users actually get.
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>

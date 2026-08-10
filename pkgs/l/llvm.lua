@@ -207,7 +207,10 @@ end
 -- contents (any `ld-*.so*`), mirroring glibc.lua's `exports.runtime.loader`
 -- declaration, so nothing here hardcodes an architecture.
 function __find_glibc_runtime()
-    local glibc_dir = pkginfo.dep_install_dir("glibc")
+    -- Namespaced, as declared -- see gcc.lua's copy of this helper and
+    -- openxlings/xlings#524. A bare name has no answer under explicit
+    -- dependency store roots.
+    local glibc_dir = pkginfo.dep_install_dir("xim:glibc")
     if not glibc_dir then return nil, nil end
 
     for _, libname in ipairs({"lib64", "lib"}) do
@@ -228,18 +231,27 @@ function __find_glibc_runtime()
 end
 
 -- Locate the linux-headers payload's include dir (this package's own dep).
--- xim:linux-headers is a thin delegator to scode:linux-headers, so the
--- xim-namespaced store entry can be a metadata-only husk — require the
--- actual payload marker (include/linux/limits.h) and fall back to the
--- scode namespace explicitly. Returns nil when absent (warn-level: the
--- cfg then omits the kernel-header line; compiles that need <linux/*.h>
--- surface a clear missing-header error instead of a broken install).
+--
+-- The payload marker (include/linux/limits.h) is still required rather than
+-- assumed, so a husk cannot pass for a payload. Returns nil when absent
+-- (warn-level: the cfg then omits the kernel-header line; compiles that need
+-- <linux/*.h> surface a clear missing-header error instead of a broken
+-- install).
+--
+-- The `scode:linux-headers` fallback that used to follow is gone. It rested
+-- on a premise that stopped being true in openxlings/xlings#366:
+-- `xim:linux-headers` was a thin delegator whose own store entry could be a
+-- metadata-only husk, and is now a self-contained prebuilt that carries the
+-- headers itself. The fallback also could not work any more -- `scode:
+-- linux-headers` is not declared here, so it has no resolver record, and an
+-- undeclared coordinate has no answer under explicit dependency store roots
+-- (openxlings/xlings#524). A branch that can only ever evaluate to nil is
+-- indistinguishable from one that works, which is how this class of defect
+-- survives.
 function __find_linux_headers_include()
-    for _, name in ipairs({"linux-headers", "scode:linux-headers"}) do
-        local dir = pkginfo.dep_install_dir(name)
-        if dir and os.isfile(path.join(dir, "include", "linux", "limits.h")) then
-            return path.join(dir, "include")
-        end
+    local dir = pkginfo.dep_install_dir("xim:linux-headers")
+    if dir and os.isfile(path.join(dir, "include", "linux", "limits.h")) then
+        return path.join(dir, "include")
     end
     return nil
 end

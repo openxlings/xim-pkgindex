@@ -34,6 +34,27 @@
 # Design: xlings/.agents/docs/2026-08-07-graphics-experience-industry-survey-and-plan.md §10
 set -uo pipefail
 
+# DT_RUNPATH, the default -- NOT --disable-new-dtags.
+#
+# These probes used to pass `-Wl,--disable-new-dtags`, which emits DT_RPATH.
+# DT_RPATH is searched TRANSITIVELY up the load chain, so the probe's own
+# rpath ended up serving glvnd's dlopen of the vendor from inside
+# libGLX.so.0. That works, and no real consumer does it: every build system
+# emits plain `-Wl,-rpath` with the modern default, which is DT_RUNPATH, and
+# DT_RUNPATH is not transitive. So every green GLX check here was bought with
+# a flag nobody passes -- openxlings/xlings#525, where mcpp's imgui template
+# got "GLX: No GLXFBConfigs returned" on a host whose own glxinfo was fine.
+#
+# Vendor reachability now lives where it belongs: libglvnd's own libGLX.so.0
+# carries $ORIGIN/glx-vendor. These probes therefore link the way a real
+# consumer links, and a failure here is a real failure.
+#
+# XLINGS_GFX_LEGACY_DTAGS=1 restores the old flag. Keep it for diagnosis
+# only: if the legacy build passes and the default one fails, the vendor
+# directory is the thing that is broken, not the rest of the stack.
+DTAGS=()
+[[ -n "${XLINGS_GFX_LEGACY_DTAGS:-}" ]] && DTAGS=(-Wl,--disable-new-dtags)
+
 SUBOS="gfxverify"; KEEP=0; JSON=0; XHOME_ARG=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -163,7 +184,7 @@ if [[ -n "$CC" && -f "$HERE/glprobe.c" ]]; then
   if "$CC" -O0 -o /tmp/gfxverify-probe "$HERE/glprobe.c" ${INC:+-I"$INC"} \
         -L"$S/lib" -lEGL -lGL -Wl,--dynamic-linker="$S/lib/ld-linux-x86-64.so.2" \
         -Wl,-rpath,"$S/lib" -Wl,-rpath-link,"$S/lib" -Wl,-rpath-link,"$S/usr/lib" \
-        -Wl,--disable-new-dtags 2>/tmp/gfxverify-probe.log; then
+        "${DTAGS[@]}" 2>/tmp/gfxverify-probe.log; then
     PROBE=/tmp/gfxverify-probe
   fi
 fi
