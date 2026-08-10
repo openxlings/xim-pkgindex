@@ -70,6 +70,13 @@ import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 import("xim.pkgindex.graphics")
 
+-- Single-quote for `sh -c`. Same helper shape as gcc.lua's: the paths here are
+-- ours, but a store path containing a quote would turn a command into
+-- something unparseable, and `$ORIGIN` must survive the shell verbatim.
+function __shq(s)
+    return "'" .. tostring(s):gsub("'", "'\\''") .. "'"
+end
+
 -- Give libGLX.so.0 a search path that reaches the GLX vendor libraries.
 --
 -- glvnd builds `libGLX_<vendor>.so.0` and dlopens it BY NAME -- there is no
@@ -109,23 +116,74 @@ function __wire_glx_vendor_search_path()
     -- problem being fixed.
     fs.mkdir_p(path.join(pkginfo.install_dir(), graphics.GLX_VENDOR_SUBDIR))
 
-    local want = "$ORIGIN/glx-vendor"
+    -- An ABSOLUTE payload path, not `$ORIGIN/glx-vendor`.
+    --
+    -- `$ORIGIN` was the first implementation and it is wrong here. glibc
+    -- expands it against the directory the object was OPENED from, not the
+    -- realpath of the file: this payload is reached through the subos farm
+    -- symlink `<subos>/lib/libGLX.so.0`, so `$ORIGIN` became `<subos>/lib` and
+    -- the loader looked in `<subos>/lib/glx-vendor`, which nothing creates.
+    --
+    -- Measured with LD_DEBUG=libs on a real NVIDIA host:
+    --
+    --   search path=<subos>/lib/glx-vendor   (RPATH from file <subos>/lib/libGLX.so.0)
+    --
+    -- The mechanism was working; it was pointed one directory-tree away from
+    -- the vendors. An absolute payload path is immune to which symlink the
+    -- object was reached through, and it is subos-independent for the same
+    -- reason -- every subos's farm entry points at this one file, whose RPATH
+    -- names this one directory. Consistent with the rest of this RPATH, which
+    -- elfpatch already fills with absolute per-home payload paths.
+    local want = path.join(pkginfo.install_dir(), graphics.GLX_VENDOR_SUBDIR)
+
     -- --print-rpath prints DT_RUNPATH too, so this reads whatever tag is
     -- actually there.
+    -- patchelf by ABSOLUTE PATH. It is a BUILD dep, so xlings places it in the
+    -- store WITHOUT activating it in the subos workspace -- it is not on PATH
+    -- here. `os.iorun` returns "" on failure and swallows stderr, so a bare
+    -- name fails silently and looks exactly like "nothing to do". CI caught
+    -- this: the install aborted with "patchelf missing or refused" on a runner
+    -- where patchelf was installed the whole time.
+    local pe = "patchelf"
+    local bd = pkginfo.build_dep and pkginfo.build_dep("patchelf")
+    if bd and bd.bin and os.isfile(path.join(bd.bin, "patchelf")) then
+        pe = path.join(bd.bin, "patchelf")
+    end
+
     local current = os.iorun(string.format(
-        [[patchelf --print-rpath "%s"]], dispatch))
+        [[%s --print-rpath "%s"]], pe, dispatch))
     current = current and current:gsub("%s+$", "") or ""
 
     if current:find(want, 1, true) then return true end
-    local merged = (current ~= "") and (current .. ":" .. want) or want
-    os.exec(string.format([[patchelf --force-rpath --set-rpath %q %q]],
-                          merged, dispatch))
+
+    -- Rebuild rather than append. A first implementation put the literal
+    -- through `string.format("%q")` into `os.exec` -- Lua quoting, not shell
+    -- quoting -- so the shell expanded `$ORIGIN` as an unset variable and the
+    -- tag came out as a bare `/glx-vendor`: an absolute path that exists
+    -- nowhere. Measured on a real install. Appending on top of that would
+    -- leave the corpse in place forever, so any entry whose last component is
+    -- `glx-vendor` is dropped first and the correct one added once. This also
+    -- makes the hook idempotent across re-installs.
+    local kept = {}
+    for entry in (current .. ":"):gmatch("([^:]*):") do
+        if entry ~= "" and not entry:match("/glx%-vendor$") then
+            table.insert(kept, entry)
+        end
+    end
+    table.insert(kept, want)
+    local merged = table.concat(kept, ":")
+
+    -- SINGLE quotes. `$ORIGIN` must reach patchelf literally, and `os.exec`
+    -- goes through a shell. `__shq` handles a path containing a quote, which
+    -- would otherwise turn the command into something unparseable.
+    os.exec(string.format([[%s --force-rpath --set-rpath %s %s]],
+                          pe, __shq(merged), __shq(dispatch)))
 
     -- Assert the result, do not assume it. patchelf may be absent, and a
     -- skipped rewrite here is indistinguishable from a working one until a GL
     -- program fails two layers away with a message about FBConfigs.
     local after = os.iorun(string.format(
-        [[patchelf --print-rpath "%s"]], dispatch))
+        [[%s --print-rpath "%s"]], pe, dispatch))
     if not (after and after:find(want, 1, true)) then
         log.error("failed to add %s to libGLX.so.0's RPATH (patchelf missing "
                   .. "or refused). GLX programs would find no vendor and "
