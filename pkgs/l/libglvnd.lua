@@ -70,6 +70,13 @@ import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 import("xim.pkgindex.graphics")
 
+-- Single-quote for `sh -c`. Same helper shape as gcc.lua's: the paths here are
+-- ours, but a store path containing a quote would turn a command into
+-- something unparseable, and `$ORIGIN` must survive the shell verbatim.
+function __shq(s)
+    return "'" .. tostring(s):gsub("'", "'\\''") .. "'"
+end
+
 -- Give libGLX.so.0 a search path that reaches the GLX vendor libraries.
 --
 -- glvnd builds `libGLX_<vendor>.so.0` and dlopens it BY NAME -- there is no
@@ -117,9 +124,29 @@ function __wire_glx_vendor_search_path()
     current = current and current:gsub("%s+$", "") or ""
 
     if current:find(want, 1, true) then return true end
-    local merged = (current ~= "") and (current .. ":" .. want) or want
-    os.exec(string.format([[patchelf --force-rpath --set-rpath %q %q]],
-                          merged, dispatch))
+
+    -- Rebuild rather than append. A first implementation put the literal
+    -- through `string.format("%q")` into `os.exec` -- Lua quoting, not shell
+    -- quoting -- so the shell expanded `$ORIGIN` as an unset variable and the
+    -- tag came out as a bare `/glx-vendor`: an absolute path that exists
+    -- nowhere. Measured on a real install. Appending on top of that would
+    -- leave the corpse in place forever, so any entry whose last component is
+    -- `glx-vendor` is dropped first and the correct one added once. This also
+    -- makes the hook idempotent across re-installs.
+    local kept = {}
+    for entry in (current .. ":"):gmatch("([^:]*):") do
+        if entry ~= "" and not entry:match("/glx%-vendor$") then
+            table.insert(kept, entry)
+        end
+    end
+    table.insert(kept, want)
+    local merged = table.concat(kept, ":")
+
+    -- SINGLE quotes. `$ORIGIN` must reach patchelf literally, and `os.exec`
+    -- goes through a shell. `__shq` handles a path containing a quote, which
+    -- would otherwise turn the command into something unparseable.
+    os.exec(string.format([[patchelf --force-rpath --set-rpath %s %s]],
+                          __shq(merged), __shq(dispatch)))
 
     -- Assert the result, do not assume it. patchelf may be absent, and a
     -- skipped rewrite here is indistinguishable from a working one until a GL
