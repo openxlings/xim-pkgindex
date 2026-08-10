@@ -337,6 +337,31 @@ function graphics.vendor_closure_gaps(interposer, host_vendor)
     -- reachability was false.
     local tags = os.iorun(string.format([[readelf -d "%s"]], interposer))
     if tags == "" then return out end
+    -- The tag on the INTERPOSER decides whether the host driver behind it can
+    -- resolve its own DT_NEEDED *from this library alone*. It does not decide
+    -- what happens in a real process, because a CONSUMER's DT_RPATH is
+    -- transitive: when an executable stamped that way opens this vendor, its
+    -- search path covers the whole chain and the host driver resolves.
+    --
+    -- Measured on one home, one interposer, changing only the consumer:
+    -- a DT_RUNPATH consumer cannot open libEGL_nvidia; a DT_RPATH consumer
+    -- loads it and renders on the GPU.
+    --
+    -- So this is NOT `broken`. Before libxpkg 0.0.57 nearly every installed
+    -- executable carried DT_RUNPATH and calling it broken was accurate in
+    -- practice; since 0.0.57 elfpatch stamps DT_RPATH on executables, so
+    -- installed programs reach the GPU through this vendor and only programs
+    -- the USER builds -- which still get DT_RUNPATH (openxlings/xlings#532) --
+    -- cannot. Reporting that as `broken` under-reports, which is the worse
+    -- direction: it sends someone to fix a problem that is not there and hides
+    -- the one that is. See openxlings/xlings#537.
+    -- The tag on the INTERPOSER decides whether the host driver behind it
+    -- resolves its own DT_NEEDED *from this library alone*. It does not decide
+    -- what happens in a process: a CONSUMER's DT_RPATH is transitive, so an
+    -- executable stamped that way covers this whole chain when it opens the
+    -- vendor. Measured -- DT_RUNPATH consumer cannot open libEGL_nvidia,
+    -- DT_RPATH loads it and renders on the GPU. The caller turns this into
+    -- `needs-transitive-consumer`, not `broken` (openxlings/xlings#537).
     if not tags:find("(RPATH)", 1, true) then
         out.ok = true
         out.reason = "tag"
