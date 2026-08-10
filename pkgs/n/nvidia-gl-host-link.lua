@@ -640,10 +640,28 @@ function __force_rpath_on_interposers(dir)
         pe = path.join(bd.bin, "patchelf")
     end
 
-    local names = {
-        "libEGL_nvidia.so.0", "libGLX_nvidia.so.0",
-        "libGLESv1_CM_nvidia.so.1", "libGLESv2_nvidia.so.2",
-    }
+    -- ONLY the GLX vendor. Measured, three ways, on an NVIDIA 550.144.03 host
+    -- with verify-host-link.sh (probes built with DEFAULT dtags):
+    --
+    --   all four RUNPATH (before any of this)   5 failed, 7 passed
+    --   all four RPATH                          2 failed, 10 passed
+    --   GLX only RPATH                          1 failed, 11 passed
+    --
+    -- GLX needs it because its vendor is reached by a bare-SONAME dlopen from
+    -- inside libGLX.so.0, and the host vendor behind our interposer carries no
+    -- search path of its own -- only a TRANSITIVE tag reaches its closure.
+    --
+    -- EGL does not, and is HARMED by it. Its vendor is named by an absolute
+    -- path in the glvnd JSON, so its closure already resolves; DT_RPATH is
+    -- transitive, so forcing it here pushes our farm and glibc lib64 into
+    -- every lookup libEGL_nvidia makes below itself, and `eglInitialize`
+    -- fails outright. Same reason the farm must never enter an executable's
+    -- RPATH -- one level down, and for a library.
+    --
+    -- GLES1/GLES2 are left alone for the same reason as EGL: nothing measured
+    -- says they need it, and "every entry point" is the rule for INTERPOSING,
+    -- not for tagging.
+    local names = { "libGLX_nvidia.so.0" }
     for _, name in ipairs(names) do
         local f = path.join(dir, "lib", name)
         if os.isfile(f) then
