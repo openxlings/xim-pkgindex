@@ -116,7 +116,26 @@ function __wire_glx_vendor_search_path()
     -- problem being fixed.
     fs.mkdir_p(path.join(pkginfo.install_dir(), graphics.GLX_VENDOR_SUBDIR))
 
-    local want = "$ORIGIN/glx-vendor"
+    -- An ABSOLUTE payload path, not `$ORIGIN/glx-vendor`.
+    --
+    -- `$ORIGIN` was the first implementation and it is wrong here. glibc
+    -- expands it against the directory the object was OPENED from, not the
+    -- realpath of the file: this payload is reached through the subos farm
+    -- symlink `<subos>/lib/libGLX.so.0`, so `$ORIGIN` became `<subos>/lib` and
+    -- the loader looked in `<subos>/lib/glx-vendor`, which nothing creates.
+    --
+    -- Measured with LD_DEBUG=libs on a real NVIDIA host:
+    --
+    --   search path=<subos>/lib/glx-vendor   (RPATH from file <subos>/lib/libGLX.so.0)
+    --
+    -- The mechanism was working; it was pointed one directory-tree away from
+    -- the vendors. An absolute payload path is immune to which symlink the
+    -- object was reached through, and it is subos-independent for the same
+    -- reason -- every subos's farm entry points at this one file, whose RPATH
+    -- names this one directory. Consistent with the rest of this RPATH, which
+    -- elfpatch already fills with absolute per-home payload paths.
+    local want = path.join(pkginfo.install_dir(), graphics.GLX_VENDOR_SUBDIR)
+
     -- --print-rpath prints DT_RUNPATH too, so this reads whatever tag is
     -- actually there.
     local current = os.iorun(string.format(
