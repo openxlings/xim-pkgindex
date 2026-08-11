@@ -249,6 +249,33 @@ function __wire_glx_vendors()
         "libEGL_%s.so.0", "libGLX_%s.so.0",
         "libGLESv1_CM_%s.so.1", "libGLESv2_%s.so.2",
     }
+    -- PROVENANCE: which payload each verdict is about.
+    --
+    -- This record is written by `graphics` and every line in it describes a
+    -- DIFFERENT package -- mesa, libglvnd, nvidia-gl-host-link. Those packages
+    -- upgrade on their own schedule, and until now nothing could tell that a
+    -- record had outlived what it describes. Measured on a real home: the
+    -- record was written at 01:37:17 and the nvidia payload it speaks for at
+    -- 01:38:14 -- the verdict predated its subject by 57 seconds.
+    --
+    -- The dispatch layer already had this (`dispatch=` -> the reader compares
+    -- it against what the farm resolves to, and says `stale wiring`). The
+    -- vendor layer had nothing.
+    --
+    -- WHAT THE READER CAN DO WITH IT decided the shape. "Is this the current
+    -- version of that package" is unanswerable there: `subos info` answers
+    -- from local state by contract and must not parse the index. A PATH is
+    -- different -- the reader can follow `glx-vendor/<soname>` and see whether
+    -- it still lands inside this directory, which is precisely what changes
+    -- when a vendor is upgraded and the assembler is not re-run. Local, cheap,
+    -- and it needs nobody's cooperation.
+    --
+    -- LAST ON THE LINE, because it is a path and a path may contain a space;
+    -- the reader takes the whole remainder, exactly as it does for `dispatch=`.
+    local function vendor_line(soname, dir, rest)
+        return "vendor=" .. soname .. " " .. rest .. " payload=" .. dir
+    end
+
     local lines = { "dispatch=" .. dispatch }
     for _, v in ipairs(_GLX_VENDORS) do
         local dir = pkginfo.dep_install_dir(v.dep)
@@ -263,7 +290,7 @@ function __wire_glx_vendors()
                         -- library, and it used to be recorded as `native` --
                         -- which the panel shows as a PASS. An absent
                         -- observation must never be spent as a verdict.
-                        table.insert(lines, "vendor=" .. soname .. " state=unverified")
+                        table.insert(lines, vendor_line(soname, dir, "state=unverified"))
                         log.warn("%s: cannot read its dynamic section (readelf "
                                  .. "unavailable); its wiring is unknown, not "
                                  .. "healthy", soname)
@@ -272,11 +299,11 @@ function __wire_glx_vendors()
                         -- our store: this vendor is OURS, built against our
                         -- payloads. There is no host closure to check, which
                         -- is not the same as a failed check.
-                        table.insert(lines, "vendor=" .. soname .. " state=native")
+                        table.insert(lines, vendor_line(soname, dir, "state=native"))
                     else
                         local gaps = graphics.vendor_closure_gaps(lib, host)
                         if not gaps.ok then
-                            table.insert(lines, "vendor=" .. soname .. " state=unverified")
+                            table.insert(lines, vendor_line(soname, dir, "state=unverified"))
                             log.warn("%s: cannot verify its dependency closure "
                                      .. "(readelf or patchelf unavailable); if it "
                                      .. "is incomplete, GL renders through another "
@@ -302,8 +329,8 @@ function __wire_glx_vendors()
                             -- sends someone to fix a problem that is not there
                             -- and hides the one that is
                             -- (openxlings/xlings#537).
-                            table.insert(lines, "vendor=" .. soname
-                                         .. " state=needs-transitive-consumer")
+                            table.insert(lines, vendor_line(soname, dir,
+                                         "state=needs-transitive-consumer"))
                             log.warn("%s carries DT_RUNPATH. Installed "
                                      .. "programs still reach it -- their own "
                                      .. "DT_RPATH is transitive and covers this "
@@ -313,9 +340,9 @@ function __wire_glx_vendors()
                                      .. "elsewhere (openxlings/xlings#532).",
                                      soname)
                         elseif #gaps.missing > 0 then
-                            table.insert(lines, "vendor=" .. soname
-                                         .. " state=broken missing="
-                                         .. table.concat(gaps.missing, ","))
+                            table.insert(lines, vendor_line(soname, dir,
+                                         "state=broken missing="
+                                         .. table.concat(gaps.missing, ",")))
                             log.warn("%s cannot load: the host driver behind it "
                                      .. "needs %s, which nothing on its search "
                                      .. "path provides. glvnd falls back to "
@@ -323,7 +350,7 @@ function __wire_glx_vendors()
                                      .. "still renders, just not on this driver.",
                                      soname, table.concat(gaps.missing, ", "))
                         else
-                            table.insert(lines, "vendor=" .. soname .. " state=ok")
+                            table.insert(lines, vendor_line(soname, dir, "state=ok"))
                         end
                     end
                 end
