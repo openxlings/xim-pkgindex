@@ -41,7 +41,20 @@ package = {
             -- once the interpreter moves there is no host fallback — so
             -- gcc-runtime is not an optional extra, it is the rest of the
             -- closure.
-            deps = { "xim:glibc@>=2.38", "xim:gcc-runtime@>=13" },
+            --
+            -- zlib and libX11 are NOT optional extras either -- they are the
+            -- rest of the DT_NEEDED closure, measured over every ELF in the
+            -- payload rather than assumed:
+            --
+            --   libz.so.1    <- lib/libslang-llvm.so   (the LLVM downstream)
+            --   libX11.so.6  <- lib/libgfx.so.*        (slang's graphics layer)
+            --
+            -- libgfx is a leaf here (nothing in bin/ links it), but it is not
+            -- dropped from the payload: it is what upstream ships, and a
+            -- consumer that links or dlopens it has to find libX11 or it fails
+            -- to load. Behind our loader there is no host fallback.
+            deps = { "xim:glibc@>=2.38", "xim:gcc-runtime@>=13",
+                     "xim:zlib@>=1.3", "xim:libX11@>=1.8" },
             source = "https://github.com/shader-slang/slang/releases/download/v${version}/slang-${version}-linux-${arch}.${ext}",
             ["latest"] = { ref = "2026.14.1" },
             ["2026.14.1"] = {
