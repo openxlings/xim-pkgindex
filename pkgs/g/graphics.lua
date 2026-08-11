@@ -157,7 +157,7 @@ package = {
                     "xim:libglvnd@>=1.7.0.1",
                 },
             },
-            ["latest"] = { ref = "0.1.4" },
+            ["latest"] = { ref = "0.1.5" },
             -- No payload. This package is its dependency list and the report
             -- below; there is nothing to download.
             --
@@ -179,6 +179,15 @@ package = {
             -- a vendor that is a bare symlink to the host driver. Measured on
             -- a real home, ALL SIX vendors were recorded `native` -- a pass --
             -- while the stack was wired to nothing.
+            -- 0.1.5 re-runs config() so an already-assembled home re-records
+            -- its wiring WITH the payload each verdict was measured against.
+            -- The reader (xlings 2026.8.11.2) expires a verdict whose vendor
+            -- symlink no longer lands inside that directory -- and a record
+            -- without the field produces no verdict at all, by design. So
+            -- without this key the read side would be permanently inert on
+            -- every home that already has the stack: safe, and useless. The
+            -- same reasoning as every key above it.
+            ["0.1.5"] = { },
             ["0.1.4"] = { },
             ["0.1.3"] = { },
             ["0.1.2"] = { },
