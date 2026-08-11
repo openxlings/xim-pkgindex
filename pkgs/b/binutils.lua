@@ -30,7 +30,22 @@ package = {
 
     xpm = {
         linux = {
-            deps = { "xim:glibc@>=2.39" },
+            -- gcc-runtime is not decoration: `ld.gold` in this payload has
+            -- DT_NEEDED on libstdc++.so.6 and libgcc_s.so.1, and once the
+            -- payload uses OUR loader there is no host fallback behind it --
+            -- its ld.so.cache path exists on no machine. So those two sonames
+            -- were simply unresolvable and `ld.gold` could not run.
+            --
+            -- This was true before this change and invisible: the dependency
+            -- closure check (rule D) only runs on packages a PR touches, and
+            -- nothing had touched binutils since the check existed. Bumping to
+            -- 2.42.1 for the `ld` wrapper is what put it in front of the gate
+            -- -- which is the gate working, not the bump breaking anything.
+            --
+            -- elfpatch reads gcc-runtime's exports.runtime.libdirs and appends
+            -- it to this payload's RPATH at install time, so nothing here
+            -- hardcodes a path. No cycle: gcc-runtime depends only on glibc.
+            deps = { "xim:glibc@>=2.39", "xim:gcc-runtime@>=15" },
             ["latest"] = { ref = "2.42.1" },
             -- SAME ARTIFACT, NEW KEY. The bytes are identical to 2.42 -- the
             -- sha256 below is the 2.42 tarball's -- and the only thing that
