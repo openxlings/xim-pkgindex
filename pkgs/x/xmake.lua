@@ -21,15 +21,37 @@ package = {
     programs = {"xmake"},
     xvm_enable = true,
 
-    -- v3.0.8 deliberately skipped: although the v3.0.8 release.yml says
-    -- the Linux bundle is built with `xrepo env -b zig xmake f --embed=y
-    -- --toolchain=zig --cross=x86_64-linux-musl`, the artifact actually
+    -- v3.0.8 and everything after it deliberately skipped: although the v3.0.8
+    -- release.yml says the Linux bundle is built with `xrepo env -b zig xmake f
+    -- --embed=y --toolchain=zig --cross=x86_64-linux-musl`, the artifact actually
     -- uploaded to the v3.0.8 release page is *not* a musl-static binary —
     -- it's glibc-dynamic with INTERP=/lib64/ld-linux-x86-64.so.2 and
     -- DT_NEEDED libncurses.so.6 + libtinfo.so.6, breaking on Alpine /
     -- distroless / any host without those libs. v3.0.7 (and prior) are
     -- correctly musl-static, so we pin `latest = 3.0.7` until upstream
-    -- re-uploads a corrected v3.0.8 bundle. Tracking issue: TBD.
+    -- re-uploads a corrected bundle. Tracking issue: TBD.
+    --
+    -- RE-CHECKED 2026-08-12 against v3.1.0 (the then-current stable, released
+    -- 2026-08-08) — still not fixed, so the pin stays. Measured, not read off the
+    -- release notes, on xmake-bundle-v3.1.0.linux.x86_64
+    -- (sha256 1baab457f3bf11032e82c6210bc5bec04f5b902962da17dab53cae10783170de):
+    --
+    --     Type: DYN (PIE), has PT_INTERP
+    --     NEEDED: libncurses.so.6, libtinfo.so.6, libm.so.6, libc.so.6
+    --
+    -- Bumping is not merely "less portable", it would REGRESS arch coverage: a
+    -- dynamic bundle needs `xim:glibc` (+ ncurses) declared, xim resolves deps
+    -- per-OS rather than per-arch, and glibc is `archs = {"x86_64"}` — so every
+    -- linux/aarch64 install would start failing at dependency resolution. The
+    -- static 3.0.7 bundle needs no deps at all and works on both arches. Record
+    -- the measurement here so the next bump attempt costs one readelf, not a
+    -- rediscovery.
+    --
+    -- Also considered and rejected: xmake-bundle-v3.1.0.cosmocc (Cosmopolitan
+    -- APE). It genuinely has no ELF NEEDED, but it is a DOS/MBR-header hybrid
+    -- that rewrites itself on first run — it trips binfmt_misc assumptions and
+    -- noexec/read-only payload dirs, which is the opposite of what a package
+    -- payload should do.
     xpm = {
         linux = {
             -- ncurses declared (2026-08-09), measured with readelf, and the
