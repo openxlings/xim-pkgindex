@@ -68,6 +68,21 @@
 -- manage plugins is a worse default than one that says what it needs, and the
 -- gap closes on its own the moment xim:pnpm gains an arm64 asset.
 --
+-- **No `xim:npm`.** node.lua's config() already does
+-- `xvm.add("npm", ...)` and `xvm.add("npx", ...)` off the node payload's own
+-- bin directory, so npm arrives with node — verified: the node payload ships
+-- `bin/npm`. Declaring xim:npm as well is not merely redundant, it puts a
+-- SECOND OWNER on the xvm name `npm` with a different version string
+-- (`11.2.0` from xim:npm vs `node-24.19.0` from xim:node). Two owners with
+-- different versions is the case the spec calls out as the dangerous one:
+-- it is accepted silently at install time and only bites later, when an
+-- `xvm use` on one side rewrites what the other side pointed at. Measured on
+-- a live machine: `npm` already showed three actives across 19 subos in both
+-- naming schemes at once.
+--
+-- (bun.lua and openclaw.lua declare the same redundant pair; out of scope
+-- here, worth a follow-up.)
+--
 -- `xim:node@>=24`, and that floor is upstream's own, not a round number.
 -- The repo root package.json declares
 -- `engines: { node: "^22.19.0 || >=24.0.0" }`. The 22.x arm is unreachable
@@ -118,19 +133,19 @@ package = {
 
     xpm = {
         linux = {
-            deps = {"xim:node@>=24", "xim:npm", "xim:pnpm"},
+            deps = {"xim:node@>=24", "xim:pnpm"},
             ["latest"] = { ref = "0.1.0-rc.6" },
             ["0.1.0-rc.6"] = {},
             ["0.1.0-rc.3"] = {},
         },
         macosx = {
-            deps = {"xim:node@>=24", "xim:npm", "xim:pnpm"},
+            deps = {"xim:node@>=24", "xim:pnpm"},
             ["latest"] = { ref = "0.1.0-rc.6" },
             ["0.1.0-rc.6"] = {},
             ["0.1.0-rc.3"] = {},
         },
         windows = {
-            deps = {"xim:node@>=24", "xim:npm", "xim:pnpm"},
+            deps = {"xim:node@>=24", "xim:pnpm"},
             ["latest"] = { ref = "0.1.0-rc.6" },
             ["0.1.0-rc.6"] = {},
             ["0.1.0-rc.3"] = {},
