@@ -161,6 +161,11 @@ function install()
         os.execute("node --version > /dev/null 2>&1")
     end
 
+    -- npm writes straight to the terminal, and its first line lands flush
+    -- against whatever xlings printed last, so the two read as one message.
+    -- One blank line separates them.
+    print("")
+
     -- Lifecycle scripts run on purpose. See the header: node-pty's install
     -- script is the only thing that produces pty.node on Linux.
     os.exec(string.format(
