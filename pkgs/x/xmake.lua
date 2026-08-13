@@ -108,11 +108,15 @@ package = {
             ["3.1.0"] = {
                 sha256 = "1baab457f3bf11032e82c6210bc5bec04f5b902962da17dab53cae10783170de",
             },
-            -- Last musl-static bundle. Kept for Alpine / distroless form-H
-            -- hosts; see the header comment.
+            -- Last musl-static bundle (verified: `statically linked`, zero
+            -- DT_NEEDED). Kept for Alpine / distroless form-H hosts; see the
+            -- header comment. Its sha256 used to be nil — on the one package
+            -- whose whole story is "upstream shipped something other than what
+            -- the release notes claimed", an unpinned fallback was the wrong
+            -- gap to leave open. Resolves through the `source` map above, so it
+            -- gets the CN leg too.
             ["3.0.7"] = {
-                url = "https://github.com/xmake-io/xmake/releases/download/v3.0.7/xmake-bundle-v3.0.7.linux.x86_64",
-                sha256 = nil,
+                sha256 = "59371d344722fd7f2883d1d5ce347a3bac0493d3e80e85a8e438603eaee9b958",
             },
         },
         macosx = {
@@ -125,8 +129,7 @@ package = {
                 sha256 = "296ee53b26e17adc2de5533e3695234c843089712c372db611293ad96ba8ab45",
             },
             ["3.0.7"] = {
-                url = "https://github.com/xmake-io/xmake/releases/download/v3.0.7/xmake-bundle-v3.0.7.macos.arm64",
-                sha256 = nil,
+                sha256 = "999093c3455d3537d6012a5d51a05d736275d55dfb43e59a4b84d519f3e97966",
             },
         },
         windows = {
@@ -139,8 +142,7 @@ package = {
                 sha256 = "41f497ed71f076a9ecf14100e77af5509656a5e41dfd4da8d068b1319a8ef895",
             },
             ["3.0.7"] = {
-                url = "https://github.com/xmake-io/xmake/releases/download/v3.0.7/xmake-bundle-v3.0.7.win64.exe",
-                sha256 = nil,
+                sha256 = "beb282f889357c7a6125ccf334c2476aebf26119a12e0cb86cf4e7d272192f68",
             },
         },
     },
