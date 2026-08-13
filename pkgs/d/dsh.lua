@@ -52,16 +52,21 @@
 -- versions. Measured, not assumed — a pty.node built under node 26.7.0
 -- loads under node 24.15.0.
 --
--- **pnpm is deliberately NOT in `deps`.** `dsh plugin --profile <p> add ...`
--- shells out to `pnpm` off PATH — the CLI even says so when it is missing
--- (`dsh: pnpm not found on PATH — install pnpm to manage profile plugins`),
--- so it is tempting to declare it. But xim:pnpm ships only
--- `pnpm-linux-x64` / `pnpm-win32-x64` / `pnpm-darwin-arm64`, i.e. it is
--- `archs = {"x86_64"}` on Linux, while dsh itself is JavaScript and runs
--- wherever node does. A hard dep would therefore make `xlings install dsh`
--- fail outright on aarch64 Linux to enable one optional subcommand. Users
--- who want profile plugin management run `xlings install pnpm` alongside;
--- booting a profile, the web UI and headless runs need none of it.
+-- **pnpm IS a dependency**, and it belongs here rather than in every install
+-- command a user is told to type. `dsh plugin --profile <p> add ...` shells
+-- out to `pnpm` off PATH — the CLI says so itself when it is missing
+-- (`dsh: pnpm not found on PATH — install pnpm to manage profile plugins`) —
+-- and upstream's own removal note is explicit: "Profile installation requires
+-- `pnpm` on the host `PATH`."
+--
+-- The cost, stated rather than discovered later: xim:pnpm ships only
+-- `pnpm-linux-x64` / `pnpm-win32-x64` / `pnpm-darwin-arm64`, so it is
+-- `archs = {"x86_64"}` on Linux while dsh itself is JavaScript and runs
+-- wherever node does. Declaring it therefore makes `xlings install dsh` fail
+-- on aarch64 Linux, where it previously succeeded with plugin management
+-- broken. That trade was made deliberately: an install that works but cannot
+-- manage plugins is a worse default than one that says what it needs, and the
+-- gap closes on its own the moment xim:pnpm gains an arm64 asset.
 --
 -- `xim:node@>=24`, and that floor is upstream's own, not a round number.
 -- The repo root package.json declares
@@ -97,7 +102,13 @@ package = {
     docs = "https://github.com/deepseek-ai/deepseek-harness/blob/master/docs/user/index.md",
 
     type = "package",
-    archs = {"x86_64", "aarch64"},
+    -- x86_64 only, and that is a consequence of the pnpm dep above rather
+    -- than a property of dsh: dsh is JavaScript and runs wherever node does,
+    -- but xim:pnpm has no aarch64 asset, so the dependency closure cannot
+    -- resolve there. Declaring aarch64 while the install cannot succeed would
+    -- be a claim the index cannot honour. Restore it the moment xim:pnpm
+    -- ships arm64.
+    archs = {"x86_64"},
     status = "dev", -- upstream: developer preview, breaking changes expected
     categories = {"ai", "cli", "tools"},
     keywords = {"dsh", "deepseek", "deepseek-harness", "agent", "cli", "cordis"},
@@ -107,19 +118,19 @@ package = {
 
     xpm = {
         linux = {
-            deps = {"xim:node@>=24", "xim:npm"},
+            deps = {"xim:node@>=24", "xim:npm", "xim:pnpm"},
             ["latest"] = { ref = "0.1.0-rc.6" },
             ["0.1.0-rc.6"] = {},
             ["0.1.0-rc.3"] = {},
         },
         macosx = {
-            deps = {"xim:node@>=24", "xim:npm"},
+            deps = {"xim:node@>=24", "xim:npm", "xim:pnpm"},
             ["latest"] = { ref = "0.1.0-rc.6" },
             ["0.1.0-rc.6"] = {},
             ["0.1.0-rc.3"] = {},
         },
         windows = {
-            deps = {"xim:node@>=24", "xim:npm"},
+            deps = {"xim:node@>=24", "xim:npm", "xim:pnpm"},
             ["latest"] = { ref = "0.1.0-rc.6" },
             ["0.1.0-rc.6"] = {},
             ["0.1.0-rc.3"] = {},
