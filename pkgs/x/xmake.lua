@@ -21,90 +21,128 @@ package = {
     programs = {"xmake"},
     xvm_enable = true,
 
-    -- v3.0.8 and everything after it deliberately skipped: although the v3.0.8
-    -- release.yml says the Linux bundle is built with `xrepo env -b zig xmake f
-    -- --embed=y --toolchain=zig --cross=x86_64-linux-musl`, the artifact actually
-    -- uploaded to the v3.0.8 release page is *not* a musl-static binary —
-    -- it's glibc-dynamic with INTERP=/lib64/ld-linux-x86-64.so.2 and
-    -- DT_NEEDED libncurses.so.6 + libtinfo.so.6, breaking on Alpine /
-    -- distroless / any host without those libs. v3.0.7 (and prior) are
-    -- correctly musl-static, so we pin `latest = 3.0.7` until upstream
-    -- re-uploads a corrected bundle. Tracking issue: TBD.
+    -- WHY `latest` TRACKS A GLIBC-DYNAMIC BUNDLE, AND WHY 3.0.7 IS KEPT
     --
-    -- RE-CHECKED 2026-08-12 against v3.1.0 (the then-current stable, released
-    -- 2026-08-08) — still not fixed, so the pin stays. Measured, not read off the
-    -- release notes, on xmake-bundle-v3.1.0.linux.x86_64
-    -- (sha256 1baab457f3bf11032e82c6210bc5bec04f5b902962da17dab53cae10783170de):
+    -- Upstream stopped shipping a musl-static Linux bundle at v3.0.8. The
+    -- v3.0.8 release.yml says it is cross-built with `xrepo env -b zig xmake f
+    -- --embed=y --toolchain=zig --cross=x86_64-linux-musl`, but the artifact
+    -- actually uploaded is glibc-dynamic, and that has not been corrected
+    -- since. RE-MEASURED 2026-08-13 on xmake-bundle-v3.1.0.linux.x86_64
+    -- (sha256 1baab457f3bf11032e82c6210bc5bec04f5b902962da17dab53cae10783170de)
+    -- with readelf, not read off the release notes:
     --
-    --     Type: DYN (PIE), has PT_INTERP
-    --     NEEDED: libncurses.so.6, libtinfo.so.6, libm.so.6, libc.so.6
+    --     Type:        DYN (PIE), has PT_INTERP
+    --     NEEDED:      libncurses.so.6, libtinfo.so.6, libm.so.6, libc.so.6
+    --     max GLIBC_:  2.38          <- the floor declared in linux deps below
     --
-    -- Bumping is not merely "less portable", it would REGRESS arch coverage: a
-    -- dynamic bundle needs `xim:glibc` (+ ncurses) declared, xim resolves deps
-    -- per-OS rather than per-arch, and glibc is `archs = {"x86_64"}` — so every
-    -- linux/aarch64 install would start failing at dependency resolution. The
-    -- static 3.0.7 bundle needs no deps at all and works on both arches. Record
-    -- the measurement here so the next bump attempt costs one readelf, not a
-    -- rediscovery.
+    -- The index pinned `latest = 3.0.7` over this until 2026-08-13, on the
+    -- argument that a bump would REGRESS arch coverage: a dynamic bundle must
+    -- declare `xim:glibc`, xim resolves deps per-OS rather than per-arch, and
+    -- glibc is `archs = {"x86_64"}`, so linux/aarch64 would start failing at
+    -- dependency resolution. That argument does not survive contact with this
+    -- file, on two counts:
+    --
+    --   * this recipe ALREADY carries an x86_64-only linux dep. `ncurses` is
+    --     `archs = {"x86_64"}` and has been in the linux block since
+    --     2026-08-09, so adding glibc spends no coverage that is still unspent.
+    --   * upstream publishes no linux-aarch64 bundle at all. The v3.1.0 assets
+    --     are linux.x86_64, macos.arm64, macos.x86_64, win32/win64/arm64.exe
+    --     and cosmocc — and the linux URL below is hardcoded `.linux.x86_64`.
+    --     "3.0.7 is zero-dep and works on both arches" was never true of linux;
+    --     the aarch64 in `archs` above is the macOS bundle.
+    --
+    -- So the dependency is declarable and xlings resolves it: in form X the
+    -- closure installs glibc + ncurses from the index, in form H they come from
+    -- the host. That is the same trade bazel.lua and cmake.lua already make, and
+    -- it is why `latest` now tracks 3.1.0.
+    --
+    -- 3.0.7 is KEPT rather than deleted: it is the last musl-static bundle and
+    -- the only entry that still runs on Alpine / distroless in form H, where
+    -- 3.1.0 will not. Pin it explicitly (`xmake@3.0.7`) on such hosts.
     --
     -- Also considered and rejected: xmake-bundle-v3.1.0.cosmocc (Cosmopolitan
     -- APE). It genuinely has no ELF NEEDED, but it is a DOS/MBR-header hybrid
     -- that rewrites itself on first run — it trips binfmt_misc assumptions and
     -- noexec/read-only payload dirs, which is the opposite of what a package
     -- payload should do.
+    --
+    -- NEXT BUMP costs one readelf on the new linux bundle: if NEEDED or the max
+    -- GLIBC_ reference move, update the linux deps; if upstream ever restores a
+    -- musl-static bundle, the deps can be dropped entirely.
     xpm = {
         linux = {
-            -- ncurses declared (2026-08-09), measured with readelf, and the
-            -- measurement is version-split:
+            -- Both deps are read straight off the readelf measurement above,
+            -- and as of `latest = 3.1.0` they are live requirements rather
+            -- than anticipatory ones: glibc supplies libc.so.6 + libm.so.6 at
+            -- GLIBC_2.38, ncurses supplies libncurses.so.6 + libtinfo.so.6.
+            -- (While `latest` was the static 3.0.7 this block drew the D1
+            -- "declares X, but nothing in the payload names a soname it
+            -- provides" warning; the bump is what clears it.)
             --
-            --   3.0.7 (the pinned latest)  static, no INTERP, no NEEDED —
-            --                              needs nothing at runtime
-            --   3.0.8 (skipped, see above) glibc-dynamic, NEEDED
-            --                              libncurses.so.6 + libtinfo.so.6
+            -- They bite in form X / subos, where there is no host fallback and
+            -- libtinfo must come from the index — mcpp#392 is exactly an
+            -- xmake-adjacent binary crashing on that gap. In form H both
+            -- resolve from host SONAMEs and look redundant.
             --
-            -- So today this dep draws the D1 "declares X, but nothing in the
-            -- payload names a soname it provides" WARNING against 3.0.7, and
-            -- that is the accurate state: the declaration is for the moment
-            -- the pin moves to any dynamic bundle (3.0.8's shape), and for
-            -- form-X/subos consumers, where libtinfo must come from the index
-            -- because our loader has no host fallback — mcpp#392 is exactly
-            -- an xmake-adjacent binary crashing on that gap. The ecosystem-
-            -- side fix is this edge (ncurses provides the sonames); the
-            -- host-glibc side is C1's version floor in glibc.lua. Form H
-            -- resolution today is unchanged either way: host SONAMEs keep
-            -- working.
-            --
-            -- Bare name, not `xim:ncurses`, deliberately: ncurses is NEW in
-            -- the index, and a new name cannot be served by CI's overlay
-            -- (the compiled catalog has no entry; a miss triggers the
-            -- auto-refresh that clobbers the overlay). The harness registers
-            -- new packages under local:, and bare names prefer primary repos
+            -- Bare name for ncurses, not `xim:ncurses`, deliberately: ncurses
+            -- entered the index recently enough that check-dep-namespace.lua
+            -- still carries it as a not-yet-published exemption, and a name the
+            -- compiled catalog lacks cannot be served by CI's overlay (a miss
+            -- triggers the auto-refresh that clobbers the overlay). The harness
+            -- registers new packages under local:, and bare names prefer primary repos
             -- (local: in CI, xim: once published) over the scode sub-index —
             -- so the bare form resolves correctly in every state this recipe
             -- meets. posix-test.sh records the same rule: "a new package is
-            -- referenced bare, a changed published one with xim:".
-            deps = { "ncurses" },
-            url_template = "https://github.com/xmake-io/xmake/releases/download/v{version}/xmake-bundle-v{version}.linux.x86_64",
-            ["latest"] = { ref = "3.0.7" },
+            -- referenced bare, a changed published one with xim:". glibc is
+            -- long-published, so it takes the `xim:` form.
+            deps = { "ncurses", "xim:glibc@>=2.38" },
+            -- `source` map rather than `url_template`: it carries the CN leg,
+            -- and version-check.py's bump appends `["<ver>"] = { sha256 }`
+            -- against it, so the mirror survives future auto-bumps instead of
+            -- being flattened back to a single GitHub URL.
+            source = {
+                GLOBAL = "https://github.com/xmake-io/xmake/releases/download/v${version}/xmake-bundle-v${version}.linux.x86_64",
+                CN = "https://gitcode.com/xlings-res/xmake/releases/download/${version}/xmake-bundle-v${version}.linux.x86_64",
+            },
+            ["latest"] = { ref = "3.1.0" },
+            ["3.1.0"] = {
+                sha256 = "1baab457f3bf11032e82c6210bc5bec04f5b902962da17dab53cae10783170de",
+            },
+            -- Last musl-static bundle (verified: `statically linked`, zero
+            -- DT_NEEDED). Kept for Alpine / distroless form-H hosts; see the
+            -- header comment. Its sha256 used to be nil — on the one package
+            -- whose whole story is "upstream shipped something other than what
+            -- the release notes claimed", an unpinned fallback was the wrong
+            -- gap to leave open. Resolves through the `source` map above, so it
+            -- gets the CN leg too.
             ["3.0.7"] = {
-                url = "https://github.com/xmake-io/xmake/releases/download/v3.0.7/xmake-bundle-v3.0.7.linux.x86_64",
-                sha256 = nil,
+                sha256 = "59371d344722fd7f2883d1d5ce347a3bac0493d3e80e85a8e438603eaee9b958",
             },
         },
         macosx = {
-            url_template = "https://github.com/xmake-io/xmake/releases/download/v{version}/xmake-bundle-v{version}.macos.arm64",
-            ["latest"] = { ref = "3.0.7" },
+            source = {
+                GLOBAL = "https://github.com/xmake-io/xmake/releases/download/v${version}/xmake-bundle-v${version}.macos.arm64",
+                CN = "https://gitcode.com/xlings-res/xmake/releases/download/${version}/xmake-bundle-v${version}.macos.arm64",
+            },
+            ["latest"] = { ref = "3.1.0" },
+            ["3.1.0"] = {
+                sha256 = "296ee53b26e17adc2de5533e3695234c843089712c372db611293ad96ba8ab45",
+            },
             ["3.0.7"] = {
-                url = "https://github.com/xmake-io/xmake/releases/download/v3.0.7/xmake-bundle-v3.0.7.macos.arm64",
-                sha256 = nil,
+                sha256 = "999093c3455d3537d6012a5d51a05d736275d55dfb43e59a4b84d519f3e97966",
             },
         },
         windows = {
-            url_template = "https://github.com/xmake-io/xmake/releases/download/v{version}/xmake-bundle-v{version}.win64.exe",
-            ["latest"] = { ref = "3.0.7" },
+            source = {
+                GLOBAL = "https://github.com/xmake-io/xmake/releases/download/v${version}/xmake-bundle-v${version}.win64.exe",
+                CN = "https://gitcode.com/xlings-res/xmake/releases/download/${version}/xmake-bundle-v${version}.win64.exe",
+            },
+            ["latest"] = { ref = "3.1.0" },
+            ["3.1.0"] = {
+                sha256 = "41f497ed71f076a9ecf14100e77af5509656a5e41dfd4da8d068b1319a8ef895",
+            },
             ["3.0.7"] = {
-                url = "https://github.com/xmake-io/xmake/releases/download/v3.0.7/xmake-bundle-v3.0.7.win64.exe",
-                sha256 = nil,
+                sha256 = "beb282f889357c7a6125ccf334c2476aebf26119a12e0cb86cf4e7d272192f68",
             },
         },
     },
