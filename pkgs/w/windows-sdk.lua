@@ -230,8 +230,19 @@ local function fetch_verified(entry, dir)
     end
 
     local why = {}
-    for _, url in ipairs(sources(entry)) do
-        log.info("windows-sdk: fetching " .. entry.name .. " from " .. host_of(url))
+    for i, url in ipairs(sources(entry)) do
+        -- The FIRST address is the expected one; reaching a later one means
+        -- something is wrong upstream even though the install still succeeds.
+        -- That has to be louder than an info line, or "the mirror served it"
+        -- and "the mirror is dead and the CDN saved us" look identical from
+        -- outside -- and the second one is how a fallback rots unnoticed
+        -- until the day both addresses are gone.
+        if i > 1 then
+            log.warn("windows-sdk: " .. entry.name .. " -- falling back to " ..
+                     host_of(url) .. " after: " .. table.concat(why, "; "))
+        else
+            log.info("windows-sdk: fetching " .. entry.name .. " from " .. host_of(url))
+        end
         -- pcall: curl -f exits non-zero on a 404, and system.exec RAISES on a
         -- non-zero exit. Without this the first missing mirror would abort the
         -- install instead of falling through to the next address.
