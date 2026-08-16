@@ -65,6 +65,18 @@ import("xim.libxpkg.xvm")
 -- out rather than derived, so neither can drift into a guess.
 local SDK_DIR_VERSION = "10.0.26100.0"
 
+-- path.join mixes separators on Windows -- it keeps the backslashes already in
+-- the store path and adds forward ones -- and msiexec rejects the result:
+--
+--   msiexec /a "...\10.0.26100/.installers/Universal CRT ....msi" /qn ...
+--   exec failed after 1 attempt(s)
+--
+-- curl and tar do not care; msiexec does. Normalised at the call site rather
+-- than globally, so nothing else has to know.
+local function winpath(p)
+    return (p:gsub("/", "\\"))
+end
+
 local PAYLOADS = {
     { name = "Universal CRT Headers Libraries and Sources-x86_en-us.msi", msi = true,
       sha256 = "F611CE8A9E576E3383917B04B6FBE5EE6BED8363C1A2A8E9D6F8335CBB422675",
@@ -190,7 +202,7 @@ function install()
             -- and path.absolute is not in the xpkg sandbox. /qn only -- it is
             -- the same switch as /quiet, and msiexec takes one of them.
             system.exec(string.format('msiexec /a "%s" /qn TARGETDIR="%s"',
-                                     path.join(work, e.name), idir))
+                                     winpath(path.join(work, e.name)), winpath(idir)))
         end
     end
 
