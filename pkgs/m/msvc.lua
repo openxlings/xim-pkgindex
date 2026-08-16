@@ -340,24 +340,64 @@ function install()
 
     -- A .vsix is a zip. Windows 10 1803+ ships tar.exe, which reads zip and
     -- needs no PowerShell module and no temp COM object.
+    --
+    -- ⚠️ RELATIVE PATHS, from inside `work`. An absolute Windows path passed to
+    -- `tar -xf` is ambiguous:
+    --
+    --     tar -xf "C:\...\xim-x-msvc\14.44.35207/.payloads/Microsoft.VC...vsix"
+    --     tar: Cannot connect to C: resolve failed
+    --
+    -- GNU tar reads `host:path` before it reads a drive letter, so `C:` becomes
+    -- a hostname. Windows' own bsdtar does not -- which is why this passed the
+    -- index's windows-test (bsdtar from System32) and failed under mcpp's e2e,
+    -- where Git for Windows puts GNU tar first on PATH. Same recipe, same
+    -- runner image, different tar.
+    --
+    -- `--force-local` fixes it for GNU tar and is rejected by bsdtar, so it
+    -- trades one broken environment for the other. A relative name has no
+    -- colon at all and both accept it -- the same shape 7zip.lua already uses.
     local stage = path.join(work, "x")
-    for _, e in ipairs(payloads()) do
-        log.info("msvc: unpacking " .. e.name)
-        os.mkdir(stage)
-        system.exec(string.format('tar -xf "%s" -C "%s"', path.join(work, e.name), stage))
-        -- Everything useful lives under Contents/; the rest is vsix metadata.
-        local contents = path.join(stage, "Contents")
-        if os.isdir(contents) then
-            -- All four payloads unpack into the SAME VC/ tree, so this is a
-            -- merge, not a move. os.cp of a directory INTO an existing one of
-            -- the same name nests it -- measured on windows-sdk, which ended
-            -- up with Include/<ver>/<ver>/ that way -- and a recursive merge
-            -- in Lua would need os.files, which is not in the sandbox.
-            -- xcopy merges, ships with Windows, and returns 0 on success.
-            system.exec(string.format('xcopy "%s\\*" "%s\\" /E /I /Y /Q',
-                                      winpath(contents), winpath(idir)))
+
+    -- Leaving via `idir`, not via a saved `os.curdir()`.
+    --
+    -- `os.curdir` has ZERO uses across the whole index, and every previous
+    -- time this recipe reached for an xpkg-sandbox API with no precedent
+    -- (os.execv, path.absolute, os.files) it turned into an install-time
+    -- "attempt to call a nil value". `pkginfo.install_dir()` is used
+    -- everywhere and is a real directory that outlives `work` -- which is all
+    -- the restore actually needs.
+    --
+    -- pcall, so a raising `system.exec` cannot leave the process sitting in a
+    -- directory this function is about to delete. Everything after
+    -- `install()` in the same process -- config hooks, other packages --
+    -- would inherit that cwd, and the symptom would surface somewhere with no
+    -- connection to here.
+    os.cd(work)
+    local ok, err = pcall(function()
+        for _, e in ipairs(payloads()) do
+            log.info("msvc: unpacking " .. e.name)
+            os.mkdir(stage)
+            system.exec(string.format('tar -xf "%s" -C "x"', e.name))
+            -- Everything useful lives under Contents/; the rest is vsix metadata.
+            local contents = path.join(stage, "Contents")
+            if os.isdir(contents) then
+                -- All the payloads unpack into the SAME VC/ tree, so this is a
+                -- merge, not a move. os.cp of a directory INTO an existing one
+                -- of the same name nests it -- measured on windows-sdk, which
+                -- ended up with Include/<ver>/<ver>/ that way -- and a
+                -- recursive merge in Lua would need os.files, which is not in
+                -- the sandbox.
+                -- xcopy merges, ships with Windows, and returns 0 on success.
+                system.exec(string.format('xcopy "%s\\*" "%s\\" /E /I /Y /Q',
+                                          winpath(contents), winpath(idir)))
+            end
+            os.tryrm(stage)
         end
-        os.tryrm(stage)
+    end)
+    os.cd(idir)
+    if not ok then
+        log.error("msvc: unpacking failed: " .. tostring(err))
+        return false
     end
     os.tryrm(work)
 

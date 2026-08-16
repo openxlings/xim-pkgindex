@@ -77,6 +77,38 @@ class TestStatic:
                 f"{toolset} 缺动态 CRT payload (.CRT.x64.Store.base): {of_toolset}"
 
     @pytest.mark.static
+    def test_tar_is_never_handed_an_absolute_windows_path(self):
+        """`tar -xf` 不能收绝对 Windows 路径。
+
+        GNU tar 先按 `host:path` 解释,于是 `C:` 变成主机名:
+
+            tar: Cannot connect to C: resolve failed
+
+        Windows 自带的 bsdtar 不会 —— 所以同一份 recipe 在 index 的
+        windows-test(System32 的 bsdtar)通过,在 mcpp 的 e2e
+        (Git for Windows 把 GNU tar 排在 PATH 前面)失败。同一个 runner
+        镜像、同一份 recipe、不同的 tar。
+
+        `--force-local` 只对 GNU tar 有效、被 bsdtar 拒绝,等于换一个坏掉的
+        环境。相对路径两边都认。
+        """
+        import re
+        # 注释里就写着那个坏例子(留着是为了说明原因), 所以只扫真正的代码行 ——
+        # 第一版没扫掉注释, 于是它抓到的是自己的说明文字。
+        code = "\n".join(
+            line for line in open(PKG_FILE, encoding='utf-8').read().splitlines()
+            if not line.lstrip().startswith("--"))
+
+        calls = re.findall(r"tar\s+-xf\s+\"([^\"]*)\"", code)
+        assert calls, "没有找到 tar -xf 调用"
+        for arg in calls:
+            assert not re.match(r'^[A-Za-z]:', arg), f"tar 收到了带盘符的路径: {arg}"
+            assert arg == "%s", f"tar 的归档参数应当是单个相对文件名: {arg}"
+        # 相对文件名只有在 cwd 就是 work 时才成立, 两者必须同时在。
+        assert 'os.cd(work)' in code, "解包必须先 cd 进 work,才能用相对文件名"
+        assert 'os.cd(idir)' in code, "解包完必须把 cwd 移出 work(用 idir,不用没有先例的 os.curdir)"
+
+    @pytest.mark.static
     def test_installed_checks_what_a_build_needs(self):
         """installed() 必须验到两种 CRT 模型的导入库。
 
