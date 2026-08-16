@@ -186,8 +186,11 @@ function install()
     for _, e in ipairs(PAYLOADS) do
         if e.msi then
             log.info("windows-sdk: extracting " .. e.name)
-            system.exec(string.format('msiexec /a "%s" /quiet /qn TARGETDIR="%s"',
-                                     path.join(work, e.name), path.absolute(idir)))
+            -- idir straight in: pkginfo.install_dir() is already absolute,
+            -- and path.absolute is not in the xpkg sandbox. /qn only -- it is
+            -- the same switch as /quiet, and msiexec takes one of them.
+            system.exec(string.format('msiexec /a "%s" /qn TARGETDIR="%s"',
+                                     path.join(work, e.name), idir))
         end
     end
 
