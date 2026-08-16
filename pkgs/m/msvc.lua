@@ -135,6 +135,28 @@ local TOOLSETS = {
           sha256 = "4aaf54db0bfc9435f7c3660e1a00237a4b556042bfeea64bde44c2e0194e6ee5",
           urls = { "https://gitcode.com/xlings-res/msvc/releases/download/14.44.35207/Microsoft.VC.14.44.17.14.CRT.Redist.X64.base.vsix",
                    "https://download.visualstudio.microsoft.com/download/pr/45d3b8dd-bced-4b37-9974-142f748d710c/4aaf54db0bfc9435f7c3660e1a00237a4b556042bfeea64bde44c2e0194e6ee5/Microsoft.VC.14.44.17.14.CRT.Redist.X64.base.vsix" } },
+        -- ⚠️ "Store" is a misleading name, and skipping it on that basis is
+        -- exactly what happened. THIS is the payload that puts the DYNAMIC
+        -- CRT import libraries in lib/x64:
+        --   msvcprt.lib  msvcrt.lib  vcruntime.lib  oldnames.lib (+ d variants)
+        -- The uwp/ and store/ subdirectories it also carries are the parts the
+        -- name refers to; the desktop libs sit at the top of lib/x64.
+        --
+        -- Without it the toolset can only link /MT. `.Desktop.base` holds the
+        -- STATIC halves (libcmt/libcpmt/libvcruntime) and nothing else, and
+        -- use_ansi.h picks between them by _DLL:
+        --     #if defined(_DLL) && !defined(_STATIC_CPPLIB)
+        --     #define _LIB_STEM "msvcprt"      // /MD  <- was absent
+        --     #else
+        --     #define _LIB_STEM "libcpmt"      // /MT
+        -- so every default (/MD) build failed at link with an unresolved
+        -- msvcprt.lib -- while cl.exe, the headers and std.ixx were all
+        -- present and `installed()` said yes. See installed() below, which no
+        -- longer accepts that state.
+        { name = "Microsoft.VC.14.44.17.14.CRT.x64.Store.base.vsix",
+          sha256 = "9135b03c0df53c7a0aa9bef7230a1c2ff4263a0ee7baa7e419d034f484f6bb56",
+          urls = { "https://gitcode.com/xlings-res/msvc/releases/download/14.44.35207/Microsoft.VC.14.44.17.14.CRT.x64.Store.base.vsix",
+                   "https://download.visualstudio.microsoft.com/download/pr/67cf767c-5e71-47c2-a54a-cd5631e28942/9135b03c0df53c7a0aa9bef7230a1c2ff4263a0ee7baa7e419d034f484f6bb56/Microsoft.VC.14.44.17.14.CRT.x64.Store.base.vsix" } },
     },
     ["14.52.36629"] = {
         { name = "Microsoft.VC.14.52.Tools.HostX64.TargetX64.base.vsix",
@@ -153,6 +175,12 @@ local TOOLSETS = {
           sha256 = "da122e4f50a1d3328dd09954ed81ccf3012a32c23abac215872cc74272eee1f3",
           urls = { "https://gitcode.com/xlings-res/msvc/releases/download/14.52.36629/Microsoft.VC.14.52.CRT.Redist.X64.base.vsix",
                    "https://download.visualstudio.microsoft.com/download/pr/0fdca428-6677-4d0e-a19d-65f175edc108/da122e4f50a1d3328dd09954ed81ccf3012a32c23abac215872cc74272eee1f3/Microsoft.VC.14.52.CRT.Redist.X64.base.vsix" } },
+        -- The dynamic CRT import libs -- see the 14.44 entry above for why a
+        -- payload named "Store" is the one a desktop /MD build needs.
+        { name = "Microsoft.VC.14.52.CRT.x64.Store.base.vsix",
+          sha256 = "54113449899bee687e3d9bd3dc77d5ebbdfce499e5f44b5f35349b010fffa34c",
+          urls = { "https://gitcode.com/xlings-res/msvc/releases/download/14.52.36629/Microsoft.VC.14.52.CRT.x64.Store.base.vsix",
+                   "https://download.visualstudio.microsoft.com/download/pr/0fdca428-6677-4d0e-a19d-65f175edc108/54113449899bee687e3d9bd3dc77d5ebbdfce499e5f44b5f35349b010fffa34c/Microsoft.VC.14.52.CRT.x64.Store.base.vsix" } },
     },
 }
 
@@ -271,11 +299,33 @@ local function fetch_verified(entry, dir)
     return false
 end
 
+-- What a build actually needs, not merely what unpacked.
+--
+-- The first two were here from the start. `msvcprt.lib` was not, and its
+-- absence was invisible for exactly that reason: cl.exe and std.ixx were
+-- present, `installed()` said yes, the index's windows-test went green, and
+-- every DEFAULT (/MD) build then failed at link on a library nothing had
+-- noticed was missing. `.Desktop.base` ships only the static halves; the
+-- dynamic import libs come from the `.x64.Store.base` payload added above.
+--
+-- Both CRT models are asserted, because each alone leaves the other free to
+-- go missing the same silent way:
+--   libcpmt.lib  -- /MT, from CRT.x64.Desktop.base
+--   msvcprt.lib  -- /MD, from CRT.x64.Store.base  (the DEFAULT model)
+local function required_files()
+    return {
+        path.join(bindir(), "cl.exe"),
+        path.join(toolsdir(), "modules", "std.ixx"),
+        path.join(toolsdir(), "lib", "x64", "libcpmt.lib"),
+        path.join(toolsdir(), "lib", "x64", "msvcprt.lib"),
+    }
+end
+
 function installed()
-    -- The compiler itself and the STL's std.ixx: the two things whose absence
-    -- turns into a confusing failure much later.
-    return os.isfile(path.join(bindir(), "cl.exe"))
-       and os.isfile(path.join(toolsdir(), "modules", "std.ixx"))
+    for _, f in ipairs(required_files()) do
+        if not os.isfile(f) then return false end
+    end
+    return true
 end
 
 function install()
@@ -312,8 +362,16 @@ function install()
     os.tryrm(work)
 
     if not installed() then
-        log.error("msvc: unpacked, but cl.exe / std.ixx are not where they should be " ..
-                  "(expected under VC/Tools/MSVC/" .. toolset() .. ")")
+        -- Name the MISSING file, not the category. "cl.exe / std.ixx are not
+        -- where they should be" was true and useless when the missing thing
+        -- was neither of them.
+        local missing = {}
+        for _, f in ipairs(required_files()) do
+            if not os.isfile(f) then table.insert(missing, f) end
+        end
+        log.error("msvc: unpacked, but these are not where they should be:\n    " ..
+                  table.concat(missing, "\n    ") ..
+                  "\n  (expected under VC/Tools/MSVC/" .. toolset() .. ")")
         return false
     end
     return true
