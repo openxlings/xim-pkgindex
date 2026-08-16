@@ -232,24 +232,23 @@ function install()
     -- "Program Files" prefix) is a property of the installer, not something to
     -- hardcode. Anchor on the one file that must exist and derive the root
     -- from it: <root>/Include/<ver>/ucrt/corecrt.h is four levels up.
-    -- MERGE, not move. The four MSIs do not agree on a prefix: some lay their
-    -- files straight into TARGETDIR and some under "Windows Kits/10", so by
-    -- the time this runs there is usually already an Include/ at the package
-    -- root. os.trymv onto an existing directory fails -- silently, being a
-    -- "try" -- and the first run to get this far reported exactly that:
-    -- Include/ and Lib/ present at the root, the anchor file still missing,
-    -- and "Windows Kits/" still sitting there.
+    -- Merge with xcopy, not in Lua.
+    --
+    -- The four MSIs do not agree on a prefix: some lay their files straight
+    -- into TARGETDIR and some under "Windows Kits/10", so the two trees have
+    -- to be united. Doing it here is not an option -- os.trymv onto an
+    -- existing directory fails (silently, being a "try"), and os.cp of a
+    -- directory INTO an existing one of the same name nests it, which is how
+    -- a previous run ended up with Include/<ver>/<ver>/. A recursive merge in
+    -- Lua would need to walk files, and os.files is not in the sandbox.
+    --
+    -- xcopy does exactly this, ships with Windows, and unlike robocopy it
+    -- returns 0 on success rather than a bitmask that reads as failure.
     local root = find_sdk_root(idir, 4)
     if root and root ~= idir then
-        log.info("windows-sdk: SDK root found at " .. root)
-        for _, sub in ipairs(os.dirs(path.join(root, "*"))) do
-            local dest = path.join(idir, path.filename(sub))
-            if os.isdir(dest) then
-                os.cp(path.join(sub, "*"), dest)
-            else
-                os.trymv(sub, dest)
-            end
-        end
+        log.info("windows-sdk: merging SDK root from " .. root)
+        system.exec(string.format('xcopy "%s\\*" "%s\\" /E /I /Y /Q',
+                                  winpath(root), winpath(idir)))
         os.tryrm(path.join(idir, "Windows Kits"))
     end
 
