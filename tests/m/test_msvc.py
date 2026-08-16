@@ -77,33 +77,46 @@ class TestStatic:
                 f"{toolset} 缺动态 CRT payload (.CRT.x64.Store.base): {of_toolset}"
 
     @pytest.mark.static
-    def test_tar_is_never_handed_an_absolute_windows_path(self):
-        """`tar -xf` 不能收绝对 Windows 路径。
+    def test_unpacking_pins_the_system_bsdtar_and_a_relative_archive_name(self):
+        """解包必须钉死 System32 的 bsdtar,并且归档参数是相对文件名。
 
-        GNU tar 先按 `host:path` 解释,于是 `C:` 变成主机名:
+        **`.vsix` 是 zip,而 GNU tar 根本不读 zip。** Windows 自带的
+        System32\\tar.exe 是 bsdtar(libarchive),读得了;Git for Windows
+        带的是 GNU tar,读不了:
 
-            tar: Cannot connect to C: resolve failed
+            tar: This does not look like a tar archive
 
-        Windows 自带的 bsdtar 不会 —— 所以同一份 recipe 在 index 的
-        windows-test(System32 的 bsdtar)通过,在 mcpp 的 e2e
-        (Git for Windows 把 GNU tar 排在 PATH 前面)失败。同一个 runner
-        镜像、同一份 recipe、不同的 tar。
+        同一个 GitHub 镜像上两次运行证明了这点:index 自己的 windows-test
+        解析到 bsdtar、通过;mcpp 的 e2e 解析到 GNU tar、失败。
+        **同一份 recipe、同一个镜像、不同的 PATH** —— 所以不能让 PATH 来选。
 
-        `--force-local` 只对 GNU tar 有效、被 bsdtar 拒绝,等于换一个坏掉的
-        环境。相对路径两边都认。
+        两个参数、两种风险,分别钉:
+
+        * **exe 必须是绝对路径**,否则又回到 PATH 来选;
+        * **归档参数必须是相对文件名**,因为 GNU tar 会把开头的 `C:` 当主机名
+          (`tar: Cannot connect to C: resolve failed`)—— bsdtar 无所谓,
+          GNU tar 致命,而 `--force-local` 是修好一个弄坏另一个。
+
+        只钉 exe 今天就够用;保留相对文件名是为了让这条调用**无论最后是哪个
+        tar 在跑都正确**。
         """
         import re
-        # 注释里就写着那个坏例子(留着是为了说明原因), 所以只扫真正的代码行 ——
+        # 注释里就写着那些坏例子(留着是为了说明原因), 所以只扫真正的代码行 ——
         # 第一版没扫掉注释, 于是它抓到的是自己的说明文字。
         code = "\n".join(
             line for line in open(PKG_FILE, encoding='utf-8').read().splitlines()
             if not line.lstrip().startswith("--"))
 
-        calls = re.findall(r"tar\s+-xf\s+\"([^\"]*)\"", code)
-        assert calls, "没有找到 tar -xf 调用"
+        assert 'System32' in code and 'tar.exe' in code, \
+            "解包必须显式用 System32\\tar.exe(bsdtar),不能让 PATH 选到 GNU tar"
+        assert not re.search(r"['\"]tar\s+-xf", code), \
+            "不能调用裸 `tar` —— PATH 上的可能是读不了 zip 的 GNU tar"
+
+        calls = re.findall(r"-xf\s+\"([^\"]*)\"", code)
+        assert calls, "没有找到 -xf 调用"
         for arg in calls:
-            assert not re.match(r'^[A-Za-z]:', arg), f"tar 收到了带盘符的路径: {arg}"
-            assert arg == "%s", f"tar 的归档参数应当是单个相对文件名: {arg}"
+            assert not re.match(r'^[A-Za-z]:', arg), f"归档参数带了盘符: {arg}"
+            assert arg == "%s", f"归档参数应当是单个相对文件名: {arg}"
         # 相对文件名只有在 cwd 就是 work 时才成立, 两者必须同时在。
         assert 'os.cd(work)' in code, "解包必须先 cd 进 work,才能用相对文件名"
         assert 'os.cd(idir)' in code, "解包完必须把 cwd 移出 work(用 idir,不用没有先例的 os.curdir)"

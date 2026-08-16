@@ -338,24 +338,31 @@ function install()
         if not fetch_verified(e, work) then return false end
     end
 
-    -- A .vsix is a zip. Windows 10 1803+ ships tar.exe, which reads zip and
-    -- needs no PowerShell module and no temp COM object.
+    -- A .vsix is a ZIP, and that decides WHICH tar -- not just which path.
     --
-    -- ⚠️ RELATIVE PATHS, from inside `work`. An absolute Windows path passed to
-    -- `tar -xf` is ambiguous:
+    -- Windows 10 1803+ ships bsdtar at System32\tar.exe, and libarchive reads
+    -- zip. GNU tar does not read zip AT ALL. So on a runner where Git for
+    -- Windows is on PATH ahead of System32, a bare `tar` is a coin flip
+    -- between "works" and:
     --
-    --     tar -xf "C:\...\xim-x-msvc\14.44.35207/.payloads/Microsoft.VC...vsix"
-    --     tar: Cannot connect to C: resolve failed
+    --     tar: This does not look like a tar archive
     --
-    -- GNU tar reads `host:path` before it reads a drive letter, so `C:` becomes
-    -- a hostname. Windows' own bsdtar does not -- which is why this passed the
-    -- index's windows-test (bsdtar from System32) and failed under mcpp's e2e,
-    -- where Git for Windows puts GNU tar first on PATH. Same recipe, same
-    -- runner image, different tar.
+    -- Two runs on the SAME GitHub image proved it: the index's own
+    -- windows-test resolved bsdtar and passed; mcpp's e2e resolved GNU tar
+    -- and failed. Same recipe, same image, different PATH -- so the recipe
+    -- must not let PATH pick.
     --
-    -- `--force-local` fixes it for GNU tar and is rejected by bsdtar, so it
-    -- trades one broken environment for the other. A relative name has no
-    -- colon at all and both accept it -- the same shape 7zip.lua already uses.
+    -- Absolute path to the EXE, relative name for the ARCHIVE. Those are
+    -- different arguments with different hazards:
+    --   * the exe path must be absolute, or PATH decides again;
+    --   * the archive name must be relative, because GNU tar reads a leading
+    --     `C:` as a hostname (`tar: Cannot connect to C: resolve failed`) --
+    --     harmless for bsdtar, fatal for GNU tar, and `--force-local` fixes
+    --     one by breaking the other.
+    -- Pinning the exe alone would work today; keeping the relative name means
+    -- the invocation stays correct whichever tar ends up running it.
+    local systar = path.join(os.getenv("SystemRoot") or "C:\\Windows",
+                             "System32", "tar.exe")
     local stage = path.join(work, "x")
 
     -- Leaving via `idir`, not via a saved `os.curdir()`.
@@ -377,7 +384,7 @@ function install()
         for _, e in ipairs(payloads()) do
             log.info("msvc: unpacking " .. e.name)
             os.mkdir(stage)
-            system.exec(string.format('tar -xf "%s" -C "x"', e.name))
+            system.exec(string.format('"%s" -xf "%s" -C "x"', systar, e.name))
             -- Everything useful lives under Contents/; the rest is vsix metadata.
             local contents = path.join(stage, "Contents")
             if os.isdir(contents) then
