@@ -70,6 +70,56 @@ class TestStatic:
             f"缺核心 Win32 导入库的 MSI(Store Apps Libs): {names}"
 
     @pytest.mark.static
+    def test_every_header_and_tool_msi_named_store_apps_is_shipped(self):
+        """um 头 / shared 头 / rc.exe / mt.exe —— 四样都在 "Store Apps" 里。
+
+        名字写着 "Desktop" 的四个 MSI 一个都不提供它们:
+        `Windows SDK Desktop Headers x64` 只有 **4 个文件**
+        (WinHvEmulation.h / WinHvPlatform.h / WinHvPlatformDefs.h + 一个
+        catalog),既没有 windows.h 也没有 winnt.h;
+        `Windows SDK Desktop Tools x64` 的 99 个 bin 工具里没有 rc.exe,
+        也没有 mt.exe。
+
+        真正提供它们的是:
+
+            um 头 (528 个: windows.h/winnt.h)  Store Apps Headers
+            shared 头 (windef.h/sal.h/...)     Store Apps Headers OnecoreUap
+            rc.exe / rcdll.dll / mt.exe        Store Apps Tools
+
+        以上不是猜的 —— 是把每个 MSI 的 File/Component/Directory 表解出来、
+        把每个文件的安装路径算出来核对的。少任一个:缺 um 头则
+        `#include <windows.h>` 直接失败;缺 shared 头则 windows.h 自身
+        编不过;缺 Tools 则 `programs = {"rc", "mt"}` 注册两个不存在的程序。
+        """
+        names = [e["name"] for e in payload_entries(PKG_FILE)]
+
+        def has(frag):
+            return any(frag in n for n in names)
+
+        assert has("Store Apps Headers-"), f"缺 um 头 (Store Apps Headers): {names}"
+        assert has("Store Apps Headers OnecoreUap"), f"缺 shared 头 (OnecoreUap): {names}"
+        assert has("Store Apps Tools"), f"缺 rc.exe/mt.exe (Store Apps Tools): {names}"
+
+    @pytest.mark.static
+    def test_required_files_covers_every_payload_that_matters(self):
+        """`required_files()` 每条对应一个 **只有它才提供** 的 MSI。
+
+        这是覆盖,不是抽样:哪个 payload 没下下来/没解开/没合并,
+        报错就点名哪一个。所以断言的文件必须能区分 MSI —— 例如
+        `gdi32.lib` 只在 Desktop Libs x64(它和 Store Apps Libs 的
+        365/116 两组库**完全不相交**),`windef.h` 只在 OnecoreUap。
+        """
+        src = open(PKG_FILE, encoding='utf-8').read()
+        body = src[src.index("local function required_files"):src.index("function install()")]
+        # 同样去掉注释行 —— 见下一个用例, 断言自己的说明文字是这套测试
+        # 已经犯过一次的错。
+        code = "\n".join(l for l in body.splitlines()
+                         if not l.lstrip().startswith("--"))
+        for f in ("corecrt.h", "winnt.h", "windef.h", "kernel32.lib",
+                  "gdi32.lib", "rc.exe", "mt.exe"):
+            assert f in code, f"required_files() 没覆盖 {f}"
+
+    @pytest.mark.static
     def test_installed_asserts_files_not_directories(self):
         """`installed()` 必须查文件名, 不能只查目录。
 
