@@ -270,6 +270,19 @@ function install()
                 if depth > 0 then dump(d, prefix .. "  ", depth - 1) end
             end
         end
+        -- File level. os.dirs only lists directories, and three rounds of
+        -- correct-looking directory trees is enough to establish that the
+        -- missing thing is a file, not a folder.
+        local function probe(rel)
+            local full = winpath(path.join(idir, rel))
+            local out = os.iorun(string.format('cmd /c dir /b "%s" 2>&1', full)) or ""
+            log.error("  dir " .. rel .. " -> " .. out:gsub("[\r\n]+", " "):sub(1, 300))
+        end
+        probe(path.join("Include", SDK_DIR_VERSION, "ucrt"))
+        probe(path.join("Lib", SDK_DIR_VERSION, "um"))
+        probe(path.join("Lib", SDK_DIR_VERSION, "um", "x64"))
+        probe(path.join("bin", SDK_DIR_VERSION, "x64"))
+
         log.error("  present under " .. idir .. ":")
         dump(idir, "    ", 0)
         for _, sub in ipairs({"Include", "Lib", "bin"}) do
