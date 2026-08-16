@@ -85,3 +85,31 @@ def _extract_field(content: str, field_name: str) -> str | None:
         return match.group(1)
     match = re.search(rf'{field_name}\s*=\s*\[\[(.*?)\]\]', content, re.DOTALL)
     return match.group(1).strip() if match else None
+
+
+def payload_entries(pkg_file: str) -> list[dict]:
+    """解析 recipe 里的 payload 表: {name, sha256, urls[]}。
+
+    只有自己下载「一组」payload 的 recipe 需要它 —— msvc / windows-sdk。
+    框架的单 url + sha256 校验覆盖不到那种形状, 所以这些条目的完整性
+    只能由测试来钉。
+
+    地址是**列表**: 一个条目可以有 `url = "..."` 或
+    `urls = { "镜像", "官方" }`。sha256 仍然只有一个, 这正是镜像成立的
+    前提 —— 从哪个地址取到都按同一个摘要校验。
+    """
+    src = open(pkg_file, encoding='utf-8').read()
+    entries = []
+    for m in re.finditer(
+            r'\{\s*name\s*=\s*"([^"]+)"\s*,'          # name
+            r'(?:\s*msi\s*=\s*\w+\s*,)?'              # optional msi flag
+            r'\s*sha256\s*=\s*"([0-9a-fA-F]{64})"\s*,'  # sha256
+            r'\s*(url\s*=\s*"[^"]+"|urls\s*=\s*\{.*?\})',  # one address or many
+            src, re.DOTALL):
+        name, sha, addr = m.group(1), m.group(2), m.group(3)
+        entries.append({
+            "name": name,
+            "sha256": sha,
+            "urls": re.findall(r'"(https?://[^"]+)"', addr),
+        })
+    return entries
