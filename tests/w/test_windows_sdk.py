@@ -83,7 +83,8 @@ class TestStatic:
         windows-test 全绿, 而任何程序的链接都失败。
         """
         src = open(PKG_FILE, encoding='utf-8').read()
-        body = src[src.index("function installed()"):src.index("function install()")]
+        # 从 required_files() 起 —— 名字清单在那里, installed() 只是遍历它。
+        body = src[src.index("local function required_files"):src.index("function install()")]
         # 去掉注释行 —— 上面那段注释里就写着 kernel32.lib, 第一版因此在
         # 「检查被削弱回目录」的情况下照样通过, 抓到的是自己的说明文字。
         code = "\n".join(l for l in body.splitlines()

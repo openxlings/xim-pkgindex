@@ -326,6 +326,16 @@ local function find_sdk_root(base, depth)
     return nil
 end
 
+local function required_files()
+    local d = pkginfo.install_dir()
+    return {
+        path.join(d, "Include", SDK_DIR_VERSION, "ucrt", "corecrt.h"),
+        path.join(d, "Include", SDK_DIR_VERSION, "um", "winnt.h"),
+        path.join(d, "Lib", SDK_DIR_VERSION, "um", "x64", "kernel32.lib"),
+        path.join(d, "bin", SDK_DIR_VERSION, "x64", "rc.exe"),
+    }
+end
+
 function installed()
     -- Assert the FILES a link actually opens, not the directories they sit in.
     --
@@ -351,14 +361,7 @@ function installed()
     --   kernel32.lib Store Apps Libs   -- the core Win32 import libraries
     --   winnt.h      Desktop Headers x64
     --   rc.exe       Desktop Tools x64
-    local d = pkginfo.install_dir()
-    local need = {
-        path.join(d, "Include", SDK_DIR_VERSION, "ucrt", "corecrt.h"),
-        path.join(d, "Include", SDK_DIR_VERSION, "um", "winnt.h"),
-        path.join(d, "Lib", SDK_DIR_VERSION, "um", "x64", "kernel32.lib"),
-        path.join(d, "bin", SDK_DIR_VERSION, "x64", "rc.exe"),
-    }
-    for _, f in ipairs(need) do
+    for _, f in ipairs(required_files()) do
         if not os.isfile(f) then return false end
     end
     return true
@@ -420,11 +423,12 @@ function install()
     if not installed() then
         -- Say WHAT is there. "not installed" after a clean extraction means the
         -- layout moved, and the next person needs the tree, not the verdict.
+        local missing = {}
+        for _, f in ipairs(required_files()) do
+            if not os.isfile(f) then table.insert(missing, f) end
+        end
         log.error("windows-sdk: extraction finished but the SDK tree is not where it should be." ..
-                  "\n  wanted: Include/" .. SDK_DIR_VERSION .. "/ucrt/corecrt.h" ..
-                  "\n          Include/" .. SDK_DIR_VERSION .. "/um/winnt.h" ..
-                  "\n          Lib/" .. SDK_DIR_VERSION .. "/um/x64/kernel32.lib" ..
-                  "\n          bin/" .. SDK_DIR_VERSION .. "/x64/rc.exe")
+                  "\n  missing:\n    " .. table.concat(missing, "\n    "))
         -- Two levels, not one. The top level looked correct for three runs
         -- running while the anchor files were not there, so the level that
         -- matters is the one below it: which version directories exist under
