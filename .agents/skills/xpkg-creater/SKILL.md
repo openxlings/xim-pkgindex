@@ -223,6 +223,78 @@ rm -rf ~/.xlings/data/xpkgs/{xim,local}-x-<pkg>/<version>
 - 可先 `os.tryrm(pkginfo.install_dir())` 再 `os.mv(...)`
 - 若是 Linux 预构建 ELF，必要时做可重定位修复（如 patchelf）
 
+### 2.2.1 installed() 约束 —— 「装好了」必须等于「能用」⚠️
+
+`installed()` 的含义是:**payload 处于「这份 recipe 产出的状态」**,
+不是「这儿有个目录」。两者只在 recipe 变更时不一样,而那正是它要紧的时候。
+
+2026-08-16 这一轮 MSVC 生态里,**九层缺陷有四层是这一条**:每一层的
+windows-test 都是绿的,而包对使用者是坏的。
+
+#### (a) 必须查文件,不能查目录
+
+```lua
+-- ❌ 目录在 ≠ 里面有东西
+if os.isdir(path.join(d, "Lib", VER, "um", "x64")) then return true end
+
+-- ✅ 查那个只有它才提供的文件
+if not os.isfile(path.join(d, "Lib", VER, "um", "x64", "kernel32.lib")) then
+    return false
+end
+```
+
+真实后果:少了带 `kernel32.lib` 的那个 MSI,目录照样存在(另外 341 个 um 库
+落进去了),`installed()` 说 yes,而**任何程序的链接都失败**。
+
+> Windows 文件系统**大小写不敏感**,`os.isfile("kernel32.lib")` 照样匹配磁盘上的
+> `Kernel32.Lib`。不要用"文件名大小写不确定"当作查目录的理由。
+
+#### (b) 必须是覆盖,不是抽样
+
+一个 payload 一条断言,而且那条断言的文件**只有那个 payload 提供**。
+这样哪个 payload 没下来/没解开/没合并,报错就点名哪一个。
+
+`windows-sdk` 的做法(8 个 payload → 7 条断言):
+
+| 断言的文件 | 唯一提供它的 payload |
+|---|---|
+| `Include/<v>/ucrt/corecrt.h` | Universal CRT |
+| `Include/<v>/um/winnt.h` | Store Apps Headers |
+| `Include/<v>/shared/windef.h` | Store Apps Headers OnecoreUap |
+| `Lib/<v>/um/x64/kernel32.lib` | Store Apps Libs |
+| `Lib/<v>/um/x64/gdi32.lib` | Desktop Libs x64 |
+| `bin/<v>/x64/rc.exe` / `mt.exe` | Store Apps Tools |
+
+选 `gdi32.lib` 而不是随便一个库,是因为它**只在** Desktop Libs 里 ——
+那 365 个库和 Store Apps Libs 的 116 个**完全不相交**。抽样会漏,覆盖不会。
+
+#### (c) 必须能表达「什么**不该**在」
+
+包的版本号**不会**因为 recipe 改了就变。所以对已经装了旧布局的机器,
+`installed()` 是**唯一**能把它们拉回来的东西:
+
+```lua
+-- 新 recipe 不再安装 vctip.exe(它占着 payload 让整个包卸不掉)。
+-- 只写"不装"对已经装了的机器毫无作用 —— 必须让 installed() 认出旧产物。
+for _, d in ipairs(bin_arch_dirs()) do
+    if os.isfile(path.join(d, "vctip.exe")) then return false end
+end
+```
+
+> **新增**的文件靠断言"它在"就能发现;**删掉**的文件必须显式说"它不该在"。
+
+#### (d) 失败时要点名缺哪个文件
+
+```lua
+local missing = {}
+for _, f in ipairs(required_files()) do
+    if not os.isfile(f) then table.insert(missing, f) end
+end
+log.error("... 不在应该在的位置:\n    " .. table.concat(missing, "\n    "))
+```
+
+「wanted: <四个路径>」不算 —— 那是把清单再抄一遍,读的人还得自己比对。
+
 ### 2.3 config() 约束
 
 `config()` 负责将该版本注册到 xvm（subos 隔离路由）：
