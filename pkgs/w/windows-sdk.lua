@@ -206,22 +206,36 @@ function install()
         end
     end
 
-    -- The MSIs lay their payload under "Windows Kits/10/..."; hoist it so the
-    -- package root IS the SDK root, which is the shape every consumer expects
-    -- (WindowsSdkDir points at it directly).
-    local kits = path.join(idir, "Windows Kits", "10")
-    if os.isdir(kits) then
-        for _, sub in ipairs(os.dirs(path.join(kits, "*"))) do
-            os.mv(sub, path.join(idir, path.filename(sub)))
+    -- Hoist the SDK root up to the package root, so that the payload dir IS
+    -- WindowsSdkDir -- the shape every consumer expects.
+    --
+    -- FOUND, not assumed. msiexec /a reproduces the MSI's own directory table,
+    -- and where that puts things ("Windows Kits/10/...", possibly under a
+    -- "Program Files" prefix) is a property of the installer, not something to
+    -- hardcode. Anchor on the one file that must exist and derive the root
+    -- from it: <root>/Include/<ver>/ucrt/corecrt.h is four levels up.
+    if not os.isfile(path.join(idir, "Include", SDK_DIR_VERSION, "ucrt", "corecrt.h")) then
+        local anchors = os.files(path.join(idir, "**", "Include", SDK_DIR_VERSION, "ucrt", "corecrt.h"))
+        if anchors and #anchors > 0 then
+            local root = path.directory(path.directory(path.directory(path.directory(anchors[1]))))
+            log.info("windows-sdk: SDK root found at " .. root)
+            for _, sub in ipairs(os.dirs(path.join(root, "*"))) do
+                os.trymv(sub, path.join(idir, path.filename(sub)))
+            end
         end
-        os.tryrm(path.join(idir, "Windows Kits"))
     end
 
     os.tryrm(work)
 
     if not installed() then
-        log.error("windows-sdk: extraction finished but the SDK tree is not there " ..
-                  "(expected Include/" .. SDK_DIR_VERSION .. "/ucrt/corecrt.h)")
+        -- Say WHAT is there. "not installed" after a clean extraction means the
+        -- layout moved, and the next person needs the tree, not the verdict.
+        log.error("windows-sdk: extraction finished but the SDK tree is not where it should be." ..
+                  "\n  wanted: Include/" .. SDK_DIR_VERSION .. "/ucrt/corecrt.h" ..
+                  "\n          Lib/" .. SDK_DIR_VERSION .. "/um/x64/kernel32.lib")
+        for _, d in ipairs(os.dirs(path.join(idir, "*"))) do
+            log.error("  present: " .. path.filename(d) .. "/")
+        end
         return false
     end
     return true
