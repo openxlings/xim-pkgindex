@@ -109,6 +109,11 @@ class TestStatic:
 
         assert 'System32' in code and 'tar.exe' in code, \
             "解包必须显式用 System32\\tar.exe(bsdtar),不能让 PATH 选到 GNU tar"
+        # exe 路径也必须过 winpath():path.join 会混用分隔符,而
+        # "C:\\Windows/System32/tar.exe" 是执行不了的 —— 这个 recipe 里
+        # winpath 的注释本来就写着这件事,只是当时只想到 xcopy 的参数。
+        assert re.search(r"winpath\(path\.join\([^)]*SystemRoot", code), \
+            "System32 的 exe 路径必须过 winpath(),否则分隔符是混的"
         assert not re.search(r"['\"]tar\s+-xf", code), \
             "不能调用裸 `tar` —— PATH 上的可能是读不了 zip 的 GNU tar"
 

@@ -361,8 +361,15 @@ function install()
     --     one by breaking the other.
     -- Pinning the exe alone would work today; keeping the relative name means
     -- the invocation stays correct whichever tar ends up running it.
-    local systar = path.join(os.getenv("SystemRoot") or "C:\\Windows",
-                             "System32", "tar.exe")
+    -- winpath(), because path.join mixes separators and the EXECUTABLE path
+    -- cares as much as xcopy's arguments do:
+    --
+    --     "C:\\Windows/System32/tar.exe" -xf "...": exec failed
+    --
+    -- The helper above already documents this for xcopy. It applies here too,
+    -- and I applied it one line too late.
+    local systar = winpath(path.join(os.getenv("SystemRoot") or "C:\\Windows",
+                                     "System32", "tar.exe"))
     local stage = path.join(work, "x")
 
     -- Leaving via `idir`, not via a saved `os.curdir()`.
