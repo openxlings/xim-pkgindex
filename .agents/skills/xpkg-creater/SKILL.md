@@ -136,6 +136,22 @@ xpm = {
 |------|------|------|
 | `os.exists(p)` | `attempt to call a nil value (field 'exists')` | `os.isdir(p) or os.isfile(p)` |
 | `os.arch()` | 返回 nil / `_RUNTIME.arch` 为空 | 从 `pkginfo.install_file()` 推导 |
+| `os.curdir()` | `attempt to call a nil value (field 'curdir')` | `os.cd` 之后用一个已知目录回去(`pkginfo.install_dir()`) |
+| `os.execv(...)` | 同上 | `system.exec` / `os.exec` |
+| `os.files(...)` | 同上 | `os.dirs` 递归,或交给 `xcopy` / shell |
+| `path.absolute(p)` | 同上 | `pkginfo.install_dir()` 本来就是绝对路径 |
+
+> **先 grep,再写。** 上面五条都是同一个形状,而每一条在写下去之前都能用一条
+> 命令排除:
+>
+> ```bash
+> grep -rn "os\.curdir" pkgs/ | wc -l    # 0 → 别用
+> ```
+>
+> **整个 index 里零处使用的 sandbox API,基本可以认定它不在 runtime 里。**
+> 这不是概率判断:能用的东西早就有人用了。而代价是不对称的 —— 猜对省几秒,
+> 猜错要等一轮 Windows CI(约 4 分钟)才知道,而且失败信息出现在
+> install hook 里、离你写的那一行有几层。
 
 危险的地方在于**表现形式**：install hook 抛错之后，安装目录里往往只剩一个 `.xpkg.lua`、
 没有 payload，而外层可能仍然打印 `✓ N package(s) installed`。所以
