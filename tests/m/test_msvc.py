@@ -207,6 +207,24 @@ class TestStatic:
         assert "os.tryrm" in code
 
     @pytest.mark.static
+    def test_installed_rejects_a_payload_that_still_has_vctip(self):
+        """`installed()` 必须把「还带着 vctip.exe 的 payload」判为**没装**。
+
+        包版本号不会因为 recipe 改了就变,所以已经装了旧布局的机器
+        **只能靠这个判据**被拉回来 —— 否则它们永远停在卸不掉的那个版本上。
+
+        `installed()` 的含义是「payload 处于**这份 recipe 产出的状态**」,
+        不是「这儿有个 payload」。两者只在 recipe 变更时不一样,
+        而那正是它要紧的时候。
+        """
+        src = open(PKG_FILE, encoding='utf-8').read()
+        body = src[src.index("function installed()"):src.index("function install()")]
+        code = "\n".join(l for l in body.splitlines()
+                          if not l.lstrip().startswith("--"))
+        assert "vctip.exe" in code, \
+            "installed() 没有排除 vctip.exe —— 老机器会永远卸不掉"
+
+    @pytest.mark.static
     def test_mirror_never_replaces_the_official_address(self):
         """有镜像的条目必须仍然保留官方地址。
 
