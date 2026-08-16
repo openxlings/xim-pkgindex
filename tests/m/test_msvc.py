@@ -90,15 +90,16 @@ class TestStatic:
         解析到 bsdtar、通过;mcpp 的 e2e 解析到 GNU tar、失败。
         **同一份 recipe、同一个镜像、不同的 PATH** —— 所以不能让 PATH 来选。
 
-        两个参数、两种风险,分别钉:
+        钉死 exe 之后,**盘符那条风险就不存在了** —— 它是 GNU tar 独有的。
+        所以路径全部用绝对的、全部过 `winpath()`,并且**不用 `os.cd`**:
 
-        * **exe 必须是绝对路径**,否则又回到 PATH 来选;
-        * **归档参数必须是相对文件名**,因为 GNU tar 会把开头的 `C:` 当主机名
-          (`tar: Cannot connect to C: resolve failed`)—— bsdtar 无所谓,
-          GNU tar 致命,而 `--force-local` 是修好一个弄坏另一个。
+        * `path.join` 会混用分隔符,`"C:\\Windows/System32/tar.exe"` 执行不了;
+        * `system.exec` **不继承** `os.cd` 设的 cwd。7zip.lua 那个
+          「cd 之后用相对文件名」的形状用的是 `os.exec` —— 照抄形状而没有核对
+          这一处差别的结果是:命令拼得完全正确,却找不到自己的归档文件。
 
-        只钉 exe 今天就够用;保留相对文件名是为了让这条调用**无论最后是哪个
-        tar 在跑都正确**。
+        少一个可动的部件就少一处可以出错:没有 cwd 要改、没有 cwd 要还,
+        也没有任何东西取决于最后是哪个 tar 在跑。
         """
         import re
         # 注释里就写着那些坏例子(留着是为了说明原因), 所以只扫真正的代码行 ——
@@ -109,22 +110,18 @@ class TestStatic:
 
         assert 'System32' in code and 'tar.exe' in code, \
             "解包必须显式用 System32\\tar.exe(bsdtar),不能让 PATH 选到 GNU tar"
-        # exe 路径也必须过 winpath():path.join 会混用分隔符,而
-        # "C:\\Windows/System32/tar.exe" 是执行不了的 —— 这个 recipe 里
-        # winpath 的注释本来就写着这件事,只是当时只想到 xcopy 的参数。
         assert re.search(r"winpath\(path\.join\([^)]*SystemRoot", code), \
             "System32 的 exe 路径必须过 winpath(),否则分隔符是混的"
         assert not re.search(r"['\"]tar\s+-xf", code), \
             "不能调用裸 `tar` —— PATH 上的可能是读不了 zip 的 GNU tar"
 
-        calls = re.findall(r"-xf\s+\"([^\"]*)\"", code)
-        assert calls, "没有找到 -xf 调用"
-        for arg in calls:
-            assert not re.match(r'^[A-Za-z]:', arg), f"归档参数带了盘符: {arg}"
-            assert arg == "%s", f"归档参数应当是单个相对文件名: {arg}"
-        # 相对文件名只有在 cwd 就是 work 时才成立, 两者必须同时在。
-        assert 'os.cd(work)' in code, "解包必须先 cd 进 work,才能用相对文件名"
-        assert 'os.cd(idir)' in code, "解包完必须把 cwd 移出 work(用 idir,不用没有先例的 os.curdir)"
+        # 归档与目标目录都必须过 winpath();相对路径依赖 cwd,而
+        # system.exec 不继承 os.cd。
+        assert 'winpath(path.join(work, e.name))' in code, \
+            "归档参数必须是 winpath 过的绝对路径"
+        assert 'winpath(stage)' in code, "-C 的目标必须是 winpath 过的绝对路径"
+        assert 'os.cd(' not in code, \
+            "解包不该改 cwd —— system.exec 不继承它,绝对路径本来就不需要"
 
     @pytest.mark.static
     def test_installed_checks_what_a_build_needs(self):

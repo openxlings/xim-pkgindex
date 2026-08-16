@@ -352,46 +352,39 @@ function install()
     -- and failed. Same recipe, same image, different PATH -- so the recipe
     -- must not let PATH pick.
     --
-    -- Absolute path to the EXE, relative name for the ARCHIVE. Those are
-    -- different arguments with different hazards:
-    --   * the exe path must be absolute, or PATH decides again;
-    --   * the archive name must be relative, because GNU tar reads a leading
-    --     `C:` as a hostname (`tar: Cannot connect to C: resolve failed`) --
-    --     harmless for bsdtar, fatal for GNU tar, and `--force-local` fixes
-    --     one by breaking the other.
-    -- Pinning the exe alone would work today; keeping the relative name means
-    -- the invocation stays correct whichever tar ends up running it.
-    -- winpath(), because path.join mixes separators and the EXECUTABLE path
-    -- cares as much as xcopy's arguments do:
+    -- ABSOLUTE paths for everything, and NO `os.cd`.
+    --
+    -- The drive-colon hazard was GNU tar's alone; pinning bsdtar removes it,
+    -- so the relative-name workaround it needed goes away with it. That
+    -- workaround also depended on `system.exec` inheriting a cwd set by
+    -- `os.cd` -- which it does not. 7zip.lua's cd-then-relative-name shape
+    -- uses `os.exec`, and I copied the shape without checking that one
+    -- difference: the command came out perfectly formed and still could not
+    -- find its archive.
+    --
+    -- winpath() on every path, because path.join mixes separators and both
+    -- the executable and its arguments care:
     --
     --     "C:\\Windows/System32/tar.exe" -xf "...": exec failed
     --
-    -- The helper above already documents this for xcopy. It applies here too,
-    -- and I applied it one line too late.
+    -- Fewer moving parts than the version this replaces: no cwd to change, no
+    -- cwd to restore, and nothing that depends on which tar runs it.
     local systar = winpath(path.join(os.getenv("SystemRoot") or "C:\\Windows",
                                      "System32", "tar.exe"))
     local stage = path.join(work, "x")
 
-    -- Leaving via `idir`, not via a saved `os.curdir()`.
-    --
-    -- `os.curdir` has ZERO uses across the whole index, and every previous
-    -- time this recipe reached for an xpkg-sandbox API with no precedent
-    -- (os.execv, path.absolute, os.files) it turned into an install-time
-    -- "attempt to call a nil value". `pkginfo.install_dir()` is used
-    -- everywhere and is a real directory that outlives `work` -- which is all
-    -- the restore actually needs.
-    --
-    -- pcall, so a raising `system.exec` cannot leave the process sitting in a
-    -- directory this function is about to delete. Everything after
-    -- `install()` in the same process -- config hooks, other packages --
-    -- would inherit that cwd, and the symptom would surface somewhere with no
-    -- connection to here.
-    os.cd(work)
+    -- pcall so a raising `system.exec` becomes a named error and `false`,
+    -- rather than propagating out of a hook whose contract is true/false --
+    -- which is how the first failure here read as the unhelpful
+    -- "install hook failed: install hook returned false".
     local ok, err = pcall(function()
         for _, e in ipairs(payloads()) do
             log.info("msvc: unpacking " .. e.name)
             os.mkdir(stage)
-            system.exec(string.format('"%s" -xf "%s" -C "x"', systar, e.name))
+            system.exec(string.format('"%s" -xf "%s" -C "%s"',
+                                      systar,
+                                      winpath(path.join(work, e.name)),
+                                      winpath(stage)))
             -- Everything useful lives under Contents/; the rest is vsix metadata.
             local contents = path.join(stage, "Contents")
             if os.isdir(contents) then
@@ -408,7 +401,6 @@ function install()
             os.tryrm(stage)
         end
     end)
-    os.cd(idir)
     if not ok then
         log.error("msvc: unpacking failed: " .. tostring(err))
         return false
