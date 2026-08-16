@@ -1,4 +1,4 @@
-"""测试 msvc 包"""
+"""测试 windows-sdk 包"""
 import pytest
 from tests.lib.xpkg_parser import parse_xpkg
 from tests.lib.assertions import (
@@ -8,8 +8,8 @@ from tests.lib.assertions import (
     assert_xim_add_succeeds,
 )
 
-PKG = "msvc"
-PKG_FILE = "pkgs/m/msvc.lua"
+PKG = "windows-sdk"
+PKG_FILE = "pkgs/w/windows-sdk.lua"
 
 
 @pytest.fixture(scope='module')
