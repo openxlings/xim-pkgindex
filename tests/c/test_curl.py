@@ -1,4 +1,4 @@
-"""测试 msvc 包"""
+"""测试 curl 包"""
 import pytest
 from tests.lib.xpkg_parser import parse_xpkg
 from tests.lib.assertions import (
@@ -8,8 +8,8 @@ from tests.lib.assertions import (
     assert_xim_add_succeeds,
 )
 
-PKG = "msvc"
-PKG_FILE = "pkgs/m/msvc.lua"
+PKG = "curl"
+PKG_FILE = "pkgs/c/curl.lua"
 
 
 @pytest.fixture(scope='module')
@@ -35,16 +35,14 @@ class TestStatic:
         assert_no_typos(PKG_FILE)
 
     @pytest.mark.static
-    def test_every_payload_is_pinned(self):
-        """每个 payload 都必须同时有 url 和 sha256。
+    def test_url_is_pinned(self):
+        """每个 url 都要有 sha256。
 
-        这个包自己下载一组 payload, 框架的单 url 校验覆盖不到它们 ——
-        少一个 sha256 就是少一次校验, 而这些字节会变成编译器。
+        curl 是 windows-sdk / msvc 的下载器 —— 它自己没被校验, 后面
+        那些 sha256 就都建立在一个未经检查的二进制上。
         """
         src = open(PKG_FILE, encoding='utf-8').read()
-        assert src.count('url = "https://') == src.count('sha256 = "'), \
-            "payload 表里 url 与 sha256 数量不一致"
-        assert src.count('sha256 = "') > 0
+        assert src.count('url = "https://') == src.count('sha256 = "') > 0
 
 
 class TestIndex:

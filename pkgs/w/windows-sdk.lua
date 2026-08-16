@@ -49,6 +49,13 @@ package = {
             -- Empty resource: this package fetches a SET of payloads, and the
             -- framework's single-url download cannot express that. install()
             -- does it, and checks every sha256 itself.
+            -- curl does the fetching below. Windows ships one since 10 1803,
+            -- but a recipe that downloads and checksums a pinned payload set
+            -- should not leave the downloader itself to the host -- that is
+            -- the one open end in an otherwise closed chain. Bare because curl
+            -- is new in the same change as this dependency; see the EXEMPT
+            -- entry in .github/scripts/check-dep-namespace.lua.
+            deps = { "curl" },
             ["latest"] = { ref = "10.0.26100" },
             ["10.0.26100"] = { },
         },
