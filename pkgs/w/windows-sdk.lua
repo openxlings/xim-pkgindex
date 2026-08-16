@@ -232,12 +232,25 @@ function install()
     -- "Program Files" prefix) is a property of the installer, not something to
     -- hardcode. Anchor on the one file that must exist and derive the root
     -- from it: <root>/Include/<ver>/ucrt/corecrt.h is four levels up.
+    -- MERGE, not move. The four MSIs do not agree on a prefix: some lay their
+    -- files straight into TARGETDIR and some under "Windows Kits/10", so by
+    -- the time this runs there is usually already an Include/ at the package
+    -- root. os.trymv onto an existing directory fails -- silently, being a
+    -- "try" -- and the first run to get this far reported exactly that:
+    -- Include/ and Lib/ present at the root, the anchor file still missing,
+    -- and "Windows Kits/" still sitting there.
     local root = find_sdk_root(idir, 4)
     if root and root ~= idir then
         log.info("windows-sdk: SDK root found at " .. root)
         for _, sub in ipairs(os.dirs(path.join(root, "*"))) do
-            os.trymv(sub, path.join(idir, path.filename(sub)))
+            local dest = path.join(idir, path.filename(sub))
+            if os.isdir(dest) then
+                os.cp(path.join(sub, "*"), dest)
+            else
+                os.trymv(sub, dest)
+            end
         end
+        os.tryrm(path.join(idir, "Windows Kits"))
     end
 
     os.tryrm(work)
