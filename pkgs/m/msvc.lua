@@ -349,9 +349,34 @@ local function required_files()
     }
 end
 
+-- Every bin/<host>/<arch> a toolset payload can have. Written out rather than
+-- discovered because os.files/os.dirs are not in the xpkg sandbox.
+local function bin_arch_dirs()
+    local out = {}
+    for _, host in ipairs({"Hostx64", "Hostx86", "Hostarm64"}) do
+        for _, arch in ipairs({"x64", "x86", "arm64", "arm"}) do
+            table.insert(out, path.join(toolsdir(), "bin", host, arch))
+        end
+    end
+    return out
+end
+
 function installed()
     for _, f in ipairs(required_files()) do
         if not os.isfile(f) then return false end
+    end
+    -- A payload that still carries vctip.exe was unpacked by a recipe from
+    -- BEFORE it was dropped, and it is the one thing that makes this package
+    -- impossible to uninstall (see install()). Reporting it as installed
+    -- would strand every existing machine on the broken layout forever --
+    -- the package version does not change when the recipe does, so this
+    -- predicate is the ONLY thing that can pull them forward.
+    --
+    -- `installed()` means "the payload is in the state this recipe produces",
+    -- not "some payload is here". The two differ exactly when a recipe
+    -- changes, which is when it matters.
+    for _, d in ipairs(bin_arch_dirs()) do
+        if os.isfile(path.join(d, "vctip.exe")) then return false end
     end
     return true
 end
@@ -474,11 +499,8 @@ function install()
     -- A toolchain payload should also not phone home on a user's machine
     -- because they compiled something, so this deletion is not purely
     -- mechanical convenience.
-    local bin = path.join(toolsdir(), "bin")
-    for _, host in ipairs({"Hostx64", "Hostx86", "Hostarm64"}) do
-        for _, arch in ipairs({"x64", "x86", "arm64", "arm"}) do
-            os.tryrm(path.join(bin, host, arch, "vctip.exe"))
-        end
+    for _, d in ipairs(bin_arch_dirs()) do
+        os.tryrm(path.join(d, "vctip.exe"))
     end
 
     if not installed() then
