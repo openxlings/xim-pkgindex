@@ -358,26 +358,39 @@ function install()
     -- colon at all and both accept it -- the same shape 7zip.lua already uses.
     local stage = path.join(work, "x")
     local prevdir = os.curdir()
+
+    -- pcall, so a raising `system.exec` cannot leave the process sitting in a
+    -- directory this function is about to delete. Everything after `install()`
+    -- in the same process -- config hooks, other packages -- would inherit
+    -- that cwd, and the symptom would surface somewhere with no connection to
+    -- here.
     os.cd(work)
-    for _, e in ipairs(payloads()) do
-        log.info("msvc: unpacking " .. e.name)
-        os.mkdir(stage)
-        system.exec(string.format('tar -xf "%s" -C "x"', e.name))
-        -- Everything useful lives under Contents/; the rest is vsix metadata.
-        local contents = path.join(stage, "Contents")
-        if os.isdir(contents) then
-            -- All four payloads unpack into the SAME VC/ tree, so this is a
-            -- merge, not a move. os.cp of a directory INTO an existing one of
-            -- the same name nests it -- measured on windows-sdk, which ended
-            -- up with Include/<ver>/<ver>/ that way -- and a recursive merge
-            -- in Lua would need os.files, which is not in the sandbox.
-            -- xcopy merges, ships with Windows, and returns 0 on success.
-            system.exec(string.format('xcopy "%s\\*" "%s\\" /E /I /Y /Q',
-                                      winpath(contents), winpath(idir)))
+    local ok, err = pcall(function()
+        for _, e in ipairs(payloads()) do
+            log.info("msvc: unpacking " .. e.name)
+            os.mkdir(stage)
+            system.exec(string.format('tar -xf "%s" -C "x"', e.name))
+            -- Everything useful lives under Contents/; the rest is vsix metadata.
+            local contents = path.join(stage, "Contents")
+            if os.isdir(contents) then
+                -- All the payloads unpack into the SAME VC/ tree, so this is a
+                -- merge, not a move. os.cp of a directory INTO an existing one
+                -- of the same name nests it -- measured on windows-sdk, which
+                -- ended up with Include/<ver>/<ver>/ that way -- and a
+                -- recursive merge in Lua would need os.files, which is not in
+                -- the sandbox.
+                -- xcopy merges, ships with Windows, and returns 0 on success.
+                system.exec(string.format('xcopy "%s\\*" "%s\\" /E /I /Y /Q',
+                                          winpath(contents), winpath(idir)))
+            end
+            os.tryrm(stage)
         end
-        os.tryrm(stage)
-    end
+    end)
     os.cd(prevdir)
+    if not ok then
+        log.error("msvc: unpacking failed: " .. tostring(err))
+        return false
+    end
     os.tryrm(work)
 
     if not installed() then
