@@ -260,8 +260,23 @@ function install()
         log.error("windows-sdk: extraction finished but the SDK tree is not where it should be." ..
                   "\n  wanted: Include/" .. SDK_DIR_VERSION .. "/ucrt/corecrt.h" ..
                   "\n          Lib/" .. SDK_DIR_VERSION .. "/um/x64/kernel32.lib")
-        for _, d in ipairs(os.dirs(path.join(idir, "*"))) do
-            log.error("  present: " .. path.filename(d) .. "/")
+        -- Two levels, not one. The top level looked correct for three runs
+        -- running while the anchor files were not there, so the level that
+        -- matters is the one below it: which version directories exist under
+        -- Include/ and Lib/, and what is inside them.
+        local function dump(base, prefix, depth)
+            for _, d in ipairs(os.dirs(path.join(base, "*")) or {}) do
+                log.error(prefix .. path.filename(d) .. "/")
+                if depth > 0 then dump(d, prefix .. "  ", depth - 1) end
+            end
+        end
+        log.error("  present under " .. idir .. ":")
+        dump(idir, "    ", 0)
+        for _, sub in ipairs({"Include", "Lib", "bin"}) do
+            if os.isdir(path.join(idir, sub)) then
+                log.error("  " .. sub .. "/:")
+                dump(path.join(idir, sub), "    ", 1)
+            end
         end
         return false
     end
