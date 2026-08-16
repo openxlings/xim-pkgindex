@@ -1,6 +1,6 @@
 """测试 msvc 包"""
 import pytest
-from tests.lib.xpkg_parser import parse_xpkg, payload_entries
+from tests.lib.xpkg_parser import parse_xpkg, payload_entries, toolset_payloads
 from tests.lib.assertions import (
     assert_required_fields, assert_valid_spec, assert_valid_type,
     assert_no_typos, assert_no_exec_xvm, assert_no_bashrc_modification,
@@ -68,13 +68,14 @@ class TestStatic:
             #else
             #define _LIB_STEM "libcpmt"     // /MT
         """
-        names = [e["name"] for e in payload_entries(PKG_FILE)]
-        for toolset, tag in (("14.44", "14.44"), ("14.52", "14.52")):
-            of_toolset = [n for n in names if f".{tag}." in n or f"VC.{tag}" in n]
-            assert any("Desktop.base" in n for n in of_toolset), \
-                f"{toolset} 缺静态 CRT payload (.CRT.x64.Desktop.base): {of_toolset}"
-            assert any("Store.base" in n for n in of_toolset), \
-                f"{toolset} 缺动态 CRT payload (.CRT.x64.Store.base): {of_toolset}"
+        # 按 TOOLSETS 表分组, 不是扫全文件 —— 见 test_every_toolset_is_complete。
+        groups = toolset_payloads(PKG_FILE)
+        assert groups, "TOOLSETS 表里没有解析到 toolset"
+        for toolset, names in groups.items():
+            assert any("Desktop.base" in n for n in names), \
+                f"{toolset} 缺静态 CRT payload (.CRT.x64.Desktop.base): {names}"
+            assert any(".CRT.x64.Store.base" in n for n in names), \
+                f"{toolset} 缺动态 CRT payload (.CRT.x64.Store.base): {names}"
 
     @pytest.mark.static
     def test_unpacking_pins_the_system_bsdtar(self):
@@ -139,8 +140,46 @@ class TestStatic:
         就不是安装成功, 而是解压成功。
         """
         src = open(PKG_FILE, encoding='utf-8').read()
-        for lib in ("libcpmt.lib", "msvcprt.lib"):
-            assert lib in src, f"installed() 没有检查 {lib}"
+        for f in ("libcpmt.lib", "msvcprt.lib", "clui.dll"):
+            assert f in src, f"installed() 没有检查 {f}"
+
+    @pytest.mark.static
+    def test_compiler_resources_are_shipped(self):
+        """每个 toolset 必须带 `.Res.base` —— 没有它 cl.exe 跑不起来。
+
+        它装的是 `bin/Hostx64/x64/1033/clui.dll`(编译器的消息资源)。
+        缺了之后**任何**一次调用都会在说出任何有用的话之前死掉:
+
+            fatal error C1510: Cannot load language resource clui.dll
+
+        包括每个消费者做的第一件事 —— 读 banner 来识别编译器。
+        `.Res.base` 的名字听起来像是本地化裁剪,它不是可选的。
+        """
+        for toolset, names in toolset_payloads(PKG_FILE).items():
+            assert any("Res.base" in n for n in names), \
+                f"{toolset} 缺编译器资源 payload (.Tools.*.Res.base): {names}"
+
+    @pytest.mark.static
+    def test_every_toolset_is_complete_and_entries_live_in_TOOLSETS(self):
+        """条目必须在 TOOLSETS 表**里面**, 而且每个 toolset 都要齐。
+
+        这条来自一个真实事故: 补 clui.dll 的两个条目被插进了
+        `package.xpm` 表 —— 静态测试全绿(它们扫的是整个文件, "文件里有"
+        就算数), 而 recipe 运行时只取到 5 个 payload, Windows 上照旧失败。
+
+        **"文件里有"和"表里有"是两个问题。** 位置错了的条目对 recipe 来说
+        根本不存在, 所以判据必须按表来, 不能按文本。
+        """
+        groups = toolset_payloads(PKG_FILE)
+        assert set(groups) == {"14.44.35207", "14.52.36629"}, \
+            f"TOOLSETS 的 key 不对: {sorted(groups)}"
+        for toolset, names in groups.items():
+            assert len(names) == len(set(names)), f"{toolset} 有重复条目"
+            for need in ("Tools.HostX64.TargetX64.base", "CRT.Headers.base",
+                         "CRT.x64.Desktop.base", "CRT.Redist", 
+                         "CRT.x64.Store.base", "Res.base"):
+                assert any(need in n for n in names), \
+                    f"{toolset} 缺 {need}: {names}"
 
     @pytest.mark.static
     def test_mirror_never_replaces_the_official_address(self):

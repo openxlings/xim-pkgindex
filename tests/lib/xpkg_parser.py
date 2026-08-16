@@ -113,3 +113,31 @@ def payload_entries(pkg_file: str) -> list[dict]:
             "urls": re.findall(r'"(https?://[^"]+)"', addr),
         })
     return entries
+
+
+def toolset_payloads(pkg_file: str) -> dict:
+    """按 TOOLSETS 表分组的 payload —— 位置也要对, 不只是"文件里有"。
+
+    `payload_entries` 扫的是整个文件, 所以一个插错地方的条目(比如掉进
+    `package.xpm` 里)照样被它数到 —— 而 recipe 运行时根本看不见。这个
+    函数只在 `local TOOLSETS = {` ... 对应的收尾 `}` 之间找, 并按
+    `["<toolset>"] = {` 分组。
+
+    这条来自真实事故: 补 clui.dll 的那个条目被插进了 package 表,
+    静态测试全绿, Windows 上只取了 5 个 payload。
+    """
+    src = open(pkg_file, encoding='utf-8').read()
+    start = src.index("local TOOLSETS = {")
+    end = src.index("\n}\n", start)
+    body = src[start:end]
+
+    groups, cur = {}, None
+    for line in body.splitlines():
+        m = re.match(r'\s*\["([0-9][^"]*)"\]\s*=\s*\{', line)
+        if m:
+            cur = m.group(1); groups[cur] = []
+            continue
+        n = re.search(r'\{\s*name\s*=\s*"([^"]+)"', line)
+        if n and cur:
+            groups[cur].append(n.group(1))
+    return groups
