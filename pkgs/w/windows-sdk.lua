@@ -127,25 +127,33 @@ local PAYLOADS = {
 
 -- Download one payload and prove it is the file we asked for.
 --
--- The check is the point, not the download: these bytes become a compiler's
--- headers, and "curl exited 0" says nothing about what arrived. Returns false
--- on any mismatch rather than letting a bad payload reach msiexec.
+-- The check is the point, not the download: these bytes become a compiler's headers, and
+-- "curl exited 0" says nothing about what arrived. Returns false on any
+-- mismatch rather than letting a bad payload through.
+--
+-- certutil, not PowerShell's Get-FileHash: both ship with Windows, but
+-- Get-FileHash needs a quoted -LiteralPath nested inside a quoted -Command
+-- inside a shell string, and these file names contain spaces. certutil takes
+-- one quoted path and prints the digest on a line of its own.
 local function fetch_verified(entry, dir)
     local dst = path.join(dir, entry.name)
     if not os.isfile(dst) then
         log.info("windows-sdk: fetching " .. entry.name)
-        os.execv("curl", {"-fsSL", "--retry", "3", "-o", dst, entry.url})
+        system.exec(string.format('curl -fsSL --retry 3 -o "%s" "%s"', dst, entry.url))
     end
     if not os.isfile(dst) then
         log.error("windows-sdk: download produced no file: " .. entry.name)
         return false
     end
-    local out = os.iorunv("powershell", {"-NoProfile", "-Command",
-        "(Get-FileHash -Algorithm SHA256 -LiteralPath '" .. dst .. "').Hash.ToLower()"})
-    local got = (out or ""):trim()
+    local out = os.iorun(string.format('certutil -hashfile "%s" SHA256', dst)) or ""
+    local got = nil
+    for line in out:gmatch("[^\r\n]+") do
+        local hex = line:gsub("%s+", ""):lower()
+        if #hex == 64 and hex:match("^%x+$") then got = hex break end
+    end
     if got ~= entry.sha256 then
         log.error("windows-sdk: sha256 mismatch for " .. entry.name ..
-                  "\n  expected " .. entry.sha256 .. "\n  got      " .. got)
+                  "\n  expected " .. entry.sha256 .. "\n  got      " .. tostring(got))
         os.tryrm(dst)
         return false
     end
@@ -175,8 +183,8 @@ function install()
     for _, e in ipairs(PAYLOADS) do
         if e.msi then
             log.info("windows-sdk: extracting " .. e.name)
-            os.execv("msiexec", {"/a", path.join(work, e.name), "/quiet", "/qn",
-                                 "TARGETDIR=" .. path.absolute(idir)})
+            system.exec(string.format('msiexec /a "%s" /quiet /qn TARGETDIR="%s"',
+                                     path.join(work, e.name), path.absolute(idir)))
         end
     end
 
