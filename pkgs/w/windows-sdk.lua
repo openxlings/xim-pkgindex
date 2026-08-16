@@ -4,13 +4,20 @@
 -- without one cannot compile a single translation unit -- the ucrt / um /
 -- shared headers and the um libs are not part of the compiler.
 --
--- Not the 530 MB full SDK. Four MSIs and the fifteen cabinets their Media
--- tables reference, 139 MB, enough to compile and link x64 desktop C++:
+-- Not the 530 MB full SDK. Five MSIs and the twenty-one cabinets their Media
+-- tables reference, 170 MB, enough to compile and link x64 desktop C++:
 --
 --   Universal CRT Headers Libraries and Sources   ucrt headers + libs
 --   Windows SDK Desktop Headers x64               um / shared headers
---   Windows SDK Desktop Libs x64                  um libs
+--   Windows SDK Desktop Libs x64                  um libs -- the LONG TAIL
+--   Windows SDK for Windows Store Apps Libs       kernel32/user32/advapi32/
+--                                                 ole32/oleaut32/uuid  <- core
 --   Windows SDK Desktop Tools x64                 rc.exe, mt.exe
+--
+-- The fourth line is not a typo and the fifth is not optional. "Desktop Libs
+-- x64" ships 341 um libraries and NOT ONE of the six every program links;
+-- those are in the MSI whose name says "Store Apps". Exactly the same naming
+-- trap as msvc.lua's CRT.x64.Store.base, one layer down.
 --
 -- Every payload below is pinned by URL + sha256, both taken from the VS
 -- channel manifest (see the msvc recipe's header for how that is resolved).
@@ -160,6 +167,43 @@ local PAYLOADS = {
       sha256 = "355CC1E65B9E5F02A0B3A4F32D02F9241B97030D3527166EFF6A372D5D0E1BAC",
       urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/f9ff50431335056fb4fbac05b8268204.cab.bin",
                "https://download.visualstudio.microsoft.com/download/pr/6452c1f1-dc1e-413c-8b19-991b61870a8b/8383be7caac218b9afd6a3564dbb0984/f9ff50431335056fb4fbac05b8268204.cab" } },
+    -- ⚠️ "Store Apps" is a misleading name -- the same trap as msvc.lua's
+    -- CRT.x64.Store.base, one layer down. THIS is where the core Win32 import
+    -- libraries live:
+    --     kernel32.lib  user32.lib  advapi32.lib  ole32.lib  oleaut32.lib  uuid.lib
+    -- "Windows SDK Desktop Libs x64" carries 341 um libs and NONE of those
+    -- six; it is the long tail (sensorsapi, websocket, computestorage...).
+    -- Without this MSI a link of `int main(){}` fails at
+    --     LINK : fatal error LNK1104: cannot open file 'kernel32.lib'
+    -- which is every program, so the SDK subset was unusable for its purpose.
+    { name = "Windows SDK for Windows Store Apps Libs-x86_en-us.msi", msi = true,
+      sha256 = "1381535D2F6B1894A092DA67F8A8FB048A4DFE8060CE75B3275AFFA81B02586E",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/Windows_SDK_for_Windows_Store_Apps_Libs-x86_en-us.msi",
+               "https://download.visualstudio.microsoft.com/download/pr/6452c1f1-dc1e-413c-8b19-991b61870a8b/079ca63878193e064d8aa000670f0db3/windows%20sdk%20for%20windows%20store%20apps%20libs-x86_en-us.msi" } },
+    { name = "05047a45609f311645eebcac2739fc4c.cab",
+      sha256 = "902003E4976C7BC4BCDA9F31F1D835B8072235532412770F66B0BC9F0882CB7E",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/05047a45609f311645eebcac2739fc4c.cab.bin",
+               "https://download.visualstudio.microsoft.com/download/pr/6452c1f1-dc1e-413c-8b19-991b61870a8b/67a9b258981565b78c46484efbed6945/05047a45609f311645eebcac2739fc4c.cab" } },
+    { name = "13d68b8a7b6678a368e2d13ff4027521.cab",
+      sha256 = "0B26EDE2D22EA531D921269DFFFCD14CC71D6932CAC0F2720FCEC37079286643",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/13d68b8a7b6678a368e2d13ff4027521.cab.bin",
+               "https://download.visualstudio.microsoft.com/download/pr/6452c1f1-dc1e-413c-8b19-991b61870a8b/2160d8b73fe2e4fea3e2097084a081cd/13d68b8a7b6678a368e2d13ff4027521.cab" } },
+    { name = "463ad1b0783ebda908fd6c16a4abfe93.cab",
+      sha256 = "43C40559098A2C1EFBEF6AF16F97A44FD80B3BB9FE8AE117C4E6F9F3F852B8E8",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/463ad1b0783ebda908fd6c16a4abfe93.cab.bin",
+               "https://download.visualstudio.microsoft.com/download/pr/6452c1f1-dc1e-413c-8b19-991b61870a8b/637a623c788980d4a7edf6d84e34ed70/463ad1b0783ebda908fd6c16a4abfe93.cab" } },
+    { name = "5a22e5cde814b041749fb271547f4dd5.cab",
+      sha256 = "57E7E309413D05B781AE76D1B5C54DC7AFF350B6A460920F1F358E8003AABDFB",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/5a22e5cde814b041749fb271547f4dd5.cab.bin",
+               "https://download.visualstudio.microsoft.com/download/pr/6452c1f1-dc1e-413c-8b19-991b61870a8b/03cfd7ea3b3116d5d32d11df101dea24/5a22e5cde814b041749fb271547f4dd5.cab" } },
+    { name = "e10768bb6e9d0ea730280336b697da66.cab",
+      sha256 = "46E21578A4CFCE3BD6E4EACC10B92121A825CE443CC2F6CCE84B07E37B9D21BC",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/e10768bb6e9d0ea730280336b697da66.cab.bin",
+               "https://download.visualstudio.microsoft.com/download/pr/6452c1f1-dc1e-413c-8b19-991b61870a8b/b2915dcb648d1087f4a5ef20f17c9825/e10768bb6e9d0ea730280336b697da66.cab" } },
+    { name = "f9b24c8280986c0683fbceca5326d806.cab",
+      sha256 = "154F4A24EC22EA0C932709F0E1A2C443946B42C14291A49A280AB4EA0EAA504D",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/f9b24c8280986c0683fbceca5326d806.cab.bin",
+               "https://download.visualstudio.microsoft.com/download/pr/6452c1f1-dc1e-413c-8b19-991b61870a8b/66f36d1686d2dde0cfa99a5160a9571d/f9b24c8280986c0683fbceca5326d806.cab" } },
 }
 
 -- The addresses a payload can be fetched from, in order of preference.
@@ -283,21 +327,41 @@ local function find_sdk_root(base, depth)
 end
 
 function installed()
-    -- One assertion per MSI, so a partial extraction cannot pass.
+    -- Assert the FILES a link actually opens, not the directories they sit in.
     --
-    -- The header is checked by name; the libs and tools by directory. That is
-    -- not laziness -- the SDK does not spell its own file names consistently.
-    -- A `dir /b` of Lib/<ver>/um/x64 on the runner returns, in one listing:
+    -- This used to check `Lib/<ver>/um/x64` as a DIRECTORY, reasoning that the
+    -- SDK spells its own names inconsistently --
     --
     --   AclUI.Lib  ActiveDS.Lib  advpack.Lib  ahadmin.lib  amsi.lib ...
     --
-    -- so `kernel32.lib` is a guess about casing, and a wrong guess here reads
-    -- as "the SDK did not install". The directory existing means the x64 libs
-    -- MSI unpacked, which is the fact worth asserting.
+    -- -- so naming `kernel32.lib` was "a guess about casing". That reasoning
+    -- is wrong: Windows filesystems are CASE-INSENSITIVE, so os.isfile on
+    -- `kernel32.lib` matches `Kernel32.Lib` on disk. There was no hazard to
+    -- avoid.
+    --
+    -- And the weakening is precisely what let a broken SDK ship. The subset
+    -- was missing the MSI that CONTAINS kernel32.lib, the directory existed
+    -- anyway (341 other um libs landed in it), `installed()` said yes,
+    -- windows-test went green, and every link of every program failed with
+    --
+    --     LINK : fatal error LNK1104: cannot open file 'kernel32.lib'
+    --
+    -- One name per MSI, chosen so that MSI's absence cannot hide:
+    --   corecrt.h    Universal CRT headers
+    --   kernel32.lib Store Apps Libs   -- the core Win32 import libraries
+    --   winnt.h      Desktop Headers x64
+    --   rc.exe       Desktop Tools x64
     local d = pkginfo.install_dir()
-    return os.isfile(path.join(d, "Include", SDK_DIR_VERSION, "ucrt", "corecrt.h"))
-       and os.isdir(path.join(d, "Lib", SDK_DIR_VERSION, "um", "x64"))
-       and os.isdir(path.join(d, "bin", SDK_DIR_VERSION, "x64"))
+    local need = {
+        path.join(d, "Include", SDK_DIR_VERSION, "ucrt", "corecrt.h"),
+        path.join(d, "Include", SDK_DIR_VERSION, "um", "winnt.h"),
+        path.join(d, "Lib", SDK_DIR_VERSION, "um", "x64", "kernel32.lib"),
+        path.join(d, "bin", SDK_DIR_VERSION, "x64", "rc.exe"),
+    }
+    for _, f in ipairs(need) do
+        if not os.isfile(f) then return false end
+    end
+    return true
 end
 
 function install()
@@ -358,8 +422,9 @@ function install()
         -- layout moved, and the next person needs the tree, not the verdict.
         log.error("windows-sdk: extraction finished but the SDK tree is not where it should be." ..
                   "\n  wanted: Include/" .. SDK_DIR_VERSION .. "/ucrt/corecrt.h" ..
-                  "\n          Lib/" .. SDK_DIR_VERSION .. "/um/x64/" ..
-                  "\n          bin/" .. SDK_DIR_VERSION .. "/x64/")
+                  "\n          Include/" .. SDK_DIR_VERSION .. "/um/winnt.h" ..
+                  "\n          Lib/" .. SDK_DIR_VERSION .. "/um/x64/kernel32.lib" ..
+                  "\n          bin/" .. SDK_DIR_VERSION .. "/x64/rc.exe")
         -- Two levels, not one. The top level looked correct for three runs
         -- running while the anchor files were not there, so the level that
         -- matters is the one below it: which version directories exist under
