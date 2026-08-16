@@ -450,6 +450,37 @@ function install()
     end
     os.tryrm(work)
 
+    -- Drop vctip.exe: it is a background telemetry uploader that cl.exe
+    -- spawns, and it makes the toolset UNINSTALLABLE.
+    --
+    -- vctip.exe outlives the compiler, holds
+    -- `Microsoft.VisualStudio.Telemetry.dll` open from inside the payload
+    -- directory, and Windows then refuses to delete that directory:
+    --
+    --     error: remove failed: Access is denied.
+    --              stuck at: ...\bin\Hostx64\x64\Microsoft.VisualStudio.Telemetry.dll
+    --
+    -- Removing it is safe by cl.exe's OWN design, not by hope -- these are
+    -- strings inside cl.exe:
+    --
+    --     Not launching VCTIP: Binary not found @ '%S'
+    --     Not launching VCTIP: CLR not present
+    --
+    -- The absent binary is a case it already handles and moves on from.
+    -- There is no environment variable to ask for this: cl.exe carries no
+    -- telemetry opt-out switch (vctip's own `-upload:optout` writes MACHINE
+    -- state, which a package install has no business doing).
+    --
+    -- A toolchain payload should also not phone home on a user's machine
+    -- because they compiled something, so this deletion is not purely
+    -- mechanical convenience.
+    local tools = path.join(pkginfo.install_dir(), "VC", "Tools", "MSVC", toolset(), "bin")
+    for _, host in ipairs({"Hostx64", "Hostx86", "Hostarm64"}) do
+        for _, arch in ipairs({"x64", "x86", "arm64", "arm"}) do
+            os.tryrm(path.join(tools, host, arch, "vctip.exe"))
+        end
+    end
+
     if not installed() then
         -- Name the MISSING file, not the category. "cl.exe / std.ixx are not
         -- where they should be" was true and useless when the missing thing

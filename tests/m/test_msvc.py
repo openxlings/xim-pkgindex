@@ -182,6 +182,31 @@ class TestStatic:
                     f"{toolset} 缺 {need}: {names}"
 
     @pytest.mark.static
+    def test_vctip_is_deleted_after_unpacking(self):
+        """install() 必须删掉 vctip.exe —— 不然这个 toolset **卸不掉**。
+
+        vctip.exe 是 cl.exe 拉起来的后台遥测上传进程,它比编译器活得久,
+        并且从 payload 目录**里面**占着
+        `Microsoft.VisualStudio.Telemetry.dll`。于是:
+
+            error: remove failed: Access is denied.
+                     stuck at: ...\\bin\\Hostx64\\x64\\Microsoft.VisualStudio.Telemetry.dll
+
+        删它是安全的,依据是 cl.exe **自己的**字符串:
+
+            Not launching VCTIP: Binary not found @ '%S'
+
+        —— 二进制不在是它本来就处理的一条分支。没有环境变量可以关掉它
+        (vctip 自己的 `-upload:optout` 写的是**机器级**状态,装个包不该动那个)。
+        """
+        src = open(PKG_FILE, encoding="utf-8").read()
+        body = src[src.index("function install()"):]
+        code = "\n".join(l for l in body.splitlines()
+                          if not l.lstrip().startswith("--"))
+        assert "vctip.exe" in code, "install() 没有删 vctip.exe —— toolset 会卸不掉"
+        assert "os.tryrm" in code
+
+    @pytest.mark.static
     def test_mirror_never_replaces_the_official_address(self):
         """有镜像的条目必须仍然保留官方地址。
 
