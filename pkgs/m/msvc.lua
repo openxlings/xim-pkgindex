@@ -60,17 +60,20 @@ package = {
     xpm = {
         windows = {
             -- The compiler is useless without the ucrt/um headers and libs,
-            -- and those are a separate product. Declared, not assumed to be
-            -- on the host.
-            -- curl is bare because it is new in this same change; see the
-            -- EXEMPT entry in .github/scripts/check-dep-namespace.lua.
-            -- Qualify it once published.
-            deps = { "xim:windows-sdk@10.0.26100", "curl" },
+            -- and those are a separate product. curl does the fetching. Both
+            -- declared, neither assumed to be on the host.
+            deps = { "xim:windows-sdk@10.0.26100", "xim:curl@8.21.0" },
+
+            -- `latest` stays on the release channel deliberately. 14.52 is an
+            -- Insiders toolset; asking for it should be a choice, not what a
+            -- bare `xlings install msvc` hands you.
             ["latest"] = { ref = "14.44.35207" },
-            -- Empty resource: this package fetches a SET of payloads and the
+
+            -- Empty resources: this package fetches a SET of payloads and the
             -- framework's single-url download cannot express that. install()
             -- does it and checks every sha256 itself.
-            ["14.44.35207"] = { },
+            ["14.44.35207"] = { },   -- release channel, VS 2022 17.14
+            ["14.52.36629"] = { },   -- Insiders, VS 2026 -- see TOOLSETS below
         },
     },
 }
@@ -81,11 +84,16 @@ import("xim.libxpkg.log")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.subos")
 
--- The directory version inside every payload. Same value as the package
--- version; spelled out rather than derived from it, because they are two
--- different facts that happen to agree.
-local TOOLSET = "14.44.35207"
 local SDK_DIR_VERSION = "10.0.26100.0"
+
+-- The package version IS the toolset's directory name -- that is why the
+-- version is spelled the way it is. Verified per entry rather than assumed:
+-- for 14.44 the payloads carry 35228 / 35220 / 35226 and all unpack into
+-- 14.44.35207, while 14.52's payloads and directory agree at 36629. Getting
+-- this wrong is not subtle; nothing lands where the recipe looks for it.
+local function toolset()
+    return pkginfo.version()
+end
 
 -- path.join mixes separators on Windows -- it keeps the backslashes already in
 -- the store path and adds forward ones. tar does not care; xcopy does.
@@ -93,23 +101,61 @@ local function winpath(p)
     return (p:gsub("/", "\\"))
 end
 
-local PAYLOADS = {
-    { name = "Microsoft.VC.14.44.17.14.Tools.HostX64.TargetX64.base.vsix",
-      sha256 = "ee0baaa3a112d255f19f6c27dcc0ff6e496949eb9f1f37be0ac908c562a7076c",
-      url = "https://download.visualstudio.microsoft.com/download/pr/bbc72d8e-2acd-4229-8f6a-85e23c5e3456/ee0baaa3a112d255f19f6c27dcc0ff6e496949eb9f1f37be0ac908c562a7076c/Microsoft.VC.14.44.17.14.Tools.HostX64.TargetX64.base.vsix" },
-    { name = "Microsoft.VC.14.44.17.14.CRT.Headers.base.vsix",
-      sha256 = "852382a9aa73502b7849c1bcadfb603ba7175c4e8b60e6aba03c7de711d4ece5",
-      url = "https://download.visualstudio.microsoft.com/download/pr/c610cd8c-801b-44b8-a80a-82cc382aeb43/852382a9aa73502b7849c1bcadfb603ba7175c4e8b60e6aba03c7de711d4ece5/Microsoft.VC.14.44.17.14.CRT.Headers.base.vsix" },
-    { name = "Microsoft.VC.14.44.17.14.CRT.x64.Desktop.base.vsix",
-      sha256 = "f01f701a7bcd9587a340898c851424f6a52bb913a70c185ff0d5bf0288c5831a",
-      url = "https://download.visualstudio.microsoft.com/download/pr/67cf767c-5e71-47c2-a54a-cd5631e28942/f01f701a7bcd9587a340898c851424f6a52bb913a70c185ff0d5bf0288c5831a/Microsoft.VC.14.44.17.14.CRT.x64.Desktop.base.vsix" },
-    { name = "Microsoft.VC.14.44.17.14.CRT.Redist.X64.base.vsix",
-      sha256 = "4aaf54db0bfc9435f7c3660e1a00237a4b556042bfeea64bde44c2e0194e6ee5",
-      url = "https://download.visualstudio.microsoft.com/download/pr/45d3b8dd-bced-4b37-9974-142f748d710c/4aaf54db0bfc9435f7c3660e1a00237a4b556042bfeea64bde44c2e0194e6ee5/Microsoft.VC.14.44.17.14.CRT.Redist.X64.base.vsix" },
+-- One payload set per toolset, keyed by that toolset's directory version.
+--
+-- 14.44 comes from the release channel (aka.ms/vs/17/release/channel), 14.52
+-- from Insiders (aka.ms/vs/18/insiders/channel) -- two manifests, and the
+-- package ids are not spelled alike either: Microsoft.VC.14.44.17.14.* against
+-- Microsoft.VC.14.52.*.
+--
+-- The Insiders entry carries a risk the release one does not: Microsoft rotates
+-- those payloads. When 14.52.36629 goes away the URLs 404 -- loudly, and with
+-- the sha256 still pinned, so a rotated build cannot be served in its place.
+-- That is the failure mode worth having; it is also why `latest` is not it.
+local TOOLSETS = {
+    ["14.44.35207"] = {
+        { name = "Microsoft.VC.14.44.17.14.Tools.HostX64.TargetX64.base.vsix",
+          sha256 = "ee0baaa3a112d255f19f6c27dcc0ff6e496949eb9f1f37be0ac908c562a7076c",
+          url = "https://download.visualstudio.microsoft.com/download/pr/bbc72d8e-2acd-4229-8f6a-85e23c5e3456/ee0baaa3a112d255f19f6c27dcc0ff6e496949eb9f1f37be0ac908c562a7076c/Microsoft.VC.14.44.17.14.Tools.HostX64.TargetX64.base.vsix" },
+        { name = "Microsoft.VC.14.44.17.14.CRT.Headers.base.vsix",
+          sha256 = "852382a9aa73502b7849c1bcadfb603ba7175c4e8b60e6aba03c7de711d4ece5",
+          url = "https://download.visualstudio.microsoft.com/download/pr/c610cd8c-801b-44b8-a80a-82cc382aeb43/852382a9aa73502b7849c1bcadfb603ba7175c4e8b60e6aba03c7de711d4ece5/Microsoft.VC.14.44.17.14.CRT.Headers.base.vsix" },
+        { name = "Microsoft.VC.14.44.17.14.CRT.x64.Desktop.base.vsix",
+          sha256 = "f01f701a7bcd9587a340898c851424f6a52bb913a70c185ff0d5bf0288c5831a",
+          url = "https://download.visualstudio.microsoft.com/download/pr/67cf767c-5e71-47c2-a54a-cd5631e28942/f01f701a7bcd9587a340898c851424f6a52bb913a70c185ff0d5bf0288c5831a/Microsoft.VC.14.44.17.14.CRT.x64.Desktop.base.vsix" },
+        { name = "Microsoft.VC.14.44.17.14.CRT.Redist.X64.base.vsix",
+          sha256 = "4aaf54db0bfc9435f7c3660e1a00237a4b556042bfeea64bde44c2e0194e6ee5",
+          url = "https://download.visualstudio.microsoft.com/download/pr/45d3b8dd-bced-4b37-9974-142f748d710c/4aaf54db0bfc9435f7c3660e1a00237a4b556042bfeea64bde44c2e0194e6ee5/Microsoft.VC.14.44.17.14.CRT.Redist.X64.base.vsix" },
+    },
+    ["14.52.36629"] = {
+        { name = "Microsoft.VC.14.52.Tools.HostX64.TargetX64.base.vsix",
+          sha256 = "3cf795636cf47b91a3583baa45df8cf7e7448c551a6d2f7f65a015cc1b858930",
+          url = "https://download.visualstudio.microsoft.com/download/pr/0fdca428-6677-4d0e-a19d-65f175edc108/3cf795636cf47b91a3583baa45df8cf7e7448c551a6d2f7f65a015cc1b858930/Microsoft.VC.14.52.Tools.HostX64.TargetX64.base.vsix" },
+        { name = "Microsoft.VC.14.52.CRT.Headers.base.vsix",
+          sha256 = "26c7797d7408b565c0a6bdc0862391bc69efc8aff14560dde854a86b32d8720c",
+          url = "https://download.visualstudio.microsoft.com/download/pr/0fdca428-6677-4d0e-a19d-65f175edc108/26c7797d7408b565c0a6bdc0862391bc69efc8aff14560dde854a86b32d8720c/Microsoft.VC.14.52.CRT.Headers.base.vsix" },
+        { name = "Microsoft.VC.14.52.CRT.x64.Desktop.base.vsix",
+          sha256 = "ff89fd2b115c6a08dff82a6ce9cc90ef6f4aeb4704c29a5b77d16f063ad33524",
+          url = "https://download.visualstudio.microsoft.com/download/pr/0fdca428-6677-4d0e-a19d-65f175edc108/ff89fd2b115c6a08dff82a6ce9cc90ef6f4aeb4704c29a5b77d16f063ad33524/Microsoft.VC.14.52.CRT.x64.Desktop.base.vsix" },
+        { name = "Microsoft.VC.14.52.CRT.Redist.X64.base.vsix",
+          sha256 = "da122e4f50a1d3328dd09954ed81ccf3012a32c23abac215872cc74272eee1f3",
+          url = "https://download.visualstudio.microsoft.com/download/pr/0fdca428-6677-4d0e-a19d-65f175edc108/da122e4f50a1d3328dd09954ed81ccf3012a32c23abac215872cc74272eee1f3/Microsoft.VC.14.52.CRT.Redist.X64.base.vsix" },
+    },
 }
 
+-- After TOOLSETS, not before it: a function that closes over a local must be
+-- defined below that local, or the name it captures is a global -- which reads
+-- as `attempt to index a nil value (global 'TOOLSETS')` at install time.
+local function payloads()
+    local set = TOOLSETS[toolset()]
+    if not set then
+        log.error("msvc: no payload set for toolset " .. tostring(toolset()))
+    end
+    return set or {}
+end
+
 local function toolsdir()
-    return path.join(pkginfo.install_dir(), "VC", "Tools", "MSVC", TOOLSET)
+    return path.join(pkginfo.install_dir(), "VC", "Tools", "MSVC", toolset())
 end
 
 local function bindir()
@@ -167,14 +213,14 @@ function install()
     os.tryrm(idir)
     os.mkdir(work)
 
-    for _, e in ipairs(PAYLOADS) do
+    for _, e in ipairs(payloads()) do
         if not fetch_verified(e, work) then return false end
     end
 
     -- A .vsix is a zip. Windows 10 1803+ ships tar.exe, which reads zip and
     -- needs no PowerShell module and no temp COM object.
     local stage = path.join(work, "x")
-    for _, e in ipairs(PAYLOADS) do
+    for _, e in ipairs(payloads()) do
         log.info("msvc: unpacking " .. e.name)
         os.mkdir(stage)
         system.exec(string.format('tar -xf "%s" -C "%s"', path.join(work, e.name), stage))
@@ -196,7 +242,7 @@ function install()
 
     if not installed() then
         log.error("msvc: unpacked, but cl.exe / std.ixx are not where they should be " ..
-                  "(expected under VC/Tools/MSVC/" .. TOOLSET .. ")")
+                  "(expected under VC/Tools/MSVC/" .. toolset() .. ")")
         return false
     end
     return true
@@ -213,8 +259,8 @@ function config()
     -- in the subos instead would export a Windows-SDK include path to every
     -- other compiler in the same subos, which is a real way to break an
     -- unrelated build.
-    local inc = { path.join(idir, "VC", "Tools", "MSVC", TOOLSET, "include") }
-    local lib = { path.join(idir, "VC", "Tools", "MSVC", TOOLSET, "lib", "x64") }
+    local inc = { path.join(idir, "VC", "Tools", "MSVC", toolset(), "include") }
+    local lib = { path.join(idir, "VC", "Tools", "MSVC", toolset(), "lib", "x64") }
     if sdk then
         for _, part in ipairs({"ucrt", "um", "shared"}) do
             table.insert(inc, path.join(sdk, "Include", SDK_DIR_VERSION, part))
