@@ -1,6 +1,6 @@
 """测试 msvc 包"""
 import pytest
-from tests.lib.xpkg_parser import parse_xpkg
+from tests.lib.xpkg_parser import parse_xpkg, payload_entries
 from tests.lib.assertions import (
     assert_required_fields, assert_valid_spec, assert_valid_type,
     assert_no_typos, assert_no_exec_xvm, assert_no_bashrc_modification,
@@ -36,15 +36,34 @@ class TestStatic:
 
     @pytest.mark.static
     def test_every_payload_is_pinned(self):
-        """每个 payload 都必须同时有 url 和 sha256。
+        """每个 payload 恰好一个 sha256, 至少一个地址。
 
         这个包自己下载一组 payload, 框架的单 url 校验覆盖不到它们 ——
         少一个 sha256 就是少一次校验, 而这些字节会变成编译器。
+
+        镜像让地址变成一个列表, 但 sha256 仍然是**一个**: 从哪个地址取到
+        都按同一个摘要校验, 所以"多来源"不会变成"多份可信来源"。
         """
-        src = open(PKG_FILE, encoding='utf-8').read()
-        assert src.count('url = "https://') == src.count('sha256 = "'), \
-            "payload 表里 url 与 sha256 数量不一致"
-        assert src.count('sha256 = "') > 0
+        entries = payload_entries(PKG_FILE)
+        assert entries, "没有解析到任何 payload"
+        for e in entries:
+            assert e["sha256"], f"{e['name']} 没有 sha256"
+            assert e["urls"], f"{e['name']} 没有任何下载地址"
+
+    @pytest.mark.static
+    def test_mirror_never_replaces_the_official_address(self):
+        """有镜像的条目必须仍然保留官方地址。
+
+        镜像是**第二个**地址, 不是替代品。只留镜像会把一个可以回退的
+        依赖换成一个不能回退的依赖 —— 而且换掉的正是唯一的权威来源。
+        """
+        for e in payload_entries(PKG_FILE):
+            official = [u for u in e["urls"]
+                        if "download.visualstudio.microsoft.com" in u]
+            assert official, f"{e['name']} 丢掉了官方地址: {e['urls']}"
+            if len(e["urls"]) > 1:
+                assert e["urls"][-1] == official[-1], \
+                    f"{e['name']} 的官方地址应当是最后的回退"
 
 
 class TestIndex:

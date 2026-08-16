@@ -108,38 +108,51 @@ end
 -- package ids are not spelled alike either: Microsoft.VC.14.44.17.14.* against
 -- Microsoft.VC.14.52.*.
 --
--- The Insiders entry carries a risk the release one does not: Microsoft rotates
--- those payloads. When 14.52.36629 goes away the URLs 404 -- loudly, and with
--- the sha256 still pinned, so a rotated build cannot be served in its place.
--- That is the failure mode worth having; it is also why `latest` is not it.
+-- The Insiders entry carried a risk the release one does not: Microsoft
+-- rotates those payloads, and when 14.52.36629 goes away its CDN URL 404s.
+-- That is now survivable rather than terminal -- every entry lists a mirror
+-- first and the CDN as the fallback, so the pin outlives the address. The
+-- sha256 is unchanged and still pinned, so a rotated build can never be
+-- served in place of the one named here, from either address.
+--
+-- `latest` still stays on the release channel: an Insiders toolset should be
+-- a choice, not what a bare `xlings install msvc` hands you.
 local TOOLSETS = {
     ["14.44.35207"] = {
         { name = "Microsoft.VC.14.44.17.14.Tools.HostX64.TargetX64.base.vsix",
           sha256 = "ee0baaa3a112d255f19f6c27dcc0ff6e496949eb9f1f37be0ac908c562a7076c",
-          url = "https://download.visualstudio.microsoft.com/download/pr/bbc72d8e-2acd-4229-8f6a-85e23c5e3456/ee0baaa3a112d255f19f6c27dcc0ff6e496949eb9f1f37be0ac908c562a7076c/Microsoft.VC.14.44.17.14.Tools.HostX64.TargetX64.base.vsix" },
+          urls = { "https://gitcode.com/xlings-res/msvc/releases/download/14.44.35207/Microsoft.VC.14.44.17.14.Tools.HostX64.TargetX64.base.vsix",
+                   "https://download.visualstudio.microsoft.com/download/pr/bbc72d8e-2acd-4229-8f6a-85e23c5e3456/ee0baaa3a112d255f19f6c27dcc0ff6e496949eb9f1f37be0ac908c562a7076c/Microsoft.VC.14.44.17.14.Tools.HostX64.TargetX64.base.vsix" } },
         { name = "Microsoft.VC.14.44.17.14.CRT.Headers.base.vsix",
           sha256 = "852382a9aa73502b7849c1bcadfb603ba7175c4e8b60e6aba03c7de711d4ece5",
-          url = "https://download.visualstudio.microsoft.com/download/pr/c610cd8c-801b-44b8-a80a-82cc382aeb43/852382a9aa73502b7849c1bcadfb603ba7175c4e8b60e6aba03c7de711d4ece5/Microsoft.VC.14.44.17.14.CRT.Headers.base.vsix" },
+          urls = { "https://gitcode.com/xlings-res/msvc/releases/download/14.44.35207/Microsoft.VC.14.44.17.14.CRT.Headers.base.vsix",
+                   "https://download.visualstudio.microsoft.com/download/pr/c610cd8c-801b-44b8-a80a-82cc382aeb43/852382a9aa73502b7849c1bcadfb603ba7175c4e8b60e6aba03c7de711d4ece5/Microsoft.VC.14.44.17.14.CRT.Headers.base.vsix" } },
         { name = "Microsoft.VC.14.44.17.14.CRT.x64.Desktop.base.vsix",
           sha256 = "f01f701a7bcd9587a340898c851424f6a52bb913a70c185ff0d5bf0288c5831a",
-          url = "https://download.visualstudio.microsoft.com/download/pr/67cf767c-5e71-47c2-a54a-cd5631e28942/f01f701a7bcd9587a340898c851424f6a52bb913a70c185ff0d5bf0288c5831a/Microsoft.VC.14.44.17.14.CRT.x64.Desktop.base.vsix" },
+          urls = { "https://gitcode.com/xlings-res/msvc/releases/download/14.44.35207/Microsoft.VC.14.44.17.14.CRT.x64.Desktop.base.vsix",
+                   "https://download.visualstudio.microsoft.com/download/pr/67cf767c-5e71-47c2-a54a-cd5631e28942/f01f701a7bcd9587a340898c851424f6a52bb913a70c185ff0d5bf0288c5831a/Microsoft.VC.14.44.17.14.CRT.x64.Desktop.base.vsix" } },
         { name = "Microsoft.VC.14.44.17.14.CRT.Redist.X64.base.vsix",
           sha256 = "4aaf54db0bfc9435f7c3660e1a00237a4b556042bfeea64bde44c2e0194e6ee5",
-          url = "https://download.visualstudio.microsoft.com/download/pr/45d3b8dd-bced-4b37-9974-142f748d710c/4aaf54db0bfc9435f7c3660e1a00237a4b556042bfeea64bde44c2e0194e6ee5/Microsoft.VC.14.44.17.14.CRT.Redist.X64.base.vsix" },
+          urls = { "https://gitcode.com/xlings-res/msvc/releases/download/14.44.35207/Microsoft.VC.14.44.17.14.CRT.Redist.X64.base.vsix",
+                   "https://download.visualstudio.microsoft.com/download/pr/45d3b8dd-bced-4b37-9974-142f748d710c/4aaf54db0bfc9435f7c3660e1a00237a4b556042bfeea64bde44c2e0194e6ee5/Microsoft.VC.14.44.17.14.CRT.Redist.X64.base.vsix" } },
     },
     ["14.52.36629"] = {
         { name = "Microsoft.VC.14.52.Tools.HostX64.TargetX64.base.vsix",
           sha256 = "3cf795636cf47b91a3583baa45df8cf7e7448c551a6d2f7f65a015cc1b858930",
-          url = "https://download.visualstudio.microsoft.com/download/pr/0fdca428-6677-4d0e-a19d-65f175edc108/3cf795636cf47b91a3583baa45df8cf7e7448c551a6d2f7f65a015cc1b858930/Microsoft.VC.14.52.Tools.HostX64.TargetX64.base.vsix" },
+          urls = { "https://gitcode.com/xlings-res/msvc/releases/download/14.52.36629/Microsoft.VC.14.52.Tools.HostX64.TargetX64.base.vsix",
+                   "https://download.visualstudio.microsoft.com/download/pr/0fdca428-6677-4d0e-a19d-65f175edc108/3cf795636cf47b91a3583baa45df8cf7e7448c551a6d2f7f65a015cc1b858930/Microsoft.VC.14.52.Tools.HostX64.TargetX64.base.vsix" } },
         { name = "Microsoft.VC.14.52.CRT.Headers.base.vsix",
           sha256 = "26c7797d7408b565c0a6bdc0862391bc69efc8aff14560dde854a86b32d8720c",
-          url = "https://download.visualstudio.microsoft.com/download/pr/0fdca428-6677-4d0e-a19d-65f175edc108/26c7797d7408b565c0a6bdc0862391bc69efc8aff14560dde854a86b32d8720c/Microsoft.VC.14.52.CRT.Headers.base.vsix" },
+          urls = { "https://gitcode.com/xlings-res/msvc/releases/download/14.52.36629/Microsoft.VC.14.52.CRT.Headers.base.vsix",
+                   "https://download.visualstudio.microsoft.com/download/pr/0fdca428-6677-4d0e-a19d-65f175edc108/26c7797d7408b565c0a6bdc0862391bc69efc8aff14560dde854a86b32d8720c/Microsoft.VC.14.52.CRT.Headers.base.vsix" } },
         { name = "Microsoft.VC.14.52.CRT.x64.Desktop.base.vsix",
           sha256 = "ff89fd2b115c6a08dff82a6ce9cc90ef6f4aeb4704c29a5b77d16f063ad33524",
-          url = "https://download.visualstudio.microsoft.com/download/pr/0fdca428-6677-4d0e-a19d-65f175edc108/ff89fd2b115c6a08dff82a6ce9cc90ef6f4aeb4704c29a5b77d16f063ad33524/Microsoft.VC.14.52.CRT.x64.Desktop.base.vsix" },
+          urls = { "https://gitcode.com/xlings-res/msvc/releases/download/14.52.36629/Microsoft.VC.14.52.CRT.x64.Desktop.base.vsix",
+                   "https://download.visualstudio.microsoft.com/download/pr/0fdca428-6677-4d0e-a19d-65f175edc108/ff89fd2b115c6a08dff82a6ce9cc90ef6f4aeb4704c29a5b77d16f063ad33524/Microsoft.VC.14.52.CRT.x64.Desktop.base.vsix" } },
         { name = "Microsoft.VC.14.52.CRT.Redist.X64.base.vsix",
           sha256 = "da122e4f50a1d3328dd09954ed81ccf3012a32c23abac215872cc74272eee1f3",
-          url = "https://download.visualstudio.microsoft.com/download/pr/0fdca428-6677-4d0e-a19d-65f175edc108/da122e4f50a1d3328dd09954ed81ccf3012a32c23abac215872cc74272eee1f3/Microsoft.VC.14.52.CRT.Redist.X64.base.vsix" },
+          urls = { "https://gitcode.com/xlings-res/msvc/releases/download/14.52.36629/Microsoft.VC.14.52.CRT.Redist.X64.base.vsix",
+                   "https://download.visualstudio.microsoft.com/download/pr/0fdca428-6677-4d0e-a19d-65f175edc108/da122e4f50a1d3328dd09954ed81ccf3012a32c23abac215872cc74272eee1f3/Microsoft.VC.14.52.CRT.Redist.X64.base.vsix" } },
     },
 }
 
@@ -162,42 +175,100 @@ local function bindir()
     return path.join(toolsdir(), "bin", "Hostx64", "x64")
 end
 
--- Download one payload and prove it is the file we asked for.
+-- The addresses a payload can be fetched from, in order of preference.
 --
--- The check is the point, not the download: these bytes become a compiler, and
--- "curl exited 0" says nothing about what arrived. Returns false on any
--- mismatch rather than letting a bad payload through.
+-- An entry carries `url` (one address) or `urls` (several). With one address
+-- the behaviour is byte-for-byte what it was, so adding a mirror to an entry
+-- cannot change how an unmirrored one installs.
 --
+-- WHY A LIST IS ENOUGH. A mirror is not a second trust root here -- it is a
+-- second ADDRESS for the same bytes, and `entry.sha256` is checked whichever
+-- one answered. That is the whole reason the fallback can be silent: there is
+-- no source-dependent outcome to report. Microsoft's CDN is itself just one
+-- of the addresses, and an Insiders payload rotating off it stops being a
+-- dead end the moment a second one exists.
+--
+-- The mirrored bytes were verified by DOWNLOADING every payload back from
+-- gitcode and hashing it against the pins below -- not by trusting that the
+-- upload succeeded, which for some files it reported both ways.
+local function sources(entry)
+    if entry.urls and #entry.urls > 0 then return entry.urls end
+    return { entry.url }
+end
+
 -- certutil, not PowerShell's Get-FileHash: both ship with Windows, but
 -- Get-FileHash needs a quoted -LiteralPath nested inside a quoted -Command
 -- inside a shell string. certutil takes one quoted path and prints the digest
 -- on a line of its own.
-local function fetch_verified(entry, dir)
-    local dst = path.join(dir, entry.name)
-    if not os.isfile(dst) then
-        log.info("msvc: fetching " .. entry.name)
-        system.exec(string.format('curl -fsSL --retry 3 -o "%s" "%s"', dst, entry.url))
-    end
-    if not os.isfile(dst) then
-        log.error("msvc: download produced no file: " .. entry.name)
-        return false
-    end
-    local out = os.iorun(string.format('certutil -hashfile "%s" SHA256', dst)) or ""
-    local got = nil
+local function sha256_of(file)
+    local out = os.iorun(string.format('certutil -hashfile "%s" SHA256', file)) or ""
     for line in out:gmatch("[^\r\n]+") do
         local hex = line:gsub("%s+", ""):lower()
-        if #hex == 64 and hex:match("^%x+$") then got = hex break end
+        if #hex == 64 and hex:match("^%x+$") then return hex end
     end
-    -- Case-insensitive: certutil prints uppercase, and the manifest is not
-    -- consistent either -- the VC payloads carry lowercase digests while the
-    -- SDK's are uppercase. Comparing the bytes, not their spelling.
-    if got ~= entry.sha256:lower() then
-        log.error("msvc: sha256 mismatch for " .. entry.name ..
-                  "\n  expected " .. entry.sha256 .. "\n  got      " .. tostring(got))
+    return nil
+end
+
+-- "https://gitcode.com/a/b/c" -> "gitcode.com", for log lines that say WHICH
+-- address answered. Without it a mirror is invisible in a build log, and an
+-- invisible fallback is indistinguishable from no fallback.
+local function host_of(url)
+    return (url:match("^%w+://([^/]+)")) or url
+end
+
+-- Download one payload and prove it is the file we asked for.
+--
+-- The check is the point, not the download: these bytes become a compiler,
+-- and "curl exited 0" says nothing about what arrived. Every address is
+-- verified against the SAME sha256, and a mismatch drops the file and moves
+-- on rather than letting a bad payload through.
+local function fetch_verified(entry, dir)
+    local dst  = path.join(dir, entry.name)
+    local want = entry.sha256:lower()
+
+    -- An already-present file still has to prove itself. A partial download
+    -- from an interrupted run is also "a file that exists", and accepting it
+    -- would turn a network blip into a corrupt compiler.
+    if os.isfile(dst) then
+        if sha256_of(dst) == want then return true end
         os.tryrm(dst)
-        return false
     end
-    return true
+
+    local why = {}
+    for i, url in ipairs(sources(entry)) do
+        -- The FIRST address is the expected one; reaching a later one means
+        -- something is wrong upstream even though the install still succeeds.
+        -- That has to be louder than an info line, or "the mirror served it"
+        -- and "the mirror is dead and the CDN saved us" look identical from
+        -- outside -- and the second one is how a fallback rots unnoticed
+        -- until the day both addresses are gone.
+        if i > 1 then
+            log.warn("msvc: " .. entry.name .. " -- falling back to " ..
+                     host_of(url) .. " after: " .. table.concat(why, "; "))
+        else
+            log.info("msvc: fetching " .. entry.name .. " from " .. host_of(url))
+        end
+        -- pcall: curl -f exits non-zero on a 404, and system.exec RAISES on a
+        -- non-zero exit. Without this the first missing mirror would abort the
+        -- install instead of falling through to the next address.
+        pcall(system.exec, string.format(
+            'curl -fsSL --retry 3 -o "%s" "%s"', dst, url))
+        if os.isfile(dst) then
+            local got = sha256_of(dst)
+            if got == want then return true end
+            -- Same address, wrong bytes. Say so per address: "the mirror is
+            -- stale" and "the CDN is down" need different fixes.
+            table.insert(why, host_of(url) .. ": sha256 " .. tostring(got))
+            os.tryrm(dst)
+        else
+            table.insert(why, host_of(url) .. ": no file")
+        end
+    end
+
+    log.error("msvc: could not obtain " .. entry.name ..
+              "\n  expected sha256 " .. entry.sha256 ..
+              "\n  tried:\n    " .. table.concat(why, "\n    "))
+    return false
 end
 
 function installed()
