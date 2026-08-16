@@ -77,8 +77,8 @@ class TestStatic:
                 f"{toolset} 缺动态 CRT payload (.CRT.x64.Store.base): {of_toolset}"
 
     @pytest.mark.static
-    def test_unpacking_pins_the_system_bsdtar_and_a_relative_archive_name(self):
-        """解包必须钉死 System32 的 bsdtar,并且归档参数是相对文件名。
+    def test_unpacking_pins_the_system_bsdtar(self):
+        """解包必须钉死 System32 的 bsdtar,并且路径与引号都按 cmd 的规矩来。
 
         **`.vsix` 是 zip,而 GNU tar 根本不读 zip。** Windows 自带的
         System32\\tar.exe 是 bsdtar(libarchive),读得了;Git for Windows
@@ -91,7 +91,8 @@ class TestStatic:
         **同一份 recipe、同一个镜像、不同的 PATH** —— 所以不能让 PATH 来选。
 
         钉死 exe 之后,**盘符那条风险就不存在了** —— 它是 GNU tar 独有的。
-        所以路径全部用绝对的、全部过 `winpath()`,并且**不用 `os.cd`**:
+        所以路径全部用绝对的、全部过 `winpath()`,并且**不用 `os.cd`**;
+        而 exe 本身**不能加引号**,否则 cmd /c 会把整行弄坏:
 
         * `path.join` 会混用分隔符,`"C:\\Windows/System32/tar.exe"` 执行不了;
         * `system.exec` **不继承** `os.cd` 设的 cwd。7zip.lua 那个
@@ -114,6 +115,12 @@ class TestStatic:
             "System32 的 exe 路径必须过 winpath(),否则分隔符是混的"
         assert not re.search(r"['\"]tar\s+-xf", code), \
             "不能调用裸 `tar` —— PATH 上的可能是读不了 zip 的 GNU tar"
+        # exe 本身不能加引号:cmd /c 遇到「首个 token 带引号 + 后面还有带引号的
+        # 参数」会把最外层那对剥掉, 然后报
+        #   The filename, directory name, or volume label syntax is incorrect.
+        # 证据很干净:裸 `tar` 时程序跑起来了并自己报错, 加引号时它根本没跑。
+        assert "'%s -xf" in code, \
+            "exe 不能加引号 —— cmd /c 会把整行弄坏(参数该加的还是要加)"
 
         # 归档与目标目录都必须过 winpath();相对路径依赖 cwd,而
         # system.exec 不继承 os.cd。

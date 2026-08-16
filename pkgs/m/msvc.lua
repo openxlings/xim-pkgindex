@@ -381,7 +381,22 @@ function install()
         for _, e in ipairs(payloads()) do
             log.info("msvc: unpacking " .. e.name)
             os.mkdir(stage)
-            system.exec(string.format('"%s" -xf "%s" -C "%s"',
+            -- The EXE IS NOT QUOTED, and that is not an oversight.
+            --
+            -- `cmd /c` mangles a line whose first token is quoted when more
+            -- quoted arguments follow -- it strips the outermost pair and
+            -- answers:
+            --
+            --     The filename, directory name, or volume label syntax is incorrect.
+            --
+            -- The evidence is clean: with a bare `tar` the program RAN and
+            -- complained itself ("does not look like a tar archive"); with
+            -- `"C:\...\tar.exe"` nothing ran at all. vc6.lua has the same
+            -- shape -- unquoted command, quoted arguments.
+            --
+            -- Safe because %SystemRoot% has no spaces; the ARGUMENTS keep
+            -- their quotes, and they are the ones that can.
+            system.exec(string.format('%s -xf "%s" -C "%s"',
                                       systar,
                                       winpath(path.join(work, e.name)),
                                       winpath(stage)))
