@@ -340,11 +340,29 @@ function install()
 
     -- A .vsix is a zip. Windows 10 1803+ ships tar.exe, which reads zip and
     -- needs no PowerShell module and no temp COM object.
+    --
+    -- ⚠️ RELATIVE PATHS, from inside `work`. An absolute Windows path passed to
+    -- `tar -xf` is ambiguous:
+    --
+    --     tar -xf "C:\...\xim-x-msvc\14.44.35207/.payloads/Microsoft.VC...vsix"
+    --     tar: Cannot connect to C: resolve failed
+    --
+    -- GNU tar reads `host:path` before it reads a drive letter, so `C:` becomes
+    -- a hostname. Windows' own bsdtar does not -- which is why this passed the
+    -- index's windows-test (bsdtar from System32) and failed under mcpp's e2e,
+    -- where Git for Windows puts GNU tar first on PATH. Same recipe, same
+    -- runner image, different tar.
+    --
+    -- `--force-local` fixes it for GNU tar and is rejected by bsdtar, so it
+    -- trades one broken environment for the other. A relative name has no
+    -- colon at all and both accept it -- the same shape 7zip.lua already uses.
     local stage = path.join(work, "x")
+    local prevdir = os.curdir()
+    os.cd(work)
     for _, e in ipairs(payloads()) do
         log.info("msvc: unpacking " .. e.name)
         os.mkdir(stage)
-        system.exec(string.format('tar -xf "%s" -C "%s"', path.join(work, e.name), stage))
+        system.exec(string.format('tar -xf "%s" -C "x"', e.name))
         -- Everything useful lives under Contents/; the rest is vsix metadata.
         local contents = path.join(stage, "Contents")
         if os.isdir(contents) then
@@ -359,6 +377,7 @@ function install()
         end
         os.tryrm(stage)
     end
+    os.cd(prevdir)
     os.tryrm(work)
 
     if not installed() then
