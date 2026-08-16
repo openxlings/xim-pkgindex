@@ -4,13 +4,27 @@
 -- without one cannot compile a single translation unit -- the ucrt / um /
 -- shared headers and the um libs are not part of the compiler.
 --
--- Not the 530 MB full SDK. Four MSIs and the fifteen cabinets their Media
--- tables reference, 139 MB, enough to compile and link x64 desktop C++:
+-- Not the 530 MB full SDK. Eight MSIs and the thirty-five cabinets their
+-- Media tables reference, 291 MB, enough to compile, link and rc a Win32
+-- desktop program:
 --
 --   Universal CRT Headers Libraries and Sources   ucrt headers + libs
---   Windows SDK Desktop Headers x64               um / shared headers
---   Windows SDK Desktop Libs x64                  um libs
---   Windows SDK Desktop Tools x64                 rc.exe, mt.exe
+--   Windows SDK Desktop Libs x64                  365 um libs -- the LONG TAIL
+--   Windows SDK Desktop Tools x64                 99 bin tools (NOT rc/mt)
+--   Windows SDK Desktop Headers x64               3 Hyper-V headers, no more
+--   Windows SDK for Windows Store Apps Libs       kernel32/user32/advapi32/
+--                                                 ole32/oleaut32/uuid  <- core
+--   Windows SDK for Windows Store Apps Headers    528 um headers: windows.h,
+--                                                 winnt.h  <- core
+--   ... Headers OnecoreUap                        shared/: windef.h, sal.h,
+--                                                 winerror.h  <- core
+--   Windows SDK for Windows Store Apps Tools      rc.exe, rcdll.dll, mt.exe
+--
+-- Read that list again: EVERY header and library and tool a Win32 program
+-- actually needs comes from an MSI whose name says "Store Apps", and the
+-- four whose names say "Desktop" contribute a long tail, some bin utilities
+-- and three Hyper-V headers. The naming is not a hint -- it is an anti-hint.
+-- Same trap as msvc.lua's CRT.x64.Store.base, now four layers deep.
 --
 -- Every payload below is pinned by URL + sha256, both taken from the VS
 -- channel manifest (see the msvc recipe's header for how that is resolved).
@@ -160,6 +174,134 @@ local PAYLOADS = {
       sha256 = "355CC1E65B9E5F02A0B3A4F32D02F9241B97030D3527166EFF6A372D5D0E1BAC",
       urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/f9ff50431335056fb4fbac05b8268204.cab.bin",
                "https://download.visualstudio.microsoft.com/download/pr/6452c1f1-dc1e-413c-8b19-991b61870a8b/8383be7caac218b9afd6a3564dbb0984/f9ff50431335056fb4fbac05b8268204.cab" } },
+    -- ⚠️ "Store Apps" is a misleading name -- the same trap as msvc.lua's
+    -- CRT.x64.Store.base, one layer down. THIS is where the core Win32 import
+    -- libraries live:
+    --     kernel32.lib  user32.lib  advapi32.lib  ole32.lib  oleaut32.lib  uuid.lib
+    -- "Windows SDK Desktop Libs x64" carries 341 um libs and NONE of those
+    -- six; it is the long tail (sensorsapi, websocket, computestorage...).
+    -- Without this MSI a link of `int main(){}` fails at
+    --     LINK : fatal error LNK1104: cannot open file 'kernel32.lib'
+    -- which is every program, so the SDK subset was unusable for its purpose.
+    { name = "Windows SDK for Windows Store Apps Libs-x86_en-us.msi", msi = true,
+      sha256 = "1381535D2F6B1894A092DA67F8A8FB048A4DFE8060CE75B3275AFFA81B02586E",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/Windows_SDK_for_Windows_Store_Apps_Libs-x86_en-us.msi",
+               "https://download.visualstudio.microsoft.com/download/pr/6452c1f1-dc1e-413c-8b19-991b61870a8b/079ca63878193e064d8aa000670f0db3/windows%20sdk%20for%20windows%20store%20apps%20libs-x86_en-us.msi" } },
+    { name = "05047a45609f311645eebcac2739fc4c.cab",
+      sha256 = "902003E4976C7BC4BCDA9F31F1D835B8072235532412770F66B0BC9F0882CB7E",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/05047a45609f311645eebcac2739fc4c.cab.bin",
+               "https://download.visualstudio.microsoft.com/download/pr/6452c1f1-dc1e-413c-8b19-991b61870a8b/67a9b258981565b78c46484efbed6945/05047a45609f311645eebcac2739fc4c.cab" } },
+    { name = "13d68b8a7b6678a368e2d13ff4027521.cab",
+      sha256 = "0B26EDE2D22EA531D921269DFFFCD14CC71D6932CAC0F2720FCEC37079286643",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/13d68b8a7b6678a368e2d13ff4027521.cab.bin",
+               "https://download.visualstudio.microsoft.com/download/pr/6452c1f1-dc1e-413c-8b19-991b61870a8b/2160d8b73fe2e4fea3e2097084a081cd/13d68b8a7b6678a368e2d13ff4027521.cab" } },
+    { name = "463ad1b0783ebda908fd6c16a4abfe93.cab",
+      sha256 = "43C40559098A2C1EFBEF6AF16F97A44FD80B3BB9FE8AE117C4E6F9F3F852B8E8",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/463ad1b0783ebda908fd6c16a4abfe93.cab.bin",
+               "https://download.visualstudio.microsoft.com/download/pr/6452c1f1-dc1e-413c-8b19-991b61870a8b/637a623c788980d4a7edf6d84e34ed70/463ad1b0783ebda908fd6c16a4abfe93.cab" } },
+    { name = "5a22e5cde814b041749fb271547f4dd5.cab",
+      sha256 = "57E7E309413D05B781AE76D1B5C54DC7AFF350B6A460920F1F358E8003AABDFB",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/5a22e5cde814b041749fb271547f4dd5.cab.bin",
+               "https://download.visualstudio.microsoft.com/download/pr/6452c1f1-dc1e-413c-8b19-991b61870a8b/03cfd7ea3b3116d5d32d11df101dea24/5a22e5cde814b041749fb271547f4dd5.cab" } },
+    { name = "e10768bb6e9d0ea730280336b697da66.cab",
+      sha256 = "46E21578A4CFCE3BD6E4EACC10B92121A825CE443CC2F6CCE84B07E37B9D21BC",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/e10768bb6e9d0ea730280336b697da66.cab.bin",
+               "https://download.visualstudio.microsoft.com/download/pr/6452c1f1-dc1e-413c-8b19-991b61870a8b/b2915dcb648d1087f4a5ef20f17c9825/e10768bb6e9d0ea730280336b697da66.cab" } },
+    { name = "f9b24c8280986c0683fbceca5326d806.cab",
+      sha256 = "154F4A24EC22EA0C932709F0E1A2C443946B42C14291A49A280AB4EA0EAA504D",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/f9b24c8280986c0683fbceca5326d806.cab.bin",
+               "https://download.visualstudio.microsoft.com/download/pr/6452c1f1-dc1e-413c-8b19-991b61870a8b/66f36d1686d2dde0cfa99a5160a9571d/f9b24c8280986c0683fbceca5326d806.cab" } },
+    -- Three more, and the same trap a third and fourth time.
+    --
+    -- "Windows SDK Desktop Headers x64" sounds like the um/shared headers.
+    -- It ships FOUR FILES: WinHvEmulation.h, WinHvPlatform.h,
+    -- WinHvPlatformDefs.h and a catalog. Not windows.h. Not winnt.h.
+    -- The 528 um headers are in "for Windows Store Apps Headers", the shared
+    -- ones (windef.h, sal.h, winerror.h, basetsd.h, guiddef.h) are in
+    -- "for Windows Store Apps Headers OnecoreUap", and rc.exe / rcdll.dll /
+    -- mt.exe -- the two programs this package advertises -- are in
+    -- "for Windows Store Apps Tools". Nothing named "Desktop" carries any of
+    -- them.
+    --
+    -- This is not guesswork: each MSI's File + Component + Directory tables
+    -- were decoded offline and the install path of every file resolved, so
+    -- the four lines below are what the SDK actually puts on disk. The
+    -- previous comment here claimed "Desktop Headers x64 -> um / shared
+    -- headers" and was simply wrong; installed() only found out because it
+    -- started asserting winnt.h instead of a directory.
+    --
+    -- The Tools MSI costs 99 MB to deliver a 200 KB resource compiler -- it
+    -- carries x86/x64/arm64 and AccChecker besides. Paid, rather than
+    -- shipping a package whose `programs = {"rc", "mt"}` names two files
+    -- that are not there.
+    { name = "Windows SDK for Windows Store Apps Headers-x86_en-us.msi", msi = true,
+      sha256 = "48C953AD16CE986F724EA53A9FA5FE796DD92D77E6C1BFE8CFE2105760401425",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/Windows_SDK_for_Windows_Store_Apps_Headers-x86_en-us.msi",
+               "https://download.visualstudio.microsoft.com/download/pr/e690ed5c-a2c2-42aa-8cbb-4f3ea5f87edf/e4c6d39d87f5c255483cbed9a719379c/windows%20sdk%20for%20windows%20store%20apps%20headers-x86_en-us.msi" } },
+    { name = "766c0ffd568bbb31bf7fb6793383e24a.cab",
+      sha256 = "41577D34CB8972821710878DC2FF8C82ED0F218E79640792F27D2658958C1B1A",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/766c0ffd568bbb31bf7fb6793383e24a.cab.bin",
+               "https://download.visualstudio.microsoft.com/download/pr/e690ed5c-a2c2-42aa-8cbb-4f3ea5f87edf/9b55a3f3e88b71fd20d425b1675038bd/766c0ffd568bbb31bf7fb6793383e24a.cab" } },
+    { name = "8125ee239710f33ea485965f76fae646.cab",
+      sha256 = "AA6532B67AF8D1A302E963F08F2D0F8FFF734E6B0DCD4DB5C872F10B27F5F835",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/8125ee239710f33ea485965f76fae646.cab.bin",
+               "https://download.visualstudio.microsoft.com/download/pr/e690ed5c-a2c2-42aa-8cbb-4f3ea5f87edf/f4e1d09d1a4d70a82444fa4f1aac5d7b/8125ee239710f33ea485965f76fae646.cab" } },
+    { name = "c0aa6d435b0851bf34365aadabd0c20f.cab",
+      sha256 = "4CCBAABD756FCB9735D60BA545079DEAE4FFDCA1B8584D7CF8A28A871448F8FC",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/c0aa6d435b0851bf34365aadabd0c20f.cab.bin",
+               "https://download.visualstudio.microsoft.com/download/pr/e690ed5c-a2c2-42aa-8cbb-4f3ea5f87edf/b1889625df897934cc0b7d30a5620efd/c0aa6d435b0851bf34365aadabd0c20f.cab" } },
+    { name = "Windows SDK for Windows Store Apps Headers OnecoreUap-x86_en-us.msi", msi = true,
+      sha256 = "92DC37ACAC3D795CFCF62DDC9E7A8D689087EA711C7046341617549C45E659B8",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/Windows_SDK_for_Windows_Store_Apps_Headers_OnecoreUap-x86_en-us.msi",
+               "https://download.visualstudio.microsoft.com/download/pr/e690ed5c-a2c2-42aa-8cbb-4f3ea5f87edf/1bb87b77719e9bf0c77536f8aa8831c3/windows%20sdk%20for%20windows%20store%20apps%20headers%20onecoreuap-x86_en-us.msi" } },
+    { name = "e89e3dcbb016928c7e426238337d69eb.cab",
+      sha256 = "7AF28E97E8EF2FDE14DB0ECCC1E41B4AB332B3CFD3D65DDFA0CD7930FF3F97AD",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/e89e3dcbb016928c7e426238337d69eb.cab.bin",
+               "https://download.visualstudio.microsoft.com/download/pr/e690ed5c-a2c2-42aa-8cbb-4f3ea5f87edf/aa45855a2db781eba5367a90d9702991/e89e3dcbb016928c7e426238337d69eb.cab" } },
+    { name = "Windows SDK for Windows Store Apps Tools-x86_en-us.msi", msi = true,
+      sha256 = "59A8197DB4B7651625C810BF0A7D59480BC18250558AA6D3C99A05F80466EC78",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/Windows_SDK_for_Windows_Store_Apps_Tools-x86_en-us.msi",
+               "https://download.visualstudio.microsoft.com/download/pr/e690ed5c-a2c2-42aa-8cbb-4f3ea5f87edf/59ce2e4e7d12186bfba85c54f4026546/windows%20sdk%20for%20windows%20store%20apps%20tools-x86_en-us.msi" } },
+    { name = "2630bae9681db6a9f6722366f47d055c.cab",
+      sha256 = "55C9439C5477C9A8887880CCC57A2BDB71B712257119AF760864C18343F7FAD2",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/2630bae9681db6a9f6722366f47d055c.cab.bin",
+               "https://download.visualstudio.microsoft.com/download/pr/e690ed5c-a2c2-42aa-8cbb-4f3ea5f87edf/0a19221dcbcb5f7bf4b45cbc2932743a/2630bae9681db6a9f6722366f47d055c.cab" } },
+    { name = "26ea25236f12b23db661acf268a70cfa.cab",
+      sha256 = "47839E22AF08420476C9C48F50CA6463E89B6A2B5628C08FA27CC42FB1284C7C",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/26ea25236f12b23db661acf268a70cfa.cab.bin",
+               "https://download.visualstudio.microsoft.com/download/pr/e690ed5c-a2c2-42aa-8cbb-4f3ea5f87edf/c8301ed19c227741201abd4dea4d863d/26ea25236f12b23db661acf268a70cfa.cab" } },
+    { name = "2a30b5d1115d515c6ddd8cd6b5173835.cab",
+      sha256 = "01FC9DB99B11F5F8D771B9B07780100589B5FA7CDD719BF2B02EA076763168E5",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/2a30b5d1115d515c6ddd8cd6b5173835.cab.bin",
+               "https://download.visualstudio.microsoft.com/download/pr/e690ed5c-a2c2-42aa-8cbb-4f3ea5f87edf/05ef8fa52330fd13b117d61243efa9c7/2a30b5d1115d515c6ddd8cd6b5173835.cab" } },
+    { name = "4a4c678668584fc994ead5b99ccf7f03.cab",
+      sha256 = "8197D07538168AECB8E7DC469CEFCADF21EC610BF95E97527D2E7491168A8E65",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/4a4c678668584fc994ead5b99ccf7f03.cab.bin",
+               "https://download.visualstudio.microsoft.com/download/pr/e690ed5c-a2c2-42aa-8cbb-4f3ea5f87edf/7c629cca1649e7491d7eeb2a2622ea22/4a4c678668584fc994ead5b99ccf7f03.cab" } },
+    { name = "61d57a7a82309cd161a854a6f4619e52.cab",
+      sha256 = "A19984F4A105F783A3A510445FD2DDA33B2130141CA7AD402320BCEEE8541B1F",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/61d57a7a82309cd161a854a6f4619e52.cab.bin",
+               "https://download.visualstudio.microsoft.com/download/pr/e690ed5c-a2c2-42aa-8cbb-4f3ea5f87edf/9045f92e92095a4496e5fc55175f94ac/61d57a7a82309cd161a854a6f4619e52.cab" } },
+    { name = "68de71e3e2fb9941ee5b7c77500c0508.cab",
+      sha256 = "45D7480B178D37F39A088AD89048DCEB55068603B8C759690734E3298894A891",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/68de71e3e2fb9941ee5b7c77500c0508.cab.bin",
+               "https://download.visualstudio.microsoft.com/download/pr/e690ed5c-a2c2-42aa-8cbb-4f3ea5f87edf/e587157990ed8c5831cea0925c8a5191/68de71e3e2fb9941ee5b7c77500c0508.cab" } },
+    { name = "69661e20556b3ca9456b946c2c881ddd.cab",
+      sha256 = "1C56E5B107BFC4E2D35FF8BAAAE44037105A1C63964682D93E3C32C0D708433E",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/69661e20556b3ca9456b946c2c881ddd.cab.bin",
+               "https://download.visualstudio.microsoft.com/download/pr/e690ed5c-a2c2-42aa-8cbb-4f3ea5f87edf/1cd90b8646ccd10a91fa16927c94cb41/69661e20556b3ca9456b946c2c881ddd.cab" } },
+    { name = "b82881a61b7477bd4eb5de2cd5037fe2.cab",
+      sha256 = "706674A05487A82F149AA5F215709F2BDEF9D54888C933FE0C17C4272D0876AD",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/b82881a61b7477bd4eb5de2cd5037fe2.cab.bin",
+               "https://download.visualstudio.microsoft.com/download/pr/e690ed5c-a2c2-42aa-8cbb-4f3ea5f87edf/528c78f5c6e2e4ac979d3e2b8b3aedaf/b82881a61b7477bd4eb5de2cd5037fe2.cab" } },
+    { name = "dcfb1aa345e349091a44e86ce1766566.cab",
+      sha256 = "CF5E2CFF8CF9AAF59BCA0D57914DE2817B2E9D67225BEB4B16A91512E4F98CA3",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/dcfb1aa345e349091a44e86ce1766566.cab.bin",
+               "https://download.visualstudio.microsoft.com/download/pr/e690ed5c-a2c2-42aa-8cbb-4f3ea5f87edf/48cd16cda6085509cd03f709c85682a3/dcfb1aa345e349091a44e86ce1766566.cab" } },
+    { name = "e3d1b35aecfccda1b4af6fe5988ac4be.cab",
+      sha256 = "2BD0E59DEA945A4C276D9E8A6C6945AD955C9C3BE858E62F0B466925BC627E70",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/e3d1b35aecfccda1b4af6fe5988ac4be.cab.bin",
+               "https://download.visualstudio.microsoft.com/download/pr/e690ed5c-a2c2-42aa-8cbb-4f3ea5f87edf/2fe14e34e0ee1923777fd543e5b57902/e3d1b35aecfccda1b4af6fe5988ac4be.cab" } },
 }
 
 -- The addresses a payload can be fetched from, in order of preference.
@@ -282,22 +424,55 @@ local function find_sdk_root(base, depth)
     return nil
 end
 
+-- One file per MSI that matters, chosen so a missing payload cannot pass.
+--
+-- Not a sample -- a cover. Each line below is the file that only ONE of the
+-- eight payloads provides, so whichever one failed to download, extract or
+-- merge, exactly this list names it. The last two are the `programs` this
+-- package registers with xvm: a package that advertises rc and mt and then
+-- ships neither is worse than one that admits it has no tools.
+local function required_files()
+    local d = pkginfo.install_dir()
+    return {
+        path.join(d, "Include", SDK_DIR_VERSION, "ucrt", "corecrt.h"),    -- UCRT
+        path.join(d, "Include", SDK_DIR_VERSION, "um", "winnt.h"),        -- StoreApps Headers
+        path.join(d, "Include", SDK_DIR_VERSION, "shared", "windef.h"),   -- ... OnecoreUap
+        path.join(d, "Lib", SDK_DIR_VERSION, "um", "x64", "kernel32.lib"),-- StoreApps Libs
+        path.join(d, "Lib", SDK_DIR_VERSION, "um", "x64", "gdi32.lib"),   -- Desktop Libs x64
+        path.join(d, "bin", SDK_DIR_VERSION, "x64", "rc.exe"),            -- StoreApps Tools
+        path.join(d, "bin", SDK_DIR_VERSION, "x64", "mt.exe"),            -- ... same
+    }
+end
+
 function installed()
-    -- One assertion per MSI, so a partial extraction cannot pass.
+    -- Assert the FILES a link actually opens, not the directories they sit in.
     --
-    -- The header is checked by name; the libs and tools by directory. That is
-    -- not laziness -- the SDK does not spell its own file names consistently.
-    -- A `dir /b` of Lib/<ver>/um/x64 on the runner returns, in one listing:
+    -- This used to check `Lib/<ver>/um/x64` as a DIRECTORY, reasoning that the
+    -- SDK spells its own names inconsistently --
     --
     --   AclUI.Lib  ActiveDS.Lib  advpack.Lib  ahadmin.lib  amsi.lib ...
     --
-    -- so `kernel32.lib` is a guess about casing, and a wrong guess here reads
-    -- as "the SDK did not install". The directory existing means the x64 libs
-    -- MSI unpacked, which is the fact worth asserting.
-    local d = pkginfo.install_dir()
-    return os.isfile(path.join(d, "Include", SDK_DIR_VERSION, "ucrt", "corecrt.h"))
-       and os.isdir(path.join(d, "Lib", SDK_DIR_VERSION, "um", "x64"))
-       and os.isdir(path.join(d, "bin", SDK_DIR_VERSION, "x64"))
+    -- -- so naming `kernel32.lib` was "a guess about casing". That reasoning
+    -- is wrong: Windows filesystems are CASE-INSENSITIVE, so os.isfile on
+    -- `kernel32.lib` matches `Kernel32.Lib` on disk. There was no hazard to
+    -- avoid.
+    --
+    -- And the weakening is precisely what let a broken SDK ship. The subset
+    -- was missing the MSI that CONTAINS kernel32.lib, the directory existed
+    -- anyway (341 other um libs landed in it), `installed()` said yes,
+    -- windows-test went green, and every link of every program failed with
+    --
+    --     LINK : fatal error LNK1104: cannot open file 'kernel32.lib'
+    --
+    -- One name per MSI, chosen so that MSI's absence cannot hide:
+    --   corecrt.h    Universal CRT headers
+    --   kernel32.lib Store Apps Libs   -- the core Win32 import libraries
+    --   winnt.h      Desktop Headers x64
+    --   rc.exe       Desktop Tools x64
+    for _, f in ipairs(required_files()) do
+        if not os.isfile(f) then return false end
+    end
+    return true
 end
 
 function install()
@@ -356,10 +531,12 @@ function install()
     if not installed() then
         -- Say WHAT is there. "not installed" after a clean extraction means the
         -- layout moved, and the next person needs the tree, not the verdict.
+        local missing = {}
+        for _, f in ipairs(required_files()) do
+            if not os.isfile(f) then table.insert(missing, f) end
+        end
         log.error("windows-sdk: extraction finished but the SDK tree is not where it should be." ..
-                  "\n  wanted: Include/" .. SDK_DIR_VERSION .. "/ucrt/corecrt.h" ..
-                  "\n          Lib/" .. SDK_DIR_VERSION .. "/um/x64/" ..
-                  "\n          bin/" .. SDK_DIR_VERSION .. "/x64/")
+                  "\n  missing:\n    " .. table.concat(missing, "\n    "))
         -- Two levels, not one. The top level looked correct for three runs
         -- running while the anchor files were not there, so the level that
         -- matters is the one below it: which version directories exist under
