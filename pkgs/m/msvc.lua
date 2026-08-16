@@ -112,14 +112,6 @@ end
 -- those payloads. When 14.52.36629 goes away the URLs 404 -- loudly, and with
 -- the sha256 still pinned, so a rotated build cannot be served in its place.
 -- That is the failure mode worth having; it is also why `latest` is not it.
-local function payloads()
-    local set = TOOLSETS[toolset()]
-    if not set then
-        log.error("msvc: no payload set for toolset " .. tostring(toolset()))
-    end
-    return set or {}
-end
-
 local TOOLSETS = {
     ["14.44.35207"] = {
         { name = "Microsoft.VC.14.44.17.14.Tools.HostX64.TargetX64.base.vsix",
@@ -150,6 +142,17 @@ local TOOLSETS = {
           url = "https://download.visualstudio.microsoft.com/download/pr/0fdca428-6677-4d0e-a19d-65f175edc108/da122e4f50a1d3328dd09954ed81ccf3012a32c23abac215872cc74272eee1f3/Microsoft.VC.14.52.CRT.Redist.X64.base.vsix" },
     },
 }
+
+-- After TOOLSETS, not before it: a function that closes over a local must be
+-- defined below that local, or the name it captures is a global -- which reads
+-- as `attempt to index a nil value (global 'TOOLSETS')` at install time.
+local function payloads()
+    local set = TOOLSETS[toolset()]
+    if not set then
+        log.error("msvc: no payload set for toolset " .. tostring(toolset()))
+    end
+    return set or {}
+end
 
 local function toolsdir()
     return path.join(pkginfo.install_dir(), "VC", "Tools", "MSVC", toolset())
