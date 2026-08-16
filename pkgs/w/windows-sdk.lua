@@ -175,6 +175,24 @@ local function fetch_verified(entry, dir)
     return true
 end
 
+-- Walk down looking for the SDK root, bounded.
+--
+-- os.files is not in the xpkg sandbox (os.dirs is), so this recurses over
+-- directories instead of globbing for the anchor file. Depth 4 covers every
+-- prefix msiexec has been seen to produce ("Windows Kits/10", optionally under
+-- a Program Files one); anything deeper would be a different installer.
+local function find_sdk_root(base, depth)
+    if os.isfile(path.join(base, "Include", SDK_DIR_VERSION, "ucrt", "corecrt.h")) then
+        return base
+    end
+    if depth <= 0 then return nil end
+    for _, d in ipairs(os.dirs(path.join(base, "*")) or {}) do
+        local found = find_sdk_root(d, depth - 1)
+        if found then return found end
+    end
+    return nil
+end
+
 function installed()
     -- Assert on the artifact: a header and a lib that a compile actually
     -- consumes, not on the directory existing.
@@ -214,14 +232,11 @@ function install()
     -- "Program Files" prefix) is a property of the installer, not something to
     -- hardcode. Anchor on the one file that must exist and derive the root
     -- from it: <root>/Include/<ver>/ucrt/corecrt.h is four levels up.
-    if not os.isfile(path.join(idir, "Include", SDK_DIR_VERSION, "ucrt", "corecrt.h")) then
-        local anchors = os.files(path.join(idir, "**", "Include", SDK_DIR_VERSION, "ucrt", "corecrt.h"))
-        if anchors and #anchors > 0 then
-            local root = path.directory(path.directory(path.directory(path.directory(anchors[1]))))
-            log.info("windows-sdk: SDK root found at " .. root)
-            for _, sub in ipairs(os.dirs(path.join(root, "*"))) do
-                os.trymv(sub, path.join(idir, path.filename(sub)))
-            end
+    local root = find_sdk_root(idir, 4)
+    if root and root ~= idir then
+        log.info("windows-sdk: SDK root found at " .. root)
+        for _, sub in ipairs(os.dirs(path.join(root, "*"))) do
+            os.trymv(sub, path.join(idir, path.filename(sub)))
         end
     end
 
