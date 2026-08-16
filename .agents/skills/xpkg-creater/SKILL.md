@@ -149,6 +149,33 @@ xpm = {
 > ```
 >
 > **整个 index 里零处使用的 sandbox API,基本可以认定它不在 runtime 里。**
+>
+> 另外两条不在上表里,因为它们**存在**、只是行为和你以为的不一样:
+>
+> - `os.cd(dir)` 之后 **`system.exec` 不继承那个 cwd**(`os.exec` 才继承)。
+>   照抄别的 recipe 的「cd 之后用相对路径」时,先看清它用的是哪一个 ——
+>   命令可以拼得完全正确,然后找不到自己的文件。
+> - `path.join` 在 Windows 上**混用分隔符**(保留已有的 `\`、新加 `/`)。
+>   `"C:\Windows/System32/tar.exe"` 执行不了,`msiexec` 也拒收。
+>   凡是要交给 Windows 程序的路径都过一遍 `winpath()` —— **包括可执行文件
+>   本身的路径**,不只是它的参数。
+
+#### Windows 上的 `tar`:PATH 会替你选,而两个 tar 能力不同
+
+runner 上同时存在两个 `tar`,**它们不是同一个程序**:
+
+| | 来源 | 读 zip? | `C:\...` 参数 |
+|---|---|---|---|
+| bsdtar | `%SystemRoot%\System32\tar.exe`(Win10 1803+) | ✅ | 正常 |
+| GNU tar | Git for Windows / MSYS2 | ❌ **完全不支持** | 当成 `host:path`,报 `Cannot connect to C:` |
+
+`.vsix` / `.zip` 只有 bsdtar 读得了。而**哪一个被选中取决于 PATH 顺序** ——
+同一个 GitHub 镜像上,index 自己的 windows-test 拿到 bsdtar 通过,
+mcpp 的 e2e 拿到 GNU tar 失败,recipe 一个字都没变。
+
+所以:**解 zip 时写绝对路径的 `System32\tar.exe`,不要写裸 `tar`。**
+钉死之后盘符问题也随之消失(那是 GNU tar 独有的),路径可以放心用绝对的。
+`--force-local` 不是答案 —— GNU tar 认、bsdtar 拒收,是拿一个坏环境换另一个。
 > 这不是概率判断:能用的东西早就有人用了。而代价是不对称的 —— 猜对省几秒,
 > 猜错要等一轮 Windows CI(约 4 分钟)才知道,而且失败信息出现在
 > install hook 里、离你写的那一行有几层。

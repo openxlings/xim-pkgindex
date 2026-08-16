@@ -338,46 +338,68 @@ function install()
         if not fetch_verified(e, work) then return false end
     end
 
-    -- A .vsix is a zip. Windows 10 1803+ ships tar.exe, which reads zip and
-    -- needs no PowerShell module and no temp COM object.
+    -- A .vsix is a ZIP, and that decides WHICH tar -- not just which path.
     --
-    -- ⚠️ RELATIVE PATHS, from inside `work`. An absolute Windows path passed to
-    -- `tar -xf` is ambiguous:
+    -- Windows 10 1803+ ships bsdtar at System32\tar.exe, and libarchive reads
+    -- zip. GNU tar does not read zip AT ALL. So on a runner where Git for
+    -- Windows is on PATH ahead of System32, a bare `tar` is a coin flip
+    -- between "works" and:
     --
-    --     tar -xf "C:\...\xim-x-msvc\14.44.35207/.payloads/Microsoft.VC...vsix"
-    --     tar: Cannot connect to C: resolve failed
+    --     tar: This does not look like a tar archive
     --
-    -- GNU tar reads `host:path` before it reads a drive letter, so `C:` becomes
-    -- a hostname. Windows' own bsdtar does not -- which is why this passed the
-    -- index's windows-test (bsdtar from System32) and failed under mcpp's e2e,
-    -- where Git for Windows puts GNU tar first on PATH. Same recipe, same
-    -- runner image, different tar.
+    -- Two runs on the SAME GitHub image proved it: the index's own
+    -- windows-test resolved bsdtar and passed; mcpp's e2e resolved GNU tar
+    -- and failed. Same recipe, same image, different PATH -- so the recipe
+    -- must not let PATH pick.
     --
-    -- `--force-local` fixes it for GNU tar and is rejected by bsdtar, so it
-    -- trades one broken environment for the other. A relative name has no
-    -- colon at all and both accept it -- the same shape 7zip.lua already uses.
+    -- ABSOLUTE paths for everything, and NO `os.cd`.
+    --
+    -- The drive-colon hazard was GNU tar's alone; pinning bsdtar removes it,
+    -- so the relative-name workaround it needed goes away with it. That
+    -- workaround also depended on `system.exec` inheriting a cwd set by
+    -- `os.cd` -- which it does not. 7zip.lua's cd-then-relative-name shape
+    -- uses `os.exec`, and I copied the shape without checking that one
+    -- difference: the command came out perfectly formed and still could not
+    -- find its archive.
+    --
+    -- winpath() on every path, because path.join mixes separators and both
+    -- the executable and its arguments care:
+    --
+    --     "C:\\Windows/System32/tar.exe" -xf "...": exec failed
+    --
+    -- Fewer moving parts than the version this replaces: no cwd to change, no
+    -- cwd to restore, and nothing that depends on which tar runs it.
+    local systar = winpath(path.join(os.getenv("SystemRoot") or "C:\\Windows",
+                                     "System32", "tar.exe"))
     local stage = path.join(work, "x")
 
-    -- Leaving via `idir`, not via a saved `os.curdir()`.
-    --
-    -- `os.curdir` has ZERO uses across the whole index, and every previous
-    -- time this recipe reached for an xpkg-sandbox API with no precedent
-    -- (os.execv, path.absolute, os.files) it turned into an install-time
-    -- "attempt to call a nil value". `pkginfo.install_dir()` is used
-    -- everywhere and is a real directory that outlives `work` -- which is all
-    -- the restore actually needs.
-    --
-    -- pcall, so a raising `system.exec` cannot leave the process sitting in a
-    -- directory this function is about to delete. Everything after
-    -- `install()` in the same process -- config hooks, other packages --
-    -- would inherit that cwd, and the symptom would surface somewhere with no
-    -- connection to here.
-    os.cd(work)
+    -- pcall so a raising `system.exec` becomes a named error and `false`,
+    -- rather than propagating out of a hook whose contract is true/false --
+    -- which is how the first failure here read as the unhelpful
+    -- "install hook failed: install hook returned false".
     local ok, err = pcall(function()
         for _, e in ipairs(payloads()) do
             log.info("msvc: unpacking " .. e.name)
             os.mkdir(stage)
-            system.exec(string.format('tar -xf "%s" -C "x"', e.name))
+            -- The EXE IS NOT QUOTED, and that is not an oversight.
+            --
+            -- `cmd /c` mangles a line whose first token is quoted when more
+            -- quoted arguments follow -- it strips the outermost pair and
+            -- answers:
+            --
+            --     The filename, directory name, or volume label syntax is incorrect.
+            --
+            -- The evidence is clean: with a bare `tar` the program RAN and
+            -- complained itself ("does not look like a tar archive"); with
+            -- `"C:\...\tar.exe"` nothing ran at all. vc6.lua has the same
+            -- shape -- unquoted command, quoted arguments.
+            --
+            -- Safe because %SystemRoot% has no spaces; the ARGUMENTS keep
+            -- their quotes, and they are the ones that can.
+            system.exec(string.format('%s -xf "%s" -C "%s"',
+                                      systar,
+                                      winpath(path.join(work, e.name)),
+                                      winpath(stage)))
             -- Everything useful lives under Contents/; the rest is vsix metadata.
             local contents = path.join(stage, "Contents")
             if os.isdir(contents) then
@@ -394,7 +416,6 @@ function install()
             os.tryrm(stage)
         end
     end)
-    os.cd(idir)
     if not ok then
         log.error("msvc: unpacking failed: " .. tostring(err))
         return false

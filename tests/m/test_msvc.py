@@ -77,36 +77,58 @@ class TestStatic:
                 f"{toolset} 缺动态 CRT payload (.CRT.x64.Store.base): {of_toolset}"
 
     @pytest.mark.static
-    def test_tar_is_never_handed_an_absolute_windows_path(self):
-        """`tar -xf` 不能收绝对 Windows 路径。
+    def test_unpacking_pins_the_system_bsdtar(self):
+        """解包必须钉死 System32 的 bsdtar,并且路径与引号都按 cmd 的规矩来。
 
-        GNU tar 先按 `host:path` 解释,于是 `C:` 变成主机名:
+        **`.vsix` 是 zip,而 GNU tar 根本不读 zip。** Windows 自带的
+        System32\\tar.exe 是 bsdtar(libarchive),读得了;Git for Windows
+        带的是 GNU tar,读不了:
 
-            tar: Cannot connect to C: resolve failed
+            tar: This does not look like a tar archive
 
-        Windows 自带的 bsdtar 不会 —— 所以同一份 recipe 在 index 的
-        windows-test(System32 的 bsdtar)通过,在 mcpp 的 e2e
-        (Git for Windows 把 GNU tar 排在 PATH 前面)失败。同一个 runner
-        镜像、同一份 recipe、不同的 tar。
+        同一个 GitHub 镜像上两次运行证明了这点:index 自己的 windows-test
+        解析到 bsdtar、通过;mcpp 的 e2e 解析到 GNU tar、失败。
+        **同一份 recipe、同一个镜像、不同的 PATH** —— 所以不能让 PATH 来选。
 
-        `--force-local` 只对 GNU tar 有效、被 bsdtar 拒绝,等于换一个坏掉的
-        环境。相对路径两边都认。
+        钉死 exe 之后,**盘符那条风险就不存在了** —— 它是 GNU tar 独有的。
+        所以路径全部用绝对的、全部过 `winpath()`,并且**不用 `os.cd`**;
+        而 exe 本身**不能加引号**,否则 cmd /c 会把整行弄坏:
+
+        * `path.join` 会混用分隔符,`"C:\\Windows/System32/tar.exe"` 执行不了;
+        * `system.exec` **不继承** `os.cd` 设的 cwd。7zip.lua 那个
+          「cd 之后用相对文件名」的形状用的是 `os.exec` —— 照抄形状而没有核对
+          这一处差别的结果是:命令拼得完全正确,却找不到自己的归档文件。
+
+        少一个可动的部件就少一处可以出错:没有 cwd 要改、没有 cwd 要还,
+        也没有任何东西取决于最后是哪个 tar 在跑。
         """
         import re
-        # 注释里就写着那个坏例子(留着是为了说明原因), 所以只扫真正的代码行 ——
+        # 注释里就写着那些坏例子(留着是为了说明原因), 所以只扫真正的代码行 ——
         # 第一版没扫掉注释, 于是它抓到的是自己的说明文字。
         code = "\n".join(
             line for line in open(PKG_FILE, encoding='utf-8').read().splitlines()
             if not line.lstrip().startswith("--"))
 
-        calls = re.findall(r"tar\s+-xf\s+\"([^\"]*)\"", code)
-        assert calls, "没有找到 tar -xf 调用"
-        for arg in calls:
-            assert not re.match(r'^[A-Za-z]:', arg), f"tar 收到了带盘符的路径: {arg}"
-            assert arg == "%s", f"tar 的归档参数应当是单个相对文件名: {arg}"
-        # 相对文件名只有在 cwd 就是 work 时才成立, 两者必须同时在。
-        assert 'os.cd(work)' in code, "解包必须先 cd 进 work,才能用相对文件名"
-        assert 'os.cd(idir)' in code, "解包完必须把 cwd 移出 work(用 idir,不用没有先例的 os.curdir)"
+        assert 'System32' in code and 'tar.exe' in code, \
+            "解包必须显式用 System32\\tar.exe(bsdtar),不能让 PATH 选到 GNU tar"
+        assert re.search(r"winpath\(path\.join\([^)]*SystemRoot", code), \
+            "System32 的 exe 路径必须过 winpath(),否则分隔符是混的"
+        assert not re.search(r"['\"]tar\s+-xf", code), \
+            "不能调用裸 `tar` —— PATH 上的可能是读不了 zip 的 GNU tar"
+        # exe 本身不能加引号:cmd /c 遇到「首个 token 带引号 + 后面还有带引号的
+        # 参数」会把最外层那对剥掉, 然后报
+        #   The filename, directory name, or volume label syntax is incorrect.
+        # 证据很干净:裸 `tar` 时程序跑起来了并自己报错, 加引号时它根本没跑。
+        assert "'%s -xf" in code, \
+            "exe 不能加引号 —— cmd /c 会把整行弄坏(参数该加的还是要加)"
+
+        # 归档与目标目录都必须过 winpath();相对路径依赖 cwd,而
+        # system.exec 不继承 os.cd。
+        assert 'winpath(path.join(work, e.name))' in code, \
+            "归档参数必须是 winpath 过的绝对路径"
+        assert 'winpath(stage)' in code, "-C 的目标必须是 winpath 过的绝对路径"
+        assert 'os.cd(' not in code, \
+            "解包不该改 cwd —— system.exec 不继承它,绝对路径本来就不需要"
 
     @pytest.mark.static
     def test_installed_checks_what_a_build_needs(self):
