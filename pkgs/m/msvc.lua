@@ -357,13 +357,21 @@ function install()
     -- trades one broken environment for the other. A relative name has no
     -- colon at all and both accept it -- the same shape 7zip.lua already uses.
     local stage = path.join(work, "x")
-    local prevdir = os.curdir()
 
+    -- Leaving via `idir`, not via a saved `os.curdir()`.
+    --
+    -- `os.curdir` has ZERO uses across the whole index, and every previous
+    -- time this recipe reached for an xpkg-sandbox API with no precedent
+    -- (os.execv, path.absolute, os.files) it turned into an install-time
+    -- "attempt to call a nil value". `pkginfo.install_dir()` is used
+    -- everywhere and is a real directory that outlives `work` -- which is all
+    -- the restore actually needs.
+    --
     -- pcall, so a raising `system.exec` cannot leave the process sitting in a
-    -- directory this function is about to delete. Everything after `install()`
-    -- in the same process -- config hooks, other packages -- would inherit
-    -- that cwd, and the symptom would surface somewhere with no connection to
-    -- here.
+    -- directory this function is about to delete. Everything after
+    -- `install()` in the same process -- config hooks, other packages --
+    -- would inherit that cwd, and the symptom would surface somewhere with no
+    -- connection to here.
     os.cd(work)
     local ok, err = pcall(function()
         for _, e in ipairs(payloads()) do
@@ -386,7 +394,7 @@ function install()
             os.tryrm(stage)
         end
     end)
-    os.cd(prevdir)
+    os.cd(idir)
     if not ok then
         log.error("msvc: unpacking failed: " .. tostring(err))
         return false

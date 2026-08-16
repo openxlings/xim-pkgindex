@@ -106,7 +106,7 @@ class TestStatic:
             assert arg == "%s", f"tar 的归档参数应当是单个相对文件名: {arg}"
         # 相对文件名只有在 cwd 就是 work 时才成立, 两者必须同时在。
         assert 'os.cd(work)' in code, "解包必须先 cd 进 work,才能用相对文件名"
-        assert 'os.cd(prevdir)' in code, "解包完必须把 cwd 还回去"
+        assert 'os.cd(idir)' in code, "解包完必须把 cwd 移出 work(用 idir,不用没有先例的 os.curdir)"
 
     @pytest.mark.static
     def test_installed_checks_what_a_build_needs(self):
