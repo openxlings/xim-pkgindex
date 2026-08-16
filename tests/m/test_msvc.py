@@ -139,8 +139,26 @@ class TestStatic:
         就不是安装成功, 而是解压成功。
         """
         src = open(PKG_FILE, encoding='utf-8').read()
-        for lib in ("libcpmt.lib", "msvcprt.lib"):
-            assert lib in src, f"installed() 没有检查 {lib}"
+        for f in ("libcpmt.lib", "msvcprt.lib", "clui.dll"):
+            assert f in src, f"installed() 没有检查 {f}"
+
+    @pytest.mark.static
+    def test_compiler_resources_are_shipped(self):
+        """每个 toolset 必须带 `.Res.base` —— 没有它 cl.exe 跑不起来。
+
+        它装的是 `bin/Hostx64/x64/1033/clui.dll`(编译器的消息资源)。
+        缺了之后**任何**一次调用都会在说出任何有用的话之前死掉:
+
+            fatal error C1510: Cannot load language resource clui.dll
+
+        包括每个消费者做的第一件事 —— 读 banner 来识别编译器。
+        `.Res.base` 的名字听起来像是本地化裁剪,它不是可选的。
+        """
+        names = [e["name"] for e in payload_entries(PKG_FILE)]
+        for tag in ("14.44", "14.52"):
+            of_toolset = [n for n in names if f".{tag}." in n or f"VC.{tag}" in n]
+            assert any("Res.base" in n for n in of_toolset), \
+                f"{tag} 缺编译器资源 payload (.Tools.*.Res.base): {of_toolset}"
 
     @pytest.mark.static
     def test_mirror_never_replaces_the_official_address(self):
