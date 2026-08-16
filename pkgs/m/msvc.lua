@@ -75,34 +75,6 @@ package = {
             ["14.44.35207"] = { },   -- release channel, VS 2022 17.14
             ["14.52.36629"] = { },   -- Insiders, VS 2026 -- see TOOLSETS below
         },
-        -- cl.exe cannot RUN without this one. It carries
-        -- bin/Hostx64/x64/1033/clui.dll -- the compiler's message resources --
-        -- and without it every invocation, including `cl` with no arguments,
-        -- dies before it can say anything:
-        --
-        --     fatal error C1510: Cannot load language resource clui.dll
-        --
-        -- Which means a toolset missing it fails the FIRST thing any consumer
-        -- does: read the banner to identify the compiler. `.Res.base` reads
-        -- like localisation trim; it is not optional.
-        { name = "Microsoft.VC.14.44.17.14.Tools.HostX64.TargetX64.Res.base.enu.vsix",
-          sha256 = "6e31f47833bfa585f56d55716a1ef081f1434f93ad77160eab49c6e193765832",
-          urls = { "https://gitcode.com/xlings-res/msvc/releases/download/14.44.35207/Microsoft.VC.14.44.17.14.Tools.HostX64.TargetX64.Res.base.enu.vsix",
-                   "https://download.visualstudio.microsoft.com/download/pr/bbc72d8e-2acd-4229-8f6a-85e23c5e3456/6e31f47833bfa585f56d55716a1ef081f1434f93ad77160eab49c6e193765832/Microsoft.VC.14.44.17.14.Tools.HostX64.TargetX64.Res.base.enu.vsix" } },
-        -- cl.exe cannot RUN without this one. It carries
-        -- bin/Hostx64/x64/1033/clui.dll -- the compiler's message resources --
-        -- and without it every invocation, including `cl` with no arguments,
-        -- dies before it can say anything:
-        --
-        --     fatal error C1510: Cannot load language resource clui.dll
-        --
-        -- Which means a toolset missing it fails the FIRST thing any consumer
-        -- does: read the banner to identify the compiler. `.Res.base` reads
-        -- like localisation trim; it is not optional.
-        { name = "Microsoft.VC.14.52.Tools.HostX64.TargetX64.Res.base.enu.vsix",
-          sha256 = "46f6aa187a41842ce6b13a85a6337b8002aae577803de2202d7bdd368e06eaed",
-          urls = { "https://gitcode.com/xlings-res/msvc/releases/download/14.52.36629/Microsoft.VC.14.52.Tools.HostX64.TargetX64.Res.base.enu.vsix",
-                   "https://download.visualstudio.microsoft.com/download/pr/0fdca428-6677-4d0e-a19d-65f175edc108/46f6aa187a41842ce6b13a85a6337b8002aae577803de2202d7bdd368e06eaed/Microsoft.VC.14.52.Tools.HostX64.TargetX64.Res.base.enu.vsix" } },
     },
 }
 
@@ -185,6 +157,20 @@ local TOOLSETS = {
           sha256 = "9135b03c0df53c7a0aa9bef7230a1c2ff4263a0ee7baa7e419d034f484f6bb56",
           urls = { "https://gitcode.com/xlings-res/msvc/releases/download/14.44.35207/Microsoft.VC.14.44.17.14.CRT.x64.Store.base.vsix",
                    "https://download.visualstudio.microsoft.com/download/pr/67cf767c-5e71-47c2-a54a-cd5631e28942/9135b03c0df53c7a0aa9bef7230a1c2ff4263a0ee7baa7e419d034f484f6bb56/Microsoft.VC.14.44.17.14.CRT.x64.Store.base.vsix" } },
+        -- cl.exe cannot RUN without this one. It carries
+        -- bin/Hostx64/x64/1033/clui.dll -- the compiler's message resources
+        -- -- and without it EVERY invocation dies before printing a useful
+        -- word:
+        --
+        --     fatal error C1510: Cannot load language resource clui.dll
+        --
+        -- including the banner, which is the first thing every consumer
+        -- reads to identify the compiler. `.Res.base` sounds like
+        -- localisation trim. It is not optional.
+        { name = "Microsoft.VC.14.44.17.14.Tools.HostX64.TargetX64.Res.base.enu.vsix",
+          sha256 = "6e31f47833bfa585f56d55716a1ef081f1434f93ad77160eab49c6e193765832",
+          urls = { "https://gitcode.com/xlings-res/msvc/releases/download/14.44.35207/Microsoft.VC.14.44.17.14.Tools.HostX64.TargetX64.Res.base.enu.vsix",
+                   "https://download.visualstudio.microsoft.com/download/pr/bbc72d8e-2acd-4229-8f6a-85e23c5e3456/6e31f47833bfa585f56d55716a1ef081f1434f93ad77160eab49c6e193765832/Microsoft.VC.14.44.17.14.Tools.HostX64.TargetX64.Res.base.enu.vsix" } },
     },
     ["14.52.36629"] = {
         { name = "Microsoft.VC.14.52.Tools.HostX64.TargetX64.base.vsix",
@@ -209,6 +195,20 @@ local TOOLSETS = {
           sha256 = "54113449899bee687e3d9bd3dc77d5ebbdfce499e5f44b5f35349b010fffa34c",
           urls = { "https://gitcode.com/xlings-res/msvc/releases/download/14.52.36629/Microsoft.VC.14.52.CRT.x64.Store.base.vsix",
                    "https://download.visualstudio.microsoft.com/download/pr/0fdca428-6677-4d0e-a19d-65f175edc108/54113449899bee687e3d9bd3dc77d5ebbdfce499e5f44b5f35349b010fffa34c/Microsoft.VC.14.52.CRT.x64.Store.base.vsix" } },
+        -- cl.exe cannot RUN without this one. It carries
+        -- bin/Hostx64/x64/1033/clui.dll -- the compiler's message resources
+        -- -- and without it EVERY invocation dies before printing a useful
+        -- word:
+        --
+        --     fatal error C1510: Cannot load language resource clui.dll
+        --
+        -- including the banner, which is the first thing every consumer
+        -- reads to identify the compiler. `.Res.base` sounds like
+        -- localisation trim. It is not optional.
+        { name = "Microsoft.VC.14.52.Tools.HostX64.TargetX64.Res.base.enu.vsix",
+          sha256 = "46f6aa187a41842ce6b13a85a6337b8002aae577803de2202d7bdd368e06eaed",
+          urls = { "https://gitcode.com/xlings-res/msvc/releases/download/14.52.36629/Microsoft.VC.14.52.Tools.HostX64.TargetX64.Res.base.enu.vsix",
+                   "https://download.visualstudio.microsoft.com/download/pr/0fdca428-6677-4d0e-a19d-65f175edc108/46f6aa187a41842ce6b13a85a6337b8002aae577803de2202d7bdd368e06eaed/Microsoft.VC.14.52.Tools.HostX64.TargetX64.Res.base.enu.vsix" } },
     },
 }
 
@@ -343,12 +343,6 @@ end
 local function required_files()
     return {
         path.join(bindir(), "cl.exe"),
-        -- cl.exe EXISTING is not cl.exe RUNNING. Without its message
-        -- resources every invocation dies at
-        --     fatal error C1510: Cannot load language resource clui.dll
-        -- before printing a single useful word -- including the banner every
-        -- consumer reads first to identify the compiler.
-        path.join(bindir(), "1033", "clui.dll"),
         path.join(toolsdir(), "modules", "std.ixx"),
         path.join(toolsdir(), "lib", "x64", "libcpmt.lib"),
         path.join(toolsdir(), "lib", "x64", "msvcprt.lib"),
