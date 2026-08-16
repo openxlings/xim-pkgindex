@@ -151,7 +151,10 @@ local function fetch_verified(entry, dir)
         local hex = line:gsub("%s+", ""):lower()
         if #hex == 64 and hex:match("^%x+$") then got = hex break end
     end
-    if got ~= entry.sha256 then
+    -- Case-insensitive: certutil prints uppercase, and the manifest is not
+    -- consistent either -- the VC payloads carry lowercase digests while the
+    -- SDK's are uppercase. Comparing the bytes, not their spelling.
+    if got ~= entry.sha256:lower() then
         log.error("windows-sdk: sha256 mismatch for " .. entry.name ..
                   "\n  expected " .. entry.sha256 .. "\n  got      " .. tostring(got))
         os.tryrm(dst)
