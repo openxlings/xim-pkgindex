@@ -307,6 +307,55 @@ foreach ($relFile in $files) {
         Log-Info "no new shim appeared (type='$pkgType'; declared programs may have been re-pointed)"
     }
 
+    # --- run what the package advertises -------------------------------
+    #
+    # WHY THIS STEP EXISTS. Everything above proves the payload UNPACKED: a
+    # directory is there, a shim name is there. Nothing had ever RUN the
+    # thing, and that is a different question.
+    #
+    # It cost a full day. `cl.exe` spawns `vctip.exe`, a background telemetry
+    # uploader that outlives it and holds a DLL open INSIDE the payload, so
+    # the package became impossible to uninstall for anyone who had actually
+    # compiled something. This script's own "post-uninstall checks" went green
+    # through all of it, because it uninstalled a toolset that had never
+    # compiled anything.
+    #
+    # Exit codes are deliberately ignored: `rc.exe` with no arguments is a
+    # usage error, and that is fine — the claim being tested is "this binary
+    # executes on this machine, and whatever it starts, we uninstall around
+    # it", not "it accepts these flags".
+    if ($expectArtifacts -and $meta.programs -and $meta.programs.Count -gt 0) {
+        Log-Step "[$pkg] run declared programs (they must EXECUTE, not just exist)"
+        foreach ($prog in $meta.programs) {
+            $exe = $shimsAfter.Keys | Where-Object {
+                $_ -eq $prog -or $_ -eq "$prog.exe" -or $_ -eq "$prog.cmd" } |
+                Select-Object -First 1
+            if (-not $exe) { continue }
+            $full = Join-Path $shimDir $exe
+            # Bounded: a program that waits on stdin would otherwise hang the
+            # whole job (there is a lint for blocking reads in hooks, but a
+            # shipped binary is not a hook).
+            $proc = Start-Process -FilePath $full -ArgumentList "/?" `
+                        -NoNewWindow -PassThru -ErrorAction SilentlyContinue
+            if (-not $proc) {
+                # Could not be launched at all: the payload is missing
+                # something the binary needs to start -- a sibling DLL, its
+                # resource DLL, the CRT it links against. That is exactly the
+                # class of defect this step exists for.
+                Log-Fail "declared program '$prog' could not be executed"
+                $failures += "$relFile (program-not-executable:$prog)"
+                continue
+            }
+            if ($proc.WaitForExit(30000)) {
+                Log-Pass "ran $prog (exit $($proc.ExitCode))"
+            } else {
+                try { $proc.Kill() } catch { }
+                Log-Fail "declared program '$prog' did not exit within 30s"
+                $failures += "$relFile (program-hangs:$prog)"
+            }
+        }
+    }
+
     # --- uninstall ---
     # Remove exactly what this test installed, not "whatever is active".
     #
