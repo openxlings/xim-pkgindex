@@ -224,8 +224,24 @@ VS 的分发是**清单驱动**的，这正是能钉住版本的地方——boot
 | SDK 精确子集 | 4 个 MSI + **15 个 CAB = 19 个文件 / 139 MB**（整包 530 MB） |
 | **旧 payload 保留期（风险 #2）** | VS **2019**（16.11）的 channel manifest 今天仍可解析，其 payload 可取回（HTTP 206）。**release 通道是多年级别**；Insiders 未测，故首版不做 |
 
-> 仍未实测的只剩**安装路径本身**（`msiexec /a` 解包、`tar -xf` 解 vsix、xvm/subos 注册），
-> 因为那只在 Windows 上跑。这正是 CI 的 `windows-test` job 要回答的问题。
+### 4.2 安装路径实测（PR #626，windows-test 已绿）
+
+`windows-sdk` 已在 Windows CI 上跑通装/卸载。踩到的坑值得记下来，都不是设计问题，
+是**沙箱与 Windows 的具体事实**：
+
+| 坑 | 实情 |
+|---|---|
+| `os.execv` / `path.absolute` / `os.files` | **都不在 xpkg 沙箱里**。共同信号：这三个在整个索引里**零使用**——「先 grep 索引有没有先例」应当是写 recipe 的第一步 |
+| 可用的等价物 | `system.exec`（131 处）、`os.iorun`（44）、`os.dirs`（11）、`os.trymv`（8）、`path.join`/`path.filename` |
+| sha256 大小写 | 清单**自己不一致**：VC 的 payload 是小写、SDK 的是大写。必须大小写无关比较 |
+| `certutil` vs `Get-FileHash` | 后者要在 shell 字符串里嵌两层引号，而 SDK 有个文件叫 `Universal CRT Headers Libraries and Sources-x86_en-us.msi`。`certutil` 一层引号搞定 |
+| `path.join` 的分隔符 | Windows 上会**混用**（store 路径的 `\` + 新加的 `/`）。curl/tar 不在意，**msiexec 直接失败** |
+| MSI 的落点 | 四个 MSI **前缀不一致**：有的进 `TARGETDIR` 根，有的进 `Windows Kits/10`。要合并，不能搬 |
+| 合并方式 | `os.trymv` 到已存在目录**静默失败**；`os.cp` 目录进同名目录会**嵌套一层**。用 `xcopy /E /I /Y`（`robocopy` 成功返回非零，会被当失败） |
+| **文件名大小写** | SDK 在**同一个目录内**就不一致：`AclUI.Lib` / `advpack.Lib` / `amsi.lib` 混排。所以断言不要押具体 lib 名 |
+
+**断言策略**：一个 MSI 一条，且只押实测过的事实——头文件按名字（大小写已测），
+库和工具按目录。既保证部分解包过不了，又不押 SDK 自己都不稳定的拼写。
 
 **为什么不镜像到 xlings-res**：见 §9 许可一节。首选形状是**安装时从微软 CDN 下载**，
 与现有 CI 里装 Vulkan SDK 的形状一致。
@@ -425,7 +441,7 @@ if (auto* dir = std::getenv("VSINSTALLDIR"); dir && *dir) {
 | 1 | **许可边界** | 未确认 | 决定「镜像到 xlings-res」还是「安装时从微软 CDN 下载」。**后者更稳妥**，形状与 Vulkan SDK 一致。这一条不清楚就不该开工 |
 | 2 | **payload 保留期** | ✅ release 通道已验证（VS2019 仍可取回）；Insiders 未测 | release 通道的 payload 微软长期保留；**Insiders 会轮换**。钉了 URL 的包会不会几个月后 404，必须拿一个旧 manifest 实测。**建议首版只做 release 通道**，Insiders 另议 |
 | 3 | ~~清单结构 / payload id~~ | ✅ **已实测**，见 §4.1 | —— |
-| 4 | 解包后可用性 | 部分验证：布局、`cl.exe`、`std.ixx` 都在；**实际编译只能靠 Windows CI** | 交给 `windows-test` job |
+| 4 | 解包后可用性 | ✅ **`windows-sdk` 已在 Windows CI 装/卸载通过**（PR #626）。`msvc` 的解包路径同形但尚未跑过 | —— |
 | 5 | ~~体积~~ | ✅ toolset 83.5 MB + SDK 139 MB = **222.6 MB** | 远小于整包，不必进 res 镜像 |
 | 6 | ARM64 / x86 目标 | 首版不做 | 多目标会让 payload 膨胀，先只做 x64 |
 
