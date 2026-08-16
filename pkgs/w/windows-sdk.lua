@@ -194,11 +194,21 @@ local function find_sdk_root(base, depth)
 end
 
 function installed()
-    -- Assert on the artifact: a header and a lib that a compile actually
-    -- consumes, not on the directory existing.
+    -- One assertion per MSI, so a partial extraction cannot pass.
+    --
+    -- The header is checked by name; the libs and tools by directory. That is
+    -- not laziness -- the SDK does not spell its own file names consistently.
+    -- A `dir /b` of Lib/<ver>/um/x64 on the runner returns, in one listing:
+    --
+    --   AclUI.Lib  ActiveDS.Lib  advpack.Lib  ahadmin.lib  amsi.lib ...
+    --
+    -- so `kernel32.lib` is a guess about casing, and a wrong guess here reads
+    -- as "the SDK did not install". The directory existing means the x64 libs
+    -- MSI unpacked, which is the fact worth asserting.
     local d = pkginfo.install_dir()
     return os.isfile(path.join(d, "Include", SDK_DIR_VERSION, "ucrt", "corecrt.h"))
-       and os.isfile(path.join(d, "Lib", SDK_DIR_VERSION, "um", "x64", "kernel32.lib"))
+       and os.isdir(path.join(d, "Lib", SDK_DIR_VERSION, "um", "x64"))
+       and os.isdir(path.join(d, "bin", SDK_DIR_VERSION, "x64"))
 end
 
 function install()
@@ -259,7 +269,8 @@ function install()
         -- layout moved, and the next person needs the tree, not the verdict.
         log.error("windows-sdk: extraction finished but the SDK tree is not where it should be." ..
                   "\n  wanted: Include/" .. SDK_DIR_VERSION .. "/ucrt/corecrt.h" ..
-                  "\n          Lib/" .. SDK_DIR_VERSION .. "/um/x64/kernel32.lib")
+                  "\n          Lib/" .. SDK_DIR_VERSION .. "/um/x64/" ..
+                  "\n          bin/" .. SDK_DIR_VERSION .. "/x64/")
         -- Two levels, not one. The top level looked correct for three runs
         -- running while the anchor files were not there, so the level that
         -- matters is the one below it: which version directories exist under
