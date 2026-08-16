@@ -474,10 +474,10 @@ function install()
     -- A toolchain payload should also not phone home on a user's machine
     -- because they compiled something, so this deletion is not purely
     -- mechanical convenience.
-    local tools = path.join(pkginfo.install_dir(), "VC", "Tools", "MSVC", toolset(), "bin")
+    local bin = path.join(toolsdir(), "bin")
     for _, host in ipairs({"Hostx64", "Hostx86", "Hostarm64"}) do
         for _, arch in ipairs({"x64", "x86", "arm64", "arm"}) do
-            os.tryrm(path.join(tools, host, arch, "vctip.exe"))
+            os.tryrm(path.join(bin, host, arch, "vctip.exe"))
         end
     end
 
