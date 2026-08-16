@@ -51,7 +51,14 @@ package = {
             -- res_versioned: version-bump bot tracks mcpp-community/mcpp releases
             -- and appends checked XLINGS_RES entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "2026.8.16.1" },
+            ["latest"] = { ref = "2026.8.16.2" },
+            ["2026.8.16.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "5ab14255a98a7b81a1494503405dda114746d0f7f1c3916807e1016b2b06cc34",
+                    x86_64 = "299102dc47acbc8f1d34e7fcc69632863a4b2b94593d876ff268d3678a6ed174",
+                },
+            },
             ["2026.8.16.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -573,7 +580,13 @@ package = {
             -- res_versioned: version-bump bot tracks mcpp-community/mcpp releases
             -- and appends checked XLINGS_RES entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "2026.8.16.1" },
+            ["latest"] = { ref = "2026.8.16.2" },
+            ["2026.8.16.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "5139db702d389af5d473a8dda95989242ec1b0805c2c710ae61332401181eb7f",
+                },
+            },
             ["2026.8.16.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -1018,7 +1031,13 @@ package = {
             -- res_versioned: version-bump bot tracks mcpp-community/mcpp releases
             -- and appends checked XLINGS_RES entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "2026.8.16.1" },
+            ["latest"] = { ref = "2026.8.16.2" },
+            ["2026.8.16.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "02ec6166f1ed68d4a380e98dfc01a93f516149a51ceb74bae2c00b33e93c0098",
+                },
+            },
             ["2026.8.16.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
