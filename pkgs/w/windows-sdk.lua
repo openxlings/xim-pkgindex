@@ -14,6 +14,10 @@
 --   Windows SDK Desktop Headers x86               1685 headers -- the DESKTOP
 --                                                 half of um/: ShlObj.h,
 --                                                 ShObjIdl.h  <- core
+--   Windows SDK OnecoreUap Headers x86            198 more, incl. windowsx.h
+--                                                 <- core. NOT the same MSI as
+--                                                 "...Store Apps Headers
+--                                                 OnecoreUap" above
 --   Windows SDK for Windows Store Apps Libs       kernel32/user32/advapi32/
 --                                                 ole32/oleaut32/uuid  <- core
 --   Windows SDK for Windows Store Apps Headers    528 um headers: windows.h,
@@ -255,6 +259,23 @@ local PAYLOADS = {
     -- forty minutes into a build that had already compiled hundreds of TUs.
     -- The required_files() cover below now names it, so a payload set that
     -- loses it again fails at install instead.
+    -- windowsx.h and 197 others, and the name collides with an MSI already in
+    -- this list: "Windows SDK **for Windows Store Apps** Headers OnecoreUap"
+    -- (shared/: windef.h, sal.h) is a DIFFERENT payload from "Windows SDK
+    -- OnecoreUap Headers x86" (um/: windowsx.h). Having both is not
+    -- redundancy.
+    --
+    -- Its x64 and arm64 siblings ship one and three files; only x86 is
+    -- substantial. Same shape as the Desktop Headers set.
+    { name = "Windows SDK OnecoreUap Headers x86-x86_en-us.msi", msi = true,
+      sha256 = "09725127B70E645FD0C86F004A1B0204AE72D685D70B2E3856EFC00533AAEEC3",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/Windows_SDK_OnecoreUap_Headers_x86-x86_en-us.msi",
+               "https://download.visualstudio.microsoft.com/download/pr/6452c1f1-dc1e-413c-8b19-991b61870a8b/bf4c8a484028b6e592a6a9d818c21777/windows%20sdk%20onecoreuap%20headers%20x86-x86_en-us.msi" } },
+    { name = "f2e05dfd38ed343d3de77209cf3ecdae.cab",
+      sha256 = "C536E6742D56A05C47310C23E09A9E5A5552D914F5752FF9050EEE88E009BCF9",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/f2e05dfd38ed343d3de77209cf3ecdae.cab.bin",
+               "https://download.visualstudio.microsoft.com/download/pr/6452c1f1-dc1e-413c-8b19-991b61870a8b/107cd9d9170325d1ded9e4cc47a9c4cc/f2e05dfd38ed343d3de77209cf3ecdae.cab" } },
+
     { name = "Windows SDK Desktop Headers x86-x86_en-us.msi", msi = true,
       sha256 = "F1E5159FEB948CE90A81DCC6A427DDE844610230CB6ED787E35D422DE527A5F8",
       urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/Windows_SDK_Desktop_Headers_x86-x86_en-us.msi",
@@ -467,7 +488,7 @@ end
 -- One file per MSI that matters, chosen so a missing payload cannot pass.
 --
 -- Not a sample -- a cover. Each line below is the file that only ONE of the
--- nine payloads provides, so whichever one failed to download, extract or
+-- ten payloads provides, so whichever one failed to download, extract or
 -- merge, exactly this list names it. The last two are the `programs` this
 -- package registers with xvm: a package that advertises rc and mt and then
 -- ships neither is worse than one that admits it has no tools.
@@ -477,6 +498,7 @@ local function required_files()
         path.join(d, "Include", SDK_DIR_VERSION, "ucrt", "corecrt.h"),    -- UCRT
         path.join(d, "Include", SDK_DIR_VERSION, "um", "winnt.h"),        -- StoreApps Headers
         path.join(d, "Include", SDK_DIR_VERSION, "um", "ShlObj.h"),       -- Desktop Headers x86
+        path.join(d, "Include", SDK_DIR_VERSION, "um", "windowsx.h"),     -- OnecoreUap Headers x86
         path.join(d, "Include", SDK_DIR_VERSION, "shared", "windef.h"),   -- ... OnecoreUap
         path.join(d, "Lib", SDK_DIR_VERSION, "um", "x64", "kernel32.lib"),-- StoreApps Libs
         path.join(d, "Lib", SDK_DIR_VERSION, "um", "x64", "gdi32.lib"),   -- Desktop Libs x64
