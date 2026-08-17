@@ -4,14 +4,16 @@
 -- without one cannot compile a single translation unit -- the ucrt / um /
 -- shared headers and the um libs are not part of the compiler.
 --
--- Not the 530 MB full SDK. Eight MSIs and the thirty-five cabinets their
--- Media tables reference, 291 MB, enough to compile, link and rc a Win32
--- desktop program:
+-- Not the 530 MB full SDK. Nine MSIs and the cabinets their Media tables
+-- reference, enough to compile, link and rc a Win32 desktop program:
 --
 --   Universal CRT Headers Libraries and Sources   ucrt headers + libs
 --   Windows SDK Desktop Libs x64                  365 um libs -- the LONG TAIL
 --   Windows SDK Desktop Tools x64                 99 bin tools (NOT rc/mt)
 --   Windows SDK Desktop Headers x64               3 Hyper-V headers, no more
+--   Windows SDK Desktop Headers x86               1685 headers -- the DESKTOP
+--                                                 half of um/: ShlObj.h,
+--                                                 ShObjIdl.h  <- core
 --   Windows SDK for Windows Store Apps Libs       kernel32/user32/advapi32/
 --                                                 ole32/oleaut32/uuid  <- core
 --   Windows SDK for Windows Store Apps Headers    528 um headers: windows.h,
@@ -234,6 +236,44 @@ local PAYLOADS = {
     -- carries x86/x64/arm64 and AccChecker besides. Paid, rather than
     -- shipping a package whose `programs = {"rc", "mt"}` names two files
     -- that are not there.
+    -- The DESKTOP half of um/, and the fourth time this MSI set has punished
+    -- reading its names.
+    --
+    -- "Store Apps Headers" carries 580 um headers including windows.h and
+    -- winnt.h, so it looks like the whole of um/. It is not: for the shell
+    -- headers it ships only the _core split -- ShlObj_core.h, ShObjIdl_core.h
+    -- -- and the umbrella headers that include them, ShlObj.h and ShObjIdl.h,
+    -- are in "Desktop Headers x86". Nothing about "x86" suggests that; the
+    -- x64/arm/arm64 siblings really are three Hyper-V headers each, and this
+    -- one is 1685 files.
+    --
+    -- Found by xrgui, which is a much larger consumer than this package's own
+    -- tests: `#include <shlobj.h>` in src/platform/font.ixx, and
+    --
+    --     fatal error C1083: Cannot open include file: 'shlobj.h'
+    --
+    -- forty minutes into a build that had already compiled hundreds of TUs.
+    -- The required_files() cover below now names it, so a payload set that
+    -- loses it again fails at install instead.
+    { name = "Windows SDK Desktop Headers x86-x86_en-us.msi", msi = true,
+      sha256 = "F1E5159FEB948CE90A81DCC6A427DDE844610230CB6ED787E35D422DE527A5F8",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/Windows_SDK_Desktop_Headers_x86-x86_en-us.msi",
+               "https://download.visualstudio.microsoft.com/download/pr/6452c1f1-dc1e-413c-8b19-991b61870a8b/7fad2c686fb58ea9e6dc0308a2df142f/windows%20sdk%20desktop%20headers%20x86-x86_en-us.msi" } },
+
+    -- The three cabinets Desktop Headers x86's Media table names.
+    { name = "07a57cdb41ba28cced14005f087267be.cab",
+      sha256 = "1F350449F6F598A4D9B316E69AD9B845DB8E8D919B8B34F5C07B32598F6DE319",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/07a57cdb41ba28cced14005f087267be.cab.bin",
+               "https://download.visualstudio.microsoft.com/download/pr/6452c1f1-dc1e-413c-8b19-991b61870a8b/2487cb3527b23ee3c6f081e01c2a1bc0/07a57cdb41ba28cced14005f087267be.cab" } },
+    { name = "2e876dd22fa5e6785f137e3422dd50ec.cab",
+      sha256 = "BD490C2DA3B5837261D43791A02EA3BB6AEF1DE787F52BEC5E7DD638BFB77F51",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/2e876dd22fa5e6785f137e3422dd50ec.cab.bin",
+               "https://download.visualstudio.microsoft.com/download/pr/6452c1f1-dc1e-413c-8b19-991b61870a8b/2f5955d08b28c63142f927aa3696c15a/2e876dd22fa5e6785f137e3422dd50ec.cab" } },
+    { name = "4fe4c8b88812f5339018c0eef95acdb9.cab",
+      sha256 = "CADD61CAAB00B5AD3EF449EFB54F8A7B1A43A7CFB85F321B544CA578B14E179B",
+      urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/4fe4c8b88812f5339018c0eef95acdb9.cab.bin",
+               "https://download.visualstudio.microsoft.com/download/pr/6452c1f1-dc1e-413c-8b19-991b61870a8b/9992f4e9621a59b8bd9a57cd62e0d567/4fe4c8b88812f5339018c0eef95acdb9.cab" } },
+
     { name = "Windows SDK for Windows Store Apps Headers-x86_en-us.msi", msi = true,
       sha256 = "48C953AD16CE986F724EA53A9FA5FE796DD92D77E6C1BFE8CFE2105760401425",
       urls = { "https://gitcode.com/xlings-res/windows-sdk/releases/download/10.0.26100/Windows_SDK_for_Windows_Store_Apps_Headers-x86_en-us.msi",
@@ -436,6 +476,7 @@ local function required_files()
     return {
         path.join(d, "Include", SDK_DIR_VERSION, "ucrt", "corecrt.h"),    -- UCRT
         path.join(d, "Include", SDK_DIR_VERSION, "um", "winnt.h"),        -- StoreApps Headers
+        path.join(d, "Include", SDK_DIR_VERSION, "um", "ShlObj.h"),       -- Desktop Headers x86
         path.join(d, "Include", SDK_DIR_VERSION, "shared", "windef.h"),   -- ... OnecoreUap
         path.join(d, "Lib", SDK_DIR_VERSION, "um", "x64", "kernel32.lib"),-- StoreApps Libs
         path.join(d, "Lib", SDK_DIR_VERSION, "um", "x64", "gdi32.lib"),   -- Desktop Libs x64
