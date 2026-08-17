@@ -14,10 +14,10 @@
 --   Windows SDK Desktop Headers x86               1685 headers -- the DESKTOP
 --                                                 half of um/: ShlObj.h,
 --                                                 ShObjIdl.h  <- core
---   Windows SDK OnecoreUap Headers x86            198 more, incl. windowsx.h
---                                                 <- core. NOT the same MSI as
---                                                 "...Store Apps Headers
---                                                 OnecoreUap" above
+--   Windows SDK OnecoreUap Headers x86            198 MORE shared/ headers:
+--                                                 windowsx.h  <- core. A
+--                                                 DIFFERENT MSI from the one
+--                                                 above, disjoint from it
 --   Windows SDK for Windows Store Apps Libs       kernel32/user32/advapi32/
 --                                                 ole32/oleaut32/uuid  <- core
 --   Windows SDK for Windows Store Apps Headers    528 um headers: windows.h,
@@ -259,11 +259,23 @@ local PAYLOADS = {
     -- forty minutes into a build that had already compiled hundreds of TUs.
     -- The required_files() cover below now names it, so a payload set that
     -- loses it again fails at install instead.
-    -- windowsx.h and 197 others, and the name collides with an MSI already in
-    -- this list: "Windows SDK **for Windows Store Apps** Headers OnecoreUap"
-    -- (shared/: windef.h, sal.h) is a DIFFERENT payload from "Windows SDK
-    -- OnecoreUap Headers x86" (um/: windowsx.h). Having both is not
-    -- redundancy.
+    -- shared/ IS SPLIT ACROSS TWO MSIs whose names are nearly the same, and
+    -- they do not overlap by a single file:
+    --
+    --   ... for Windows Store Apps Headers OnecoreUap    92 shared/ headers
+    --                                                    (windef.h, sal.h)
+    --   ... OnecoreUap Headers x86                      198 shared/ headers
+    --                                                    (windowsx.h)
+    --
+    -- Measured: 92 unique, 198 unique, 0 in common. Having both is not
+    -- redundancy, and having only the first is how `#include <windowsx.h>`
+    -- fails while windef.h resolves.
+    --
+    -- NOTE THE DIRECTORY: windowsx.h is in shared/, not um/, despite being a
+    -- Win32 UI header. required_files() below says shared/ for that reason --
+    -- an earlier revision of this entry asserted um/windowsx.h and installed()
+    -- correctly rejected the install, which is the cover rule catching the
+    -- person writing it rather than a payload.
     --
     -- Its x64 and arm64 siblings ship one and three files; only x86 is
     -- substantial. Same shape as the Desktop Headers set.
@@ -498,7 +510,7 @@ local function required_files()
         path.join(d, "Include", SDK_DIR_VERSION, "ucrt", "corecrt.h"),    -- UCRT
         path.join(d, "Include", SDK_DIR_VERSION, "um", "winnt.h"),        -- StoreApps Headers
         path.join(d, "Include", SDK_DIR_VERSION, "um", "ShlObj.h"),       -- Desktop Headers x86
-        path.join(d, "Include", SDK_DIR_VERSION, "um", "windowsx.h"),     -- OnecoreUap Headers x86
+        path.join(d, "Include", SDK_DIR_VERSION, "shared", "windowsx.h"), -- OnecoreUap Headers x86
         path.join(d, "Include", SDK_DIR_VERSION, "shared", "windef.h"),   -- ... OnecoreUap
         path.join(d, "Lib", SDK_DIR_VERSION, "um", "x64", "kernel32.lib"),-- StoreApps Libs
         path.join(d, "Lib", SDK_DIR_VERSION, "um", "x64", "gdi32.lib"),   -- Desktop Libs x64
