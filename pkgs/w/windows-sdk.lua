@@ -467,7 +467,7 @@ end
 -- One file per MSI that matters, chosen so a missing payload cannot pass.
 --
 -- Not a sample -- a cover. Each line below is the file that only ONE of the
--- eight payloads provides, so whichever one failed to download, extract or
+-- nine payloads provides, so whichever one failed to download, extract or
 -- merge, exactly this list names it. The last two are the `programs` this
 -- package registers with xvm: a package that advertises rc and mt and then
 -- ships neither is worse than one that admits it has no tools.
