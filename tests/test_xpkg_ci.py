@@ -319,3 +319,40 @@ def test_arch_alias_is_read_from_its_own_block_not_the_version_body():
     # No arch_alias: unchanged behaviour, expand_template falls back to the
     # canonical amd64/arm64 spellings.
     assert mod.arch_aliases(f'["1.0.0"] = {{ sha256 = {{ x86_64 = "{sha_x}" }} }},') == {}
+
+
+def test_mirror_materializes_only_the_arches_the_platform_ships():
+    """`package.archs` is the UNION across platforms and cannot answer the
+    per-platform question. qemu-riscv declares {x86_64, aarch64} because linux
+    and macosx ship both, while xPack publishes no win32-arm64 -- and the
+    mirror duly built `...-win32-aarch64.zip` and died on a 404 (measured, run
+    32184409615, the first mirror attempt after the package merged).
+
+    The per-arch `sha256` table is the authoritative answer: a checksum exists
+    iff an asset exists, and it is the same table xlings resolves against
+    (fail-closed) at install time.
+    """
+    windows = ('["9.2.4-1"] = { arch_alias = { x86_64 = "x64" }, '
+               'sha256 = { x86_64 = "05df" } },')
+    linux = ('["9.2.4-1"] = { arch_alias = { x86_64 = "x64", aarch64 = "arm64" }, '
+             'sha256 = { x86_64 = "7cd6", aarch64 = "b90f" } },')
+
+    assert mod.checksum_arches(windows) == ["x86_64"]
+    assert mod.checksum_arches(linux) == ["x86_64", "aarch64"]
+
+    # A V1 single-hash entry declares no per-arch table; those recipes keep
+    # falling through to the URL-shape heuristic.
+    assert mod.checksum_arches('["1.0"] = { url = "u", sha256 = "abc" },') == []
+
+
+def test_arch_alias_template_counts_as_arch_parameterized():
+    """`resolve_platform_arches` recognised `${arch}` but not `${arch_alias}`,
+    so an alias-templated URL fell through to the arch-baked branch, matched
+    nothing, and returned every declared arch. Harmless now that
+    `checksum_arches` runs first, but the classification was simply wrong.
+    """
+    template = "https://x/${version}/foo-win32-${arch_alias}.${ext}"
+    arches, error = mod.resolve_platform_arches(
+        ["x86_64", "aarch64"], template, {"x86_64": "x64"})
+    assert error is None
+    assert arches == ["x86_64", "aarch64"]

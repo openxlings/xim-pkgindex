@@ -174,3 +174,37 @@ class TestVerify:
             "timeout 10 qemu-system-riscv64 -machine virt -nographic "
             "-no-reboot -bios default 2>&1 | head -20",
             contains="OpenSBI")
+
+
+class TestMirror:
+    @pytest.mark.static
+    def test_global_stays_upstream_and_cn_points_at_the_mirror(self, source_text):
+        """GLOBAL 必须是上游, CN 必须是 xlings-res 镜像.
+
+        两个工具都把 `GLOBAL` 当真源读: 版本更新器用它发现新版本, 镜像
+        materializer 用它抓要镜像的字节. 把 GLOBAL 指向镜像 = 让镜像镜像自己.
+        """
+        assert source_text.count("GLOBAL =") == 3, "三个平台各要一条 GLOBAL"
+        assert source_text.count("CN =") == 3, "三个平台各要一条 CN"
+        for line in source_text.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("GLOBAL ="):
+                assert "xpack-dev-tools" in stripped, f"GLOBAL 不是上游: {stripped}"
+            if stripped.startswith("CN ="):
+                assert "gitcode.com/xlings-res/qemu-riscv" in stripped, \
+                    f"CN 不是 xlings-res 镜像: {stripped}"
+
+    @pytest.mark.static
+    def test_mirror_tag_has_no_v_prefix(self, source_text):
+        """上游 tag 带 `v`, xlings-res tag 是裸版本号 —— 两边不能抄错.
+
+        抄错的后果是 CN 用户 404, 而 CI 只跑 GLOBAL, 永远看不到.
+        """
+        for line in source_text.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("GLOBAL ="):
+                assert "/download/v${version}/" in stripped, \
+                    f"上游 tag 少了 v 前缀: {stripped}"
+            if stripped.startswith("CN ="):
+                assert "/download/${version}/" in stripped, \
+                    f"镜像 tag 不该有 v 前缀: {stripped}"

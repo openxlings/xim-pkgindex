@@ -37,6 +37,16 @@ package = {
     -- The arch spelling difference (x86_64 -> x64) is an `arch_alias`;
     -- `${ext}` already resolves to `zip` on windows and `tar.gz` elsewhere,
     -- which matches xPack exactly.
+    --
+    -- GLOBAL is xpack-dev-tools, the authoritative upstream. CN is
+    -- gitcode.com/xlings-res/qemu-riscv, a byte-identical copy of the same
+    -- bytes (all five archives plus their .sha256 sidecars, published
+    -- 2026-08-19 and verified from both mirrors). GLOBAL must stay upstream:
+    -- both the version updater and the mirror materializer read `GLOBAL` as
+    -- the source of truth, so pointing it at the mirror would make the mirror
+    -- mirror itself. The mirror TAG has no `v` prefix -- xlings-res tags are
+    -- the plain version -- while upstream's does; that is the one difference
+    -- between the two templates besides the host.
     xpm = {
         linux = {
             -- `deps` is deliberately EMPTY, and that is load-bearing.
@@ -71,7 +81,10 @@ package = {
             -- glibc, which is what xPack builds it to do (floor: 2.28).
             -- Compare claude.lua and aarch64-linux-musl-gcc.lua -- the same
             -- conclusion reached from the other two directions.
-            source = "https://github.com/xpack-dev-tools/qemu-riscv-xpack/releases/download/v${version}/xpack-qemu-riscv-${version}-linux-${arch_alias}.${ext}",
+            source = {
+                GLOBAL = "https://github.com/xpack-dev-tools/qemu-riscv-xpack/releases/download/v${version}/xpack-qemu-riscv-${version}-linux-${arch_alias}.${ext}",
+                CN = "https://gitcode.com/xlings-res/qemu-riscv/releases/download/${version}/xpack-qemu-riscv-${version}-linux-${arch_alias}.${ext}",
+            },
             ["latest"] = { ref = "9.2.4-1" },
             ["9.2.4-1"] = {
                 arch_alias = { x86_64 = "x64", aarch64 = "arm64" },
@@ -82,7 +95,10 @@ package = {
             },
         },
         macosx = {
-            source = "https://github.com/xpack-dev-tools/qemu-riscv-xpack/releases/download/v${version}/xpack-qemu-riscv-${version}-darwin-${arch_alias}.${ext}",
+            source = {
+                GLOBAL = "https://github.com/xpack-dev-tools/qemu-riscv-xpack/releases/download/v${version}/xpack-qemu-riscv-${version}-darwin-${arch_alias}.${ext}",
+                CN = "https://gitcode.com/xlings-res/qemu-riscv/releases/download/${version}/xpack-qemu-riscv-${version}-darwin-${arch_alias}.${ext}",
+            },
             ["latest"] = { ref = "9.2.4-1" },
             ["9.2.4-1"] = {
                 arch_alias = { x86_64 = "x64", aarch64 = "arm64" },
@@ -97,7 +113,10 @@ package = {
             -- is the union across platforms, and arch resolution is
             -- fail-closed, so an arm64 Windows host is told the arch is
             -- unavailable instead of being handed the x64 archive.
-            source = "https://github.com/xpack-dev-tools/qemu-riscv-xpack/releases/download/v${version}/xpack-qemu-riscv-${version}-win32-${arch_alias}.${ext}",
+            source = {
+                GLOBAL = "https://github.com/xpack-dev-tools/qemu-riscv-xpack/releases/download/v${version}/xpack-qemu-riscv-${version}-win32-${arch_alias}.${ext}",
+                CN = "https://gitcode.com/xlings-res/qemu-riscv/releases/download/${version}/xpack-qemu-riscv-${version}-win32-${arch_alias}.${ext}",
+            },
             ["latest"] = { ref = "9.2.4-1" },
             ["9.2.4-1"] = {
                 arch_alias = { x86_64 = "x64" },
