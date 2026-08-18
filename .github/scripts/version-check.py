@@ -432,10 +432,14 @@ def check_package(lua_path: Path, token: str | None) -> dict[str, Any] | None:
         return record
     record["status"] = "update-available"
 
-    # The newest version this run will add. Equal to `upstream` in the ordinary
-    # case, and NOT equal when the index is current on its pointer but behind
-    # on entries.
-    upstream = chain[-1]
+    # Where `["latest"]` will point after this run. In the ordinary case that
+    # is the newest version being added. When the chain is pure backfill --
+    # every missing entry older than the pointer, which is the normal state for
+    # a package sitting on the newest release -- the pointer must stay put:
+    # `chain[-1]` is then the newest MISSING version, not the newest version.
+    # Reporting it as `upstream` is what made the scan announce
+    # `fd: 10.4.2 -> 10.4.1`.
+    upstream = max([chain[-1], current], key=version_sort_key)
     record["upstream"] = upstream
 
     proposed: dict[str, str] = {}
@@ -637,10 +641,20 @@ def apply_bump(
     token: str | None,
     res_platforms: list[str] | None = None,
     source_map_platforms: list[str] | None = None,
+    latest_ref: str | None = None,
 ) -> dict[str, Any]:
     """Edit lua_path in place: append a new `["<upstream>"]` entry per
-    platform and bump `["latest"].ref` from <current> to <upstream>.
+    platform and rewrite the `["latest"] = { ref = "<current>" }` line.
     Existing version entries are untouched.
+
+    `latest_ref` is what the rewritten pointer says, and it defaults to
+    `upstream`. It is a separate parameter because the two are NOT the same
+    thing during a backfill: the missing chain is walked in ascending order and
+    deliberately includes versions OLDER than the current pointer (that is the
+    whole point -- see the chain construction), so an entry being added is not
+    evidence that it should become `latest`. Callers that backfill pass the
+    newest version they have seen; the append still lands, the pointer does not
+    move backwards.
 
     Two entry shapes, per platform:
       - url_template platforms (in `proposed_urls`): the artifact is
@@ -652,6 +666,7 @@ def apply_bump(
 
     Returns a record describing what happened (status + per-platform).
     """
+    latest_ref = latest_ref or upstream
     res_platforms = res_platforms or []
     source_map_platforms = source_map_platforms or []
     text = lua_path.read_text(encoding="utf-8")
@@ -702,12 +717,12 @@ def apply_bump(
         # and immediately follow it with the new version block.
         if plat in source_map_platforms:
             replacement = (
-                f'{indent}["latest"] = {{ ref = "{upstream}" }},\n'
+                f'{indent}["latest"] = {{ ref = "{latest_ref}" }},\n'
                 f'{indent}["{upstream}"] = {{ sha256 = "{sha}" }},\n'
             )
         else:
             replacement = (
-                f'{indent}["latest"] = {{ ref = "{upstream}" }},\n'
+                f'{indent}["latest"] = {{ ref = "{latest_ref}" }},\n'
                 f'{indent}["{upstream}"] = {{\n'
                 f'{indent}    url = "{new_url}",\n'
                 f'{indent}    sha256 = "{sha}",\n'
@@ -747,7 +762,7 @@ def apply_bump(
             for arch, digest in sorted(hashes.items())
         )
         replacement = (
-            f'{indent}["latest"] = {{ ref = "{upstream}" }},\n'
+            f'{indent}["latest"] = {{ ref = "{latest_ref}" }},\n'
             f'{indent}["{upstream}"] = {{\n'
             f'{indent}    url = "XLINGS_RES",\n'
             f'{indent}    sha256 = {{\n'
@@ -838,12 +853,24 @@ def main() -> int:
             # the question this script exists to answer once.
             chain = rec.get("missing_chain") or [rec["upstream"]]
             steps: list[dict[str, Any]] = []
+            # `prev` anchors the next edit (apply_bump finds the `["latest"]`
+            # line by the ref it currently holds); `newest` is what that line
+            # should say. They diverge because the chain deliberately contains
+            # versions OLDER than the current pointer -- backfilling those is
+            # the feature. Without the split, walking fd's chain
+            # (8.7.0 ... 10.4.1) past a `latest` of 10.4.2 ends with the
+            # pointer on 10.4.1, i.e. the bot proposes a downgrade; measured on
+            # fd/zoxide/fzf/qemu-riscv, and worst on qemu-riscv, whose chain
+            # tops out a whole major below its pinned 9.2.4-1.
             prev = rec["current"]
+            newest = rec["current"]
             for ver in chain:
                 templates = rec.get("url_templates") or {}
                 urls = ({plat: expand_version_template(tpl, ver)
                          for plat, tpl in templates.items()}
                         if templates else dict(rec.get("proposed_urls", {})))
+                latest_ref = (ver if version_sort_key(ver) > version_sort_key(newest)
+                              else newest)
                 applied = apply_bump(
                     Path(rec["path"]),
                     prev,
@@ -852,15 +879,20 @@ def main() -> int:
                     args.token,
                     rec.get("proposed_res", []),
                     rec.get("proposed_source_maps", []),
+                    latest_ref,
                 )
                 applied["version"] = ver
+                applied["latest_ref"] = latest_ref
                 steps.append(applied)
                 if applied.get("status") != "applied":
                     # Stop at the first failure and keep what landed. A partial
                     # backfill that says where it stopped beats one that
                     # silently skips the middle.
                     break
-                prev = ver
+                # The next step anchors on what was actually written, which is
+                # `latest_ref`, not `ver`.
+                prev = latest_ref
+                newest = latest_ref
             rec["apply"] = steps[-1] if steps else {
                 "status": "error", "reason": "empty chain"}
             rec["apply_steps"] = steps

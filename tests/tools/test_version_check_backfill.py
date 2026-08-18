@@ -107,3 +107,97 @@ def test_the_chain_is_ascending():
     the order is load-bearing rather than cosmetic."""
     got = _missing(["2026.8.6.1", "2026.8.5.3", "2026.8.5.2"], set())
     assert got == sorted(got, key=vc.version_sort_key)
+
+
+# ── the pointer must never move backwards ────────────────────────────
+#
+# The chain deliberately contains versions OLDER than `latest` (that is the
+# whole point of backfill), and both the report and `--apply` used to take
+# `chain[-1]` -- the newest MISSING version -- as the new pointer. For any
+# package already sitting on the newest release, every missing version is
+# older, so the bot proposed a downgrade. Measured 2026-08-19 against the
+# live index: fd 10.4.2 -> 10.4.1, and qemu-riscv 9.2.4-1 -> 8.2.6-1, a whole
+# major below a version mcpp pins.
+
+def _pointer_after(chain, current):
+    """What `["latest"].ref` says once the chain has been walked."""
+    newest = current
+    for ver in chain:
+        if vc.version_sort_key(ver) > vc.version_sort_key(newest):
+            newest = ver
+    return newest
+
+
+def test_pure_backfill_leaves_the_pointer_alone():
+    """fd's exact state: on the newest release, nine older entries missing."""
+    chain = ["8.7.0", "8.7.1", "9.0.0", "10.0.0", "10.1.0",
+             "10.2.0", "10.3.0", "10.4.0", "10.4.1"]
+    assert _pointer_after(chain, "10.4.2") == "10.4.2"
+
+
+def test_a_real_upgrade_still_moves_the_pointer():
+    """The guard must not cost the feature: fzf's chain straddles `current`."""
+    chain = ["0.68.0", "0.70.0", "0.73.0", "0.73.1",
+             "0.74.0", "0.74.1", "0.74.2", "0.74.3"]
+    assert _pointer_after(chain, "0.72.0") == "0.74.3"
+
+
+def test_dashed_upstream_versions_do_not_invert():
+    """xPack tags carry a packaging revision (`9.2.4-1`). The component after
+    the dot is then non-numeric, which sorts as text -- fine, as long as the
+    numeric majors still decide first."""
+    assert _pointer_after(["7.0.0-1", "8.2.2-1", "8.2.6-1"], "9.2.4-1") == "9.2.4-1"
+    assert vc.version_sort_key("9.2.4-1") > vc.version_sort_key("8.2.6-1")
+
+
+def test_apply_bump_writes_latest_ref_not_the_appended_version(tmp_path):
+    """The append still lands; only the pointer is held back."""
+    recipe = tmp_path / "demo.lua"
+    recipe.write_text(
+        'package = {\n'
+        '    xpm = {\n'
+        '        linux = {\n'
+        '            ["latest"] = { ref = "10.4.2" },\n'
+        '            ["10.4.2"] = { url = "u", sha256 = "s" },\n'
+        '        },\n'
+        '    },\n'
+        '}\n', encoding="utf-8")
+
+    original = vc.compute_sha256
+    vc.compute_sha256 = lambda url, token=None: "deadbeef"
+    try:
+        result = vc.apply_bump(
+            recipe, "10.4.2", "10.4.1",
+            {"linux": "https://example/fd-10.4.1.tar.gz"},
+            None, [], [], "10.4.2")
+    finally:
+        vc.compute_sha256 = original
+
+    assert result["status"] == "applied"
+    text = recipe.read_text(encoding="utf-8")
+    assert '["latest"] = { ref = "10.4.2" }' in text, "pointer moved backwards"
+    assert '["10.4.1"] = {' in text, "backfilled entry was not appended"
+
+
+def test_apply_bump_defaults_latest_ref_to_upstream(tmp_path):
+    """Omitting the argument keeps the pre-fix behaviour for the ordinary
+    forward bump, so existing callers are unaffected."""
+    recipe = tmp_path / "demo.lua"
+    recipe.write_text(
+        'package = {\n'
+        '    xpm = {\n'
+        '        linux = {\n'
+        '            ["latest"] = { ref = "0.72.0" },\n'
+        '        },\n'
+        '    },\n'
+        '}\n', encoding="utf-8")
+
+    original = vc.compute_sha256
+    vc.compute_sha256 = lambda url, token=None: "deadbeef"
+    try:
+        vc.apply_bump(recipe, "0.72.0", "0.74.3",
+                      {"linux": "https://example/fzf-0.74.3.tar.gz"}, None)
+    finally:
+        vc.compute_sha256 = original
+
+    assert '["latest"] = { ref = "0.74.3" }' in recipe.read_text(encoding="utf-8")
