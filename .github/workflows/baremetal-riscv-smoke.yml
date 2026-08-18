@@ -22,7 +22,10 @@ on:
   pull_request:
     paths:
       - 'pkgs/q/qemu-riscv.lua'
+      - 'pkgs/p/picolibc-riscv.lua'
       - 'tests/q/**'
+      - 'tests/p/test_picolibc_riscv.py'
+      - '.agents/tools/build-baremetal-sysroot.sh'
   workflow_dispatch:
 
 concurrency:
@@ -56,7 +59,9 @@ jobs:
           # indexes the bare name is ambiguous, and a miss triggers a refresh
           # that pulls the published artifact back over the local copy.
           xlings config --add-xpkg pkgs/q/qemu-riscv.lua
+          xlings config --add-xpkg pkgs/p/picolibc-riscv.lua
           xlings install local:qemu-riscv -y
+          xlings install local:picolibc-riscv -y
           xlings install xim:llvm -y
 
       - name: The payload keeps its own loader search path
@@ -164,5 +169,84 @@ jobs:
           grep -q 'OpenSBI'          /tmp/bm/boot.log
           grep -q 'MCPP-BAREMETAL-OK' /tmp/bm/boot.log
 
+      - name: Link and boot against the picolibc sysroot
+        run: |
+          set -e
+          # Locate the sysroot payload by content, same reason as the llvm one.
+          SYSROOT=""
+          for d in "$HOME"/.xlings/data/xpkgs/*-x-picolibc-riscv/*/; do
+            [ -f "$d/lib/rv64gc/lp64d/libc.a" ] && SYSROOT="$d"
+          done
+          test -n "$SYSROOT" || { echo "no picolibc-riscv payload on disk"; exit 1; }
+          echo "sysroot: $SYSROOT"
+          INC="$SYSROOT/include/rv64gc/lp64d"
+          LIB="$SYSROOT/lib/rv64gc/lp64d"
+
+          mkdir -p /tmp/pc && cd /tmp/pc
+          cat > app.cppm <<'EOF'
+          module;
+          #include <stdio.h>
+          #include <stdlib.h>
+          export module app;
+          export extern "C" int run() {
+              // printf WITH A FLOAT on purpose: picolibc's ryu formatting does
+              // 128-bit shifts, and that is the only thing in an ordinary
+              // program that needs __ashlti3/__lshrti3 on rv64gc. A 64-bit
+              // division would NOT reach it -- rv64gc has a hardware divu.
+              printf("PICOLIBC-OK %d %.4f\n", 42, 3.14159);
+              void* p = malloc(64);
+              printf("MALLOC-%s\n", p ? "OK" : "FAIL");
+              free(p);
+              return 0;
+          }
+          EOF
+          printf 'int run(void);\nint main(void) { return run(); }\n' > main.c
+
+          TGT="--target=riscv64-none-elf -march=rv64gc -mabi=lp64d -mcmodel=medany
+               -ffreestanding -fno-exceptions -fno-rtti"
+          "$LLVM/bin/clang++" --no-default-config $TGT -std=c++23 -nostdinc++ \
+              -isystem "$INC" --precompile app.cppm -o app.pcm
+          "$LLVM/bin/clang++" --no-default-config $TGT -std=c++23 -nostdinc++ \
+              -isystem "$INC" -c app.pcm -o app.o
+          "$LLVM/bin/clang" --no-default-config $TGT -isystem "$INC" -c main.c -o main.o
+          "$LLVM/bin/clang" --no-default-config $TGT -fuse-ld="$LLVM/bin/ld.lld" \
+              -nostdlib -nostartfiles -T "$LIB/picolibcpp.ld" -L "$LIB" \
+              "$LIB/crt0-semihost.o" main.o app.o -lc -lsemihost \
+              "$LIB/libclang_rt.builtins-riscv64.a" -o app.elf
+
+          file app.elf | grep -q 'UCB RISC-V'
+          timeout 60 qemu-system-riscv64 -machine virt -nographic -no-reboot \
+            -semihosting -bios none -kernel /tmp/pc/app.elf 2>&1 \
+            | tee /tmp/pc/run.log || true
+          grep -q 'PICOLIBC-OK 42 3.1416' /tmp/pc/run.log
+          grep -q 'MALLOC-OK'             /tmp/pc/run.log
+
+      - name: The rv32 profile links too
+        run: |
+          set -e
+          SYSROOT=""
+          for d in "$HOME"/.xlings/data/xpkgs/*-x-picolibc-riscv/*/; do
+            [ -f "$d/lib/rv32imac/ilp32/libc.a" ] && SYSROOT="$d"
+          done
+          test -n "$SYSROOT" || { echo "payload has no rv32imac/ilp32 profile"; exit 1; }
+          INC="$SYSROOT/include/rv32imac/ilp32"
+          LIB="$SYSROOT/lib/rv32imac/ilp32"
+          cd /tmp/pc
+          T32="--target=riscv32-none-elf -march=rv32imac -mabi=ilp32 -mcmodel=medany
+               -ffreestanding -fno-exceptions -fno-rtti"
+          "$LLVM/bin/clang++" --no-default-config $T32 -std=c++23 -nostdinc++ \
+              -isystem "$INC" --precompile app.cppm -o app32.pcm
+          "$LLVM/bin/clang++" --no-default-config $T32 -std=c++23 -nostdinc++ \
+              -isystem "$INC" -c app32.pcm -o app32.o
+          "$LLVM/bin/clang" --no-default-config $T32 -isystem "$INC" -c main.c -o main32.o
+          "$LLVM/bin/clang" --no-default-config $T32 -fuse-ld="$LLVM/bin/ld.lld" \
+              -nostdlib -nostartfiles -T "$LIB/picolibcpp.ld" -L "$LIB" \
+              "$LIB/crt0-semihost.o" main32.o app32.o -lc -lsemihost \
+              "$LIB/libclang_rt.builtins-riscv32.a" -o app32.elf
+          # Second profile, so a payload that only unpacked rv64 fails here
+          # instead of at some future rv32 user's first link.
+          file app32.elf | grep -q 'ELF 32-bit'
+          file app32.elf | grep -q 'UCB RISC-V'
+
       - name: Package lifecycle + verify layers
-        run: pytest tests/q -m "lifecycle or verify" --tb=short -q
+        run: pytest tests/q tests/p/test_picolibc_riscv.py -m "lifecycle or verify" --tb=short -q

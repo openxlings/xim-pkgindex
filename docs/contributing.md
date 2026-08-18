@@ -138,6 +138,24 @@ file`）。所以：
 - 这类包的 `verify` 测试必须**真跑一次**，不能只问 `--version`：上面那个断裂
   对 `--version` 完全不可见。
 
+### 5.2 目标 sysroot:与宿主库的三条区别
+
+交叉/裸机 sysroot 包(`picolibc-riscv` 是第一个)与普通宿主库包在三处相反:
+
+1. **头文件绝不进 subos sysroot。** 宿主库把头拷进 `usr/include`(见 `zlib.lua`)
+   是对的;`riscv*-none-elf` 的**目标**头这么做,会让每个普通构建的宿主 libc 被
+   遮住。这类包的 `config()` 只注册 umbrella 节点,消费者自己把 `--sysroot` /
+   `-isystem` 指到它的安装目录。
+2. **载荷与宿主无关 ⇒ 一个 sha256 服务全平台。** 目标代码在哪台机器上都是同一份
+   字节,所以三个平台写同一个哈希、不写 per-arch 表 —— per-arch 表会让镜像工具
+   把它当成有架构区分的资产,去抓第二个并不存在的 URL。
+3. **自建产物不设 `ci`。** `mirror = true` 会让镜像镜像它自己(GLOBAL 已经是
+   xlings-res);`update = true` 会把 `latest` 指向一个还没构建出来的 URL。版本
+   升级 = 跑构建脚本 → 发布 → 改配方,是人的动作。
+
+自建产物必须在 `.agents/tools/` 留一份**可复现**的构建脚本(固定 tar 的
+owner/mtime 与成员序,同输入同字节),并在配方里指向它。
+
 ## 6. PR 清单
 
 PR 描述至少包含：
