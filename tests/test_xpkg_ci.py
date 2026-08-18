@@ -278,3 +278,44 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
+
+def test_arch_alias_is_read_from_its_own_block_not_the_version_body():
+    """`sha256` is a per-arch table of the same `<arch> = "<string>"` shape as
+    `arch_alias`, so a scan over the whole version body collects both and the
+    later one wins. In the field order docs/V2/xpackage-spec.md documents --
+    `arch_alias` first, then `sha256` -- every alias resolved to a checksum and
+    the mirror built `...-linux-7cd69277....tar.gz`.
+
+    Nothing in the index had both an `arch_alias` and `ci.mirror` until
+    qemu-riscv, which is why it never fired. Pinned from both sides: the two
+    field orders must agree, and a version entry with no `arch_alias` at all
+    must still fall through to the canonical defaults.
+    """
+    sha_x = "7cd69277dcf32bb024351ea225d549577713302cc5141444bad12836d5967b8c"
+    sha_a = "b90f76ebff7ecfa50e77c61a750534bdd0eb41deb793c0253fb3f583002a4aed"
+    alias_first = f'''["9.2.4-1"] = {{
+        arch_alias = {{ x86_64 = "x64", aarch64 = "arm64" }},
+        sha256 = {{ x86_64 = "{sha_x}", aarch64 = "{sha_a}" }},
+    }},'''
+    sha_first = f'''["9.2.4-1"] = {{
+        sha256 = {{ x86_64 = "{sha_x}", aarch64 = "{sha_a}" }},
+        arch_alias = {{ x86_64 = "x64", aarch64 = "arm64" }},
+    }},'''
+
+    expected = {"x86_64": "x64", "aarch64": "arm64"}
+    assert mod.arch_aliases(alias_first) == expected
+    assert mod.arch_aliases(sha_first) == expected
+
+    template = ("https://github.com/xpack-dev-tools/qemu-riscv-xpack/releases/"
+                "download/v${version}/xpack-qemu-riscv-${version}-linux-"
+                "${arch_alias}.${ext}")
+    for body in (alias_first, sha_first):
+        url = mod.expand_template(template, "qemu-riscv", "9.2.4-1",
+                                  "linux", "x86_64", mod.arch_aliases(body))
+        assert url.endswith("xpack-qemu-riscv-9.2.4-1-linux-x64.tar.gz"), url
+        assert sha_x not in url, "checksum leaked into the mirror URL"
+
+    # No arch_alias: unchanged behaviour, expand_template falls back to the
+    # canonical amd64/arm64 spellings.
+    assert mod.arch_aliases(f'["1.0.0"] = {{ sha256 = {{ x86_64 = "{sha_x}" }} }},') == {}

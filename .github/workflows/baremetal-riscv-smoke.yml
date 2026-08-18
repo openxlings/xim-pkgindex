@@ -1,0 +1,168 @@
+# Bare-metal RISC-V consumer smoke.
+#
+# `qemu-system-riscv64 --version` proves almost nothing about this package: it
+# does not load the OpenSBI firmware out of `share/qemu`, does not resolve the
+# datadir relative to the executable, and does not touch the 51 shared objects
+# the payload reaches through its own `RPATH=$ORIGIN/../libexec`. An install
+# hook that moved only the two executables passes `--version` and then dies on
+# the first real boot. Measured 2026-08-19: declaring `xim:glibc` made xlings'
+# elfpatch REPLACE that RPATH, the install reported success, and the emulator
+# failed to start with `libpixman-1.so.0: cannot open shared object file`.
+#
+# So this job does the thing the package exists for: build a bare-metal RISC-V
+# kernel from a C++20 module interface unit with the llvm payload, boot it in
+# the qemu this PR ships, and assert on what the kernel printed.
+#
+# Scoped by `paths:` -- the payload is ~365MB unpacked and llvm is larger
+# still, so this must not run on every pkgs/ touch.
+
+name: baremetal riscv smoke
+
+on:
+  pull_request:
+    paths:
+      - 'pkgs/q/qemu-riscv.lua'
+      - 'tests/q/**'
+  workflow_dispatch:
+
+concurrency:
+  group: baremetal-riscv-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  boot-a-kernel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Install xlings
+        run: |
+          export XLINGS_NON_INTERACTIVE=1
+          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
+          echo "$HOME/.xlings/bin"               >> "$GITHUB_PATH"
+          echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
+
+      - name: Register this PR's descriptor and install it
+        run: |
+          # `local:` rather than a bare name: once the descriptor exists in two
+          # indexes the bare name is ambiguous, and a miss triggers a refresh
+          # that pulls the published artifact back over the local copy.
+          xlings config --add-xpkg pkgs/q/qemu-riscv.lua
+          xlings install local:qemu-riscv -y
+          xlings install xim:llvm -y
+
+      - name: The payload keeps its own loader search path
+        run: |
+          set -e
+          # Locate the PAYLOAD, not the shim. `readlink -f` on the shim lands
+          # on $HOME/.xlings/bin/xlings -- the dispatcher, whose own RPATH says
+          # nothing about qemu (measured 2026-08-19; the check "passed" by
+          # failing for the wrong reason).
+          PAYLOAD=""
+          for d in "$HOME"/.xlings/data/xpkgs/*-x-qemu-riscv/*/; do
+            [ -x "$d/bin/qemu-system-riscv64" ] && PAYLOAD="$d"
+          done
+          test -n "$PAYLOAD" || { echo "no qemu-riscv payload on disk"; exit 1; }
+          echo "payload: $PAYLOAD"
+          # The regression this pins: elfpatch rewriting DT_RPATH drops
+          # `$ORIGIN/../libexec` and every bundled library goes out of reach,
+          # while the install still reports success.
+          readelf -d "$PAYLOAD/bin/qemu-system-riscv64" | grep -F '$ORIGIN/../libexec'
+          test -f "$PAYLOAD/share/qemu/opensbi-riscv64-generic-fw_dynamic.bin"
+
+      - name: Build a bare-metal kernel from a C++20 module
+        run: |
+          set -e
+          # Pick the payload BY CONTENT, not by listing order. A store can hold
+          # several version dirs -- a half-removed older one among them -- and
+          # `ls ... | head -1` takes the lexically first, which on this very
+          # machine was an empty 20.1.7 next to the installed 22.1.8. Take the
+          # newest directory that actually carries the driver.
+          LLVM=""
+          for d in $(ls -d "$HOME"/.xlings/data/xpkgs/xim-x-llvm/*/ 2>/dev/null | sort -V); do
+            [ -x "$d/bin/clang++" ] && [ -x "$d/bin/ld.lld" ] && LLVM="$d"
+          done
+          test -n "$LLVM" || { echo "no llvm payload carries bin/clang++"; exit 1; }
+          echo "using llvm payload: $LLVM"
+          echo "LLVM=$LLVM" >> "$GITHUB_ENV"
+          mkdir -p /tmp/bm && cd /tmp/bm
+
+          cat > start.S <<'EOF'
+          .section .text.start
+          .globl _start
+          _start:
+              la sp, stack_top
+              call kmain
+          1:  wfi
+              j 1b
+          .section .bss
+          .align 12
+          stack:
+              .space 4096
+          stack_top:
+          EOF
+
+          cat > kmain.cppm <<'EOF'
+          module;
+          export module kmain;
+          namespace {
+              // qemu `virt`'s 16550 UART.
+              volatile char* const kUart = reinterpret_cast<volatile char*>(0x10000000);
+              void put(char c) { *kUart = c; }
+              void puts(const char* s) { while (*s) put(*s++); }
+          }
+          export extern "C" void kmain() {
+              puts("MCPP-BAREMETAL-OK\n");
+              // Poweroff through the virt machine's syscon device, so the job
+              // ends on the kernel's terms rather than on a timeout.
+              *reinterpret_cast<volatile unsigned int*>(0x100000) = 0x5555;
+          }
+          EOF
+
+          cat > link.ld <<'EOF'
+          ENTRY(_start)
+          SECTIONS {
+            . = 0x80200000;
+            .text   : { *(.text.start) *(.text*) }
+            .rodata : { *(.rodata*) }
+            .data   : { *(.data*) }
+            .bss    : { *(.bss*) *(COMMON) }
+          }
+          EOF
+
+          TGT="--target=riscv64-none-elf -march=rv64gc -mabi=lp64d -mcmodel=medany
+               -ffreestanding -fno-exceptions -fno-rtti -nostdinc++ -std=c++23"
+          "$LLVM/bin/clang++" --no-default-config $TGT -c start.S -o start.o
+          "$LLVM/bin/clang++" --no-default-config $TGT --precompile kmain.cppm -o kmain.pcm
+          "$LLVM/bin/clang++" --no-default-config $TGT -c kmain.pcm -o kmain.o
+          "$LLVM/bin/ld.lld" -T link.ld start.o kmain.o -o kernel.elf
+
+          file kernel.elf | grep -q 'UCB RISC-V'
+          test -z "$("$LLVM/bin/llvm-nm" -u kernel.elf)"   # closed: no undefined symbols
+          # `if`, not `! cmd | grep -q` -- a `!`-prefixed pipeline is exempt
+          # from errexit and would never fail the step.
+          if readelf -l kernel.elf | grep -q INTERP; then
+            echo "kernel.elf has a PT_INTERP; it is not freestanding"; exit 1
+          fi
+
+      - name: Boot it in the qemu this PR ships
+        run: |
+          set -e
+          timeout 60 qemu-system-riscv64 -machine virt -nographic -no-reboot \
+            -bios default -kernel /tmp/bm/kernel.elf 2>&1 | tee /tmp/bm/boot.log || true
+          # Two things at once: OpenSBI proves the firmware was found in
+          # share/qemu and executed; the kernel's own line proves the module
+          # we built actually ran on the emulated hart.
+          grep -q 'OpenSBI'          /tmp/bm/boot.log
+          grep -q 'MCPP-BAREMETAL-OK' /tmp/bm/boot.log
+
+      - name: Package lifecycle + verify layers
+        run: pytest tests/q -m "lifecycle or verify" --tb=short -q

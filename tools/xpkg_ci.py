@@ -221,6 +221,23 @@ def declared_arches(text: str) -> list[str]:
     return re.findall(r'"([^"]+)"', match.group(1)) if match else []
 
 
+def arch_aliases(body: str) -> dict[str, str]:
+    """Read a version entry's `arch_alias` table.
+
+    Scoped to the `arch_alias = { ... }` block on purpose. `sha256` is a
+    per-arch table of exactly the same `<arch> = "<string>"` shape, so a scan
+    over the whole version body collects both and the later one wins. In the
+    field order docs/V2/xpackage-spec.md documents (`arch_alias` first, then
+    `sha256`) that made every alias resolve to a checksum, and the mirror
+    built `...-linux-7cd69277....tar.gz`. Nothing in the index had both an
+    `arch_alias` and `ci.mirror` until now, which is why it never fired.
+    """
+    match = re.search(r'\barch_alias\s*=\s*\{([^{}]*)\}', body)
+    if not match:
+        return {}
+    return dict(re.findall(r'(x86_64|aarch64|x86)\s*=\s*"([^"]+)"', match.group(1)))
+
+
 def expand_template(template: str, package: str, version: str,
                     platform: str, arch: str,
                     aliases: dict[str, str] | None = None) -> str:
@@ -362,7 +379,7 @@ def materialize(args: argparse.Namespace) -> int:
             return fail(f"{platform}: cannot materialize an already mirrored XLINGS_RES source")
         if not template:
             return fail(f"{platform}: URL/template missing")
-        aliases = dict(re.findall(r'(x86_64|aarch64|x86)\s*=\s*"([^"]+)"', body))
+        aliases = arch_aliases(body)
         use_arches, arch_error = resolve_platform_arches(arches, template, aliases)
         if arch_error:
             return fail(f"{platform}: {arch_error}")

@@ -111,6 +111,33 @@ GLOBAL/CN URL 的实际响应和 SHA256。涉及坏缓存时，预置一个错�
 - 配置型包将写配置的动作放在 `config()`，保留用户已有配置并避免输出 token。
 - 旧配方变更必须确认旧客户端仍能解析；不能仅凭静态字段推断兼容。
 
+### 5.1 自带共享库的载荷：`deps` 与 `$ORIGIN`
+
+有些上游预编译包把自己的共享库一并放进归档，并靠自身的
+`DT_RPATH=$ORIGIN/../<dir>` 找到它们（xPack、部分 Electron/Bun 应用）。
+**这类载荷不要声明提供 loader 的依赖（`xim:glibc` 等）。**
+
+声明了，xlings 的谓词驱动 elfpatch 就有了可 key 的 loader 提供者，而它
+**整条替换 `DT_RPATH`，不是前置追加**。实测（2026-08-19，`qemu-riscv`）：
+
+```
+上游:   [$ORIGIN/../libexec]
+装完:   [<install>/lib:<glibc>/lib64:<subos farm>/lib]
+```
+
+自带的库全部失联，**而 install 仍然报成功** —— 文件一个不少，所有存在性检查
+都过，只有第一次真运行才会炸（`libpixman-1.so.0: cannot open shared object
+file`）。所以：
+
+- 判断依据是**实测的 DT_NEEDED 闭包**，不是清单；用
+  `LD_TRACE_LOADED_OBJECTS=1 <bin>` 分清哪些来自载荷内部、哪些跨出边界。
+- 跨出边界的只有核心 glibc 时，空 `deps` 是正确答案（参考 `claude.lua`、
+  `aarch64-linux-musl-gcc.lua`，从另外两个方向得到同一结论）。
+- 载荷里如果还捆了 `libresolv`/`libssp` 这类 glibc 组件，即使 elfpatch 保留
+  `$ORIGIN` 也不该声明私有 glibc —— 那会让两个 glibc 进同一个进程。
+- 这类包的 `verify` 测试必须**真跑一次**，不能只问 `--version`：上面那个断裂
+  对 `--version` 完全不可见。
+
 ## 6. PR 清单
 
 PR 描述至少包含：
