@@ -238,6 +238,26 @@ def arch_aliases(body: str) -> dict[str, str]:
     return dict(re.findall(r'(x86_64|aarch64|x86)\s*=\s*"([^"]+)"', match.group(1)))
 
 
+def checksum_arches(body: str) -> list[str]:
+    """The arches a version entry declares a per-arch `sha256` for.
+
+    This is the authoritative statement of what a platform actually ships: a
+    checksum exists if and only if an asset exists, and it is the same table
+    xlings resolves against (fail-closed) at install time. `package.archs` is
+    the UNION across platforms and cannot answer the per-platform question --
+    qemu-riscv declares `{x86_64, aarch64}` because linux and macosx ship both,
+    while xPack publishes no win32-arm64 at all.
+
+    Scoped to the `sha256 = { ... }` block for the same reason `arch_aliases`
+    is scoped to its own: the two tables have identical shape.
+    """
+    match = re.search(r'\bsha256\s*=\s*\{([^{}]*)\}', body)
+    if not match:
+        return []
+    seen = re.findall(r'(x86_64|aarch64|x86)\s*=\s*"', match.group(1))
+    return [a for i, a in enumerate(seen) if a not in seen[:i]]
+
+
 def expand_template(template: str, package: str, version: str,
                     platform: str, arch: str,
                     aliases: dict[str, str] | None = None) -> str:
@@ -271,8 +291,15 @@ def resolve_platform_arches(arches: list[str], template: str,
 
     Returns ``(arches, None)`` on success or ``(None, error)`` when a
     non-parameterized URL matches more than one declared arch (ambiguous).
+
+    Note this only decides which arches a TEMPLATE can express. It cannot know
+    which arches a platform actually ships -- that is `checksum_arches`, and
+    `materialize` prefers it whenever the version entry carries a per-arch
+    `sha256`. Reaching here with a per-arch table means the recipe is a V1
+    single-hash shape.
     """
-    if "${arch}" in template or "{arch}" in template:
+    if ("${arch}" in template or "{arch}" in template
+            or "${arch_alias}" in template or "{arch_alias}" in template):
         return arches, None
     if len(arches) == 1:
         return [arches[0]], None
@@ -380,9 +407,22 @@ def materialize(args: argparse.Namespace) -> int:
         if not template:
             return fail(f"{platform}: URL/template missing")
         aliases = arch_aliases(body)
-        use_arches, arch_error = resolve_platform_arches(arches, template, aliases)
-        if arch_error:
-            return fail(f"{platform}: {arch_error}")
+        # Ask the version entry which arches THIS platform ships before falling
+        # back to inference from `package.archs` + the URL shape. `archs` is the
+        # union across platforms and says nothing per-platform: qemu-riscv
+        # declares {x86_64, aarch64} because linux and macosx ship both, while
+        # xPack publishes no win32-arm64 -- and the mirror duly tried to fetch
+        # `...-win32-aarch64.zip` and died on a 404 (measured, run 32184409615).
+        use_arches = checksum_arches(body)
+        if use_arches:
+            unknown = [a for a in use_arches if arches and a not in arches]
+            if unknown:
+                return fail(f"{platform}: sha256 declares {unknown}, "
+                            f"absent from package.archs {arches}")
+        else:
+            use_arches, arch_error = resolve_platform_arches(arches, template, aliases)
+            if arch_error:
+                return fail(f"{platform}: {arch_error}")
         for arch in use_arches:
             final_url = expand_template(template, args.package, version, platform, arch, aliases)
             if not final_url.startswith("https://"):
