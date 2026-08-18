@@ -73,6 +73,21 @@ class TestStatic:
                 f"缺少 arch_alias {canonical} -> {alias}")
 
     @pytest.mark.static
+    def test_install_accepts_both_firmware_layouts(self, source_text):
+        """固件的 datadir 上游本身就分平台, 两条路径都得认.
+
+            linux / macosx  ->  share/qemu/opensbi-riscv64-generic-fw_dynamic.bin
+            windows         ->  share/opensbi-riscv64-generic-fw_dynamic.bin
+
+        (2026-08-19 对三份归档逐一核过.) 只认 Linux 那条会让 Windows 安装
+        在 install hook 里中止 —— 这正是这个差异被发现的方式.
+        """
+        assert 'path.join(dir, "share", "qemu", fw)' in source_text, \
+            "install hook 不再接受 linux/macosx 的 share/qemu 布局"
+        assert 'path.join(dir, "share", fw)' in source_text, \
+            "install hook 不再接受 windows 的 share/ 布局"
+
+    @pytest.mark.static
     def test_windows_declares_no_arm64_asset(self, source_text):
         """xPack 不发 win32-arm64. 声明它 = 把 x64 归档喂给 arm64 主机.
 

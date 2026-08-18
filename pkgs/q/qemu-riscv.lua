@@ -148,20 +148,42 @@ function install()
     os.mv(payload_root(), dir)
 
     -- The tree must stay whole, not just the two executables: qemu resolves
-    -- its firmware (`share/qemu/opensbi-riscv64-generic-fw_dynamic.bin`, the
-    -- default -bios for `-machine virt`) relative to the executable, and its
-    -- shared libraries through `RPATH=$ORIGIN/../libexec`. Moving the binaries
-    -- alone would produce an emulator that answers `--version` and then fails
-    -- to boot anything -- so assert both, here, where the fault is legible.
+    -- its OpenSBI firmware (the default -bios for `-machine virt`) relative to
+    -- the executable, and on Linux its shared libraries through
+    -- `RPATH=$ORIGIN/../libexec`. Moving the binaries alone would produce an
+    -- emulator that answers `--version` and then fails to boot anything -- so
+    -- assert both, here, where the fault is legible.
     local exe = is_host("windows") and ".exe" or ""
     for _, prog in ipairs({"qemu-system-riscv64", "qemu-system-riscv32"}) do
         if not os.isfile(path.join(dir, "bin", prog .. exe)) then
             raise("qemu-riscv payload is missing bin/" .. prog .. exe)
         end
     end
-    if not os.isfile(path.join(dir, "share", "qemu",
-                               "opensbi-riscv64-generic-fw_dynamic.bin")) then
-        raise("qemu-riscv payload is missing share/qemu/opensbi-riscv64-generic-fw_dynamic.bin")
+
+    -- The firmware's datadir is NOT the same on every platform, and the
+    -- difference is upstream's, not ours (verified against all three archives,
+    -- 2026-08-19):
+    --
+    --   linux / macosx  ->  share/qemu/opensbi-riscv64-generic-fw_dynamic.bin
+    --   windows         ->  share/opensbi-riscv64-generic-fw_dynamic.bin
+    --
+    -- Hard-coding the Linux layout made the Windows install abort here, which
+    -- is how the difference was found -- exactly the intended outcome, and the
+    -- reason this check exists rather than trusting the archive. Accept either
+    -- layout; require one of them.
+    local fw = "opensbi-riscv64-generic-fw_dynamic.bin"
+    local candidates = {
+        path.join(dir, "share", "qemu", fw),   -- linux / macosx
+        path.join(dir, "share", fw),           -- windows
+    }
+    local found = false
+    for _, p in ipairs(candidates) do
+        if os.isfile(p) then found = true end
+    end
+    if not found then
+        raise("qemu-riscv payload has no " .. fw
+              .. " under share/qemu/ or share/ -- `-machine virt` cannot boot "
+              .. "without it")
     end
 
     return true
