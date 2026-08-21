@@ -127,40 +127,68 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 
--- ⚠️ THE ARCHIVES HAVE NO WRAP DIRECTORY -- `bin/` and `share/` are at the
--- root -- so unlike `qemu-arm` there is no upstream-chosen name to look for.
--- What xim hands us is the extraction directory named after the archive, and
--- that directory IS the payload root. The fallback exists for a repackaged
--- mirror asset whose name does not match.
-local function payload_root()
+local function exe_name()
+    return is_host("windows") and "qemu-system-x86_64.exe" or "qemu-system-x86_64"
+end
+
+-- ⚠️ THE ARCHIVES HAVE NO WRAP DIRECTORY, WHICH CHANGES WHAT install() CAN DO.
+--
+-- xim extracts in place, into the directory holding the downloaded archive.
+-- xPack's archives carry a `xpack-qemu-arm-<version>/` root, so `qemu-arm` can
+-- move that one directory and be done. These carry `bin/` and `share/` at top
+-- level, so the extraction leaves them BESIDE the archive in a directory xim
+-- also uses for other things -- moving it wholesale would move that directory.
+--
+-- So the two entries are moved by name, which is what `cc-connect` does with
+-- its single flat file. ⚠️ AND THE EMULATOR IS ASSERTED BEFORE THE MOVE RATHER
+-- THAN AFTER: the source directory is shared, a `bin/` in it is not necessarily
+-- ours, and a check that ran afterwards would already have moved somebody
+-- else's.
+--
+-- The wrap-directory case is still handled, for a future repackaging that adds
+-- one; it is tried first because it is unambiguous when it applies.
+local function wrapped_root()
     local named = pkginfo.install_file()
         :replace(".tar.gz", "")
         :replace(".zip", "")
-    local exe = is_host("windows") and "qemu-system-x86_64.exe" or "qemu-system-x86_64"
-
-    if os.isfile(path.join(named, "bin", exe)) then
+    if os.isfile(path.join(named, "bin", exe_name())) then
         return named
     end
-
-    local base = path.directory(pkginfo.install_file())
-    for _, d in ipairs(os.dirs(path.join(base, "*"))) do
-        if os.isfile(path.join(d, "bin", exe)) then
+    for _, d in ipairs(os.dirs(path.join(path.directory(pkginfo.install_file()), "*"))) do
+        if os.isfile(path.join(d, "bin", exe_name())) then
             return d
         end
     end
-
-    raise("cannot find the qemu-x86 payload under '" .. base
-          .. "': no directory contains bin/" .. exe)
+    return nil
 end
 
 function install()
     local dir = pkginfo.install_dir()
     os.tryrm(dir)
-    os.mv(payload_root(), dir)
 
-    local exe = is_host("windows") and "qemu-system-x86_64.exe" or "qemu-system-x86_64"
-    if not os.isfile(path.join(dir, "bin", exe)) then
-        raise("qemu-x86 payload is missing bin/" .. exe)
+    local wrapped = wrapped_root()
+    if wrapped then
+        os.mv(wrapped, dir)
+    else
+        local from = path.directory(pkginfo.install_file())
+        if not os.isfile(path.join(from, "bin", exe_name())) then
+            raise("cannot find the qemu-x86 payload under '" .. from
+                  .. "': neither a wrap directory nor a flat bin/" .. exe_name())
+        end
+        os.mkdir(dir)
+        -- `share` carries the firmware; `bin` the emulator and, on windows, the
+        -- DLLs beside it. Both, or the install is not the payload.
+        for _, entry in ipairs({"bin", "share"}) do
+            local src = path.join(from, entry)
+            if not os.isdir(src) then
+                raise("qemu-x86 payload has no '" .. entry .. "/' under '" .. from .. "'")
+            end
+            os.mv(src, path.join(dir, entry))
+        end
+    end
+
+    if not os.isfile(path.join(dir, "bin", exe_name())) then
+        raise("qemu-x86 payload is missing bin/" .. exe_name())
     end
 
     -- ⚠️ ASSERT THE FIRMWARE, NOT JUST THE EXECUTABLE, AND ASSERT IT HERE.
