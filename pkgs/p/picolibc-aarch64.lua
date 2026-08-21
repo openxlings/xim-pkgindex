@@ -55,15 +55,15 @@ package = {
         },
         linux = {
             ["latest"] = { ref = "1.8.12" },
-            ["1.8.12"] = { sha256 = "e42b24b9a74a0d0b1593cfb3e9df2de61db9a0a54b1efdc7cdad11882d022315" },
+            ["1.8.12"] = { sha256 = "d5d57b75130aee300b74e940994296847ec30450af3e5cdaf1cecd238183721a" },
         },
         macosx = {
             ["latest"] = { ref = "1.8.12" },
-            ["1.8.12"] = { sha256 = "e42b24b9a74a0d0b1593cfb3e9df2de61db9a0a54b1efdc7cdad11882d022315" },
+            ["1.8.12"] = { sha256 = "d5d57b75130aee300b74e940994296847ec30450af3e5cdaf1cecd238183721a" },
         },
         windows = {
             ["latest"] = { ref = "1.8.12" },
-            ["1.8.12"] = { sha256 = "e42b24b9a74a0d0b1593cfb3e9df2de61db9a0a54b1efdc7cdad11882d022315" },
+            ["1.8.12"] = { sha256 = "d5d57b75130aee300b74e940994296847ec30450af3e5cdaf1cecd238183721a" },
         },
     },
 }
