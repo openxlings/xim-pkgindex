@@ -1497,10 +1497,67 @@ function install()
     return true
 end
 
+-- Files the release carries that belong in the HOME, not in the store.
+--
+-- `install()` moves the whole unpacked tree into the package store, so the
+-- payload has `config/themes/*.json` -- but nothing puts them where the client
+-- reads them. `ensure_home_layout` does that, and it only runs from
+-- `self init` / `self install`: a FRESH install gets the shipped themes and an
+-- UPGRADE (`xlings install xlings@latest`, `xlings self update`) does not.
+--
+-- Measured on 2026-08-22 against a home created by an older xlings, right
+-- after 2026.8.22.1 shipped:
+--
+--     ls $XLINGS_HOME/config/          -> shell            (no themes/)
+--     xlings config --theme mono       -> "the configured theme file is not
+--                                         there ... using the built-in default"
+--
+-- So every shipped theme was unreachable for every existing user, while a new
+-- one got them -- the two populations disagreeing about what the same version
+-- can do.
+--
+-- Done here rather than in the client because this is a one-shot install
+-- action: the recipe owns what an upgrade does, and fixing it here reaches
+-- users on their next upgrade instead of waiting for another xlings release.
+--
+-- The files are xlings-owned (each says "copy me, do not edit in place"), so
+-- overwriting is correct; a user's own theme lives at a path they chose.
+local function __install_home_config()
+    local home = os.getenv("XLINGS_HOME")
+    if not home or home == "" then
+        home = path.join(os.getenv("HOME") or os.getenv("USERPROFILE") or "", ".xlings")
+    end
+    if home == ".xlings" then return end   -- no home to resolve; skip quietly
+
+    local src = path.join(pkginfo.install_dir(), "config", "themes")
+    if not os.isdir(src) then return end   -- pre-2026.8.22.1 payload
+
+    local dst = path.join(home, "config", "themes")
+    os.mkdir(dst)
+
+    -- Named, not globbed. `os.cp` with a wildcard has no other user in this
+    -- index, and an unsupported glob in the recipe sandbox does not raise --
+    -- it copies nothing and returns, which is indistinguishable from success.
+    -- Listing the files means a missing one is a missing file.
+    --
+    -- A theme added to xlings and not added here ships as "absent", which the
+    -- client already reports clearly ("the configured theme file is not
+    -- there"); the reverse -- a name here that the payload lacks -- is guarded
+    -- by os.isfile below, so an older payload does not error.
+    local shipped = { "mono.json", "high-contrast.json" }
+    for _, name in ipairs(shipped) do
+        local from = path.join(src, name)
+        if os.isfile(from) then
+            os.cp(from, path.join(dst, name), { force = true })
+        end
+    end
+end
+
 function config()
     xvm.add("xlings", {
         bindir = path.join(pkginfo.install_dir(), "bin"),
     })
+    __install_home_config()
     return true
 end
 
