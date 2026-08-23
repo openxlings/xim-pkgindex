@@ -64,9 +64,10 @@ package = {
             ["latest"] = { ref = "22.1.8" },
             ["22.1.8"] = {
                 url = {
-                    -- Staging until the asset lands on xlings-res; the sha256
-                    -- pins the bytes either way. See the ci-block note above.
-                    GLOBAL = "https://github.com/cloud-teahouse/mcpp/releases/download/llvm-musl-libcxx-22.1.8/llvm-musl-libcxx-22.1.8-linux-x86_64.tar.xz",
+                    -- Dedicated payload repo (source + per-release archives)
+                    -- until the asset migrates to xlings-res; sha256 pins the
+                    -- bytes either way. See the ci-block note above.
+                    GLOBAL = "https://github.com/cloud-teahouse/llvm-musl-libcxx/releases/download/22.1.8/llvm-musl-libcxx-22.1.8-linux-x86_64.tar.xz",
                 },
                 sha256 = {
                     x86_64 = "bdd30f05fc9136f9e582caec727f2c39c195acd29a21e79d1a19e3c170cc381c",
