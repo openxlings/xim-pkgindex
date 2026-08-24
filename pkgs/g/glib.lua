@@ -15,6 +15,7 @@ package = {
     xpm = {
         linux = {
             deps = {
+                "xim:glibc@>=2.38",
                 "xim:libffi@3.4.4",
                 "xim:zlib@1.3.1",
                 "xim:pcre2@10.42",
