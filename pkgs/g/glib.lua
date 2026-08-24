@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "2",
     homepage = "https://gitlab.gnome.org/GNOME/glib",
     name = "glib",
     description = "Low-level core library (GLib/GObject/GIO)",
@@ -14,7 +14,14 @@ package = {
     xvm_enable = true,
     xpm = {
         linux = {
-            deps = { "xim:libffi@3.4.4", "xim:zlib@1.3.1", "xim:pcre2@10.42" },
+            deps = {
+                "xim:libffi@3.4.4",
+                "xim:zlib@1.3.1",
+                "xim:pcre2@10.42",
+            },
+            exports = {
+                runtime = { libdirs = { "lib" } },
+            },
             ["latest"] = { ref = "2.80.0" },
             ["2.80.0"] = {
                 url = {
@@ -30,48 +37,47 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
-
-local libs = {
-    "libglib-2.0.so", "libglib-2.0.so.0",
-    "libgobject-2.0.so", "libgobject-2.0.so.0",
-    "libgio-2.0.so", "libgio-2.0.so.0",
-    "libgmodule-2.0.so", "libgmodule-2.0.so.0",
-    "libgthread-2.0.so", "libgthread-2.0.so.0",
-}
+import("xim.pkgindex.sysroot")
+import("xim.pkgindex.selfcontain")
 
 function install()
     local srcdir = pkginfo.name() .. "-" .. pkginfo.version() .. "-linux-x86_64"
     os.tryrm(pkginfo.install_dir())
     os.mv(srcdir, pkginfo.install_dir())
+
+    selfcontain.seal(pkginfo.install_dir())
     return true
 end
 
 function config()
     local idir = pkginfo.install_dir()
-    local libdir = path.join(idir, "lib")
     local binding = package.name .. "@" .. pkginfo.version()
+
     xvm.add(package.name)
-    for _, lib in ipairs(libs) do
-        if os.isfile(path.join(libdir, lib)) then
-            xvm.add(lib, { type = "lib", bindir = libdir, filename = lib, alias = lib, binding = binding })
-        end
+
+    -- Register every linker-facing soname at its exact release version. This
+    -- materializes <subos>/lib entries for GNU ld as well as lld.
+    sysroot.declare_libs(idir, "lib", binding, pkginfo.version())
+
+    if not sysroot.declare_headers_tree(idir, "include", "usr/include", binding) then
+        sysroot.install_headers_tree(
+            path.join(idir, "include"),
+            path.join(system.subos_sysrootdir(), "usr", "include"))
     end
-    local sysroot = system.subos_sysrootdir()
-    local sys_inc = path.join(sysroot, "usr/include")
-    os.mkdir(sys_inc)
-    system.exec(string.format("sh -c 'cp -a %s/include/* %s/ 2>/dev/null || true'", idir, sys_inc))
-    local sys_pc = path.join(sysroot, "usr/lib/pkgconfig")
-    os.mkdir(sys_pc)
+
+    -- Keep pkg-config metadata in the active SubOS view. The files retain
+    -- absolute payload prefixes, which point at the shared xim installation.
+    local sysroot_pc = path.join(system.subos_sysrootdir(), "usr/lib/pkgconfig")
+    os.mkdir(sysroot_pc)
     system.exec(string.format(
         "sh -c 'for pc in %s/lib/pkgconfig/*.pc; do [ -f \"$pc\" ] && sed \"s|^prefix=.*|prefix=%s|\" \"$pc\" > %s/$(basename \"$pc\"); done'",
-        idir, idir, sys_pc
+        idir, idir, sysroot_pc
     ))
     return true
 end
 
 function uninstall()
     xvm.remove(package.name)
-    for _, lib in ipairs(libs) do xvm.remove(lib) end
     local sysroot = system.subos_sysrootdir()
     system.exec(string.format(
         "sh -c 'rm -rf %s/usr/include/glib-2.0; rm -f %s/usr/lib/pkgconfig/glib-2.0.pc %s/usr/lib/pkgconfig/gobject-2.0.pc %s/usr/lib/pkgconfig/gio-2.0.pc %s/usr/lib/pkgconfig/gmodule-2.0.pc %s/usr/lib/pkgconfig/gthread-2.0.pc'",
