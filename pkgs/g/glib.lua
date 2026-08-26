@@ -68,21 +68,43 @@ function config()
 
     -- Keep pkg-config metadata in the active SubOS view. The files retain
     -- absolute payload prefixes, which point at the shared xim installation.
+    --
+    -- libdir is rewritten too, and that is not cosmetic: this artifact was
+    -- built on a Debian-family host, so every .pc ships
+    -- `libdir=${prefix}/lib/x86_64-linux-gnu` while the payload puts its
+    -- libraries in a flat `lib/`. Rewriting only `prefix=` leaves
+    -- `pkg-config --libs glib-2.0` emitting -L<payload>/lib/x86_64-linux-gnu,
+    -- a directory that does not exist -- i.e. exactly the `cannot find
+    -- -lglib-2.0` this recipe is supposed to end, for every consumer that
+    -- asks pkg-config instead of relying on the sysroot lib search path.
+    -- (pcre2 and libffi carry the same sed with no libdir clause; theirs is
+    -- correct only because their upstream .pc already says ${prefix}/lib.)
     local sysroot_pc = path.join(system.subos_sysrootdir(), "usr/lib/pkgconfig")
     os.mkdir(sysroot_pc)
     system.exec(string.format(
-        "sh -c 'for pc in %s/lib/pkgconfig/*.pc; do [ -f \"$pc\" ] && sed \"s|^prefix=.*|prefix=%s|\" \"$pc\" > %s/$(basename \"$pc\"); done'",
-        idir, idir, sysroot_pc
+        "sh -c 'for pc in %s/lib/pkgconfig/*.pc; do [ -f \"$pc\" ] && sed -e \"s|^prefix=.*|prefix=%s|\" -e \"s|^libdir=.*|libdir=%s/lib|\" \"$pc\" > %s/$(basename \"$pc\"); done'",
+        idir, idir, idir, sysroot_pc
     ))
     return true
 end
 
 function uninstall()
     xvm.remove(package.name)
-    local sysroot = system.subos_sysrootdir()
+
+    -- The library nodes go with xvm.remove(binding); the header symlinks do
+    -- NOT. Measured on xlings 2026.8.22.4: install declares 274 header assets
+    -- under <subos>/usr/include/glib-2.0, `xlings remove glib` reports the
+    -- package removed, and all 274 symlinks are still there -- now pointing
+    -- into a payload this subos no longer uses. So the hook keeps removing
+    -- the tree. Drop these lines only after a client is confirmed to reclaim
+    -- `xvm.files` assets; a green install proves nothing about that.
+    --
+    -- glibconfig.h lives inside glib-2.0/ in this artifact (not in
+    -- lib/glib-2.0/include as on a distro), so the one tree covers it.
+    local sysroot_dir = system.subos_sysrootdir()
     system.exec(string.format(
         "sh -c 'rm -rf %s/usr/include/glib-2.0; rm -f %s/usr/lib/pkgconfig/glib-2.0.pc %s/usr/lib/pkgconfig/gobject-2.0.pc %s/usr/lib/pkgconfig/gio-2.0.pc %s/usr/lib/pkgconfig/gmodule-2.0.pc %s/usr/lib/pkgconfig/gthread-2.0.pc'",
-        sysroot, sysroot, sysroot, sysroot, sysroot, sysroot
+        sysroot_dir, sysroot_dir, sysroot_dir, sysroot_dir, sysroot_dir, sysroot_dir
     ))
     return true
 end
