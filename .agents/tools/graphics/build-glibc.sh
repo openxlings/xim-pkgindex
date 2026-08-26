@@ -18,10 +18,12 @@
 #   * it is the one package whose payload cannot be patched by elfpatch: it IS
 #     the loader. Its own layout has to be right at build time.
 #
-# Usage:  build-glibc.sh <version>            (e.g. build-glibc.sh 2.44)
-#         build-glibc.sh <version>r<rev>     (e.g. build-glibc.sh 2.44r1)
+# Usage:  build-glibc.sh <upstream> [<package-version>]
+#           build-glibc.sh 2.44              -> glibc-2.44-linux-x86_64.tar.gz
+#           build-glibc.sh 2.44 2.44.1       -> glibc-2.44.1-linux-x86_64.tar.gz
 #
-# THE `r<rev>` FORM, AND WHY REBUILDING 2.44 AS "2.44" IS NOT AN OPTION
+# TWO ARGUMENTS, AND WHY THE PACKAGE VERSION HAS TO SORT ABOVE THE ONE IT
+# REPLACES
 #
 # When a payload is rebuilt for a reason that is ours rather than upstream's --
 # a patch, a prefix, a packaging fix -- the bytes change while the glibc
@@ -29,23 +31,35 @@
 # two artifacts, and it breaks the party that did nothing wrong: a client
 # holding a cached index still has the OLD sha256, downloads the NEW asset,
 # and fails the integrity check. It also leaves everyone already on 2.44 with
-# nothing that distinguishes the fixed copy.
+# nothing that distinguishes the fixed copy. So the package gets its own
+# version, and the upstream one it was built from is a separate argument.
 #
-# `r` and not `-`: publish.sh recovers the version from the tarball name with
-# `${stem##*-}`, which returns only the trailing field of a dashed version.
+# WHICH version is not a matter of taste. Recipes depend on this package as
+# `xim:glibc@>=2.38` (libllvm, glslang, elfutils, graphite2, ...), and
+# `select_version_` answers a range with `semver::select_best`, which returns
+# the MAXIMUM satisfying version -- not the one `latest` points at. So a
+# revision that sorts BELOW the artifact it supersedes is not merely untidy;
+# every ranged dependency resolves straight back to the copy being replaced.
 #
-# `r` and not `+`, which was the first choice because `["25.0.4+7"]` is
-# already an index key: look at what jdk-temurin has to do to USE it. The
-# GLOBAL url spells that version `jdk-25.0.4%2B7` and the CN mirror gives up
-# and calls it `25.0.4_7`. A `+` in a version means the key, the git tag, the
-# asset name and two urls stop being the same string, and every one of those
-# is a place to get it wrong once. `r1` is the same string in all five.
+# The first attempt here was `2.44r1`, and it has exactly that defect.
+# xlings' semver splits a field at digit/alpha boundaries and reads a missing
+# segment as numeric 0, so an alpha segment loses to it: their own pinned
+# corpus asserts `compare("6.5", "6.5rc1") > 0`. `2.44r1` is therefore a
+# PRE-release of 2.44 as far as every range expression is concerned.
+#
+# `2.44.1` sorts above `2.44` by the same rule read the other way (1 > the
+# missing 0). It is also the same string in the index key, the git tag, the
+# asset name and both urls -- unlike `+1`, where jdk-temurin's `["25.0.4+7"]`
+# needs `%2B` in the GLOBAL url and a rename to `25.0.4_7` on the CN mirror --
+# and unlike `-1`, which publish.sh's `${stem##*-}` would truncate.
+#
+# It does collide with a hypothetical upstream glibc 2.44.1. Upstream has not
+# shipped a three-component release in this series; if it ever does, take the
+# next free revision rather than reusing this shape.
 set -uo pipefail
 
-VERSION="${1:?usage: build-glibc.sh <version>[r<rev>]}"
-UPSTREAM="${VERSION%%[!0-9.]*}"   # what to fetch and configure; glibc's own
-                                  # versions are digits and dots, so the first
-                                  # character outside that set starts our part
+UPSTREAM="${1:?usage: build-glibc.sh <upstream> [<package-version>]}"
+VERSION="${2:-$UPSTREAM}"   # what the artifact is called and published as
 NAME=glibc
 SUBOS_NAME="${XLINGS_GFX_SUBOS:-gfxbuild}"
 XHOME="${XLINGS_HOME:-$HOME/.xlings}"

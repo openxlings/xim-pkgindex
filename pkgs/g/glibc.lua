@@ -66,7 +66,7 @@ package = {
                     -- libdirs not declared → falls back to {lib64, lib} convention
                 },
             },
-            -- `latest` is 2.44 (as 2.44r1 — same upstream release, our
+            -- `latest` is 2.44 (as 2.44.1 — same upstream release, our
             -- revision 1; see that entry) — and from now on it TRACKS the
             -- highest glibc of any distribution we support, as a standing
             -- policy rather than a per-version judgement call. Decided 2026-08-09
@@ -107,7 +107,7 @@ package = {
             -- direction: glibc runs older binaries on newer libc, never the
             -- reverse, so every 2.39-built payload in the index runs
             -- unchanged under 2.44.
-            ["latest"] = { ref = "2.44r1" },
+            ["latest"] = { ref = "2.44.1" },
             ["2.39"] = "XLINGS_RES",
             -- Built from source, not XLINGS_RES: the sha256 is checked, which
             -- an XLINGS_RES entry cannot do. Build recipe and the reason its
@@ -134,16 +134,27 @@ package = {
                 },
                 sha256 = "0105292fd6b49f74fbf51f93af973b78a9fc18225cb1c757c720e90de3120182",
             },
-            -- Same glibc, our revision 1. `r1` because the change is ours and
-            -- upstream 2.44 is untouched.
+            -- Same upstream 2.44, our revision 1.
             --
-            -- Not `+1`, which was the first choice on the strength of
-            -- `["25.0.4+7"]` a few files away -- until you look at what that
-            -- key costs to use: its GLOBAL url spells the version
-            -- `jdk-25.0.4%2B7` and the CN mirror renames it `25.0.4_7`. A `+`
-            -- makes the key, the tag, the asset name and two urls four
-            -- different spellings of one version. `r1` is the same string in
-            -- all of them.
+            -- THE REVISION HAS TO SORT ABOVE THE VERSION IT REPLACES, and
+            -- that is a resolution requirement, not a naming preference.
+            -- Recipes here depend on this package as `xim:glibc@>=2.38`
+            -- (libllvm, glslang, elfutils, graphite2, ...), and a range is
+            -- answered by `semver::select_best`, which returns the MAXIMUM
+            -- satisfying version -- NOT the one `latest` points at. A
+            -- revision sorting below 2.44 would leave every ranged dependency
+            -- resolving straight back to the artifact being replaced.
+            --
+            -- `2.44r1` was the first choice and has exactly that defect:
+            -- xlings' semver reads a missing segment as numeric 0 and lets it
+            -- beat an alpha one, so `2.44r1` is a PRE-release of 2.44 to
+            -- every range expression. Their pinned corpus says so directly --
+            -- `EXPECT_GT(compare("6.5", "6.5rc1"), 0)`.
+            --
+            -- `2.44.1` sorts above 2.44 by that same rule read the other way,
+            -- and is the same string in the key, the tag, the asset name and
+            -- both urls -- unlike `+1`, where `["25.0.4+7"]` costs jdk-temurin
+            -- a `%2B` in one url and a rename to `25.0.4_7` in the other.
             --
             -- What it carries that 2.44 does not:
             --
@@ -174,12 +185,12 @@ package = {
             -- Criterion, both directions:
             --   .agents/tools/graphics/verify-preload-closure.sh <payload>
             -- 0 here, 2 (inconclusive, not 0) on a payload without the patch.
-            ["2.44r1"] = {
+            ["2.44.1"] = {
                 url = {
-                    GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44r1/glibc-2.44r1-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44r1/glibc-2.44r1-linux-x86_64.tar.gz",
+                    GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.1/glibc-2.44.1-linux-x86_64.tar.gz",
+                    CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.1/glibc-2.44.1-linux-x86_64.tar.gz",
                 },
-                sha256 = "18b7441b293ac9954a1319e5eafc762213e8642afaf31aac93f7c97bcced4c76",
+                sha256 = "dce0273804a307eb6bb3613a468977be73dbfe96d85fb76a14acb6970bc7d9fe",
             },
         },
     },
