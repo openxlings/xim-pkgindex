@@ -37,17 +37,22 @@ package = {
             -- when a subos hosts both glibc and musl xpkgs.
             --
             -- WHAT DECLARING THIS COSTS THE CONSUMER, because it is not
-            -- obvious and it is not reversible at runtime: our ld.so carries
-            -- the build machine's cache path,
-            -- `/home/xlings/.xlings_data/.../etc/ld.so.cache`, which exists on
-            -- no machine (`strings` it; the host's says `/etc/ld.so.cache`).
-            -- On a multiarch distro essentially every system library lives in
-            -- /usr/lib/<triple> and is reachable ONLY through that cache, so a
-            -- payload whose PT_INTERP points here has no host fallback at all.
+            -- obvious and it is not reversible at runtime: our ld.so resolves
+            -- nothing through ld.so.cache. On a multiarch distro essentially
+            -- every system library lives in /usr/lib/<triple> and is reachable
+            -- ONLY through that cache, so a payload whose PT_INTERP points
+            -- here has no host fallback at all.
             --
-            -- That is the intended end state — the 2.44 build prefix is
-            -- literally `/nonexistent/xlings-use-rpath-not-default-search` —
-            -- but it makes the declaration all-or-nothing. A consumer's closure
+            -- That is the intended end state, and as of 2.44r1 it is true for
+            -- the reason stated rather than by accident. The published 2.44
+            -- gets there the wrong way: its cache path is
+            -- `/home/xlings/.xlings_data/.../etc/ld.so.cache`, the BUILD
+            -- MACHINE, which no user has -- so the cache misses because the
+            -- file is absent, and reading that as "we do not use the cache"
+            -- confuses a stale artifact for a design. 2.44r1 carries the
+            -- reserved prefix and ships no cache at all.
+            --
+            -- Either way the declaration is all-or-nothing. A consumer's closure
             -- must cover every library it will ever load, dlopen'd ones
             -- included. Reasoning "the missing ones are optional, so behaviour
             -- degrades no further than today" is false: today they resolve off
@@ -61,9 +66,10 @@ package = {
                     -- libdirs not declared → falls back to {lib64, lib} convention
                 },
             },
-            -- `latest` is 2.44 — and from now on it TRACKS the highest glibc
-            -- of any distribution we support, as a standing policy rather
-            -- than a per-version judgement call. Decided 2026-08-09
+            -- `latest` is 2.44 (as 2.44.2 — same upstream release, our
+            -- revision 1; see that entry) — and from now on it TRACKS the
+            -- highest glibc of any distribution we support, as a standing
+            -- policy rather than a per-version judgement call. Decided 2026-08-09
             -- (ecosystem-closure design, §C5/§C1):
             --
             -- The target form is X-complete — loader, libc and libraries all
@@ -84,22 +90,117 @@ package = {
             -- pin-to-active keeps an already-activated 2.39 pinned. `latest`
             -- decides only version-less explicit installs and NEW subos.
             --
+            -- The same sentence is why a bad artifact cannot be recalled by
+            -- republishing it. InstallState (xlings src/core/xim/
+            -- install_state.cppm) answers from the payload directory and the
+            -- ledger; no caller consults the remote sha256. A machine holding
+            -- `xim-x-glibc/2.44` never downloads that url again whatever is
+            -- behind it, so overwriting an asset reaches exactly the audience
+            -- a new version reaches -- and adds a failure the new version
+            -- does not: a client whose cached index still carries the old
+            -- hash pulls the new bytes and fails the integrity check.
+            -- Whoever is already on a bad payload needs
+            -- `xlings install glibc@<new>`; that is a release note, not a
+            -- version-numbering decision.
+            --
             -- Backward compatibility is what makes the move safe in the other
             -- direction: glibc runs older binaries on newer libc, never the
             -- reverse, so every 2.39-built payload in the index runs
             -- unchanged under 2.44.
-            ["latest"] = { ref = "2.44" },
+            ["latest"] = { ref = "2.44.2" },
             ["2.39"] = "XLINGS_RES",
             -- Built from source, not XLINGS_RES: the sha256 is checked, which
             -- an XLINGS_RES entry cannot do. Build recipe and the reason its
             -- prefix looks the way it does:
             -- .agents/tools/graphics/build-glibc.sh
+            --
+            -- 2.44 IS LEFT IN PLACE, AND IT IS NOT THE ONE TO INSTALL.
+            --
+            -- Its asset predates two decisions that were made about it and
+            -- never reached it. `strings` on the published loader shows
+            -- neither the reserved prefix (AD-11, one day younger than this
+            -- tarball) nor the preload change below; it still carries
+            -- `/home/xlings/.xlings_data/...`, the build machine.
+            --
+            -- Nothing about it is edited rather than superseded, because a
+            -- published sha256 is a promise to whoever already read it: a
+            -- client holding a cached index still has THIS hash, and swapping
+            -- the bytes behind the same version breaks the one party that did
+            -- nothing wrong. Entries here are append-only for that reason.
             ["2.44"] = {
                 url = {
                     GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44/glibc-2.44-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44/glibc-2.44-linux-x86_64.tar.gz",
                 },
                 sha256 = "0105292fd6b49f74fbf51f93af973b78a9fc18225cb1c757c720e90de3120182",
+            },
+            -- Same upstream 2.44, our revision 2.
+            --
+            -- Revision 1 existed for about an hour and was deleted from both
+            -- regions before any index referenced it: it still carried the
+            -- build subos compiler's RPATH into the BUILDER's glibc and gcc
+            -- payloads, so elfpatch gave 16 of its binaries an interpreter
+            -- from this payload and a RUNPATH into whichever glibc the
+            -- installing machine already had, and xlings refused the install
+            -- with `loader/libc payload mismatch in 16 binary(ies)`. The
+            -- build script strips that RPATH now and asserts it is gone.
+            -- Numbering starts at 2 rather than pretending it did not happen.
+            --
+            -- THE REVISION HAS TO SORT ABOVE THE VERSION IT REPLACES, and
+            -- that is a resolution requirement, not a naming preference.
+            -- Recipes here depend on this package as `xim:glibc@>=2.38`
+            -- (libllvm, glslang, elfutils, graphite2, ...), and a range is
+            -- answered by `semver::select_best`, which returns the MAXIMUM
+            -- satisfying version -- NOT the one `latest` points at. A
+            -- revision sorting below 2.44 would leave every ranged dependency
+            -- resolving straight back to the artifact being replaced.
+            --
+            -- `2.44r1` was the first choice and has exactly that defect:
+            -- xlings' semver reads a missing segment as numeric 0 and lets it
+            -- beat an alpha one, so `2.44r1` is a PRE-release of 2.44 to
+            -- every range expression. Their pinned corpus says so directly --
+            -- `EXPECT_GT(compare("6.5", "6.5rc1"), 0)`.
+            --
+            -- `2.44.1` sorts above 2.44 by that same rule read the other way,
+            -- and is the same string in the key, the tag, the asset name and
+            -- both urls -- unlike `+1`, where `["25.0.4+7"]` costs jdk-temurin
+            -- a `%2B` in one url and a rename to `25.0.4_7` in the other.
+            --
+            -- What it carries that 2.44 does not:
+            --
+            --   * the reserved prefix actually in the artifact, so the default
+            --     search path is dead by construction instead of naming a
+            --     directory on someone's disk
+            --   * elf/rtld.c reads SYSCONFDIR "/ld.so.preload" instead of the
+            --     host's literal /etc one. A payload is not the host system,
+            --     and reading the host's list injects host-built objects into
+            --     every process this loader starts -- the compiler, its
+            --     cc1plus/as/ld children, and the binaries users ship. On a
+            --     host that has such a list, 2.44 cannot run any of them
+            --     (mcpp-community/mcpp#484, exit 127); where the injected
+            --     object is self-contained it loads silently against our libc
+            --     instead, which is the two-libc case with no diagnostic.
+            --     Upstream already relocates the sibling path -- LD_SO_CACHE
+            --     is SYSCONFDIR "/ld.so.cache" -- so this is that treatment,
+            --     not a new switch. For --sysconfdir=/etc it is a no-op.
+            --   * no etc/ld.so.cache. `make install` runs ldconfig and leaves
+            --     one keyed to $PREFIX, a path that exists nowhere; every
+            --     report about our "stale private cache" was about a file the
+            --     loader never opened.
+            --
+            -- XLINGS_LD_PRELOAD_FILE redirects the preload path at run time
+            -- for the relocation case (empty = none). It is in unsecvars.h,
+            -- so set-user-ID programs never see it.
+            --
+            -- Criterion, both directions:
+            --   .agents/tools/graphics/verify-preload-closure.sh <payload>
+            -- 0 here, 2 (inconclusive, not 0) on a payload without the patch.
+            ["2.44.2"] = {
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.2/glibc-2.44.2-linux-x86_64.tar.gz",
+                    CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.2/glibc-2.44.2-linux-x86_64.tar.gz",
+                },
+                sha256 = "ed4bf048b8ed2b65433e0dd655f93133da4a9bd458276cfa986b7cccde835d08",
             },
         },
     },
