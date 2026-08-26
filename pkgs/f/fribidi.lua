@@ -29,6 +29,7 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.pkgindex.sysroot")
 
 local libs = { "libfribidi.so", "libfribidi.so.0" }
 
@@ -36,6 +37,15 @@ function install()
     local srcdir = pkginfo.name() .. "-" .. pkginfo.version() .. "-linux-x86_64"
     os.tryrm(pkginfo.install_dir())
     os.mv(srcdir, pkginfo.install_dir())
+
+    -- The .pc files in this payload say `libdir=${prefix}/lib/x86_64-linux-gnu`
+    -- -- a Debian-family build host -- against a payload with a flat lib/.
+    -- Rewriting `prefix=` alone (what this recipe did) leaves pkg-config
+    -- emitting -L for a directory that does not exist. It still links, because
+    -- the subos lib search path covers it, and then the consumer that stamped
+    -- its RPATH from `pkg-config --variable=libdir` dies at startup.
+    sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")
+
     return true
 end
 
@@ -55,9 +65,11 @@ function config()
     system.exec(string.format("sh -c 'cp -a %s/include/* %s/ 2>/dev/null || true'", idir, sys_inc))
     local sys_pc = path.join(sysroot, "usr/lib/pkgconfig")
     os.mkdir(sys_pc)
+    -- The payload's .pc files were already pointed at the payload in
+    -- install(); copying them verbatim is what keeps that the only answer.
     system.exec(string.format(
-        "sh -c 'for pc in %s/lib/pkgconfig/*.pc; do [ -f \"$pc\" ] && sed \"s|^prefix=.*|prefix=%s|\" \"$pc\" > %s/$(basename \"$pc\"); done'",
-        idir, idir, sys_pc
+        "sh -c 'for pc in %s/lib/pkgconfig/*.pc; do [ -f \"$pc\" ] && cp -f \"$pc\" %s/; done'",
+        idir, sys_pc
     ))
     return true
 end
