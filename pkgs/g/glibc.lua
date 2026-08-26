@@ -370,19 +370,26 @@ function __config_header(binding)
     --
     -- glibc is the case declare_headers warns about — it scatters into
     -- `usr/include`, the most shared namespace there is, and the semantics
-    -- change from first-claimant-keeps-it to last-one-wins. Measured before
-    -- doing it: of glibc's 130 top-level entries exactly one, `scsi`, is
-    -- also shipped by another package in the index (linux-headers). Every
-    -- other name is glibc's alone.
+    -- change from first-claimant-keeps-it to last-one-wins. Measured: of
+    -- glibc's 129 top-level entries exactly one, `scsi`, is also shipped by
+    -- another package in the index (linux-headers). Every other name is
+    -- glibc's alone.
     --
-    -- That one entry was already decided by install order, just invisibly:
-    -- install_headers skipped it if linux-headers got there first, and
-    -- linux-headers (declared since #425) overwrote it if it came second.
-    -- With both declared it is still order-dependent, but now *recorded* —
-    -- two packages claiming one path becomes state doctor can see rather
-    -- than a silent race.
+    -- `scsi` is therefore declared per FILE, and linux-headers does the same
+    -- in the same release. Directory granularity cannot express what that
+    -- one name needs: the two payloads are DISJOINT — glibc ships scsi.h,
+    -- scsi_ioctl.h and sg.h, linux-headers ships six others — and a
+    -- distribution's /usr/include/scsi is the union. Declaring the directory
+    -- makes it one link, so whoever installed last won it whole.
+    --
+    -- This comment used to say that was acceptable because it had become
+    -- "state doctor can see". It had not: nothing reported it, and measured
+    -- on a real installation the link belonged to linux-headers, so
+    -- `<scsi/sg.h>` was simply ABSENT from a subos with glibc installed and
+    -- declaring it. Recorded and unread is the same as unrecorded.
     if sysroot.declare_headers(pkginfo.install_dir(), "include",
-                               "usr/include", binding) then
+                               "usr/include", binding,
+                               { merge = { "scsi" } }) then
         return
     end
 

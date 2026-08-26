@@ -82,18 +82,80 @@ end
 -- race decided by install order. Only migrate a directory whose names are
 -- yours (`openssl/`, `python3.13/`); for a package that scatters entries
 -- into a shared namespace, check what else claims them first.
-function sysroot.declare_headers(install_dir, src_rel, dst_rel, binding)
+--
+-- OPTS.MERGE names children that must be declared per FILE instead of as one
+-- directory. Use it for a name another package also ships.
+--
+-- Directory granularity cannot express a merge: the child becomes ONE asset,
+-- a link to your payload's directory, so the last package to install replaces
+-- the other one wholesale. Measured on a real installation before this
+-- existed: `usr/include/scsi` is shipped by glibc (scsi.h, scsi_ioctl.h,
+-- sg.h) and by linux-headers (six other files), the two sets are disjoint,
+-- the link belonged to linux-headers -- and `<scsi/sg.h>` was therefore
+-- simply absent from a subos that had glibc installed and declaring it. A
+-- distribution's /usr/include/scsi is the union of the two.
+--
+-- Only the contested names, not the whole tree. glibc ships 129 top-level
+-- entries and exactly one of them collides; declaring the lot per-file costs
+-- 484 nodes against 131, and buys nothing for the other 128.
+--
+-- Both sides of a collision must pass it in the same index release. A package
+-- that declares leaves while the other still declares the directory is
+-- writing into a directory the other one owns -- see the note in
+-- `sysroot.unwrap_directory_asset` for why that is not merely untidy.
+function sysroot.declare_headers(install_dir, src_rel, dst_rel, binding, opts)
     if not xvm.files then return false end
     local src_dir = path.join(install_dir, src_rel)
     if not os.isdir(src_dir) then return true end
+    local merge = {}
+    for _, name in ipairs((opts or {}).merge or {}) do merge[name] = true end
     for _, name in ipairs(sysroot.entries(src_dir)) do
-        xvm.files{
-            src = path.join(src_rel, name),
-            dst = path.join(dst_rel, name),
-            binding = binding,
-        }
+        if merge[name] then
+            sysroot.unwrap_directory_asset(path.join(dst_rel, name))
+            sysroot.__declare_tree(install_dir, path.join(src_rel, name),
+                                   path.join(dst_rel, name), binding, 0)
+        else
+            xvm.files{
+                src = path.join(src_rel, name),
+                dst = path.join(dst_rel, name),
+                binding = binding,
+            }
+        end
     end
     return true
+end
+
+-- Turn a leftover whole-directory link at DST_REL into a real directory,
+-- keeping every entry it was providing.
+--
+-- Needed while migrating a name from directory granularity to per-file: the
+-- previous install left `usr/include/scsi` as a link into some package's
+-- payload, and `create_directories` treats a link-to-directory as "already
+-- there", so the arriving header is written INSIDE THAT PACKAGE'S PAYLOAD --
+-- a store every subos on the machine reads and no uninstall cleans.
+--
+-- A client from 2026.8.26.1 on refuses that write and unwraps the link
+-- itself. An older one does not, which is why this exists at all. But it must
+-- unwrap the SAME WAY the client does, one link per entry, rather than just
+-- deleting: measured on a new client, a plain `rm` here ran first and threw
+-- away the other package's six headers that the client would have kept. A
+-- migration helper that makes the fixed client behave worse than it does on
+-- its own is not a helper.
+--
+-- Idempotent, and a no-op on anything that is not a link -- including the
+-- real directory this leaves behind, so re-running config() costs one test.
+--
+-- POSIX only by construction: the shape it repairs is a symlink, and on
+-- Windows a declared asset is a hard link or a copy.
+function sysroot.unwrap_directory_asset(dst_rel)
+    if os.host() == "windows" then return end
+    local target = path.join(system.subos_sysrootdir(), dst_rel)
+    system.exec(string.format(
+        [[sh -c "t=\"%s\"; [ -L \"$t\" ] || exit 0; ]] ..
+        [[src=$(readlink \"$t\"); rm -f \"$t\"; mkdir -p \"$t\"; ]] ..
+        [[for f in \"$src\"/*; do [ -e \"$f\" ] || continue; ]] ..
+        [[ln -sfn \"$f\" \"$t/$(basename \"$f\")\"; done; exit 0"]],
+        target))
 end
 
 -- declare_headers, but for a directory whose names are NOT yours.

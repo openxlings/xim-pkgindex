@@ -72,9 +72,17 @@ function config()
     -- do -- and unlike the stamp, the declaration also survives a sysroot
     -- wipe correctly, because it is state xlings owns rather than a file
     -- in the tree being wiped.
+    -- `scsi` per FILE, and glibc does the same in the same release: the two
+    -- packages ship disjoint halves of one directory (six files here, three
+    -- there) and a directory-granularity declaration is a single link, so
+    -- whoever installed last took the whole name. Measured before this
+    -- changed: this package held the link and glibc's `<scsi/sg.h>` was
+    -- absent from the sysroot. Both sides must migrate together -- see
+    -- sysroot.unwrap_directory_asset.
     if not sysroot.declare_headers(pkginfo.install_dir(), "include",
                                    "usr/include",
-                                   "linux-headers@" .. pkginfo.version()) then
+                                   "linux-headers@" .. pkginfo.version(),
+                                   { merge = { "scsi" } }) then
         local sysroot_usrdir = path.join(system.subos_sysrootdir(), "usr")
         if not os.isdir(sysroot_usrdir) then os.mkdir(sysroot_usrdir) end
 
