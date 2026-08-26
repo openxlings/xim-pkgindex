@@ -100,6 +100,13 @@ class TestRevisionOrdering:
         # env-var tables in config(), and a criterion that matches
         # LD_LIBRARY_PATH is not reading the version table.
         head = meta.raw_content.split('\nimport(', 1)[0]
+        # Lua comments stripped first. A version that is only MENTIONED -- in
+        # a "restore this when X ships" note, say -- is not in the table, and
+        # a criterion that cannot tell those apart is reading prose. This bit
+        # already: a commented-out restore snippet made the check report a
+        # `latest` that pointed below an entry that was not there.
+        head = '\n'.join(l for l in head.splitlines()
+                          if not l.lstrip().startswith('--'))
         keys = re.findall(r'\["([^"]+)"\]\s*=', head)
         ref = re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"([^"]+)"', head)
         return [k for k in keys if k != 'latest'], (ref.group(1) if ref else None)
