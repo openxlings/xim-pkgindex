@@ -63,6 +63,44 @@ end
 -- xlings owns them: they follow `xlings use` and are removed with the
 -- release instead of by a hand-written mirror of this call in uninstall().
 --
+-- THAT SECOND HALF IS TRUE FROM xlings 2026.8.26.1, AND WAS FALSE BEFORE IT.
+-- Written as a promise here since 2026.7.27.0, it described nothing: no
+-- removal path reclaimed a declared asset, in either shape a removal takes
+-- (openxlings/xlings#423). Measured on glib -- 274 header assets, 5
+-- pkg-config assets, 15 lib nodes, in a subos holding glib and nothing else:
+--
+--     client        uninstall() does nothing by hand   after remove
+--     2026.8.26.1   -                                  0 left
+--     2026.8.22.4   -                                  279 left
+--
+-- On 2026.8.26.1 both shapes are covered and neither touches anything else:
+--
+--     full uninstall   glib 294 -> 0, glib-2.0/ swept, usr/include kept,
+--                      other packages' 138 entries untouched
+--     detach           this subos 294 -> 0, the other subos still 294,
+--                      payload kept
+--
+-- WHAT THAT MEANS FOR A RECIPE. Eight recipes in this index carry a
+-- hand-written cleanup, in two shapes, and the split is worth knowing:
+--
+--   * gated on `if not xvm.files` -- libxml2, openssl, ca-certificates,
+--     zlib. These trusted the sentence above, so on a client that HAD
+--     `xvm.files` and did not reclaim (2026.7.27.0 .. 2026.8.22.4) they
+--     leaked. Their comments are correct for the first time now.
+--   * unconditional -- glib, freetype, libselinux, util-linux. These did not
+--     trust it and cleaned anyway, so they never leaked. On 2026.8.26.1 that
+--     work is redundant, and it is kept ONLY for users who have not upgraded.
+--
+-- A recipe cannot tell which client it is on: there is no capability to probe
+-- for reclamation and no client version in the sandbox. So the unconditional
+-- four stay until the minimum supported client is past 2026.8.26.1, and then
+-- all four go at once.
+--
+-- BEFORE DELETING ANY OF THEM, re-run the measurement -- and count with
+-- `find -xtype l`, never `[ -e ]`. `-e` follows the link, so a leaked link
+-- whose payload is gone reads as "already cleaned up". That is the exact
+-- mistake that hid this bug from its own test for a month.
+--
 -- Returns false when the running client has no `xvm.files`, so the caller
 -- falls back to install_headers and behaves exactly as it did before. That
 -- probe -- capability, never version -- is the contract in
