@@ -120,19 +120,12 @@ end
 function uninstall()
     xvm.remove(package.name)
 
-    -- Unconditional, not `if not xvm.files`, and that distinction is why
-    -- this package never leaked while the four gated ones did: a client can
-    -- have `xvm.files` and still not reclaim, which is exactly what
-    -- 2026.7.27.0 .. 2026.8.22.4 were.
-    -- Redundant on xlings 2026.8.26.1, which reclaims declared assets by
-    -- itself (openxlings/xlings#423); the whole difference on anything
-    -- older, which does not. A recipe cannot tell which one it is on --
-    -- there is no capability to probe and no client version in the sandbox --
-    -- so this stays until the minimum supported client is past 2026.8.26.1.
-    -- The measurement, and why `[ -e ]` must not be the check, are on
+    -- Nothing by hand. xlings reclaims declared assets on every path that
+    -- gives a release up -- full uninstall, detach, a re-registration that
+    -- stops declaring a destination, and a `use` down to a smaller asset set
+    -- (openxlings/xlings#423, fixed in 2026.8.26.1). The hand-written mirror
+    -- that used to live here is gone; the numbers that justify its removal,
+    -- and what an older client does without it, are on
     -- `sysroot.declare_headers` in libs/sysroot.lua.
-    local sysroot = system.subos_sysrootdir()
-    os.tryrm(path.join(sysroot, "usr/include/freetype2"))
-    os.tryrm(path.join(sysroot, "usr/lib/pkgconfig/freetype2.pc"))
     return true
 end

@@ -93,19 +93,12 @@ end
 function uninstall()
     xvm.remove(package.name)
 
-    -- By name, not `rm -rf usr/include`: that directory is shared with
-    -- glibc and everything else in the sysroot.
-    -- Redundant on xlings 2026.8.26.1, which reclaims declared assets by
-    -- itself (openxlings/xlings#423); the whole difference on anything
-    -- older, which does not. A recipe cannot tell which one it is on --
-    -- there is no capability to probe and no client version in the sandbox --
-    -- so this stays until the minimum supported client is past 2026.8.26.1.
-    -- The measurement, and why `[ -e ]` must not be the check, are on
+    -- Nothing by hand. xlings reclaims declared assets on every path that
+    -- gives a release up -- full uninstall, detach, a re-registration that
+    -- stops declaring a destination, and a `use` down to a smaller asset set
+    -- (openxlings/xlings#423, fixed in 2026.8.26.1). The hand-written mirror
+    -- that used to live here is gone; the numbers that justify its removal,
+    -- and what an older client does without it, are on
     -- `sysroot.declare_headers` in libs/sysroot.lua.
-    local sysroot_dir = system.subos_sysrootdir()
-    system.exec(string.format(
-        "sh -c 'rm -rf %s/usr/include/selinux; rm -f %s/usr/lib/pkgconfig/libselinux.pc'",
-        sysroot_dir, sysroot_dir
-    ))
     return true
 end

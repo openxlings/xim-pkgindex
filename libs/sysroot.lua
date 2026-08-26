@@ -80,26 +80,32 @@ end
 --     detach           this subos 294 -> 0, the other subos still 294,
 --                      payload kept
 --
--- WHAT THAT MEANS FOR A RECIPE. Eight recipes in this index carry a
--- hand-written cleanup, in two shapes, and the split is worth knowing:
+-- WHAT THAT MEANS FOR A RECIPE: nothing by hand any more. The four recipes
+-- that carried an unconditional hand-written cleanup -- glib, freetype,
+-- libselinux, util-linux -- had it removed once 2026.8.26.1 shipped. They
+-- were the ones that did NOT trust the sentence above and cleaned anyway, so
+-- they never leaked; the other four (libxml2, openssl, ca-certificates, zlib)
+-- gate on `if not xvm.files`, which is the pre-2026.7.27.0 fallback for the
+-- legacy COPY path and a different question entirely -- those stay.
 --
---   * gated on `if not xvm.files` -- libxml2, openssl, ca-certificates,
---     zlib. These trusted the sentence above, so on a client that HAD
---     `xvm.files` and did not reclaim (2026.7.27.0 .. 2026.8.22.4) they
---     leaked. Their comments are correct for the first time now.
---   * unconditional -- glib, freetype, libselinux, util-linux. These did not
---     trust it and cleaned anyway, so they never leaked. On 2026.8.26.1 that
---     work is redundant, and it is kept ONLY for users who have not upgraded.
+-- WHAT AN OLDER CLIENT DOES NOW. A recipe cannot tell which client it is on:
+-- there is no capability to probe for reclamation and no client version in
+-- the sandbox. So on anything before 2026.8.26.1 these four now leave their
+-- assets behind -- 279 of them for glib. That was accepted deliberately:
 --
--- A recipe cannot tell which client it is on: there is no capability to probe
--- for reclamation and no client version in the sandbox. So the unconditional
--- four stay until the minimum supported client is past 2026.8.26.1, and then
--- all four go at once.
+--   * it is not a breakage. A dangling link is not selected by a compiler,
+--     nothing that worked stops working, and a reinstall overwrites cleanly.
+--   * it is recoverable and self-announcing after upgrading: the 2026.8.26.1
+--     doctor sees them (the older one scanned one level deep and reported
+--     zero) and `self doctor --fix` takes them to zero.
+--   * it was never a complete defence anyway. Only 8 of the 39 recipes that
+--     declare assets ever carried one; the 26 of the X11/graphics stack never
+--     did, so an old client already accumulated exactly this from them.
 --
--- BEFORE DELETING ANY OF THEM, re-run the measurement -- and count with
--- `find -xtype l`, never `[ -e ]`. `-e` follows the link, so a leaked link
--- whose payload is gone reads as "already cleaned up". That is the exact
--- mistake that hid this bug from its own test for a month.
+-- IF YOU ADD ONE BACK, or write a new recipe that cleans by hand, measure
+-- first -- and count with `find -xtype l`, never `[ -e ]`. `-e` follows the
+-- link, so a leaked link whose payload is gone reads as "already cleaned up".
+-- That is the exact mistake that hid this bug from its own test for a month.
 --
 -- Returns false when the running client has no `xvm.files`, so the caller
 -- falls back to install_headers and behaves exactly as it did before. That
