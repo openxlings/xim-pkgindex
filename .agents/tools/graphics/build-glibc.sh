@@ -180,6 +180,44 @@ if [[ ! -d "$PAYLOAD/lib64" ]]; then
     ln -s lib "$PAYLOAD/lib64" || fail "lib64 link"
 fi
 
+# ── drop the RPATH the subos compiler injected ──────────────────────────
+#
+# gcc in the build subos links bin/* , sbin/* and libexec/getconf/* with
+#
+#   DT_RPATH = <builder home>/.xlings/data/xpkgs/xim-x-glibc/<ver>/lib64
+#              :<builder home>/.xlings/data/xpkgs/xim-x-gcc/<ver>/lib64
+#
+# which is the build machine written into a published artifact, and it is not
+# cosmetic. The first version of this check skipped these files on the
+# reasoning that their PT_INTERP is the reserved prefix, so they can never
+# start and their RPATH can never be followed. That reasoning is wrong at
+# exactly one step: elfpatch REWRITES PT_INTERP at install time, so they do
+# start -- and it rewrites this RPATH in place rather than recomputing it,
+# so the payload identity baked in here is the one they get.
+#
+# Measured: installing such a payload alongside an older glibc gives every one
+# of these 16 binaries an interpreter from the NEW payload and a RUNPATH into
+# the OLD one, and xlings refuses the install:
+#
+#   loader/libc payload mismatch in 16 binary(ies)
+#
+# Removing it is the whole fix. These binaries need no RPATH of their own --
+# install-time relocation is what gives them one, and it can only get the
+# answer right if it is not handed a stale one to edit.
+if command -v patchelf >/dev/null; then
+    stripped=0
+    for elf in $(find "$PAYLOAD" -type f \( -name '*.so' -o -name '*.so.*' -o -perm -u+x \) 2>/dev/null); do
+        head -c 4 "$elf" 2>/dev/null | grep -q $'\x7fELF' || continue
+        rp="$(readelf -dW "$elf" 2>/dev/null \
+              | sed -n 's/.*\(RPATH\|RUNPATH\).*\[\(.*\)\]/\2/p')"
+        [[ -n "$rp" && "$rp" == *"$HOME"* ]] || continue
+        patchelf --remove-rpath "$elf" 2>/dev/null && stripped=$((stripped+1))
+    done
+    [[ $stripped -eq 0 ]] || log "removed the builder's RPATH from $stripped binaries"
+else
+    fail "patchelf not found — cannot remove the build subos's injected RPATH"
+fi
+
 # ── the checks ──────────────────────────────────────────────────────────
 log "checking the payload"
 leaks=0
@@ -287,20 +325,16 @@ for elf in $(find "$PAYLOAD" -type f \( -name '*.so' -o -name '*.so.*' -o -perm 
         leaks=$((leaks+1))
     fi
 
-    # RPATH is only checked on objects a loader can actually act on.
+    # EVERY ELF, including the ones with an interpreter.
     #
-    # The subos gcc links `bin/*` and `sbin/*` with an RPATH into the BUILD
-    # machine's glibc and gcc payloads. That is a builder-disk path in a
-    # published artifact and it looks alarming, but it can never be followed:
-    # those same programs have PT_INTERP under the reserved prefix (asserted
-    # just above), so execve fails with ENOENT before any RPATH is consulted.
-    # Failing the build on it would be asserting a property of a code path
-    # that AD-11 deliberately made unreachable.
-    #
-    # A shared library is different: it is loaded BY something else, its
-    # PT_INTERP is not consulted, and its RPATH is. So that is where the
-    # question has an answer that matters.
-    [[ -n "$interp" ]] && continue
+    # This check used to skip them, reasoning that a program whose PT_INTERP
+    # is the reserved prefix cannot start, so its RPATH cannot be followed.
+    # elfpatch rewrites PT_INTERP at install time; they start. And it edits
+    # this RPATH rather than recomputing one, so a stale entry decides which
+    # payload they bind to. Skipping them is what let a payload through that
+    # xlings then refused to install:
+    #   loader/libc payload mismatch in 16 binary(ies)
+    # The strip above is the fix; this is the assertion that it happened.
     rpath="$(readelf -dW "$elf" 2>/dev/null \
              | sed -n 's/.*\(RPATH\|RUNPATH\).*\[\(.*\)\]/\2/p')"
     if [[ -n "$rpath" && "$rpath" == *"$HOME"* ]]; then

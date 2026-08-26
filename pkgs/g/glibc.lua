@@ -66,7 +66,7 @@ package = {
                     -- libdirs not declared → falls back to {lib64, lib} convention
                 },
             },
-            -- `latest` is 2.44 (as 2.44.1 — same upstream release, our
+            -- `latest` is 2.44 (as 2.44.2 — same upstream release, our
             -- revision 1; see that entry) — and from now on it TRACKS the
             -- highest glibc of any distribution we support, as a standing
             -- policy rather than a per-version judgement call. Decided 2026-08-09
@@ -107,7 +107,7 @@ package = {
             -- direction: glibc runs older binaries on newer libc, never the
             -- reverse, so every 2.39-built payload in the index runs
             -- unchanged under 2.44.
-            ["latest"] = { ref = "2.44.1" },
+            ["latest"] = { ref = "2.44.2" },
             ["2.39"] = "XLINGS_RES",
             -- Built from source, not XLINGS_RES: the sha256 is checked, which
             -- an XLINGS_RES entry cannot do. Build recipe and the reason its
@@ -134,7 +134,17 @@ package = {
                 },
                 sha256 = "0105292fd6b49f74fbf51f93af973b78a9fc18225cb1c757c720e90de3120182",
             },
-            -- Same upstream 2.44, our revision 1.
+            -- Same upstream 2.44, our revision 2.
+            --
+            -- Revision 1 existed for about an hour and was deleted from both
+            -- regions before any index referenced it: it still carried the
+            -- build subos compiler's RPATH into the BUILDER's glibc and gcc
+            -- payloads, so elfpatch gave 16 of its binaries an interpreter
+            -- from this payload and a RUNPATH into whichever glibc the
+            -- installing machine already had, and xlings refused the install
+            -- with `loader/libc payload mismatch in 16 binary(ies)`. The
+            -- build script strips that RPATH now and asserts it is gone.
+            -- Numbering starts at 2 rather than pretending it did not happen.
             --
             -- THE REVISION HAS TO SORT ABOVE THE VERSION IT REPLACES, and
             -- that is a resolution requirement, not a naming preference.
@@ -185,12 +195,12 @@ package = {
             -- Criterion, both directions:
             --   .agents/tools/graphics/verify-preload-closure.sh <payload>
             -- 0 here, 2 (inconclusive, not 0) on a payload without the patch.
-            ["2.44.1"] = {
+            ["2.44.2"] = {
                 url = {
-                    GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.1/glibc-2.44.1-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.1/glibc-2.44.1-linux-x86_64.tar.gz",
+                    GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.2/glibc-2.44.2-linux-x86_64.tar.gz",
+                    CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.2/glibc-2.44.2-linux-x86_64.tar.gz",
                 },
-                sha256 = "dce0273804a307eb6bb3613a468977be73dbfe96d85fb76a14acb6970bc7d9fe",
+                sha256 = "ed4bf048b8ed2b65433e0dd655f93133da4a9bd458276cfa986b7cccde835d08",
             },
         },
     },
