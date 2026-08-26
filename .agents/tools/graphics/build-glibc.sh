@@ -78,6 +78,20 @@ BUILDDIR="$SRC/glibc-$VERSION"
 rm -rf "$BUILDDIR"; mkdir -p "$BUILDDIR"
 tar xf "$TARBALL" -C "$BUILDDIR" --strip-components=1 || fail "extract"
 
+# ── patches ─────────────────────────────────────────────────────────────
+#
+# Version-pinned by filename. A patch that stops applying is a HARD failure,
+# not a warning: `patch` refusing to find its context is the only signal that
+# the thing it was compensating for has moved, and a payload built without it
+# looks identical from the outside.
+PATCHDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/patches"
+shopt -s nullglob
+for p in "$PATCHDIR/glibc-$VERSION-"*.patch; do
+    log "applying $(basename "$p")"
+    patch -p1 -d "$BUILDDIR" --forward < "$p" || fail "patch $(basename "$p")"
+done
+shopt -u nullglob
+
 export PATH="$SUBOS/bin:$SUBOS/usr/bin:$PATH"
 export CC="$SUBOS/bin/gcc" CXX="$SUBOS/bin/g++"
 [[ -x "$CC" ]] || fail "no gcc in the subos"
@@ -144,6 +158,30 @@ if [[ -n "$LOADER" ]]; then
     esac
 fi
 
+# `strings X | grep -q Y` CANNOT BE USED HERE, and the reason is not style.
+#
+# This script runs under `set -o pipefail`. `grep -q` exits at the first match,
+# `strings` then dies of SIGPIPE, and pipefail reports the pipeline as 141 --
+# so a SUCCESSFUL match is read as a failure. Whether strings finishes writing
+# before grep leaves is a race on file size and match position, which is why
+# this looked like it worked.
+#
+# The two directions are not symmetric, and that is what makes it worth this
+# comment. The prefix check fails LOUDLY on a correct artifact, so somebody
+# notices. The $HOME check fails SILENTLY on a leaking one: a payload that
+# does name the build machine matches, gets 141, and is reported clean. The
+# guard written to stop exactly that artifact could never fire.
+#
+# So: dump once to a file, grep the file. No pipe, no signal, no race.
+strings_of () {  # strings_of <elf> -> path to a cached strings dump
+    local elf="$1" key
+    key="$(echo "$elf" | tr -c 'A-Za-z0-9' '_')"
+    local out="$WORK/strings/$key.txt"
+    mkdir -p "$WORK/strings"
+    [[ -s "$out" ]] || strings -a "$elf" > "$out" 2>/dev/null
+    echo "$out"
+}
+
 # The prefix is a decision about the ARTIFACT, so check the artifact (R4).
 #
 # Without this, a `--prefix` that silently failed to take -- or a future edit
@@ -151,21 +189,100 @@ fi
 # directory on the build machine, and nothing anywhere says so. That is exactly
 # how the old prefix survived across several releases.
 if [[ -n "$LOADER" ]]; then
-    if strings "$LOADER" 2>/dev/null | grep -qF "$PREFIX"; then
+    ldump="$(strings_of "$LOADER")"
+    if grep -qF "$PREFIX" "$ldump"; then
         log "  default search path: $PREFIX (reserved, cannot exist)"
     else
         echo "    the loader does not carry the reserved prefix; its default"
         echo "    library search path is something else:"
-        strings "$LOADER" 2>/dev/null | grep -E "^/[^ ]*/lib(64)?$" | head -3 \
-            | sed 's/^/      /'
+        grep -E "^/[^ ]*/lib(64)?$" "$ldump" | head -3 | sed 's/^/      /'
         leaks=$((leaks+1))
     fi
-    # And it must not name this machine. The payload is published; a build
-    # path in it is a fact about the builder's disk, not about glibc.
-    if strings "$LOADER" 2>/dev/null | grep -qF "$HOME"; then
-        echo "    the loader carries a path from this machine's \$HOME"
+
+    # The preload path is a decision about the ARTIFACT too, and the same
+    # reasoning as the prefix check above applies: a patch that silently
+    # stopped applying leaves a loader that reads the HOST's list, which no
+    # file listing shows and which only reproduces on a machine that has an
+    # /etc/ld.so.preload -- rare on a dev box, common on the audited hosts
+    # our users run the artifacts on.
+    #
+    # Two assertions, because either one alone passes for the wrong reason:
+    # the literal must be GONE (the patch changed something) and the
+    # sysconfdir form must be PRESENT (it changed it to the right thing).
+    if grep -qx "/etc/ld.so.preload" "$ldump"; then
+        echo "    the loader still reads the host's /etc/ld.so.preload"
+        echo "    (glibc-$VERSION-preload-follows-sysconfdir.patch did not take)"
         leaks=$((leaks+1))
     fi
+    if ! grep -qxF "$PREFIX/etc/ld.so.preload" "$ldump"; then
+        echo "    the loader does not carry $PREFIX/etc/ld.so.preload"
+        leaks=$((leaks+1))
+    fi
+fi
+
+# Every ELF in the payload, not just the loader -- but only the paths the
+# LOADER WILL ACT ON.
+#
+# The loader is where the prefix decision shows up, so that is where the check
+# was written. It is not the only object carrying a compiled-in path: every
+# shared object and program here has a PT_INTERP, an absolute path to the
+# loader as of build time. In the published 2.44 that is
+# `/home/xlings/.xlings_data/...`, which is why `./libc.so.6` on a user's
+# machine fails with a bare "No such file or directory" naming libc rather
+# than the interpreter it could not find. One object checked out of many is
+# how a correct-looking assertion covers a fraction of its subject.
+#
+# PT_INTERP and DT_RPATH/DT_RUNPATH, NOT `strings | grep $HOME`. An unstripped
+# glibc names the builder's include directories all over its debug info -- 280
+# objects here -- and none of that is ever resolved at run time. A check that
+# cannot tell a path the loader follows from a path the compiler mentioned
+# produces 280 findings and zero information, and the first person to see that
+# wall deletes the check.
+for elf in $(find "$PAYLOAD" -type f \( -name '*.so' -o -name '*.so.*' -o -perm -u+x \) 2>/dev/null); do
+    head -c 4 "$elf" 2>/dev/null | grep -q $'\x7fELF' || continue
+    rel="${elf#"$PAYLOAD"/}"
+
+    interp="$(readelf -lW "$elf" 2>/dev/null \
+              | sed -n 's/.*program interpreter: \(.*\)\]/\1/p')"
+    if [[ -n "$interp" && "$interp" != "$PREFIX"/* ]]; then
+        echo "    $rel: PT_INTERP is $interp (expected under $PREFIX)"
+        leaks=$((leaks+1))
+    fi
+
+    # RPATH is only checked on objects a loader can actually act on.
+    #
+    # The subos gcc links `bin/*` and `sbin/*` with an RPATH into the BUILD
+    # machine's glibc and gcc payloads. That is a builder-disk path in a
+    # published artifact and it looks alarming, but it can never be followed:
+    # those same programs have PT_INTERP under the reserved prefix (asserted
+    # just above), so execve fails with ENOENT before any RPATH is consulted.
+    # Failing the build on it would be asserting a property of a code path
+    # that AD-11 deliberately made unreachable.
+    #
+    # A shared library is different: it is loaded BY something else, its
+    # PT_INTERP is not consulted, and its RPATH is. So that is where the
+    # question has an answer that matters.
+    [[ -n "$interp" ]] && continue
+    rpath="$(readelf -dW "$elf" 2>/dev/null \
+             | sed -n 's/.*\(RPATH\|RUNPATH\).*\[\(.*\)\]/\2/p')"
+    if [[ -n "$rpath" && "$rpath" == *"$HOME"* ]]; then
+        echo "    $rel: RPATH/RUNPATH names this machine: $rpath"
+        leaks=$((leaks+1))
+    fi
+done
+
+# glibc's `make install` runs ldconfig, so DESTDIR ends up with a cache keyed
+# to $PREFIX -- a path that exists nowhere. The loader then consults a file it
+# cannot open on every single lookup, and every report about it ("the private
+# cache is stale") is about a file that was never read.
+#
+# We resolve through DT_RPATH, so there is nothing for a cache to add. Drop it
+# rather than ship a decoy, and keep the check so a future layout change cannot
+# put one back unnoticed.
+rm -f "$PAYLOAD/etc/ld.so.cache"
+if [[ -e "$PAYLOAD/etc/ld.so.cache" ]]; then
+    echo "    payload carries an etc/ld.so.cache; we do not use ldconfig"
+    leaks=$((leaks+1))
 fi
 
 # And libc has to load under it, which is the pairing that actually gets used.

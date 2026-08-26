@@ -1,0 +1,131 @@
+Make /etc/ld.so.preload follow --sysconfdir, and let it be redirected.
+
+WHAT IS WRONG TODAY
+
+rtld.c names the host's /etc/ld.so.preload as a literal, so a payload loader
+reads the HOST's preload list and loads the host objects on it into every
+process it starts.  That is every process we start: the compiler, its
+cc1plus/as/ld children, and the binaries we ship to users.  The host objects
+are built against the host's libc, ours is a different one, and neither
+outcome is visible to the program:
+
+  * the preloaded object's own dependency is not in our closure, so the
+    process dies at startup naming a library nothing we built ever referenced
+      .../bin/g++: error while loading shared libraries: libdl.so.2:
+      cannot open shared object file: No such file or directory
+  * or it is self-contained, and then it simply runs against our libc
+      LD_DEBUG=libs: libclean.so -> .../xim-x-glibc/2.44/lib64/libc.so.6
+    which is the "one process, two libcs" case the ecosystem-closure design
+    exists to prevent, arriving through a door nobody was watching
+
+Measured, mcpp-community/mcpp#484: a host with /etc/ld.so.preload cannot run
+`g++ --version`, cannot compile, cannot link, and cannot run the binaries we
+produce (exit 127); a host without one is unaffected, which is why this went
+unseen -- the file is empty on dev boxes and CI, and present on exactly the
+audited, managed and cloud hosts our users deploy to.
+
+The private ld.so.cache does not save us: its path is compiled in too, and it
+names the build machine.  There is no --inhibit-preload; ld.so has one for the
+cache and one for RPATH and deliberately none for this, because
+/etc/ld.so.preload is the channel that survives secure-execution mode.
+
+WHY THIS SHAPE
+
+Upstream already relocates the sibling path -- LD_SO_CACHE is
+SYSCONFDIR "/ld.so.cache" in dl-cache.h -- and leaves this one literal.  So
+this is not a switch bolted onto glibc; it is the same treatment the cache
+already gets.  For --sysconfdir=/etc, which is what a system glibc is built
+with, the two spellings are the same string and this patch is a no-op.
+
+A build-time prefix cannot be the whole answer for a package whose install
+path is not its build path, so XLINGS_LD_PRELOAD_FILE redirects it at run
+time; empty means "no preload file".  It is added to unsecvars.h, which is
+what makes it behave like LD_PRELOAD under set-user-ID -- see the comment
+there before touching it.
+
+WHAT IT COSTS
+
+Processes started by this loader no longer honour the host's preload list,
+which is where audit / APM / HIDS agents inject themselves.  For a payload
+that is the point.  It is also not a regression: on such a host those
+processes do not run at all today.
+
+--- a/elf/rtld.c
++++ b/elf/rtld.c
+@@ -1834,8 +1834,40 @@
+      open().  So we do this first.  If it succeeds we do almost twice
+      the work but this does not matter, since it is not for production
+      use.  */
+-  static const char preload_file[] = "/etc/ld.so.preload";
+-  if (__glibc_unlikely (__access (preload_file, R_OK) == 0))
++  /* xlings: this file follows --sysconfdir, the way ld.so.cache already
++     does, instead of naming the host's /etc unconditionally.
++
++     A relocatable payload is not the host system.  Reading the host's list
++     injects host-built objects -- compiled against a different libc -- into
++     every process this loader starts, which for us includes the compiler,
++     its cc1plus/as/ld children, and the binaries we ship to users.  When
++     such an object's own dependency is not reachable, the process dies at
++     startup naming a library nothing in our closure ever referenced; when
++     it is reachable, it silently runs against our libc instead of the one
++     it was built for.  Neither is visible to the program.
++
++     Upstream already relocates LD_SO_CACHE with SYSCONFDIR (dl-cache.h)
++     and leaves this path literal.  For --sysconfdir=/etc -- what a system
++     glibc is built with -- the two forms are the same string, so this is a
++     no-op for any ordinary build.
++
++     XLINGS_LD_PRELOAD_FILE redirects it at run time, which a build-time
++     prefix cannot do for a package whose install path is not its build
++     path.  An empty value means "no preload file at all".
++
++     The variable is listed in unsecvars.h, so process_envvars_secure() has
++     already removed it from the environment before we get here whenever
++     __libc_enable_secure is set -- the same treatment LD_PRELOAD gets, and
++     for the same reason.  The test below states that property here too,
++     rather than leaving it to a file three directories away.  */
++  const char *preload_file = SYSCONFDIR "/ld.so.preload";
++  {
++    const char *xlings_preload_file = getenv ("XLINGS_LD_PRELOAD_FILE");
++    if (xlings_preload_file != NULL && !__libc_enable_secure)
++      preload_file = xlings_preload_file;
++  }
++  if (preload_file[0] != '\0'
++      && __glibc_unlikely (__access (preload_file, R_OK) == 0))
+     {
+       /* Read the contents of the file.  */
+       file = _dl_sysdep_read_whole_file (preload_file, &file_size,
+--- a/sysdeps/generic/unsecvars.h
++++ b/sysdeps/generic/unsecvars.h
+@@ -1,6 +1,24 @@
+ /* Environment variable to be removed for SUID programs.  The names are
+    all stuffed in a single string which means they have to be terminated
+    with a '\0' explicitly.  */
++
++/* xlings: XLINGS_LD_PRELOAD_FILE at the end of this list is load-bearing, and
++   deleting it on a rebase is silent.
++
++   That variable names the file rtld.c reads instead of the compiled-in
++   preload path, so it can point at any file the caller likes -- the same
++   power LD_PRELOAD has, in file form.  LD_PRELOAD is in this list because a
++   set-user-ID program must not let its caller choose what gets loaded into
++   it; the file form needs the entry for exactly the same reason, and
++   dropping it turns every set-user-ID binary that runs under this loader
++   into an injection point.
++
++   Being listed here is what makes rtld.c's getenv() return NULL under
++   __libc_enable_secure: process_envvars_secure() unsets everything in this
++   string before dl_main() reaches the preload block.  It also removes the
++   name from the environment the program sees, which is the documented
++   contract for the rest of this list (see ld.so(8), "Secure-execution
++   mode") and the reason a local check in rtld.c is not a substitute.  */
+ #define UNSECURE_ENVVARS \
+   "GCONV_PATH\0"							      \
+   "GETCONF_DIR\0"							      \
+@@ -35,4 +53,5 @@
+   "RESOLV_HOST_CONF\0"							      \
+   "RES_OPTIONS\0"							      \
+   "TMPDIR\0"								      \
+-  "TZDIR\0"
++  "TZDIR\0"								      \
++  "XLINGS_LD_PRELOAD_FILE\0"
