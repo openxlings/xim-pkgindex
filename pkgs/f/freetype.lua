@@ -18,17 +18,25 @@ package = {
 
     xpm = {
         linux = {
-            -- The prebuilt tarball's shared objects live at
-            -- lib/x86_64-linux-musl/ (a from-source build convention --
-            -- see LIBSUB below; the SONAME is still libc.so.6 so glibc
-            -- consumers load it fine).  xlings' predicate-driven elfpatch
-            -- appends this to consumers' RPATH so `deps.runtime =
-            -- { "xim:freetype@2.13.2" }` is enough to make godot and
-            -- friends resolve libfreetype.so.6 without any
-            -- LD_LIBRARY_PATH plumbing in the consumer.
+            deps = { "xim:glibc@>=2.38" },
+            -- elfpatch appends this to a consumer's RPATH, which is what makes
+            -- `deps = { "xim:freetype@2.13.2" }` enough for godot and friends
+            -- to resolve libfreetype.so.6 with no LD_LIBRARY_PATH plumbing.
+            --
+            -- `lib`, flat, like every other library payload in this index. The
+            -- 2.13.2 asset was rebuilt on 2026-08-26 for exactly that reason
+            -- (#687): it used to ship its libraries under
+            -- lib/x86_64-linux-musl, the index's only such shape, so every
+            -- generic sysroot helper needed an exception for this one package
+            -- -- and a missing exception does not fail, it just quietly
+            -- registers nothing. The rebuild also dropped two build-machine
+            -- artefacts: a RUNPATH naming the builder's subos, and a
+            -- `prefix=<builder home>/xpkgs/fromsource-x-freetype/...` inside
+            -- the shipped .pc. SONAME and DT_NEEDED are unchanged, so the five
+            -- recipes pinning @2.13.2 keep working.
             exports = {
                 runtime = {
-                    libdirs = { "lib/x86_64-linux-musl" },
+                    libdirs = { "lib" },
                 },
             },
             ["latest"] = { ref = "2.13.2" },
@@ -37,7 +45,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/freetype/releases/download/2.13.2/freetype-2.13.2-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/freetype/releases/download/2.13.2/freetype-2.13.2-linux-x86_64.tar.gz",
                 },
-                sha256 = "461bd3493988542edabdda6ac54436e796d2f56055478acfb8efec7aa1cc55ac",
+                sha256 = "a6c64a5008ec26917c769dd9840bf4f8d207e5a41f9ac48a8a9f2dc416af2664",
             },
         },
     },
@@ -47,104 +55,77 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
+import("xim.pkgindex.sysroot")
 
--- musl-static from-source build lays libs under lib/x86_64-linux-musl
-local LIBSUB = "lib/x86_64-linux-musl"
-local libs = { "libfreetype.so", "libfreetype.so.6" }
+-- The payload published before 2026-08-26 for this same version. Kept only to
+-- recognise it: a home that installed 2.13.2 earlier still has that tree on
+-- disk, and `xlings install` will not re-fetch what it considers present. Then
+-- config() would look in `lib`, find nothing, register nothing, and every
+-- consumer would quietly lose its libfreetype entry -- so the mismatch is
+-- reported instead. Delete this once the old shape can no longer be in the
+-- wild. See openxlings/xim-pkgindex#687.
+local LEGACY_LIBSUB = "lib/x86_64-linux-musl"
 
 function install()
-    local srcdir = "freetype-" .. pkginfo.version() .. "-linux-x86_64"
+    -- `freetype-<ver>`, not `freetype-<ver>-linux-x86_64`: the rebuilt asset
+    -- is packed by build-in-subos.sh, whose top-level directory is
+    -- <name>-<version> like every other payload that harness produces.
+    local srcdir = "freetype-" .. pkginfo.version()
     os.tryrm(pkginfo.install_dir())
     os.mv(srcdir, pkginfo.install_dir())
+
+    -- prefix=/usr as built; point it at the payload so the .pc can be
+    -- declared rather than copied-and-rewritten per subos.
+    sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")
     return true
 end
 
 function config()
     local idir = pkginfo.install_dir()
-    local libdir = path.join(idir, LIBSUB)
     local binding = package.name .. "@" .. pkginfo.version()
+
+    if not os.isdir(path.join(idir, "lib")) then
+        raise(string.format(
+            "this freetype payload has no lib/ -- it is the pre-2026-08-26 "
+            .. "%s layout, which this recipe no longer reads. Reinstall it: "
+            .. "`xlings remove freetype@%s` then `xlings install freetype`.",
+            LEGACY_LIBSUB, pkginfo.version()))
+    end
 
     xvm.add(package.name)
 
-    for _, lib in ipairs(libs) do
-        local p = path.join(libdir, lib)
-        if os.isfile(p) then
-            xvm.add(lib, {
-                type = "lib",
-                bindir = libdir,
-                filename = lib,
-                alias = lib,
-                binding = binding,
-            })
-        end
+    sysroot.declare_libs(idir, "lib", binding, pkginfo.version())
+
+    -- declare_headers, not _tree: `freetype2/` is a name this package owns,
+    -- so one asset for the directory is right and cheaper than 200 leaves.
+    if not sysroot.declare_headers(idir, "include", "usr/include", binding) then
+        sysroot.install_headers(
+            path.join(idir, "include"),
+            path.join(system.subos_sysrootdir(), "usr", "include"))
     end
 
-    local sysroot = system.subos_sysrootdir()
-    local ft_inc = path.join(idir, "include/freetype2")
-    local src_pc = path.join(libdir, "pkgconfig/freetype2.pc")
-
-    -- Capability probe, not a version check: xvm.files exists only on a
-    -- client that understands type = "files" entries.
-    if xvm.files then
-        -- Headers: a payload directory, declared as-is.
-        if os.isdir(ft_inc) then
-            xvm.files{
-                src = "include/freetype2",
-                dst = "usr/include/freetype2",
-                binding = binding,
-            }
-        end
-
-        -- The .pc has to have its prefix rewritten, so it is not a payload
-        -- file to begin with -- but generating it INTO the payload makes it
-        -- one, and then it declares like anything else. The rewritten prefix
-        -- is the payload's own location, so it belongs there rather than in
-        -- the sysroot: one file per payload, not one per subos.
-        if os.isfile(src_pc) then
-            local staged = path.join(libdir, "pkgconfig/freetype2.sysroot.pc")
-            system.exec(string.format(
-                "sh -c 'sed \"s|^prefix=.*|prefix=%s|\" %s > %s'",
-                idir, src_pc, staged
-            ))
-            xvm.files{
-                src = path.join(LIBSUB, "pkgconfig/freetype2.sysroot.pc"),
-                dst = "usr/lib/pkgconfig/freetype2.pc",
-                binding = binding,
-            }
-        end
-    else
-        -- headers → sysroot/usr/include/freetype2
-        local sys_inc = path.join(sysroot, "usr/include")
-        os.mkdir(sys_inc)
-        if os.isdir(ft_inc) then
-            os.cp(ft_inc, sys_inc, { force = true })
-        end
-
-        -- freetype2.pc → sysroot, with prefix rewritten to the install dir
-        local sys_pc = path.join(sysroot, "usr/lib/pkgconfig")
-        os.mkdir(sys_pc)
-        if os.isfile(src_pc) then
-            system.exec(string.format(
-                "sh -c 'sed \"s|^prefix=.*|prefix=%s|\" %s > %s/freetype2.pc'",
-                idir, src_pc, sys_pc
-            ))
-        end
+    -- install() already pointed the payload's .pc at the payload, so there is
+    -- nothing left to rewrite per subos and no `.sysroot.pc` twin to generate.
+    if not sysroot.declare_headers(idir, "lib/pkgconfig",
+                                   "usr/lib/pkgconfig", binding) then
+        local sysroot_pc = path.join(system.subos_sysrootdir(), "usr/lib/pkgconfig")
+        os.mkdir(sysroot_pc)
+        system.exec(string.format(
+            "sh -c 'for pc in %s/lib/pkgconfig/*.pc; do [ -f \"$pc\" ] && cp -f \"$pc\" %s/; done'",
+            idir, sysroot_pc))
     end
-
     return true
 end
 
 function uninstall()
     xvm.remove(package.name)
-    for _, lib in ipairs(libs) do
-        xvm.remove(lib)
-    end
-    -- Declared assets go with the release; only the legacy copies need
-    -- taking out by hand.
-    if not xvm.files then
-        local sysroot = system.subos_sysrootdir()
-        os.tryrm(path.join(sysroot, "usr/include/freetype2"))
-        os.tryrm(path.join(sysroot, "usr/lib/pkgconfig/freetype2.pc"))
-    end
+
+    -- Unconditionally, not `if not xvm.files`: declared file assets are NOT
+    -- reclaimed by `xlings remove` on the clients shipping today
+    -- (openxlings/xlings#423 -- measured again on 2026.8.22.4), so the branch
+    -- that assumed they were left the sysroot holding dangling links.
+    local sysroot = system.subos_sysrootdir()
+    os.tryrm(path.join(sysroot, "usr/include/freetype2"))
+    os.tryrm(path.join(sysroot, "usr/lib/pkgconfig/freetype2.pc"))
     return true
 end
