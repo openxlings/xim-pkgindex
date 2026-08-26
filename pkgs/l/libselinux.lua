@@ -93,9 +93,15 @@ end
 function uninstall()
     xvm.remove(package.name)
 
-    -- Declared file assets are not reclaimed by `xlings remove` on the
-    -- clients shipping today (measured on 2026.8.22.4), so the hook removes
-    -- what it declared -- by name, because `usr/include` is shared.
+    -- By name, not `rm -rf usr/include`: that directory is shared with
+    -- glibc and everything else in the sysroot.
+    -- Redundant on xlings 2026.8.26.1, which reclaims declared assets by
+    -- itself (openxlings/xlings#423); the whole difference on anything
+    -- older, which does not. A recipe cannot tell which one it is on --
+    -- there is no capability to probe and no client version in the sandbox --
+    -- so this stays until the minimum supported client is past 2026.8.26.1.
+    -- The measurement, and why `[ -e ]` must not be the check, are on
+    -- `sysroot.declare_headers` in libs/sysroot.lua.
     local sysroot_dir = system.subos_sysrootdir()
     system.exec(string.format(
         "sh -c 'rm -rf %s/usr/include/selinux; rm -f %s/usr/lib/pkgconfig/libselinux.pc'",

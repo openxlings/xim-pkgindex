@@ -104,11 +104,15 @@ end
 function uninstall()
     xvm.remove(package.name)
 
-    -- Declared file assets are not reclaimed by `xlings remove` on the
-    -- clients shipping today -- measured on 2026.8.22.4, where a package's
-    -- lib nodes go and every xvm.files symlink stays. So the hook removes
-    -- what it declared. Named individually: `usr/include` is shared with
-    -- glibc and every other package in the sysroot.
+    -- Named individually: `usr/include` is shared with glibc and every
+    -- other package in the sysroot.
+    -- Redundant on xlings 2026.8.26.1, which reclaims declared assets by
+    -- itself (openxlings/xlings#423); the whole difference on anything
+    -- older, which does not. A recipe cannot tell which one it is on --
+    -- there is no capability to probe and no client version in the sandbox --
+    -- so this stays until the minimum supported client is past 2026.8.26.1.
+    -- The measurement, and why `[ -e ]` must not be the check, are on
+    -- `sysroot.declare_headers` in libs/sysroot.lua.
     local sysroot_dir = system.subos_sysrootdir()
     system.exec(string.format(
         "sh -c 'rm -rf %s/usr/include/libmount %s/usr/include/blkid %s/usr/include/uuid; "

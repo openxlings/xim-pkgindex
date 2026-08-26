@@ -98,19 +98,17 @@ end
 function uninstall()
     xvm.remove(package.name)
 
-    -- `xvm.files` assets are declared, but on this client they are not
-    -- reclaimed. Measured on xlings 2026.8.22.4, in a subos holding glib and
-    -- nothing else, so no other binding can be claiming the paths:
+    -- Redundant on xlings 2026.8.26.1, which reclaims declared assets by
+    -- itself (openxlings/xlings#423); the whole difference on anything
+    -- older, which does not. A recipe cannot tell which one it is on --
+    -- there is no capability to probe and no client version in the sandbox --
+    -- so this stays until the minimum supported client is past 2026.8.26.1.
+    -- The measurement, and why `[ -e ]` must not be the check, are on
+    -- `sysroot.declare_headers` in libs/sysroot.lua.
     --
-    --     after install   lib nodes 15   header assets 274   pc assets 5
-    --     after remove    lib nodes  0   header assets 274   pc assets 5
-    --
-    -- The `type = "lib"` nodes go with xvm.remove(binding); the file assets
-    -- stay, pointing into a payload this subos no longer uses. So the hook
-    -- still removes both trees by hand -- a duplicate of what the declaration
-    -- already says, kept only until a client reclaims them. Re-run that
-    -- measurement before deleting this; a green install proves nothing about
-    -- removal.
+    -- This package is where the numbers were taken: 274 header assets, 5
+    -- pkg-config assets, 15 lib nodes. 2026.8.26.1 leaves 0 behind with these
+    -- lines deleted; 2026.8.22.4 leaves 279.
     --
     -- glibconfig.h lives inside glib-2.0/ in this artifact (not in
     -- lib/glib-2.0/include as on a distro), so the one tree covers it.
