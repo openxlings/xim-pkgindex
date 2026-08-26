@@ -14,7 +14,19 @@ package = {
     xvm_enable = true,
     xpm = {
         linux = {
-            deps = { "xim:freetype@2.13.2" },
+            -- The full DT_NEEDED closure of libharfbuzz.so.0, enumerated from
+            -- the artifact rather than written from memory: libm/libc
+            -- (glibc), libfreetype, libglib-2.0 and libgraphite2. The last
+            -- two were missing -- glib because nothing had checked, graphite2
+            -- because the index had no such package -- and the symptom was
+            -- `-lharfbuzz` failing in a closed SubOS with undefined
+            -- references to gr_* while the recipe looked complete.
+            deps = {
+                "xim:glibc@>=2.38",
+                "xim:freetype@2.13.2",
+                "xim:glib@2.80.0",
+                "xim:graphite2@>=1.3.14",
+            },
             ["latest"] = { ref = "8.3.0" },
             ["8.3.0"] = {
                 url = {

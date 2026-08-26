@@ -289,29 +289,68 @@ function sysroot.relocate_pkgconfig(install_dir, src_rel)
     local pcdir = path.join(install_dir, src_rel or "lib/pkgconfig")
     if not os.isdir(pcdir) then return true end
 
+    -- Two rewrites, because .pc files come in two shapes and the second one
+    -- has no variables to rewrite at all. graphite2 1.3.14 ships:
+    --
+    --     Libs: -L/usr/lib -lgraphite2
+    --     Cflags: -I/usr/include
+    --
+    -- with no prefix=, libdir= or includedir= line anywhere in the file. A
+    -- rewrite that only edits variable definitions leaves that .pc handing
+    -- every consumer the HOST's /usr/lib -- worse than a path that does not
+    -- exist, because on most machines that one does, with a different
+    -- library in it.
     system.exec(string.format(
         "sh -c 'for pc in %s/*.pc; do [ -f \"$pc\" ] || continue; sed -i "
         .. "-e \"s|^prefix=.*|prefix=%s|\" "
         .. "-e \"s|^exec_prefix=.*|exec_prefix=%s|\" "
         .. "-e \"s|^libdir=.*|libdir=%s/lib|\" "
-        .. "-e \"s|^includedir=.*|includedir=%s/include|\" \"$pc\"; done'",
-        pcdir, install_dir, install_dir, install_dir, install_dir))
+        .. "-e \"s|^includedir=.*|includedir=%s/include|\" "
+        -- Longest first, and no alternation: BSD sed has none, and
+        -- rewriting `-L/usr/lib` before `-L/usr/lib/x86_64-linux-gnu` would
+        -- leave the multiarch tail glued onto the payload path.
+        .. "-e \"s|-L/usr/lib/x86_64-linux-gnu|-L%s/lib|g\" "
+        .. "-e \"s|-L/usr/lib64|-L%s/lib|g\" "
+        .. "-e \"s|-L/usr/lib|-L%s/lib|g\" "
+        .. "-e \"s|-I/usr/include|-I%s/include|g\" "
+        .. "\"$pc\"; done'",
+        pcdir, install_dir, install_dir, install_dir, install_dir,
+        install_dir, install_dir, install_dir, install_dir))
 
     -- R4: check the artifact, not the intent. A sed that matched nothing is
     -- indistinguishable from one that worked, and the difference surfaces as
     -- a link or startup failure inside somebody else's package.
+    --
+    -- The check is on what the file HANDS OUT, not on which variables it
+    -- defines: every absolute -L/-I in it, plus libdir/includedir when they
+    -- are defined absolutely, must name a directory that exists inside this
+    -- payload. That form covers both shapes above and does not require a
+    -- .pc to have any particular variable.
     for _, name in ipairs(sysroot.entries(pcdir)) do
         if name:find("%.pc$") then
             local pc = "\n" .. (io.readfile(path.join(pcdir, name)) or "")
-            if not pc:find("\nlibdir=" .. install_dir .. "/lib\n", 1, true) then
+            local bad = nil
+
+            for _, flag in ipairs({"L", "I"}) do
+                for dir in pc:gmatch("%-" .. flag .. "(/[^%s\"\']*)") do
+                    if not os.isdir(dir) then bad = "-" .. flag .. dir end
+                end
+            end
+            for _, var in ipairs({"libdir", "includedir"}) do
+                local dir = pc:match("\n" .. var .. "=(/[^\n]*)")
+                if dir and not os.isdir(dir) then bad = var .. "=" .. dir end
+            end
+
+            if bad then
                 -- string.format, not raise's varargs: this client passes the
                 -- message through verbatim, so a %s left for it to fill
                 -- reaches the user as a literal "%s". Verified by making the
                 -- check fail on purpose.
                 raise(string.format(
-                    "pkgconfig relocation left %s with a libdir that is not "
-                    .. "%s/lib; a consumer would link against a directory "
-                    .. "that does not exist", name, install_dir))
+                    "pkgconfig relocation left %s pointing at %s, which does "
+                    .. "not exist under %s -- a consumer would link against a "
+                    .. "directory that is not there, or worse, the host's",
+                    name, bad, install_dir))
             end
         end
     end
