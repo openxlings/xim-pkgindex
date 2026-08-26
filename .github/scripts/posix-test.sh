@@ -280,22 +280,53 @@ fi
 # package. That is precisely the case that produces the duplicate, and it is the
 # only case overlay can serve.
 #
-# A package the PR ADDS is not in the index, so asking for it by its index name
-# makes xlings say `'xim:<pkg>' not in current index; refreshing index...` and
-# re-fetch the whole index — which overwrites the file that was just placed
-# there, and the install then fails with `not found`. New packages therefore
-# keep the `--add-xpkg` / `local:` path, where they are unambiguous anyway:
-# nothing published shares the name, so there is no second candidate.
+# A package the PR ADDS is not in the index either, and it used to be excluded
+# here: asking for a name the index does not carry made xlings say
+# `'xim:<pkg>' not in current index; refreshing index...` and re-fetch the whole
+# index, overwriting the file just placed there. So new packages took the
+# `--add-xpkg` / `local:` path instead.
 #
-# This also matches the namespace rule the index already follows — a new package
-# is referenced bare, a changed published one with `xim:`.
+# That exclusion has a cost the ecosystem hit as soon as a PR added a package
+# AND a consumer of it in one change: #680 adds util-linux and libselinux and
+# makes glib depend on `xim:util-linux@>=2.40`. Both new recipes registered
+# fine — as `local:` — and glib then failed with `package 'xim:util-linux@>=2.40'
+# not found`, which is not a defect in any of the three recipes. Under the old
+# rule that PR is untestable in principle: it can only go green after a merge
+# that CI was supposed to gate.
+#
+# What makes the new package overlayable is dropping the index's entry cache
+# with it. The refresh the comment above describes is triggered by the name
+# missing from that cache, not by the file missing from the tree — so placing
+# the .lua and invalidating the cache lets the client rescan the directory and
+# find it as `xim:<pkg>`, with no re-fetch to overwrite anything. Verified both
+# ways before this was written: with the cache left in place the name does not
+# resolve; with it dropped, `xlings search` lists `xim:util-linux` from a plain
+# file copy.
+#
+# The verification below keeps that a claim this script can back: if the name
+# still does not resolve after the copy, the function reports failure and the
+# caller falls back to `--add-xpkg` exactly as before.
 INDEX_DIR="$XLINGS_HOME_DIR/data/xim-pkgindex"
 overlay_recipe() {
     local rel_file="$1"
     [[ -d "$INDEX_DIR" && ! -L "$INDEX_DIR" ]] || return 1
-    [[ -f "$INDEX_DIR/$rel_file" ]] || return 1   # not published: not ours to overlay
+
+    local is_new=0
+    [[ -f "$INDEX_DIR/$rel_file" ]] || is_new=1
+
+    mkdir -p "$INDEX_DIR/$(dirname "$rel_file")" || return 1
     cp -f "$WORKSPACE_ROOT/$rel_file" "$INDEX_DIR/$rel_file" || return 1
-    return 0
+    [[ "$is_new" -eq 0 ]] && return 0
+
+    # New name: the cache is what the resolver reads, so it has to be rebuilt.
+    rm -f "$INDEX_DIR/.xlings-index-cache.json"
+    local pkg_name; pkg_name="$(basename "$rel_file" .lua)"
+    if "$XLINGS_CMD" search "$pkg_name" 2>/dev/null | grep -q "xim:$pkg_name"; then
+        return 0
+    fi
+    # Could not make it resolve under xim: — leave it to --add-xpkg / local:.
+    rm -f "$INDEX_DIR/$rel_file"
+    return 1
 }
 
 # The same reasoning applies to libs/: a recipe overlaid into the xim index
