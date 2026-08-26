@@ -66,9 +66,10 @@ package = {
                     -- libdirs not declared → falls back to {lib64, lib} convention
                 },
             },
-            -- `latest` is 2.44 — and from now on it TRACKS the highest glibc
-            -- of any distribution we support, as a standing policy rather
-            -- than a per-version judgement call. Decided 2026-08-09
+            -- `latest` is 2.44 (as 2.44r1 — same upstream release, our
+            -- revision 1; see that entry) — and from now on it TRACKS the
+            -- highest glibc of any distribution we support, as a standing
+            -- policy rather than a per-version judgement call. Decided 2026-08-09
             -- (ecosystem-closure design, §C5/§C1):
             --
             -- The target form is X-complete — loader, libc and libraries all
@@ -88,6 +89,19 @@ package = {
             -- bound in each subos's subos_info, and the resolver's
             -- pin-to-active keeps an already-activated 2.39 pinned. `latest`
             -- decides only version-less explicit installs and NEW subos.
+            --
+            -- The same sentence is why a bad artifact cannot be recalled by
+            -- republishing it. InstallState (xlings src/core/xim/
+            -- install_state.cppm) answers from the payload directory and the
+            -- ledger; no caller consults the remote sha256. A machine holding
+            -- `xim-x-glibc/2.44` never downloads that url again whatever is
+            -- behind it, so overwriting an asset reaches exactly the audience
+            -- a new version reaches -- and adds a failure the new version
+            -- does not: a client whose cached index still carries the old
+            -- hash pulls the new bytes and fails the integrity check.
+            -- Whoever is already on a bad payload needs
+            -- `xlings install glibc@<new>`; that is a release note, not a
+            -- version-numbering decision.
             --
             -- Backward compatibility is what makes the move safe in the other
             -- direction: glibc runs older binaries on newer libc, never the
