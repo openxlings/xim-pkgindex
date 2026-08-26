@@ -103,6 +103,16 @@ end
 -- that declares leaves while the other still declares the directory is
 -- writing into a directory the other one owns -- see the note in
 -- `sysroot.unwrap_directory_asset` for why that is not merely untidy.
+--
+-- ON AN EXISTING HOME, `xlings install <pkg>` IS NOT ENOUGH. Measured on a
+-- real installation after this shipped: the unwrap runs and the previously
+-- declared leaves land, but the NEWLY declared ones are registered without
+-- being activated -- and an asset is only placed for the active version, so
+-- five of the nine `scsi` headers stayed missing. `xlings use <pkg> <ver>`
+-- activates the whole release and completes it. That non-activation is
+-- long-standing client behaviour (identical on 2026.8.22.4 and 2026.8.26.1),
+-- not something this change introduced, but anyone following this migration
+-- meets it, so it is written where they will be standing.
 function sysroot.declare_headers(install_dir, src_rel, dst_rel, binding, opts)
     if not xvm.files then return false end
     local src_dir = path.join(install_dir, src_rel)
