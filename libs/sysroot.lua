@@ -11,6 +11,7 @@
 
 import("xim.libxpkg.fs")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.system")
 
 local sysroot = {}
 
@@ -256,6 +257,65 @@ function sysroot.declare_libs(install_dir, src_rel, binding, version)
             })
         end
     end
+end
+
+-- Point a payload's own .pc files at the payload, once, at install time.
+--
+-- Every prebuilt payload in this index was configured with --prefix=/usr, so
+-- its .pc files describe the build machine's filesystem, not ours. The usual
+-- fix -- rewrite `prefix=` into a copy under <subos>/usr/lib/pkgconfig -- is
+-- wrong twice over:
+--
+--   * it only holds when the rest of the file is expressed in ${prefix}. It
+--     is not, and the shapes differ per project: glib 2.80.0 (Debian build
+--     host) ships `libdir=${prefix}/lib/x86_64-linux-gnu` against a payload
+--     with a flat lib/; util-linux and libselinux ship `libdir=/usr/lib` and
+--     `includedir=/usr/include` with no ${prefix} in them at all. A
+--     prefix-only rewrite leaves pkg-config emitting -L for a directory that
+--     does not exist, which still LINKS -- declare_libs has put the sonames
+--     on the subos search path by then -- and then dies at startup in
+--     whatever consumer stamped its RPATH from `pkg-config --variable=libdir`
+--     (meson, cmake and libtool all do).
+--
+--   * a rewritten COPY is a second answer to a question the payload already
+--     answers, and it has to be made once per subos and deleted by hand.
+--     Fixed at the source, config() can DECLARE the .pc like any other file
+--     asset (see declare_headers), and the copy disappears.
+--
+-- The prefix is the payload's own absolute path, which is the same for every
+-- subos that mounts it -- so this belongs to the payload (R6), not the view.
+-- Idempotent: a second run rewrites the same lines to the same values.
+function sysroot.relocate_pkgconfig(install_dir, src_rel)
+    local pcdir = path.join(install_dir, src_rel or "lib/pkgconfig")
+    if not os.isdir(pcdir) then return true end
+
+    system.exec(string.format(
+        "sh -c 'for pc in %s/*.pc; do [ -f \"$pc\" ] || continue; sed -i "
+        .. "-e \"s|^prefix=.*|prefix=%s|\" "
+        .. "-e \"s|^exec_prefix=.*|exec_prefix=%s|\" "
+        .. "-e \"s|^libdir=.*|libdir=%s/lib|\" "
+        .. "-e \"s|^includedir=.*|includedir=%s/include|\" \"$pc\"; done'",
+        pcdir, install_dir, install_dir, install_dir, install_dir))
+
+    -- R4: check the artifact, not the intent. A sed that matched nothing is
+    -- indistinguishable from one that worked, and the difference surfaces as
+    -- a link or startup failure inside somebody else's package.
+    for _, name in ipairs(sysroot.entries(pcdir)) do
+        if name:find("%.pc$") then
+            local pc = "\n" .. (io.readfile(path.join(pcdir, name)) or "")
+            if not pc:find("\nlibdir=" .. install_dir .. "/lib\n", 1, true) then
+                -- string.format, not raise's varargs: this client passes the
+                -- message through verbatim, so a %s left for it to fill
+                -- reaches the user as a literal "%s". Verified by making the
+                -- check fail on purpose.
+                raise(string.format(
+                    "pkgconfig relocation left %s with a libdir that is not "
+                    .. "%s/lib; a consumer would link against a directory "
+                    .. "that does not exist", name, install_dir))
+            end
+        end
+    end
+    return true
 end
 
 return sysroot

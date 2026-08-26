@@ -16,6 +16,13 @@ package = {
         linux = {
             deps = {
                 "xim:glibc@>=2.38",
+                -- libgio-2.0.so.0 names libmount.so.1 and libselinux.so.1 in
+                -- its DT_NEEDED. Without these two, `-lgio-2.0` in a closed
+                -- SubOS fails with 30 undefined references (mnt_*@MOUNT_2.19,
+                -- *@LIBSELINUX_1.0) and the only way to link gio was to fall
+                -- back to the host.
+                "xim:util-linux@>=2.40",
+                "xim:libselinux@>=3.11",
                 "xim:libffi@3.4.4",
                 "xim:zlib@1.3.1",
                 "xim:pcre2@10.42",
@@ -47,54 +54,12 @@ function install()
     os.mv(srcdir, pkginfo.install_dir())
 
     selfcontain.seal(pkginfo.install_dir())
-    relocate_pkgconfig(pkginfo.install_dir())
+    -- The .pc files in this artifact were written by a Debian-family
+    -- --prefix=/usr build: `libdir=${prefix}/lib/x86_64-linux-gnu` against a
+    -- payload with a flat lib/. Fixing them in the payload is what lets
+    -- config() declare them instead of copying a rewritten duplicate.
+    sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")
     return true
-end
-
--- Rewrite the payload's own .pc files, once, at install time.
---
--- This artifact was built on a Debian-family host, so every .pc ships
--- `prefix=/usr` and `libdir=${prefix}/lib/x86_64-linux-gnu` while the payload
--- puts its libraries in a flat `lib/`. Rewriting only `prefix` -- what this
--- recipe did before -- leaves pkg-config emitting
--- -L<payload>/lib/x86_64-linux-gnu, a directory that does not exist. It still
--- LINKS inside a subos, because declare_libs has meanwhile put the sonames on
--- the implicit search path, so the damage shows up one step later: a consumer
--- that stamps its RPATH from `pkg-config --variable=libdir` (meson, cmake,
--- libtool all do) builds clean and then dies at startup with
--- `libgobject-2.0.so.0: cannot open shared object file`. Measured both ways in
--- a sandboxed subos.
---
--- In the PAYLOAD, not into the sysroot, because the answer is the same for
--- every subos that mounts this payload: prefix is the payload's own absolute
--- path. Writing it here makes the file correct at its source, which is what
--- lets config() DECLARE it instead of copying a rewritten duplicate per subos.
-function relocate_pkgconfig(idir)
-    local pcdir = path.join(idir, "lib", "pkgconfig")
-    if not os.isdir(pcdir) then return end
-    system.exec(string.format(
-        "sh -c 'for pc in %s/*.pc; do [ -f \"$pc\" ] || continue; "
-        .. "sed -i -e \"s|^prefix=.*|prefix=%s|\" -e \"s|^libdir=.*|libdir=%s/lib|\" \"$pc\"; done'",
-        pcdir, idir, idir))
-
-    -- R4: check the artifact, not the intent. A sed that matched nothing is
-    -- indistinguishable from a sed that worked, and the difference only
-    -- surfaces as a link or startup failure in somebody else's package.
-    for _, name in ipairs(sysroot.entries(pcdir)) do
-        if name:find("%.pc$") then
-            local pc = "\n" .. (io.readfile(path.join(pcdir, name)) or "")
-            if not pc:find("\nlibdir=" .. idir .. "/lib\n", 1, true) then
-                -- string.format, not raise's varargs: this client passes the
-                -- message through verbatim, so a %s left for it to fill
-                -- reaches the user as the literal "%s". Verified by making
-                -- the check fail on purpose.
-                raise(string.format(
-                    "pkgconfig relocation left %s with a libdir that is not "
-                    .. "%s/lib; a consumer would link against a directory that "
-                    .. "does not exist", name, idir))
-            end
-        end
-    end
 end
 
 function config()
