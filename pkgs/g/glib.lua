@@ -47,7 +47,54 @@ function install()
     os.mv(srcdir, pkginfo.install_dir())
 
     selfcontain.seal(pkginfo.install_dir())
+    relocate_pkgconfig(pkginfo.install_dir())
     return true
+end
+
+-- Rewrite the payload's own .pc files, once, at install time.
+--
+-- This artifact was built on a Debian-family host, so every .pc ships
+-- `prefix=/usr` and `libdir=${prefix}/lib/x86_64-linux-gnu` while the payload
+-- puts its libraries in a flat `lib/`. Rewriting only `prefix` -- what this
+-- recipe did before -- leaves pkg-config emitting
+-- -L<payload>/lib/x86_64-linux-gnu, a directory that does not exist. It still
+-- LINKS inside a subos, because declare_libs has meanwhile put the sonames on
+-- the implicit search path, so the damage shows up one step later: a consumer
+-- that stamps its RPATH from `pkg-config --variable=libdir` (meson, cmake,
+-- libtool all do) builds clean and then dies at startup with
+-- `libgobject-2.0.so.0: cannot open shared object file`. Measured both ways in
+-- a sandboxed subos.
+--
+-- In the PAYLOAD, not into the sysroot, because the answer is the same for
+-- every subos that mounts this payload: prefix is the payload's own absolute
+-- path. Writing it here makes the file correct at its source, which is what
+-- lets config() DECLARE it instead of copying a rewritten duplicate per subos.
+function relocate_pkgconfig(idir)
+    local pcdir = path.join(idir, "lib", "pkgconfig")
+    if not os.isdir(pcdir) then return end
+    system.exec(string.format(
+        "sh -c 'for pc in %s/*.pc; do [ -f \"$pc\" ] || continue; "
+        .. "sed -i -e \"s|^prefix=.*|prefix=%s|\" -e \"s|^libdir=.*|libdir=%s/lib|\" \"$pc\"; done'",
+        pcdir, idir, idir))
+
+    -- R4: check the artifact, not the intent. A sed that matched nothing is
+    -- indistinguishable from a sed that worked, and the difference only
+    -- surfaces as a link or startup failure in somebody else's package.
+    for _, name in ipairs(sysroot.entries(pcdir)) do
+        if name:find("%.pc$") then
+            local pc = "\n" .. (io.readfile(path.join(pcdir, name)) or "")
+            if not pc:find("\nlibdir=" .. idir .. "/lib\n", 1, true) then
+                -- string.format, not raise's varargs: this client passes the
+                -- message through verbatim, so a %s left for it to fill
+                -- reaches the user as the literal "%s". Verified by making
+                -- the check fail on purpose.
+                raise(string.format(
+                    "pkgconfig relocation left %s with a libdir that is not "
+                    .. "%s/lib; a consumer would link against a directory that "
+                    .. "does not exist", name, idir))
+            end
+        end
+    end
 end
 
 function config()
@@ -66,38 +113,39 @@ function config()
             path.join(system.subos_sysrootdir(), "usr", "include"))
     end
 
-    -- Keep pkg-config metadata in the active SubOS view. The files retain
-    -- absolute payload prefixes, which point at the shared xim installation.
-    --
-    -- libdir is rewritten too, and that is not cosmetic: this artifact was
-    -- built on a Debian-family host, so every .pc ships
-    -- `libdir=${prefix}/lib/x86_64-linux-gnu` while the payload puts its
-    -- libraries in a flat `lib/`. Rewriting only `prefix=` leaves
-    -- `pkg-config --libs glib-2.0` emitting -L<payload>/lib/x86_64-linux-gnu,
-    -- a directory that does not exist -- i.e. exactly the `cannot find
-    -- -lglib-2.0` this recipe is supposed to end, for every consumer that
-    -- asks pkg-config instead of relying on the sysroot lib search path.
-    -- (pcre2 and libffi carry the same sed with no libdir clause; theirs is
-    -- correct only because their upstream .pc already says ${prefix}/lib.)
-    local sysroot_pc = path.join(system.subos_sysrootdir(), "usr/lib/pkgconfig")
-    os.mkdir(sysroot_pc)
-    system.exec(string.format(
-        "sh -c 'for pc in %s/lib/pkgconfig/*.pc; do [ -f \"$pc\" ] && sed -e \"s|^prefix=.*|prefix=%s|\" -e \"s|^libdir=.*|libdir=%s/lib|\" \"$pc\" > %s/$(basename \"$pc\"); done'",
-        idir, idir, idir, sysroot_pc
-    ))
+    -- pkg-config metadata, DECLARED like the headers rather than copied.
+    -- install() already made the payload's own .pc files correct, so there is
+    -- nothing left to rewrite per subos -- the asset is the payload file, and
+    -- the names in lib/pkgconfig are ours, so the non-recursive helper is the
+    -- right one. The fallback keeps clients without `xvm.files` working
+    -- exactly as before.
+    if not sysroot.declare_headers(idir, "lib/pkgconfig",
+                                   "usr/lib/pkgconfig", binding) then
+        local sysroot_pc = path.join(system.subos_sysrootdir(), "usr/lib/pkgconfig")
+        os.mkdir(sysroot_pc)
+        system.exec(string.format(
+            "sh -c 'for pc in %s/lib/pkgconfig/*.pc; do [ -f \"$pc\" ] && cp -f \"$pc\" %s/; done'",
+            idir, sysroot_pc))
+    end
     return true
 end
 
 function uninstall()
     xvm.remove(package.name)
 
-    -- The library nodes go with xvm.remove(binding); the header symlinks do
-    -- NOT. Measured on xlings 2026.8.22.4: install declares 274 header assets
-    -- under <subos>/usr/include/glib-2.0, `xlings remove glib` reports the
-    -- package removed, and all 274 symlinks are still there -- now pointing
-    -- into a payload this subos no longer uses. So the hook keeps removing
-    -- the tree. Drop these lines only after a client is confirmed to reclaim
-    -- `xvm.files` assets; a green install proves nothing about that.
+    -- `xvm.files` assets are declared, but on this client they are not
+    -- reclaimed. Measured on xlings 2026.8.22.4, in a subos holding glib and
+    -- nothing else, so no other binding can be claiming the paths:
+    --
+    --     after install   lib nodes 15   header assets 274   pc assets 5
+    --     after remove    lib nodes  0   header assets 274   pc assets 5
+    --
+    -- The `type = "lib"` nodes go with xvm.remove(binding); the file assets
+    -- stay, pointing into a payload this subos no longer uses. So the hook
+    -- still removes both trees by hand -- a duplicate of what the declaration
+    -- already says, kept only until a client reclaims them. Re-run that
+    -- measurement before deleting this; a green install proves nothing about
+    -- removal.
     --
     -- glibconfig.h lives inside glib-2.0/ in this artifact (not in
     -- lib/glib-2.0/include as on a distro), so the one tree covers it.
