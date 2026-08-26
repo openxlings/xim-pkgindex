@@ -19,9 +19,33 @@
 #     the loader. Its own layout has to be right at build time.
 #
 # Usage:  build-glibc.sh <version>            (e.g. build-glibc.sh 2.44)
+#         build-glibc.sh <version>r<rev>     (e.g. build-glibc.sh 2.44r1)
+#
+# THE `r<rev>` FORM, AND WHY REBUILDING 2.44 AS "2.44" IS NOT AN OPTION
+#
+# When a payload is rebuilt for a reason that is ours rather than upstream's --
+# a patch, a prefix, a packaging fix -- the bytes change while the glibc
+# version does not. Publishing those bytes as "2.44" again gives one name to
+# two artifacts, and it breaks the party that did nothing wrong: a client
+# holding a cached index still has the OLD sha256, downloads the NEW asset,
+# and fails the integrity check. It also leaves everyone already on 2.44 with
+# nothing that distinguishes the fixed copy.
+#
+# `r` and not `-`: publish.sh recovers the version from the tarball name with
+# `${stem##*-}`, which returns only the trailing field of a dashed version.
+#
+# `r` and not `+`, which was the first choice because `["25.0.4+7"]` is
+# already an index key: look at what jdk-temurin has to do to USE it. The
+# GLOBAL url spells that version `jdk-25.0.4%2B7` and the CN mirror gives up
+# and calls it `25.0.4_7`. A `+` in a version means the key, the git tag, the
+# asset name and two urls stop being the same string, and every one of those
+# is a place to get it wrong once. `r1` is the same string in all five.
 set -uo pipefail
 
-VERSION="${1:?usage: build-glibc.sh <version>}"
+VERSION="${1:?usage: build-glibc.sh <version>[r<rev>]}"
+UPSTREAM="${VERSION%%[!0-9.]*}"   # what to fetch and configure; glibc's own
+                                  # versions are digits and dots, so the first
+                                  # character outside that set starts our part
 NAME=glibc
 SUBOS_NAME="${XLINGS_GFX_SUBOS:-gfxbuild}"
 XHOME="${XLINGS_HOME:-$HOME/.xlings}"
@@ -68,13 +92,13 @@ rm -rf "$STAGE"; mkdir -p "$SRC" "$STAGE" "$DIST"
 #   * `--prefix` and DESTDIR are separate, so the install layout is unaffected
 PREFIX="/nonexistent/xlings-use-rpath-not-default-search"
 
-TARBALL="$SRC/glibc-$VERSION.tar.xz"
+TARBALL="$SRC/glibc-$UPSTREAM.tar.xz"
 [[ -f "$TARBALL" ]] || {
-    log "fetching glibc-$VERSION.tar.xz"
+    log "fetching glibc-$UPSTREAM.tar.xz"
     curl -fsSL --retry 3 -o "$TARBALL" \
-        "https://ftp.gnu.org/gnu/glibc/glibc-$VERSION.tar.xz" || fail "download"
+        "https://ftp.gnu.org/gnu/glibc/glibc-$UPSTREAM.tar.xz" || fail "download"
 }
-BUILDDIR="$SRC/glibc-$VERSION"
+BUILDDIR="$SRC/glibc-$UPSTREAM"
 rm -rf "$BUILDDIR"; mkdir -p "$BUILDDIR"
 tar xf "$TARBALL" -C "$BUILDDIR" --strip-components=1 || fail "extract"
 
@@ -86,7 +110,7 @@ tar xf "$TARBALL" -C "$BUILDDIR" --strip-components=1 || fail "extract"
 # looks identical from the outside.
 PATCHDIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/patches"
 shopt -s nullglob
-for p in "$PATCHDIR/glibc-$VERSION-"*.patch; do
+for p in "$PATCHDIR/glibc-$UPSTREAM-"*.patch; do
     log "applying $(basename "$p")"
     patch -p1 -d "$BUILDDIR" --forward < "$p" || fail "patch $(basename "$p")"
 done
@@ -104,7 +128,7 @@ export CC="$SUBOS/bin/gcc" CXX="$SUBOS/bin/g++"
 unset CPPFLAGS LDFLAGS LD_LIBRARY_PATH
 
 mkdir -p "$BUILDDIR/_b" && cd "$BUILDDIR/_b" || fail "cd"
-log "configuring $VERSION (prefix=$PREFIX)"
+log "configuring $UPSTREAM (prefix=$PREFIX)"
 # --enable-kernel: the oldest kernel this build supports. 4.19 is the floor
 #   most distributions target; raising it drops compatibility code, lowering it
 #   is pointless for a payload that ships with xlings.
@@ -153,8 +177,8 @@ LOADER="$(find "$PAYLOAD" -maxdepth 2 -name 'ld-linux-*.so.*' ! -type l | head -
 if [[ -n "$LOADER" ]]; then
     got="$("$LOADER" --version 2>/dev/null | head -1)"
     case "$got" in
-        *"$VERSION"*) log "  loader reports: $got" ;;
-        *) echo "    loader reports '$got', expected $VERSION"; leaks=$((leaks+1)) ;;
+        *"$UPSTREAM"*) log "  loader reports: $got" ;;
+        *) echo "    loader reports '$got', expected $UPSTREAM"; leaks=$((leaks+1)) ;;
     esac
 fi
 
@@ -211,7 +235,7 @@ if [[ -n "$LOADER" ]]; then
     # sysconfdir form must be PRESENT (it changed it to the right thing).
     if grep -qx "/etc/ld.so.preload" "$ldump"; then
         echo "    the loader still reads the host's /etc/ld.so.preload"
-        echo "    (glibc-$VERSION-preload-follows-sysconfdir.patch did not take)"
+        echo "    (glibc-$UPSTREAM-preload-follows-sysconfdir.patch did not take)"
         leaks=$((leaks+1))
     fi
     if ! grep -qxF "$PREFIX/etc/ld.so.preload" "$ldump"; then

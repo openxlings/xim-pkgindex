@@ -37,17 +37,22 @@ package = {
             -- when a subos hosts both glibc and musl xpkgs.
             --
             -- WHAT DECLARING THIS COSTS THE CONSUMER, because it is not
-            -- obvious and it is not reversible at runtime: our ld.so carries
-            -- the build machine's cache path,
-            -- `/home/xlings/.xlings_data/.../etc/ld.so.cache`, which exists on
-            -- no machine (`strings` it; the host's says `/etc/ld.so.cache`).
-            -- On a multiarch distro essentially every system library lives in
-            -- /usr/lib/<triple> and is reachable ONLY through that cache, so a
-            -- payload whose PT_INTERP points here has no host fallback at all.
+            -- obvious and it is not reversible at runtime: our ld.so resolves
+            -- nothing through ld.so.cache. On a multiarch distro essentially
+            -- every system library lives in /usr/lib/<triple> and is reachable
+            -- ONLY through that cache, so a payload whose PT_INTERP points
+            -- here has no host fallback at all.
             --
-            -- That is the intended end state — the 2.44 build prefix is
-            -- literally `/nonexistent/xlings-use-rpath-not-default-search` —
-            -- but it makes the declaration all-or-nothing. A consumer's closure
+            -- That is the intended end state, and as of 2.44r1 it is true for
+            -- the reason stated rather than by accident. The published 2.44
+            -- gets there the wrong way: its cache path is
+            -- `/home/xlings/.xlings_data/.../etc/ld.so.cache`, the BUILD
+            -- MACHINE, which no user has -- so the cache misses because the
+            -- file is absent, and reading that as "we do not use the cache"
+            -- confuses a stale artifact for a design. 2.44r1 carries the
+            -- reserved prefix and ships no cache at all.
+            --
+            -- Either way the declaration is all-or-nothing. A consumer's closure
             -- must cover every library it will ever load, dlopen'd ones
             -- included. Reasoning "the missing ones are optional, so behaviour
             -- degrades no further than today" is false: today they resolve off
@@ -88,18 +93,79 @@ package = {
             -- direction: glibc runs older binaries on newer libc, never the
             -- reverse, so every 2.39-built payload in the index runs
             -- unchanged under 2.44.
-            ["latest"] = { ref = "2.44" },
+            ["latest"] = { ref = "2.44r1" },
             ["2.39"] = "XLINGS_RES",
             -- Built from source, not XLINGS_RES: the sha256 is checked, which
             -- an XLINGS_RES entry cannot do. Build recipe and the reason its
             -- prefix looks the way it does:
             -- .agents/tools/graphics/build-glibc.sh
+            --
+            -- 2.44 IS LEFT IN PLACE, AND IT IS NOT THE ONE TO INSTALL.
+            --
+            -- Its asset predates two decisions that were made about it and
+            -- never reached it. `strings` on the published loader shows
+            -- neither the reserved prefix (AD-11, one day younger than this
+            -- tarball) nor the preload change below; it still carries
+            -- `/home/xlings/.xlings_data/...`, the build machine.
+            --
+            -- Nothing about it is edited rather than superseded, because a
+            -- published sha256 is a promise to whoever already read it: a
+            -- client holding a cached index still has THIS hash, and swapping
+            -- the bytes behind the same version breaks the one party that did
+            -- nothing wrong. Entries here are append-only for that reason.
             ["2.44"] = {
                 url = {
                     GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44/glibc-2.44-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44/glibc-2.44-linux-x86_64.tar.gz",
                 },
                 sha256 = "0105292fd6b49f74fbf51f93af973b78a9fc18225cb1c757c720e90de3120182",
+            },
+            -- Same glibc, our revision 1. `r1` because the change is ours and
+            -- upstream 2.44 is untouched.
+            --
+            -- Not `+1`, which was the first choice on the strength of
+            -- `["25.0.4+7"]` a few files away -- until you look at what that
+            -- key costs to use: its GLOBAL url spells the version
+            -- `jdk-25.0.4%2B7` and the CN mirror renames it `25.0.4_7`. A `+`
+            -- makes the key, the tag, the asset name and two urls four
+            -- different spellings of one version. `r1` is the same string in
+            -- all of them.
+            --
+            -- What it carries that 2.44 does not:
+            --
+            --   * the reserved prefix actually in the artifact, so the default
+            --     search path is dead by construction instead of naming a
+            --     directory on someone's disk
+            --   * elf/rtld.c reads SYSCONFDIR "/ld.so.preload" instead of the
+            --     host's literal /etc one. A payload is not the host system,
+            --     and reading the host's list injects host-built objects into
+            --     every process this loader starts -- the compiler, its
+            --     cc1plus/as/ld children, and the binaries users ship. On a
+            --     host that has such a list, 2.44 cannot run any of them
+            --     (mcpp-community/mcpp#484, exit 127); where the injected
+            --     object is self-contained it loads silently against our libc
+            --     instead, which is the two-libc case with no diagnostic.
+            --     Upstream already relocates the sibling path -- LD_SO_CACHE
+            --     is SYSCONFDIR "/ld.so.cache" -- so this is that treatment,
+            --     not a new switch. For --sysconfdir=/etc it is a no-op.
+            --   * no etc/ld.so.cache. `make install` runs ldconfig and leaves
+            --     one keyed to $PREFIX, a path that exists nowhere; every
+            --     report about our "stale private cache" was about a file the
+            --     loader never opened.
+            --
+            -- XLINGS_LD_PRELOAD_FILE redirects the preload path at run time
+            -- for the relocation case (empty = none). It is in unsecvars.h,
+            -- so set-user-ID programs never see it.
+            --
+            -- Criterion, both directions:
+            --   .agents/tools/graphics/verify-preload-closure.sh <payload>
+            -- 0 here, 2 (inconclusive, not 0) on a payload without the patch.
+            ["2.44r1"] = {
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44r1/glibc-2.44r1-linux-x86_64.tar.gz",
+                    CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44r1/glibc-2.44r1-linux-x86_64.tar.gz",
+                },
+                sha256 = "18b7441b293ac9954a1319e5eafc762213e8642afaf31aac93f7c97bcced4c76",
             },
         },
     },
