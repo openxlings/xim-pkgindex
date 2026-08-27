@@ -107,7 +107,7 @@ package = {
             -- direction: glibc runs older binaries on newer libc, never the
             -- reverse, so every 2.39-built payload in the index runs
             -- unchanged under 2.44.
-            ["latest"] = { ref = "2.44" },
+            ["latest"] = { ref = "2.44.2" },
             ["2.39"] = "XLINGS_RES",
             -- Built from source, not XLINGS_RES: the sha256 is checked, which
             -- an XLINGS_RES entry cannot do. Build recipe and the reason its
@@ -134,52 +134,63 @@ package = {
                 },
                 sha256 = "0105292fd6b49f74fbf51f93af973b78a9fc18225cb1c757c720e90de3120182",
             },
-            -- 2.44.2 IS WITHDRAWN AGAIN, AND THIS TIME NOT FOR A DAY.
+            -- 2.44.2 IS BACK, AND IT IS `latest`.
             --
-            -- The artifact is good and stays published (xlings-res/glibc tag
-            -- 2.44.2, sha256 ed4bf048...). What cannot hold is offering it
-            -- under a version no existing consumer can bind to.
-            --
-            -- The binding is the payload DIRECTORY NAME, so a consumer that
-            -- has `glibc@2.44` compiled in needs `xim-x-glibc/2.44` on disk.
-            -- Publishing 2.44.2 as `latest` means that directory never
-            -- appears, and the consumer refuses:
+            -- It was withdrawn three times. Not because the artifact was bad
+            -- -- it was always good -- but because the BINDING IS THE PAYLOAD
+            -- DIRECTORY NAME, and consumers held that name as a compiled-in
+            -- constant. A consumer with `glibc@2.44` baked in needs
+            -- `xim-x-glibc/2.44` on disk; publishing a higher version means
+            -- range dependencies (36 of them, `glibc@>=2.38/2.39`) resolve
+            -- through select_best -- MAXIMUM satisfying, which does not
+            -- consult `latest` -- install the higher one, and the consumer
+            -- refuses:
             --
             --   error: selected RuntimeBinding glibc@2.44 requires payload
             --          '<home>/.../xpkgs/xim-x-glibc/2.44', but it is not
             --          installed
             --
-            -- THREE places hold that constant, and they update on three
-            -- different schedules:
+            -- What changed is that every consumer now takes the binding from
+            -- THIS FILE instead of from a constant, so both questions asked of
+            -- this table give the same answer again. Measured across four
+            -- client versions against exactly this state:
             --
-            --   1. xlings itself            -- fixed in 2026.8.27.2, which
-            --                                  takes the value from THIS file
-            --   2. CI bootstrap pins        -- a workflow literal; moved by
-            --                                  hand, whenever someone notices
-            --   3. mcpp's VENDORED xlings   -- measured on the release runner:
-            --                                  "vendored xlings 2026.8.10.1 is
-            --                                  older than the pinned
-            --                                  2026.8.17.2"
+            --   v2026.8.8.1   [constant]     declares 2.39    installs 2.44.2
+            --   v2026.8.10.1  [constant]     declares 2.44    installs 2.44.2
+            --   2026.8.27.4   [reads index]  declares 2.44.2  installs 2.44.2
+            --   2026.8.27.5   [index + D1]   declares 2.44.2  installs 2.44.2
             --
-            -- (1) was the fix. (2) and (3) are copies of the same constant in
-            -- places that cannot all be moved at once, and there is no release
-            -- ordering that reaches them together -- which is the argument
-            -- that the binding should not carry a packaging revision AT ALL.
+            -- The two that mismatch are gone: openxlings/xlings#574 moved all
+            -- seven CI bootstrap pins off them, and mcpp-community/mcpp#520
+            -- moved mcpp's bundled xlings to 2026.8.27.5.
             --
-            -- The structural answer, and the reason this is withdrawn rather
-            -- than juggled: 2.44.2 and 2.44 are the SAME ABI. The revision is
-            -- our packaging, not glibc's. So the index key may carry it (for
-            -- ordering and sha) while the payload directory and the binding
-            -- stay `glibc@2.44` -- an install_as/abi concept that makes a
-            -- revision invisible to every consumer, old and new. That is
-            -- openxlings/xlings' call to make; this entry comes back when it
-            -- exists, or when nothing pins the name any more.
+            -- ⚠️ MOVING `latest` WITH THE ENTRY IS NOT OPTIONAL. Adding 2.44.2
+            -- while leaving `latest` at 2.44 is strictly worse than not adding
+            -- it: select_best would install 2.44.2 while every binding still
+            -- said 2.44. `latest` and "the highest entry" are two different
+            -- questions, and they must not disagree for a runtime package.
             --
-            -- Cost meanwhile: 2.44 is the artifact that reads the HOST's
-            -- /etc/ld.so.preload (mcpp-community/mcpp#484). That breaks only
-            -- on hosts that have such a file -- rare. What was breaking
-            -- instead was every clean environment, every release build and
-            -- the aarch64 CI: universal.
+            -- Why it is worth doing at all -- `strings` on the two loaders:
+            --
+            --                             2.44        2.44.2
+            --   XLINGS_LD_PRELOAD_FILE    absent      present
+            --   build-machine paths       8           0
+            --   preload path              /etc/ld.so.preload   /nonexistent/...
+            --
+            -- 2.44 reads the HOST's /etc/ld.so.preload (mcpp-community/mcpp#484)
+            -- and still carries the machine it was built on. Every user is on
+            -- it today. That is what this restores.
+            --
+            -- 2.44 stays in the table, append-only: subos created against it
+            -- keep resolving, and on 2026.8.27.5 the declaration outranks
+            -- `latest`, so they are not dragged forward.
+            ["2.44.2"] = {
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.2/glibc-2.44.2-linux-x86_64.tar.gz",
+                    CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.2/glibc-2.44.2-linux-x86_64.tar.gz",
+                },
+                sha256 = "ed4bf048b8ed2b65433e0dd655f93133da4a9bd458276cfa986b7cccde835d08",
+            },
         },
     },
 }
