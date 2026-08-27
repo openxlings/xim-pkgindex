@@ -107,7 +107,7 @@ package = {
             -- direction: glibc runs older binaries on newer libc, never the
             -- reverse, so every 2.39-built payload in the index runs
             -- unchanged under 2.44.
-            ["latest"] = { ref = "2.44" },
+            ["latest"] = { ref = "2.44.2" },
             ["2.39"] = "XLINGS_RES",
             -- Built from source, not XLINGS_RES: the sha256 is checked, which
             -- an XLINGS_RES entry cannot do. Build recipe and the reason its
@@ -134,48 +134,74 @@ package = {
                 },
                 sha256 = "0105292fd6b49f74fbf51f93af973b78a9fc18225cb1c757c720e90de3120182",
             },
-            -- 2.44.2 IS WITHDRAWN FROM THE INDEX, NOT UNPUBLISHED.
+            -- Same upstream 2.44, our revision 2. Withdrawn for a day, and
+            -- the reason it came back is the whole point of the sequence:
+            -- xlings 2026.8.27.1 takes the default runtime binding from THIS
+            -- FILE (openxlings/xlings#567) instead of a constant compiled into
+            -- the client, so `latest` moving no longer strands anybody.
             --
-            -- The artifact is fine and stays at
-            -- github.com/xlings-res/glibc/releases/tag/2.44.2 (sha256
-            -- ed4bf048b8ed2b65433e0dd655f93133da4a9bd458276cfa986b7cccde835d08).
-            -- What was wrong was the ORDER: released xlings has the default
-            -- runtime binding compiled in as the literal `glibc@2.44`, and
-            -- payload directories are named after the version, so on any clean
-            -- environment installing 2.44.2 left nothing answering to the
-            -- binding:
+            -- What went wrong the first time, kept here because the failure is
+            -- invisible from a developer machine: released xlings pinned
+            -- `glibc@2.44`, payload directories are named after the version,
+            -- and so a clean environment installed 2.44.2 and then found
+            -- nothing answering to the binding --
             --
             --   error: selected RuntimeBinding glibc@2.44 requires payload
             --          '<home>/.../xpkgs/xim-x-glibc/2.44', but it is not
             --          installed
             --
-            -- Measured on xlings CI (aarch64 cross-build) and on a fresh
-            -- MCPP_HOME. Every NEW environment; no existing one, because a
-            -- subos keeps the binding it recorded -- which is why a developer
-            -- machine shows nothing wrong.
+            -- -- on every NEW environment and on none that already existed,
+            -- because a subos keeps the binding it recorded. The index is DATA
+            -- and the client is a PROGRAM: the consumer ships first.
             --
-            -- MOVING `latest` BACK IS NOT ENOUGH, and the test in
-            -- tests/g/test_glibc.py caught that: recipes depend on this
-            -- package by RANGE (`xim:glibc@>=2.38`, 33 of them), and a range
-            -- is answered by semver::select_best -- the MAXIMUM satisfying
-            -- version, which never looks at `latest`. So while 2.44.2 is
-            -- listed at all, it is what gets installed.
+            -- Also: moving `latest` back was not enough on its own. 33 recipes
+            -- depend on glibc by RANGE, and select_best answers a range with
+            -- the MAXIMUM satisfying version without consulting `latest`, so
+            -- the entry had to leave the table entirely. TestRevisionOrdering
+            -- in tests/g/test_glibc.py is that rule, and it caught it.
             --
-            -- The index is DATA and the client is a PROGRAM: publishing data
-            -- must not make the program stop working. The consumer ships
-            -- first, then this comes back.
+            -- What this carries that 2.44 does not:
             --
-            -- Restore when openxlings/xlings#567 is released (it makes the
-            -- default come from this file instead of a constant):
+            --   * the reserved prefix actually in the artifact, so the default
+            --     search path is dead by construction instead of naming a
+            --     directory on the build machine
+            --   * elf/rtld.c reads SYSCONFDIR "/ld.so.preload" instead of the
+            --     host's literal /etc one. Reading the host's list injects
+            --     host-built objects into every process this loader starts --
+            --     the compiler, its cc1plus/as/ld children, and the binaries
+            --     users ship. On a host that has such a list, 2.44 cannot run
+            --     any of them (mcpp-community/mcpp#484, exit 127); where the
+            --     injected object is self-contained it loads silently against
+            --     our libc instead, which is the two-libc case with no
+            --     diagnostic. Upstream already relocates the sibling path --
+            --     LD_SO_CACHE is SYSCONFDIR "/ld.so.cache" -- so this is that
+            --     treatment, not a new switch; for --sysconfdir=/etc it is a
+            --     no-op.
+            --   * no etc/ld.so.cache. `make install` runs ldconfig and leaves
+            --     one keyed to $PREFIX, a path that exists nowhere; every
+            --     report about our "stale private cache" was about a file the
+            --     loader never opened.
+            --   * no builder RPATH in bin/*, sbin/* or libexec/getconf/*.
+            --     elfpatch rewrites PT_INTERP at install and EDITS the
+            --     existing RPATH rather than recomputing it, so a leaked one
+            --     decides which payload those binaries bind to -- revision 1
+            --     was refused by xlings with "loader/libc payload mismatch in
+            --     16 binary(ies)" for exactly that.
             --
-            --   ["latest"] = { ref = "2.44.2" },
-            --   ["2.44.2"] = { url = { GLOBAL = ".../2.44.2/glibc-2.44.2-linux-x86_64.tar.gz",
-            --                          CN     = ".../2.44.2/glibc-2.44.2-linux-x86_64.tar.gz" },
-            --                  sha256 = "ed4bf048b8ed2b65433e0dd655f93133da4a9bd458276cfa986b7cccde835d08" },
+            -- XLINGS_LD_PRELOAD_FILE redirects the preload path at run time
+            -- for the relocation case (empty = none). It is in unsecvars.h, so
+            -- set-user-ID programs never see it.
             --
-            -- Cost of sitting on 2.44 meanwhile: it is the artifact that reads
-            -- the HOST's /etc/ld.so.preload (#692), which breaks only on hosts
-            -- that have one. That is rare; the above is universal.
+            -- Criterion, both directions:
+            --   .agents/tools/graphics/verify-preload-closure.sh <payload>
+            -- 0 here, 2 (inconclusive, not 0) on a payload without the patch.
+            ["2.44.2"] = {
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.2/glibc-2.44.2-linux-x86_64.tar.gz",
+                    CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.2/glibc-2.44.2-linux-x86_64.tar.gz",
+                },
+                sha256 = "ed4bf048b8ed2b65433e0dd655f93133da4a9bd458276cfa986b7cccde835d08",
+            },
         },
     },
 }
