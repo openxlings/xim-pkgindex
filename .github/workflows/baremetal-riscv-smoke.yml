@@ -60,8 +60,16 @@ jobs:
           # that pulls the published artifact back over the local copy.
           xlings config --add-xpkg pkgs/q/qemu-riscv.lua
           xlings config --add-xpkg pkgs/p/picolibc-riscv.lua
+          # The final step runs `pytest tests/q` wholesale, so every package
+          # with a test under tests/q has to be installable here -- otherwise a
+          # new sibling arrives and this job fails on "not published yet",
+          # which reads as the new package being broken rather than as this
+          # list being short. 2.6MB unpacked; the scoping note above is about
+          # the 365MB one.
+          xlings config --add-xpkg pkgs/q/qemu-user-aarch64.lua
           xlings install local:qemu-riscv -y
           xlings install local:picolibc-riscv -y
+          xlings install local:qemu-user-aarch64 -y
           xlings install xim:llvm -y
 
       - name: The payload keeps its own loader search path
