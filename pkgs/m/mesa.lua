@@ -255,6 +255,7 @@ function config()
     -- libs/graphics.lua for the libglvnd scanning rules that make that the
     -- only correct arrangement.
     graphics.declare_dri(dir, "lib/dri", tag)
+    graphics.declare_gbm(dir, "lib/gbm", tag)
     graphics.declare_egl_vendor(dir, "share/glvnd/egl_vendor.d/50_mesa.json", tag)
 
     -- The Vulkan ICD manifests, into the subos for the same reason the vendor
