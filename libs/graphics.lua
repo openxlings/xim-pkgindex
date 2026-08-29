@@ -76,6 +76,26 @@ local graphics = {}
 graphics.DRI_DIR        = "usr/lib/dri"
 graphics.EGL_VENDOR_DIR = "share/glvnd/egl_vendor.d"
 
+-- GBM backends. Same shape as DRI_DIR and for the same reasons -- under `usr/`
+-- because of the destination whitelist described above, and a directory of
+-- dlopen'd plugins rather than link targets.
+--
+-- WHY IT WAS MISSING, AND WHAT IT BREAKS. mesa is built with `--prefix=/usr`,
+-- so `gbmbackendspath=/usr/lib/gbm` is compiled INTO libgbm.so (visible in its
+-- gbm.pc). Once the payload is relocated that path is wrong, and libgbm is a
+-- pure loader: every gbm_create_device() dlopens `<path>/<driver>_gbm.so`.
+-- Measured before this entry existed:
+--
+--   MESA-LOADER: failed to open dri: /usr/lib/gbm/dri_gbm.so: cannot open
+--   shared object file (search paths /usr/lib/gbm, suffix _gbm)
+--
+-- DRI and the EGL vendor directory were already covered by the two entries
+-- above; GBM is the same class of problem and simply never got its
+-- counterpart. Anything that allocates scanout buffers -- a KMS/DRM console
+-- app, a Wayland compositor back end, headless GPU rendering, SDL2's KMSDRM
+-- video driver, ffmpeg's VAAPI hwcontext -- gets a NULL device without it.
+graphics.GBM_DIR        = "usr/lib/gbm"
+
 -- The GLX vendor directory — and why it is NOT next to the two above.
 --
 -- Those are subos-relative, because an ENVIRONMENT VARIABLE points at them.
@@ -124,10 +144,19 @@ graphics.VULKAN_ICD_DIR = "share/vulkan/icd.d"
 -- mesa's ICD manifests are found with no new variable. `VK_DRIVER_FILES` would
 -- be wrong here -- it is an OVERRIDE that suppresses system discovery, so it
 -- would hide any other ICD on the machine.
+--
+-- GBM_BACKENDS_PATH is a colon-separated LIST that libgbm walks in order
+-- (src/gbm/main/backend.c splits on ':' and dlopens `<dir>/<driver>_gbm.so` at
+-- each), so `prepend` is both correct and non-destructive here, exactly as for
+-- the three above. It is also the variable every other relocated stack reaches
+-- for: Valve's pressure-vessel answers the identical breakage with
+-- GBM_BACKENDS_PATH=/run/host/usr/lib64/gbm (steam-runtime#797), and Nix and
+-- Conda set it at environment-activation time.
 local DISCOVERY = {
     { var = "LIBGL_DRIVERS_PATH",        rel = graphics.DRI_DIR },
     { var = "__EGL_VENDOR_LIBRARY_DIRS", rel = graphics.EGL_VENDOR_DIR },
     { var = "XDG_DATA_DIRS",             rel = graphics.SHARE_DIR },
+    { var = "GBM_BACKENDS_PATH",         rel = graphics.GBM_DIR },
 }
 
 -- S2 -- the table a CONSUMER's shim carries.
@@ -281,6 +310,30 @@ function graphics.declare_dri(install_dir, rel_dir, tag)
         return false
     end
     xvm.files{ src = rel_dir, dst = graphics.DRI_DIR, binding = tag }
+    return true
+end
+
+-- The GBM counterpart of declare_dri, and deliberately its mirror image rather
+-- than a variation: the two directories hold the same KIND of thing (backend
+-- modules dlopen'd by absolute path), so the same rejection applies --
+-- `sysroot.declare_libs(dir, "lib/gbm", ...)` would flatten them into
+-- `<subos>/lib`, which is the LINK directory, and they are not link targets.
+--
+-- NOT required. A mesa built without the dri gbm backend is a legitimate
+-- configuration, and so is a consumer that only ever calls the pure half of the
+-- API (gbm_format_get_name and friends need no device). So this warns and
+-- returns false rather than failing the install -- but it does warn, because
+-- the alternative is GBM_BACKENDS_PATH naming an empty directory and
+-- gbm_create_device() returning NULL with no diagnostic of its own.
+function graphics.declare_gbm(install_dir, rel_dir, tag)
+    if not xvm.files then return false end
+    if not os.isdir(path.join(install_dir, rel_dir)) then
+        log.warn("no %s in this payload -- GBM_BACKENDS_PATH would point at an "
+                 .. "empty directory and gbm_create_device() would find no "
+                 .. "backend and return NULL", rel_dir)
+        return false
+    end
+    xvm.files{ src = rel_dir, dst = graphics.GBM_DIR, binding = tag }
     return true
 end
 
