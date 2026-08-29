@@ -8,6 +8,14 @@
 -- Every version listed in `xpm` must appear here (windows-only keys are absent
 -- for versions no windows section lists; 18.20.8 has no win-arm64 build at all).
 local _sha256 = {
+    ["24.20.0"] = {
+        linux_x64     = "2f2c0da162318f0de47665410c7c8c2ed3d36c8f3105de4bbc61176c70a7cbf2",
+        linux_arm64   = "5f4ddab610c1ab2016b3c227cebdbf6d9495161487e4739c7b90090595f465f7",
+        darwin_x64    = "9e5b2644cf107befb6aefca676b96d3296bc10138096f022ed378d6233ed81f4",
+        darwin_arm64  = "40e5607e5ecb3db9192723776da2d75d966260fc74a7a9e731c1bd67dda96bc8",
+        win_x64       = "6cac9ffbca8f6a47091e4b5c772e0606049c3871cb67d900c0cedde630e545ba",
+        win_arm64     = "31c6799744de8a54601643098040c68c3697e56c94e407d61d0e5fa5f34191d7",
+    },
     ["26.7.0"] = {
         linux_x64     = "982aa24dd8be4c889c6a8ab337ddff3b0896645b20f4239356e80552c16277ee",
         linux_arm64   = "afc7a004018485092ac8985b817b0d5684472bd9472e0b57d2ab88737e50090d",
@@ -186,9 +194,10 @@ package = {
         -- in Oct 2026; it is listed so `node@26.7.0` resolves, but it is not the
         -- default. Same rule the 24.15.0 bump followed.
         windows = {
-            ["latest"] = { ref = "24.19.0" },
+            ["latest"] = { ref = "24.20.0" },
             ["26.7.0"] = _win_url("26.7.0"),
             ["25.9.0"] = _win_url("25.9.0"),
+            ["24.20.0"] = _win_url("24.20.0"),
             ["24.19.0"] = _win_url("24.19.0"),
             ["24.15.0"] = _win_url("24.15.0"),
             ["24.4.1"] = _win_url("24.4.1"),
@@ -213,9 +222,10 @@ package = {
             deps = {
                 runtime = { "xim:glibc@>=2.39", "xim:gcc-runtime@15.1.0" },
             },
-            ["latest"] = { ref = "24.19.0" },
+            ["latest"] = { ref = "24.20.0" },
             ["26.7.0"] = _linux_url("26.7.0"),
             ["25.9.0"] = _linux_url("25.9.0"),
+            ["24.20.0"] = _linux_url("24.20.0"),
             ["24.19.0"] = _linux_url("24.19.0"),
             ["24.15.0"] = _linux_url("24.15.0"),
             ["24.4.1"] = _linux_url("24.4.1"),
@@ -229,9 +239,10 @@ package = {
             ["18.20.8"] = _linux_url("18.20.8"),
         },
         macosx = {
-            ["latest"] = { ref = "24.19.0" },
+            ["latest"] = { ref = "24.20.0" },
             ["26.7.0"] = _mac_url("26.7.0"),
             ["25.9.0"] = _mac_url("25.9.0"),
+            ["24.20.0"] = _mac_url("24.20.0"),
             ["24.19.0"] = _mac_url("24.19.0"),
             ["24.15.0"] = _mac_url("24.15.0"),
             ["24.4.1"] = _mac_url("24.4.1"),
