@@ -50,6 +50,10 @@ package = {
                 url = "https://github.com/pnpm/pnpm/releases/download/v12.0.0/pnpm-linux-x64.tar.gz",
                 sha256 = "d93497ba07d5dfc7d527b30905fdd24f55c87618ea23ea3af287cdff061510e0",
             },
+            ["11.12.0"] = {
+                url = "https://github.com/pnpm/pnpm/releases/download/v11.12.0/pnpm-linux-x64.tar.gz",
+                sha256 = "dd19bfd8bcd33a3b38dcce335e8d233194c0a61ffe1f5bcf5047f60f6d4978b8",
+            },
             ["11.0.5"] = {
                 url = "https://github.com/pnpm/pnpm/releases/download/v11.0.5/pnpm-linux-x64.tar.gz",
                 sha256 = "c1b55f53f5344cf0e26441d97b9ee2ee3b81791503c5cbd4bb93ae1898b8d211",
@@ -62,6 +66,10 @@ package = {
                 url = "https://github.com/pnpm/pnpm/releases/download/v12.0.0/pnpm-darwin-arm64.tar.gz",
                 sha256 = "c31f5abe796dfc8489ea980cb438844053ad6b402bb4f3eb9abd71086279d75b",
             },
+            ["11.12.0"] = {
+                url = "https://github.com/pnpm/pnpm/releases/download/v11.12.0/pnpm-darwin-arm64.tar.gz",
+                sha256 = "0d63d9b468690e661a182efd2c1bc752dbddc753e852b76ca5218f32fcf78a2e",
+            },
             ["11.0.5"] = {
                 url = "https://github.com/pnpm/pnpm/releases/download/v11.0.5/pnpm-darwin-arm64.tar.gz",
                 sha256 = "24d412b2d137c6bc91e09c039b0e8ced6b5ac8f1dc9ea1881f0521cdb3bc5318",
@@ -73,6 +81,10 @@ package = {
             ["12.0.0"] = {
                 url = "https://github.com/pnpm/pnpm/releases/download/v12.0.0/pnpm-win32-x64.zip",
                 sha256 = "092f60a1304fd61df44c6c534d424144146e41cc9b3cb0557372baadc00f29d5",
+            },
+            ["11.12.0"] = {
+                url = "https://github.com/pnpm/pnpm/releases/download/v11.12.0/pnpm-win32-x64.zip",
+                sha256 = "7ac25ba81b8a9f213a307ae89198ba7e636e6c74fa0d775d554ba46e0187358b",
             },
             ["11.0.5"] = {
                 url = "https://github.com/pnpm/pnpm/releases/download/v11.0.5/pnpm-win32-x64.zip",
