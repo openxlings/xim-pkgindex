@@ -25,7 +25,11 @@ package = {
     xpm = {
         linux = {
             url_template = "https://github.com/SagerNet/sing-box/releases/download/v{version}/sing-box-{version}-linux-amd64.tar.gz",
-            ["latest"] = { ref = "1.13.11" },
+            ["latest"] = { ref = "1.13.20" },
+            ["1.13.20"] = {
+                url = "https://github.com/SagerNet/sing-box/releases/download/v1.13.20/sing-box-1.13.20-linux-amd64.tar.gz",
+                sha256 = "646bc01bf128c32a12eb50d8690e387bba7504da7b1d65c704bd53916e38595a",
+            },
             ["1.13.11"] = {
                 url = "https://github.com/SagerNet/sing-box/releases/download/v1.13.11/sing-box-1.13.11-linux-amd64.tar.gz",
                 sha256 = "10ff037632165ca4f6472a0ec21393280ef5a33677e05bcde7fbcf6f9737637b",
@@ -33,7 +37,11 @@ package = {
         },
         macosx = {
             url_template = "https://github.com/SagerNet/sing-box/releases/download/v{version}/sing-box-{version}-darwin-arm64.tar.gz",
-            ["latest"] = { ref = "1.13.11" },
+            ["latest"] = { ref = "1.13.20" },
+            ["1.13.20"] = {
+                url = "https://github.com/SagerNet/sing-box/releases/download/v1.13.20/sing-box-1.13.20-darwin-arm64.tar.gz",
+                sha256 = "a5814443f27f14a95ac213d44cc7881540e5d49fa0994981f44a892563346a34",
+            },
             ["1.13.11"] = {
                 url = "https://github.com/SagerNet/sing-box/releases/download/v1.13.11/sing-box-1.13.11-darwin-arm64.tar.gz",
                 sha256 = "8fbeffbd6b737d0d3416428a126cce11002e60c89a006e42f1fbf6906802000b",
@@ -41,7 +49,11 @@ package = {
         },
         windows = {
             url_template = "https://github.com/SagerNet/sing-box/releases/download/v{version}/sing-box-{version}-windows-amd64.zip",
-            ["latest"] = { ref = "1.13.11" },
+            ["latest"] = { ref = "1.13.20" },
+            ["1.13.20"] = {
+                url = "https://github.com/SagerNet/sing-box/releases/download/v1.13.20/sing-box-1.13.20-windows-amd64.zip",
+                sha256 = "f2eb3d17bd183d143ef764c8f08c5625a93e628ec4eced24276ed6e9210fb296",
+            },
             ["1.13.11"] = {
                 url = "https://github.com/SagerNet/sing-box/releases/download/v1.13.11/sing-box-1.13.11-windows-amd64.zip",
                 sha256 = "30ecceaebb659195aa67d0a9a398c75c42fb263e079f5499a5f1dcecfa138507",
