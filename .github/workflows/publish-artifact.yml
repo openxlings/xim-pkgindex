@@ -6,11 +6,31 @@ name: Publish Index Artifact
 # clients pick up the change on their next refresh — no xlings release needed.
 # Design: .agents/docs/2026-06-24-artifact-publish-mechanism.md
 
+# `libs/**` ships. It is not a build detail, and leaving it out of this filter
+# is the most consequential of the three places it was missing.
+#
+# The artifact this workflow publishes is what `xlings update` downloads, and it
+# contains `libs/` — the recipes import `xim.pkgindex.graphics`, so mesa,
+# nvidia-gl-host-link, xkeyboard-config and libinput-quirks all execute code
+# from a file that lives there. A change confined to `libs/` therefore reaches
+# users only through this artifact, and until this line it did not reach them at
+# all: #735 merged to main with every check green, and `xlings update` kept
+# serving `xim-index-f1702a1.tar.gz` — the revision BEFORE the fix. The nightly
+# cron would have caught it up eventually, which is what made it a slow leak
+# rather than an outage.
+#
+# Third occurrence of the same gap: `ci-test.yml` and `ci-xpkg-test.yml` were
+# missing `libs/**` too (#735). Those cost review coverage; this one costs
+# delivery.
+#
+# NOT added to `pkgindex-deloy.yml` / `site-check.yml`: those render the docs
+# site from package metadata, and `libs/` is not user-facing documentation.
 on:
   push:
     branches: [ main ]
     paths:
       - 'pkgs/**'
+      - 'libs/**'
       - 'xim-indexrepos.lua'
       - '.xpkgindex.json'
   workflow_dispatch:
