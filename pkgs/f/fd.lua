@@ -22,7 +22,11 @@ package = {
     xpm = {
         linux = {
             url_template = "https://github.com/sharkdp/fd/releases/download/v{version}/fd-v{version}-x86_64-unknown-linux-musl.tar.gz",
-            ["latest"] = { ref = "10.4.2" },
+            ["latest"] = { ref = "10.5.0" },
+            ["10.5.0"] = {
+                url = "https://github.com/sharkdp/fd/releases/download/v10.5.0/fd-v10.5.0-x86_64-unknown-linux-musl.tar.gz",
+                sha256 = "761c72dc8e120d85b22292063be8a796e2eeb20eb3e4f38b8fa2343ccf3514a7",
+            },
             ["10.4.2"] = {
                 url = "https://github.com/sharkdp/fd/releases/download/v10.4.2/fd-v10.4.2-x86_64-unknown-linux-musl.tar.gz",
                 sha256 = "e3257d48e29a6be965187dbd24ce9af564e0fe67b3e73c9bdcd180f4ec11bdde",
@@ -30,7 +34,11 @@ package = {
         },
         macosx = {
             url_template = "https://github.com/sharkdp/fd/releases/download/v{version}/fd-v{version}-aarch64-apple-darwin.tar.gz",
-            ["latest"] = { ref = "10.4.2" },
+            ["latest"] = { ref = "10.5.0" },
+            ["10.5.0"] = {
+                url = "https://github.com/sharkdp/fd/releases/download/v10.5.0/fd-v10.5.0-aarch64-apple-darwin.tar.gz",
+                sha256 = "b67e1836c468e42e411984b56e52fa7abec08c2bd22c867398e7cc134aac5e12",
+            },
             ["10.4.2"] = {
                 url = "https://github.com/sharkdp/fd/releases/download/v10.4.2/fd-v10.4.2-aarch64-apple-darwin.tar.gz",
                 sha256 = "623dc0afc81b92e4d4606b380d7bc91916ba7b97814263e554d50923a39e480a",
@@ -38,7 +46,11 @@ package = {
         },
         windows = {
             url_template = "https://github.com/sharkdp/fd/releases/download/v{version}/fd-v{version}-x86_64-pc-windows-msvc.zip",
-            ["latest"] = { ref = "10.4.2" },
+            ["latest"] = { ref = "10.5.0" },
+            ["10.5.0"] = {
+                url = "https://github.com/sharkdp/fd/releases/download/v10.5.0/fd-v10.5.0-x86_64-pc-windows-msvc.zip",
+                sha256 = "a227701b8551c35a9931d9f6da75503cf86d88e182d71fb849a70864c5d57cd7",
+            },
             ["10.4.2"] = {
                 url = "https://github.com/sharkdp/fd/releases/download/v10.4.2/fd-v10.4.2-x86_64-pc-windows-msvc.zip",
                 sha256 = "b2816e506390a89941c63c9187d58a3cc10e9a55f2ef0685f9ea0eccaf7c98c8",
