@@ -142,6 +142,19 @@ graphics.VULKAN_ICD_DIR = "share/vulkan/icd.d"
 -- some do — still works when this is the subos view.
 graphics.XKB_DIR        = "share/X11/xkb"
 
+-- Where libinput looks for its device quirks.
+--
+-- `share/libinput` is `$datadir/libinput`, upstream's own layout, and the files
+-- sit FLAT in it -- meson's `install_subdir('quirks', strip_directory: true)`
+-- drops the `quirks/` level. `quirks.c:1217` then does
+-- `scandir(data_path, …, is_data_file, versionsort)` over exactly that one
+-- directory, taking every `*.quirks` file.
+--
+-- `versionsort`, so the `10-` / `30-` / `50-` filename prefixes decide
+-- precedence -- the same convention that orders the glvnd vendor JSONs, and
+-- the reason HAVE_VERSIONSORT is not optional in compat.libinput.
+graphics.QUIRKS_DIR     = "share/libinput"
+
 -- The variables, once. Keys are variable names; values are subos-relative
 -- paths, with no placeholder syntax -- the two emitters below add their own.
 --
@@ -191,6 +204,21 @@ local DISCOVERY = {
     -- identically right now and break the day a second provider appears. `set`
     -- is what the variable actually means.
     { var = "XKB_CONFIG_ROOT",           rel = graphics.XKB_DIR, op = "set" },
+    -- libinput's device quirks: per-model tuning like a touchpad's pressure
+    -- range or a mouse's wheel click angle. `libinput.c:1911` reads this
+    -- variable and falls back to a compiled-in path, which compat.libinput
+    -- leaves EMPTY for the usual reason -- upstream's default is
+    -- `$prefix/share/libinput`, and after relocation that is the HOST's.
+    --
+    -- Scalar, so `set`, for the same reason as XKB_CONFIG_ROOT: `quirks.c`
+    -- scandir()s ONE directory. It is also why the degradation is loud but
+    -- gentle -- without this, libinput logs
+    --
+    --     failed to find data files ... will negatively affect device behavior
+    --
+    -- and runs on built-in defaults: enumeration, events and gestures all
+    -- work, only the per-model tuning is gone.
+    { var = "LIBINPUT_QUIRKS_DIR",       rel = graphics.QUIRKS_DIR, op = "set" },
 }
 
 -- S2 -- the table a CONSUMER's shim carries.
@@ -280,6 +308,10 @@ graphics.RENDER_PATHS = {
 -- no libraries, no DRI modules, no EGL vendor, no `share/vulkan`. Declaring the
 -- other rows from it would name four directories it does not fill.
 graphics.XKB_ONLY = { ["XKB_CONFIG_ROOT"] = true }
+
+-- The set the libinput quirks dataset passes. Same reasoning as XKB_ONLY: data
+-- only, so it names the one directory it fills and none of the others.
+graphics.QUIRKS_ONLY = { ["LIBINPUT_QUIRKS_DIR"] = true }
 
 -- The set for a provider that contributes a Vulkan ICD as well as a GL vendor.
 --
@@ -454,6 +486,37 @@ function graphics.declare_xkb(install_dir, rel_dir, tag)
         return false
     end
     xvm.files{ src = rel_dir, dst = graphics.XKB_DIR, binding = tag }
+    return true
+end
+
+-- libinput's device quirks, placed the same way. Data, like declare_xkb: what
+-- `LIBINPUT_QUIRKS_DIR` leads to is a flat directory of `.quirks` INI files
+-- that libinput's own parser reads, with no dlopen anywhere along the path.
+--
+-- Checks for a `.quirks` FILE and not just the directory, because an empty
+-- directory is the one case that fails SILENTLY: `quirks.c:1217` scandir()s it,
+-- finds zero matches, and libinput carries on with built-in defaults -- the
+-- same outcome as declaring nothing, reached WITHOUT the "failed to find data
+-- files" message that would have named the problem.
+--
+-- One canonical filename rather than a glob, and that is a constraint rather
+-- than a preference: `os.files` does not exist in a package hook's restricted
+-- `os` table (nor do `os.filedirs`, `os.exists`, `os.curdir`, `os.iorunv`), and
+-- a `#(os.files(...) or {}) == 0` guard turns that absence into a confident
+-- "the directory is empty". `10-generic-keyboard.quirks` is the least
+-- version-sensitive name in the set -- it predates every vendor file and ships
+-- in libinput releases years apart.
+function graphics.declare_quirks(install_dir, rel_dir, tag)
+    if not xvm.files then return false end
+    local src = path.join(install_dir, rel_dir)
+    if not os.isdir(src)
+       or not os.isfile(path.join(src, "10-generic-keyboard.quirks")) then
+        log.warn("no quirks in %s -- LIBINPUT_QUIRKS_DIR would name an empty "
+                 .. "directory and libinput would fall back to its built-in "
+                 .. "defaults without saying so", rel_dir)
+        return false
+    end
+    xvm.files{ src = rel_dir, dst = graphics.QUIRKS_DIR, binding = tag }
     return true
 end
 
