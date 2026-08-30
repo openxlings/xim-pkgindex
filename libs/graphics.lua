@@ -236,6 +236,13 @@ end
 -- there would name a path it does not fill. Both packages declaring the SAME
 -- shared vendor directory is fine and intended -- `prepend` de-duplicates, and
 -- either package being absent must not remove it for the other.
+--
+-- OMITTING `only` MEANS "EVERY ROW", AND NO PACKAGE SHOULD DO IT. It reads as a
+-- convenience and behaves as a claim that grows behind the caller's back: mesa
+-- omitted it, a fifth row was added for a different subsystem, and mesa began
+-- declaring a path its payload does not contain. Pass a set -- RENDER_PATHS,
+-- EGL_VENDOR_ONLY, EGL_VENDOR_AND_ICD, XKB_ONLY, or a new one -- so that adding
+-- a row is a decision each provider makes rather than one it inherits.
 function graphics.declare_subos_env(tag, only)
     if type(subos.env) ~= "function" then return false end
     for _, d in ipairs(DISCOVERY) do
@@ -249,6 +256,25 @@ end
 
 -- The set a vendor-only provider passes to declare_subos_env.
 graphics.EGL_VENDOR_ONLY = { ["__EGL_VENDOR_LIBRARY_DIRS"] = true }
+
+-- The four RENDERING paths — what a GL/Vulkan driver stack provides.
+--
+-- This set exists because omitting `only` means "declare every row", and that
+-- was a safe default only while every row belonged to one provider. It is not
+-- safe as the table grows: `mesa` passed no set, so adding XKB_CONFIG_ROOT
+-- silently made mesa declare the keyboard-layout root, which its payload does
+-- not contain (`share/{drirc.d,glvnd,vulkan}` and no `share/X11`).
+--
+-- The rule this encodes: A PROVIDER DECLARES ONLY WHAT IT FILLS. The three
+-- `declare_*` helpers enforce it by checking `os.isdir` and declining;
+-- `declare_subos_env` has no payload to check, so the set is how a provider
+-- says the same thing.
+graphics.RENDER_PATHS = {
+    ["LIBGL_DRIVERS_PATH"]        = true,
+    ["__EGL_VENDOR_LIBRARY_DIRS"] = true,
+    ["XDG_DATA_DIRS"]             = true,
+    ["GBM_BACKENDS_PATH"]         = true,
+}
 
 -- The set the keyboard-layout dataset passes. `xkeyboard-config` is DATA only:
 -- no libraries, no DRI modules, no EGL vendor, no `share/vulkan`. Declaring the
