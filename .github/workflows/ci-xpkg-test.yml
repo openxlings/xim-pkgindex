@@ -1,5 +1,8 @@
 name: xpkg test
 
+# `libs/**` is here for the same reason as in ci-test.yml: the shared modules
+# under `libs/` are where four graphics recipes' install and config hooks
+# actually live, and a change confined to one of them used to run no CI at all.
 on:
   workflow_dispatch:
   push:
@@ -7,10 +10,12 @@ on:
       - '**'
     paths:
       - 'pkgs/**'
+      - 'libs/**'
       - 'tests/**'
   pull_request:
     paths:
       - 'pkgs/**'
+      - 'libs/**'
       - 'tests/**'
 
 jobs:
