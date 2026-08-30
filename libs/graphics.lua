@@ -135,6 +135,13 @@ graphics.SHARE_DIR      = "share"
 -- $XDG_DATA_DIRS/vulkan/icd.d and mesa puts ${subosdir}/share on that list.
 graphics.VULKAN_ICD_DIR = "share/vulkan/icd.d"
 
+-- Where libxkbcommon looks for keyboard layouts.
+--
+-- `share/X11/xkb` is the path every distribution uses and the one upstream's
+-- own compiled-in default is built from, so a consumer that hard-codes it —
+-- some do — still works when this is the subos view.
+graphics.XKB_DIR        = "share/X11/xkb"
+
 -- The variables, once. Keys are variable names; values are subos-relative
 -- paths, with no placeholder syntax -- the two emitters below add their own.
 --
@@ -157,6 +164,33 @@ local DISCOVERY = {
     { var = "__EGL_VENDOR_LIBRARY_DIRS", rel = graphics.EGL_VENDOR_DIR },
     { var = "XDG_DATA_DIRS",             rel = graphics.SHARE_DIR },
     { var = "GBM_BACKENDS_PATH",         rel = graphics.GBM_DIR },
+    -- The xkeyboard-config data tree. libxkbcommon COMPILES keymaps and
+    -- contains none: `xkb_keymap_new_from_names(rules, model, layout, …)`
+    -- reads the layouts off disk, and the path comes from XKB_CONFIG_ROOT with
+    -- a compiled-in fallback.
+    --
+    -- Same class as the four above, and it was missing for the same reason
+    -- GBM_BACKENDS_PATH was: the mechanism existed and one subsystem never got
+    -- its row. Measured before this entry — `xim:libxkbcommon`'s payload ships
+    -- `bin include lib share/{bash-completion,man}` and NO xkb data — so a
+    -- compositor asking for the "us" layout fell through to the HOST's
+    -- /usr/share/X11/xkb. That is the same silent host fallback that gave
+    -- Vulkan an llvmpipe device instead of the GPU.
+    --
+    -- `op = "set"`, and it is the FIRST row that is not a list.
+    --
+    -- The four above are colon-separated search paths, which is what makes
+    -- `prepend` both correct and non-destructive there. XKB_CONFIG_ROOT is a
+    -- SCALAR: libxkbcommon reads it once and uses it as one directory, which
+    -- must itself contain rules/, symbols/, keycodes/, types/ and compat/.
+    -- Prepend a second provider onto it and the value becomes `dirA:dirB` —
+    -- a path that does not exist, so `xkb_keymap_new_from_names` fails to find
+    -- its rules and reports nothing more specific than a compile failure.
+    --
+    -- Only `xkeyboard-config` fills this today, so `prepend` would behave
+    -- identically right now and break the day a second provider appears. `set`
+    -- is what the variable actually means.
+    { var = "XKB_CONFIG_ROOT",           rel = graphics.XKB_DIR, op = "set" },
 }
 
 -- S2 -- the table a CONSUMER's shim carries.
@@ -180,11 +214,16 @@ end
 
 -- S3 -- the same values for a subos shell.
 --
--- `prepend`, never `set`, for all three: they are colon-separated LISTS and
--- more than one package is entitled to be on them. A `set` by one provider
--- beats a `prepend` by another in xlings's resolution, so a `set` here would
--- silently erase the NVIDIA vendor directory and the machine with the GPU
--- would render on llvmpipe.
+-- `prepend` for every SEARCH PATH, and the reason is not stylistic: they are
+-- colon-separated LISTS and more than one package is entitled to be on them. A
+-- `set` by one provider beats a `prepend` by another in xlings's resolution, so
+-- a `set` on one of those would silently erase the NVIDIA vendor directory and
+-- the machine with the GPU would render on llvmpipe.
+--
+-- A row may override this with `op`, and exactly one does: XKB_CONFIG_ROOT is a
+-- scalar rather than a list, so the argument above inverts for it. The rule is
+-- the variable's own type, not a default to be departed from lightly — see the
+-- row itself.
 --
 -- Returns false on a client with no `subos.env`, so a caller can say so. The
 -- probe is `type(...) == "function"`, never truthiness: `import()` answers an
@@ -201,7 +240,7 @@ function graphics.declare_subos_env(tag, only)
     if type(subos.env) ~= "function" then return false end
     for _, d in ipairs(DISCOVERY) do
         if not only or only[d.var] then
-            subos.env{ var = d.var, op = "prepend",
+            subos.env{ var = d.var, op = d.op or "prepend",
                        value = "${subosdir}/" .. d.rel, binding = tag }
         end
     end
@@ -210,6 +249,11 @@ end
 
 -- The set a vendor-only provider passes to declare_subos_env.
 graphics.EGL_VENDOR_ONLY = { ["__EGL_VENDOR_LIBRARY_DIRS"] = true }
+
+-- The set the keyboard-layout dataset passes. `xkeyboard-config` is DATA only:
+-- no libraries, no DRI modules, no EGL vendor, no `share/vulkan`. Declaring the
+-- other rows from it would name four directories it does not fill.
+graphics.XKB_ONLY = { ["XKB_CONFIG_ROOT"] = true }
 
 -- The set for a provider that contributes a Vulkan ICD as well as a GL vendor.
 --
@@ -352,6 +396,38 @@ function graphics.declare_gbm(install_dir, rel_dir, tag)
         return false
     end
     xvm.files{ src = rel_dir, dst = graphics.GBM_DIR, binding = tag }
+    return true
+end
+
+-- The keyboard-layout dataset, placed the same way the two above place their
+-- modules — and it has to be placed, not merely declared.
+--
+-- That is the whole lesson of this helper. `declare_subos_env` writes the
+-- VARIABLE; `xvm.files` puts the CONTENT where the variable points. Declaring
+-- XKB_CONFIG_ROOT without this gives a subos where the variable is set, reads
+-- correctly in a shell, and names a directory that does not exist — which
+-- libxkbcommon reports as "keymap compilation failed", the same message it
+-- gives for a genuinely broken layout. Measured: the first version of
+-- `xkeyboard-config` declared and did not place, and the shell showed
+--
+--     XKB_CONFIG_ROOT=[.../share/X11/xkb]
+--     ls: cannot access '.../share/X11/xkb': No such file or directory
+--
+-- What it carries is DATA, not code — text files that libxkbcommon's own
+-- parser reads. That is worth saying explicitly because `subos.env` warns that
+-- a declared variable can load code from our payload into processes we do not
+-- own. It cannot here: there is no dlopen at the end of this path, and the
+-- worst a bad tree can do is fail to compile a keymap.
+function graphics.declare_xkb(install_dir, rel_dir, tag)
+    if not xvm.files then return false end
+    local src = path.join(install_dir, rel_dir)
+    if not os.isdir(src) then
+        log.warn("no %s in this payload -- XKB_CONFIG_ROOT would name a "
+                 .. "directory that does not exist and every RMLVO keymap "
+                 .. "would fail to compile", rel_dir)
+        return false
+    end
+    xvm.files{ src = rel_dir, dst = graphics.XKB_DIR, binding = tag }
     return true
 end
 
