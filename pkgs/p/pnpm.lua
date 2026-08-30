@@ -45,7 +45,11 @@ package = {
                 runtime = { "xim:glibc@>=2.39", "xim:gcc-runtime@15.1.0" },
             },
             url_template = "https://github.com/pnpm/pnpm/releases/download/v{version}/pnpm-linux-x64.tar.gz",
-            ["latest"] = { ref = "12.0.0" },
+            ["latest"] = { ref = "12.1.0" },
+            ["12.1.0"] = {
+                url = "https://github.com/pnpm/pnpm/releases/download/v12.1.0/pnpm-linux-x64.tar.gz",
+                sha256 = "ef4c3e31c8f6e587c9f04ca4b42b63d47f331247930617304ffa63354c11db79",
+            },
             ["12.0.0"] = {
                 url = "https://github.com/pnpm/pnpm/releases/download/v12.0.0/pnpm-linux-x64.tar.gz",
                 sha256 = "d93497ba07d5dfc7d527b30905fdd24f55c87618ea23ea3af287cdff061510e0",
@@ -61,7 +65,11 @@ package = {
         },
         macosx = {
             url_template = "https://github.com/pnpm/pnpm/releases/download/v{version}/pnpm-darwin-arm64.tar.gz",
-            ["latest"] = { ref = "12.0.0" },
+            ["latest"] = { ref = "12.1.0" },
+            ["12.1.0"] = {
+                url = "https://github.com/pnpm/pnpm/releases/download/v12.1.0/pnpm-darwin-arm64.tar.gz",
+                sha256 = "927542783706b6966b6792f263b9b958dcd9909c5174965cd1aae0f4ab7f613c",
+            },
             ["12.0.0"] = {
                 url = "https://github.com/pnpm/pnpm/releases/download/v12.0.0/pnpm-darwin-arm64.tar.gz",
                 sha256 = "c31f5abe796dfc8489ea980cb438844053ad6b402bb4f3eb9abd71086279d75b",
@@ -77,7 +85,11 @@ package = {
         },
         windows = {
             url_template = "https://github.com/pnpm/pnpm/releases/download/v{version}/pnpm-win32-x64.zip",
-            ["latest"] = { ref = "12.0.0" },
+            ["latest"] = { ref = "12.1.0" },
+            ["12.1.0"] = {
+                url = "https://github.com/pnpm/pnpm/releases/download/v12.1.0/pnpm-win32-x64.zip",
+                sha256 = "69c0d1d46cdc12bbefad653e859636179927aed292f9af286460a0d38d1d99d2",
+            },
             ["12.0.0"] = {
                 url = "https://github.com/pnpm/pnpm/releases/download/v12.0.0/pnpm-win32-x64.zip",
                 sha256 = "092f60a1304fd61df44c6c534d424144146e41cc9b3cb0557372baadc00f29d5",
