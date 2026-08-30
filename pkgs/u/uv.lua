@@ -38,7 +38,11 @@ package = {
             -- this field; it stays on the explicit per-version `url`.
             -- See docs/spec/url-template.md.
             url_template = "https://github.com/astral-sh/uv/releases/download/{version}/uv-x86_64-unknown-linux-musl.tar.gz",
-            ["latest"] = { ref = "0.11.28" },
+            ["latest"] = { ref = "0.12.7" },
+            ["0.12.7"] = {
+                url = "https://github.com/astral-sh/uv/releases/download/0.12.7/uv-x86_64-unknown-linux-musl.tar.gz",
+                sha256 = "3d64d44ed67da7908dc7f5c4d64ebb44bad326fa17f8a0a52fc9a7793017bbe1",
+            },
             ["0.11.28"] = {
                 url = "https://github.com/astral-sh/uv/releases/download/0.11.28/uv-x86_64-unknown-linux-musl.tar.gz",
                 sha256 = "f02146b371c35c287d860f003ece7345c86e358a3fd70a9b63700cd141ee7fb4",
@@ -58,7 +62,11 @@ package = {
         -- per-arch dispatch (xpm doesn't natively branch on arch yet).
         macosx = {
             url_template = "https://github.com/astral-sh/uv/releases/download/{version}/uv-aarch64-apple-darwin.tar.gz",
-            ["latest"] = { ref = "0.11.28" },
+            ["latest"] = { ref = "0.12.7" },
+            ["0.12.7"] = {
+                url = "https://github.com/astral-sh/uv/releases/download/0.12.7/uv-aarch64-apple-darwin.tar.gz",
+                sha256 = "127ebdda7ad953cdf198e964b570ea5771b85467ea93eb7cb6d6f8e6f55408f3",
+            },
             ["0.11.28"] = {
                 url = "https://github.com/astral-sh/uv/releases/download/0.11.28/uv-aarch64-apple-darwin.tar.gz",
                 sha256 = "33540eb7c883ab857eff79bd5ac2aa31fe27b595abecb4a9c003a2c998447232",
@@ -74,7 +82,11 @@ package = {
         },
         windows = {
             url_template = "https://github.com/astral-sh/uv/releases/download/{version}/uv-x86_64-pc-windows-msvc.zip",
-            ["latest"] = { ref = "0.11.28" },
+            ["latest"] = { ref = "0.12.7" },
+            ["0.12.7"] = {
+                url = "https://github.com/astral-sh/uv/releases/download/0.12.7/uv-x86_64-pc-windows-msvc.zip",
+                sha256 = "bf1518af459a3915511a11fdc6e2f43ef9a2afa138b9d498eeb9642fe9d85218",
+            },
             ["0.11.28"] = {
                 url = "https://github.com/astral-sh/uv/releases/download/0.11.28/uv-x86_64-pc-windows-msvc.zip",
                 sha256 = "0a23463216d09c6a72ff80ef5dc5a795f07dc1575cb84d24596c2f124a441b7b",
