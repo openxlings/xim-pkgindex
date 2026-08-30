@@ -255,6 +255,24 @@ graphics.EGL_VENDOR_ONLY = { ["__EGL_VENDOR_LIBRARY_DIRS"] = true }
 -- other rows from it would name four directories it does not fill.
 graphics.XKB_ONLY = { ["XKB_CONFIG_ROOT"] = true }
 
+-- The set for a provider that contributes a Vulkan ICD as well as a GL vendor.
+--
+-- XDG_DATA_DIRS is how the Khronos loader finds `vulkan/icd.d`; it is not a
+-- Vulkan-specific variable, which is why it is not in the EGL-only set above.
+-- A provider that stages an ICD must declare it, or the manifest sits in the
+-- subos and the loader never looks there — and the failure is invisible,
+-- because the loader then scans the HOST's /usr/share and usually finds
+-- something loadable (llvmpipe), so the program renders in software instead of
+-- reporting that the GPU was dropped. Measured on nvidia-gl-host-link.
+--
+-- LIBGL_DRIVERS_PATH stays out: an ICD is not a DRI driver module, and naming
+-- a directory this package does not fill is what the EGL-only set exists to
+-- avoid.
+graphics.EGL_VENDOR_AND_ICD = {
+    ["__EGL_VENDOR_LIBRARY_DIRS"] = true,
+    ["XDG_DATA_DIRS"]             = true,
+}
+
 -- Place one glvnd EGL vendor JSON into the subos's SHARED vendor directory.
 --
 -- WHY SHARED, AND WHY THIS IS THE POINT OF THE CHANGE
