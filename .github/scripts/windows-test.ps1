@@ -350,8 +350,22 @@ foreach ($relFile in $files) {
                 Log-Pass "ran $prog (exit $($proc.ExitCode))"
             } else {
                 try { $proc.Kill() } catch { }
-                Log-Fail "declared program '$prog' did not exit within 30s"
-                $failures += "$relFile (program-hangs:$prog)"
+                # An interactive TUI program treats "/?" as a FILENAME and
+                # opens the full-screen UI, which never exits -- nvim is the
+                # first such package in the index, and a full-screen UI on
+                # screen is proof the binary runs, not a defect. Retry with
+                # "--version", which every TUI program of that shape answers
+                # by printing and exiting like a CLI. Only a program that
+                # hangs on BOTH probes is genuinely stuck.
+                $proc = Start-Process -FilePath $full -ArgumentList "--version" `
+                            -NoNewWindow -PassThru -ErrorAction SilentlyContinue
+                if ($proc -and $proc.WaitForExit(30000)) {
+                    Log-Pass "ran $prog --version (exit $($proc.ExitCode)); /? opened an interactive UI"
+                } else {
+                    if ($proc) { try { $proc.Kill() } catch { } }
+                    Log-Fail "declared program '$prog' did not exit within 30s"
+                    $failures += "$relFile (program-hangs:$prog)"
+                }
             }
         }
     }
