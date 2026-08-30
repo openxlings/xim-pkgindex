@@ -33,6 +33,11 @@ on:
       - 'libs/**'
       - 'xim-indexrepos.lua'
       - '.xpkgindex.json'
+      # This file, the way ci-test.yml already lists itself. A publisher whose
+      # trigger or steps changed should PUBLISH once, because that is the only
+      # thing that demonstrates it still works — and it makes a change like this
+      # one self-verifying: merging it produces an artifact or it does not.
+      - '.github/workflows/publish-artifact.yml'
   workflow_dispatch:
   schedule:
     - cron: '0 18 * * *'   # nightly catch-all / mirror re-sync
