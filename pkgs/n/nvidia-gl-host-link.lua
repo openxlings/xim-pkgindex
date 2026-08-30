@@ -108,7 +108,7 @@ package = {
             exports = {
                 runtime = { libdirs = { "lib" } },
             },
-            ["latest"] = { ref = "0.1.2" },
+            ["latest"] = { ref = "0.1.3" },
             -- No payload: everything this package installs is a symlink it
             -- creates at install time from what it finds on the host. The
             -- version is the recipe's, not the driver's — the driver version
@@ -150,6 +150,12 @@ package = {
             -- that build and gets the DT_RPATH fix -- install() only runs on
             -- install, so without a new key the fix reaches fresh homes only,
             -- and silently.
+            -- 0.1.3: the Vulkan ICD is declared too. Before this the sentinel
+            -- wrote the EGL vendor JSON and stopped, so the loader never saw an
+            -- ICD in the subos and fell through to the host's /usr/share —
+            -- where the NVIDIA manifest names a bare SONAME it cannot load, and
+            -- llvmpipe silently won. See install().
+            ["0.1.3"] = { },
             ["0.1.2"] = { },
             ["0.1.1"] = { },
         },
@@ -592,6 +598,40 @@ function install()
 }
 ]], path.join(dir, "lib", "libEGL_nvidia.so.0")))
 
+    -- The VULKAN ICD, by exactly the same argument, and it was missing.
+    --
+    -- `libGLX_nvidia.so.0` is both the GLX vendor and the Vulkan ICD — one
+    -- file, two roles, which is why the symlink above already covers it. What
+    -- was absent was the DECLARATION: this package wrote the EGL vendor JSON
+    -- and stopped, so the Vulkan loader never saw an ICD inside the subos and
+    -- fell through to scanning the host's /usr/share.
+    --
+    -- MEASURED, before and after (`--sandbox --gpu`, this machine):
+    --
+    --   without this   devices = 1  ->  llvmpipe (LLVM 20.1.2)
+    --   with it        devices = 1  ->  NVIDIA GeForce RTX 4080
+    --
+    -- The failure it fixes is the bad kind: the host's own nvidia_icd.json is
+    -- reachable through XDG_DATA_DIRS and names a bare `libGLX_nvidia.so.0`,
+    -- which the loader tries and drops (`libXext.so.6: cannot open shared
+    -- object file`, because a host vendor's dependencies do not resolve inside
+    -- the subos). It then reaches the host's lvp_icd.json, whose llvmpipe HAS
+    -- few enough dependencies to load — so the program gets a SOFTWARE
+    -- rasteriser and nothing anywhere says the GPU was dropped.
+    --
+    -- Absolute `library_path` for the same reason as the EGL JSON above: this
+    -- package's own symlink, not a bare SONAME the host could answer.
+    local vkdir = path.join(dir, "share", "vulkan", "icd.d")
+    os.mkdir(vkdir)
+    io.writefile(path.join(vkdir, "10_nvidia.json"), string.format([[{
+    "file_format_version" : "1.0.0",
+    "ICD" : {
+        "library_path" : "%s",
+        "api_version" : "1.3.277"
+    }
+}
+]], path.join(dir, "lib", "libGLX_nvidia.so.0")))
+
     -- The driver version this payload was built against, recorded.
     --
     -- Everything above adapts to the host AT INSTALL TIME and is then never
@@ -760,14 +800,25 @@ function config()
     graphics.declare_egl_vendor(dir,
         "share/glvnd/egl_vendor.d/10_nvidia.json", tag)
 
-    -- Vendor directory only. This package has no driver modules and no
-    -- `share/` tree, so declaring LIBGL_DRIVERS_PATH or XDG_DATA_DIRS from
-    -- here would name paths it does not fill. mesa declares those.
+    -- …and the Vulkan ICD into the SAME shared directory, by the same rule.
+    -- `10_` beats mesa's `50_` there exactly as it does for EGL, so a machine
+    -- with both gets the NVIDIA driver and one with only mesa still works.
+    graphics.declare_vulkan_icd(dir, "share/vulkan/icd.d", tag)
+
+    -- Vendor directory AND the share tree. It used to be the vendor directory
+    -- only, with the reason stated as "this package has no `share/` tree, so
+    -- declaring XDG_DATA_DIRS from here would name a path it does not fill".
+    -- That was true and is not any more: the Vulkan ICD above IS a share tree,
+    -- and XDG_DATA_DIRS is how the Khronos loader finds `vulkan/icd.d`.
+    --
+    -- Declaring it here rather than leaning on mesa's declaration matters for
+    -- the NVIDIA-only case: a subos with this package and no mesa would
+    -- otherwise stage an ICD that nothing tells the loader to look for.
     --
     -- prepend, and both packages declaring the same value is intended:
     -- `prepend` de-duplicates, and either package being absent must not remove
     -- the directory for the other.
-    graphics.declare_subos_env(tag, graphics.EGL_VENDOR_ONLY)
+    graphics.declare_subos_env(tag, graphics.EGL_VENDOR_AND_ICD)
 
     -- No LD_LIBRARY_PATH. It used to be here, and it was the one place
     -- in this stack that needed a library SEARCH PATH rather than an
