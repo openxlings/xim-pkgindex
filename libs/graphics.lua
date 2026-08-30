@@ -232,10 +232,33 @@ local DISCOVERY = {
 -- The shim merges each value into whatever the process already has, front-most
 -- and de-duplicated, so a user who exported their own LIBGL_DRIVERS_PATH keeps
 -- it and a doubled entry cannot accumulate across nested invocations.
+--
+-- THAT MERGE IS WHY THE SCALAR ROWS ARE SKIPPED HERE.
+--
+-- `xvm.add{ envs = ... }` takes a plain `{ NAME = "value" }` map with no way to
+-- say "set, do not merge" — every entry gets the PATH-style treatment. For the
+-- four search paths that is exactly right. For XKB_CONFIG_ROOT and
+-- LIBINPUT_QUIRKS_DIR it is destructive: they name ONE directory, so a user who
+-- already has `XKB_CONFIG_ROOT=/usr/share/X11/xkb` would get
+--
+--     <subos>/share/X11/xkb:/usr/share/X11/xkb
+--
+-- and libxkbcommon would fail to find its rules in a path that is not a path.
+-- The S3 emitter below solves the same problem with `op = "set"`; S2 has no
+-- such lever, so it declines instead.
+--
+-- What that costs: a consumer launched through its shim from an ordinary login
+-- shell does not get the keyboard or quirks datasets — the same position as
+-- before those rows existed, so nothing regresses. Inside `subos use` they are
+-- set correctly by S3. Closing this properly needs a per-variable op in
+-- `xvm.add`, and until that exists, silently corrupting a scalar is the worse
+-- of the two failures.
 function graphics.consumer_envs()
     local envs = {}
     for _, d in ipairs(DISCOVERY) do
-        envs[d.var] = "${XLINGS_DYNAMIC_SUBOS_DIR}/" .. d.rel
+        if d.op ~= "set" then
+            envs[d.var] = "${XLINGS_DYNAMIC_SUBOS_DIR}/" .. d.rel
+        end
     end
     return envs
 end
