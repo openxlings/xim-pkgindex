@@ -20,7 +20,13 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "0.0.1" },
+            ["latest"] = { ref = "0.0.2" },
+            ["0.0.2"] = {
+                x86_64 = {
+                    url = "https://github.com/helantianshen/mcpp-hooks-audioplayer/releases/download/v0.0.2/mcpp-hooks-audioplayer-0.0.2-x86_64-linux-musl-static.tar.gz",
+                    sha256 = "9b8ef6c840ca070736ba0f9052102feba19d00b75944ec399e879f3041c6fe33",
+                },
+            },
             ["0.0.1"] = {
                 x86_64 = {
                     url = "https://github.com/helantianshen/mcpp-hooks-audioplayer/releases/download/v0.0.1/mcpp-hooks-audioplayer-0.0.1-x86_64-linux-musl-static.tar.gz",
@@ -29,7 +35,13 @@ package = {
             },
         },
         windows = {
-            ["latest"] = { ref = "0.0.1" },
+            ["latest"] = { ref = "0.0.2" },
+            ["0.0.2"] = {
+                x86_64 = {
+                    url = "https://github.com/helantianshen/mcpp-hooks-audioplayer/releases/download/v0.0.2/mcpp-hooks-audioplayer-0.0.2-x86_64-w64-mingw32.zip",
+                    sha256 = "29ccef955b14b2c728bbeea7f329ce076285de4ca070b1fb26794af98f98f73d",
+                },
+            },
             ["0.0.1"] = {
                 x86_64 = {
                     url = "https://github.com/helantianshen/mcpp-hooks-audioplayer/releases/download/v0.0.1/mcpp-hooks-audioplayer-0.0.1-x86_64-w64-mingw32.zip",
