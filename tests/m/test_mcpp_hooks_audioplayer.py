@@ -20,7 +20,7 @@ from tests.lib.platform_utils import skip_if_not
 from tests.lib.xpkg_parser import parse_xpkg
 
 PKG = "mcpp-hooks-audioplayer"
-INSTALL_PKG = "local:mcpp-hooks-audioplayer@0.0.2"
+INSTALL_PKG = "local:mcpp-hooks-audioplayer@0.0.3"
 PKG_FILE = "pkgs/m/mcpp-hooks-audioplayer.lua"
 
 
@@ -66,5 +66,5 @@ class TestVerify:
     def test_help(self):
         assert_xvm_shim_exists(PKG)
         assert_command_output(
-            f"{PKG} --help", contains="niulai-mama|niulai-mama1|niulai-mama2"
+            f"{PKG} --help", contains="nailong-xiao|beiliya1"
         )
