@@ -2,6 +2,22 @@ package = {
     spec = "2",
     homepage = "https://keithp.com/picolibc/",
 
+-- FOR CORTEX-M, THE SOURCE PACKAGE IS THE ROUTE mcpp DOCUMENTS, NOT THIS ONE.
+--
+-- `picolibc.picolibc` in the mcpp index carries the same upstream sources and is
+-- compiled with the consuming program's own flags, so there is no multilib key
+-- to get right and no ABI convention to match. This payload remains published
+-- and supported: it is what `[target.<triple>] sysroot = "xim:picolibc-arm@..."`
+-- opts into, and it is the same shape as `xim:picolibc-riscv`, which the RISC-V
+-- board package still uses.
+--
+-- The reason ARM has both is measured rather than stylistic. A prebuilt keys its
+-- libraries by `<march>/<mabi>`, and on ARM that CANNOT separate the float ABI,
+-- because `mabi` there names the procedure call standard and is `aapcs` either
+-- way: the seven M-profile profiles collapsed into five directories and the
+-- soft-float slot received a library carrying `Tag_ABI_HardFP_use`. Nothing
+-- failed at build time. This package therefore keys by the TARGET TRIPLE, which
+-- is what the table below does and what mcpp's freestanding table records.
     name = "picolibc-arm",
     description = "Freestanding Cortex-M sysroot - picolibc + the compiler-rt builtins needed to link it, seven multilibs",
 
