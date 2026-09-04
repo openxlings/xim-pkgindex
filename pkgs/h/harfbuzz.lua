@@ -26,6 +26,16 @@ package = {
                 "xim:freetype@2.13.2",
                 "xim:glib@>=2.80",
                 "xim:graphite2@>=1.3.14",
+                -- 14.4.0's extra libraries bring their own: libharfbuzz-raster
+                -- names libpng16 and libharfbuzz-vector names libz. Neither
+                -- exists in the 8.3.0 payload, which is one library.
+                --
+                -- graphite2 above is the mirror image: 8.3.0 links it, 14.x
+                -- does not, so the closure check reports it as
+                -- declared-but-unused on the newer payload. Kept, because
+                -- 8.3.0 is still installable from this recipe.
+                "xim:libpng@>=1.6",
+                "xim:zlib@>=1.3",
             },
             -- WHY 14.4.0 IS HERE
             --

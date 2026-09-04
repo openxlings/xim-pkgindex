@@ -189,7 +189,17 @@ STACK=(
   # libdeflate would each add a package to the closure for a format nothing
   # here asks for. zlib and libjpeg are the two that stay, and both are
   # already index packages.
-  "libtiff|4.7.2|https://download.osgeo.org/libtiff/tiff-4.7.2.tar.gz|autotools|zlib|--disable-static --disable-webp --disable-lzma --disable-zstd --disable-jbig --disable-lerc --disable-libdeflate"
+  #
+  # --disable-cxx drops libtiffxx, the C++ binding, and with it libstdc++ and
+  # libgcc_s. Behind our loader there is no host fallback, so the closure check
+  # reports them as unresolvable:
+  #     D2: 2 soname(s) have no provider in the index:
+  #         libgcc_s.so.1 (needed by libtiffxx.so.6.3.0)
+  #         libstdc++.so.6 (needed by libtiffxx.so.6.3.0)
+  # Declaring gcc-runtime would silence it; not building a binding nothing in
+  # this index uses keeps the C++ runtime out of an image codec's closure
+  # entirely, which is the better answer.
+  "libtiff|4.7.2|https://download.osgeo.org/libtiff/tiff-4.7.2.tar.gz|autotools|zlib|--disable-static --disable-cxx --disable-webp --disable-lzma --disable-zstd --disable-jbig --disable-lerc --disable-libdeflate"
 
   # builtin_loaders=all links every loader INTO libgdk_pixbuf: no loader
   # modules, no loaders.cache with build-host paths baked into it -- which is

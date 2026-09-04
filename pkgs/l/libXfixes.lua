@@ -17,7 +17,10 @@ package = {
 
     xpm = {
         linux = {
-            deps = { "xim:libX11@>=1.8" },
+            -- glibc was missing: libXfixes.so.3 names libc.so.6 and this recipe
+            -- declared only libX11, so the closure check reports it the moment
+            -- the payload is looked at.
+            deps = { "xim:glibc@>=2.38", "xim:libX11@>=1.8" },
             -- elfpatch reads this from each dependency and writes the consumer's
             -- RPATH, which is what makes the stack resolve without anyone
             -- setting LD_LIBRARY_PATH. Same mechanism `gcc-runtime` uses.

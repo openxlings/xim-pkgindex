@@ -63,9 +63,20 @@ function install()
     -- they resolve from our payloads and not from the host's ld.so.cache.
     selfcontain.seal(pkginfo.install_dir())
 
-    -- This payload's .pc files were never published; see
-    -- sysroot.declare_pkgconfig. Relocate here, declare in config().
-    sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")
+    -- NO relocate/declare of this payload's .pc, unlike the rest of the X and
+    -- GL stack, and that is deliberate. The payload is a lib/ and nothing
+    -- else; vulkan.pc's `includedir=${prefix}/include` refers to headers that
+    -- live in the SEPARATE vulkan-headers package, so there is no value this
+    -- side can rewrite it to that is correct. relocate_pkgconfig says so
+    -- rather than guessing:
+    --
+    --     pkgconfig relocation left vulkan.pc pointing at
+    --     includedir=<payload>/include, which does not exist under <payload>
+    --
+    -- Publishing it unrewritten would be worse than not publishing it: a
+    -- consumer that finds vulkan.pc and is handed /usr/include compiles
+    -- against the HOST's Vulkan headers without anything saying so. Left for
+    -- a change that can make the .pc point at vulkan-headers.
     return true
 end
 
@@ -79,8 +90,6 @@ function config()
             path.join(pkginfo.install_dir(), "include"),
             path.join(system.subos_sysrootdir(), "usr", "include"))
     end
-    sysroot.declare_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig", binding)
-
     return true
 end
 

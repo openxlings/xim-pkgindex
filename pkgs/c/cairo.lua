@@ -33,10 +33,14 @@ package = {
                 "xim:pixman@>=0.42",
                 "xim:zlib@>=1.3",
                 "xim:glib@>=2.80",
-                "xim:expat@>=2.6",
                 "xim:libX11@>=1.8",
                 "xim:libXext@>=1.3",
                 "xim:libXrender@>=0.9",
+                -- libcairo names libxcb, libxcb-render AND libxcb-shm; all
+                -- three come from libxcb. expat used to be here and is not:
+                -- nothing in the payload names a soname it provides -- that
+                -- reaches cairo through fontconfig, which declares it.
+                "xim:libxcb@>=1.17",
             },
             exports = {
                 runtime = { libdirs = { "lib" } },

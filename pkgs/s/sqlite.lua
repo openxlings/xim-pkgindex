@@ -27,8 +27,12 @@ package = {
             -- Built from the autoconf amalgamation with --disable-readline
             -- (readline is not in the index; the CLI works without line
             -- editing).
+            -- libz is not obvious and was not guessed: the autoconf
+            -- amalgamation links zlib when it finds one, so the built
+            -- libsqlite3.so.0 names libz.so.1 in its DT_NEEDED.
             deps = {
                 "xim:glibc@>=2.38",
+                "xim:zlib@>=1.3",
             },
             exports = {
                 runtime = { libdirs = { "lib" } },

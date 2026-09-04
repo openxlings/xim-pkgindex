@@ -34,6 +34,12 @@ package = {
             -- an optional extra for the gtk4 stack -- without it gtk4 cannot
             -- be configured at all.
             --
+            -- --disable-cxx drops libtiffxx, the C++ binding, and with it
+            -- libstdc++ and libgcc_s. Behind our loader there is no host
+            -- fallback for those, so the closure check reports them as having
+            -- no provider at all; not building a binding nothing in this index
+            -- uses keeps the C++ runtime out of an image codec's closure.
+            --
             -- webp, lzma, zstd, jbig, lerc and libdeflate are all disabled.
             -- Each would add a package to the closure for a format nothing in
             -- this index asks for; zlib and libjpeg are the two that stay,
@@ -44,7 +50,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libtiff/releases/download/4.7.2/libtiff-4.7.2-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libtiff/releases/download/4.7.2/libtiff-4.7.2-linux-x86_64.tar.gz",
                 },
-                sha256 = "49a3d202893498370e11c6c8e506524e65554bb8e9fa6bda74338f66c0550288",
+                sha256 = "bd5baf88fbb2fb0da9087478bc31b1d7ef12b0512944cd2c7430c2aa44ece940",
             },
         },
     },
