@@ -97,6 +97,24 @@ class TestStatic:
             "install 没有断言 bin/probe-rs 存在, 布局变化会晚很多才现形"
 
     @pytest.mark.static
+    def test_install_handles_the_flat_windows_archive(self, source_text):
+        """⚠️⚠️ 两种归档形状不同, 而只有 Windows 那台机器看得见.
+
+        `.tar.xz` 解到 `probe-rs-tools-<triple>/` 下; Windows 的 `.zip` 是
+        **平的** —— `probe-rs.exe` 直接躺在解包目录里, 没有外层目录. 按 tar
+        形状写的 install 在 Windows 上死于
+        `no directory contains probe-rs.exe`, CI 只有 Windows runner 报得出来.
+
+        所以 payload_root 回答的是「哪个目录**装着**这个程序」—— 两种形状都有
+        答案 —— 而 install 搬**文件**不搬目录: 平形状下那个目录是共享的解包根,
+        搬走它会连别的包的文件一起搬走.
+        """
+        assert 'if os.isfile(path.join(base, exe)) then' in source_text, \
+            "payload_root 不认平铺的 Windows 归档"
+        assert 'os.mv(from, path.join(bindir, prog .. exe))' in source_text, \
+            "install 搬的是目录而不是文件, 平形状下会连累共享解包根"
+
+    @pytest.mark.static
     def test_mirror_tag_prefix(self, source_text):
         """上游 tag 带 `v`, xlings-res tag 是裸版本号 —— 两边不能抄错.
 

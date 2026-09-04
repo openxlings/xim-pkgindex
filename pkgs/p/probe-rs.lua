@@ -121,21 +121,41 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 
--- The archive extracts to `probe-rs-tools-<triple>/` with the programs at its
--- ROOT — no `bin/`. Derived from the archive name rather than hard-coded so a
--- repackaged mirror asset keeps working.
+-- ⚠️⚠️ THE TWO ARCHIVES DO NOT HAVE THE SAME SHAPE, AND ONLY ONE HOST SHOWS IT.
+--
+-- The `.tar.xz` assets extract to `probe-rs-tools-<triple>/` with the programs
+-- at its root. The Windows `.zip` is FLAT: `probe-rs.exe` and its siblings sit
+-- directly in the extraction directory, with no wrap directory at all.
+--
+-- Measured: an install written for the tar shape configured, downloaded and
+-- then died on Windows with
+--
+--     cannot find the probe-rs payload under '...\runtimedir':
+--     no directory contains probe-rs.exe
+--
+-- and only the Windows runner could see it. So this function answers "which
+-- directory CONTAINS the program", which is a question both shapes have an
+-- answer to, and the install moves files rather than the directory — because
+-- in the flat case that directory is the shared extraction root and moving it
+-- would take other packages' files with it.
 local function payload_root()
+    local exe = is_host("windows") and "probe-rs.exe" or "probe-rs"
+
     local named = pkginfo.install_file()
         :replace(".tar.xz", "")
         :replace(".zip", "")
-    if os.isdir(named) then
+    if os.isfile(path.join(named, exe)) then
         return named
+    end
+
+    -- The flat shape: the program is directly beside the archive.
+    local base = path.directory(pkginfo.install_file())
+    if os.isfile(path.join(base, exe)) then
+        return base
     end
 
     -- Defensive: the extraction directory can be shared, so also look for
     -- whichever sibling actually carries the program.
-    local base = path.directory(pkginfo.install_file())
-    local exe = is_host("windows") and "probe-rs.exe" or "probe-rs"
     for _, d in ipairs(os.dirs(path.join(base, "*"))) do
         if os.isfile(path.join(d, exe)) then
             return d
@@ -143,41 +163,48 @@ local function payload_root()
     end
 
     raise("cannot find the probe-rs payload under '" .. base
-          .. "': no directory contains " .. exe)
+          .. "': nothing there contains " .. exe)
 end
 
 function install()
     local dir = pkginfo.install_dir()
     os.tryrm(dir)
-    os.mv(payload_root(), dir)
 
-    -- ⚠️⚠️ THE PROGRAM IS MOVED INTO `bin/`, AND THAT IS NOT TIDINESS.
+    local src = payload_root()
+    local exe = is_host("windows") and ".exe" or ""
+    local bindir = path.join(dir, "bin")
+    os.mkdir(bindir)
+
+    -- ⚠️⚠️ THE PROGRAMS GO INTO `bin/`, AND THAT IS NOT TIDINESS.
     --
-    -- mcpp's runner lookup searches `<payload>/bin` for a program named by
-    -- bare name, and only then PATH. A board package that writes
-    -- `mcpp::runner("probe-rs")` therefore resolves it out of this payload —
+    -- mcpp's runner lookup searches `<payload>/bin` for a program named by bare
+    -- name, and only then PATH. A board package that writes
+    -- `mcpp::runner("probe-rs")` therefore resolves it out of THIS payload —
     -- which is the whole point of naming a program instead of computing a path.
     -- Upstream puts the executables at the archive root, so a payload left as
     -- extracted would silently fall through to PATH and pick up whatever shim
     -- or system copy happened to be there.
     --
-    -- The other two programs move with it: `cargo-embed` and `cargo-flash` are
-    -- not registered, but leaving them at the root while their sibling moved
-    -- would make the payload's layout depend on which names this index chose to
-    -- expose.
-    local exe = is_host("windows") and ".exe" or ""
-    local bindir = path.join(dir, "bin")
-    os.mkdir(bindir)
+    -- `cargo-embed` and `cargo-flash` move with it: they are not registered,
+    -- but leaving them behind would make the payload's layout depend on which
+    -- names this index chose to expose.
     for _, prog in ipairs({"probe-rs", "cargo-embed", "cargo-flash"}) do
-        local src = path.join(dir, prog .. exe)
-        if os.isfile(src) then
-            os.mv(src, path.join(bindir, prog .. exe))
+        local from = path.join(src, prog .. exe)
+        if os.isfile(from) then
+            os.mv(from, path.join(bindir, prog .. exe))
+        end
+    end
+    for _, f in ipairs({"README.md", "CHANGELOG.md",
+                        "LICENSE-APACHE", "LICENSE-MIT"}) do
+        local from = path.join(src, f)
+        if os.isfile(from) then
+            os.mv(from, path.join(dir, f))
         end
     end
 
     -- Asserted here, where the fault is legible. A payload that extracted
-    -- partially, or whose layout upstream changed, would otherwise surface
-    -- much later as "runner not found" pointing at a directory that exists.
+    -- partially, or whose layout upstream changed, would otherwise surface much
+    -- later as "runner not found" pointing at a directory that exists.
     if not os.isfile(path.join(bindir, "probe-rs" .. exe)) then
         raise("probe-rs payload is missing bin/probe-rs" .. exe)
     end

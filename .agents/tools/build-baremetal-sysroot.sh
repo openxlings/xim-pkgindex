@@ -74,6 +74,30 @@ PROFILES_aarch64=(
 PROFILES_x86=(
     "x86_64-none-elf  x86-64   sysv  small  x86_64  -mno-red-zone"
 )
+# ⚠️ SEVEN PROFILES, AND THAT IS THE FAMILY RATHER THAN A CHOICE. "Cortex-M" is
+# not an instruction set: an object built for `thumbv7em` uses instructions a
+# Cortex-M0 does not have, so mcpp's target table carries seven rows and a
+# sysroot serving them has to carry seven multilibs. The values are copied from
+# that table rather than chosen here.
+#
+# ⚠️ `-mfpu=none` ON EVERY SOFT-FLOAT ROW, AND IT IS NOT REDUNDANT WITH THE ABI.
+# clang reads the float ABI from the `eabi`/`eabihf` suffix, and the ABI governs
+# how floats cross a call boundary — not whether the compiler may USE the FPU
+# inside one. `thumbv7em` implies FPv4-SP, so without this a soft-float build
+# emits FPU instructions that fault at run time on a part with no FPU, with a
+# clean compile and a clean link.
+#
+# ⚠️ `mcmodel` IS `-` ON EVERY ROW: 32-bit ARM has no such axis, and passing
+# `-mcmodel=` with an empty value is an error rather than a no-op.
+PROFILES_arm=(
+    "thumbv6m-none-eabi        armv6-m      aapcs - arm -mfpu=none"
+    "thumbv7m-none-eabi        armv7-m      aapcs - arm -mfpu=none"
+    "thumbv7em-none-eabi       armv7e-m     aapcs - arm -mfpu=none"
+    "thumbv7em-none-eabihf     armv7e-m     aapcs - arm -"
+    "thumbv8m.base-none-eabi   armv8-m.base aapcs - arm -mfpu=none"
+    "thumbv8m.main-none-eabi   armv8-m.main aapcs - arm -mfpu=none"
+    "thumbv8m.main-none-eabihf armv8-m.main aapcs - arm -"
+)
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -100,7 +124,8 @@ case "$FAMILY" in
     riscv)   PROFILES=("${PROFILES_riscv[@]}")   ;;
     aarch64) PROFILES=("${PROFILES_aarch64[@]}") ;;
     x86)     PROFILES=("${PROFILES_x86[@]}")     ;;
-    *) echo "unknown --family '$FAMILY' (riscv|aarch64|x86)" >&2; exit 2 ;;
+    arm)     PROFILES=("${PROFILES_arm[@]}")     ;;
+    *) echo "unknown --family '$FAMILY' (riscv|aarch64|x86|arm)" >&2; exit 2 ;;
 esac
 
 WORK="${WORK:-$(mktemp -d)}"
@@ -148,7 +173,40 @@ for profile in "${PROFILES[@]}"; do
     set -- $profile
     triple="$1"; march="$2"; mabi="$3"; mcmodel="$4"; cpu_family="$5"; extra="$6"
     [ "$extra" = "-" ] && extra=""
+    # ⚠️ AN ABSENT AXIS IS AN ABSENT FLAG, NOT AN EMPTY ONE. 32-bit ARM has no
+    # `-mcmodel`, and `-mcmodel=` with nothing after it is an error rather than
+    # a no-op — so the flag is built here and interpolated as a whole.
+    mcmodel_flag=""
+    [ "$mcmodel" != "-" ] && mcmodel_flag="-mcmodel=$mcmodel"
+
+    # ⚠️⚠️ COMPILER-RT AND PICOLIBC WANT DIFFERENT TRIPLES FOR THE SAME MACHINE,
+    # AND THE DISAGREEMENT IS SILENT.
+    #
+    # picolibc is built for `thumbv6m-none-eabi`, which is what mcpp's target
+    # table spells and what a consumer writes. compiler-rt's architecture
+    # detection does not recognise a `thumb*` triple: measured, configuring with
+    # `thumbv6m-none-eabi` produces a build tree with NO builtins target at all
+    # — cmake succeeds, ninja reports "no work to do", and the failure surfaces
+    # as a missing file at the copy below. With `armv6m-none-eabi` the same
+    # configuration prints
+    #
+    #     For armv6m builtins preferring arm/addsf3.S to addsf3.c
+    #
+    # and emits `libclang_rt.builtins-armv6m.a`.
+    #
+    # ⚠️ AND THE ARCHIVE IS NAMED AFTER THAT TRIPLE, NOT THE OTHER ONE. mcpp
+    # asks for `clang_rt.builtins-<arch of the target triple>`, which is
+    # `thumbv6m` — so the file is RENAMED into the payload under the name the
+    # consumer will ask for. Leaving it as compiler-rt spelled it would ship a
+    # sysroot whose builtins exist and cannot be found.
     arch="${triple%%-*}"
+    crt_triple="$triple"
+    crt_arch="$arch"
+    case "$FAMILY" in
+        arm) crt_triple="${triple/thumb/armv}"
+             crt_triple="${crt_triple/armvv/armv}"
+             crt_arch="${crt_triple%%-*}" ;;
+    esac
     echo "==> $march/$mabi ($triple)"
 
     prefix="$STAGE/staging/$march/$mabi"
@@ -172,17 +230,23 @@ for profile in "${PROFILES[@]}"; do
     #   riscv   virt RAM base   0x80000000
     #   aarch64 virt RAM base   0x40000000
     #   x86_64  multiboot load  0x00100000  (1 MiB, above the legacy hole)
+    #   arm     Cortex-M reset vector   0x00000000  (RAM at 0x20000000)
     flash_addr=0x80000000; ram_addr=0x80400000
     case "$FAMILY" in
         aarch64) flash_addr=0x40000000; ram_addr=0x40400000 ;;
         x86)     flash_addr=0x00100000; ram_addr=0x00500000
                  semihost=false; lld_emul=elf_x86_64 ;;
+        # ⚠️ M-profile's map is ARCHITECTURAL, not a board's choice: the vector
+        # table is fetched from address 0 and SRAM begins at 0x20000000. A board
+        # normally supplies its own script; these defaults exist so an image
+        # linked without one still lands where the hardware looks.
+        arm)     flash_addr=0x00000000; ram_addr=0x20000000 ;;
     esac
 
     if [ -n "$lld_emul" ]; then
         [ -x "$LINK_WRAPPER" ] || { echo "missing $LINK_WRAPPER" >&2; exit 2; }
         export BARE_LLVM="$LLVM_DIR" BARE_TRIPLE="$triple" BARE_MARCH="$march" \
-               BARE_MCMODEL="$mcmodel" BARE_EXTRA="$extra" BARE_EMUL="$lld_emul"
+               BARE_MCMODEL="$mcmodel_flag" BARE_EXTRA="$extra" BARE_EMUL="$lld_emul"
         CC_BIN="$LINK_WRAPPER"
     else
         CC_BIN="$LLVM_DIR/bin/clang"
@@ -197,6 +261,8 @@ for profile in "${PROFILES[@]}"; do
     # would reach clang as an argument and be reported as a missing file.
     extra_meson=""
     [ -n "$extra" ] && extra_meson=", '$extra'"
+    mcmodel_meson=""
+    [ -n "$mcmodel_flag" ] && mcmodel_meson=", '$mcmodel_flag'"
     # ⚠️ NOT DECLARED FOR x86: the wrapper above IS the linker, and naming
     # ld.lld here would make meson probe it through a driver that cannot link.
     if [ -n "$lld_emul" ]; then
@@ -207,8 +273,8 @@ cpp_ld = '$LLVM_DIR/bin/ld.lld'"
     fi
     cat > "$cross" <<EOF
 [binaries]
-c   = ['$CC_BIN', '--no-default-config', '-target', '$triple', '-march=$march', '-mabi=$mabi', '-mcmodel=$mcmodel', '-nostdlib'$extra_meson]
-cpp = ['$CC_BIN', '--no-default-config', '-target', '$triple', '-march=$march', '-mabi=$mabi', '-mcmodel=$mcmodel', '-nostdlib'$extra_meson]
+c   = ['$CC_BIN', '--no-default-config', '-target', '$triple', '-march=$march', '-mabi=$mabi'$mcmodel_meson, '-nostdlib'$extra_meson]
+cpp = ['$CC_BIN', '--no-default-config', '-target', '$triple', '-march=$march', '-mabi=$mabi'$mcmodel_meson, '-nostdlib'$extra_meson]
 ar     = '$LLVM_DIR/bin/llvm-ar'
 nm     = '$LLVM_DIR/bin/llvm-nm'
 strip  = '$LLVM_DIR/bin/llvm-strip'
@@ -254,12 +320,12 @@ EOF
           -DCMAKE_AR="$LLVM_DIR/bin/llvm-ar" \
           -DCMAKE_NM="$LLVM_DIR/bin/llvm-nm" \
           -DCMAKE_RANLIB="$LLVM_DIR/bin/llvm-ranlib" \
-          -DCMAKE_C_COMPILER_TARGET="$triple" \
-          -DCMAKE_ASM_COMPILER_TARGET="$triple" \
-          -DCMAKE_CXX_COMPILER_TARGET="$triple" \
-          -DCMAKE_C_FLAGS="--no-default-config -march=$march -mabi=$mabi -mcmodel=$mcmodel $extra -ffreestanding" \
-          -DCMAKE_ASM_FLAGS="--no-default-config -march=$march -mabi=$mabi -mcmodel=$mcmodel $extra" \
-          -DCMAKE_CXX_FLAGS="--no-default-config -march=$march -mabi=$mabi -mcmodel=$mcmodel $extra -ffreestanding" \
+          -DCMAKE_C_COMPILER_TARGET="$crt_triple" \
+          -DCMAKE_ASM_COMPILER_TARGET="$crt_triple" \
+          -DCMAKE_CXX_COMPILER_TARGET="$crt_triple" \
+          -DCMAKE_C_FLAGS="--no-default-config -march=$march -mabi=$mabi $mcmodel_flag $extra -ffreestanding" \
+          -DCMAKE_ASM_FLAGS="--no-default-config -march=$march -mabi=$mabi $mcmodel_flag $extra" \
+          -DCMAKE_CXX_FLAGS="--no-default-config -march=$march -mabi=$mabi $mcmodel_flag $extra -ffreestanding" \
           -DCOMPILER_RT_BAREMETAL_BUILD=ON \
           -DCOMPILER_RT_DEFAULT_TARGET_ONLY=ON \
           -DCOMPILER_RT_OS_DIR=baremetal \
@@ -270,8 +336,8 @@ EOF
     mkdir -p "$STAGE/include/$march/$mabi" "$STAGE/lib/$march/$mabi"
     cp -a "$prefix/include/." "$STAGE/include/$march/$mabi/"
     cp -a "$prefix/lib/." "$STAGE/lib/$march/$mabi/"
-    cp "$WORK/crtb-$march-$mabi/lib/baremetal/libclang_rt.builtins-$arch.a" \
-       "$STAGE/lib/$march/$mabi/"
+    cp "$WORK/crtb-$march-$mabi/lib/baremetal/libclang_rt.builtins-$crt_arch.a" \
+       "$STAGE/lib/$march/$mabi/libclang_rt.builtins-$arch.a"
 
     # Fail closed on the exact gap this artifact exists to close. Reaching here
     # with the builtins missing would ship a sysroot whose printf cannot link.
