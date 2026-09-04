@@ -40,15 +40,27 @@ package = {
         --                            libcairo.so.2
         --   (plus libc++_shared.so from the bundled Android runtime payload)
         --
-        -- GTK4, GDK-Pixbuf and libsoup-3 have no package in this index (no
-        -- gtk.lua / gdk-pixbuf.lua / libsoup.lua). Declaring only the in-index
-        -- half (glibc, pango, cairo, …) would move PT_INTERP into our sandbox
-        -- and REMOVE the host fallback for the GTK4 half, which then resolves
-        -- nowhere (our glibc's ld.so cache path exists on no machine). A UI SDK
-        -- is also meant to bind the desktop the user is actually logged into —
-        -- vendoring GTK4 would make a second, worse desktop. So the whole
-        -- payload stays on the host loader and the host is the provider; the
-        -- D2 dep-closure check reports these sonames as notes, not a failure.
+        -- The three sonames this comment used to call unpackaged --
+        -- libgtk-4.so.1, libgdk_pixbuf-2.0.so.0, libsoup-3.0.so.0 -- now have
+        -- packages (gtk4, gdk-pixbuf, libsoup). That closes the index gap
+        -- #749 recorded, and `.agents/tools/graphics/verify-huxerui-closure.sh`
+        -- walks this SDK's DT_NEEDED against the installed payloads to show it.
+        --
+        -- IT DOES NOT CHANGE THE DECISION HERE, and the reason is the second
+        -- half of the original argument rather than the first. Declaring only
+        -- the in-index half would move PT_INTERP into our sandbox and REMOVE
+        -- the host fallback, and more importantly a UI SDK is meant to bind
+        -- the desktop the user is actually logged into: vendoring GTK4 under
+        -- an application makes a second, worse desktop, with its own theme,
+        -- its own settings daemon and its own input methods. Availability was
+        -- never the only reason to stay on the host loader.
+        --
+        -- What the packages buy is the other consumer: a project that wants a
+        -- SEALED GTK4 build can now `xlings install gtk4` and get one, without
+        -- huxerui having to choose that for every application built on it. So
+        -- the whole payload stays on the host loader, the host stays the
+        -- provider, and the D2 dep-closure check keeps reporting these sonames
+        -- as notes rather than a failure.
         linux = {
             source = "https://github.com/HuxerUI/HuxerUI/releases/download/v${version}/huxerui-sdk-${version}-linux-${arch}.${ext}",
             ["latest"] = { ref = "0.2.0" },
