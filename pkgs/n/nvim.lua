@@ -52,7 +52,10 @@ package = {
                 GLOBAL = "https://github.com/neovim/neovim/releases/download/v${version}/nvim-linux-x86_64.tar.gz",
                 CN = "https://gitcode.com/xlings-res/nvim/releases/download/${version}/nvim-linux-x86_64.tar.gz",
             },
-            ["latest"] = { ref = "0.12.4" },
+            ["latest"] = { ref = "0.12.5" },
+            ["0.12.5"] = {
+                sha256 = "bce0f56eda1f1b1db6eee8f4133d7a38813ea07933837dd1777411ca384c6875",
+            },
             ["0.12.4"] = {
                 sha256 = "012bf3fcac5ade43914df3f174668bf64d05e049a4f032a388c027b1ebd78628",
             },
@@ -67,7 +70,10 @@ package = {
                 GLOBAL = "https://github.com/neovim/neovim/releases/download/v${version}/nvim-win64.zip",
                 CN = "https://gitcode.com/xlings-res/nvim/releases/download/${version}/nvim-win64.zip",
             },
-            ["latest"] = { ref = "0.12.4" },
+            ["latest"] = { ref = "0.12.5" },
+            ["0.12.5"] = {
+                sha256 = "de8625ba8cf65ebf40eb80a388ba1ec8e9c15b30218821e2c639119b05920de1",
+            },
             ["0.12.4"] = {
                 sha256 = "9fc3572829ffd13debb6e32555da2c8cc02555568260a9fc4cf1f65bbcca319c",
             },

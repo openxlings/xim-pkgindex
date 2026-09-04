@@ -1,0 +1,26 @@
+Drop the test, doc and sample-tool subdirectories from the build.
+
+graphite2 1.3.14 predates <cstdint> being required transitively, and its
+tests do not include it: on GCC 13+ every test translation unit fails with
+`'uint8_t' was not declared in this scope`, which stops ninja before the
+library -- which compiled cleanly -- can be installed.
+
+Nothing in this payload ships the tests, the docs or gr2fonttest, so they
+are removed rather than repaired: adding an include to five test files is
+five more things to carry at the next version bump, for code the package
+does not publish.
+
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -82,11 +82,6 @@
+ endif()
+ 
+ add_subdirectory(src)
+-add_subdirectory(tests)
+-add_subdirectory(doc)
+-if (NOT GRAPHITE2_NFILEFACE)
+-    add_subdirectory(gr2fonttest)
+-endif()
+ 
+ set(version 3.0.1)
+ set(libdir ${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX})

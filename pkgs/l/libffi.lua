@@ -32,7 +32,11 @@ import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
 import("xim.pkgindex.selfcontain")
 
-local libs = { "libffi.so", "libffi.so.7" }
+-- The 3.4.4 tarball ships BOTH soname lines (libffi.so.7.1.0 and
+-- libffi.so.8.1.4); publishing only .so.7 leaves consumers that were built
+-- against .so.8 — xim:glib 2.80.0 is one, its libgio NEEDs libffi.so.8 —
+-- unresolvable in the subos view even though the payload carries the file.
+local libs = { "libffi.so", "libffi.so.7", "libffi.so.8" }
 
 function install()
     local srcdir = pkginfo.name() .. "-" .. pkginfo.version() .. "-linux-x86_64"

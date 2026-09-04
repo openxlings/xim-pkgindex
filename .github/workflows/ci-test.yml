@@ -19,17 +19,27 @@ name: pkgindex test
 # On a pull_request event changed-files diffs against the base, so the gate
 # sees the whole PR every time. The concurrency group below keeps the
 # duplicate push run from doubling the cost.
+# `libs/**` is in the filters below, and it was missing.
+#
+# `libs/graphics.lua` is imported by mesa, nvidia-gl-host-link,
+# xkeyboard-config and libinput-quirks — four recipes whose install and config
+# hooks are mostly calls into it. A change confined to that file therefore has
+# the widest blast radius in the index and, until this line, was the ONLY such
+# change that ran no CI at all. Measured on #735, which touches nothing else and
+# reported `no checks reported on the branch`.
 on:
   push:
     branches:
       - '**'
     paths:
       - 'pkgs/**'
+      - 'libs/**'
       - '.github/workflows/ci-test.yml'
       - '.github/scripts/**'
   pull_request:
     paths:
       - 'pkgs/**'
+      - 'libs/**'
       - '.github/workflows/ci-test.yml'
       - '.github/scripts/**'
   workflow_dispatch:

@@ -255,6 +255,7 @@ function config()
     -- libs/graphics.lua for the libglvnd scanning rules that make that the
     -- only correct arrangement.
     graphics.declare_dri(dir, "lib/dri", tag)
+    graphics.declare_gbm(dir, "lib/gbm", tag)
     graphics.declare_egl_vendor(dir, "share/glvnd/egl_vendor.d/50_mesa.json", tag)
 
     -- The Vulkan ICD manifests, into the subos for the same reason the vendor
@@ -265,7 +266,21 @@ function config()
 
     -- And the shell scope as well, from the same table, so entering the subos
     -- and running a program through its shim cannot disagree.
-    graphics.declare_subos_env(tag)
+    --
+    -- RENDER_PATHS, not the whole table. This call used to pass no set at all,
+    -- which means "declare every row", and that was correct only while every
+    -- row was one mesa fills. It stopped being true the moment XKB_CONFIG_ROOT
+    -- joined the table: mesa's payload has `share/{drirc.d,glvnd,vulkan}` and
+    -- no `share/X11` whatsoever, so mesa was declaring the keyboard-layout
+    -- root — a subsystem it has nothing to do with — and on a subos WITHOUT
+    -- xkeyboard-config that variable would name a directory that does not
+    -- exist. Measured on eco-2026-8-30-2.
+    --
+    -- Same rule the three declare_* calls above already follow by construction:
+    -- each checks `os.isdir` and declines rather than naming a path it does not
+    -- fill. `declare_subos_env` has no payload to check against, so the set is
+    -- how a provider says what it fills.
+    graphics.declare_subos_env(tag, graphics.RENDER_PATHS)
     return true
 end
 

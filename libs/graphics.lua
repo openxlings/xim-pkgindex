@@ -76,6 +76,26 @@ local graphics = {}
 graphics.DRI_DIR        = "usr/lib/dri"
 graphics.EGL_VENDOR_DIR = "share/glvnd/egl_vendor.d"
 
+-- GBM backends. Same shape as DRI_DIR and for the same reasons -- under `usr/`
+-- because of the destination whitelist described above, and a directory of
+-- dlopen'd plugins rather than link targets.
+--
+-- WHY IT WAS MISSING, AND WHAT IT BREAKS. mesa is built with `--prefix=/usr`,
+-- so `gbmbackendspath=/usr/lib/gbm` is compiled INTO libgbm.so (visible in its
+-- gbm.pc). Once the payload is relocated that path is wrong, and libgbm is a
+-- pure loader: every gbm_create_device() dlopens `<path>/<driver>_gbm.so`.
+-- Measured before this entry existed:
+--
+--   MESA-LOADER: failed to open dri: /usr/lib/gbm/dri_gbm.so: cannot open
+--   shared object file (search paths /usr/lib/gbm, suffix _gbm)
+--
+-- DRI and the EGL vendor directory were already covered by the two entries
+-- above; GBM is the same class of problem and simply never got its
+-- counterpart. Anything that allocates scanout buffers -- a KMS/DRM console
+-- app, a Wayland compositor back end, headless GPU rendering, SDL2's KMSDRM
+-- video driver, ffmpeg's VAAPI hwcontext -- gets a NULL device without it.
+graphics.GBM_DIR        = "usr/lib/gbm"
+
 -- The GLX vendor directory — and why it is NOT next to the two above.
 --
 -- Those are subos-relative, because an ENVIRONMENT VARIABLE points at them.
@@ -115,6 +135,26 @@ graphics.SHARE_DIR      = "share"
 -- $XDG_DATA_DIRS/vulkan/icd.d and mesa puts ${subosdir}/share on that list.
 graphics.VULKAN_ICD_DIR = "share/vulkan/icd.d"
 
+-- Where libxkbcommon looks for keyboard layouts.
+--
+-- `share/X11/xkb` is the path every distribution uses and the one upstream's
+-- own compiled-in default is built from, so a consumer that hard-codes it —
+-- some do — still works when this is the subos view.
+graphics.XKB_DIR        = "share/X11/xkb"
+
+-- Where libinput looks for its device quirks.
+--
+-- `share/libinput` is `$datadir/libinput`, upstream's own layout, and the files
+-- sit FLAT in it -- meson's `install_subdir('quirks', strip_directory: true)`
+-- drops the `quirks/` level. `quirks.c:1217` then does
+-- `scandir(data_path, …, is_data_file, versionsort)` over exactly that one
+-- directory, taking every `*.quirks` file.
+--
+-- `versionsort`, so the `10-` / `30-` / `50-` filename prefixes decide
+-- precedence -- the same convention that orders the glvnd vendor JSONs, and
+-- the reason HAVE_VERSIONSORT is not optional in compat.libinput.
+graphics.QUIRKS_DIR     = "share/libinput"
+
 -- The variables, once. Keys are variable names; values are subos-relative
 -- paths, with no placeholder syntax -- the two emitters below add their own.
 --
@@ -124,10 +164,61 @@ graphics.VULKAN_ICD_DIR = "share/vulkan/icd.d"
 -- mesa's ICD manifests are found with no new variable. `VK_DRIVER_FILES` would
 -- be wrong here -- it is an OVERRIDE that suppresses system discovery, so it
 -- would hide any other ICD on the machine.
+--
+-- GBM_BACKENDS_PATH is a colon-separated LIST that libgbm walks in order
+-- (src/gbm/main/backend.c splits on ':' and dlopens `<dir>/<driver>_gbm.so` at
+-- each), so `prepend` is both correct and non-destructive here, exactly as for
+-- the three above. It is also the variable every other relocated stack reaches
+-- for: Valve's pressure-vessel answers the identical breakage with
+-- GBM_BACKENDS_PATH=/run/host/usr/lib64/gbm (steam-runtime#797), and Nix and
+-- Conda set it at environment-activation time.
 local DISCOVERY = {
     { var = "LIBGL_DRIVERS_PATH",        rel = graphics.DRI_DIR },
     { var = "__EGL_VENDOR_LIBRARY_DIRS", rel = graphics.EGL_VENDOR_DIR },
     { var = "XDG_DATA_DIRS",             rel = graphics.SHARE_DIR },
+    { var = "GBM_BACKENDS_PATH",         rel = graphics.GBM_DIR },
+    -- The xkeyboard-config data tree. libxkbcommon COMPILES keymaps and
+    -- contains none: `xkb_keymap_new_from_names(rules, model, layout, …)`
+    -- reads the layouts off disk, and the path comes from XKB_CONFIG_ROOT with
+    -- a compiled-in fallback.
+    --
+    -- Same class as the four above, and it was missing for the same reason
+    -- GBM_BACKENDS_PATH was: the mechanism existed and one subsystem never got
+    -- its row. Measured before this entry — `xim:libxkbcommon`'s payload ships
+    -- `bin include lib share/{bash-completion,man}` and NO xkb data — so a
+    -- compositor asking for the "us" layout fell through to the HOST's
+    -- /usr/share/X11/xkb. That is the same silent host fallback that gave
+    -- Vulkan an llvmpipe device instead of the GPU.
+    --
+    -- `op = "set"`, and it is the FIRST row that is not a list.
+    --
+    -- The four above are colon-separated search paths, which is what makes
+    -- `prepend` both correct and non-destructive there. XKB_CONFIG_ROOT is a
+    -- SCALAR: libxkbcommon reads it once and uses it as one directory, which
+    -- must itself contain rules/, symbols/, keycodes/, types/ and compat/.
+    -- Prepend a second provider onto it and the value becomes `dirA:dirB` —
+    -- a path that does not exist, so `xkb_keymap_new_from_names` fails to find
+    -- its rules and reports nothing more specific than a compile failure.
+    --
+    -- Only `xkeyboard-config` fills this today, so `prepend` would behave
+    -- identically right now and break the day a second provider appears. `set`
+    -- is what the variable actually means.
+    { var = "XKB_CONFIG_ROOT",           rel = graphics.XKB_DIR, op = "set" },
+    -- libinput's device quirks: per-model tuning like a touchpad's pressure
+    -- range or a mouse's wheel click angle. `libinput.c:1911` reads this
+    -- variable and falls back to a compiled-in path, which compat.libinput
+    -- leaves EMPTY for the usual reason -- upstream's default is
+    -- `$prefix/share/libinput`, and after relocation that is the HOST's.
+    --
+    -- Scalar, so `set`, for the same reason as XKB_CONFIG_ROOT: `quirks.c`
+    -- scandir()s ONE directory. It is also why the degradation is loud but
+    -- gentle -- without this, libinput logs
+    --
+    --     failed to find data files ... will negatively affect device behavior
+    --
+    -- and runs on built-in defaults: enumeration, events and gestures all
+    -- work, only the per-model tuning is gone.
+    { var = "LIBINPUT_QUIRKS_DIR",       rel = graphics.QUIRKS_DIR, op = "set" },
 }
 
 -- S2 -- the table a CONSUMER's shim carries.
@@ -141,21 +232,49 @@ local DISCOVERY = {
 -- The shim merges each value into whatever the process already has, front-most
 -- and de-duplicated, so a user who exported their own LIBGL_DRIVERS_PATH keeps
 -- it and a doubled entry cannot accumulate across nested invocations.
+--
+-- THAT MERGE IS WHY THE SCALAR ROWS ARE SKIPPED HERE.
+--
+-- `xvm.add{ envs = ... }` takes a plain `{ NAME = "value" }` map with no way to
+-- say "set, do not merge" — every entry gets the PATH-style treatment. For the
+-- four search paths that is exactly right. For XKB_CONFIG_ROOT and
+-- LIBINPUT_QUIRKS_DIR it is destructive: they name ONE directory, so a user who
+-- already has `XKB_CONFIG_ROOT=/usr/share/X11/xkb` would get
+--
+--     <subos>/share/X11/xkb:/usr/share/X11/xkb
+--
+-- and libxkbcommon would fail to find its rules in a path that is not a path.
+-- The S3 emitter below solves the same problem with `op = "set"`; S2 has no
+-- such lever, so it declines instead.
+--
+-- What that costs: a consumer launched through its shim from an ordinary login
+-- shell does not get the keyboard or quirks datasets — the same position as
+-- before those rows existed, so nothing regresses. Inside `subos use` they are
+-- set correctly by S3. Closing this properly needs a per-variable op in
+-- `xvm.add`, and until that exists, silently corrupting a scalar is the worse
+-- of the two failures.
 function graphics.consumer_envs()
     local envs = {}
     for _, d in ipairs(DISCOVERY) do
-        envs[d.var] = "${XLINGS_DYNAMIC_SUBOS_DIR}/" .. d.rel
+        if d.op ~= "set" then
+            envs[d.var] = "${XLINGS_DYNAMIC_SUBOS_DIR}/" .. d.rel
+        end
     end
     return envs
 end
 
 -- S3 -- the same values for a subos shell.
 --
--- `prepend`, never `set`, for all three: they are colon-separated LISTS and
--- more than one package is entitled to be on them. A `set` by one provider
--- beats a `prepend` by another in xlings's resolution, so a `set` here would
--- silently erase the NVIDIA vendor directory and the machine with the GPU
--- would render on llvmpipe.
+-- `prepend` for every SEARCH PATH, and the reason is not stylistic: they are
+-- colon-separated LISTS and more than one package is entitled to be on them. A
+-- `set` by one provider beats a `prepend` by another in xlings's resolution, so
+-- a `set` on one of those would silently erase the NVIDIA vendor directory and
+-- the machine with the GPU would render on llvmpipe.
+--
+-- A row may override this with `op`, and exactly one does: XKB_CONFIG_ROOT is a
+-- scalar rather than a list, so the argument above inverts for it. The rule is
+-- the variable's own type, not a default to be departed from lightly — see the
+-- row itself.
 --
 -- Returns false on a client with no `subos.env`, so a caller can say so. The
 -- probe is `type(...) == "function"`, never truthiness: `import()` answers an
@@ -168,11 +287,18 @@ end
 -- there would name a path it does not fill. Both packages declaring the SAME
 -- shared vendor directory is fine and intended -- `prepend` de-duplicates, and
 -- either package being absent must not remove it for the other.
+--
+-- OMITTING `only` MEANS "EVERY ROW", AND NO PACKAGE SHOULD DO IT. It reads as a
+-- convenience and behaves as a claim that grows behind the caller's back: mesa
+-- omitted it, a fifth row was added for a different subsystem, and mesa began
+-- declaring a path its payload does not contain. Pass a set -- RENDER_PATHS,
+-- EGL_VENDOR_ONLY, EGL_VENDOR_AND_ICD, XKB_ONLY, or a new one -- so that adding
+-- a row is a decision each provider makes rather than one it inherits.
 function graphics.declare_subos_env(tag, only)
     if type(subos.env) ~= "function" then return false end
     for _, d in ipairs(DISCOVERY) do
         if not only or only[d.var] then
-            subos.env{ var = d.var, op = "prepend",
+            subos.env{ var = d.var, op = d.op or "prepend",
                        value = "${subosdir}/" .. d.rel, binding = tag }
         end
     end
@@ -181,6 +307,52 @@ end
 
 -- The set a vendor-only provider passes to declare_subos_env.
 graphics.EGL_VENDOR_ONLY = { ["__EGL_VENDOR_LIBRARY_DIRS"] = true }
+
+-- The four RENDERING paths — what a GL/Vulkan driver stack provides.
+--
+-- This set exists because omitting `only` means "declare every row", and that
+-- was a safe default only while every row belonged to one provider. It is not
+-- safe as the table grows: `mesa` passed no set, so adding XKB_CONFIG_ROOT
+-- silently made mesa declare the keyboard-layout root, which its payload does
+-- not contain (`share/{drirc.d,glvnd,vulkan}` and no `share/X11`).
+--
+-- The rule this encodes: A PROVIDER DECLARES ONLY WHAT IT FILLS. The three
+-- `declare_*` helpers enforce it by checking `os.isdir` and declining;
+-- `declare_subos_env` has no payload to check, so the set is how a provider
+-- says the same thing.
+graphics.RENDER_PATHS = {
+    ["LIBGL_DRIVERS_PATH"]        = true,
+    ["__EGL_VENDOR_LIBRARY_DIRS"] = true,
+    ["XDG_DATA_DIRS"]             = true,
+    ["GBM_BACKENDS_PATH"]         = true,
+}
+
+-- The set the keyboard-layout dataset passes. `xkeyboard-config` is DATA only:
+-- no libraries, no DRI modules, no EGL vendor, no `share/vulkan`. Declaring the
+-- other rows from it would name four directories it does not fill.
+graphics.XKB_ONLY = { ["XKB_CONFIG_ROOT"] = true }
+
+-- The set the libinput quirks dataset passes. Same reasoning as XKB_ONLY: data
+-- only, so it names the one directory it fills and none of the others.
+graphics.QUIRKS_ONLY = { ["LIBINPUT_QUIRKS_DIR"] = true }
+
+-- The set for a provider that contributes a Vulkan ICD as well as a GL vendor.
+--
+-- XDG_DATA_DIRS is how the Khronos loader finds `vulkan/icd.d`; it is not a
+-- Vulkan-specific variable, which is why it is not in the EGL-only set above.
+-- A provider that stages an ICD must declare it, or the manifest sits in the
+-- subos and the loader never looks there — and the failure is invisible,
+-- because the loader then scans the HOST's /usr/share and usually finds
+-- something loadable (llvmpipe), so the program renders in software instead of
+-- reporting that the GPU was dropped. Measured on nvidia-gl-host-link.
+--
+-- LIBGL_DRIVERS_PATH stays out: an ICD is not a DRI driver module, and naming
+-- a directory this package does not fill is what the EGL-only set exists to
+-- avoid.
+graphics.EGL_VENDOR_AND_ICD = {
+    ["__EGL_VENDOR_LIBRARY_DIRS"] = true,
+    ["XDG_DATA_DIRS"]             = true,
+}
 
 -- Place one glvnd EGL vendor JSON into the subos's SHARED vendor directory.
 --
@@ -281,6 +453,93 @@ function graphics.declare_dri(install_dir, rel_dir, tag)
         return false
     end
     xvm.files{ src = rel_dir, dst = graphics.DRI_DIR, binding = tag }
+    return true
+end
+
+-- The GBM counterpart of declare_dri, and deliberately its mirror image rather
+-- than a variation: the two directories hold the same KIND of thing (backend
+-- modules dlopen'd by absolute path), so the same rejection applies --
+-- `sysroot.declare_libs(dir, "lib/gbm", ...)` would flatten them into
+-- `<subos>/lib`, which is the LINK directory, and they are not link targets.
+--
+-- NOT required. A mesa built without the dri gbm backend is a legitimate
+-- configuration, and so is a consumer that only ever calls the pure half of the
+-- API (gbm_format_get_name and friends need no device). So this warns and
+-- returns false rather than failing the install -- but it does warn, because
+-- the alternative is GBM_BACKENDS_PATH naming an empty directory and
+-- gbm_create_device() returning NULL with no diagnostic of its own.
+function graphics.declare_gbm(install_dir, rel_dir, tag)
+    if not xvm.files then return false end
+    if not os.isdir(path.join(install_dir, rel_dir)) then
+        log.warn("no %s in this payload -- GBM_BACKENDS_PATH would point at an "
+                 .. "empty directory and gbm_create_device() would find no "
+                 .. "backend and return NULL", rel_dir)
+        return false
+    end
+    xvm.files{ src = rel_dir, dst = graphics.GBM_DIR, binding = tag }
+    return true
+end
+
+-- The keyboard-layout dataset, placed the same way the two above place their
+-- modules — and it has to be placed, not merely declared.
+--
+-- That is the whole lesson of this helper. `declare_subos_env` writes the
+-- VARIABLE; `xvm.files` puts the CONTENT where the variable points. Declaring
+-- XKB_CONFIG_ROOT without this gives a subos where the variable is set, reads
+-- correctly in a shell, and names a directory that does not exist — which
+-- libxkbcommon reports as "keymap compilation failed", the same message it
+-- gives for a genuinely broken layout. Measured: the first version of
+-- `xkeyboard-config` declared and did not place, and the shell showed
+--
+--     XKB_CONFIG_ROOT=[.../share/X11/xkb]
+--     ls: cannot access '.../share/X11/xkb': No such file or directory
+--
+-- What it carries is DATA, not code — text files that libxkbcommon's own
+-- parser reads. That is worth saying explicitly because `subos.env` warns that
+-- a declared variable can load code from our payload into processes we do not
+-- own. It cannot here: there is no dlopen at the end of this path, and the
+-- worst a bad tree can do is fail to compile a keymap.
+function graphics.declare_xkb(install_dir, rel_dir, tag)
+    if not xvm.files then return false end
+    local src = path.join(install_dir, rel_dir)
+    if not os.isdir(src) then
+        log.warn("no %s in this payload -- XKB_CONFIG_ROOT would name a "
+                 .. "directory that does not exist and every RMLVO keymap "
+                 .. "would fail to compile", rel_dir)
+        return false
+    end
+    xvm.files{ src = rel_dir, dst = graphics.XKB_DIR, binding = tag }
+    return true
+end
+
+-- libinput's device quirks, placed the same way. Data, like declare_xkb: what
+-- `LIBINPUT_QUIRKS_DIR` leads to is a flat directory of `.quirks` INI files
+-- that libinput's own parser reads, with no dlopen anywhere along the path.
+--
+-- Checks for a `.quirks` FILE and not just the directory, because an empty
+-- directory is the one case that fails SILENTLY: `quirks.c:1217` scandir()s it,
+-- finds zero matches, and libinput carries on with built-in defaults -- the
+-- same outcome as declaring nothing, reached WITHOUT the "failed to find data
+-- files" message that would have named the problem.
+--
+-- One canonical filename rather than a glob, and that is a constraint rather
+-- than a preference: `os.files` does not exist in a package hook's restricted
+-- `os` table (nor do `os.filedirs`, `os.exists`, `os.curdir`, `os.iorunv`), and
+-- a `#(os.files(...) or {}) == 0` guard turns that absence into a confident
+-- "the directory is empty". `10-generic-keyboard.quirks` is the least
+-- version-sensitive name in the set -- it predates every vendor file and ships
+-- in libinput releases years apart.
+function graphics.declare_quirks(install_dir, rel_dir, tag)
+    if not xvm.files then return false end
+    local src = path.join(install_dir, rel_dir)
+    if not os.isdir(src)
+       or not os.isfile(path.join(src, "10-generic-keyboard.quirks")) then
+        log.warn("no quirks in %s -- LIBINPUT_QUIRKS_DIR would name an empty "
+                 .. "directory and libinput would fall back to its built-in "
+                 .. "defaults without saying so", rel_dir)
+        return false
+    end
+    xvm.files{ src = rel_dir, dst = graphics.QUIRKS_DIR, binding = tag }
     return true
 end
 

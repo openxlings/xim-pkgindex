@@ -30,7 +30,11 @@ package = {
     xpm = {
         linux = {
             url_template = "https://github.com/fish-shell/fish-shell/releases/download/{version}/fish-{version}-linux-x86_64.tar.xz",
-            ["latest"] = { ref = "4.8.0" },
+            ["latest"] = { ref = "4.8.1" },
+            ["4.8.1"] = {
+                url = "https://github.com/fish-shell/fish-shell/releases/download/4.8.1/fish-4.8.1-linux-x86_64.tar.xz",
+                sha256 = "39cab35242ab77bfdbce73b473000c3b045aaf2fe0951b042199bb7fdba3df78",
+            },
             ["4.8.0"] = {
                 url = "https://github.com/fish-shell/fish-shell/releases/download/4.8.0/fish-4.8.0-linux-x86_64.tar.xz",
                 sha256 = "98f7916878fc76be797cabf284f185b56f31a35681e3aec9b9faf7a4a6aa0d74",

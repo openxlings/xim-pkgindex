@@ -11,6 +11,7 @@
 
 import("xim.libxpkg.fs")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.system")
 
 local sysroot = {}
 
@@ -62,6 +63,50 @@ end
 -- xlings owns them: they follow `xlings use` and are removed with the
 -- release instead of by a hand-written mirror of this call in uninstall().
 --
+-- THAT SECOND HALF IS TRUE FROM xlings 2026.8.26.1, AND WAS FALSE BEFORE IT.
+-- Written as a promise here since 2026.7.27.0, it described nothing: no
+-- removal path reclaimed a declared asset, in either shape a removal takes
+-- (openxlings/xlings#423). Measured on glib -- 274 header assets, 5
+-- pkg-config assets, 15 lib nodes, in a subos holding glib and nothing else:
+--
+--     client        uninstall() does nothing by hand   after remove
+--     2026.8.26.1   -                                  0 left
+--     2026.8.22.4   -                                  279 left
+--
+-- On 2026.8.26.1 both shapes are covered and neither touches anything else:
+--
+--     full uninstall   glib 294 -> 0, glib-2.0/ swept, usr/include kept,
+--                      other packages' 138 entries untouched
+--     detach           this subos 294 -> 0, the other subos still 294,
+--                      payload kept
+--
+-- WHAT THAT MEANS FOR A RECIPE: nothing by hand any more. The four recipes
+-- that carried an unconditional hand-written cleanup -- glib, freetype,
+-- libselinux, util-linux -- had it removed once 2026.8.26.1 shipped. They
+-- were the ones that did NOT trust the sentence above and cleaned anyway, so
+-- they never leaked; the other four (libxml2, openssl, ca-certificates, zlib)
+-- gate on `if not xvm.files`, which is the pre-2026.7.27.0 fallback for the
+-- legacy COPY path and a different question entirely -- those stay.
+--
+-- WHAT AN OLDER CLIENT DOES NOW. A recipe cannot tell which client it is on:
+-- there is no capability to probe for reclamation and no client version in
+-- the sandbox. So on anything before 2026.8.26.1 these four now leave their
+-- assets behind -- 279 of them for glib. That was accepted deliberately:
+--
+--   * it is not a breakage. A dangling link is not selected by a compiler,
+--     nothing that worked stops working, and a reinstall overwrites cleanly.
+--   * it is recoverable and self-announcing after upgrading: the 2026.8.26.1
+--     doctor sees them (the older one scanned one level deep and reported
+--     zero) and `self doctor --fix` takes them to zero.
+--   * it was never a complete defence anyway. Only 8 of the 39 recipes that
+--     declare assets ever carried one; the 26 of the X11/graphics stack never
+--     did, so an old client already accumulated exactly this from them.
+--
+-- IF YOU ADD ONE BACK, or write a new recipe that cleans by hand, measure
+-- first -- and count with `find -xtype l`, never `[ -e ]`. `-e` follows the
+-- link, so a leaked link whose payload is gone reads as "already cleaned up".
+-- That is the exact mistake that hid this bug from its own test for a month.
+--
 -- Returns false when the running client has no `xvm.files`, so the caller
 -- falls back to install_headers and behaves exactly as it did before. That
 -- probe -- capability, never version -- is the contract in
@@ -81,18 +126,90 @@ end
 -- race decided by install order. Only migrate a directory whose names are
 -- yours (`openssl/`, `python3.13/`); for a package that scatters entries
 -- into a shared namespace, check what else claims them first.
-function sysroot.declare_headers(install_dir, src_rel, dst_rel, binding)
+--
+-- OPTS.MERGE names children that must be declared per FILE instead of as one
+-- directory. Use it for a name another package also ships.
+--
+-- Directory granularity cannot express a merge: the child becomes ONE asset,
+-- a link to your payload's directory, so the last package to install replaces
+-- the other one wholesale. Measured on a real installation before this
+-- existed: `usr/include/scsi` is shipped by glibc (scsi.h, scsi_ioctl.h,
+-- sg.h) and by linux-headers (six other files), the two sets are disjoint,
+-- the link belonged to linux-headers -- and `<scsi/sg.h>` was therefore
+-- simply absent from a subos that had glibc installed and declaring it. A
+-- distribution's /usr/include/scsi is the union of the two.
+--
+-- Only the contested names, not the whole tree. glibc ships 129 top-level
+-- entries and exactly one of them collides; declaring the lot per-file costs
+-- 484 nodes against 131, and buys nothing for the other 128.
+--
+-- Both sides of a collision must pass it in the same index release. A package
+-- that declares leaves while the other still declares the directory is
+-- writing into a directory the other one owns -- see the note in
+-- `sysroot.unwrap_directory_asset` for why that is not merely untidy.
+--
+-- ON AN EXISTING HOME, `xlings install <pkg>` IS NOT ENOUGH. Measured on a
+-- real installation after this shipped: the unwrap runs and the previously
+-- declared leaves land, but the NEWLY declared ones are registered without
+-- being activated -- and an asset is only placed for the active version, so
+-- five of the nine `scsi` headers stayed missing. `xlings use <pkg> <ver>`
+-- activates the whole release and completes it. That non-activation is
+-- long-standing client behaviour (identical on 2026.8.22.4 and 2026.8.26.1),
+-- not something this change introduced, but anyone following this migration
+-- meets it, so it is written where they will be standing.
+function sysroot.declare_headers(install_dir, src_rel, dst_rel, binding, opts)
     if not xvm.files then return false end
     local src_dir = path.join(install_dir, src_rel)
     if not os.isdir(src_dir) then return true end
+    local merge = {}
+    for _, name in ipairs((opts or {}).merge or {}) do merge[name] = true end
     for _, name in ipairs(sysroot.entries(src_dir)) do
-        xvm.files{
-            src = path.join(src_rel, name),
-            dst = path.join(dst_rel, name),
-            binding = binding,
-        }
+        if merge[name] then
+            sysroot.unwrap_directory_asset(path.join(dst_rel, name))
+            sysroot.__declare_tree(install_dir, path.join(src_rel, name),
+                                   path.join(dst_rel, name), binding, 0)
+        else
+            xvm.files{
+                src = path.join(src_rel, name),
+                dst = path.join(dst_rel, name),
+                binding = binding,
+            }
+        end
     end
     return true
+end
+
+-- Turn a leftover whole-directory link at DST_REL into a real directory,
+-- keeping every entry it was providing.
+--
+-- Needed while migrating a name from directory granularity to per-file: the
+-- previous install left `usr/include/scsi` as a link into some package's
+-- payload, and `create_directories` treats a link-to-directory as "already
+-- there", so the arriving header is written INSIDE THAT PACKAGE'S PAYLOAD --
+-- a store every subos on the machine reads and no uninstall cleans.
+--
+-- A client from 2026.8.26.1 on refuses that write and unwraps the link
+-- itself. An older one does not, which is why this exists at all. But it must
+-- unwrap the SAME WAY the client does, one link per entry, rather than just
+-- deleting: measured on a new client, a plain `rm` here ran first and threw
+-- away the other package's six headers that the client would have kept. A
+-- migration helper that makes the fixed client behave worse than it does on
+-- its own is not a helper.
+--
+-- Idempotent, and a no-op on anything that is not a link -- including the
+-- real directory this leaves behind, so re-running config() costs one test.
+--
+-- POSIX only by construction: the shape it repairs is a symlink, and on
+-- Windows a declared asset is a hard link or a copy.
+function sysroot.unwrap_directory_asset(dst_rel)
+    if os.host() == "windows" then return end
+    local target = path.join(system.subos_sysrootdir(), dst_rel)
+    system.exec(string.format(
+        [[sh -c "t=\"%s\"; [ -L \"$t\" ] || exit 0; ]] ..
+        [[src=$(readlink \"$t\"); rm -f \"$t\"; mkdir -p \"$t\"; ]] ..
+        [[for f in \"$src\"/*; do [ -e \"$f\" ] || continue; ]] ..
+        [[ln -sfn \"$f\" \"$t/$(basename \"$f\")\"; done; exit 0"]],
+        target))
 end
 
 -- declare_headers, but for a directory whose names are NOT yours.
@@ -256,6 +373,104 @@ function sysroot.declare_libs(install_dir, src_rel, binding, version)
             })
         end
     end
+end
+
+-- Point a payload's own .pc files at the payload, once, at install time.
+--
+-- Every prebuilt payload in this index was configured with --prefix=/usr, so
+-- its .pc files describe the build machine's filesystem, not ours. The usual
+-- fix -- rewrite `prefix=` into a copy under <subos>/usr/lib/pkgconfig -- is
+-- wrong twice over:
+--
+--   * it only holds when the rest of the file is expressed in ${prefix}. It
+--     is not, and the shapes differ per project: glib 2.80.0 (Debian build
+--     host) ships `libdir=${prefix}/lib/x86_64-linux-gnu` against a payload
+--     with a flat lib/; util-linux and libselinux ship `libdir=/usr/lib` and
+--     `includedir=/usr/include` with no ${prefix} in them at all. A
+--     prefix-only rewrite leaves pkg-config emitting -L for a directory that
+--     does not exist, which still LINKS -- declare_libs has put the sonames
+--     on the subos search path by then -- and then dies at startup in
+--     whatever consumer stamped its RPATH from `pkg-config --variable=libdir`
+--     (meson, cmake and libtool all do).
+--
+--   * a rewritten COPY is a second answer to a question the payload already
+--     answers, and it has to be made once per subos and deleted by hand.
+--     Fixed at the source, config() can DECLARE the .pc like any other file
+--     asset (see declare_headers), and the copy disappears.
+--
+-- The prefix is the payload's own absolute path, which is the same for every
+-- subos that mounts it -- so this belongs to the payload (R6), not the view.
+-- Idempotent: a second run rewrites the same lines to the same values.
+function sysroot.relocate_pkgconfig(install_dir, src_rel)
+    local pcdir = path.join(install_dir, src_rel or "lib/pkgconfig")
+    if not os.isdir(pcdir) then return true end
+
+    -- Two rewrites, because .pc files come in two shapes and the second one
+    -- has no variables to rewrite at all. graphite2 1.3.14 ships:
+    --
+    --     Libs: -L/usr/lib -lgraphite2
+    --     Cflags: -I/usr/include
+    --
+    -- with no prefix=, libdir= or includedir= line anywhere in the file. A
+    -- rewrite that only edits variable definitions leaves that .pc handing
+    -- every consumer the HOST's /usr/lib -- worse than a path that does not
+    -- exist, because on most machines that one does, with a different
+    -- library in it.
+    system.exec(string.format(
+        "sh -c 'for pc in %s/*.pc; do [ -f \"$pc\" ] || continue; sed -i "
+        .. "-e \"s|^prefix=.*|prefix=%s|\" "
+        .. "-e \"s|^exec_prefix=.*|exec_prefix=%s|\" "
+        .. "-e \"s|^libdir=.*|libdir=%s/lib|\" "
+        .. "-e \"s|^includedir=.*|includedir=%s/include|\" "
+        -- Longest first, and no alternation: BSD sed has none, and
+        -- rewriting `-L/usr/lib` before `-L/usr/lib/x86_64-linux-gnu` would
+        -- leave the multiarch tail glued onto the payload path.
+        .. "-e \"s|-L/usr/lib/x86_64-linux-gnu|-L%s/lib|g\" "
+        .. "-e \"s|-L/usr/lib64|-L%s/lib|g\" "
+        .. "-e \"s|-L/usr/lib|-L%s/lib|g\" "
+        .. "-e \"s|-I/usr/include|-I%s/include|g\" "
+        .. "\"$pc\"; done'",
+        pcdir, install_dir, install_dir, install_dir, install_dir,
+        install_dir, install_dir, install_dir, install_dir))
+
+    -- R4: check the artifact, not the intent. A sed that matched nothing is
+    -- indistinguishable from one that worked, and the difference surfaces as
+    -- a link or startup failure inside somebody else's package.
+    --
+    -- The check is on what the file HANDS OUT, not on which variables it
+    -- defines: every absolute -L/-I in it, plus libdir/includedir when they
+    -- are defined absolutely, must name a directory that exists inside this
+    -- payload. That form covers both shapes above and does not require a
+    -- .pc to have any particular variable.
+    for _, name in ipairs(sysroot.entries(pcdir)) do
+        if name:find("%.pc$") then
+            local pc = "\n" .. (io.readfile(path.join(pcdir, name)) or "")
+            local bad = nil
+
+            for _, flag in ipairs({"L", "I"}) do
+                for dir in pc:gmatch("%-" .. flag .. "(/[^%s\"\']*)") do
+                    if not os.isdir(dir) then bad = "-" .. flag .. dir end
+                end
+            end
+            for _, var in ipairs({"libdir", "includedir"}) do
+                local dir = pc:match("\n" .. var .. "=(/[^\n]*)")
+                if dir and not os.isdir(dir) then bad = var .. "=" .. dir end
+            end
+
+            if bad then
+                -- string.format, not raise's varargs: this client passes the
+                -- message through verbatim, so a %s left for it to fill
+                -- reaches the user as a literal "%s". Verified by making the
+                -- check fail on purpose.
+                raise(string.format(
+                    "pkgconfig relocation left %s pointing at %s, which does "
+                    .. "not exist under %s -- a consumer would link against a "
+                    .. "directory that is not there, or worse, the host's",
+                    name, bad, install_dir))
+            end
+        end
+    end
+    return true
 end
 
 return sysroot

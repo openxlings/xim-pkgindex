@@ -37,17 +37,22 @@ package = {
             -- when a subos hosts both glibc and musl xpkgs.
             --
             -- WHAT DECLARING THIS COSTS THE CONSUMER, because it is not
-            -- obvious and it is not reversible at runtime: our ld.so carries
-            -- the build machine's cache path,
-            -- `/home/xlings/.xlings_data/.../etc/ld.so.cache`, which exists on
-            -- no machine (`strings` it; the host's says `/etc/ld.so.cache`).
-            -- On a multiarch distro essentially every system library lives in
-            -- /usr/lib/<triple> and is reachable ONLY through that cache, so a
-            -- payload whose PT_INTERP points here has no host fallback at all.
+            -- obvious and it is not reversible at runtime: our ld.so resolves
+            -- nothing through ld.so.cache. On a multiarch distro essentially
+            -- every system library lives in /usr/lib/<triple> and is reachable
+            -- ONLY through that cache, so a payload whose PT_INTERP points
+            -- here has no host fallback at all.
             --
-            -- That is the intended end state — the 2.44 build prefix is
-            -- literally `/nonexistent/xlings-use-rpath-not-default-search` —
-            -- but it makes the declaration all-or-nothing. A consumer's closure
+            -- That is the intended end state, and as of 2.44r1 it is true for
+            -- the reason stated rather than by accident. The published 2.44
+            -- gets there the wrong way: its cache path is
+            -- `/home/xlings/.xlings_data/.../etc/ld.so.cache`, the BUILD
+            -- MACHINE, which no user has -- so the cache misses because the
+            -- file is absent, and reading that as "we do not use the cache"
+            -- confuses a stale artifact for a design. 2.44r1 carries the
+            -- reserved prefix and ships no cache at all.
+            --
+            -- Either way the declaration is all-or-nothing. A consumer's closure
             -- must cover every library it will ever load, dlopen'd ones
             -- included. Reasoning "the missing ones are optional, so behaviour
             -- degrades no further than today" is false: today they resolve off
@@ -61,9 +66,10 @@ package = {
                     -- libdirs not declared → falls back to {lib64, lib} convention
                 },
             },
-            -- `latest` is 2.44 — and from now on it TRACKS the highest glibc
-            -- of any distribution we support, as a standing policy rather
-            -- than a per-version judgement call. Decided 2026-08-09
+            -- `latest` is 2.44 (as 2.44.2 — same upstream release, our
+            -- revision 1; see that entry) — and from now on it TRACKS the
+            -- highest glibc of any distribution we support, as a standing
+            -- policy rather than a per-version judgement call. Decided 2026-08-09
             -- (ecosystem-closure design, §C5/§C1):
             --
             -- The target form is X-complete — loader, libc and libraries all
@@ -84,22 +90,106 @@ package = {
             -- pin-to-active keeps an already-activated 2.39 pinned. `latest`
             -- decides only version-less explicit installs and NEW subos.
             --
+            -- The same sentence is why a bad artifact cannot be recalled by
+            -- republishing it. InstallState (xlings src/core/xim/
+            -- install_state.cppm) answers from the payload directory and the
+            -- ledger; no caller consults the remote sha256. A machine holding
+            -- `xim-x-glibc/2.44` never downloads that url again whatever is
+            -- behind it, so overwriting an asset reaches exactly the audience
+            -- a new version reaches -- and adds a failure the new version
+            -- does not: a client whose cached index still carries the old
+            -- hash pulls the new bytes and fails the integrity check.
+            -- Whoever is already on a bad payload needs
+            -- `xlings install glibc@<new>`; that is a release note, not a
+            -- version-numbering decision.
+            --
             -- Backward compatibility is what makes the move safe in the other
             -- direction: glibc runs older binaries on newer libc, never the
             -- reverse, so every 2.39-built payload in the index runs
             -- unchanged under 2.44.
-            ["latest"] = { ref = "2.44" },
+            ["latest"] = { ref = "2.44.2" },
             ["2.39"] = "XLINGS_RES",
             -- Built from source, not XLINGS_RES: the sha256 is checked, which
             -- an XLINGS_RES entry cannot do. Build recipe and the reason its
             -- prefix looks the way it does:
             -- .agents/tools/graphics/build-glibc.sh
+            --
+            -- 2.44 IS LEFT IN PLACE, AND IT IS NOT THE ONE TO INSTALL.
+            --
+            -- Its asset predates two decisions that were made about it and
+            -- never reached it. `strings` on the published loader shows
+            -- neither the reserved prefix (AD-11, one day younger than this
+            -- tarball) nor the preload change below; it still carries
+            -- `/home/xlings/.xlings_data/...`, the build machine.
+            --
+            -- Nothing about it is edited rather than superseded, because a
+            -- published sha256 is a promise to whoever already read it: a
+            -- client holding a cached index still has THIS hash, and swapping
+            -- the bytes behind the same version breaks the one party that did
+            -- nothing wrong. Entries here are append-only for that reason.
             ["2.44"] = {
                 url = {
                     GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44/glibc-2.44-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44/glibc-2.44-linux-x86_64.tar.gz",
                 },
                 sha256 = "0105292fd6b49f74fbf51f93af973b78a9fc18225cb1c757c720e90de3120182",
+            },
+            -- 2.44.2 IS BACK, AND IT IS `latest`.
+            --
+            -- It was withdrawn three times. Not because the artifact was bad
+            -- -- it was always good -- but because the BINDING IS THE PAYLOAD
+            -- DIRECTORY NAME, and consumers held that name as a compiled-in
+            -- constant. A consumer with `glibc@2.44` baked in needs
+            -- `xim-x-glibc/2.44` on disk; publishing a higher version means
+            -- range dependencies (36 of them, `glibc@>=2.38/2.39`) resolve
+            -- through select_best -- MAXIMUM satisfying, which does not
+            -- consult `latest` -- install the higher one, and the consumer
+            -- refuses:
+            --
+            --   error: selected RuntimeBinding glibc@2.44 requires payload
+            --          '<home>/.../xpkgs/xim-x-glibc/2.44', but it is not
+            --          installed
+            --
+            -- What changed is that every consumer now takes the binding from
+            -- THIS FILE instead of from a constant, so both questions asked of
+            -- this table give the same answer again. Measured across four
+            -- client versions against exactly this state:
+            --
+            --   v2026.8.8.1   [constant]     declares 2.39    installs 2.44.2
+            --   v2026.8.10.1  [constant]     declares 2.44    installs 2.44.2
+            --   2026.8.27.4   [reads index]  declares 2.44.2  installs 2.44.2
+            --   2026.8.27.5   [index + D1]   declares 2.44.2  installs 2.44.2
+            --
+            -- The two that mismatch are gone: openxlings/xlings#574 moved all
+            -- seven CI bootstrap pins off them, and mcpp-community/mcpp#520
+            -- moved mcpp's bundled xlings to 2026.8.27.5.
+            --
+            -- ⚠️ MOVING `latest` WITH THE ENTRY IS NOT OPTIONAL. Adding 2.44.2
+            -- while leaving `latest` at 2.44 is strictly worse than not adding
+            -- it: select_best would install 2.44.2 while every binding still
+            -- said 2.44. `latest` and "the highest entry" are two different
+            -- questions, and they must not disagree for a runtime package.
+            --
+            -- Why it is worth doing at all -- `strings` on the two loaders:
+            --
+            --                             2.44        2.44.2
+            --   XLINGS_LD_PRELOAD_FILE    absent      present
+            --   build-machine paths       8           0
+            --   preload path              /etc/ld.so.preload   /nonexistent/...
+            --
+            -- 2.44 reads the HOST's /etc/ld.so.preload (mcpp-community/mcpp#484)
+            -- and still carries the machine it was built on. Every user is on
+            -- it today. That is what this restores.
+            --
+            -- 2.44 stays in the table, append-only: subos created against it
+            -- keep resolving, and on 2026.8.27.5 the declaration outranks
+            -- `latest`, so they are not dragged forward.
+            ["2.44.2"] = {
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.2/glibc-2.44.2-linux-x86_64.tar.gz",
+                    CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.2/glibc-2.44.2-linux-x86_64.tar.gz",
+                },
+                sha256 = "ed4bf048b8ed2b65433e0dd655f93133da4a9bd458276cfa986b7cccde835d08",
             },
         },
     },
@@ -370,19 +460,26 @@ function __config_header(binding)
     --
     -- glibc is the case declare_headers warns about — it scatters into
     -- `usr/include`, the most shared namespace there is, and the semantics
-    -- change from first-claimant-keeps-it to last-one-wins. Measured before
-    -- doing it: of glibc's 130 top-level entries exactly one, `scsi`, is
-    -- also shipped by another package in the index (linux-headers). Every
-    -- other name is glibc's alone.
+    -- change from first-claimant-keeps-it to last-one-wins. Measured: of
+    -- glibc's 129 top-level entries exactly one, `scsi`, is also shipped by
+    -- another package in the index (linux-headers). Every other name is
+    -- glibc's alone.
     --
-    -- That one entry was already decided by install order, just invisibly:
-    -- install_headers skipped it if linux-headers got there first, and
-    -- linux-headers (declared since #425) overwrote it if it came second.
-    -- With both declared it is still order-dependent, but now *recorded* —
-    -- two packages claiming one path becomes state doctor can see rather
-    -- than a silent race.
+    -- `scsi` is therefore declared per FILE, and linux-headers does the same
+    -- in the same release. Directory granularity cannot express what that
+    -- one name needs: the two payloads are DISJOINT — glibc ships scsi.h,
+    -- scsi_ioctl.h and sg.h, linux-headers ships six others — and a
+    -- distribution's /usr/include/scsi is the union. Declaring the directory
+    -- makes it one link, so whoever installed last won it whole.
+    --
+    -- This comment used to say that was acceptable because it had become
+    -- "state doctor can see". It had not: nothing reported it, and measured
+    -- on a real installation the link belonged to linux-headers, so
+    -- `<scsi/sg.h>` was simply ABSENT from a subos with glibc installed and
+    -- declaring it. Recorded and unread is the same as unrecorded.
     if sysroot.declare_headers(pkginfo.install_dir(), "include",
-                               "usr/include", binding) then
+                               "usr/include", binding,
+                               { merge = { "scsi" } }) then
         return
     end
 

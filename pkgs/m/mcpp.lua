@@ -51,7 +51,154 @@ package = {
             -- res_versioned: version-bump bot tracks mcpp-community/mcpp releases
             -- and appends checked XLINGS_RES entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "2026.8.21.3" },
+            ["latest"] = { ref = "2026.9.4.1" },
+            ["2026.9.4.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "a276465dacbc9a791766c0a6a1b64650704be50d8335c3876e5b07a135e72235",
+                    x86_64 = "0554e3f4039d337c3eb974ac4d957c3660d6edb1b5287faf5af56856f71b0fb7",
+                },
+            },
+            ["2026.9.3.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "97cae340690f9146df9e256c877abf7fbb995e148bd2667f99d43a3244b1b463",
+                    x86_64 = "5c4c514db2dfa0f2ea2ae92f47d20e3568e846c78a8a00ed8d3ec56ad8080d4f",
+                },
+            },
+            ["2026.9.3.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "9eeef8764483010430138a4b8d42f7371f0f7ebc40cdd6a982b35a257e558199",
+                    x86_64 = "7b9ffbb71fbb703203ae3b7558d3b37178fe414c857ea230a7c51dd081e6ad4c",
+                },
+            },
+            ["2026.9.2.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "45056785d39d4673d5195f5bb04df25f63ca2a2a7ed0c5d4e00b2514de361782",
+                    x86_64 = "64bd391aecc16423e92bd78ed11e72b2d12f5110744b20d6a8014265dad736da",
+                },
+            },
+            ["2026.9.1.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "d506fef975b51a96c2ee133c66d819d2650f36cc91c630d27bd269d9fa891303",
+                    x86_64 = "68417d3bff7cadb554bc1434b49884bac69a8f53af970e39d3ec9721292d4847",
+                },
+            },
+            ["2026.8.30.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "68a7219b2e398dd9ce4dab71a727d786e47f451a9ef5e1b985fa261838d6f887",
+                    x86_64 = "5ea55cc7deeae75e9927a1de05ab6fdfba877d52ed7a641e02530a5c9e4bc494",
+                },
+            },
+            ["2026.8.30.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "ad6440629aace3468ef48fe0199802f9bf86882853efd602bfa63bc279f403a7",
+                    x86_64 = "12d75edbfe4e34b004942970a40834907f7905f895409954fd6efc27639e6fa4",
+                },
+            },
+            ["2026.8.29.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "7c6de8c99868261edbe7cf2a2d73166cfb2e8a0d82d34b5e820f87f493a224a3",
+                    x86_64 = "6d83c4a65238f84d2bdd952f7469477f918a1a9e1f1473bca56ebb697fd972a9",
+                },
+            },
+            ["2026.8.28.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "903edec9baa714b1126532c186c2ca14d32dd7abff8e847b71b53c033591f560",
+                    x86_64 = "a35aecf16ca4aeb0a6aa76b1e6875f9d98aa1d7e643cae0884a77eb34dac2f9a",
+                },
+            },
+            ["2026.8.28.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "27b5d988ff94d2edddb12269571a2bcd3e18c3f294e2439483fff5c35d2e3b6e",
+                    x86_64 = "9e55c8b41cc2ec479807095f6fb39dca11a3ed41b686ffa905ca5f8bb8e34ee9",
+                },
+            },
+            ["2026.8.27.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "3dc7e0926f337aea6bdd3f8ddd1b987897901abf4f9990d9da6c3c67696a9c34",
+                    x86_64 = "aea30cb4894bf0099f7903ce9ccaf02dbb019e6c24825f78d65de5de306751a9",
+                },
+            },
+            ["2026.8.27.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "f0e331d05380cbccb1e1a1858c2afdb6855eef8ad78b7f40b1a71e3cae86b2c3",
+                    x86_64 = "9c7c0c4b69afe66c54fe97121dbe509a6ed6039f248ecc5355ee0cf5a56808db",
+                },
+            },
+            ["2026.8.26.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "3b3b5cc05ddbcb84ff9c6aade079ef2ac4dea5a4ee50f488398742ef79b6a6c0",
+                    x86_64 = "aad70c63d716adfae5e09ad83198731578db1dc24437946bf17e3933b42c557c",
+                },
+            },
+            ["2026.8.26.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "6881bafe2d339089a4453d36662419b32f833351646ce1fc542ebdd30139d51b",
+                    x86_64 = "d649b820b30292ce80656e8b5e3ff98ecbb091143e21266cb73c42820ed23639",
+                },
+            },
+            ["2026.8.25.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "2247420332401e94a94915ec676505081d0aec2da5adfb88d70a2afca9df0d43",
+                    x86_64 = "612cdd0d49ff511fc505b96dea340d776515a92c9f629a397223a82699694129",
+                },
+            },
+            ["2026.8.25.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "d9fea48d32082d87ef6101bc6be45826ae80c154dcba5241367724f001616320",
+                    x86_64 = "147d541649c515dfcf9b7883730eb268a173298f58c9fd9aced706251f05004c",
+                },
+            },
+            ["2026.8.24.6"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "6c7064ca17d0b0ba9d300e1f2ddb87623dc7bf7fc07e8eca24a25d7e4fbf7dd6",
+                    x86_64 = "69424c3ac29747e6511f39c29ec1e3c8ffe673acfa7c93f6d8033e64ae3b90c2",
+                },
+            },
+            ["2026.8.24.4"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "1c9d79169635e35e5147ec3820f38136a5a6ddbd2642834ba833515f718563f5",
+                    x86_64 = "916993749aec4b29e6228f66c4c1f5e82eb1dfb17d3f90c079acc41a4310f844",
+                },
+            },
+            ["2026.8.24.3"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "2834d015bfae09e20e5e22dc4a113c02611fbe126e692f49863f0f856595399f",
+                    x86_64 = "0c023b879b77b596e52091c9f72f5f90c8ee5ac9274169c4ecbe244bd541b3f0",
+                },
+            },
+            ["2026.8.24.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "5c5a44801567a972f3f04a9f4758985e93492ca50e297085a851aa7ba45c4dcb",
+                    x86_64 = "f1004ebe68f4cf48daa8ae5675c8cbfbd0f8a242abdebbd3779eebc175e6bd66",
+                },
+            },
+            ["2026.8.24.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "5c6dab50fb5ceefcbc836c9c51f1d33fac9e955eab40ed1b015b70d7efe9de54",
+                    x86_64 = "a7cd10a36941e1e6c66b19f4d67ab01ae824e111187d02d300bdd4733d744f06",
+                },
+            },
             ["2026.8.21.3"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -685,7 +832,133 @@ package = {
             -- res_versioned: version-bump bot tracks mcpp-community/mcpp releases
             -- and appends checked XLINGS_RES entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "2026.8.21.3" },
+            ["latest"] = { ref = "2026.9.4.1" },
+            ["2026.9.4.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "ca6c9105f4c2530dc21c7f3d57e21176b8ac3a7ef6107ac07052e8a4d6d77c4f",
+                },
+            },
+            ["2026.9.3.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "9969815c45ae7c712cb1cb3307bbe2cef150031d03281372de8fc840c1cdc361",
+                },
+            },
+            ["2026.9.3.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "e1e98cc63ecf6c43ded3eb1537f7c4195fa147bdc33a955f987234f380511a5b",
+                },
+            },
+            ["2026.9.2.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "bdd989e8aa25c336bd2a1084efb8158945b40cc1cfc95b0a06628046ce2a3094",
+                },
+            },
+            ["2026.9.1.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "e98021e8f17393a653a500dd991890c135454bc31456f748e6079117e52883dc",
+                },
+            },
+            ["2026.8.30.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "a0c7c2f7ebc43d0611afcf465d0dc9530ad175db8026d23fb4b3754e35ba8910",
+                },
+            },
+            ["2026.8.30.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "6c9bc330d45cf12251e7d23c4aa61c72460dbb2a146f751efe0894e7b2082b94",
+                },
+            },
+            ["2026.8.29.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "fff1d5a25ddf6791623356ad2d5c2f058e1185522a318d12adb8dc2f28dc4b3f",
+                },
+            },
+            ["2026.8.28.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "8cdf1551baed7fca4a1964bf94e8b467262f145267f3d215808c37fc57d57d7a",
+                },
+            },
+            ["2026.8.28.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "afe13a9132209014a8f53c85839d8921f2b50fe311732805e93b90b079142bc6",
+                },
+            },
+            ["2026.8.27.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "24304b445ad9e5c9e72690e09ce7987480be7b2be6518751ab2d56da1e15c04d",
+                },
+            },
+            ["2026.8.27.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "665583e68b71e4d6cdd09b2c277239d757e158a6315baca61e792b701db64d4e",
+                },
+            },
+            ["2026.8.26.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "e1cf0a6e0834bfa83561bf778249e5887d3b39cc1b3293d3ee450196040e90eb",
+                },
+            },
+            ["2026.8.26.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "2994b5a675089ce01919d72cf8f6726b04e6bf5dbf5232412e2c4ce4e4236427",
+                },
+            },
+            ["2026.8.25.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "2e7c577478133585d41a1447adc9d9a5305446ce71293e4de9f416c209afd8e9",
+                },
+            },
+            ["2026.8.25.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "033703812c375c9b21a06952d6fc1182226f2a6c7ceaf90ae092844af66272fc",
+                },
+            },
+            ["2026.8.24.6"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "6633771aa513ee8ab4502b12e7b937ef408a5649886cf97211283a5328ad954b",
+                },
+            },
+            ["2026.8.24.4"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "84e53391a21220715c82478cd6d5d5e95688c549dc2d6e422728b1be0144b7d1",
+                },
+            },
+            ["2026.8.24.3"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "c0d997660cfba02496b9d022741f48fab6e2e38875c4fee2f450528732fb12ff",
+                },
+            },
+            ["2026.8.24.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "af0c4faff1dae246ef7971960234653b02504ca49877d78e2a585f2e65173a81",
+                },
+            },
+            ["2026.8.24.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "a91ccb44b2c8f6251873e47b645e4ce0f28868a782bc2793d12e235c824b3e9e",
+                },
+            },
             ["2026.8.21.3"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -1226,7 +1499,133 @@ package = {
             -- res_versioned: version-bump bot tracks mcpp-community/mcpp releases
             -- and appends checked XLINGS_RES entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "2026.8.21.3" },
+            ["latest"] = { ref = "2026.9.4.1" },
+            ["2026.9.4.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "d9e1f1338d3383c7cbaaeb9998c70a8360992d95d13267c51c18f063973fdd5a",
+                },
+            },
+            ["2026.9.3.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "d865929d82fe2f3ceb80e846f43bc43911a71f25e0546d2aae19c32fc29332db",
+                },
+            },
+            ["2026.9.3.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "80dbc1bbfdc623194913132c662b93d4ad55280f7f497c21dd7677eecc542a5b",
+                },
+            },
+            ["2026.9.2.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "1703434f0b47b43448e291e01b423ab27d3bffe3942e97a6aeea5fc720e938bb",
+                },
+            },
+            ["2026.9.1.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "49057908ae8b95082f1155c3fc24e66ff1520b281c4a4d5eb82dccb9facbb3c0",
+                },
+            },
+            ["2026.8.30.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "ab8e43e827bff876044d2084d3e5d470d460d1f5a084ae0484c846685dcfd663",
+                },
+            },
+            ["2026.8.30.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "6ed4853fafd8e1431cbe324847cdede731f68d74d24522b94703e46963c4d984",
+                },
+            },
+            ["2026.8.29.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "c6e3701c8484b0adde7eb91d97c381b216df53055c8889f92baa6783cc5d508b",
+                },
+            },
+            ["2026.8.28.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "6a713553e86548e2f61e5791b3cfc08999aed86e29dcfd071fba6fab7d5ee377",
+                },
+            },
+            ["2026.8.28.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "48fe0abdd939a7f114e2da8bc6115972d9e4e49e2aac2249454059694ffec660",
+                },
+            },
+            ["2026.8.27.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "c9b575650e33a53662ed2ba9c6aa14f11e354e2b76b7c181b01bf9a369ad3a01",
+                },
+            },
+            ["2026.8.27.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "1876bbc4715e7dcbd69c82ce07131fdd44b9aca5cc417952be68ac90e23a4c01",
+                },
+            },
+            ["2026.8.26.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "93907c34e9d5a69e5975bee2b4d207e046f9ce958dd8576c3d1d84b5b7294d11",
+                },
+            },
+            ["2026.8.26.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "fae278b4a67ba1d1ba2f3643b4a260ed02316b00201c353239a6b5f5f932a1e7",
+                },
+            },
+            ["2026.8.25.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "26c0393df64d28eb656f67692fb99d7a7ddeec1cfeec56f93373e7f9b35ebcfa",
+                },
+            },
+            ["2026.8.25.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "d81f172daa2e32e08ae3939821909a335077c5e0eab91676dee328ef22dc8b80",
+                },
+            },
+            ["2026.8.24.6"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "a58a9845bbb78c6c899b3bbc2d564633780c518e448c0846d9f44705315271ba",
+                },
+            },
+            ["2026.8.24.4"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "f9331cd0b266617db43a055c041649a3b70dd86465bbd2a74afae9e66c092759",
+                },
+            },
+            ["2026.8.24.3"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "94fa911f75f2f589b19d75e7f4ccffc4f33ae6fad828d33300b718f7050a2cbf",
+                },
+            },
+            ["2026.8.24.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "aba5fed969e0556b80acff0b54dcab15500d61e094e718a1dc9204eeb29524ad",
+                },
+            },
+            ["2026.8.24.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "cf02602b3ea8b5084d4454d54395daf360503088df86097eee87309f1ca19330",
+                },
+            },
             ["2026.8.21.3"] = {
                 url = "XLINGS_RES",
                 sha256 = {

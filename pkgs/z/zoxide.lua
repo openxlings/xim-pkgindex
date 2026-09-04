@@ -22,7 +22,11 @@ package = {
     xpm = {
         linux = {
             url_template = "https://github.com/ajeetdsouza/zoxide/releases/download/v{version}/zoxide-{version}-x86_64-unknown-linux-musl.tar.gz",
-            ["latest"] = { ref = "0.9.9" },
+            ["latest"] = { ref = "0.10.0" },
+            ["0.10.0"] = {
+                url = "https://github.com/ajeetdsouza/zoxide/releases/download/v0.10.0/zoxide-0.10.0-x86_64-unknown-linux-musl.tar.gz",
+                sha256 = "2d93385b99f3e82cf2701609a1bffcad863fbeb75aa3fe7eb6be4d29be68b1ae",
+            },
             ["0.9.9"] = {
                 url = "https://github.com/ajeetdsouza/zoxide/releases/download/v0.9.9/zoxide-0.9.9-x86_64-unknown-linux-musl.tar.gz",
                 sha256 = "4ff057d3c4d957946937274c2b8be7af2a9bbae7f90a1b5e9baaa7cb65a20caa",
@@ -34,7 +38,11 @@ package = {
         },
         macosx = {
             url_template = "https://github.com/ajeetdsouza/zoxide/releases/download/v{version}/zoxide-{version}-aarch64-apple-darwin.tar.gz",
-            ["latest"] = { ref = "0.9.9" },
+            ["latest"] = { ref = "0.10.0" },
+            ["0.10.0"] = {
+                url = "https://github.com/ajeetdsouza/zoxide/releases/download/v0.10.0/zoxide-0.10.0-aarch64-apple-darwin.tar.gz",
+                sha256 = "b55ae6f2f5f23d0a6ccb3bd4eeb2af9c7e0a6556e5255c82100e40305129bbb0",
+            },
             ["0.9.9"] = {
                 url = "https://github.com/ajeetdsouza/zoxide/releases/download/v0.9.9/zoxide-0.9.9-aarch64-apple-darwin.tar.gz",
                 sha256 = "57e733d0436309dae2ed97e46bba43937209395298e1d88812d4e893900cb40a",
@@ -46,7 +54,11 @@ package = {
         },
         windows = {
             url_template = "https://github.com/ajeetdsouza/zoxide/releases/download/v{version}/zoxide-{version}-x86_64-pc-windows-msvc.zip",
-            ["latest"] = { ref = "0.9.9" },
+            ["latest"] = { ref = "0.10.0" },
+            ["0.10.0"] = {
+                url = "https://github.com/ajeetdsouza/zoxide/releases/download/v0.10.0/zoxide-0.10.0-x86_64-pc-windows-msvc.zip",
+                sha256 = "f465ae548f8754c8e7edbc60b45fbf58c92bfe123db83d790252d6810fa5daf1",
+            },
             ["0.9.9"] = {
                 url = "https://github.com/ajeetdsouza/zoxide/releases/download/v0.9.9/zoxide-0.9.9-x86_64-pc-windows-msvc.zip",
                 sha256 = "5af00d0916f05631e3030537289eac56605e7c1733318c4d525c8e847f12496d",

@@ -143,6 +143,13 @@ function uninstall()
     -- Only the legacy branch placed untracked copies. Declared assets are
     -- deregistered with the release, so cleaning them here would be a second
     -- owner for the same files.
+    --
+    -- `if not xvm.files` is the pre-2026.7.27.0 fallback, NOT a guard against
+    -- the client failing to reclaim -- a client can have `xvm.files` and
+    -- still not reclaim, which every release from 2026.7.27.0 to 2026.8.22.4
+    -- was (openxlings/xlings#423). So this branch was right about the legacy
+    -- copy and wrong about the declared assets, and they leaked. True from
+    -- 2026.8.26.1 on; see `sysroot.declare_headers` in libs/sysroot.lua.
     local includedir = path.join(pkginfo.install_dir(), "include")
     if not xvm.files and os.isdir(includedir) then
         local sys_includedir = get_sys_usr_includedir()
