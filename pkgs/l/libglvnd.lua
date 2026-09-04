@@ -214,6 +214,10 @@ function install()
     -- Stamp this payload's own dependency closure onto its libraries, so
     -- they resolve from our payloads and not from the host's ld.so.cache.
     selfcontain.seal(pkginfo.install_dir())
+
+    -- This payload's .pc files were never published; see
+    -- sysroot.declare_pkgconfig. Relocate here, declare in config().
+    sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")
     return true
 end
 
@@ -244,6 +248,8 @@ function config()
             path.join(pkginfo.install_dir(), "include"),
             path.join(system.subos_sysrootdir(), "usr", "include"))
     end
+    sysroot.declare_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig", binding)
+
     return true
 end
 

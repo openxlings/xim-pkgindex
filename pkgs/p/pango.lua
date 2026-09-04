@@ -15,9 +15,31 @@ package = {
     xpm = {
         linux = {
             -- fromsource 漏了 glib/fribidi, 这里补全(pango 运行时确需)
+            -- Lower bounds, not exact pins. An `@2.80.0` here is not a
+            -- statement about compatibility, it is a statement that no sibling
+            -- may ever move: the moment glib or cairo publishes a newer
+            -- release, a consumer asking for that release and a pango
+            -- demanding the old one cannot both be satisfied.
+            --
+            -- libthai and libXft are additions, and both are things this
+            -- payload ALREADY needed:
+            --   * libthai -- measured, not inferred: `readelf -d` on this
+            --     payload's libpango-1.0.so.0 lists `libthai.so.0` in its
+            --     DT_NEEDED. Nothing in the index provided it, so every
+            --     installed pango has been resolving it from the host's
+            --     /usr/lib. It was the only unresolved soname in the whole
+            --     installed stack.
+            --   * libXft -- pango.pc names `xft >= 2.0.0` in Requires.private
+            --     and pkg-config resolves Requires.private before it answers
+            --     anything, so without it `pkg-config --cflags pango` fails
+            --     outright. Note this one is NOT in the payload's DT_NEEDED
+            --     (no pango library links X at all); it is a pkg-config-time
+            --     requirement of the .pc upstream shipped, so the closure
+            --     check will report it as declared-but-unused, correctly.
             deps = {
-                "xim:glib@2.80.0", "xim:harfbuzz@8.3.0", "xim:fribidi@1.0.13",
-                "xim:cairo@1.18.0", "xim:freetype@2.13.2", "xim:fontconfig@2.15.0",
+                "xim:glib@>=2.80", "xim:harfbuzz@>=8.3", "xim:fribidi@>=1.0.13",
+                "xim:cairo@>=1.18", "xim:freetype@>=2.13", "xim:fontconfig@>=2.15",
+                "xim:libthai@>=0.1.30", "xim:libXft@>=2.3.9",
             },
             ["latest"] = { ref = "1.52.1" },
             ["1.52.1"] = {
@@ -43,9 +65,7 @@ local libs = {
 }
 
 function install()
-    local srcdir = pkginfo.name() .. "-" .. pkginfo.version() .. "-linux-x86_64"
-    os.tryrm(pkginfo.install_dir())
-    os.mv(srcdir, pkginfo.install_dir())
+    sysroot.adopt_payload()
 
     -- The .pc files in this payload say `libdir=${prefix}/lib/x86_64-linux-gnu`
     -- -- a Debian-family build host -- against a payload with a flat lib/.

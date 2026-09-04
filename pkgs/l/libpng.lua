@@ -35,9 +35,7 @@ import("xim.pkgindex.sysroot")
 local libs = { "libpng16.so", "libpng16.so.16" }
 
 function install()
-    local srcdir = pkginfo.name() .. "-" .. pkginfo.version() .. "-linux-x86_64"
-    os.tryrm(pkginfo.install_dir())
-    os.mv(srcdir, pkginfo.install_dir())
+    sysroot.adopt_payload()
 
     -- The .pc files in this payload say `libdir=${prefix}/lib/x86_64-linux-gnu`
     -- -- a Debian-family build host -- against a payload with a flat lib/.
@@ -46,6 +44,24 @@ function install()
     -- the subos lib search path covers it, and then the consumer that stamped
     -- its RPATH from `pkg-config --variable=libdir` dies at startup.
     sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")
+
+    -- Upstream installs the versioned name AND the unversioned one -- its
+    -- Makefile.am builds libpng16.pc by `cp libpng.pc $@` and has a separate
+    -- install-libpng-pc target for the original. This payload came with only
+    -- libpng16.pc, and consumers ask for both names: cairo's own .pc says
+    -- `Requires.private: ... libpng`, so with the versioned file alone
+    -- `pkg-config --cflags cairo` fails outright and takes gtk4's configure
+    -- with it.
+    --
+    -- A copy, not a symlink: it is declared into the subos sysroot as a file
+    -- asset, and a link there would point at a payload path the consumer's
+    -- view does not necessarily resolve.
+    local pcdir = path.join(pkginfo.install_dir(), "lib", "pkgconfig")
+    local versioned = path.join(pcdir, "libpng16.pc")
+    local plain = path.join(pcdir, "libpng.pc")
+    if os.isfile(versioned) and not os.isfile(plain) then
+        os.cp(versioned, plain)
+    end
 
     return true
 end

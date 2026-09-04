@@ -30,6 +30,7 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 -- The 3.4.4 tarball ships BOTH soname lines (libffi.so.7.1.0 and
@@ -39,9 +40,7 @@ import("xim.pkgindex.selfcontain")
 local libs = { "libffi.so", "libffi.so.7", "libffi.so.8" }
 
 function install()
-    local srcdir = pkginfo.name() .. "-" .. pkginfo.version() .. "-linux-x86_64"
-    os.tryrm(pkginfo.install_dir())
-    os.mv(srcdir, pkginfo.install_dir())
+    sysroot.adopt_payload()
 
     -- Stamp this payload's own dependency closure onto its libraries, so
     -- they resolve from our payloads and not from the host's ld.so.cache.

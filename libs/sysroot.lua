@@ -12,6 +12,7 @@
 import("xim.libxpkg.fs")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.system")
+import("xim.libxpkg.pkginfo")
 
 local sysroot = {}
 
@@ -416,22 +417,151 @@ function sysroot.relocate_pkgconfig(install_dir, src_rel)
     -- every consumer the HOST's /usr/lib -- worse than a path that does not
     -- exist, because on most machines that one does, with a different
     -- library in it.
-    system.exec(string.format(
-        "sh -c 'for pc in %s/*.pc; do [ -f \"$pc\" ] || continue; sed -i "
-        .. "-e \"s|^prefix=.*|prefix=%s|\" "
-        .. "-e \"s|^exec_prefix=.*|exec_prefix=%s|\" "
-        .. "-e \"s|^libdir=.*|libdir=%s/lib|\" "
-        .. "-e \"s|^includedir=.*|includedir=%s/include|\" "
-        -- Longest first, and no alternation: BSD sed has none, and
-        -- rewriting `-L/usr/lib` before `-L/usr/lib/x86_64-linux-gnu` would
-        -- leave the multiarch tail glued onto the payload path.
-        .. "-e \"s|-L/usr/lib/x86_64-linux-gnu|-L%s/lib|g\" "
-        .. "-e \"s|-L/usr/lib64|-L%s/lib|g\" "
-        .. "-e \"s|-L/usr/lib|-L%s/lib|g\" "
-        .. "-e \"s|-I/usr/include|-I%s/include|g\" "
-        .. "\"$pc\"; done'",
-        pcdir, install_dir, install_dir, install_dir, install_dir,
-        install_dir, install_dir, install_dir, install_dir))
+    --
+    -- THE TAIL IS NOT NOISE, AND IT IS NOT ALWAYS KEPT. libdir and includedir
+    -- are not always `<prefix>/lib` and `<prefix>/include`. The published
+    -- libpng payload carries upstream's Debian-built .pc verbatim:
+    --
+    --     prefix=/usr
+    --     libdir=${prefix}/lib/x86_64-linux-gnu     <- must be FLATTENED
+    --     includedir=${prefix}/include/libpng16     <- must be KEPT
+    --     Cflags: -I${includedir}
+    --
+    -- and the two tails need opposite treatment. The payload has one flat
+    -- lib/, so the multiarch triplet has to go; the payload really does keep
+    -- its headers one level down, so dropping `libpng16` puts -I at a
+    -- directory with no png.h in it. Measured before this rule existed: cairo
+    -- 1.18.4 dies at `../src/cairo-png.c:47: fatal error: png.h: No such file
+    -- or directory`, and the existence check below passes the file, because
+    -- the flattened directory does exist -- it is just the wrong one.
+    --
+    -- One rule decides both, and it is not "is it written with ${prefix}":
+    -- RESOLVE the value first, then keep the tail only if this payload
+    -- actually has that directory. `<payload>/lib/x86_64-linux-gnu` does not
+    -- exist, so the triplet is dropped; `<payload>/include/libpng16` does, so
+    -- it is kept. Both forms -- ${prefix}-relative and absolute -- go through
+    -- the same resolution, because the shape a distro happened to write says
+    -- nothing about which of the two cases it is.
+    local function relocated(base, value, old_prefix)
+        if not value then return nil end
+        -- Resolve ${prefix} / ${exec_prefix} against what the file said
+        -- before this function touched it.
+        local resolved = value
+        if old_prefix then
+            resolved = resolved:gsub("%${exec_prefix}", old_prefix)
+                               :gsub("%${prefix}", old_prefix)
+        end
+        local tail = resolved:match("/" .. base .. "/(.+)$")
+        if tail and os.isdir(path.join(install_dir, base, tail)) then
+            return path.join(install_dir, base, tail)
+        end
+        return path.join(install_dir, base)
+    end
+
+    for _, name in ipairs(sysroot.entries(pcdir)) do
+        if name:find("%.pc$") then
+            local pc = path.join(pcdir, name)
+            local text = io.readfile(pc)
+            if text then
+                text = "\n" .. text
+                local old_prefix = text:match("\nprefix=([^\n]*)")
+                local incdir     = text:match("\nincludedir=([^\n]*)")
+                local libdir     = text:match("\nlibdir=([^\n]*)")
+
+                local seds = {
+                    string.format("-e \"s|^prefix=.*|prefix=%s|\"", install_dir),
+                    string.format("-e \"s|^exec_prefix=.*|exec_prefix=%s|\"", install_dir),
+                }
+                if libdir then
+                    seds[#seds + 1] = string.format("-e \"s|^libdir=.*|libdir=%s|\"",
+                        relocated("lib", libdir, old_prefix))
+                end
+                if incdir then
+                    seds[#seds + 1] = string.format("-e \"s|^includedir=.*|includedir=%s|\"",
+                        relocated("include", incdir, old_prefix))
+                end
+                -- Longest first, and no alternation: BSD sed has none, and
+                -- rewriting `-L/usr/lib` before `-L/usr/lib/x86_64-linux-gnu`
+                -- would leave the multiarch tail glued onto the payload path.
+                seds[#seds + 1] = string.format("-e \"s|-L/usr/lib/x86_64-linux-gnu|-L%s/lib|g\"", install_dir)
+                seds[#seds + 1] = string.format("-e \"s|-L/usr/lib64|-L%s/lib|g\"", install_dir)
+                seds[#seds + 1] = string.format("-e \"s|-L/usr/lib|-L%s/lib|g\"", install_dir)
+                seds[#seds + 1] = string.format("-e \"s|-I/usr/include|-I%s/include|g\"", install_dir)
+
+                system.exec(string.format("sh -c 'sed -i %s \"%s\"'",
+                    table.concat(seds, " "), pc))
+            end
+        end
+    end
+
+    -- A .pc VARIABLE THAT NAMES A MISSING FILE IS WORSE THAN NO VARIABLE.
+    --
+    -- glib-2.0.pc defines tool paths beside the usual directories:
+    --
+    --     bindir=${prefix}/bin
+    --     glib_genmarshal=${bindir}/glib-genmarshal
+    --     glib_mkenums=${bindir}/glib-mkenums
+    --     gobject_query=${bindir}/gobject-query
+    --
+    -- and the published glib payload has no bin/ at all -- it is an
+    -- include/ and a lib/. Consumers do not treat that as "absent", they
+    -- treat it as "present and wrong". Measured, gdk-pixbuf 2.44.8:
+    --
+    --     gdk-pixbuf/meson.build:122: ERROR: Dependency 'glib-2.0' tool
+    --     variable 'glib_genmarshal' contains erroneous value: '<...>/bin/glib-genmarshal'
+    --
+    -- meson reads the variable, sees a path that is not there, and stops.
+    -- Delete the line and the same meson falls back to find_program(), which
+    -- finds the generator on PATH and the build proceeds -- these are source
+    -- GENERATORS, the one category of host program this whole toolchain
+    -- already accepts (see build-in-subos.sh: "Programs generate source and
+    -- do not end up in the result").
+    --
+    -- So: drop variable definitions whose value is an absolute path that this
+    -- payload does not contain. Only extra variables -- prefix, exec_prefix,
+    -- libdir and includedir are rewritten above and are not candidates.
+    for _, name in ipairs(sysroot.entries(pcdir)) do
+        if name:find("%.pc$") then
+            local pc = path.join(pcdir, name)
+            local text = io.readfile(pc)
+            if text then
+                -- Collect every variable first: the interesting ones are
+                -- written against each other, not as absolute paths --
+                -- `bindir=${prefix}/bin` then
+                -- `glib_genmarshal=${bindir}/glib-genmarshal` -- so a check
+                -- that only looks at values starting with `/` sees none of
+                -- them.
+                local vars = {}
+                for line in ("\n" .. text):gmatch("\n([^\n]*)") do
+                    local var, value = line:match("^([%w_][%w_%.]*)=(.*)$")
+                    if var then vars[var] = value end
+                end
+                local function resolve(value, depth)
+                    if depth > 8 then return value end   -- cycle guard
+                    local out = value:gsub("%${([%w_%.]+)}", function(ref)
+                        return vars[ref] and resolve(vars[ref], depth + 1) or ("${" .. ref .. "}")
+                    end)
+                    return out
+                end
+
+                local drop = {}
+                for var, value in pairs(vars) do
+                    if var ~= "prefix" and var ~= "exec_prefix"
+                       and var ~= "libdir" and var ~= "includedir" then
+                        local full = resolve(value, 0)
+                        if full:sub(1, 1) == "/" and not full:find("%${")
+                           and not os.isfile(full) and not os.isdir(full) then
+                            drop[#drop + 1] = var
+                        end
+                    end
+                end
+                table.sort(drop)
+                for _, var in ipairs(drop) do
+                    system.exec(string.format("sh -c 'sed -i \"/^%s=/d\" \"%s\"'", var, pc))
+                end
+            end
+        end
+    end
 
     -- R4: check the artifact, not the intent. A sed that matched nothing is
     -- indistinguishable from one that worked, and the difference surfaces as
@@ -471,6 +601,105 @@ function sysroot.relocate_pkgconfig(install_dir, src_rel)
         end
     end
     return true
+end
+
+-- Publish a payload's pkg-config metadata into the subos sysroot.
+--
+-- Six recipes carried this byte-identical -- freetype, glib, graphite2,
+-- libselinux, util-linux, zlib -- and every new library package needed a
+-- seventh copy. It is not package-specific in any of them: the source is
+-- always `lib/pkgconfig`, the destination is always `usr/lib/pkgconfig`, and
+-- the fallback is always the same shell loop.
+--
+-- The fallback is the part worth keeping rather than deleting. `xvm.files`
+-- exists only on a client that understands declared assets; on an older one
+-- `declare_headers` returns false and the .pc files have to be COPIED, or the
+-- package installs and every pkg-config consumer of it silently fails. So the
+-- two branches are "declare" and "copy", not "declare" and "give up".
+--
+-- Call it AFTER relocate_pkgconfig: the whole reason a .pc can be declared
+-- rather than rewritten per subos is that the payload's own copy was already
+-- made correct, so the asset and the file are the same bytes.
+--
+-- NOT CALLING IT AT ALL is the failure this helper mostly exists to end. The
+-- entire X/Wayland/GL half of this index shipped .pc files in its payloads and
+-- published none of them -- seventeen recipes, none with a relocate or a
+-- declare. The packages installed, their libraries resolved, and pkg-config
+-- answered "not found" for every one of them. Measured on a throwaway home
+-- with the whole GTK 4 stack installed:
+--
+--     pkg-config --cflags gtk4      -> Package 'xrender' was not found
+--     pkg-config --cflags cairo     -> Package 'x11' was not found
+--     pkg-config --cflags epoxy     -> Package 'egl' was not found
+--     pkg-config --cflags xft       -> Package 'xproto' was not found
+--
+-- Four different consumers, one missing step in a dependency of each.
+function sysroot.declare_pkgconfig(install_dir, src_rel, binding)
+    src_rel = src_rel or "lib/pkgconfig"
+    if not os.isdir(path.join(install_dir, src_rel)) then return true end
+
+    if sysroot.declare_headers(install_dir, src_rel, "usr/lib/pkgconfig", binding) then
+        return true
+    end
+
+    -- Legacy client: place a copy instead. `cp -f` and not `cp -n`, to match
+    -- what the six hand-written versions did -- a reinstall of the same
+    -- package must refresh its own .pc rather than keep the stale one.
+    local sysroot_pc = path.join(system.subos_sysrootdir(), "usr/lib/pkgconfig")
+    os.mkdir(sysroot_pc)
+    system.exec(string.format(
+        "sh -c 'for pc in %s/%s/*.pc; do [ -f \"$pc\" ] && cp -f \"$pc\" %s/; done'",
+        install_dir, src_rel, sysroot_pc))
+    return true
+end
+
+-- Move the extracted archive into the install dir, and FAIL if there was
+-- nothing to move.
+--
+-- `os.mv(srcdir, install_dir)` on a name that does not exist does not raise --
+-- it silently does nothing, and the recipe returns true having installed an
+-- empty directory. The failure then surfaces somewhere else entirely:
+--
+--     selfcontain.lua:130: install produced no payload:
+--     .../xim-x-gtk4/4.16.13 has none of {lib, lib64}
+--
+-- which reads as a broken payload rather than a misspelled directory name.
+--
+-- And the name genuinely varies. Two conventions are live in this index:
+--
+--   <name>-<version>-linux-x86_64   the older prebuilt payloads (glib 2.80.0,
+--                                   cairo 1.18.0, harfbuzz 8.3.0, libpng, ...)
+--   <name>-<version>                everything build-in-subos.sh produces
+--                                   (libXau 1.0.11 hardcodes exactly this)
+--
+-- A recipe that carries BOTH versions of a package -- which is what adding a
+-- rebuilt release beside a published one means -- has to accept either, and
+-- hardcoding one name per version is how that recipe drifts.
+--
+-- Extra candidates can be passed for a payload whose directory matches
+-- neither (an upstream tarball adopted as-is, say).
+function sysroot.adopt_payload(...)
+    local dir = pkginfo.install_dir()
+    local name, version = pkginfo.name(), pkginfo.version()
+    local candidates = {
+        name .. "-" .. version .. "-linux-x86_64",
+        name .. "-" .. version,
+    }
+    for _, extra in ipairs({...}) do candidates[#candidates + 1] = extra end
+
+    for _, c in ipairs(candidates) do
+        if os.isdir(c) then
+            os.tryrm(dir)
+            os.mv(c, dir)
+            return c
+        end
+    end
+
+    raise(string.format(
+        "no extracted payload directory found for %s@%s -- looked for %s. "
+        .. "The archive's top-level directory is none of these, or it was "
+        .. "already consumed by another install of the same version.",
+        name, version, table.concat(candidates, ", ")))
 end
 
 return sysroot

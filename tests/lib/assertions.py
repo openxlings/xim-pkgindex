@@ -6,6 +6,7 @@ import pytest
 from tests.lib.xpkg_parser import XpkgMeta, parse_xpkg
 from tests.lib.xvm_client import XvmClient
 from tests.lib.xlings_client import XlingsClient
+from tests.lib.platform_utils import subos_sysroot_pkgconfig_dir
 
 # ═══════════════════════════════════════════
 #  L0: 静态分析
@@ -338,3 +339,42 @@ def assert_valid_xvm_node_kinds(meta: XpkgMeta):
         f"合法值为 {sorted(VALID_XVM_NODE_KINDS)}。"
         f"包名占位符请用 \"group\""
     )
+
+
+def assert_pkgconfig_resolves(*pc_names: str):
+    """`pkg-config --cflags --libs <name>` succeeds against the subos alone.
+
+    For a LIBRARY package this is the assertion that means something. "xvm
+    registered the node" says the recipe ran; it says nothing about whether a
+    consumer can actually use the payload, and the two come apart badly:
+
+      * the published glib payload shipped gmodule-2.0.pc without the
+        gmodule-no-export-2.0.pc it names in `Requires:`. pkg-config resolves
+        Requires transitively before it answers anything, so gmodule-2.0,
+        gio-2.0, gdk-pixbuf-2.0 and libsoup-3.0 ALL failed to resolve -- while
+        every one of those packages installed cleanly and registered its xvm
+        node.
+      * zlib.pc carried the absolute prefix of the machine that built it, and
+        took cairo, pango and gio down with it for the same reason.
+
+    Neither was visible to any test in this repo until this one existed.
+
+    PKG_CONFIG_LIBDIR, not PKG_CONFIG_PATH: LIBDIR REPLACES the default search
+    path instead of prepending to it. With PATH, a name missing from the subos
+    is quietly answered by the host's /usr/lib/pkgconfig and the assertion
+    passes on a machine that happens to have the dev package installed --
+    which is the exact failure mode being tested for.
+    """
+    pcdir = subos_sysroot_pkgconfig_dir()
+    if not os.path.isdir(pcdir):
+        pytest.skip(f"no subos pkgconfig dir: {pcdir}")
+    env = {**os.environ, "PKG_CONFIG_LIBDIR": pcdir}
+    for name in pc_names:
+        r = subprocess.run(
+            ["pkg-config", "--print-errors", "--cflags", "--libs", name],
+            capture_output=True, text=True, env=env, timeout=60,
+        )
+        assert r.returncode == 0, (
+            f"pkg-config 无法解析 '{name}' (仅用 subos 搜索路径 {pcdir}):\n"
+            f"{(r.stderr or r.stdout).strip()[:400]}"
+        )

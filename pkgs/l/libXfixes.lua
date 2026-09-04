@@ -17,7 +17,10 @@ package = {
 
     xpm = {
         linux = {
-            deps = { "xim:libX11@>=1.8" },
+            -- glibc was missing: libXfixes.so.3 names libc.so.6 and this recipe
+            -- declared only libX11, so the closure check reports it the moment
+            -- the payload is looked at.
+            deps = { "xim:glibc@>=2.38", "xim:libX11@>=1.8" },
             -- elfpatch reads this from each dependency and writes the consumer's
             -- RPATH, which is what makes the stack resolve without anyone
             -- setting LD_LIBRARY_PATH. Same mechanism `gcc-runtime` uses.
@@ -50,6 +53,10 @@ function install()
     -- Stamp this payload's own dependency closure onto its libraries, so they
     -- resolve from our payloads and not from the host's ld.so.cache.
     selfcontain.seal(pkginfo.install_dir())
+
+    -- This payload's .pc files were never published; see
+    -- sysroot.declare_pkgconfig. Relocate here, declare in config().
+    sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")
     return true
 end
 
@@ -75,6 +82,8 @@ function config()
             path.join(pkginfo.install_dir(), "include"),
             path.join(system.subos_sysrootdir(), "usr", "include"))
     end
+    sysroot.declare_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig", binding)
+
     return true
 end
 
