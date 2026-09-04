@@ -39,9 +39,7 @@ import("xim.pkgindex.sysroot")
 local libs = { "libpixman-1.so", "libpixman-1.so.0" }
 
 function install()
-    local srcdir = pkginfo.name() .. "-" .. pkginfo.version() .. "-linux-x86_64"
-    os.tryrm(pkginfo.install_dir())
-    os.mv(srcdir, pkginfo.install_dir())
+    sysroot.adopt_payload()
 
     -- The .pc files in this payload say `libdir=${prefix}/lib/x86_64-linux-gnu`
     -- -- a Debian-family build host -- against a payload with a flat lib/.

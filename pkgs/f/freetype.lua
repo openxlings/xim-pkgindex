@@ -106,14 +106,7 @@ function config()
 
     -- install() already pointed the payload's .pc at the payload, so there is
     -- nothing left to rewrite per subos and no `.sysroot.pc` twin to generate.
-    if not sysroot.declare_headers(idir, "lib/pkgconfig",
-                                   "usr/lib/pkgconfig", binding) then
-        local sysroot_pc = path.join(system.subos_sysrootdir(), "usr/lib/pkgconfig")
-        os.mkdir(sysroot_pc)
-        system.exec(string.format(
-            "sh -c 'for pc in %s/lib/pkgconfig/*.pc; do [ -f \"$pc\" ] && cp -f \"$pc\" %s/; done'",
-            idir, sysroot_pc))
-    end
+    sysroot.declare_pkgconfig(idir, "lib/pkgconfig", binding)
     return true
 end
 

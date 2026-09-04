@@ -46,9 +46,7 @@ import("xim.pkgindex.selfcontain")
 local libs = { "libexpat.so", "libexpat.so.1" }
 
 function install()
-    local srcdir = pkginfo.name() .. "-" .. pkginfo.version() .. "-linux-x86_64"
-    os.tryrm(pkginfo.install_dir())
-    os.mv(srcdir, pkginfo.install_dir())
+    sysroot.adopt_payload()
 
     -- Stamp this payload's own dependency closure onto its libraries, so
     -- they resolve from our payloads and not from the host's ld.so.cache.
