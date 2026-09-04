@@ -62,9 +62,15 @@ package = {
         macosx = {
             -- xlings spells macOS `macosx`; upstream asset names spell it
             -- `macos`. Platform-scope source override absorbs the difference.
-            source = "https://github.com/HuxerUI/HuxerUI/releases/download/v${version}/huxerui-sdk-${version}-macos-${arch}.${ext}",
+            --
+            -- Upstream's mac assets name the ARM build `macos-arm64` (the alias)
+            -- while the Linux ones use the canonical `linux-aarch64`, so the
+            -- `${arch}` template alone would 404 on Apple Silicon. `arch_alias`
+            -- maps the canonical key to upstream's spelling for this platform.
+            source = "https://github.com/HuxerUI/HuxerUI/releases/download/v${version}/huxerui-sdk-${version}-macos-${arch_alias}.${ext}",
             ["latest"] = { ref = "0.2.0" },
             ["0.2.0"] = {
+                arch_alias = { x86_64 = "x86_64", aarch64 = "arm64" },
                 sha256 = {
                     x86_64  = "08bcc11c1b3959d2ee9b4a763b81dfef84c6a78414afd5f06409bc0a8ec80b3e",
                     aarch64 = "3c30480e525c10fa8ed3e820e1cbb02b4970860a99167f1d7a63b58697101104",
