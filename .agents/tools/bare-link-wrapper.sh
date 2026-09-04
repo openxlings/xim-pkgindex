@@ -93,7 +93,7 @@ for src in "${srcs[@]:-}"; do
     "$BARE_LLVM/bin/clang" --no-default-config \
         ${BARE_TRIPLE:+-target "$BARE_TRIPLE"} \
         ${BARE_MARCH:+-march="$BARE_MARCH"} \
-        ${BARE_MCMODEL:+-mcmodel="$BARE_MCMODEL"} \
+        ${BARE_MCMODEL:+"$BARE_MCMODEL"} \
         $BARE_EXTRA -nostdlib -ffreestanding \
         -c "$src" -o "$obj" || exit 1
     keep+=("$obj")
