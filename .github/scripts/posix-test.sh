@@ -778,6 +778,78 @@ if [[ ${#deferred_specs[@]} -gt 0 ]]; then
         [[ $progressed -eq 0 ]] && break
     done
 
+    # ── Structural immovability is TRANSITIVE, and this used not to be ──────
+    #
+    # A changed package blocked only by packages OUTSIDE the change set is
+    # already forgiven below: the test home keeps every dep installed on
+    # purpose, so a library a resident consumer needs cannot come out however
+    # many rounds run. What was missing is that anything stuck BEHIND such a
+    # package is stuck for exactly the same reason.
+    #
+    # Measured on the gtk4 stack, where the change set contains both the base
+    # libraries and their consumers:
+    #
+    #   glib      blocked by 2 resident packages          -> forgiven
+    #   libffi    blocked by glib                         -> FAILED
+    #   libselinux blocked by glib                        -> FAILED
+    #   zlib      blocked by glib, libpng, libtiff        -> FAILED
+    #
+    # glib cannot be removed in this home, so "libffi is still required by
+    # glib" is not an ordering bug and no order fixes it. Reported as one, it
+    # asks a PR to choose between touching a base library and touching its
+    # consumer -- which is the shape of every stack-wide fix.
+    #
+    # So: compute the stuck set to a fixed point first. Seed it with the
+    # packages whose blockers contain no changed package, then repeatedly add
+    # any package whose changed blockers are all already stuck. What is left
+    # over -- blocked by a changed package that could itself have come out --
+    # is a real ordering bug or a cycle, and still fails.
+    blockers_of() {
+        printf '%s\n' "$1" \
+            | sed -n 's/^[[:space:]]\{1,\}\([^@ ]\{1,\}\)@.*/\1/p' \
+            | sed 's/.*://' | sort -u
+    }
+    is_changed_pkg() {
+        for c in ${changed_pkgs[@]+"${changed_pkgs[@]}"}; do
+            [[ "$1" == "$c" ]] && return 0
+        done
+        return 1
+    }
+    already_uninstalled() {
+        for u in ${uninstalled_pkgs[@]+"${uninstalled_pkgs[@]}"}; do
+            [[ "$1" == "$u" ]] && return 0
+        done
+        return 1
+    }
+    stuck_pkgs=()
+    is_stuck() {
+        for sp in ${stuck_pkgs[@]+"${stuck_pkgs[@]}"}; do
+            [[ "$1" == "$sp" ]] && return 0
+        done
+        return 1
+    }
+    stuck_round=0
+    while [[ $stuck_round -lt ${#deferred_specs[@]} ]]; do
+        stuck_round=$((stuck_round + 1))
+        stuck_added=0
+        i=0
+        while [[ $i -lt ${#deferred_specs[@]} ]]; do
+            pkg="${deferred_pkgs[$i]}"
+            if is_stuck "$pkg"; then i=$((i + 1)); continue; fi
+            unresolved=0
+            for b in $(blockers_of "${deferred_errs[$i]}"); do
+                if is_changed_pkg "$b" && ! already_uninstalled "$b" && ! is_stuck "$b"; then
+                    unresolved=1
+                fi
+            done
+            if [[ $unresolved -eq 0 ]]; then
+                stuck_pkgs+=("$pkg"); stuck_added=1
+            fi
+            i=$((i + 1))
+        done
+        [[ $stuck_added -eq 0 ]] && break
+    done
+
     i=0
     while [[ $i -lt ${#deferred_specs[@]} ]]; do
         spec="${deferred_specs[$i]}"
@@ -801,6 +873,9 @@ if [[ ${#deferred_specs[@]} -gt 0 ]]; then
                 for u in ${uninstalled_pkgs[@]+"${uninstalled_pkgs[@]}"}; do
                     [[ "$b" == "$u" ]] && b_is_changed=0
                 done
+                # A blocker that is itself structurally unremovable makes this
+                # one unremovable too, and for a reason no ordering changes.
+                if is_stuck "$b"; then b_is_changed=0; fi
                 if [[ $b_is_changed -eq 1 ]]; then
                     blocked_by_changed="${blocked_by_changed}${blocked_by_changed:+ }$b"
                 fi
