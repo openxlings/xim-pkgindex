@@ -40,17 +40,20 @@ package = {
     -- per-asset `.sha256` sidecar. Every hash below was taken from that sidecar
     -- and re-verified against the downloaded bytes.
     --
-    -- ⚠️ EVERY URL IS WRITTEN OUT, AND NOTHING IS TEMPLATED. The asset names are
-    -- RUST TARGET TRIPLES — `x86_64-unknown-linux-gnu`, `aarch64-apple-darwin`,
+    -- ⚠️ THE ASSET NAMES ARE RUST TARGET TRIPLES, NOT xlings PLATFORM NAMES.
+    -- `x86_64-unknown-linux-gnu`, `aarch64-apple-darwin`,
     -- `x86_64-pc-windows-msvc` — a vocabulary with no overlap with the
-    -- `linux`/`macosx`/`windows` one this index speaks, and the archive
-    -- extension changes with the platform besides. A template over two
-    -- unrelated naming schemes buys nothing and hides which five files this
-    -- descriptor actually names.
+    -- `linux`/`macosx`/`windows` one this index speaks. So the whole triple
+    -- rides in `arch_alias`, and each platform carries its own `source` because
+    -- the archive extension changes with it too.
+    --
+    -- ⚠️ NO win32-arm64 ASSET. `archs` above is the union across platforms and
+    -- arch resolution is fail-closed, so an arm64 Windows host is told the arch
+    -- is unavailable rather than handed the x64 archive.
     xpm = {
         linux = {
-            -- `deps` is deliberately EMPTY. The binary is a Rust build against the
-            -- host glibc, and declaring a glibc dep would hand xlings'
+            -- `deps` is deliberately EMPTY. The binary is a Rust build against
+            -- the host glibc, and declaring a glibc dep would hand xlings'
             -- predicate-driven elfpatch a loader provider to key off — which
             -- REPLACES DT_RPATH rather than prepending to it. With no dep the
             -- predicate never fires and the binary keeps its own INTERP, which
@@ -62,56 +65,45 @@ package = {
             -- device is present but unopenable, and its message names the file
             -- — a better diagnostic than anything an installer could print at a
             -- moment when no probe is attached.
+            source = {
+                GLOBAL = "https://github.com/probe-rs/probe-rs/releases/download/v${version}/probe-rs-tools-${arch_alias}.tar.xz",
+                CN = "https://gitcode.com/xlings-res/probe-rs/releases/download/${version}/probe-rs-tools-${arch_alias}.tar.xz",
+            },
             ["latest"] = { ref = "0.32.0" },
             ["0.32.0"] = {
-                x86_64 = {
-                    url = {
-                        GLOBAL = "https://github.com/probe-rs/probe-rs/releases/download/v0.32.0/probe-rs-tools-x86_64-unknown-linux-gnu.tar.xz",
-                        CN     = "https://gitcode.com/xlings-res/probe-rs/releases/download/0.32.0/probe-rs-tools-x86_64-unknown-linux-gnu.tar.xz",
-                    },
-                    sha256 = "c2ccc46049e52a5d403ef212078cd637ecda55b662708327960558f83e851ff5",
-                },
-                aarch64 = {
-                    url = {
-                        GLOBAL = "https://github.com/probe-rs/probe-rs/releases/download/v0.32.0/probe-rs-tools-aarch64-unknown-linux-gnu.tar.xz",
-                        CN     = "https://gitcode.com/xlings-res/probe-rs/releases/download/0.32.0/probe-rs-tools-aarch64-unknown-linux-gnu.tar.xz",
-                    },
-                    sha256 = "7c818cfd77808e806bf8f4d108c9137910b4fb28e0fe5c464d39782dbbc8af31",
+                arch_alias = { x86_64  = "x86_64-unknown-linux-gnu",
+                               aarch64 = "aarch64-unknown-linux-gnu" },
+                sha256 = {
+                    x86_64  = "c2ccc46049e52a5d403ef212078cd637ecda55b662708327960558f83e851ff5",
+                    aarch64 = "7c818cfd77808e806bf8f4d108c9137910b4fb28e0fe5c464d39782dbbc8af31",
                 },
             },
         },
         macosx = {
+            source = {
+                GLOBAL = "https://github.com/probe-rs/probe-rs/releases/download/v${version}/probe-rs-tools-${arch_alias}.tar.xz",
+                CN = "https://gitcode.com/xlings-res/probe-rs/releases/download/${version}/probe-rs-tools-${arch_alias}.tar.xz",
+            },
             ["latest"] = { ref = "0.32.0" },
             ["0.32.0"] = {
-                x86_64 = {
-                    url = {
-                        GLOBAL = "https://github.com/probe-rs/probe-rs/releases/download/v0.32.0/probe-rs-tools-x86_64-apple-darwin.tar.xz",
-                        CN     = "https://gitcode.com/xlings-res/probe-rs/releases/download/0.32.0/probe-rs-tools-x86_64-apple-darwin.tar.xz",
-                    },
-                    sha256 = "e23d117a29909a389c92234ac3ebafcc5ec24d8969d1ec5d70eece622827f778",
-                },
-                aarch64 = {
-                    url = {
-                        GLOBAL = "https://github.com/probe-rs/probe-rs/releases/download/v0.32.0/probe-rs-tools-aarch64-apple-darwin.tar.xz",
-                        CN     = "https://gitcode.com/xlings-res/probe-rs/releases/download/0.32.0/probe-rs-tools-aarch64-apple-darwin.tar.xz",
-                    },
-                    sha256 = "c39631679b83d0c94dc442d05cc4ca974a87c02907a6ddbfce46746ed503152c",
+                arch_alias = { x86_64  = "x86_64-apple-darwin",
+                               aarch64 = "aarch64-apple-darwin" },
+                sha256 = {
+                    x86_64  = "e23d117a29909a389c92234ac3ebafcc5ec24d8969d1ec5d70eece622827f778",
+                    aarch64 = "c39631679b83d0c94dc442d05cc4ca974a87c02907a6ddbfce46746ed503152c",
                 },
             },
         },
         windows = {
-            -- x86_64 only: upstream publishes no win32-arm64 asset. `archs` above
-            -- is the union across platforms and arch resolution is fail-closed,
-            -- so an arm64 Windows host is told the arch is unavailable rather
-            -- than handed the x64 archive.
+            source = {
+                GLOBAL = "https://github.com/probe-rs/probe-rs/releases/download/v${version}/probe-rs-tools-${arch_alias}.zip",
+                CN = "https://gitcode.com/xlings-res/probe-rs/releases/download/${version}/probe-rs-tools-${arch_alias}.zip",
+            },
             ["latest"] = { ref = "0.32.0" },
             ["0.32.0"] = {
-                x86_64 = {
-                    url = {
-                        GLOBAL = "https://github.com/probe-rs/probe-rs/releases/download/v0.32.0/probe-rs-tools-x86_64-pc-windows-msvc.zip",
-                        CN     = "https://gitcode.com/xlings-res/probe-rs/releases/download/0.32.0/probe-rs-tools-x86_64-pc-windows-msvc.zip",
-                    },
-                    sha256 = "56fc0564cc23d604b27dc2d57606194159c49f951999f3e47bd2cbffcba64103",
+                arch_alias = { x86_64 = "x86_64-pc-windows-msvc" },
+                sha256 = {
+                    x86_64 = "56fc0564cc23d604b27dc2d57606194159c49f951999f3e47bd2cbffcba64103",
                 },
             },
         },

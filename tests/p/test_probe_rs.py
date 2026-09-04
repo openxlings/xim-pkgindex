@@ -57,22 +57,28 @@ class TestStatic:
         assert_no_typos(PKG_FILE)
 
     @pytest.mark.static
-    def test_every_host_target_has_both_mirrors(self, source_text):
-        """五个宿主目标 × 两个镜像 = 十条 URL, 一条不少.
+    def test_every_host_target_has_its_rust_triple(self, source_text):
+        """五个宿主目标各自的 Rust 三元组都必须出现在 arch_alias 里.
 
-        少一条 = 那台机器上一个 404, 而 CI 只跑 Linux/x86_64 的 GLOBAL 一格,
-        所以另外九格只能靠断言守.
+        少一个 = 那个平台的 ${arch_alias} 展开为空, source 变成
+        `probe-rs-tools-.tar.xz`, 而只有那台机器会看到 404 —— CI 只跑
+        Linux/x86_64 一格, 所以另外四格只能靠断言守.
         """
         for platform, by_arch in EXPECTED_TRIPLE.items():
             for arch, triple in by_arch.items():
-                ext = "zip" if platform == "windows" else "tar.xz"
-                asset = f"probe-rs-tools-{triple}.{ext}"
-                for mirror, host in (("GLOBAL", "github.com/probe-rs/probe-rs"),
-                                     ("CN", "gitcode.com/xlings-res/probe-rs")):
-                    assert f"{host}/releases/download/" in source_text, \
-                        f"{mirror} 的主机名不对"
-                    assert asset in source_text, (
-                        f"{platform}/{arch} 的资产 {asset} 不在配方里")
+                assert f'"{triple}"' in source_text, (
+                    f"{platform}/{arch} 的三元组 {triple} 不在 arch_alias 里")
+
+    @pytest.mark.static
+    def test_each_platform_carries_its_own_source(self, source_text):
+        """⚠️ 三个平台各有一份 source, 因为归档扩展名随平台变.
+
+        Linux/macOS 是 `.tar.xz`, Windows 是 `.zip`。写一份根 source 会让
+        Windows 静默 404 —— 而 CI 的 Windows 那格只测安装, 测不到 URL 拼装。
+        """
+        assert source_text.count("GLOBAL = ") == 3, "三个平台各一条 GLOBAL"
+        assert source_text.count("CN = ") == 3, "三个平台各一条 CN"
+        assert source_text.count(".zip") >= 2, "windows 段没有用 .zip"
 
     @pytest.mark.static
     def test_windows_declares_no_arm64_asset(self, source_text):
@@ -123,10 +129,10 @@ class TestStatic:
         for line in source_text.splitlines():
             stripped = line.strip()
             if stripped.startswith("GLOBAL ="):
-                assert "/releases/download/v0.32.0/" in stripped, \
+                assert "/releases/download/v${version}/" in stripped, \
                     f"上游 tag 少了 v 前缀: {stripped}"
             if stripped.startswith("CN ="):
-                assert "/releases/download/0.32.0/" in stripped, \
+                assert "/releases/download/${version}/" in stripped, \
                     f"镜像 tag 不该有 v 前缀: {stripped}"
 
     @pytest.mark.static
