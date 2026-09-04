@@ -1,38 +1,39 @@
 package = {
     spec = "2",
-    homepage = "https://nghttp2.org",
-    name = "nghttp2",
-    description = "HTTP/2 C library (libnghttp2, the framing layer libsoup 3 links)",
-    maintainers = {"Tatsuhiro Tsujikawa"},
+    homepage = "https://github.com/anholt/libepoxy",
+    name = "libepoxy",
+    description = "Library for handling OpenGL function pointer management",
+    maintainers = {"Eric Anholt", "Emmanuele Bassi"},
     licenses = {"MIT"},
-    repo = "https://github.com/nghttp2/nghttp2",
-    docs = "https://nghttp2.org/documentation/",
+    repo = "https://github.com/anholt/libepoxy",
     type = "package",
     archs = {"x86_64"},
     status = "stable",
-    categories = {"library", "network"},
-    keywords = {"http2", "http", "network", "lib"},
+    categories = {"library", "graphics", "opengl"},
+    keywords = {"epoxy", "opengl", "gl", "egl", "glx", "lib"},
     xvm_enable = true,
     xpm = {
         linux = {
-            -- libsoup >= 3.2 requires libnghttp2.so.14 for its HTTP/2 support.
-            --
-            -- Built --enable-lib-only: the nghttp/nghttpd/h2load executables
-            -- would pull libev, openssl and jansson into the closure for zero
-            -- consumers in this index.
+            -- GTK 4's GL renderer talks to the driver through epoxy rather
+            -- than dlopen-ing libGL itself. Built with glx and egl on, against
+            -- the index's libglvnd -- epoxy dispatches at runtime, so the
+            -- vendor library it ends up calling is still whatever the host's
+            -- GPU stack provides via libglvnd.
             deps = {
                 "xim:glibc@>=2.38",
+                "xim:libglvnd@>=1.7",
+                "xim:libX11@>=1.8",
             },
             exports = {
                 runtime = { libdirs = { "lib" } },
             },
-            ["latest"] = { ref = "1.70.0" },
-            ["1.70.0"] = {
+            ["latest"] = { ref = "1.5.10" },
+            ["1.5.10"] = {
                 url = {
-                    GLOBAL = "https://github.com/xlings-res/nghttp2/releases/download/1.70.0/nghttp2-1.70.0-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/nghttp2/releases/download/1.70.0/nghttp2-1.70.0-linux-x86_64.tar.gz",
+                    GLOBAL = "https://github.com/xlings-res/libepoxy/releases/download/1.5.10/libepoxy-1.5.10-linux-x86_64.tar.gz",
+                    CN     = "https://gitcode.com/xlings-res/libepoxy/releases/download/1.5.10/libepoxy-1.5.10-linux-x86_64.tar.gz",
                 },
-                sha256 = "4343e8ea88063ea13a1e43dc001ca5519b63c9dda9c19c54782d2dbf594e9d30",
+                sha256 = "238b011baa5ed7b2f7118c0b04c22c20872a41c480a566a882bc4c4b115f6fdb",
             },
         },
     },

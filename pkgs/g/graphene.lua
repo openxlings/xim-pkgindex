@@ -1,38 +1,38 @@
 package = {
     spec = "2",
-    homepage = "https://nghttp2.org",
-    name = "nghttp2",
-    description = "HTTP/2 C library (libnghttp2, the framing layer libsoup 3 links)",
-    maintainers = {"Tatsuhiro Tsujikawa"},
+    homepage = "https://ebassi.github.io/graphene/",
+    name = "graphene",
+    description = "Thin layer of graphic data types (points, vectors, matrices) with SIMD support",
+    maintainers = {"Emmanuele Bassi"},
     licenses = {"MIT"},
-    repo = "https://github.com/nghttp2/nghttp2",
-    docs = "https://nghttp2.org/documentation/",
+    repo = "https://github.com/ebassi/graphene",
+    docs = "https://ebassi.github.io/graphene/docs/",
     type = "package",
     archs = {"x86_64"},
     status = "stable",
-    categories = {"library", "network"},
-    keywords = {"http2", "http", "network", "lib"},
+    categories = {"library", "graphics"},
+    keywords = {"graphene", "simd", "math", "gtk", "lib"},
     xvm_enable = true,
     xpm = {
         linux = {
-            -- libsoup >= 3.2 requires libnghttp2.so.14 for its HTTP/2 support.
-            --
-            -- Built --enable-lib-only: the nghttp/nghttpd/h2load executables
-            -- would pull libev, openssl and jansson into the closure for zero
-            -- consumers in this index.
+            -- GTK 4 requires graphene >= 1.10 and uses it for every point,
+            -- rect and matrix in the render node tree. Built with the gobject
+            -- half enabled (graphene-gobject-1.0.pc), which is the half gtk4
+            -- actually asks for.
             deps = {
                 "xim:glibc@>=2.38",
+                "xim:glib@>=2.88",
             },
             exports = {
                 runtime = { libdirs = { "lib" } },
             },
-            ["latest"] = { ref = "1.70.0" },
-            ["1.70.0"] = {
+            ["latest"] = { ref = "1.10.8" },
+            ["1.10.8"] = {
                 url = {
-                    GLOBAL = "https://github.com/xlings-res/nghttp2/releases/download/1.70.0/nghttp2-1.70.0-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/nghttp2/releases/download/1.70.0/nghttp2-1.70.0-linux-x86_64.tar.gz",
+                    GLOBAL = "https://github.com/xlings-res/graphene/releases/download/1.10.8/graphene-1.10.8-linux-x86_64.tar.gz",
+                    CN     = "https://gitcode.com/xlings-res/graphene/releases/download/1.10.8/graphene-1.10.8-linux-x86_64.tar.gz",
                 },
-                sha256 = "4343e8ea88063ea13a1e43dc001ca5519b63c9dda9c19c54782d2dbf594e9d30",
+                sha256 = "f57d7059b2bba93dfb2a7b77e974bdd1943f3d461d917430ee2734f1f85427cb",
             },
         },
     },

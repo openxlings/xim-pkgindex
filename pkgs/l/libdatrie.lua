@@ -1,38 +1,35 @@
 package = {
     spec = "2",
-    homepage = "https://nghttp2.org",
-    name = "nghttp2",
-    description = "HTTP/2 C library (libnghttp2, the framing layer libsoup 3 links)",
-    maintainers = {"Tatsuhiro Tsujikawa"},
-    licenses = {"MIT"},
-    repo = "https://github.com/nghttp2/nghttp2",
-    docs = "https://nghttp2.org/documentation/",
+    homepage = "https://github.com/tlwg/libdatrie",
+    name = "libdatrie",
+    description = "Double-array trie library (the trie engine behind libthai)",
+    maintainers = {"Theppitak Karoonboonyanan"},
+    licenses = {"LGPL-2.1"},
+    repo = "https://github.com/tlwg/libdatrie",
     type = "package",
     archs = {"x86_64"},
     status = "stable",
-    categories = {"library", "network"},
-    keywords = {"http2", "http", "network", "lib"},
+    categories = {"library", "text"},
+    keywords = {"datrie", "trie", "text", "lib"},
+    programs = {"trietool"},
     xvm_enable = true,
     xpm = {
         linux = {
-            -- libsoup >= 3.2 requires libnghttp2.so.14 for its HTTP/2 support.
-            --
-            -- Built --enable-lib-only: the nghttp/nghttpd/h2load executables
-            -- would pull libev, openssl and jansson into the closure for zero
-            -- consumers in this index.
+            -- Here for libthai, which is here for pango. Upstream ships source
+            -- only; built from the release tarball in an xlings subos.
             deps = {
                 "xim:glibc@>=2.38",
             },
             exports = {
                 runtime = { libdirs = { "lib" } },
             },
-            ["latest"] = { ref = "1.70.0" },
-            ["1.70.0"] = {
+            ["latest"] = { ref = "0.2.14" },
+            ["0.2.14"] = {
                 url = {
-                    GLOBAL = "https://github.com/xlings-res/nghttp2/releases/download/1.70.0/nghttp2-1.70.0-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/nghttp2/releases/download/1.70.0/nghttp2-1.70.0-linux-x86_64.tar.gz",
+                    GLOBAL = "https://github.com/xlings-res/libdatrie/releases/download/0.2.14/libdatrie-0.2.14-linux-x86_64.tar.gz",
+                    CN     = "https://gitcode.com/xlings-res/libdatrie/releases/download/0.2.14/libdatrie-0.2.14-linux-x86_64.tar.gz",
                 },
-                sha256 = "4343e8ea88063ea13a1e43dc001ca5519b63c9dda9c19c54782d2dbf594e9d30",
+                sha256 = "5c509113023cbe90de4681d4f9b78cedc2adc495b7562c1c6e4a498a38b8b40c",
             },
         },
     },
@@ -57,6 +54,11 @@ function config()
     local binding = package.name .. "@" .. pkginfo.version()
 
     xvm.add(package.name)
+    -- The payload also ships `trietool-0.2`, the same program under its
+    -- versioned name. One xvm node for it is enough; a second would be a
+    -- duplicate registration of the same binary.
+    xvm.add("trietool", { bindir = path.join(idir, "bin") })
+
 
     sysroot.declare_libs(idir, "lib", binding, pkginfo.version())
 
@@ -71,6 +73,7 @@ function config()
 end
 
 function uninstall()
+    xvm.remove("trietool")
     xvm.remove(package.name)
     return true
 end

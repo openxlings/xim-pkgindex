@@ -16,22 +16,30 @@ package = {
     xvm_enable = true,
     xpm = {
         linux = {
-            deps = { "xim:glibc@>=2.38" },
+            -- BUILT, not repacked, and that is the exception rather than the
+            -- rule here. Upstream does publish a Linux x86_64 binary for this
+            -- version -- sqlite-tools-linux-x64-3530400.zip -- and it contains
+            -- sqlite3, sqldiff, sqlite3_analyzer and sqlite3_rsync: four CLI
+            -- executables and no libsqlite3.so. libsoup links
+            -- `libsqlite3.so.0`, which is precisely the half upstream's binary
+            -- archive does not carry.
+            --
+            -- Built from the autoconf amalgamation with --disable-readline
+            -- (readline is not in the index; the CLI works without line
+            -- editing).
+            deps = {
+                "xim:glibc@>=2.38",
+            },
             exports = {
                 runtime = { libdirs = { "lib" } },
             },
-            -- Built from the upstream autoconf amalgamation
-            -- (sqlite-autoconf-3530400) with --disable-static
-            -- --disable-readline against the xim glib 2.80.0 stack; hosted
-            -- under FarnaHerry pending xlings-res adoption (asset name follows
-            -- the xlings-res convention). Upstream's Makefile omits DT_SONAME,
-            -- so the tarball's libsqlite3.so.0 had its soname stamped with
-            -- patchelf post-build -- without it consumers record an absolute
-            -- build-host path in DT_NEEDED.
             ["latest"] = { ref = "3.53.4" },
             ["3.53.4"] = {
-                url = "https://github.com/FarnaHerry/sqlite/releases/download/3.53.4/sqlite-3.53.4-linux-x86_64.tar.gz",
-                sha256 = "57747e0319861f8ff2570b342d19657fa5b845dea877684dd6616b44220f9cd9",
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/sqlite/releases/download/3.53.4/sqlite-3.53.4-linux-x86_64.tar.gz",
+                    CN     = "https://gitcode.com/xlings-res/sqlite/releases/download/3.53.4/sqlite-3.53.4-linux-x86_64.tar.gz",
+                },
+                sha256 = "f4f6fe756174986f0982010b756838b1b8cae362d0cb173e73d2748480614abb",
             },
         },
     },
@@ -44,9 +52,7 @@ import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    local srcdir = pkginfo.name() .. "-" .. pkginfo.version() .. "-linux-x86_64"
-    os.tryrm(pkginfo.install_dir())
-    os.mv(srcdir, pkginfo.install_dir())
+    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")
@@ -57,11 +63,9 @@ function config()
     local idir = pkginfo.install_dir()
     local binding = package.name .. "@" .. pkginfo.version()
 
-    -- package.name ("sqlite") is NOT one of the programs (the CLI is
-    -- "sqlite3"), so the root node and the program node are separate
-    -- registrations and cannot collide.
     xvm.add(package.name)
     xvm.add("sqlite3", { bindir = path.join(idir, "bin") })
+
 
     sysroot.declare_libs(idir, "lib", binding, pkginfo.version())
 
@@ -71,14 +75,7 @@ function config()
             path.join(system.subos_sysrootdir(), "usr", "include"))
     end
 
-    if not sysroot.declare_headers(idir, "lib/pkgconfig",
-                                   "usr/lib/pkgconfig", binding) then
-        local sysroot_pc = path.join(system.subos_sysrootdir(), "usr/lib/pkgconfig")
-        os.mkdir(sysroot_pc)
-        system.exec(string.format(
-            "sh -c 'for pc in %s/lib/pkgconfig/*.pc; do [ -f \"$pc\" ] && cp -f \"$pc\" %s/; done'",
-            idir, sysroot_pc))
-    end
+    sysroot.declare_pkgconfig(idir, "lib/pkgconfig", binding)
     return true
 end
 

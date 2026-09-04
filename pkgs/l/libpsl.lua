@@ -3,7 +3,7 @@ package = {
     homepage = "https://github.com/rockdaboot/libpsl",
     name = "libpsl",
     description = "C library for the Public Suffix List (libpsl + psl CLI)",
-    maintainers = {"Tim Rühsen"},
+    maintainers = {"Tim Ruehsen"},
     licenses = {"MIT"},
     repo = "https://github.com/rockdaboot/libpsl",
     type = "package",
@@ -15,20 +15,24 @@ package = {
     xvm_enable = true,
     xpm = {
         linux = {
-            deps = { "xim:glibc@>=2.38" },
+            -- libsoup links libpsl.so.5 to decide cookie scope.
+            --
+            -- Built -Druntime=no, which drops the libidn2/libunistring chain:
+            -- IDNA conversion of non-ASCII domains is unavailable, the built-in
+            -- PSL data and every ASCII-domain lookup libsoup performs are not.
+            deps = {
+                "xim:glibc@>=2.38",
+            },
             exports = {
                 runtime = { libdirs = { "lib" } },
             },
-            -- Built from upstream 0.21.5 source (meson, -Druntime=no
-            -- -Dbuiltin=true) against the xim glib 2.80.0 stack; hosted under
-            -- FarnaHerry pending xlings-res adoption. runtime=no drops the
-            -- libidn2/libunistring chain: IDNA conversion is unavailable, but
-            -- the built-in PSL data and every ASCII-domain query libsoup
-            -- performs are unaffected.
-            ["latest"] = { ref = "0.21.5" },
-            ["0.21.5"] = {
-                url = "https://github.com/FarnaHerry/libpsl/releases/download/0.21.5/libpsl-0.21.5-linux-x86_64.tar.gz",
-                sha256 = "13972b563a65c7b95ce6690fa26c65f60d659a7c12b7d7b89bb2e115def553a1",
+            ["latest"] = { ref = "0.23.3" },
+            ["0.23.3"] = {
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/libpsl/releases/download/0.23.3/libpsl-0.23.3-linux-x86_64.tar.gz",
+                    CN     = "https://gitcode.com/xlings-res/libpsl/releases/download/0.23.3/libpsl-0.23.3-linux-x86_64.tar.gz",
+                },
+                sha256 = "1987dd56df0aab14d516af533de370c97df6b37a167c1b4ef2dce54d7a796988",
             },
         },
     },
@@ -41,9 +45,7 @@ import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    local srcdir = pkginfo.name() .. "-" .. pkginfo.version() .. "-linux-x86_64"
-    os.tryrm(pkginfo.install_dir())
-    os.mv(srcdir, pkginfo.install_dir())
+    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")
@@ -56,6 +58,12 @@ function config()
 
     xvm.add(package.name)
     xvm.add("psl", { bindir = path.join(idir, "bin") })
+    -- bin/psl-make-dafsa is shipped but deliberately NOT registered: it is a
+    -- build-time source generator whose shebang is `#!/usr/bin/env python`,
+    -- and modern distributions provide `python3` without a bare `python`. A
+    -- registered shim for it would resolve and then fail on execution, which
+    -- is worse than not being on PATH.
+
 
     sysroot.declare_libs(idir, "lib", binding, pkginfo.version())
 
@@ -65,14 +73,7 @@ function config()
             path.join(system.subos_sysrootdir(), "usr", "include"))
     end
 
-    if not sysroot.declare_headers(idir, "lib/pkgconfig",
-                                   "usr/lib/pkgconfig", binding) then
-        local sysroot_pc = path.join(system.subos_sysrootdir(), "usr/lib/pkgconfig")
-        os.mkdir(sysroot_pc)
-        system.exec(string.format(
-            "sh -c 'for pc in %s/lib/pkgconfig/*.pc; do [ -f \"$pc\" ] && cp -f \"$pc\" %s/; done'",
-            idir, sysroot_pc))
-    end
+    sysroot.declare_pkgconfig(idir, "lib/pkgconfig", binding)
     return true
 end
 
