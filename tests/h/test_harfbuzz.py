@@ -1,18 +1,17 @@
-"""测试 libjpeg-turbo 包"""
+"""测试 harfbuzz 包"""
 import pytest
 from tests.lib.xpkg_parser import parse_xpkg
 from tests.lib.assertions import (
     assert_required_fields, assert_valid_spec, assert_valid_type,
     assert_no_typos, assert_no_exec_xvm, assert_no_bashrc_modification,
     assert_no_direct_path_modification, assert_uses_new_api,
-    assert_xim_add_succeeds, assert_install_succeeds,
-    assert_uninstall_succeeds, assert_xvm_registered,
+    assert_xim_add_succeeds, assert_xvm_registered,
     assert_valid_xvm_node_kinds, assert_pkgconfig_resolves,
 )
 from tests.lib.platform_utils import skip_if_not
 
-PKG = "libjpeg-turbo"
-PKG_FILE = "pkgs/l/libjpeg-turbo.lua"
+PKG = "harfbuzz"
+PKG_FILE = "pkgs/h/harfbuzz.lua"
 
 
 @pytest.fixture(scope='module')
@@ -66,31 +65,22 @@ class TestIsolation:
         assert_uses_new_api(PKG_FILE)
 
 
-class TestLifecycle:
-    @pytest.mark.lifecycle
-    @skip_if_not('linux')
-    def test_install(self):
-        assert_install_succeeds(PKG)
-
-    @pytest.mark.lifecycle
-    @skip_if_not('linux')
-    def test_uninstall(self):
-        assert_uninstall_succeeds(PKG)
-
-
 class TestVerify:
+    # No install/uninstall case here on purpose: this package is a shared
+    # dependency of most of the index, so tearing it down mid-suite would
+    # take unrelated packages with it. What is asserted is the state a
+    # consumer meets.
+
     @pytest.mark.verify
     @skip_if_not('linux')
     def test_xvm_registered(self):
         assert_xvm_registered(PKG)
 
-    # The assertion that actually means something for a library package.
-    # "xvm registered the node" only says the recipe ran; it says nothing
-    # about whether a consumer can use the payload, and the two came apart
-    # badly in this index -- glib shipped gmodule-2.0.pc without the
-    # gmodule-no-export-2.0.pc it names in Requires, and every GNOME .pc
-    # stopped resolving while every package still installed clean.
     @pytest.mark.verify
     @skip_if_not('linux')
     def test_pkgconfig_resolves(self):
-        assert_pkgconfig_resolves("libjpeg", "libturbojpeg")
+        """harfbuzz-subset is a HARD dependency of GTK 4 (no `required: false`)
+    and harfbuzz-gobject is named by pango's pangoft2.pc. The published
+    8.3.0 payload had neither: one library, one .pc.
+        """
+        assert_pkgconfig_resolves("harfbuzz", "harfbuzz-subset", "harfbuzz-gobject")

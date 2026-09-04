@@ -1,4 +1,4 @@
-"""测试 libjpeg-turbo 包"""
+"""测试 libthai 包"""
 import pytest
 from tests.lib.xpkg_parser import parse_xpkg
 from tests.lib.assertions import (
@@ -11,8 +11,8 @@ from tests.lib.assertions import (
 )
 from tests.lib.platform_utils import skip_if_not
 
-PKG = "libjpeg-turbo"
-PKG_FILE = "pkgs/l/libjpeg-turbo.lua"
+PKG = "libthai"
+PKG_FILE = "pkgs/l/libthai.lua"
 
 
 @pytest.fixture(scope='module')
@@ -93,4 +93,4 @@ class TestVerify:
     @pytest.mark.verify
     @skip_if_not('linux')
     def test_pkgconfig_resolves(self):
-        assert_pkgconfig_resolves("libjpeg", "libturbojpeg")
+        assert_pkgconfig_resolves("libthai")
