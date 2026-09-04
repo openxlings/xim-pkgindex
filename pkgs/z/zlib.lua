@@ -35,6 +35,7 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
 import("xim.pkgindex.selfcontain")
+import("xim.pkgindex.sysroot")
 import("xim.libxpkg.log")
 
 local libs = {
@@ -49,6 +50,21 @@ function install()
     -- Stamp this payload's own dependency closure onto its libraries, so
     -- they resolve from our payloads and not from the host's ld.so.cache.
     selfcontain.seal(pkginfo.install_dir())
+
+    -- The payload's zlib.pc carries the ABSOLUTE prefix of the machine that
+    -- built it -- measured on the shipped 1.3.1 artifact:
+    --
+    --     prefix=/home/.../xim-pkgindex-fromsource/.xlings/data/xpkgs/fromsource-x-zlib/1.3.1
+    --
+    -- a path that exists on nobody's machine. Every consumer that resolves
+    -- zlib through pkg-config therefore gets `-L<nonexistent>/lib -lz` and
+    -- falls back to the host's libz, or fails outright: cairo, pango and
+    -- gio-2.0 all name `zlib` in Requires(.private), so a single unrelocated
+    -- .pc takes the whole GNOME stack's pkg-config resolution down with it.
+    --
+    -- relocate_pkgconfig rewrites it to this payload and then FAILS if what
+    -- it wrote does not exist, which is the half a plain sed does not do.
+    sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")
     return true
 end
 
@@ -102,6 +118,10 @@ function config()
             end
         end
     end
+
+    -- pkg-config metadata, declared the same way the headers are; install()
+    -- already made the payload's zlib.pc correct.
+    sysroot.declare_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig", binding)
 
     return true
 end
