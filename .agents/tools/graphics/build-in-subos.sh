@@ -24,13 +24,20 @@
 # See "the check on the INPUTS" below for the two shipped packages that walked
 # straight through the payload check.
 #
-# KNOWN GAP. This list used to open with "no DT_NEEDED that resolves outside
-# the subos or the package itself". No such check has ever existed in this file
-# — grep it. It is the one that would catch an autotools package that picked up
-# a host library through a bare `-lfoo`: no absolute path for the input check
-# to see, and a bare SONAME for the payload check to shrug at. Recorded here
-# rather than quietly deleted, because it is the complement of the input check
-# and not a duplicate of it.
+# THE DT_NEEDED HALF, formerly recorded here as a KNOWN GAP, now exists --
+# but only half of what that note asked for, so read the difference.
+#
+# What is implemented: a DT_NEEDED that is an absolute PATH is rejected. That
+# caught a real one -- libsoup shipped
+# `DT_NEEDED <subos>/usr/lib/libsqlite3.so` because the sqlite payload carried
+# no DT_SONAME -- and the soname pass below now prevents the cause as well.
+#
+# What is STILL missing is the case the original note actually described: an
+# autotools package that picks up a HOST library through a bare `-lfoo`. That
+# leaves no absolute path for the input check to see and a bare soname for the
+# payload check to shrug at, and neither the path check nor the soname pass
+# helps. Recorded rather than quietly dropped, because it is the complement of
+# the input check and not a duplicate of it.
 #
 # That check is the reason this script exists rather than a README saying
 # "build it in the subos". A leaked host path does not fail the build; it fails
@@ -95,6 +102,7 @@ SRC="$WORK/src"
 
 log()  { echo "[gfx-build:$NAME] $*"; }
 fail() { echo "[gfx-build:$NAME] FAIL: $*" >&2; exit 1; }
+warn() { echo "[gfx-build:$NAME] WARN: $*" >&2; }
 # 2 and 3 are not decoration. `fail` says the package is broken; these two say
 # the check did not get to run, which is a different thing to act on, and
 # neither of them is 0.
@@ -577,7 +585,28 @@ BUILD_ENV=()
 # not become is a wildcard over everything installed — each package is named
 # here, so a dependency that is not declared still fails loudly.
 for dep in $DEPS; do
-    depdir="$(ls -d "$XHOME"/data/xpkgs/*-"$dep"/*/ 2>/dev/null | head -1)"
+    # NAMESPACE FIRST, THEN ALPHABET. `*-$dep` matches every namespace a
+    # payload can be installed under -- xim-x-, local-x-, fromsource-x-,
+    # scode-x- -- and `head -1` then picks by ASCII order, which puts
+    # `fromsource-` and `local-` ahead of `xim-`.
+    #
+    # That is not a tie-break, it is a silent substitution. Measured on this
+    # machine while building gtk4:
+    #
+    #     dep libpng         -> fromsource-x-libpng/1.6.43/
+    #     dep libjpeg-turbo  -> local-x-libjpeg-turbo/3.1.2/
+    #
+    # where local-x-libjpeg-turbo/3.1.2 was left over from testing an earlier
+    # revision of this very PR. The build would have linked against it and the
+    # payload check would have found nothing wrong -- a payload under
+    # data/xpkgs is "ours" by that check's definition, whoever put it there.
+    #
+    # So: the index namespace wins, and anything else is announced.
+    depdir="$(ls -d "$XHOME"/data/xpkgs/xim-x-"$dep"/*/ 2>/dev/null | sort -V | tail -1)"
+    if [[ -z "$depdir" ]]; then
+        depdir="$(ls -d "$XHOME"/data/xpkgs/*-"$dep"/*/ 2>/dev/null | sort -V | tail -1)"
+        [[ -n "$depdir" ]] && warn "dep $dep resolved outside the xim namespace: ${depdir#"$XHOME"/data/xpkgs/}"
+    fi
     if [[ -z "$depdir" ]]; then
         skip "--deps $dep: not installed in $XHOME (xlings install $dep)"
     fi
@@ -900,7 +929,25 @@ case "$SYSTEM" in
     ;;
   meson)
     __resolve_meson
+    # --wrap-mode=nofallback: a dependency this index does not provide must FAIL
+    # here, loudly, instead of meson quietly building the project's own bundled
+    # copy of it.
+    #
+    # This is the input check's blind spot, not a style preference. A fallback
+    # subproject is a second copy of a library compiled into the payload, and
+    # the payload check sees nothing wrong with it -- no host path, no stray
+    # RPATH. What the user gets is two harfbuzzes in one process.
+    #
+    # Measured on gtk4 4.16.13 against this index: `harfbuzz-subset` and
+    # `pangoft2` both resolved to NO, meson reached for subprojects/pango, and
+    # the build died at
+    #     subprojects/pango/pango/meson.build:171: ERROR: Tried to override
+    #     dependency 'pango' which has already been resolved
+    # -- an error about wrap bookkeeping, three steps removed from the actual
+    # cause, which was that the index's harfbuzz payload ships one library
+    # where upstream ships four.
     "${MESON[@]}" setup _b --prefix="$PREFIX" --libdir=lib \
+        --wrap-mode=nofallback \
         --buildtype=release -Ddefault_library=shared "${EXTRA[@]}" > "$WORK/$NAME-configure.log" 2>&1 \
         || { tail -30 "$WORK/$NAME-configure.log"; fail "meson setup"; }
     "${BUILD_ENV[@]}" "$SUBOS/bin/ninja" -C _b > "$WORK/$NAME-build.log" 2>&1 \
@@ -974,6 +1021,42 @@ while IFS= read -r -d '' f; do
     esac
 done < <(find "$PAYLOAD" -type f ! -type l -print0)
 
+# ── a missing DT_SONAME poisons every CONSUMER, not this payload ────────
+#
+# When a shared library carries no DT_SONAME, the linker has no name to record
+# and writes down the PATH it was handed instead. The damage lands in the next
+# package, not this one. Measured: sqlite's autoconf amalgamation ships
+# libsqlite3.so.3.53.4 with no soname, and libsoup then linked against it and
+# recorded
+#
+#     DT_NEEDED  /home/<user>/.xlings/subos/gtk4build/usr/lib/libsqlite3.so
+#
+# an absolute build-machine path inside a payload that is meant to be
+# relocatable. On any other machine that is a startup failure, and nothing in
+# libsoup's own build is wrong.
+#
+# The intended soname is already in the payload: a distro ships
+# `libfoo.so.N -> libfoo.so.N.x.y`, and `libfoo.so.N` IS the soname. Read it
+# off the symlink rather than inventing one -- if there is no such link there
+# is nothing to infer and the file is left alone.
+log "checking DT_SONAME"
+while IFS= read -r -d '' real; do
+    is_elf "$real" || continue
+    [[ -n "$(readelf -d "$real" 2>/dev/null | grep -o 'soname: \[.*\]')" ]] && continue
+    base="$(basename "$real")"
+    want=""
+    for link in "$(dirname "$real")"/*.so.*; do
+        [[ -L "$link" ]] || continue
+        [[ "$(readlink "$link")" == "$base" ]] || continue
+        # Prefer the shortest such link: libfoo.so.0 over libfoo.so.0.1.2
+        if [[ -z "$want" || ${#link} -lt ${#want} ]]; then want="$link"; fi
+    done
+    [[ -n "$want" ]] || { log "  $base has no soname and no versioned symlink — left alone"; continue; }
+    patchelf --set-soname "$(basename "$want")" "$real" \
+        && log "  $base: soname stamped as $(basename "$want")" \
+        || fail "could not stamp a soname on $base"
+done < <(find "$PAYLOAD" -name '*.so.*' -type f ! -type l -print0)
+
 # ── the check on the OUTPUT ─────────────────────────────────────────────
 # The inputs were checked above. This is the payload: what a host path in here
 # breaks is the NEXT machine, not this one.
@@ -988,6 +1071,25 @@ while IFS= read -r -d '' f; do
         ''|'$ORIGIN'*) ;;
         *) report_leak "RPATH names a path outside the payload: ${f#$PAYLOAD/} → $rp" ;;
     esac
+done < <(find "$PAYLOAD" -type f ! -type l -print0)
+
+# DT_NEEDED that is a PATH rather than a soname. This is the check the header
+# of this file records as a KNOWN GAP, and it is here now because it caught a
+# real one: libsoup, linked against a sqlite payload with no DT_SONAME, shipped
+#
+#     DT_NEEDED  <subos>/usr/lib/libsqlite3.so
+#
+# The RPATH check above cannot see it -- the RPATH was fine -- and the .pc check
+# cannot either, because nothing is written in a .pc. The soname pass above
+# prevents the cause; this catches the effect, including any cause nobody has
+# thought of yet.
+while IFS= read -r -d '' f; do
+    is_elf "$f" || continue
+    while read -r need; do
+        case "$need" in
+            /*) report_leak "DT_NEEDED is an absolute path: ${f#$PAYLOAD/} -> $need" ;;
+        esac
+    done < <(readelf -d "$f" 2>/dev/null | sed -n 's/.*(NEEDED).*\[\(.*\)\]/\1/p')
 done < <(find "$PAYLOAD" -type f ! -type l -print0)
 
 # .pc / .la / *-config files carry absolute paths that later builds consume.
@@ -1005,10 +1107,60 @@ if [[ $leaks -gt 0 ]]; then
 fi
 log "  no host references"
 
+# ── strip ───────────────────────────────────────────────────────────────
+# AFTER the leak check, never before, and that ordering is the whole point.
+#
+# The debug info is where a build records the machine it ran on. Measured on
+# the payloads this script exists to replace (PR #754, built on a Fedora host
+# rather than in a subos):
+#
+#     DW_AT_comp_dir : /tmp/gnome-build/src/sqlite-autoconf-3530400/build
+#     DW_AT_comp_dir : /usr/src/debug/glibc-2.43-8.fc44.x86_64/stdlib
+#
+# Strip first and both of those disappear, along with the only evidence that
+# the build ever touched a host toolchain. So the checks above read the
+# unstripped payload, and only then is it thinned.
+#
+# --strip-unneeded, not --strip-all: it keeps .dynsym, which is what a
+# consumer links against. A shared library stripped with --strip-all still
+# loads and still fails to link.
+#
+# Worth the step rather than shipping fat: sqlite's own numbers here are
+# 7.7M -> 1.7M for the CLI and 5.2M -> 1.2M for libsqlite3, i.e. ~10M of the
+# 14M installed footprint was debug info nobody can use without the sources.
+if [[ "${XLINGS_GFX_NO_STRIP:-0}" != "1" ]]; then
+    log "stripping"
+    before=$(du -sk "$PAYLOAD" | cut -f1)
+    while IFS= read -r -d '' f; do
+        is_elf "$f" || continue
+        strip --strip-unneeded "$f" 2>/dev/null || true
+    done < <(find "$PAYLOAD" -type f ! -type l -print0)
+    after=$(du -sk "$PAYLOAD" | cut -f1)
+    log "  ${before}K -> ${after}K"
+fi
+
 # ── package ─────────────────────────────────────────────────────────────
 OUT="$WORK/dist/$NAME-$VERSION-linux-x86_64.tar.gz"
 mkdir -p "$(dirname "$OUT")"
-tar czf "$OUT" -C "$WORK/payload" "$NAME-$VERSION"
+
+# Reproducible: same inputs -> same bytes. contributing.md §5.2.3 asks for it
+# and `tar czf` gives none of it -- member order comes from readdir, owner is
+# whoever ran the build, mtime is the wall clock, and gzip stamps its own
+# timestamp into the header on top of that. Measured on the payloads this
+# replaces: `farna/farna`, mtimes 15:02-15:34 on the build day. Nobody can
+# rebuild those and compare, which is the whole point of publishing a build
+# script next to them.
+#
+# --sort=name fixes the order, --owner/--group/--numeric-owner fix the
+# identity, --mtime fixes the clock, and gzip -n keeps gzip from putting the
+# clock back. SOURCE_DATE_EPOCH is the standard override for anyone who wants
+# the upstream release date in there instead of the epoch.
+tar --sort=name \
+    --owner=0 --group=0 --numeric-owner \
+    --mtime="@${SOURCE_DATE_EPOCH:-0}" \
+    --format=gnu \
+    -cf - -C "$WORK/payload" "$NAME-$VERSION" \
+  | gzip -n -9 > "$OUT"
 log "→ $OUT  ($(du -h "$OUT" | cut -f1))"
 sha256sum "$OUT" | sed 's/^/[gfx-build] sha256: /'
 
@@ -1023,6 +1175,27 @@ sha256sum "$OUT" | sed 's/^/[gfx-build] sha256: /'
 # once the recipes are published.
 if [[ "${XLINGS_GFX_STAGE:-1}" == "1" ]]; then
     mkdir -p "$SUBOS/usr"
+
+    # Break symlinks before copying ONTO them, or `cp -a` writes THROUGH the
+    # link and corrupts whatever it points at.
+    #
+    # An installed package does not put copies in the subos sysroot -- it
+    # declares assets, and a declared asset is a SYMLINK into that package's
+    # payload under data/xpkgs. So `<subos>/usr/lib/pkgconfig/glib-2.0.pc` is
+    # a link into the installed glib's payload, and staging a freshly built
+    # glib over it rewrote the INSTALLED package's file. Measured: staging
+    # glib 2.88.3 replaced the contents of glib 2.80.0's payload .pc.
+    #
+    # The second half of the same bug is below: the prefix rewrite used
+    # `find -type f`, which does not match a symlink, so the staged .pc kept
+    # `prefix=/usr` and every consumer resolved glib from the HOST -- graphene
+    # compiled against /usr/include/glib-2.0 and died on a missing
+    # glibconfig.h, which is the host's own split-out header.
+    while IFS= read -r -d '' f; do
+        rel="${f#$PAYLOAD/}"
+        [[ -L "$SUBOS/usr/$rel" ]] && rm -f "$SUBOS/usr/$rel"
+    done < <(find "$PAYLOAD" -type f ! -type l -print0)
+
     cp -a "$PAYLOAD/." "$SUBOS/usr/"
 
     # The copy that goes into the SUBOS gets subos paths, not the payload's
@@ -1035,6 +1208,22 @@ if [[ "${XLINGS_GFX_STAGE:-1}" == "1" ]]; then
     # installed `wayland-scanner`, whose payload RPATH of `$ORIGIN/../lib`
     # points at `<subos>/usr/lib`, and libexpat lives in `<subos>/lib`. The
     # error names libexpat and looks like a missing package.
+    #
+    # usr/LIB as well as usr/bin, and that second half was missing. A staged
+    # library keeps the `$ORIGIN` RPATH it was built with, which resolves to
+    # `<subos>/usr/lib` -- fine for its own siblings, useless for anything
+    # under `<subos>/lib`, where every INSTALLED package's libraries are.
+    #
+    # Measured: staged glib's libglib-2.0.so.0 had RPATH `$ORIGIN` and needs
+    # libpcre2-8, libffi, libz, libmount and libselinux, all of which live in
+    # `<subos>/lib`. gdk-pixbuf then failed running its own freshly built
+    # gdk-pixbuf-query-loaders:
+    #
+    #     error while loading shared libraries: libpcre2-8.so.0
+    #
+    # The consumer's own RPATH does not save it: DT_RPATH is inherited only
+    # through objects that themselves use RPATH, and it is the staged library
+    # in the middle that has to carry the path.
     while IFS= read -r -d '' f; do
         is_elf "$f" || continue
         # --force-rpath: DT_RPATH, which is transitive. Without it patchelf
@@ -1044,7 +1233,7 @@ if [[ "${XLINGS_GFX_STAGE:-1}" == "1" ]]; then
         patchelf --force-rpath --set-rpath \
             "$SUBOS/usr/lib:$SUBOS/lib${GLIBC_LIB64:+:$GLIBC_LIB64}" \
             "$f" 2>/dev/null || true
-    done < <(find "$SUBOS/usr/bin" -type f ! -type l -print0 2>/dev/null)
+    done < <(find "$SUBOS/usr/bin" "$SUBOS/usr/lib" -type f ! -type l -print0 2>/dev/null)
 
     # The payload's own .pc files say prefix=/usr, and they have to: that is
     # what makes the tarball relocatable into whatever subos installs it. But
@@ -1054,9 +1243,13 @@ if [[ "${XLINGS_GFX_STAGE:-1}" == "1" ]]; then
     # that belongs to the host.
     #
     # Only the staged copy is rewritten. The tarball keeps /usr.
+    # No `-type f`: a .pc reached through a declared-asset symlink is exactly
+    # the one that must be rewritten, and -type f skips it silently. Anything
+    # left pointing at /usr sends the next build to the host.
     while IFS= read -r -d '' pc; do
+        [[ -f "$pc" ]] || continue
         sed -i "s|^prefix=/usr$|prefix=$SUBOS/usr|; s|=/usr/|=$SUBOS/usr/|g" "$pc"
-    done < <(find "$SUBOS/usr" -name '*.pc' -type f -print0)
+    done < <(find "$SUBOS/usr" -name '*.pc' -print0)
 
     log "  staged into $SUBOS_NAME's sysroot for the next tier"
 fi
