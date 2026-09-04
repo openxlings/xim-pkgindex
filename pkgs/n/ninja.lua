@@ -30,16 +30,48 @@ package = {
             -- deps per-OS (not per-arch), so a glibc dep would 404 on aarch64
             -- (no glibc asset for arm). A static ninja sidesteps that entirely
             -- and is the right shape for a bootstrap build tool regardless.
+            -- A CHECKSUM, BECAUSE "ninja 1.12.1" HAS NAMED MORE THAN ONE
+            -- BINARY ON MORE THAN ONE MACHINE.
+            --
+            -- Measured 2026-09-04: two installs at the same package path and
+            -- the same version, one 2202320 bytes and statically linked (what
+            -- the asset above contains, BuildID 787c36ad…), the other 273768
+            -- bytes and dynamically linked against a 2014-era glibc — the shape
+            -- of upstream's own `ninja-linux.zip`. Their SHA-256 differ and both
+            -- answer `--version` with 1.12.1.
+            --
+            -- WHERE THE SECOND ONE CAME FROM IS NOT ESTABLISHED. What is
+            -- established is that nothing here would have said so: a bare
+            -- `XLINGS_RES` entry carries no checksum, so whatever the asset
+            -- happens to be is what is installed, and two machines can disagree
+            -- with nothing to notice. A build tool is the wrong place for that:
+            -- ninja is what every other package is built WITH.
             ["latest"] = { ref = "1.12.1" },
-            ["1.12.1"] = "XLINGS_RES",
+            ["1.12.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64  = "0508ca82eb54792f5a416b5e2fbb7bc6b94e355bb715019276c37c78a30f8d32",
+                    aarch64 = "5ccb8b80267f2ab9d22c2fbe868f36ccef9462af99652995e9efad16f27d631a",
+                },
+            },
         },
         macosx = {
             ["latest"] = { ref = "1.12.1" },
-            ["1.12.1"] = "XLINGS_RES",
+            ["1.12.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "6b50dbcafd7304101a1e72ab50f08f0be6c7e5a882e833a6a21d927aa7b3e617",
+                },
+            },
         },
         windows = {
             ["latest"] = { ref = "1.12.1" },
-            ["1.12.1"] = "XLINGS_RES",
+            ["1.12.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "f550fec705b6d6ff58f2db3c374c2277a37691678d6aba463adcbb129108467a",
+                },
+            },
         },
     },
 }
