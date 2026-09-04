@@ -39,6 +39,15 @@ function install()
     local dir = pkginfo.install_dir()
     os.tryrm(dir)
     os.mv("xorgproto-2024.1", dir)
+
+    -- Headers-only, so there is no seal() step here -- but it still ships 29
+    -- .pc files, and nothing published them. `xproto` is the one libXft and
+    -- libXdamage name, so without this `pkg-config --cflags xft` fails from a
+    -- sealed subos even with libXft installed.
+    --
+    -- share/pkgconfig, not lib/pkgconfig: a package with no libraries puts
+    -- them under share/, which is where xorgproto's are.
+    sysroot.relocate_pkgconfig(dir, "share/pkgconfig")
     return true
 end
 
@@ -62,6 +71,8 @@ function config()
             path.join(pkginfo.install_dir(), "include"),
             path.join(system.subos_sysrootdir(), "usr", "include"))
     end
+    sysroot.declare_pkgconfig(pkginfo.install_dir(), "share/pkgconfig", binding)
+
     return true
 end
 
