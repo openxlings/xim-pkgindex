@@ -25,27 +25,31 @@ package = {
     xvm_enable = true,
 
     xpm = {
+        -- INTENTIONALLY ON THE HOST LOADER (same decision as code.lua). This is
+        -- a decision, not an unfinished migration, recorded so a later sweep for
+        -- host-loader payloads does not "fix" it by adding a glibc dep.
+        --
+        -- The DT_NEEDED closure of bin/huxerui + lib/libhuxerui.so, enumerated
+        -- from the 0.2.0 linux-x86_64 artifact with readelf:
+        --   glibc/gcc-runtime half:  libc.so.6, libm.so.6, libdl.so,
+        --                            libstdc++.so.6, libgcc_s.so.1
+        --   GTK4 desktop stack:      libgtk-4.so.1, libgdk_pixbuf-2.0.so.0,
+        --                            libsoup-3.0.so.0, libgio-2.0.so.0,
+        --                            libgobject-2.0.so.0, libglib-2.0.so.0,
+        --                            libpango-1.0.so.0, libpangocairo-1.0.so.0,
+        --                            libcairo.so.2
+        --   (plus libc++_shared.so from the bundled Android runtime payload)
+        --
+        -- GTK4, GDK-Pixbuf and libsoup-3 have no package in this index (no
+        -- gtk.lua / gdk-pixbuf.lua / libsoup.lua). Declaring only the in-index
+        -- half (glibc, pango, cairo, …) would move PT_INTERP into our sandbox
+        -- and REMOVE the host fallback for the GTK4 half, which then resolves
+        -- nowhere (our glibc's ld.so cache path exists on no machine). A UI SDK
+        -- is also meant to bind the desktop the user is actually logged into —
+        -- vendoring GTK4 would make a second, worse desktop. So the whole
+        -- payload stays on the host loader and the host is the provider; the
+        -- D2 dep-closure check reports these sonames as notes, not a failure.
         linux = {
-            -- DT_NEEDED closure of bin/huxerui + lib/libhuxerui.so, enumerated
-            -- from the 0.2.0 linux-x86_64 artifact with readelf, not assumed.
-            -- glibc + gcc-runtime cover the C/C++ runtime; glib/pango/cairo/
-            -- harfbuzz/freetype are the text/layout half of the GTK4 stack that
-            -- IS present in this index.
-            deps = {
-                "xim:glibc@>=2.38",
-                "xim:gcc-runtime@>=13",
-                "xim:glib@>=2.80.0",
-                "xim:pango@>=1.52",
-                "xim:cairo@>=1.18.0",
-                "xim:harfbuzz@>=8.3.0",
-                "xim:freetype@>=2.13.2",
-            },
-            -- libhuxerui.so additionally DT_NEEDEDs libgtk-4.so.1,
-            -- libgdk_pixbuf-2.0.so.0 and libsoup-3.0.so.0. None of those is in
-            -- this index yet (no gtk.lua / gdk-pixbuf.lua / libsoup.lua), so a
-            -- closed-subos LINK of a GUI app still needs the host's GTK4 stack.
-            -- They are recorded here as system requirements, not silently
-            -- dropped. See the package description / issue for the gap.
             source = "https://github.com/HuxerUI/HuxerUI/releases/download/v${version}/huxerui-sdk-${version}-linux-${arch}.${ext}",
             ["latest"] = { ref = "0.2.0" },
             ["0.2.0"] = {
