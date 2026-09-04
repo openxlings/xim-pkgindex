@@ -207,9 +207,31 @@ for profile in "${PROFILES[@]}"; do
              crt_triple="${crt_triple/armvv/armv}"
              crt_arch="${crt_triple%%-*}" ;;
     esac
-    echo "==> $march/$mabi ($triple)"
+    # ⚠️⚠️ THE MULTILIB KEY IS NOT `<march>/<mabi>` ON ARM, AND ASSUMING IT WAS
+    # PRODUCED A PAYLOAD THAT SERVED HARD-FLOAT LIBRARIES TO A SOFT-FLOAT
+    # TARGET.
+    #
+    # On riscv, `mabi` IS the float ABI — `lp64d` and `lp64` are different
+    # values — so `<march>/<mabi>` separates every profile. On ARM `mabi` names
+    # the PROCEDURE CALL STANDARD and is `aapcs` for both, while the float ABI
+    # lives in the triple's `eabi`/`eabihf` suffix. So `thumbv7em-none-eabi` and
+    # `thumbv7em-none-eabihf` both map to `armv7e-m/aapcs` and the second build
+    # overwrites the first.
+    #
+    # Measured: the seven M-profile profiles collapsed into five directories,
+    # and `armv7e-m/aapcs/libc.a` came out carrying `Tag_ABI_HardFP_use` and
+    # `FP_arch: VFPv4-D16` — the hard-float build, sitting where the soft-float
+    # row would look for it. Nothing failed; the BUILDINFO listed two profiles
+    # at one path, which is the only place it was visible.
+    #
+    # ⇒ ARM keys on the TRIPLE. The other three families keep `<march>/<mabi>`
+    # so their published payloads stay byte-compatible with the `libdir` column
+    # mcpp already records for them.
+    libdir="$march/$mabi"
+    [ "$FAMILY" = arm ] && libdir="$triple"
+    echo "==> $libdir ($triple)"
 
-    prefix="$STAGE/staging/$march/$mabi"
+    prefix="$STAGE/staging/$libdir"
     cross="$WORK/cross-$march-$mabi.txt"
 
     # Semihosting is how a bare image reaches the host through the debugger
@@ -333,11 +355,11 @@ EOF
           -DCMAKE_INSTALL_PREFIX="$prefix" >/dev/null
     ninja -C "$WORK/crtb-$march-$mabi" >/dev/null
 
-    mkdir -p "$STAGE/include/$march/$mabi" "$STAGE/lib/$march/$mabi"
-    cp -a "$prefix/include/." "$STAGE/include/$march/$mabi/"
-    cp -a "$prefix/lib/." "$STAGE/lib/$march/$mabi/"
+    mkdir -p "$STAGE/include/$libdir" "$STAGE/lib/$libdir"
+    cp -a "$prefix/include/." "$STAGE/include/$libdir/"
+    cp -a "$prefix/lib/." "$STAGE/lib/$libdir/"
     cp "$WORK/crtb-$march-$mabi/lib/baremetal/libclang_rt.builtins-$crt_arch.a" \
-       "$STAGE/lib/$march/$mabi/libclang_rt.builtins-$arch.a"
+       "$STAGE/lib/$libdir/libclang_rt.builtins-$arch.a"
 
     # Fail closed on the exact gap this artifact exists to close. Reaching here
     # with the builtins missing would ship a sysroot whose printf cannot link.
@@ -355,11 +377,11 @@ EOF
     #
     # What IS universal: the builtins archive must exist and be non-empty, and
     # the assertion must not accept an EMPTY symbol listing as a pass.
-    blt="$STAGE/lib/$march/$mabi/libclang_rt.builtins-$arch.a"
+    blt="$STAGE/lib/$libdir/libclang_rt.builtins-$arch.a"
     [ -s "$blt" ] || { echo "builtins archive missing or empty: $blt" >&2; exit 1; }
     total=$("$LLVM_DIR/bin/llvm-nm" "$blt" | grep -cE ' T ' || true)
     [ "$total" -ge 20 ] \
-        || { echo "builtins for $march/$mabi export only $total text symbols — llvm-nm likely failed rather than the library being small" >&2; exit 1; }
+        || { echo "builtins for $libdir export only $total text symbols — llvm-nm likely failed rather than the library being small" >&2; exit 1; }
     if [ "$FAMILY" = riscv ]; then
         # Counted, not `grep -q`. Under `pipefail` a matching `grep -q` closes
         # the pipe the moment it matches, llvm-nm takes SIGPIPE, and the
@@ -368,14 +390,14 @@ EOF
         # perfectly fine.
         shifts=$("$LLVM_DIR/bin/llvm-nm" "$blt" | grep -cE ' T (__ashlti3|__lshrti3)$')
         [ "$shifts" -ge 2 ] \
-            || { echo "builtins for $march/$mabi lack the 128-bit shifts picolibc printf needs (found $shifts/2)" >&2; exit 1; }
+            || { echo "builtins for $libdir lack the 128-bit shifts picolibc printf needs (found $shifts/2)" >&2; exit 1; }
     fi
     required="libc.a libm.a picolibc.ld picolibcpp.ld"
     # Semihosting is a family fact; see the cross-file note above.
     [ "$semihost" = true ] && required="$required libsemihost.a crt0-semihost.o"
     for f in $required; do
-        [ -e "$STAGE/lib/$march/$mabi/$f" ] \
-            || { echo "missing $march/$mabi/$f" >&2; exit 1; }
+        [ -e "$STAGE/lib/$libdir/$f" ] \
+            || { echo "missing $libdir/$f" >&2; exit 1; }
     done
 done
 rm -rf "$STAGE/staging"
@@ -388,7 +410,10 @@ cp "$WORK/llvm-src/compiler-rt/LICENSE.TXT" "$STAGE/LICENSE.compiler-rt"
     echo "built with  $("$LLVM_DIR/bin/clang" --version | head -1)"
     echo "family  $FAMILY"
     echo "profiles"
-    for profile in "${PROFILES[@]}"; do set -- $profile; echo "  $2/$3  ($1)"; done
+    for profile in "${PROFILES[@]}"; do
+        set -- $profile
+        if [ "$FAMILY" = arm ]; then echo "  $1"; else echo "  $2/$3  ($1)"; fi
+    done
 } > "$STAGE/BUILDINFO"
 
 asset="$OUT/picolibc-$FAMILY-$PICOLIBC_VERSION.tar.gz"
