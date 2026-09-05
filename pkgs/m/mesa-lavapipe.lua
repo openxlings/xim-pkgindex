@@ -44,7 +44,7 @@ package = {
     -- than for one library. Recipe, scripts and measurements:
     -- https://github.com/xlings-res/mesa-lavapipe
     --
-    -- ⚠️⚠️ NO `deps`, AND THAT IS THE DESIGN.
+    -- NO `deps`, AND THAT IS THE DESIGN.
     --
     -- Every `lib/*.so*` in the payload carries `DT_RPATH = $ORIGIN`, written
     -- when the payload was assembled, and the closure is complete inside that
