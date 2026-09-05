@@ -60,8 +60,8 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
-import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
+import("xim.libxpkg.elfpatch")
 
 -- ⚠️⚠️ THE ARCHIVE IS FLAT, AND xim UNPACKS IN PLACE INTO A SHARED DIRECTORY.
 --
@@ -110,6 +110,68 @@ function install()
             error("dpcpp: payload is incomplete after the move; missing " .. required)
         end
     end
+    -- FIVE OF THIS PAYLOAD'S PROGRAMS SHIP WITH NO SEARCH PATH AT ALL.
+    --
+    -- `clang++` and the driver binaries carry RUNPATH=$ORIGIN/../lib from the
+    -- upstream build. `sycl-ls`, `sycl-prof`, `sycl-trace`, `sycl-sanitize`
+    -- and `syclbin-dump` carry neither RPATH nor RUNPATH, so once the payload
+    -- is anywhere other than its build prefix they cannot find a library in
+    -- their own directory:
+    --
+    --   sycl-ls: error while loading shared libraries: libsycl.so.9: cannot
+    --   open shared object file: No such file or directory
+    --
+    -- and those five are exactly the programs whose job is to report which
+    -- devices this payload can reach. The `[cuda:gpu] NVIDIA CUDA BACKEND`
+    -- recorded in the comment at the top of this file was measured with
+    -- LD_LIBRARY_PATH set, which is why an installed payload nobody could run
+    -- still read as working.
+    --
+    -- set_rpath, NOT selfcontain.seal, AND THE DIFFERENCE IS THE LOADER.
+    --
+    -- `selfcontain.seal` calls `patch_elf_loader_rpath`, which sets the
+    -- INTERPRETER as well as the search path. A payload patched that way runs
+    -- under the ecosystem's private loader, and behind that loader there is no
+    -- host fallback: its ld.so.cache path exists on no machine. This payload
+    -- is not closed over. Its Unified Runtime adapters need `libcuda.so.1`,
+    -- `libnvidia-ml.so.1`, `libcupti.so.12`, `libOpenCL.so.1` and `libz.so.1`,
+    -- and this index publishes a provider for only some of them. Sealing was
+    -- tried: CI's dependency-closure check refused it and named the four with
+    -- no provider, and the sealed payload enumerated NO platforms where the
+    -- unsealed one had found the GPU -- the check was describing a real
+    -- regression, not a formality.
+    --
+    -- So this is the smallest change that answers the defect: give the five
+    -- programs the same relative search path the other programs in this same
+    -- payload already carry, and change nothing about which loader they run
+    -- under or where their other dependencies come from. Closing the payload
+    -- properly needs a CUPTI payload, an OpenCL loader package and the NVIDIA
+    -- userspace sentinel; that is a packaging round of its own and is recorded
+    -- here rather than half-done.
+    --
+    -- BOTH HALVES, AND THE LIBRARY HALF IS WHAT MAKES THE DEVICE APPEAR.
+    --
+    -- Giving only bin/ a search path makes the five programs start and leaves
+    -- `sycl-ls` reporting no platforms at all. The Unified Runtime loader
+    -- dlopens its adapters by absolute path, so they are found -- and then
+    -- each one fails on `libumf.so.1`, which is IN THIS PAYLOAD'S OWN lib/ and
+    -- which the adapters, carrying no search path of their own, cannot see.
+    -- The measurement that separates the two: with bin/ alone, every adapter
+    -- reports `libumf.so.1: cannot open shared object file`; with both, the
+    -- CUDA adapter loads and the device is enumerated.
+    --
+    -- $ORIGIN keeps this relative, so the payload answers from wherever it is
+    -- unpacked, and nothing outside the payload is named -- the adapters'
+    -- remaining needs (`libcuda.so.1`, `libnvidia-ml.so.1`) still resolve the
+    -- way they did before this change, through the host loader's cache. A
+    -- RUNPATH adds a directory to that search; it does not replace it.
+    --
+    -- `shrink = false`: --shrink-rpath keeps only the entries that satisfy a
+    -- current DT_NEEDED, which is the wrong answer for a directory something
+    -- will dlopen out of later.
+    elfpatch.set_rpath(path.join(dir, "bin"), { "$ORIGIN/../lib" }, { shrink = false })
+    elfpatch.set_rpath(path.join(dir, "lib"), { "$ORIGIN" },        { shrink = false })
+
     log.info("dpcpp installed to %s", dir)
     return true
 end
