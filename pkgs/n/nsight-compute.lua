@@ -109,12 +109,21 @@ local function scan_dir(dir, kind)
     -- `io.popen` is what this index's other payload recipes use for the job.
     -- These components declare `linux` only, so one POSIX listing is the whole
     -- story.
+    -- ⚠️ `-type f` WOULD SKIP SYMLINKS, AND SOME PAYLOADS SHIP ONLY SYMLINKS
+    -- IN `bin/`. nsight-systems is that case: `bin/nsys` and `bin/nsys-ui`
+    -- point at `../target-linux-x64/nsys` and `../host-linux-x64/nsys-ui`, and
+    -- a scan restricted to regular files reported the payload as containing no
+    -- programs -- which is what CI said, twice.
+    --
+    -- `-executable` asks the question that is actually being asked, and it
+    -- follows the link. Libraries are matched by name for the same reason: a
+    -- versioned soname is usually a symlink to the real object.
     local cmd
     if kind == "lib" then
         cmd = string.format(
-            [[find "%s" -maxdepth 1 \( -name '*.so*' -o -name '*.a' \) -type f 2>/dev/null]], dir)
+            [[find "%s" -maxdepth 1 \( -name '*.so*' -o -name '*.a' \) 2>/dev/null]], dir)
     else
-        cmd = string.format([[find "%s" -maxdepth 1 -type f -perm -u+x 2>/dev/null]], dir)
+        cmd = string.format([[find "%s" -maxdepth 1 ! -type d -executable 2>/dev/null]], dir)
     end
     local f = io.popen(cmd)
     if not f then return out end
