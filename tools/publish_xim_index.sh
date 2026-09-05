@@ -48,8 +48,15 @@ MAN="$DIR/${BASE}.manifest.json"
 # The "latest" pointer is NOT a release asset (gitcode can't overwrite/delete
 # those). It is a repo FILE pushed via git (overwriteable) and served raw — see
 # tools/push_index_pointers.sh. Here we just emit the pointer JSON into DIR for
-# that step to collect. The artifact tarball IS a release asset: its name is
-# version-unique (xim-index-<ver>.tar.gz), so it's always a fresh upload.
+# that step to collect.
+#
+# The artifact tarball IS a release asset, and its name is version-unique --
+# but the version is the index COMMIT, so a rerun on an unchanged HEAD (the
+# nightly cron) names the file that is already there and --clobber replaces it.
+# "Version-unique name" therefore never meant "always a fresh upload". What
+# makes the upload safe is that build_xim_index_artifact.sh reuses the already
+# published bytes for a version, so a re-upload writes what is already there;
+# see the comment there for the 2026-09-05 failure that established it.
 LATEST_JSON="$DIR/$LATEST"   # xim-index[-name]-latest.json (collected by pointer push)
 cp "$MAN" "$LATEST_JSON"
 
