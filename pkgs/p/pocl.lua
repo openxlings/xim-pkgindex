@@ -273,26 +273,26 @@ function config()
     -- manifest reach the subos.
     xvm.add(package.name)
 
-    -- The manifest into the shared OpenCL vendor directory, and
-    -- OCL_ICD_VENDORS so ocl-icd looks there at all.
+    -- Two placements. The manifest goes into the subos view's vendors
+    -- directory, where a future assembler that merges the host's manifests
+    -- with payload ones would read it. The library goes onto
+    -- OCL_ICD_FILENAMES, which the Khronos OpenCL-ICD-Loader -- the loader
+    -- this ecosystem builds and links -- enumerates IN ADDITION to
+    -- /etc/OpenCL/vendors, so this device is added and the machine's own
+    -- (an NVIDIA or Intel ICD) stay visible. Measured with that loader and
+    -- OCL_ICD_FILENAMES=<payload>/lib/libpocl.so: `Portable Computing
+    -- Language` and `NVIDIA CUDA` enumerated in one process.
     --
-    -- UNLIKE mesa-lavapipe's Vulkan equivalent, this is NOT additive with
-    -- the host: ocl-icd (the loader this payload ships, `lib/libOpenCL.so.1`)
-    -- has no `OCL_ICD_FILENAMES`-style list variable -- `strings
-    -- lib/libOpenCL.so.1.0.0` on it contains OCL_ICD_VENDORS and
-    -- OPENCL_VENDOR_PATH and nowhere contains the string "OCL_ICD_FILENAMES"
-    -- at all, so setting that variable (the Khronos OpenCL-ICD-Loader's
-    -- mechanism, and what a first draft of this recipe assumed ocl-icd
-    -- shared) silently does nothing: measured, a probe with
-    -- OCL_ICD_FILENAMES=<payload>/lib/libpocl.so found zero platforms.
-    -- OCL_ICD_VENDORS is a single directory that REPLACES the default
-    -- `/etc/OpenCL/vendors` scan, not a list that extends it -- so a subos
-    -- with this declared active shadows a real GPU's OpenCL ICD there for
-    -- any process that resolves `-lOpenCL` to this payload's loader. See
-    -- `libs/graphics.lua`'s DISCOVERY table, the OCL_ICD_VENDORS row, for the
-    -- full measurement and what closing this gap would take.
+    -- OCL_ICD_VENDORS is deliberately NOT declared. It names one directory
+    -- used INSTEAD of the default scan, and a subos that set it would hide a
+    -- real GPU's OpenCL ICD from every loader that honours it. The payload's
+    -- own bundled loader (conda-forge's ocl-icd, lib/libOpenCL.so.1) has no
+    -- OCL_ICD_FILENAMES support (`strings` on it lists OCL_ICD_VENDORS and
+    -- OPENCL_VENDOR_PATH only); it is not the loader the ecosystem links, and
+    -- a user of the payload's own tools sets OCL_ICD_VENDORS for that
+    -- session. See libs/graphics.lua, declare_opencl_icd_library.
     graphics.declare_opencl_icd(dir, "etc/OpenCL/vendors", tag)
-    graphics.declare_subos_env(tag, graphics.OPENCL_ICD_ONLY)
+    graphics.declare_opencl_icd_library(dir, "lib/libpocl.so", tag)
     return true
 end
 

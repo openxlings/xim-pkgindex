@@ -225,45 +225,6 @@ local DISCOVERY = {
     -- and runs on built-in defaults: enumeration, events and gestures all
     -- work, only the per-model tuning is gone.
     { var = "LIBINPUT_QUIRKS_DIR",       rel = graphics.QUIRKS_DIR, op = "set" },
-    -- OpenCL vendor discovery -- the analogue of VULKAN_ICD_DIR, but reached
-    -- through a variable that behaves nothing like XDG_DATA_DIRS.
-    --
-    -- The design this row was FIRST written against assumed the Khronos
-    -- OpenCL-ICD-Loader's two variables: OCL_ICD_FILENAMES, a colon list of
-    -- ICD .so files (additive, so a subos could `prepend` one path onto it
-    -- the same way VULKAN_ICD_DIR works), and OCL_ICD_VENDORS naming a
-    -- directory (documented as the thing NOT to set, because it replaces
-    -- rather than extends the default `/etc/OpenCL/vendors` scan and would
-    -- hide a real GPU's ICD).
-    --
-    -- `pocl`'s payload does not ship that loader. It ships `ocl-icd`
-    -- (conda-forge's `libOpenCL.so.1`), a separate, older implementation, and
-    -- `strings lib/libOpenCL.so.1.0.0` on that binary contains OCL_ICD_VENDORS
-    -- and OPENCL_VENDOR_PATH and NOWHERE contains the string
-    -- "OCL_ICD_FILENAMES" -- the variable simply is not compiled in, so no
-    -- amount of setting it does anything. Measured directly: a probe with
-    -- OCL_ICD_FILENAMES=<payload>/lib/libpocl.so found zero platforms; the
-    -- same probe with OCL_ICD_VENDORS=<a directory containing pocl.icd>
-    -- found "Portable Computing Language" and ran a kernel on it.
-    --
-    -- So the ONLY working lever for this loader is exactly the one the
-    -- Khronos design meant to avoid touching: a single directory that
-    -- REPLACES the scan, not a list that extends it. `op = "set"`, for the
-    -- same reason as XKB_CONFIG_ROOT and LIBINPUT_QUIRKS_DIR -- the variable
-    -- names ONE directory, and a `prepend` would turn it into `dirA:dirB`,
-    -- a path ocl-icd's own single-directory reader cannot parse as two.
-    --
-    -- THE COST, STATED PLAINLY: entering a subos that has declared this row
-    -- shadows the host's own /etc/OpenCL/vendors -- an NVIDIA or Intel ICD
-    -- among them -- for any process that resolves `-lOpenCL` to THIS payload's
-    -- libOpenCL.so.1. That is the opposite of VULKAN_ICD_DIR's guarantee, and
-    -- it is a property of ocl-icd's own environment-variable surface, not a
-    -- choice made here. A future package that wants to be additive with the
-    -- host's OpenCL vendors needs either a repack of the Khronos loader
-    -- instead of ocl-icd, or a `wire_glx_vendors`-style assembler that copies
-    -- the host's own `*.icd` files into OPENCL_VENDOR_DIR alongside ours --
-    -- both out of scope for the package that first needed this row.
-    { var = "OCL_ICD_VENDORS",           rel = graphics.OPENCL_VENDOR_DIR, op = "set" },
 }
 
 -- S2 -- the table a CONSUMER's shim carries.
@@ -416,9 +377,36 @@ graphics.VULKAN_ICD_ONLY = {
 -- none of the OTHER rows (it is not a GL/Vulkan driver at all). One row,
 -- OCL_ICD_VENDORS -- see that row's comment in DISCOVERY for why it is the
 -- only lever ocl-icd exposes, and what declaring it costs.
-graphics.OPENCL_ICD_ONLY = {
-    ["OCL_ICD_VENDORS"] = true,
-}
+-- OpenCL discovery is NOT a DISCOVERY row. The Khronos OpenCL-ICD-Loader --
+-- the loader this ecosystem builds and links (`compat.opencl` in mcpp-index)
+-- -- enumerates OCL_ICD_FILENAMES, a colon-separated list of ICD library
+-- files, IN ADDITION to the vendors directory (`khrIcdOsVendorsEnumerate`,
+-- loader/linux/icd_linux.c), so a payload driver is announced by prepending
+-- one file to that list and the machine's own drivers stay visible. Two
+-- things keep it out of the table above:
+--
+--   * the value is the payload's own absolute library path, not a
+--     `${subosdir}/...` view path: the library carries DT_RPATH=$ORIGIN and
+--     $ORIGIN resolves to the directory of the path dlopen was given, so a
+--     symlink under the subos would leave its closure unresolved;
+--   * OCL_ICD_VENDORS is the wrong lever and is deliberately never declared:
+--     it names ONE directory used INSTEAD of /etc/OpenCL/vendors, and every
+--     loader that honours it would then hide an NVIDIA or Intel ICD.
+--
+-- The payload's own bundled loader (conda-forge's ocl-icd, `libOpenCL.so.1`)
+-- does not compile OCL_ICD_FILENAMES in (measured: `strings` on it lists
+-- OCL_ICD_VENDORS and OPENCL_VENDOR_PATH only). That loader is not the one
+-- the ecosystem links; a user who runs the payload's own tools against it
+-- sets OCL_ICD_VENDORS for that session. Measured with the Khronos loader
+-- and OCL_ICD_FILENAMES=<payload>/lib/libpocl.so: both `Portable Computing
+-- Language` and `NVIDIA CUDA` are enumerated in one process.
+function graphics.declare_opencl_icd_library(install_dir, rel_lib, tag)
+    if type(subos.env) ~= "function" then return false end
+    local lib = path.join(install_dir, rel_lib)
+    if not os.isfile(lib) then return false end
+    subos.env{ var = "OCL_ICD_FILENAMES", op = "prepend", value = lib, binding = tag }
+    return true
+end
 
 -- Place one glvnd EGL vendor JSON into the subos's SHARED vendor directory.
 --

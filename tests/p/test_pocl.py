@@ -130,8 +130,9 @@ class TestStatic:
     def test_config_wires_opencl_discovery(self, meta):
         code = _code(meta.raw_content)
         assert "graphics.declare_opencl_icd" in code
-        assert "graphics.declare_subos_env" in code
-        assert "graphics.OPENCL_ICD_ONLY" in code
+        assert "graphics.declare_opencl_icd_library" in code
+        assert "OCL_ICD_VENDORS" not in re.sub(r"--[^\n]*", "", code), \
+            "the recipe must never declare OCL_ICD_VENDORS; it replaces the host's vendors directory"
 
 
 class TestIndex:
@@ -255,21 +256,23 @@ class TestVerify:
 
     @pytest.mark.verify
     @skip_if_not('linux')
-    def test_subos_env_carries_ocl_icd_vendors(self):
-        """OCL_ICD_VENDORS, not OCL_ICD_FILENAMES: this payload ships
-        ocl-icd, and `strings lib/libOpenCL.so.1.0.0` on it contains no
-        "OCL_ICD_FILENAMES" at all -- the Khronos loader's additive list
-        variable is simply not compiled into this loader. OCL_ICD_VENDORS is
-        the one lever that is, and it replaces rather than extends the
-        default scan (see libs/graphics.lua's DISCOVERY table for the
-        measurement and the cost)."""
+    def test_subos_env_carries_ocl_icd_filenames(self):
+        """OCL_ICD_FILENAMES, prepended with the payload's own libpocl.so:
+        the Khronos loader the ecosystem links enumerates it in addition to
+        the vendors directory, so the CPU device is added and the machine's
+        own ICDs stay visible. OCL_ICD_VENDORS must NOT appear: it replaces
+        the default scan and would hide a real GPU (libs/graphics.lua,
+        declare_opencl_icd_library)."""
         r = subprocess.run(
             [os.path.join(xlings_home(), "subos", "current", "bin", "xlings"),
              "subos", "use", "default", "--cmd", "env"],
             capture_output=True, text=True, timeout=30,
         )
         assert r.returncode == 0, f"xlings subos use failed: {r.stderr[:300]}"
-        m = re.search(r"^OCL_ICD_VENDORS=(.*)$", r.stdout, re.MULTILINE)
-        assert m, f"OCL_ICD_VENDORS not set in the subos environment:\n{r.stdout[-500:]}"
-        assert os.path.isfile(os.path.join(m.group(1), "pocl.icd")), \
-            f"OCL_ICD_VENDORS={m.group(1)!r} has no pocl.icd in it"
+        assert not re.search(r"^OCL_ICD_VENDORS=", r.stdout, re.MULTILINE), \
+            "OCL_ICD_VENDORS is set in the subos environment; it would hide the host's ICDs"
+        m = re.search(r"^OCL_ICD_FILENAMES=(.*)$", r.stdout, re.MULTILINE)
+        assert m, f"OCL_ICD_FILENAMES not set in the subos environment:\n{r.stdout[-500:]}"
+        libs = m.group(1).split(":")
+        assert any(l.endswith("/lib/libpocl.so") and os.path.isfile(l) for l in libs), \
+            f"OCL_ICD_FILENAMES={m.group(1)!r} names no existing libpocl.so"
