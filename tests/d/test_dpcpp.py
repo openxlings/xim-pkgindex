@@ -94,27 +94,44 @@ class TestSearchPaths:
     """配方的那一半;TestVerify 是测出来的那一半。"""
 
     @pytest.mark.static
-    def test_sets_rpath_on_both_bin_and_lib(self, meta):
+    def test_forces_rpath_on_the_programs(self, meta):
         """载荷里有五个程序出厂时既无 DT_RPATH 也无 DT_RUNPATH,装好之后找不到
-        自己目录里的 libsycl.so.9。只给 bin/ 加路径还不够:UR loader 按绝对
-        路径 dlopen 各个 adapter,于是它们被找到了,然后每一个都倒在
-        `libumf.so.1` 上 —— 那个库就在本载荷的 lib/ 里。"""
+        自己目录里的 libsycl.so.9。要的是 DT_RPATH 而不是 DT_RUNPATH:后者只对
+        对象自己的 DT_NEEDED 生效,而这个载荷的设备支持是一串 dlopen ——
+        sycl-ls → libsycl → libur_loader → libur_adapter_* → libumf ——
+        只有可传递的那个 tag 能到底。"""
         code = _code(meta.raw_content)
-        assert re.search(r'elfpatch\.set_rpath\(.*"bin".*\$ORIGIN/\.\./lib', code), \
-            "bin/ must get $ORIGIN/../lib"
-        assert re.search(r'elfpatch\.set_rpath\(.*"lib".*"\$ORIGIN"', code), \
-            "lib/ must get $ORIGIN"
+        assert "--force-rpath" in code, "the programs must get DT_RPATH, not DT_RUNPATH"
+        assert "$ORIGIN/../lib" in code
 
     @pytest.mark.static
-    def test_does_not_seal_the_payload(self, meta):
-        """`selfcontain.seal` 连 interpreter 一起换,载荷就跑在生态的私有
-        loader 上,而它背后没有宿主回落。这个载荷没有闭包 —— 它的 UR adapter
-        还要 libcuda.so.1 / libnvidia-ml.so.1 / libcupti.so.12 / libOpenCL.so.1
-        / libz.so.1,本索引只提供其中一部分。封过一次,CI 的闭包检查点名了
-        没有提供者的那四个,而且封过之后一个平台都枚举不出来。"""
+    def test_declares_patchelf_as_a_build_dep(self, meta):
+        """godot.lua 与 libglvnd.lua 用同样的理由声明它:让安装顺序确定,
+        而不是指望 patchelf 恰好已经在 shim PATH 上。"""
+        code = _code(meta.raw_content)
+        assert "xim:patchelf" in code
+
+    @pytest.mark.static
+    def test_does_not_touch_the_libraries(self, meta):
+        """这一条是「没做什么」的判据,而它是被实测逼出来的。给载荷的库自己一条
+        RUNPATH 也能让 sycl-ls 枚举出设备,但那会**关掉**加载它们的那个产物继承
+        下来的 DT_RPATH:实测 libur_adapter_cuda.so.0 于是先找不到 libcuda.so.1、
+        再找不到 libnvidia-ml.so.1 —— 那两个本来是产物自己的搜索路径在提供。
+        每个消费者都得把这个载荷的整个外部闭包再 farm 一遍。"""
         code = _code(meta.raw_content)
         assert "selfcontain" not in code, \
-            "dpcpp must not be sealed: it has no closure and would lose its host fallback"
+            "dpcpp must not be sealed: seal also swaps the interpreter"
+        # The patch loop names the five programs and nothing under lib/.
+        assert 'path.join(dir, "bin", prog)' in code
+        assert 'path.join(dir, "lib"' not in code, \
+            "the payload's libraries must be left exactly as upstream shipped them"
+
+    @pytest.mark.static
+    def test_asserts_the_artifact_not_the_intent(self, meta):
+        """patchelf 可能不在。跳过的重写和成功的重写从一次运行上看一模一样,
+        直到有人在另一台机器上跑那个程序。"""
+        code = _code(meta.raw_content)
+        assert "readelf" in code and "(RPATH)" in code
 
     @pytest.mark.static
     def test_does_not_probe_the_host_for_the_driver(self, meta):
@@ -136,10 +153,8 @@ class TestVerify:
     @pytest.mark.verify
     @skip_if_not('linux')
     def test_every_program_can_start(self):
-        """缺陷本身,按用户会做的动作陈述:这五个程序各自会以某个状态退出,
-        但绝不该在 main 之前死在 loader 里 ——「error while loading shared
-        libraries」就是那种死法。判据落在 stderr 上而不是退出码上,因为
-        `--help` 合法地以非零退出。"""
+        """缺陷本身,按用户会做的动作陈述。判据落在 stderr 上而不是退出码上,
+        因为 `--help` 合法地以非零退出。"""
         b = os.path.join(_payload_dir(), "bin")
         checked = 0
         for prog in UNSEARCHED:
@@ -154,9 +169,46 @@ class TestVerify:
 
     @pytest.mark.verify
     @skip_if_not('linux')
+    def test_programs_carry_rpath_not_runpath(self):
+        b = os.path.join(_payload_dir(), "bin")
+        checked = 0
+        for prog in UNSEARCHED:
+            p = os.path.join(b, prog)
+            if not os.path.isfile(p):
+                continue
+            r = subprocess.run(["readelf", "-d", p], capture_output=True, text=True, timeout=15)
+            checked += 1
+            assert "(RPATH)" in r.stdout, f"bin/{prog} carries no DT_RPATH"
+            assert "(RUNPATH)" not in r.stdout, \
+                f"bin/{prog} carries a DT_RUNPATH, which a dlopen beneath it does not honour"
+        assert checked > 0, "no dpcpp program found to check"
+
+    @pytest.mark.verify
+    @skip_if_not('linux')
+    def test_libraries_were_left_alone(self):
+        """`test_does_not_touch_the_libraries` 的实测那一半。一个带 RUNPATH 的
+        payload 库会关掉加载它的产物继承下来的 RPATH。"""
+        lib = os.path.join(_payload_dir(), "lib")
+        checked = 0
+        for name in sorted(os.listdir(lib)):
+            if "libur_adapter" not in name:
+                continue
+            p = os.path.join(lib, name)
+            if os.path.islink(p) or not os.path.isfile(p):
+                continue
+            r = subprocess.run(["readelf", "-d", p], capture_output=True, text=True, timeout=15)
+            if r.returncode != 0:
+                continue
+            checked += 1
+            assert "(RUNPATH)" not in r.stdout, \
+                f"lib/{name} carries a RUNPATH; it would cut its loader off from its own farm"
+        assert checked > 0, "no Unified Runtime adapter found to check"
+
+    @pytest.mark.verify
+    @skip_if_not('linux')
     def test_the_interpreter_is_untouched(self):
-        """这一条是「没做什么」的判据。换 interpreter 会把载荷挪到私有 loader
-        上,而它背后没有宿主回落 —— 那正是 CI 的闭包检查拒掉的形态。"""
+        """换 interpreter 会把载荷挪到私有 loader 上,而它背后没有宿主回落 ——
+        那正是 CI 的闭包检查拒掉的形态。"""
         r = subprocess.run(["readelf", "-p", ".interp",
                             os.path.join(_payload_dir(), "bin", "sycl-ls")],
                            capture_output=True, text=True, timeout=15)
@@ -166,29 +218,8 @@ class TestVerify:
 
     @pytest.mark.verify
     @skip_if_not('linux')
-    def test_adapters_can_reach_the_payloads_own_libraries(self):
-        """把 bin/ 那一半和 lib/ 那一半分开的判据。UR 的 adapter 是被 dlopen
-        的,它们自己的 DT_NEEDED 只按自己的搜索路径解析。"""
-        lib = os.path.join(_payload_dir(), "lib")
-        checked = 0
-        for name in sorted(os.listdir(lib)):
-            if "libur_adapter" not in name or not name.endswith(".0"):
-                continue
-            p = os.path.join(lib, name)
-            if os.path.islink(p) or not os.path.isfile(p):
-                continue
-            r = subprocess.run(["readelf", "-d", p], capture_output=True,
-                               text=True, timeout=15)
-            if r.returncode != 0:
-                continue
-            checked += 1
-            assert "$ORIGIN" in r.stdout, f"lib/{name} names no $ORIGIN in its search path"
-        assert checked > 0, "no Unified Runtime adapter found to check"
-
-    @pytest.mark.verify
-    @skip_if_not('linux')
     def test_clang_still_reports_its_version(self):
-        """对照。加搜索路径会重写 bin/ 里每一个程序,包括本来就正确的那些。"""
+        """对照:`clang++` 不在被改写的五个之列,必须原样可用。"""
         r = subprocess.run([os.path.join(_payload_dir(), "bin", "clang++"), "--version"],
                            capture_output=True, text=True, timeout=60)
         assert r.returncode == 0, r.stderr[:300]
@@ -197,9 +228,9 @@ class TestVerify:
     @pytest.mark.verify
     @skip_if_not('linux')
     def test_sycl_ls_reports_rather_than_fails_to_start(self):
-        """`sycl-ls` 要能产出一份报告,而不是一条 loader 错误,并且不能有任何
-        adapter 倒在本载荷自己的库上。列出哪些设备是这台机器的答案而不是这个
-        包的 —— 没有 GPU 的 runner 合法地一个都没有。"""
+        """列出哪些设备是这台机器的答案而不是这个包的 —— 没有 GPU 的 runner
+        合法地一个都没有。判据落在这个包能造成的两种失败上:起不来,以及某个
+        adapter 找不到本载荷自己的库。"""
         r = subprocess.run([os.path.join(_payload_dir(), "bin", "sycl-ls"), "--verbose"],
                            capture_output=True, text=True, timeout=120)
         assert "error while loading shared libraries" not in r.stderr, \

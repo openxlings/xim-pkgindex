@@ -47,6 +47,11 @@ package = {
 
     xpm = {
         linux = {
+            -- patchelf, to force DT_RPATH rather than DT_RUNPATH on the
+            -- programs. A BUILD dep so the install order is deterministic
+            -- instead of trusting patchelf to be on the shim PATH already --
+            -- the reason godot.lua and libglvnd.lua declare it the same way.
+            build = { "xim:patchelf@0.18.0" },
             source = "https://github.com/intel/llvm/releases/download/v${version}/sycl_linux.tar.gz",
             ["latest"] = { ref = "7.1.0" },
             ["7.1.0"] = {
@@ -61,7 +66,6 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
-import("xim.libxpkg.elfpatch")
 
 -- ⚠️⚠️ THE ARCHIVE IS FLAT, AND xim UNPACKS IN PLACE INTO A SHARED DIRECTORY.
 --
@@ -127,50 +131,67 @@ function install()
     -- LD_LIBRARY_PATH set, which is why an installed payload nobody could run
     -- still read as working.
     --
-    -- set_rpath, NOT selfcontain.seal, AND THE DIFFERENCE IS THE LOADER.
+    -- DT_RPATH ON THE PROGRAMS, AND NOTHING ON THE LIBRARIES. Both halves of
+    -- that sentence were arrived at by measuring the alternative.
     --
-    -- `selfcontain.seal` calls `patch_elf_loader_rpath`, which sets the
-    -- INTERPRETER as well as the search path. A payload patched that way runs
-    -- under the ecosystem's private loader, and behind that loader there is no
-    -- host fallback: its ld.so.cache path exists on no machine. This payload
-    -- is not closed over. Its Unified Runtime adapters need `libcuda.so.1`,
-    -- `libnvidia-ml.so.1`, `libcupti.so.12`, `libOpenCL.so.1` and `libz.so.1`,
-    -- and this index publishes a provider for only some of them. Sealing was
-    -- tried: CI's dependency-closure check refused it and named the four with
-    -- no provider, and the sealed payload enumerated NO platforms where the
-    -- unsealed one had found the GPU -- the check was describing a real
-    -- regression, not a formality.
+    -- DT_RUNPATH is honoured for an object's own DT_NEEDED and NOT for a
+    -- dlopen made beneath it; DT_RPATH is searched for both, at any depth.
+    -- This payload's device support is a chain of dlopens -- `sycl-ls` loads
+    -- `libsycl.so.9`, which loads `libur_loader.so.0`, which loads one
+    -- `libur_adapter_*.so.0` per back end, and those need `libumf.so.1` from
+    -- this same directory -- so only the transitive tag reaches the bottom.
+    -- With RUNPATH the programs start and then report no platforms at all,
+    -- every adapter failing on `libumf.so.1`.
     --
-    -- So this is the smallest change that answers the defect: give the five
-    -- programs the same relative search path the other programs in this same
-    -- payload already carry, and change nothing about which loader they run
-    -- under or where their other dependencies come from. Closing the payload
-    -- properly needs a CUPTI payload, an OpenCL loader package and the NVIDIA
-    -- userspace sentinel; that is a packaging round of its own and is recorded
-    -- here rather than half-done.
+    -- Giving the LIBRARIES a search path of their own answers that too, and it
+    -- is the wrong answer. A non-empty RUNPATH on a payload library switches
+    -- OFF the inherited DT_RPATH of whatever loaded it, so an mcpp artifact
+    -- that reaches this payload through a runtime adapter stops seeing its own
+    -- farm: measured, `libur_adapter_cuda.so.0` then failed on `libcuda.so.1`
+    -- and then on `libnvidia-ml.so.1`, each of which the artifact's own path
+    -- had been supplying. Every consumer would have to re-farm this payload's
+    -- entire external closure. The libraries are therefore left exactly as
+    -- upstream shipped them, and only the programs are patched.
     --
-    -- BOTH HALVES, AND THE LIBRARY HALF IS WHAT MAKES THE DEVICE APPEAR.
-    --
-    -- Giving only bin/ a search path makes the five programs start and leaves
-    -- `sycl-ls` reporting no platforms at all. The Unified Runtime loader
-    -- dlopens its adapters by absolute path, so they are found -- and then
-    -- each one fails on `libumf.so.1`, which is IN THIS PAYLOAD'S OWN lib/ and
-    -- which the adapters, carrying no search path of their own, cannot see.
-    -- The measurement that separates the two: with bin/ alone, every adapter
-    -- reports `libumf.so.1: cannot open shared object file`; with both, the
-    -- CUDA adapter loads and the device is enumerated.
-    --
-    -- $ORIGIN keeps this relative, so the payload answers from wherever it is
-    -- unpacked, and nothing outside the payload is named -- the adapters'
-    -- remaining needs (`libcuda.so.1`, `libnvidia-ml.so.1`) still resolve the
-    -- way they did before this change, through the host loader's cache. A
-    -- RUNPATH adds a directory to that search; it does not replace it.
-    --
-    -- `shrink = false`: --shrink-rpath keeps only the entries that satisfy a
-    -- current DT_NEEDED, which is the wrong answer for a directory something
-    -- will dlopen out of later.
-    elfpatch.set_rpath(path.join(dir, "bin"), { "$ORIGIN/../lib" }, { shrink = false })
-    elfpatch.set_rpath(path.join(dir, "lib"), { "$ORIGIN" },        { shrink = false })
+    -- `selfcontain.seal` is not used for the same class of reason: it sets the
+    -- INTERPRETER as well, and behind the ecosystem's private loader there is
+    -- no host fallback -- CI's dependency-closure check refuses this payload
+    -- there, naming `libOpenCL.so.1`, `libcupti.so.12`, `libnvidia-ml.so.1`
+    -- and `libz.so.1`, for which this index publishes no provider. Closing the
+    -- payload properly is a packaging round of its own and is recorded here
+    -- rather than half-done.
+    local pe = "patchelf"
+    if pkginfo.build_dep then
+        local ok, bd = pcall(function() return pkginfo.build_dep("xim:patchelf") end)
+        if not (ok and bd and bd.bin) then
+            ok, bd = pcall(function() return pkginfo.build_dep("patchelf") end)
+        end
+        if ok and bd and bd.bin and os.isfile(path.join(bd.bin, "patchelf")) then
+            pe = path.join(bd.bin, "patchelf")
+        end
+    end
+    -- SINGLE quotes around the rpath: `$ORIGIN` must reach patchelf literally,
+    -- and os.exec goes through a shell.
+    local patched, skipped = 0, {}
+    for _, prog in ipairs({ "sycl-ls", "sycl-prof", "sycl-trace", "sycl-sanitize",
+                            "syclbin-dump" }) do
+        local exe = path.join(dir, "bin", prog)
+        if os.isfile(exe) then
+            os.exec(string.format([[%s --force-rpath --set-rpath '$ORIGIN/../lib' "%s"]], pe, exe))
+            -- ASSERT THE ARTIFACT, NOT THE INTENT. patchelf may be absent, and
+            -- a skipped rewrite is indistinguishable from a working one until
+            -- somebody runs the program on a machine that is not this one.
+            local out = os.iorun(string.format([[readelf -d "%s"]], exe)) or ""
+            if out:find("(RPATH)", 1, true) then patched = patched + 1
+            else table.insert(skipped, prog) end
+        end
+    end
+    if #skipped > 0 then
+        log.warn("dpcpp: %d program(s) still carry no DT_RPATH (%s); they will not "
+                 .. "find this payload's own libraries. Is xim:patchelf installed?",
+                 #skipped, table.concat(skipped, ", "))
+    end
+    log.debug("dpcpp: %d program(s) given a transitive search path", patched)
 
     log.info("dpcpp installed to %s", dir)
     return true
