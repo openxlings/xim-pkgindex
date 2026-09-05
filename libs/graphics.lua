@@ -135,6 +135,12 @@ graphics.SHARE_DIR      = "share"
 -- $XDG_DATA_DIRS/vulkan/icd.d and mesa puts ${subosdir}/share on that list.
 graphics.VULKAN_ICD_DIR = "share/vulkan/icd.d"
 
+-- Where the OpenCL ICD loader looks for vendor manifests, relative to the
+-- subos. Same shared-directory shape as VULKAN_ICD_DIR and for the same
+-- reason -- several packages may each contribute one `.icd` file -- but
+-- reached through a DIFFERENT mechanism, see OCL_ICD_VENDORS below.
+graphics.OPENCL_VENDOR_DIR = "etc/OpenCL/vendors"
+
 -- Where libxkbcommon looks for keyboard layouts.
 --
 -- `share/X11/xkb` is the path every distribution uses and the one upstream's
@@ -219,6 +225,45 @@ local DISCOVERY = {
     -- and runs on built-in defaults: enumeration, events and gestures all
     -- work, only the per-model tuning is gone.
     { var = "LIBINPUT_QUIRKS_DIR",       rel = graphics.QUIRKS_DIR, op = "set" },
+    -- OpenCL vendor discovery -- the analogue of VULKAN_ICD_DIR, but reached
+    -- through a variable that behaves nothing like XDG_DATA_DIRS.
+    --
+    -- The design this row was FIRST written against assumed the Khronos
+    -- OpenCL-ICD-Loader's two variables: OCL_ICD_FILENAMES, a colon list of
+    -- ICD .so files (additive, so a subos could `prepend` one path onto it
+    -- the same way VULKAN_ICD_DIR works), and OCL_ICD_VENDORS naming a
+    -- directory (documented as the thing NOT to set, because it replaces
+    -- rather than extends the default `/etc/OpenCL/vendors` scan and would
+    -- hide a real GPU's ICD).
+    --
+    -- `pocl`'s payload does not ship that loader. It ships `ocl-icd`
+    -- (conda-forge's `libOpenCL.so.1`), a separate, older implementation, and
+    -- `strings lib/libOpenCL.so.1.0.0` on that binary contains OCL_ICD_VENDORS
+    -- and OPENCL_VENDOR_PATH and NOWHERE contains the string
+    -- "OCL_ICD_FILENAMES" -- the variable simply is not compiled in, so no
+    -- amount of setting it does anything. Measured directly: a probe with
+    -- OCL_ICD_FILENAMES=<payload>/lib/libpocl.so found zero platforms; the
+    -- same probe with OCL_ICD_VENDORS=<a directory containing pocl.icd>
+    -- found "Portable Computing Language" and ran a kernel on it.
+    --
+    -- So the ONLY working lever for this loader is exactly the one the
+    -- Khronos design meant to avoid touching: a single directory that
+    -- REPLACES the scan, not a list that extends it. `op = "set"`, for the
+    -- same reason as XKB_CONFIG_ROOT and LIBINPUT_QUIRKS_DIR -- the variable
+    -- names ONE directory, and a `prepend` would turn it into `dirA:dirB`,
+    -- a path ocl-icd's own single-directory reader cannot parse as two.
+    --
+    -- THE COST, STATED PLAINLY: entering a subos that has declared this row
+    -- shadows the host's own /etc/OpenCL/vendors -- an NVIDIA or Intel ICD
+    -- among them -- for any process that resolves `-lOpenCL` to THIS payload's
+    -- libOpenCL.so.1. That is the opposite of VULKAN_ICD_DIR's guarantee, and
+    -- it is a property of ocl-icd's own environment-variable surface, not a
+    -- choice made here. A future package that wants to be additive with the
+    -- host's OpenCL vendors needs either a repack of the Khronos loader
+    -- instead of ocl-icd, or a `wire_glx_vendors`-style assembler that copies
+    -- the host's own `*.icd` files into OPENCL_VENDOR_DIR alongside ours --
+    -- both out of scope for the package that first needed this row.
+    { var = "OCL_ICD_VENDORS",           rel = graphics.OPENCL_VENDOR_DIR, op = "set" },
 }
 
 -- S2 -- the table a CONSUMER's shim carries.
@@ -365,6 +410,16 @@ graphics.VULKAN_ICD_ONLY = {
     ["XDG_DATA_DIRS"] = true,
 }
 
+-- The set for a provider that contributes an OpenCL ICD and nothing else.
+--
+-- `pocl` ships `etc/OpenCL/vendors/pocl.icd` and a private `lib/`; it fills
+-- none of the OTHER rows (it is not a GL/Vulkan driver at all). One row,
+-- OCL_ICD_VENDORS -- see that row's comment in DISCOVERY for why it is the
+-- only lever ocl-icd exposes, and what declaring it costs.
+graphics.OPENCL_ICD_ONLY = {
+    ["OCL_ICD_VENDORS"] = true,
+}
+
 -- Place one glvnd EGL vendor JSON into the subos's SHARED vendor directory.
 --
 -- WHY SHARED, AND WHY THIS IS THE POINT OF THE CHANGE
@@ -435,6 +490,38 @@ function graphics.declare_vulkan_icd(install_dir, rel_dir, tag)
             xvm.files{
                 src = path.join(rel_dir, base),
                 dst = path.join(graphics.VULKAN_ICD_DIR, base),
+                binding = tag,
+            }
+            n = n + 1
+        end
+    end
+    f:close()
+    return n > 0
+end
+
+-- Place an OpenCL ICD manifest into the subos, where ocl-icd looks once
+-- OCL_ICD_VENDORS names this directory (see that row's comment in DISCOVERY).
+--
+-- Same shared-directory shape as `declare_vulkan_icd` -- one directory,
+-- several packages may contribute, filenames just have to not collide -- and
+-- the same reason for existing: a manifest left sitting only in the payload
+-- is never read, because OCL_ICD_VENDORS is what makes ocl-icd look at this
+-- directory AT ALL, and declaring the variable without placing the file into
+-- it points ocl-icd at a directory with nothing in it.
+function graphics.declare_opencl_icd(install_dir, rel_dir, tag)
+    if not xvm.files then return false end
+    local dir = path.join(install_dir, rel_dir)
+    if not os.isdir(dir) then return true end   -- a build with no OpenCL ICD
+    local f = io.popen(string.format([[ls -1 "%s"/*.icd 2>/dev/null]], dir))
+    if not f then return false end
+    local n = 0
+    for line in f:lines() do
+        local p = line:gsub("[\r\n]+$", "")
+        if p ~= "" then
+            local base = p:match("([^/]+)$")
+            xvm.files{
+                src = path.join(rel_dir, base),
+                dst = path.join(graphics.OPENCL_VENDOR_DIR, base),
                 binding = tag,
             }
             n = n + 1
