@@ -81,72 +81,105 @@ end
 
 -- WHAT GETS REGISTERED, AND WHY IT IS SCANNED
 --
--- These components differ in shape: some carry only `bin/` (nvcc, cuda-gdb),
--- some only `lib/` and `include/` (cudart, libnvvm), some both. Registering a
--- hand-written list per component would be a table to keep in step with
--- upstream's packaging, and upstream has already moved files between
--- components once between the 12.x and 13.x lines.
+-- These components differ in shape, and the differences are not guessable:
 --
--- So the payload is scanned. What matters for the version machinery is that
--- `xvm.add(package.name)` names the root -- that is what `xlings use
--- <pkg> <version>` switches -- and that each program and library is bound to
--- `<pkg>@<version>`, so two release lines can be installed side by side and
--- selected rather than fighting.
+--   cuda-nvcc        bin/ and nvvm/bin/
+--   cuda-cudart      lib/ and include/, no programs at all
+--   cuda-gdb         bin/, and one of its programs is named after the package
+--   nsight-compute   NO bin/ -- `ncu` and `ncu-ui` sit at the payload root,
+--                    beside host/ and target/
 --
--- A component that registers nothing at all is not a partial result, it is the
--- wrong payload: reported as an error rather than a successful install of
--- nothing.
-local function register_dir(dir, kind, binding, count)
-    if not os.isdir(dir) then return count end
+-- A hand-written list per component would be a table to keep in step with
+-- upstream, and upstream has already moved files between components once
+-- between the 12.x and 13.x lines. So the payload is scanned, in the four
+-- places these layouts put things.
+--
+-- ⚠️ A PROGRAM NAMED AFTER ITS PACKAGE IS REGISTERED ONCE, NOT TWICE.
+-- `xvm.add(package.name)` names the root, which is what `xlings use <pkg>
+-- <version>` switches. `cuda-gdb` ships `bin/cuda-gdb`, so adding that as a
+-- program as well trips xvm's duplicate-registration check and the whole
+-- config hook fails -- which is exactly what CI reported before this. The root
+-- therefore carries the binding when such a program exists, and is added bare
+-- otherwise.
+local function scan_dir(dir, kind)
+    local out = {}
+    if not os.isdir(dir) then return out end
     -- `io.popen` rather than `os.files`: the recipe sandbox does not expose the
-    -- latter in `config()` -- it fails with `attempt to call a nil value
-    -- (field 'files')` -- and `io.popen` is what the index's other payload
-    -- recipes use for the same job. These components declare `linux` only, so
-    -- one POSIX listing is the whole story; a Windows entry would need the
-    -- `dir /b` branch llvm.lua carries, and would be added with that entry.
-    local pattern = (kind == "lib") and "-type f -name '*.so*' -o -type f -name '*.a'"
-                                     or "-maxdepth 1 -type f -perm -u+x"
+    -- latter in `config()` (`attempt to call a nil value (field 'files')`), and
+    -- `io.popen` is what this index's other payload recipes use for the job.
+    -- These components declare `linux` only, so one POSIX listing is the whole
+    -- story.
     local cmd
     if kind == "lib" then
-        cmd = string.format([[find "%s" -maxdepth 1 \( %s \) 2>/dev/null]], dir, pattern)
+        cmd = string.format(
+            [[find "%s" -maxdepth 1 \( -name '*.so*' -o -name '*.a' \) -type f 2>/dev/null]], dir)
     else
-        cmd = string.format([[find "%s" %s 2>/dev/null]], dir, pattern)
+        cmd = string.format([[find "%s" -maxdepth 1 -type f -perm -u+x 2>/dev/null]], dir)
     end
     local f = io.popen(cmd)
-    if not f then return count end
+    if not f then return out end
     for line in f:lines() do
         local full = line:gsub("[\r\n]+$", "")
-        if full ~= "" then
-            local base = path.filename(full)
-            if kind == "lib" then
-                xvm.add(base, {
-                    type = "lib", bindir = dir, filename = base,
-                    alias = base, binding = binding,
-                })
-            else
-                xvm.add((base:gsub("%.exe$", "")), {
-                    bindir = dir, alias = base, binding = binding,
-                })
-            end
-            count = count + 1
-        end
+        if full ~= "" then table.insert(out, full) end
     end
     f:close()
-    return count
+    return out
 end
 
 function config()
     local dir     = pkginfo.install_dir()
     local binding = package.name .. "@" .. pkginfo.version()
 
-    xvm.add(package.name)
+    local programs, libs = {}, {}
+    for _, d in ipairs({ path.join(dir, "bin"), path.join(dir, "nvvm", "bin"), dir }) do
+        for _, f in ipairs(scan_dir(d, "bin")) do table.insert(programs, f) end
+    end
+    for _, d in ipairs({ path.join(dir, "lib"), path.join(dir, "lib64"),
+                         path.join(dir, "nvvm", "lib64") }) do
+        for _, f in ipairs(scan_dir(d, "lib")) do table.insert(libs, f) end
+    end
+
+    -- Does the payload ship a program named after the package?
+    local eponymous = nil
+    for _, f in ipairs(programs) do
+        if path.filename(f):gsub("%.exe$", "") == package.name then eponymous = f end
+    end
+
+    -- ⚠️ NO `binding` ON THE ROOT. The binding names the node a registration
+    -- resolves through, and xvm refuses `registration node cannot bind to
+    -- itself` -- which is what CI reported. The root carries the bindir
+    -- directly, exactly as cmake.lua does for its own eponymous program; the
+    -- other programs bind THROUGH the root.
+    if eponymous then
+        xvm.add(package.name, {
+            bindir = path.directory(eponymous),
+            alias  = path.filename(eponymous),
+        })
+    else
+        xvm.add(package.name)
+    end
 
     local n = 0
-    n = register_dir(path.join(dir, "bin"), "bin", binding, n)
-    n = register_dir(path.join(dir, "lib"), "lib", binding, n)
-    n = register_dir(path.join(dir, "nvvm", "bin"), "bin", binding, n)
-    n = register_dir(path.join(dir, "nvvm", "lib64"), "lib", binding, n)
+    for _, f in ipairs(programs) do
+        local base = path.filename(f)
+        if f ~= eponymous then
+            xvm.add((base:gsub("%.exe$", "")), {
+                bindir = path.directory(f), alias = base, binding = binding,
+            })
+        end
+        n = n + 1
+    end
+    for _, f in ipairs(libs) do
+        local base = path.filename(f)
+        xvm.add(base, {
+            type = "lib", bindir = path.directory(f), filename = base,
+            alias = base, binding = binding,
+        })
+        n = n + 1
+    end
 
+    -- A component that registers nothing and carries no headers is not a
+    -- partial result, it is the wrong payload.
     if n == 0 and not os.isdir(path.join(dir, "include")) then
         log.error("%s: payload contains no programs, libraries or headers",
                   package.name)

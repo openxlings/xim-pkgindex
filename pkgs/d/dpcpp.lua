@@ -60,103 +60,80 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
 
+-- ⚠️⚠️ THE ARCHIVE IS FLAT, AND xim UNPACKS IN PLACE INTO A SHARED DIRECTORY.
+--
+-- `sycl_linux.tar.gz` has `./bin`, `./lib` and `./include` at the top with no
+-- wrapping directory. xim extracts an archive beside itself, and that place is
+-- `~/.xlings/data/runtimedir` -- shared with every other package's download.
+--
+-- So this recipe must NOT move "the directory the archive unpacked to": that
+-- directory is the shared one, and moving it would take other packages'
+-- downloads with it. It moves the three entries this archive is known to
+-- contain, by name.
+--
+-- ⭐ AND THE ASSERTIONS COME FIRST. The source directory is shared, so a
+-- `bin/` found there is not necessarily ours; a completeness check placed
+-- after the move would already have moved someone else's tree. This is the
+-- same shape `cc-connect` documents, and it was learned the same way -- an
+-- earlier revision of this recipe extracted 815 files into the shared
+-- directory before the check ran.
+local ENTRIES = { "bin", "lib", "include" }
+
 function install()
-    -- The asset is a FLAT archive: bin/, lib/, include/ at the top level with
-    -- no wrapping directory. Unpacking it beside other downloads and then
-    -- moving "the one directory" would move the wrong thing, so the download
-    -- directory itself is the payload root.
     local file = pkginfo.install_file() or ""
     local src  = path.directory(file)
-    if not os.isdir(path.join(src, "bin")) then
-        error("dpcpp: the archive did not unpack to a flat prefix (no bin/)")
+
+    -- Before anything is moved: is this the payload we asked for?
+    for _, required in ipairs({ path.join("bin", "clang++"),
+                                path.join("bin", "sycl-ls"),
+                                path.join("lib", "libsycl.so") }) do
+        if not os.isfile(path.join(src, required)) then
+            error("dpcpp: the unpacked archive is missing " .. required
+                  .. "; refusing to move anything out of the shared download "
+                  .. "directory")
+        end
     end
+
     local dir = pkginfo.install_dir()
     os.tryrm(dir)
     os.mkdir(dir)
-    os.cp(path.join(src, "*"), dir)
+    for _, e in ipairs(ENTRIES) do
+        local from = path.join(src, e)
+        if os.isdir(from) then os.mv(from, path.join(dir, e)) end
+    end
 
     for _, required in ipairs({ "bin/clang++", "bin/sycl-ls", "lib/libsycl.so" }) do
         if not os.isfile(path.join(dir, required)) then
-            error("dpcpp: payload is incomplete; missing " .. required)
+            error("dpcpp: payload is incomplete after the move; missing " .. required)
         end
     end
     log.info("dpcpp installed to %s", dir)
     return true
 end
 
--- WHAT GETS REGISTERED, AND WHY IT IS SCANNED
---
--- These components differ in shape: some carry only `bin/` (nvcc, cuda-gdb),
--- some only `lib/` and `include/` (cudart, libnvvm), some both. Registering a
--- hand-written list per component would be a table to keep in step with
--- upstream's packaging, and upstream has already moved files between
--- components once between the 12.x and 13.x lines.
---
--- So the payload is scanned. What matters for the version machinery is that
--- `xvm.add(package.name)` names the root -- that is what `xlings use
--- <pkg> <version>` switches -- and that each program and library is bound to
--- `<pkg>@<version>`, so two release lines can be installed side by side and
--- selected rather than fighting.
---
--- A component that registers nothing at all is not a partial result, it is the
--- wrong payload: reported as an error rather than a successful install of
--- nothing.
-local function register_dir(dir, kind, binding, count)
-    if not os.isdir(dir) then return count end
-    -- `io.popen` rather than `os.files`: the recipe sandbox does not expose the
-    -- latter in `config()` -- it fails with `attempt to call a nil value
-    -- (field 'files')` -- and `io.popen` is what the index's other payload
-    -- recipes use for the same job. These components declare `linux` only, so
-    -- one POSIX listing is the whole story; a Windows entry would need the
-    -- `dir /b` branch llvm.lua carries, and would be added with that entry.
-    local pattern = (kind == "lib") and "-type f -name '*.so*' -o -type f -name '*.a'"
-                                     or "-maxdepth 1 -type f -perm -u+x"
-    local cmd
-    if kind == "lib" then
-        cmd = string.format([[find "%s" -maxdepth 1 \( %s \) 2>/dev/null]], dir, pattern)
-    else
-        cmd = string.format([[find "%s" %s 2>/dev/null]], dir, pattern)
-    end
-    local f = io.popen(cmd)
-    if not f then return count end
-    for line in f:lines() do
-        local full = line:gsub("[\r\n]+$", "")
-        if full ~= "" then
-            local base = path.filename(full)
-            if kind == "lib" then
-                xvm.add(base, {
-                    type = "lib", bindir = dir, filename = base,
-                    alias = base, binding = binding,
-                })
-            else
-                xvm.add((base:gsub("%.exe$", "")), {
-                    bindir = dir, alias = base, binding = binding,
-                })
-            end
-            count = count + 1
-        end
-    end
-    f:close()
-    return count
-end
-
 function config()
     local dir     = pkginfo.install_dir()
+    local bindir  = path.join(dir, "bin")
     local binding = package.name .. "@" .. pkginfo.version()
 
+    -- The SYCL compiler ships under clang's names, not `dpcpp`, so the root is
+    -- added bare and the programs are named individually. `icpx` is the oneAPI
+    -- spelling and is present in this build as a driver alias.
     xvm.add(package.name)
 
     local n = 0
-    n = register_dir(path.join(dir, "bin"), "bin", binding, n)
-    n = register_dir(path.join(dir, "lib"), "lib", binding, n)
-    n = register_dir(path.join(dir, "nvvm", "bin"), "bin", binding, n)
-    n = register_dir(path.join(dir, "nvvm", "lib64"), "lib", binding, n)
-
-    if n == 0 and not os.isdir(path.join(dir, "include")) then
-        log.error("%s: payload contains no programs, libraries or headers",
-                  package.name)
+    for _, prog in ipairs({ "clang++", "clang", "sycl-ls", "clang-linker-wrapper",
+                            "clang-offload-bundler", "llvm-offload-binary" }) do
+        if os.isfile(path.join(bindir, prog)) then
+            xvm.add(prog, { bindir = bindir, alias = prog, binding = binding })
+            n = n + 1
+        end
+    end
+    if n == 0 then
+        log.error("dpcpp: payload registered no programs")
         return false
     end
     return true
