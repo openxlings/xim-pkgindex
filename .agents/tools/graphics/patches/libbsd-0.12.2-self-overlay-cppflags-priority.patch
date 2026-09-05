@@ -1,0 +1,25 @@
+--- a/src/Makefile.in
++++ b/src/Makefile.in
+@@ -641,7 +641,21 @@
+ top_build_prefix = @top_build_prefix@
+ top_builddir = @top_builddir@
+ top_srcdir = @top_srcdir@
+-AM_CPPFLAGS = -I$(top_builddir) -isystem $(top_srcdir)/include/bsd/ \
++# xlings: -isystem here does not mean what it looks like it means. GCC and
++# Clang search every -I directory, in the order given, before any -isystem
++# directory -- regardless of where -isystem sits on the command line. This
++# package builds its OWN sources against its OWN not-yet-installed headers by
++# adding include/bsd/ ahead of the system one for a bare <stdio.h>/<string.h>/
++# <sys/cdefs.h>, so it only works when nothing else on the line supplies a
++# competing -I for the same names. build-in-subos.sh always exports
++# CPPFLAGS="-I<subos>/usr/include ..." so dependants can find a dependency's
++# headers, and that -I outranks this -isystem: <stdio.h> resolved straight to
++# the subos's real glibc header, skipping this self-overlay, and left
++# FPARSELN_UNESCALL, S_ISTXT, _PW_BUF_LEN and their neighbors -- declared only
++# in include/bsd/*.h -- undeclared. -I restores the priority this package's
++# own sources depend on; the installed payload's own libbsd-overlay.pc is
++# untouched and keeps using -isystem for its consumers.
++AM_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir)/include/bsd/ \
+ 	-include $(top_builddir)/config.h -DLIBBSD_OVERLAY \
+ 	-DLIBBSD_DISABLE_DEPRECATED -D__REENTRANT $(am__append_1)
+ libbsd_la_included_sources = \
