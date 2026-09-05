@@ -89,6 +89,7 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.pkgmanager")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
+import("xim.libxpkg.system")
 
 -- The major version, as a number. `13.3.33` -> 13.
 local function major_of(ver)
@@ -123,6 +124,93 @@ local function payload_root()
     return nil
 end
 
+-- ⚠️⚠️ WHAT SPLITTING THE COMPONENT BROKE, AND WHY NOTHING REPORTED IT.
+--
+-- nvcc addresses its own back end through `bin/nvcc.profile`, which reads
+--
+--     TOP                = $(_HERE_)/..
+--     CICC_PATH          = $(TOP)/nvvm/bin
+--     NVVMIR_LIBRARY_DIR = $(TOP)/nvvm/libdevice
+--
+-- On the 12.x line `nvvm/` sat inside `cuda_nvcc` and those paths resolved. On
+-- the 13.x line upstream moved it to `libnvvm`, and `crt/` to `cuda_crt` —
+-- separate archives, and here separate payload roots. Installing all four
+-- therefore produces an nvcc that cannot compile anything:
+--
+--     sh: 1: .../xim-x-cuda-nvcc/13.3.33/bin/../nvvm/bin/cicc: not found
+--
+-- ⭐ Every obvious check passes. The payload is complete, `nvcc` is on `PATH`,
+-- `--version` answers, and the component that holds `cicc` IS installed —
+-- one directory level away from where nvcc looks. Measured 2026-09-05.
+--
+-- The repair restores the ONE layout property nvcc's own machinery depends on,
+-- and only for the components upstream versions together with nvcc, so no
+-- independently versioned component is pinned by it. A symlink rather than a
+-- copy: the component payload stays the single copy on disk, and
+-- `xlings use cuda-nvcc <other version>` continues to switch whole trees.
+-- Where a sibling component of the same release sits in this store.
+--
+-- ⚠️ `pkginfo.install_dir("xim:libnvvm", ver)` cannot answer: since libxpkg
+-- 0.0.57 it resolves only DECLARED dependencies, and these components cannot be
+-- declared. `xpm.<os>.deps` is read at the OS level, not per version — every
+-- key beside `deps` there IS a version — so one declaration would apply to the
+-- 12.x line too, where `libnvvm` and `cuda-crt` are inside `cuda_nvcc` and the
+-- separately published archives do not exist at that version. A dependency
+-- that is right for one release line and wrong for the other is not a
+-- dependency of the package.
+--
+-- So the sibling is derived, and only the two facts this store guarantees are
+-- used: components of one namespace are siblings under one root, and the
+-- directory name is `<namespace>-x-<package>`. The namespace is read off this
+-- package's own directory rather than written down, so an index published
+-- under another namespace derives its own.
+local function sibling_payload(dir, comp, ver)
+    local store  = path.directory(path.directory(dir))
+    local mine   = path.filename(path.directory(dir))
+    local prefix = mine:sub(1, #mine - #package.name)
+    return path.join(store, prefix .. comp, ver)
+end
+
+local function reunite_backend(dir, ver)
+    -- Keyed on what this release actually split out, so the 12.x line — where
+    -- nothing was split — asks for nothing and reports nothing.
+    local split = {}
+    for _, c in ipairs(backend_components(ver)) do split[c] = true end
+    local links = {
+        { "libnvvm",  "nvvm",                       path.join(dir, "nvvm") },
+        { "cuda-crt", path.join("include", "crt"),  path.join(dir, "include", "crt") },
+    }
+    for _, l in ipairs(links) do
+        local comp, rel, into = l[1], l[2], l[3]
+        -- `os.isdir`, not `os.exists`: the recipe sandbox does not expose the
+        -- latter — `attempt to call a nil value (field 'exists')`, the same
+        -- shape `register_dir` records for `os.files` — and every target here
+        -- is a directory.
+        if split[comp] and not os.isdir(into) then
+            local from = path.join(sibling_payload(dir, comp, ver), rel)
+            if not os.isdir(from) then
+                error(string.format(
+                    "cuda-nvcc: %s@%s carries %s and it was not found at %s; nvcc addresses "
+                    .. "it through its own tree and cannot compile without it",
+                    comp, ver, rel, from))
+            end
+            os.mkdir(path.directory(into))
+            -- ⚠️ `ln` through the shell, not `os.ln` (absent from the recipe
+            -- sandbox) and not `os.cp(..., { symlink = true })` — that flag
+            -- means "preserve symlinks found in the source", so it copied the
+            -- 47 MB tree instead of linking to it. `wsl-gl-host-link` already
+            -- uses this spelling; these components declare `linux` only, so one
+            -- POSIX form is the whole story.
+            --
+            -- A link, not a copy: the component payload stays the single copy
+            -- on disk, and removing that component leaves a visibly broken link
+            -- rather than a silently stale duplicate.
+            system.exec(string.format([[ln -sfn "%s" "%s"]], from, into))
+            log.info("cuda-nvcc: %s -> %s", into, from)
+        end
+    end
+end
+
 function install()
     local src = payload_root()
     if not src then
@@ -141,6 +229,8 @@ function install()
         log.info("cuda-nvcc: installing back-end component %s@%s", c, ver)
         pkgmanager.install(c .. "@" .. ver)
     end
+
+    reunite_backend(dir, ver)
 
     log.info("cuda-nvcc installed to %s", dir)
     return true
@@ -206,12 +296,25 @@ function config()
     local dir     = pkginfo.install_dir()
     local binding = package.name .. "@" .. pkginfo.version()
 
+    -- ⚠️ `nvvm/` IS SCANNED ONLY WHEN IT IS THIS PACKAGE'S OWN. On the 12.x line
+    -- it is part of the archive and its programs belong here. On the 13.x line
+    -- it is a link into `libnvvm`, whose own recipe registers `cicc` and
+    -- `libnvvm.so` against `libnvvm@<version>`; scanning through the link would
+    -- register the same files a second time under a second owner, and xvm
+    -- rejects the duplicate, failing this package's config hook.
+    local own_nvvm = #backend_components(pkginfo.version()) == 0
+    local bindirs = { path.join(dir, "bin"), dir }
+    local libdirs = { path.join(dir, "lib"), path.join(dir, "lib64") }
+    if own_nvvm then
+        table.insert(bindirs, 2, path.join(dir, "nvvm", "bin"))
+        table.insert(libdirs, path.join(dir, "nvvm", "lib64"))
+    end
+
     local programs, libs = {}, {}
-    for _, d in ipairs({ path.join(dir, "bin"), path.join(dir, "nvvm", "bin"), dir }) do
+    for _, d in ipairs(bindirs) do
         for _, f in ipairs(scan_dir(d, "bin")) do table.insert(programs, f) end
     end
-    for _, d in ipairs({ path.join(dir, "lib"), path.join(dir, "lib64"),
-                         path.join(dir, "nvvm", "lib64") }) do
+    for _, d in ipairs(libdirs) do
         for _, f in ipairs(scan_dir(d, "lib")) do table.insert(libs, f) end
     end
 
