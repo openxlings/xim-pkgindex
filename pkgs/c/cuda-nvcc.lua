@@ -171,6 +171,36 @@ local function sibling_payload(dir, comp, ver)
     return path.join(store, prefix .. comp, ver)
 end
 
+-- Best-effort install of one back-end component. Returns whether the payload
+-- is there afterwards.
+--
+-- ⚠️⚠️ A NESTED INSTALL IS NOT RELIABLE, AND ITS FAILURE IS SILENT.
+-- `pkgmanager.install` reports nothing a recipe can read, so the only evidence
+-- is whether the payload directory exists afterwards — and measured on one
+-- machine one run apart, neither spelling of the coordinate is enough on its
+-- own. The bare name resolves to nothing when this recipe is registered as a
+-- LOCAL OVERLAY, which is how CI tests a changed package; the qualified `xim:`
+-- form left the payload uninstalled under mcpp's provisioning while the archive
+-- sat downloaded in the cache. Both are tried, and neither is trusted.
+--
+-- What IS reliable is the consumer's own declaration:
+--
+--     [xlings.workspace]
+--     "xim:cuda-nvcc" = "13.3.33"
+--     "xim:libnvvm"   = "13.3.33"
+--
+-- so the link written below does not depend on this attempt succeeding, and a
+-- component that arrives later still resolves it.
+local function install_component(dir, comp, ver)
+    if os.isdir(sibling_payload(dir, comp, ver)) then return true end
+    for _, coord in ipairs({ "xim:" .. comp .. "@" .. ver, comp .. "@" .. ver }) do
+        log.info("cuda-nvcc: installing back-end component %s", coord)
+        pkgmanager.install(coord)
+        if os.isdir(sibling_payload(dir, comp, ver)) then return true end
+    end
+    return false
+end
+
 local function reunite_backend(dir, ver)
     -- Keyed on what this release actually split out, so the 12.x line — where
     -- nothing was split — asks for nothing and reports nothing.
@@ -184,17 +214,24 @@ local function reunite_backend(dir, ver)
         local comp, rel, into = l[1], l[2], l[3]
         -- `os.isdir`, not `os.exists`: the recipe sandbox does not expose the
         -- latter — `attempt to call a nil value (field 'exists')`, the same
-        -- shape `register_dir` records for `os.files` — and every target here
-        -- is a directory.
+        -- shape `scan_dir` records for `os.files` — and every target here is a
+        -- directory.
         if split[comp] and not os.isdir(into) then
-            local from = path.join(sibling_payload(dir, comp, ver), rel)
-            if not os.isdir(from) then
-                error(string.format(
-                    "cuda-nvcc: %s@%s carries %s and it was not found at %s; nvcc addresses "
-                    .. "it through its own tree and cannot compile without it",
-                    comp, ver, rel, from))
-            end
+            -- Installed by the loop in `install()` above; read, not retried, so
+            -- the attempt appears once in the log and once only.
+            local root    = sibling_payload(dir, comp, ver)
+            local present = os.isdir(root)
+            local from    = path.join(root, rel)
             os.mkdir(path.directory(into))
+            -- ⭐ THE LINK IS WRITTEN WHETHER OR NOT ITS TARGET EXISTS YET, and
+            -- that is what makes this order-independent. The path is decided by
+            -- the store's layout rather than by what happens to be installed at
+            -- this instant, so a component provisioned after this package
+            -- resolves the link the moment it lands. Requiring the target here
+            -- made the result depend on the order a consumer's
+            -- `[xlings.workspace]` entries are installed in, which nothing
+            -- promises.
+            --
             -- ⚠️ `ln` through the shell, not `os.ln` (absent from the recipe
             -- sandbox) and not `os.cp(..., { symlink = true })` — that flag
             -- means "preserve symlinks found in the source", so it copied the
@@ -206,7 +243,14 @@ local function reunite_backend(dir, ver)
             -- on disk, and removing that component leaves a visibly broken link
             -- rather than a silently stale duplicate.
             system.exec(string.format([[ln -sfn "%s" "%s"]], from, into))
-            log.info("cuda-nvcc: %s -> %s", into, from)
+            if present then
+                log.info("cuda-nvcc: %s -> %s", into, from)
+            else
+                log.warn("cuda-nvcc: %s@%s is not installed, so %s is a link to nothing "
+                         .. "and nvcc will report `cicc: not found` at the first compile. "
+                         .. "Declare it beside this package: [xlings.workspace] "
+                         .. "\"xim:%s\" = \"%s\"", comp, ver, into, comp, ver)
+            end
         end
     end
 end
@@ -226,8 +270,7 @@ function install()
     -- with it upstream.
     local ver = pkginfo.version()
     for _, c in ipairs(backend_components(ver)) do
-        log.info("cuda-nvcc: installing back-end component %s@%s", c, ver)
-        pkgmanager.install(c .. "@" .. ver)
+        install_component(dir, c, ver)
     end
 
     reunite_backend(dir, ver)
