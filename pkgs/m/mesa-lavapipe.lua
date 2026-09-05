@@ -20,7 +20,7 @@ package = {
     docs = "https://docs.mesa3d.org/drivers/llvmpipe.html",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"graphics", "vulkan", "lib"},
     keywords = {"mesa", "lavapipe", "vulkan", "llvmpipe", "software-rasterizer", "cpu"},
@@ -67,15 +67,38 @@ package = {
     -- some other package in this index also provides. They stay private to the
     -- payload; only the ICD manifest is placed, into the one directory the
     -- Khronos loader reads.
+    --
+    -- aarch64 is repacked the same way, from conda-forge's linux-aarch64
+    -- build. The two closures are not byte-identical in file count: the
+    -- aarch64 build of mesa-lavapipe itself is upstream's build_number 0
+    -- (2026-08-20), while the published x86_64 payload comes from build_number
+    -- 2 (2026-09-02), which added a dependency on `libllvmspirv22` that build 0
+    -- does not declare -- so the x86_64 payload's `lib/` carries one file
+    -- (`libLLVMSPIRVLib.so.22.1`, NCSA licensed) that aarch64's does not.
+    -- libdrm's own conda-forge package additionally ships `libdrm_etnaviv` and
+    -- `libdrm_freedreno` (ARM SoC display drivers) only on aarch64, and GCC's
+    -- `libquadmath` only on x86_64. None of the four is DT_NEEDED by anything
+    -- else in either closure (checked with `readelf -d` across every object),
+    -- so the difference does not reach `libvulkan_lvp.so` or change what the
+    -- package provides.
     xpm = {
         linux = {
             ["latest"] = { ref = "26.2.1" },
             ["26.2.1"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/mesa-lavapipe/releases/download/26.2.1/mesa-lavapipe-26.2.1-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/mesa-lavapipe/releases/download/26.2.1/mesa-lavapipe-26.2.1-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/mesa-lavapipe/releases/download/26.2.1/mesa-lavapipe-26.2.1-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/mesa-lavapipe/releases/download/26.2.1/mesa-lavapipe-26.2.1-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "104f5f4b8aee088dd9b81df5935c5d43e4982a9c62ef0465e3587b25d0e3267d",
                 },
-                sha256 = "104f5f4b8aee088dd9b81df5935c5d43e4982a9c62ef0465e3587b25d0e3267d",
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/mesa-lavapipe/releases/download/26.2.1/mesa-lavapipe-26.2.1-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/mesa-lavapipe/releases/download/26.2.1/mesa-lavapipe-26.2.1-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "4fd34bbb6ce3279a2a5d81ab9049b8e08e80e6f5c872042b14c2a65c41ac53e0",
+                },
             },
         },
     },

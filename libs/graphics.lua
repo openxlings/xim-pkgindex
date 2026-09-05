@@ -135,6 +135,12 @@ graphics.SHARE_DIR      = "share"
 -- $XDG_DATA_DIRS/vulkan/icd.d and mesa puts ${subosdir}/share on that list.
 graphics.VULKAN_ICD_DIR = "share/vulkan/icd.d"
 
+-- Where the OpenCL ICD loader looks for vendor manifests, relative to the
+-- subos. Same shared-directory shape as VULKAN_ICD_DIR and for the same
+-- reason -- several packages may each contribute one `.icd` file -- but
+-- reached through a DIFFERENT mechanism, see OCL_ICD_VENDORS below.
+graphics.OPENCL_VENDOR_DIR = "etc/OpenCL/vendors"
+
 -- Where libxkbcommon looks for keyboard layouts.
 --
 -- `share/X11/xkb` is the path every distribution uses and the one upstream's
@@ -365,6 +371,43 @@ graphics.VULKAN_ICD_ONLY = {
     ["XDG_DATA_DIRS"] = true,
 }
 
+-- The set for a provider that contributes an OpenCL ICD and nothing else.
+--
+-- `pocl` ships `etc/OpenCL/vendors/pocl.icd` and a private `lib/`; it fills
+-- none of the OTHER rows (it is not a GL/Vulkan driver at all). One row,
+-- OCL_ICD_VENDORS -- see that row's comment in DISCOVERY for why it is the
+-- only lever ocl-icd exposes, and what declaring it costs.
+-- OpenCL discovery is NOT a DISCOVERY row. The Khronos OpenCL-ICD-Loader --
+-- the loader this ecosystem builds and links (`compat.opencl` in mcpp-index)
+-- -- enumerates OCL_ICD_FILENAMES, a colon-separated list of ICD library
+-- files, IN ADDITION to the vendors directory (`khrIcdOsVendorsEnumerate`,
+-- loader/linux/icd_linux.c), so a payload driver is announced by prepending
+-- one file to that list and the machine's own drivers stay visible. Two
+-- things keep it out of the table above:
+--
+--   * the value is the payload's own absolute library path, not a
+--     `${subosdir}/...` view path: the library carries DT_RPATH=$ORIGIN and
+--     $ORIGIN resolves to the directory of the path dlopen was given, so a
+--     symlink under the subos would leave its closure unresolved;
+--   * OCL_ICD_VENDORS is the wrong lever and is deliberately never declared:
+--     it names ONE directory used INSTEAD of /etc/OpenCL/vendors, and every
+--     loader that honours it would then hide an NVIDIA or Intel ICD.
+--
+-- The payload's own bundled loader (conda-forge's ocl-icd, `libOpenCL.so.1`)
+-- does not compile OCL_ICD_FILENAMES in (measured: `strings` on it lists
+-- OCL_ICD_VENDORS and OPENCL_VENDOR_PATH only). That loader is not the one
+-- the ecosystem links; a user who runs the payload's own tools against it
+-- sets OCL_ICD_VENDORS for that session. Measured with the Khronos loader
+-- and OCL_ICD_FILENAMES=<payload>/lib/libpocl.so: both `Portable Computing
+-- Language` and `NVIDIA CUDA` are enumerated in one process.
+function graphics.declare_opencl_icd_library(install_dir, rel_lib, tag)
+    if type(subos.env) ~= "function" then return false end
+    local lib = path.join(install_dir, rel_lib)
+    if not os.isfile(lib) then return false end
+    subos.env{ var = "OCL_ICD_FILENAMES", op = "prepend", value = lib, binding = tag }
+    return true
+end
+
 -- Place one glvnd EGL vendor JSON into the subos's SHARED vendor directory.
 --
 -- WHY SHARED, AND WHY THIS IS THE POINT OF THE CHANGE
@@ -435,6 +478,38 @@ function graphics.declare_vulkan_icd(install_dir, rel_dir, tag)
             xvm.files{
                 src = path.join(rel_dir, base),
                 dst = path.join(graphics.VULKAN_ICD_DIR, base),
+                binding = tag,
+            }
+            n = n + 1
+        end
+    end
+    f:close()
+    return n > 0
+end
+
+-- Place an OpenCL ICD manifest into the subos, where ocl-icd looks once
+-- OCL_ICD_VENDORS names this directory (see that row's comment in DISCOVERY).
+--
+-- Same shared-directory shape as `declare_vulkan_icd` -- one directory,
+-- several packages may contribute, filenames just have to not collide -- and
+-- the same reason for existing: a manifest left sitting only in the payload
+-- is never read, because OCL_ICD_VENDORS is what makes ocl-icd look at this
+-- directory AT ALL, and declaring the variable without placing the file into
+-- it points ocl-icd at a directory with nothing in it.
+function graphics.declare_opencl_icd(install_dir, rel_dir, tag)
+    if not xvm.files then return false end
+    local dir = path.join(install_dir, rel_dir)
+    if not os.isdir(dir) then return true end   -- a build with no OpenCL ICD
+    local f = io.popen(string.format([[ls -1 "%s"/*.icd 2>/dev/null]], dir))
+    if not f then return false end
+    local n = 0
+    for line in f:lines() do
+        local p = line:gsub("[\r\n]+$", "")
+        if p ~= "" then
+            local base = p:match("([^/]+)$")
+            xvm.files{
+                src = path.join(rel_dir, base),
+                dst = path.join(graphics.OPENCL_VENDOR_DIR, base),
                 binding = tag,
             }
             n = n + 1
