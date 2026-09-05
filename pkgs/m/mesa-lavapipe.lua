@@ -83,6 +83,7 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.log")
+import("xim.libxpkg.xvm")
 import("xim.pkgindex.graphics")
 
 function install()
@@ -131,6 +132,12 @@ end
 function config()
     local dir = pkginfo.install_dir()
     local tag = package.name .. "@" .. pkginfo.version()
+
+    -- The node every `xvm.files` binding below points at. A binding whose root
+    -- the recipe never registers is refused (`xvm-binding-root-missing`), and
+    -- the package installs but places nothing -- so this line is not
+    -- bookkeeping, it is what makes the ICD manifest reach the subos.
+    xvm.add(package.name)
 
     -- The manifest into the shared ICD directory, so cross-vendor priority is
     -- decided by filename as it is on a host, and `XDG_DATA_DIRS` so the loader
