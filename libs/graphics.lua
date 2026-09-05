@@ -354,6 +354,17 @@ graphics.EGL_VENDOR_AND_ICD = {
     ["XDG_DATA_DIRS"]             = true,
 }
 
+-- The set for a provider that contributes a Vulkan ICD AND NOTHING ELSE.
+--
+-- `mesa-lavapipe` ships `share/vulkan/icd.d` and a private `lib/`, and it fills
+-- no GL vendor directory, no DRI module directory and no GBM backend
+-- directory. Passing EGL_VENDOR_AND_ICD would declare a vendor directory it
+-- does not have, which is the mistake RENDER_PATHS was introduced to stop
+-- rather than one it is allowed to repeat.
+graphics.VULKAN_ICD_ONLY = {
+    ["XDG_DATA_DIRS"] = true,
+}
+
 -- Place one glvnd EGL vendor JSON into the subos's SHARED vendor directory.
 --
 -- WHY SHARED, AND WHY THIS IS THE POINT OF THE CHANGE
