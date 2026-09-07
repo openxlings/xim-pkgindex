@@ -1,6 +1,18 @@
 package = {
     spec = "2",
 
+    -- THE TWO PLATFORMS CARRY DIFFERENT VERSIONS, AND THAT IS A PROPERTY OF
+    -- WHERE EACH PAYLOAD COMES FROM.
+    --
+    -- Linux is built by this ecosystem (26.2.1). Windows is repacked from
+    -- `pal1000/mesa-dist-win`, because Mesa publishes no Windows binaries of
+    -- its own, and that redistribution publishes 26.1.7 and 26.2.0. There is
+    -- no 26.2.1 of the Windows build and no 26.2.0 of the Linux one, so the
+    -- sets cannot be made equal by choosing differently. Declared here so this
+    -- reads as a decision rather than as a bump that landed in one section and
+    -- was forgotten in the other.
+    platform_versions_diverge = true,
+
     homepage = "https://docs.mesa3d.org/drivers/llvmpipe.html",
     name = "mesa-lavapipe",
     description = "Mesa lavapipe — Vulkan on the CPU, for machines with no GPU driver",
@@ -101,6 +113,35 @@ package = {
                 },
             },
         },
+
+        -- WINDOWS, AND THE PAYLOAD IS SOMEONE ELSE'S REDISTRIBUTION.
+        --
+        -- Mesa publishes no Windows binaries. `pal1000/mesa-dist-win` does,
+        -- and this payload is two files out of its `release-msvc` archive,
+        -- repacked into the same layout as the Linux ones. The provenance is
+        -- named in the payload's own PROVENANCE.md rather than left implicit,
+        -- because "where did this come from" has a different answer on this
+        -- platform.
+        --
+        -- MEASURED BEFORE IT WAS TAKEN: `vulkan_lvp.dll` imports ADVAPI32,
+        -- GDI32, KERNEL32, ntdll, ole32, SHELL32 and USER32 and nothing else
+        -- -- in particular NOT MSVCP140 or VCRUNTIME140, so it needs no Visual
+        -- C++ redistributable on the machine. A payload that depended on
+        -- something this ecosystem has not configured is the dependency this
+        -- index exists to remove, and that check is what decided between the
+        -- available builds.
+        windows = {
+            ["latest"] = { ref = "26.2.0" },
+            ["26.2.0"] = {
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/mesa-lavapipe/releases/download/26.2.0/mesa-lavapipe-26.2.0-windows-x86_64.zip",
+                        CN     = "https://gitcode.com/xlings-res/mesa-lavapipe/releases/download/26.2.0/mesa-lavapipe-26.2.0-windows-x86_64.zip",
+                    },
+                    sha256 = "fa4808f62b395774f0cb4dc559345ac13e9c1ed9885f131adfd23a2176e7aed1",
+                },
+            },
+        },
     },
 }
 
@@ -130,12 +171,25 @@ function install()
     -- way `xim:mesa` rewrites its own.
     local icddir = path.join(dir, "share/vulkan/icd.d")
     if os.isdir(icddir) then
+        -- LISTING A DIRECTORY IS A DIFFERENT COMMAND ON THE TWO HOSTS. `ls` is
+        -- not one on Windows; cmd's `dir /b` prints bare names, so the
+        -- directory is prepended. A shared invocation does not fail loudly
+        -- there -- it returns nothing, and an ICD whose `library_path` was
+        -- never rewritten is a driver the loader silently declines to load.
         local names = {}
-        local lsf = io.popen(string.format([[ls -1 "%s"/*.json 2>/dev/null]], icddir))
+        local cmd
+        if is_host("windows") then
+            cmd = string.format([[dir /b "%s\*.json" 2>nul]], icddir:gsub("/", "\\"))
+        else
+            cmd = string.format([[ls -1 "%s"/*.json 2>/dev/null]], icddir)
+        end
+        local lsf = io.popen(cmd)
         if lsf then
             for line in lsf:lines() do
                 local n = line:gsub("[\r\n]+$", "")
-                if n ~= "" then table.insert(names, n) end
+                if n ~= "" then
+                    table.insert(names, is_host("windows") and path.join(icddir, n) or n)
+                end
             end
             lsf:close()
         end
@@ -149,7 +203,11 @@ function install()
         end
     end
 
-    return os.isfile(path.join(dir, "lib", "libvulkan_lvp.so"))
+    -- The driver's file name is the host's. A check written for one spelling
+    -- passes vacuously on the other only if the file is allowed to be absent,
+    -- and it is not: a payload without it is not this package.
+    local driver = is_host("windows") and "vulkan_lvp.dll" or "libvulkan_lvp.so"
+    return os.isfile(path.join(dir, "lib", driver))
 end
 
 function config()
@@ -162,13 +220,23 @@ function config()
     -- bookkeeping, it is what makes the ICD manifest reach the subos.
     xvm.add(package.name)
 
-    -- The manifest into the shared ICD directory, so cross-vendor priority is
-    -- decided by filename as it is on a host, and `XDG_DATA_DIRS` so the loader
-    -- looks there at all. A manifest that stays in the payload is never found,
-    -- and the failure is invisible: the loader falls through to the HOST's
-    -- /usr/share and usually finds something.
-    graphics.declare_vulkan_icd(dir, "share/vulkan/icd.d", tag)
-    graphics.declare_subos_env(tag, graphics.VULKAN_ICD_ONLY)
+    -- THE SUBOS VIEW IS A LINUX CONSTRUCTION, SO THE TWO CALLS BELOW ARE TOO.
+    --
+    -- On Linux the manifest goes into the shared ICD directory, so cross-vendor
+    -- priority is decided by filename as it is on a host, and `XDG_DATA_DIRS`
+    -- makes the loader look there at all. A manifest that stays in the payload
+    -- is never found, and the failure is invisible: the loader falls through to
+    -- the HOST's /usr/share and usually finds something.
+    --
+    -- Windows has neither: the loader reads the registry, or the path named by
+    -- `VK_DRIVER_FILES`. This package therefore places the payload and stops;
+    -- naming the ICD is the consumer's, and the manifest's absolute path is
+    -- `<install_dir>/share/vulkan/icd.d/lvp_icd.x86_64.json` -- stated here
+    -- because it is now part of what this package promises.
+    if is_host("linux") then
+        graphics.declare_vulkan_icd(dir, "share/vulkan/icd.d", tag)
+        graphics.declare_subos_env(tag, graphics.VULKAN_ICD_ONLY)
+    end
     return true
 end
 
