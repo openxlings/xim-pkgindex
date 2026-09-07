@@ -163,12 +163,24 @@ function install()
     end
     os.mv(top, dir)
 
-    -- The ICD manifest ships `"library_path": "../../../lib/libvulkan_lvp.so"`,
-    -- relative to the manifest, which is correct where it sits and wrong once
-    -- config() places it into the subos view: the loader resolves the path
-    -- against the manifest it READ, and that copy lives three directories from
-    -- somewhere else entirely. Rewritten to the payload's absolute path, the
-    -- way `xim:mesa` rewrites its own.
+    -- The ICD manifest ships a path relative to itself -- on Linux
+    -- `"../../../lib/libvulkan_lvp.so"`, on Windows `".\\vulkan_lvp.dll"` --
+    -- which is correct where it sits on one host, wrong on the other, and wrong
+    -- on both once config() places a copy into the subos view: the loader
+    -- resolves the path against the manifest it READ. Rewritten to the
+    -- payload's absolute path, the way `xim:mesa` rewrites its own.
+    --
+    -- THE RESULT HAS TO BE VALID JSON, AND ON WINDOWS IT WAS NOT.
+    --
+    -- `path.join` produces `\` there, and this writes the value into a JSON
+    -- string. `"C:\Users\...\lib\vulkan_lvp.dll"` contains `\U`, which is not
+    -- a JSON escape. The loader parses manifests with cJSON, and one it cannot
+    -- parse is an ICD it SKIPS -- no error reaches the application, which sees
+    -- zero physical devices. Measured against the published 26.2.0 Windows
+    -- payload, where `mcpp`'s offscreen example prints `render unavailable`.
+    --
+    -- Forward slashes settle it: `LoadLibrary` accepts them and they need no
+    -- escape. The same spelling is correct on every host, so there is no branch.
     local icddir = path.join(dir, "share/vulkan/icd.d")
     if os.isdir(icddir) then
         -- LISTING A DIRECTORY IS A DIFFERENT COMMAND ON THE TWO HOSTS. `ls` is
@@ -197,8 +209,12 @@ function install()
             local text = io.readfile(icd)
             io.writefile(icd, (text:gsub('("library_path"%s*:%s*")([^"]+)(")',
                 function(pre, val, post)
-                    local base = val:match("([^/]+)$") or val
-                    return pre .. path.join(dir, "lib", base) .. post
+                    -- BOTH SEPARATORS, because the value's own spelling is the
+                    -- publisher's. Matching `[^/]+` alone leaves `.\` attached
+                    -- to a Windows name and produces `lib\.\vulkan_lvp.dll`.
+                    local base = val:match("([^/\\]+)$") or val
+                    local abs  = path.join(dir, "lib", base)
+                    return pre .. abs:gsub("\\", "/") .. post
                 end)))
         end
     end
