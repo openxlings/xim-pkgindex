@@ -79,12 +79,35 @@ def _strip_comments(block):
     return "".join(out)
 
 
+# WHAT IS SEARCHED FOR IS THE `xpm` ASSIGNMENT, NOT THE THREE LETTERS.
+#
+# This was `content.find("xpm")`: the first occurrence of that substring
+# anywhere in the file. Several recipes mention `xpm.<os>.deps` in a comment,
+# and those comments sit ABOVE `package = {`, so the scan began inside the
+# comment, matched the next `{`, and balanced its way through the `package`
+# table. The "platform sections" it then yielded were `maintainers`,
+# `licenses`, `archs`.
+#
+# The consequence is not an error. Those sections carry no version keys, so
+# `len(sets) < 2` and the function returns having asserted nothing. Measured:
+# fifteen recipes were invisible to this rule, among them node.lua, which
+# declares three platforms -- the case the rule exists for.
+#
+# The docstring above already says that parsing is done by brace matching
+# rather than by a regular expression. That was true of the body and false of
+# the entry point, which is the half nobody re-reads.
+#
+# `test_the_parity_check_can_see_every_declared_platform_section` below is the
+# denominator: it turns "measured nothing" into a failure.
+_XPM_ASSIGN = re.compile(r'^[^\S\n]*xpm\s*=\s*\{', re.M)
+
+
 def _platform_sections(content):
     """产出 (平台名, 该段内容)。只认 xpm 表内深度为 1 的键。"""
-    k = content.find("xpm")
-    if k < 0:
+    m = _XPM_ASSIGN.search(content)
+    if not m:
         return
-    brace = content.find("{", k)
+    brace = content.find("{", m.start())
     if brace < 0:
         return
     xpm = _balanced(content, brace)
@@ -176,4 +199,33 @@ def test_every_platform_carries_every_version(pkg_file):
           "leaves a file that still contains the version, so the omission reads "
           "as 'not found' on the platforms that lack it. If they genuinely "
           "differ, set `platform_versions_diverge = true` and say why."
+    )
+
+
+@pytest.mark.static
+@pytest.mark.parametrize("pkg_file", _discover_xpkg_files(),
+                         ids=lambda f: os.path.basename(f).replace(".lua", ""))
+def test_the_parity_check_can_see_every_declared_platform_section(pkg_file):
+    """[分母] 上面那条判据必须真的量到了平台段
+
+    A rule whose subject set is computed can have an empty subject set, and an
+    empty one passes. This asserts the other half: every platform section a
+    recipe actually declares is one `_platform_sections` yields. Without it,
+    a parser that finds nothing and a tree with nothing wrong produce the same
+    green.
+    """
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    with open(os.path.join(root, pkg_file), encoding="utf-8") as f:
+        content = f.read()
+
+    declared = set(re.findall(
+        r'^\s+(linux|windows|macosx|ubuntu|debian|archlinux|manjaro)\s*=\s*\{',
+        _strip_comments(content), re.M))
+    if not declared:
+        return
+    seen = {p for p, _ in _platform_sections(content)}
+    assert declared <= seen, (
+        f"{pkg_file}: declares {sorted(declared)} but the parity check sees "
+        f"{sorted(seen)}. It is reading the wrong table, so every assertion "
+        f"about this recipe's version sets passes over an empty set."
     )

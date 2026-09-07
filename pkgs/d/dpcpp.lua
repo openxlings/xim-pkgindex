@@ -15,10 +15,22 @@
 -- reports `[cuda:gpu] NVIDIA CUDA BACKEND` on a host with an NVIDIA driver.
 -- So the Linux asset needs no rebuild to reach NVIDIA or AMD devices.
 --
--- The same notes state that "HIP & CUDA plugins on Windows are not being
--- built". A Windows entry therefore cannot be a repack of the official asset
--- if those backends are wanted there; it has to be built. The version would
--- still be `7.1.0`, because that is the source it is built from.
+-- WHAT THE WINDOWS RELEASE CONTAINS, AND WHAT IT DOES NOT
+--
+-- `sycl_windows.tar.gz` is published for the same tag and the same version,
+-- and it is a complete toolchain: `bin/clang++.exe`, `bin/sycl-ls.exe`,
+-- `lib/sycl.lib` and `bin/sycl9.dll`. It is taken as published; nothing here
+-- repacks it.
+--
+-- The release notes state that "HIP & CUDA plugins on Windows are not being
+-- built", and the asset agrees: the adapters it carries are
+-- `ur_adapter_level_zero*.dll` and `ur_adapter_opencl*.dll`, with no CUDA and
+-- no HIP among them. So the Windows lane reaches Intel GPUs through Level
+-- Zero and any OpenCL device, and reaches NVIDIA and AMD devices only on
+-- Linux. That asymmetry belongs to the upstream release, not to this recipe,
+-- and is recorded rather than papered over: a Windows entry built from source
+-- with `--cuda --hip` would carry the same version number as an asset with
+-- different device coverage, which is worse than the gap.
 --
 -- WHAT IT CARRIES THAT THE SLIM LLVM PAYLOAD DOES NOT
 --
@@ -60,6 +72,19 @@ package = {
                 },
             },
         },
+
+        -- No `build` dep here. patchelf is an ELF tool and the search-path
+        -- rewrite it performs below has no Windows counterpart: the PE loader
+        -- looks beside the executable, which is where this payload's DLLs are.
+        windows = {
+            source = "https://github.com/intel/llvm/releases/download/v${version}/sycl_windows.tar.gz",
+            ["latest"] = { ref = "7.1.0" },
+            ["7.1.0"] = {
+                sha256 = {
+                    x86_64 = "8337faf4e1cdfb7a66e383927e19803b89d3241566bffa9b2feace761d539544",
+                },
+            },
+        },
     },
 }
 
@@ -86,34 +111,32 @@ import("xim.libxpkg.log")
 -- directory before the check ran.
 local ENTRIES = { "bin", "lib", "include" }
 
-function install()
-    local file = pkginfo.install_file() or ""
-    local src  = path.directory(file)
-
-    -- Before anything is moved: is this the payload we asked for?
-    for _, required in ipairs({ path.join("bin", "clang++"),
-                                path.join("bin", "sycl-ls"),
-                                path.join("lib", "libsycl.so") }) do
-        if not os.isfile(path.join(src, required)) then
-            error("dpcpp: the unpacked archive is missing " .. required
-                  .. "; refusing to move anything out of the shared download "
-                  .. "directory")
-        end
+-- THE COMPLETENESS CHECK NAMES FILES, SO IT IS PER-PLATFORM.
+--
+-- The two assets carry the same toolchain under different file names: the
+-- driver is `clang++` or `clang++.exe`, and the SYCL runtime is `libsycl.so`
+-- (linked against directly) or the pair `lib/sycl.lib` + `bin/sycl9.dll`. A
+-- check written for one spelling passes vacuously on the other only if it is
+-- allowed to be absent, so the list is chosen by host and both branches are
+-- required.
+--
+-- `sycl.lib` rather than `sycl9.lib`: the digit is the SYCL ABI major and
+-- moves with the release, while the unsuffixed import library does not.
+local function required_files()
+    if is_host("windows") then
+        return { path.join("bin", "clang++.exe"),
+                 path.join("bin", "sycl-ls.exe"),
+                 path.join("lib", "sycl.lib") }
     end
+    return { path.join("bin", "clang++"),
+             path.join("bin", "sycl-ls"),
+             path.join("lib", "libsycl.so") }
+end
 
-    local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mkdir(dir)
-    for _, e in ipairs(ENTRIES) do
-        local from = path.join(src, e)
-        if os.isdir(from) then os.mv(from, path.join(dir, e)) end
-    end
-
-    for _, required in ipairs({ "bin/clang++", "bin/sycl-ls", "lib/libsycl.so" }) do
-        if not os.isfile(path.join(dir, required)) then
-            error("dpcpp: payload is incomplete after the move; missing " .. required)
-        end
-    end
+-- ELF ONLY. The Windows asset needs none of this: the PE loader searches
+-- the directory holding the executable, and this payload's DLLs are in
+-- `bin/` beside the programs that load them.
+local function patch_program_rpaths(dir)
     -- FIVE OF THIS PAYLOAD'S PROGRAMS SHIP WITH NO SEARCH PATH AT ALL.
     --
     -- `clang++` and the driver binaries carry RUNPATH=$ORIGIN/../lib from the
@@ -192,6 +215,35 @@ function install()
                  #skipped, table.concat(skipped, ", "))
     end
     log.debug("dpcpp: %d program(s) given a transitive search path", patched)
+end
+
+function install()
+    local file = pkginfo.install_file() or ""
+    local src  = path.directory(file)
+
+    -- Before anything is moved: is this the payload we asked for?
+    for _, required in ipairs(required_files()) do
+        if not os.isfile(path.join(src, required)) then
+            error("dpcpp: the unpacked archive is missing " .. required
+                  .. "; refusing to move anything out of the shared download "
+                  .. "directory")
+        end
+    end
+
+    local dir = pkginfo.install_dir()
+    os.tryrm(dir)
+    os.mkdir(dir)
+    for _, e in ipairs(ENTRIES) do
+        local from = path.join(src, e)
+        if os.isdir(from) then os.mv(from, path.join(dir, e)) end
+    end
+
+    for _, required in ipairs(required_files()) do
+        if not os.isfile(path.join(dir, required)) then
+            error("dpcpp: payload is incomplete after the move; missing " .. required)
+        end
+    end
+    if is_host("linux") then patch_program_rpaths(dir) end
 
     log.info("dpcpp installed to %s", dir)
     return true
@@ -207,10 +259,14 @@ function config()
     -- spelling and is present in this build as a driver alias.
     xvm.add(package.name)
 
+    -- The alias keeps its bare name on every host -- `mcpp` and the shims ask
+    -- for `clang++`, not `clang++.exe` -- while the file that has to exist is
+    -- the one on disk.
+    local exe = is_host("windows") and ".exe" or ""
     local n = 0
     for _, prog in ipairs({ "clang++", "clang", "sycl-ls", "clang-linker-wrapper",
                             "clang-offload-bundler", "llvm-offload-binary" }) do
-        if os.isfile(path.join(bindir, prog)) then
+        if os.isfile(path.join(bindir, prog .. exe)) then
             xvm.add(prog, { bindir = bindir, alias = prog, binding = binding })
             n = n + 1
         end

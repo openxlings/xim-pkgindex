@@ -41,6 +41,23 @@
 -- Upstream states `CUDA Toolkit` for this component. The URL below points at
 -- NVIDIA's own distribution host, so nothing is re-hosted here.
 package = {
+    -- THE WINDOWS SECTION CARRIES THE 12.x LINE ONLY, AND THAT IS A DECISION
+    -- ABOUT THE RELEASE LINE RATHER THAN ABOUT THIS COMPONENT.
+    --
+    -- These components are versioned together upstream, and a consumer chooses
+    -- a line rather than a component: nvcc 12.9 with cudart 13.3 is not a
+    -- pairing NVIDIA publishes or supports. On the 13.x line `cuda_nvcc` no
+    -- longer contains its own back end -- `nvvm/` and `crt/` were split into
+    -- four separately published components, which this index reunites with
+    -- symlinks, and `ln` is not a command on Windows. Until that reunification
+    -- has a Windows form, 13.x cannot be published there; and publishing 13.x
+    -- for the components that individually could would offer a Windows
+    -- `latest` that pairs with an nvcc which does not exist on that host.
+    --
+    -- Declared rather than left to be read off the file, so this is visibly a
+    -- decision and not a bump that landed in one section and was forgotten in
+    -- the other.
+    platform_versions_diverge = true,
     spec = "1",
 
     name = "cuda-nvcc",
@@ -82,6 +99,28 @@ package = {
                 },
             },
         },
+
+        -- WINDOWS CARRIES THE 12.9 LINE ONLY, and the reason is the 13.x back
+        -- end rather than the platform. Upstream split `nvvm/` and `crt/` out
+        -- of `cuda_nvcc` on the 13.x line into four separate components, which
+        -- this index installs as four more packages and then reunites; porting
+        -- that here means Windows blocks for `libnvvm`, `cuda-crt`,
+        -- `libnvptxcompiler` and `cuda-culibos` and a reunification nothing in
+        -- CI can check on Windows yet. 12.9 keeps its back end inside the
+        -- component, so it needs none of that.
+        --
+        -- `latest` therefore differs per platform. A consumer that pins -- which
+        -- is what the rule packages do -- never sees it; one that does not gets
+        -- the line this platform has been verified on.
+        windows = {
+            source = "https://developer.download.nvidia.com/compute/cuda/redist/"
+                  .. "cuda_nvcc/windows-x86_64/"
+                  .. "cuda_nvcc-windows-x86_64-${version}-archive.zip",
+            ["latest"] = { ref = "12.9.86" },
+            ["12.9.86"] = {
+                sha256 = { x86_64 = "227b109663b5e57d2718bcabb24a4ba0d9d4e52d958e327dc476f7c28691be85" },
+            },
+        },
     },
 }
 
@@ -111,7 +150,12 @@ end
 local function payload_root()
     local file = pkginfo.install_file() or ""
     local base = path.directory(file)
-    local stem = (file:match("[^/\\]+$") or ""):gsub("%.tar%.xz$", "")
+    -- `.zip` as well as `.tar.xz`: the Windows components are published as
+    -- zips, and a stem that still carries its extension matches no directory,
+    -- so the lookup would fall through to the scan below -- which searches a
+    -- SHARED download directory and would return whichever sibling package
+    -- happened to unpack a `bin/` there first.
+    local stem = (file:match("[^/\\]+$") or ""):gsub("%.tar%.xz$", ""):gsub("%.zip$", "")
     if stem ~= "" and os.isdir(path.join(base, stem)) then
         return path.join(base, stem)
     end
@@ -206,6 +250,20 @@ local function reunite_backend(dir, ver)
     -- nothing was split — asks for nothing and reports nothing.
     local split = {}
     for _, c in ipairs(backend_components(ver)) do split[c] = true end
+
+    -- THE BRANCH THAT CANNOT BE REACHED TODAY SAYS SO OUT LOUD.
+    -- Only the 12.9 line is published for Windows, and it keeps its back end
+    -- inside the component, so `split` is empty there and the symlink loop
+    -- below never runs. Adding a 13.x Windows entry would reach it, and `ln`
+    -- is not a command on that host: the install would report success and the
+    -- first compile would fail with `cicc: not found`, one directory away from
+    -- where nvcc looked. Refusing is the cheaper reading of that state.
+    if is_host("windows") and next(split) ~= nil then
+        error("cuda-nvcc: release " .. tostring(ver) .. " publishes its back end as "
+              .. "separate components, and reuniting them on Windows is not "
+              .. "implemented; the Windows entry of this recipe covers the 12.x "
+              .. "line, whose back end is inside the component")
+    end
     local links = {
         { "libnvvm",  "nvvm",                       path.join(dir, "nvvm") },
         { "cuda-crt", path.join("include", "crt"),  path.join(dir, "include", "crt") },
@@ -307,8 +365,6 @@ local function scan_dir(dir, kind)
     -- `io.popen` rather than `os.files`: the recipe sandbox does not expose the
     -- latter in `config()` (`attempt to call a nil value (field 'files')`), and
     -- `io.popen` is what this index's other payload recipes use for the job.
-    -- These components declare `linux` only, so one POSIX listing is the whole
-    -- story.
     -- ⚠️ `-type f` WOULD SKIP SYMLINKS, AND SOME PAYLOADS SHIP ONLY SYMLINKS
     -- IN `bin/`. nsight-systems is that case: `bin/nsys` and `bin/nsys-ui`
     -- point at `../target-linux-x64/nsys` and `../host-linux-x64/nsys-ui`, and
@@ -318,8 +374,23 @@ local function scan_dir(dir, kind)
     -- `-executable` asks the question that is actually being asked, and it
     -- follows the link. Libraries are matched by name for the same reason: a
     -- versioned soname is usually a symlink to the real object.
-    local cmd
-    if kind == "lib" then
+    --
+    -- THE WINDOWS LISTING IS A DIFFERENT COMMAND, NOT A DIFFERENT PATTERN.
+    -- `find` on a Windows runner is `C:\Windows\System32\find.exe`, which
+    -- searches file CONTENTS for a string and rejects every flag used here, so
+    -- a shared invocation does not fail loudly -- it prints a usage error to
+    -- stderr, which `2>nul` would hide, and returns nothing. A component that
+    -- registers nothing looks exactly like a component with no programs.
+    --
+    -- cmd's `dir` takes several patterns at once and prints bare names under
+    -- `/b`, so the directory is prepended below. Backslashes because an
+    -- unquoted `/` is a switch character to cmd.
+    local cmd, bare
+    if is_host("windows") then
+        bare = true
+        if kind == "lib" then return out end
+        cmd = string.format([[dir /b /a-d "%s\*.exe" 2>nul]], dir:gsub("/", "\\"))
+    elseif kind == "lib" then
         cmd = string.format(
             [[find "%s" -maxdepth 1 \( -name '*.so*' -o -name '*.a' \) 2>/dev/null]], dir)
     else
@@ -329,7 +400,7 @@ local function scan_dir(dir, kind)
     if not f then return out end
     for line in f:lines() do
         local full = line:gsub("[\r\n]+$", "")
-        if full ~= "" then table.insert(out, full) end
+        if full ~= "" then table.insert(out, bare and path.join(dir, full) or full) end
     end
     f:close()
     return out

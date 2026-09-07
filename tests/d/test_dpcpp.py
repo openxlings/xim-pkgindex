@@ -61,9 +61,55 @@ class TestStatic:
         """
         vers = [v for v in re.findall(r'\["(\d[^"]*)"\]\s*=', meta.raw_content)]
         assert vers, "no numeric version keys declared"
-        # 上游 tag 是 `v7.1.0`,包里写 `7.1.0`。自建的 Windows 版本也用这个号,
-        # 因为它就是那份源码 —— 版本说的是「你拿到的是哪一版上游」。
+        # 上游 tag 是 `v7.1.0`,包里写 `7.1.0`。Linux 与 Windows 两份资产由
+        # 同一个 tag 发布,所以两个平台块用同一个版本号是上游事实而不是约定。
         assert "7.1.0" in vers
+
+
+class TestPlatforms:
+    """两份上游资产,一个配方。判据的分母取自配方本身。"""
+
+    @pytest.mark.static
+    def test_every_declared_platform_has_a_source_and_a_hash(self, meta):
+        """一个平台块加进来却没写 source 或 sha256,只会在那台机器上失败。
+        分母是配方里声明的平台,不是这里维护的一张表 —— 见 shaderc 的同名
+        教训:写死数字的断言只能发现数字变了。"""
+        code = _code(meta.raw_content)
+        xpm = code[code.index("xpm = {"):]
+        blocks = re.findall(r'^\s{8}(linux|windows|macosx) = \{(.*?)^\s{8}\},',
+                            xpm, re.M | re.S)
+        assert blocks, "no platform block found under xpm"
+        for plat, body in blocks:
+            assert "source =" in body, f"the {plat} block declares no source"
+            assert re.search(r'sha256 = \{', body), f"the {plat} block declares no sha256"
+            assert f"sycl_{'linux' if plat == 'linux' else plat}" in body \
+                or f"sycl_{plat}" in body, \
+                f"the {plat} block does not name that platform's upstream asset"
+
+    @pytest.mark.static
+    def test_the_completeness_check_names_this_hosts_file_names(self, meta):
+        """两份资产装的是同一套工具链,文件名不同:`clang++` / `clang++.exe`,
+        `lib/libsycl.so` / `lib/sycl.lib`。按一种拼法写的检查在另一个平台上
+        只会空转 —— 除非那些名字允许缺席,而它们不允许。"""
+        code = _code(meta.raw_content)
+        assert 'is_host("windows")' in code, \
+            "the completeness check does not distinguish the two hosts"
+        assert "clang++.exe" in code and "sycl.lib" in code, \
+            "the Windows file names are never mentioned"
+        assert "libsycl.so" in code, "the Linux file names were dropped"
+
+    @pytest.mark.static
+    def test_patchelf_is_reached_only_on_linux(self, meta):
+        """patchelf 是 ELF 工具。无条件调用它会让 Windows 的安装在一次
+        `os.exec` 上失败,而失败原因与这个包做的事无关。"""
+        code = _code(meta.raw_content)
+        assert re.search(r'if is_host\("linux"\) then patch_program_rpaths\(dir\) end', code), \
+            "the rpath rewrite is not guarded by the host"
+        linux_block = code[code.index("linux = {"):code.index("windows = {")]
+        assert "xim:patchelf" in linux_block, "patchelf is no longer a linux build dep"
+        windows_block = code[code.index("windows = {"):]
+        assert "patchelf" not in windows_block.split("}")[0], \
+            "the windows block must not depend on an ELF tool"
 
 
 class TestIndex:
