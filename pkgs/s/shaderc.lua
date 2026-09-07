@@ -80,6 +80,54 @@ package = {
                 },
             },
         },
+
+        -- ALSO conda-forge, and for a measured reason rather than symmetry:
+        -- Google's own macOS drop is `Mach-O 64-bit x86_64` and stamps
+        -- `shaderc v2026.2`, while this ecosystem's macOS is arm64 and the
+        -- version published here is 2026.3.
+        --
+        -- Nothing is resealed. Every executable carries
+        -- `@loader_path/../lib/` and every library `@loader_path/`, so the
+        -- payload is relocatable as it stands; `libc++.1.dylib` is bundled
+        -- because the binaries reference it as `@rpath/libc++.1.dylib` and
+        -- `@rpath` resolves only through the load commands -- the system copy
+        -- in `/usr/lib` is never reached.
+        macosx = {
+            ["latest"] = { ref = "2026.3" },
+            ["2026.3"] = {
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/shaderc/releases/download/2026.3/shaderc-2026.3-macosx-arm64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/shaderc/releases/download/2026.3/shaderc-2026.3-macosx-arm64.tar.gz",
+                    },
+                    sha256 = "1337e812b46f1068d26053f61c979a702a4ebb2195d61586a3abfbc01721b822",
+                },
+            },
+        },
+
+        -- NOT conda-forge here, and the reason is the dependency it would
+        -- bring. conda-forge's `win-64` `glslc.exe` imports `MSVCP140.dll` and
+        -- `VCRUNTIME140_1.dll` and loads `shaderc.dll` and `SPIRV-Tools.dll`
+        -- beside it, so it needs the Visual C++ redistributable installed on
+        -- the machine. Google's own Windows build imports `KERNEL32.dll` and
+        -- nothing else: static CRT, no side libraries. A build tool that
+        -- depends on something the ecosystem did not install is the dependency
+        -- this index exists to remove, so the self-contained build is packaged.
+        --
+        -- There is no `lib/` and nothing to seal: the six programs are
+        -- standalone.
+        windows = {
+            ["latest"] = { ref = "2026.3" },
+            ["2026.3"] = {
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/shaderc/releases/download/2026.3/shaderc-2026.3-windows-x86_64.zip",
+                        CN     = "https://gitcode.com/xlings-res/shaderc/releases/download/2026.3/shaderc-2026.3-windows-x86_64.zip",
+                    },
+                    sha256 = "3f66d53b56cd2653e246e73cd2c68b757e19c1db2192ac974bead4f6ab2aa03a",
+                },
+            },
+        },
     },
 }
 
@@ -105,8 +153,9 @@ function install()
     end
     os.mv(top, dir)
 
-    if not os.isfile(path.join(dir, "bin/glslc")) then
-        log.error("shaderc: payload is incomplete after the move; no bin/glslc")
+    local exe = is_host("windows") and ".exe" or ""
+    if not os.isfile(path.join(dir, "bin/glslc" .. exe)) then
+        log.error("shaderc: payload is incomplete after the move; no bin/glslc%s", exe)
         return false
     end
 
@@ -122,7 +171,13 @@ function install()
     -- a library was measured harmful (xim-pkgindex#593). So bin/ comes out
     -- DT_RPATH and lib/ DT_RUNPATH, which is the correct split here: the
     -- programs are what a caller's search path has to reach through.
-    selfcontain.seal(dir, { "lib", "bin" })
+    -- ELF ONLY. `selfcontain.seal` writes DT_RPATH/DT_RUNPATH through elfpatch,
+    -- and neither of the other two platforms has that problem to solve: the
+    -- macOS payload is already relocatable through `@loader_path`, and the
+    -- Windows programs carry no side libraries at all.
+    if is_host("linux") then
+        selfcontain.seal(dir, { "lib", "bin" })
+    end
     return true
 end
 
@@ -133,9 +188,10 @@ function config()
 
     -- The anchor entry is named after the package; a node cannot bind to
     -- itself, so the programs bind to it rather than the other way round.
+    local exe = is_host("windows") and ".exe" or ""
     xvm.add(package.name)
     for _, prog in ipairs(programs) do
-        if os.isfile(path.join(bindir, prog)) then
+        if os.isfile(path.join(bindir, prog .. exe)) then
             xvm.add(prog, { bindir = bindir, alias = prog, binding = binding })
         end
     end
