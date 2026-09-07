@@ -61,18 +61,35 @@ class TestStatic:
 
     @pytest.mark.static
     def test_resource_has_both_mirrors_per_arch(self, meta):
-        """Each declared arch resolves through both mirrors with its own
-        sha256 -- the per-arch resource shape, not one pair shared across
-        architectures."""
+        """Every resource resolves through both mirrors with its own sha256 --
+        the per-resource shape, not one pair shared across architectures or
+        platforms.
+
+        THE DENOMINATOR COMES FROM THE RECIPE, not from a list kept here. An
+        earlier version asserted `== 2`, which was the count of the two Linux
+        architectures; adding macOS and Windows made it fail for the right
+        reason and the wrong one -- it could only ever notice that the number
+        changed, never that a platform had lost its CN mirror.
+        """
         code = _code(meta.raw_content)
-        for arch in ("x86_64", "aarch64"):
-            assert re.search(
-                r'GLOBAL\s*=\s*"https://github\.com/xlings-res/shaderc/[^"]+linux-%s\.tar\.gz"'
-                % arch, code), f"no GLOBAL url for {arch}"
-            assert re.search(
-                r'CN\s*=\s*"https://gitcode\.com/xlings-res/shaderc/[^"]+linux-%s\.tar\.gz"'
-                % arch, code), f"no CN url for {arch}"
-        assert len(re.findall(r'sha256 = "[0-9a-f]{64}"', code)) == 2
+        globals_ = re.findall(
+            r'GLOBAL\s*=\s*"https://github\.com/xlings-res/shaderc/[^"]*/([^"/]+)"', code)
+        cns = re.findall(
+            r'CN\s*=\s*"https://gitcode\.com/xlings-res/shaderc/[^"]*/([^"/]+)"', code)
+        shas = re.findall(r'sha256 = "[0-9a-f]{64}"', code)
+
+        assert globals_, "no GLOBAL urls at all"
+        assert globals_ == cns, \
+            f"the two mirrors do not name the same files:\n  GLOBAL {globals_}\n  CN     {cns}"
+        assert len(shas) == len(globals_), \
+            f"{len(globals_)} resources but {len(shas)} sha256 entries"
+
+        # …and each platform this recipe declares contributes at least one
+        # resource, so a block added without a download is caught too.
+        for plat in re.findall(r'^\s{8}(linux|macosx|windows) = \{', code, re.M):
+            token = {"linux": "linux-", "macosx": "macosx-", "windows": "windows-"}[plat]
+            assert any(token in f for f in globals_), \
+                f"the {plat} block declares no resource"
 
     @pytest.mark.static
     def test_seals_both_bin_and_lib(self, meta):
