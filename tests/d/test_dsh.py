@@ -1,5 +1,6 @@
 """测试 dsh 包 (DeepSeek Harness)"""
 import pathlib
+import re
 import pytest
 from tests.lib.xpkg_parser import parse_xpkg
 from tests.lib.assertions import (
@@ -70,6 +71,19 @@ class TestStatic:
         assert body.count('"xim:node@>=24"') == 3, (
             "every platform section must pin the node floor upstream declares"
         )
+
+    @pytest.mark.static
+    @pytest.mark.parametrize("platform", ["linux", "macosx", "windows"])
+    def test_latest_and_retained_versions(self, platform):
+        """Keep all platforms on the verified release without dropping old pins."""
+        body = pathlib.Path(PKG_FILE).read_text(encoding="utf-8")
+        section = re.search(rf"^        {platform} = \{{(.*?)^        \}},",
+                            body, re.MULTILINE | re.DOTALL)
+        assert section is not None, f"missing platform: {platform}"
+        versions = section.group(1)
+        assert '["latest"] = { ref = "0.1.2-rc.1" }' in versions
+        for version in ("0.1.2-rc.1", "0.1.0-rc.6", "0.1.0-rc.3"):
+            assert f'["{version}"] = {{}}' in versions
 
 
 class TestIndex:

@@ -94,10 +94,10 @@
 --
 -- Upstream is in *developer preview* and says so in capitals: "THERE WILL
 -- BE COMPATIBILITY-BREAKING CHANGES." Hence `status = "dev"` and the
--- pre-release version keys — `0.1.0-rc.6` is the actual `latest` on npm,
--- not a placeholder.
+-- pre-release version keys — `0.1.2-rc.1` is npm's `latest`, checked on
+-- 2026-09-09. The separate alpha dist-tag is not selected implicitly.
 --
--- Two versions are tracked, not one, because a pre-1.0 harness that
+-- Historical versions are retained because a pre-1.0 harness that
 -- promises breaking changes is exactly the case `xvm use dsh@<ver>` exists
 -- for. The 0.1.0-rc.3 pin was installed and run before it was written down
 -- (`dsh --version` -> 0.1.0-rc.3): the `^0.1.0-rc.3` ranges its own
@@ -134,19 +134,22 @@ package = {
     xpm = {
         linux = {
             deps = {"xim:node@>=24", "xim:pnpm"},
-            ["latest"] = { ref = "0.1.0-rc.6" },
+            ["latest"] = { ref = "0.1.2-rc.1" },
+            ["0.1.2-rc.1"] = {},
             ["0.1.0-rc.6"] = {},
             ["0.1.0-rc.3"] = {},
         },
         macosx = {
             deps = {"xim:node@>=24", "xim:pnpm"},
-            ["latest"] = { ref = "0.1.0-rc.6" },
+            ["latest"] = { ref = "0.1.2-rc.1" },
+            ["0.1.2-rc.1"] = {},
             ["0.1.0-rc.6"] = {},
             ["0.1.0-rc.3"] = {},
         },
         windows = {
             deps = {"xim:node@>=24", "xim:pnpm"},
-            ["latest"] = { ref = "0.1.0-rc.6" },
+            ["latest"] = { ref = "0.1.2-rc.1" },
+            ["0.1.2-rc.1"] = {},
             ["0.1.0-rc.6"] = {},
             ["0.1.0-rc.3"] = {},
         },
