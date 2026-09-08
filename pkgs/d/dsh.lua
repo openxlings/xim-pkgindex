@@ -11,46 +11,22 @@
 -- tags (`github_releases()`), and this project has none. Bumps are read off
 -- registry.npmjs.org/@deepseek-ai/dsh (`dist-tags.latest`) by hand.
 --
--- **`--ignore-scripts` MUST NOT be used here, and the reason is Linux-only
--- so it does not show up on a casual test.** The first version of this
--- recipe carried it, on the argument that the published package.json
--- declares no `scripts` of its own — which is true of the ROOT package and
--- irrelevant, because the flag applies to the whole tree. Five packages in
--- that tree have install lifecycle scripts (enumerated, not guessed):
+-- **Do not use `--ignore-scripts`.** The root package has no lifecycle
+-- script, but its dependencies do: node-pty, koffi, protobufjs,
+-- @deepseek-ai/dsh-subprocess-local and @google/genai. They own native
+-- helper setup and the source-build fallback.
 --
---   node-pty@1.1.0                      install + postinstall
---   koffi@3.1.4                         install
---   protobufjs@7.6.5                    postinstall
---   @deepseek-ai/dsh-subprocess-local   postinstall
---   @google/genai@1.52.0                preinstall (a no-op echo)
+-- Older node-pty@1.1.0 tarballs had no Linux prebuild, so skipping scripts
+-- left no usable pty.node even though `dsh --version` passed. Current
+-- DSH 0.1.2-rc.1 resolves node-pty@1.2.0-beta.15, whose npm tarball also
+-- ships prebuilds/linux-x64 and prebuilds/linux-arm64. Requiring only
+-- build/Release/pty.node now rejects a valid installation.
 --
--- node-pty is the one that breaks. Its install script is
--- `node scripts/prebuild.js || node-gyp rebuild`, and prebuild.js downloads
--- NOTHING — it only *checks* whether `prebuilds/<platform>-<arch>` exists
--- and exits 1 when it does not. The npm tarball ships prebuilds for
--- darwin-arm64, darwin-x64, win32-arm64 and win32-x64 **and no linux-x64**,
--- so on Linux the `|| node-gyp rebuild` branch is the only thing that ever
--- produces `pty.node`, into `build/Release/`.
---
--- Skip it and `dsh --version` / `dsh --help` still pass — neither loads the
--- plugin tree — while every actual profile boot dies with
---
---   failed to import loader entry subprocess (@deepseek-ai/dsh-subprocess-local):
---   Failed to load native module: pty.node, checked: build/Release, build/Debug,
---   prebuilds/linux-x64
---
--- macOS and Windows are unaffected: their prebuilds are in the tarball.
--- So verify a change to this line by BOOTING A PROFILE on Linux, never by
--- `--version`. tests/d/test_dsh.py guards both directions.
---
--- Compiling from source means node-gyp, i.e. python3 + make + a C++
--- toolchain on the host at install time. That cost is accepted rather than
--- worked around: there is no prebuilt linux-x64 pty.node to fetch.
---
--- The compiled `pty.node` survives `xlings use node <other>`: node-pty
--- builds against node-addon-api (N-API), which is ABI-stable across major
--- versions. Measured, not assumed — a pty.node built under node 26.7.0
--- loads under node 24.15.0.
+-- The Linux post-install check therefore loads node-pty through its own
+-- resolver: both compiled and prebuilt layouts must actually load. Missing
+-- or unloadable native modules still fail. A source-build fallback still
+-- needs python3, make and a C++ toolchain. Verify actual profile boot too;
+-- `dsh --version` alone never loads the plugin tree.
 --
 -- **pnpm IS a dependency**, and it belongs here rather than in every install
 -- command a user is told to type. `dsh plugin --profile <p> add ...` shells
@@ -195,8 +171,7 @@ function install()
     -- One blank line separates them.
     print("")
 
-    -- Lifecycle scripts run on purpose. See the header: node-pty's install
-    -- script is the only thing that produces pty.node on Linux.
+    -- Retain lifecycle scripts for native helpers and source-build fallback.
     os.exec(string.format(
         [[npm install --prefix "%s" --no-fund --no-audit "@deepseek-ai/dsh@%s"]],
         pkginfo.install_dir(),
@@ -212,18 +187,13 @@ function install()
         raise("dsh: npm tree has no @deepseek-ai/dsh/lib/bin.js after install")
     end
 
-    -- The whole point of not passing --ignore-scripts. On Linux this file
-    -- only exists if node-pty's install script actually ran; without it
-    -- every profile boot dies and only `--version` keeps working, which is
-    -- exactly the failure this recipe shipped once already.
+    -- Ask node-pty to load the platform binary it actually selected. A
+    -- fixed build/Release path rejects current Linux prebuilt packages.
     if os.host() == "linux" then
-        local pty = path.join(pkginfo.install_dir(), "node_modules", "node-pty",
-                              "build", "Release", "pty.node")
-        if not os.isfile(pty) then
-            raise("dsh: node-pty was not built (no build/Release/pty.node); "
-                  .. "profile boot would fail. node-gyp needs python3, make "
-                  .. "and a C++ toolchain on this host.")
-        end
+        os.exec(string.format(
+            [[node -e "require(process.argv[1])" "%s"]],
+            path.join(pkginfo.install_dir(), "node_modules", "node-pty")
+        ))
     end
 
     return true

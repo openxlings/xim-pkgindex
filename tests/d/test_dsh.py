@@ -42,12 +42,11 @@ class TestStatic:
     def test_no_ignore_scripts(self):
         """`--ignore-scripts` must never come back to this recipe.
 
-        node-pty ships prebuilds for darwin/win32 only. On Linux its install
-        script (`node scripts/prebuild.js || node-gyp rebuild`) is the ONLY
-        thing that produces build/Release/pty.node, and prebuild.js downloads
-        nothing — it just checks and exits 1. Skip it and `dsh --version`
-        still passes while every profile boot dies on
-        `Failed to load native module: pty.node`.
+        Older node-pty versions shipped no Linux prebuild. Their install
+        script (`node scripts/prebuild.js || node-gyp rebuild`) was the only
+        thing that produced pty.node there. New versions also ship Linux
+        prebuilds, but lifecycle scripts still own native helper setup and
+        the source-build fallback. `dsh --version` alone exercises neither.
 
         This is a static guard because the runtime symptom is Linux-only and
         invisible to --version, which is exactly how it shipped once.
@@ -58,9 +57,20 @@ class TestStatic:
         code = [ln for ln in pathlib.Path(PKG_FILE).read_text(encoding="utf-8").splitlines()
                 if not ln.lstrip().startswith("--")]
         assert "--ignore-scripts" not in "\n".join(code), (
-            "npm install must run lifecycle scripts: node-pty has no linux-x64 "
-            "prebuild and only its install script builds pty.node"
+            "npm install must retain lifecycle scripts for native helper "
+            "setup and node-pty source-build fallback"
         )
+
+    @pytest.mark.static
+    def test_native_acceptance_loads_instead_of_assuming_build_layout(self):
+        """Both old source builds and current platform prebuilds must load."""
+        body = pathlib.Path(PKG_FILE).read_text(encoding="utf-8")
+        install = body.split("function install()", 1)[1].split("function config()", 1)[0]
+        code = "\n".join(line for line in install.splitlines()
+                         if not line.lstrip().startswith("--"))
+        assert 'node -e "require(process.argv[1])"' in code
+        assert '"node_modules", "node-pty"' in code
+        assert '"build", "Release", "pty.node"' not in code
 
     @pytest.mark.static
     def test_node_floor_declared(self):
