@@ -1,15 +1,13 @@
 -- DeepSeek Harness (`dsh`) — DeepSeek AI's open-source agent harness.
 --
--- Distribution: **npm only**. `deepseek-ai/deepseek-harness` publishes no
--- GitHub release and carries no git tag; the one shipping channel is the
--- npm package `@deepseek-ai/dsh`, and upstream's own instruction is
--- `npx @deepseek-ai/dsh web`. So this recipe goes through npm the same way
--- openclaw.lua does, rather than downloading a platform asset like
--- claude.lua / codex.lua — there is no asset to download.
+-- This recipe follows the npm package `@deepseek-ai/dsh`, matching upstream's
+-- `npx @deepseek-ai/dsh web` instruction. GitHub release/tag records now also
+-- exist, but a GitHub-only release is not proof of a published npm package or
+-- a downloadable platform binary. Verify the npm version before adding it.
 --
--- No `package.ci`: version-check.py discovers versions from GitHub release
--- tags (`github_releases()`), and this project has none. Bumps are read off
--- registry.npmjs.org/@deepseek-ai/dsh (`dist-tags.latest`) by hand.
+-- No `package.ci`: version-check.py discovers GitHub release tags, which need
+-- not exist in npm. Bumps are checked against registry.npmjs.org/@deepseek-ai/dsh
+-- (`dist-tags.latest`) instead.
 --
 -- **Do not use `--ignore-scripts`.** The root package has no lifecycle
 -- script, but its dependencies do: node-pty, koffi, protobufjs,
@@ -172,11 +170,13 @@ function install()
     print("")
 
     -- Retain lifecycle scripts for native helpers and source-build fallback.
-    os.exec(string.format(
+    if not os.exec(string.format(
         [[npm install --prefix "%s" --no-fund --no-audit "@deepseek-ai/dsh@%s"]],
         pkginfo.install_dir(),
         pkginfo.version()
-    ))
+    )) then
+        raise("dsh: npm installation failed")
+    end
 
     -- Assert the artifact, not the intent: a bare `return true` here gets
     -- stamped as installed and leaves an xvm shim pointing at nothing.
@@ -190,10 +190,14 @@ function install()
     -- Ask node-pty to load the platform binary it actually selected. A
     -- fixed build/Release path rejects current Linux prebuilt packages.
     if os.host() == "linux" then
-        os.exec(string.format(
+        -- The xlings compatibility API returns nil on a nonzero command
+        -- exit. Ignoring it turns a printed loader error into install success.
+        if not os.exec(string.format(
             [[node -e "require(process.argv[1])" "%s"]],
             path.join(pkginfo.install_dir(), "node_modules", "node-pty")
-        ))
+        )) then
+            raise("dsh: node-pty failed to load in the installed runtime")
+        end
     end
 
     return true

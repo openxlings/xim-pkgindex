@@ -73,6 +73,15 @@ class TestStatic:
         assert '"build", "Release", "pty.node"' not in code
 
     @pytest.mark.static
+    def test_install_commands_fail_closed(self):
+        """xlings os.exec returns nil for failure; it does not throw."""
+        body = pathlib.Path(PKG_FILE).read_text(encoding="utf-8")
+        install = body.split("function install()", 1)[1].split("function config()", 1)[0]
+        assert install.count('if not os.exec(string.format(') == 2
+        assert 'raise("dsh: npm installation failed")' in install
+        assert 'raise("dsh: node-pty failed to load in the installed runtime")' in install
+
+    @pytest.mark.static
     def test_node_floor_declared(self):
         """Upstream requires `^22.19.0 || >=24.0.0`, and xim:node's 22 line
         tops out at 22.17.1 — below that floor — so >=24 is the only
