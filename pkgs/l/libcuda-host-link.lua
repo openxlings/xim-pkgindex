@@ -116,6 +116,20 @@ import("xim.pkgindex.hostlib")
 -- list because `libur_adapter_cuda.so.0` -- the SYCL runtime's CUDA back end --
 -- has it in DT_NEEDED beside `libcuda.so.1`, and a consumer that farmed only
 -- the first name produced an adapter that could not load (mcpp#596).
+--
+-- WHAT IS DELIBERATELY NOT HERE, and it is a measured absence rather than an
+-- unconsidered one: `libnvidia-ptxjitcompiler.so.1`. A draft of mcpp's
+-- `compat.cuda-driver` harvested it on the theory that PTX JIT would otherwise
+-- fail. Measured on driver 550.144.03 -- a binary built for `compute_80`
+-- alone, run with only `libcuda.so.1` reachable, JITs and produces the right
+-- answer on an sm_89 device. The driver loads its own siblings through its own
+-- paths, which a private loader does not interfere with.
+--
+-- That result is recorded HERE rather than in the consumer it was measured in,
+-- because this list is what decides the set: a farm that mirrors this
+-- directory inherits both the additions and the omissions, and an omission
+-- whose reason lives in one consumer is an omission the next consumer
+-- re-litigates.
 local SONAMES = { "libcuda.so.1", "libnvidia-ml.so.1" }
 
 local function __probe_host_lib(soname)
