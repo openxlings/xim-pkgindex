@@ -2,9 +2,9 @@ package = {
     spec = "1",
 
     name = "libcuda-host-link",
-    description = "Sentinel: stable symlink to host's libcuda.so.1 (NVIDIA driver userspace lib)",
+    description = "Sentinel: stable symlinks to the host's NVIDIA driver user-space libraries",
 
-    licenses = {"Apache-2.0"},  -- the package recipe; libcuda.so.1 itself is NVIDIA's
+    licenses = {"Apache-2.0"},  -- the package recipe; the driver libraries are NVIDIA's
     repo = "https://github.com/openxlings/xim-pkgindex",
 
     -- xim pkg info
@@ -18,40 +18,69 @@ package = {
     -- What this package does (and what it does NOT do)
     --
     -- DOES:
-    --   * Probe the host for an existing `libcuda.so.1`
-    --     (NVIDIA driver userspace lib).
-    --   * Install a single symlink at
-    --       <install_dir>/lib/libcuda.so.1
+    --   * Probe the host for each library in SONAMES below (the NVIDIA
+    --     driver's user-space halves).
+    --   * Install one symlink per name at
+    --       <install_dir>/lib/<soname>
     --     pointing to the host file. If host has no driver, the symlink
-    --     points to the canonical /usr/lib/x86_64-linux-gnu/libcuda.so.1
+    --     points to the canonical /usr/lib/x86_64-linux-gnu/<soname>
     --     (or the distro's equivalent), and is intentionally dangling
     --     until the user installs the driver — at which point GPU-using
     --     consumer xpkgs auto-resolve.
     --
     -- DOES NOT:
-    --   * Redistribute libcuda.so.1. The NVIDIA Driver EULA forbids
-    --     third-party redistribution, and even if it didn't, the
-    --     userspace lib is in strict ABI lockstep with the kernel
-    --     module — versioning it as an xpkg is impossible.
+    --   * Redistribute any of them. The NVIDIA Driver EULA forbids
+    --     third-party redistribution, and even if it didn't, these
+    --     libraries are in strict ABI lockstep with the kernel
+    --     module — versioning them as an xpkg is impossible.
     --
     -- Why a sentinel package and not just probe-in-each-consumer:
-    --   * Single source of truth for "where is host libcuda" → all GPU
-    --     xpkgs (ollama / future vllm / jax / cupy / ...) read from
-    --     pkginfo.dep_install_dir("libcuda-host-link").."/lib/libcuda.so.1"
+    --   * Single source of truth for "where is the host's driver" → all
+    --     GPU xpkgs (ollama / future vllm / jax / cupy / ...) read from
+    --     pkginfo.dep_install_dir("libcuda-host-link").."/lib/<soname>"
     --     and don't reimplement ldconfig probing each.
     --   * Reinstall once → all consumers' transitive symlinks stay
     --     valid (they link to this package's link, not directly to host).
     --   * Driver post-install self-heal: install nvidia-driver later →
     --     re-`xim install libcuda-host-link` → consumer chains auto-fix
     --     without each consumer reinstall.
+    --
+    -- WHY THE ANSWER IS A SET AND NOT A NAME (0.0.2).
+    --
+    -- 0.0.1 linked `libcuda.so.1` alone, and a consumer that farmed only
+    -- what this package published inherited that as its own limit. The
+    -- SYCL runtime's CUDA adapter carries `libnvidia-ml.so.1` in its
+    -- DT_NEEDED as well, so on a machine whose loader consults no host
+    -- directory the adapter did not load, the CUDA back end vanished, and
+    -- the program aborted with no diagnosis (mcpp#596). Nothing reported
+    -- it, because a back end that fails to load is reported by nothing.
+    --
+    -- The two libraries ship in one driver package, are covered by one
+    -- EULA and move in one ABI lockstep, so every sentence above holds for
+    -- both without amendment. A consumer that enumerates this directory
+    -- rather than naming a file gets the next one for free.
     -- ─────────────────────────────────────────────────────────────────────
 
     xpm = {
         linux = {
             -- Version is the recipe version, not the driver version
             -- (drivers are owned by the host). Bump on recipe changes.
-            ["latest"] = { ref = "0.0.1" },
-            ["0.0.1"]  = { },  -- no download; install hook does everything
+            --
+            -- 0.0.1 is kept so a consumer that pinned it keeps resolving.
+            --
+            -- WHAT THE NEW KEY BUYS IS A REINSTALL, NOT A DIFFERENT RECIPE.
+            -- There is one `install()` here and it never reads
+            -- `pkginfo.version()`, so installing 0.0.1 today creates both
+            -- links as well. What a version key changes is whether a machine
+            -- that ALREADY holds the directory does anything: it does not, so
+            -- a host installed before this change keeps a one-link sentinel
+            -- until some consumer asks for a version it does not have. That
+            -- is what 0.0.2 is for, and it is why the consumers that need the
+            -- second soname move their pin rather than relying on this
+            -- file's contents.
+            ["latest"] = { ref = "0.0.2" },
+            ["0.0.2"]  = { },  -- no download; install hook does everything
+            ["0.0.1"]  = { },
         },
     },
 }
@@ -76,8 +105,21 @@ import("xim.pkgindex.hostlib")
 -- installed, this returned a 32-bit libcuda and the failure appeared at
 -- dlopen as `wrong ELF class: ELFCLASS32`, three layers from here. That is
 -- mcpp#352, in the package the whole pattern came from.
-local function __probe_host_libcuda()
-    return hostlib.path_of("libcuda.so.1")
+-- The driver's user-space libraries this sentinel answers for.
+--
+-- One list, read by install() and asserted by tests/l/test_libcuda_host_link.py,
+-- so "which libraries does this package promise" has one spelling. A consumer
+-- that enumerates the installed directory rather than naming a file inherits
+-- additions here without a change of its own.
+--
+-- `libnvidia-ml.so.1` is NVML, the driver's management library. It is in this
+-- list because `libur_adapter_cuda.so.0` -- the SYCL runtime's CUDA back end --
+-- has it in DT_NEEDED beside `libcuda.so.1`, and a consumer that farmed only
+-- the first name produced an adapter that could not load (mcpp#596).
+local SONAMES = { "libcuda.so.1", "libnvidia-ml.so.1" }
+
+local function __probe_host_lib(soname)
+    return hostlib.path_of(soname)
 end
 
 -- Choose the symlink target for the "no driver yet" case.
@@ -88,36 +130,54 @@ end
 -- This is the one question that cannot be probed -- there is no file yet, so
 -- there is no ELF class to read -- and the distro-ID table that answers it now
 -- lives in hostlib.canonical_libdir(), so layout knowledge stays in one file.
-local function __canonical_path_for_distro()
-    return path.join(hostlib.canonical_libdir(), "libcuda.so.1")
+local function __canonical_path_for_distro(soname)
+    return path.join(hostlib.canonical_libdir(), soname)
 end
 
 function install()
-    local host_libcuda = __probe_host_libcuda()
-    local target       = host_libcuda or __canonical_path_for_distro()
+    local libdir = path.join(pkginfo.install_dir(), "lib")
+    os.tryrm(pkginfo.install_dir())
+    os.mkdir(libdir)
 
-    -- Always create the symlink, even when the target doesn't exist yet.
+    -- One link per name, and the same treatment for every name: a probe, a
+    -- canonical fallback, a link that is created whether or not its target
+    -- exists yet.
+    --
     -- Dangling-but-canonical is intentional: when the user later installs
     -- nvidia-driver via their distro package manager, the driver will
-    -- materialize at the canonical path, and this symlink (plus all
-    -- transitive consumer symlinks pointing to it) will resolve
+    -- materialize at the canonical path, and these symlinks (plus all
+    -- transitive consumer symlinks pointing to them) will resolve
     -- automatically — no xpkg reinstall needed.
-    local link = path.join(pkginfo.install_dir(), "lib", "libcuda.so.1")
-    os.tryrm(pkginfo.install_dir())
-    os.mkdir(path.directory(link))
-    -- Use `ln -sf` rather than os.ln (xmake's lua has no os.ln helper);
-    -- -f is harmless here since we just os.tryrm'd the parent.
-    system.exec(string.format([[ln -sf "%s" "%s"]], target, link))
+    local found = 0
+    for _, soname in ipairs(SONAMES) do
+        local host   = __probe_host_lib(soname)
+        local target = host or __canonical_path_for_distro(soname)
+        -- Use `ln -sf` rather than os.ln (xmake's lua has no os.ln helper);
+        -- -f is harmless here since we just os.tryrm'd the parent.
+        system.exec(string.format([[ln -sf "%s" "%s"]],
+                                  target, path.join(libdir, soname)))
+        if host then
+            found = found + 1
+            log.info("libcuda-host-link: %s -> %s", soname, host)
+        else
+            log.info("libcuda-host-link: %s -> %s (dangling)", soname, target)
+        end
+    end
 
-    if host_libcuda then
-        log.info("libcuda-host-link → %s ✓", host_libcuda)
-    else
-        log.warn("NVIDIA driver not detected on this host.")
-        log.warn("  symlink target: %s (currently dangling)", target)
+    -- The count, not just the individual lines. A sentinel that resolved one
+    -- of two names is a different machine from one that resolved neither, and
+    -- reading that off a scrolled log is what "the driver is installed" was
+    -- being inferred from before.
+    log.info("libcuda-host-link: %d of %d resolved on this host",
+             found, #SONAMES)
+
+    if found < #SONAMES then
+        log.warn("NVIDIA driver not fully detected on this host.")
+        log.warn("  %d of %d libraries are dangling links", #SONAMES - found, #SONAMES)
         log.warn("  GPU-using xpkgs (ollama / vllm / ...) will fall back")
         log.warn("  to CPU until you install the NVIDIA driver via your")
-        log.warn("  distro package manager — at which point the link")
-        log.warn("  self-heals and GPU acceleration starts working.")
+        log.warn("  distro package manager — at which point the links")
+        log.warn("  self-heal and GPU acceleration starts working.")
     end
 
     return true
