@@ -89,46 +89,25 @@ package = {
                 "xim:cmake",
                 "xim:mcpp",
 
-                -- The transitive .pc closure of gtk4 + epoxy + libsoup, the
-                -- same set and the same floors upstream's mcpp.toml pins. A
-                -- missing entry surfaces as `Package <x> was not found in the
-                -- pkg-config search path`, which names it.
-                "xim:cairo@>=1.18.4",
-                "xim:expat@>=2.6.2",
-                "xim:fontconfig@>=2.15.0.1",
-                "xim:freetype@>=2.13.2",
-                "xim:fribidi@>=1.0.13",
-                "xim:gdk-pixbuf@>=2.44.8",
-                "xim:glib@>=2.88.3",
-                "xim:graphene@>=1.10.8",
-                "xim:gtk4@>=4.16.13",
-                "xim:harfbuzz@>=14.4.0",
-                "xim:libX11@>=1.8.10",
-                "xim:libXau@>=1.0.11",
-                "xim:libXdmcp@>=1.1.5",
-                "xim:libXext@>=1.3.6",
-                "xim:libXft@>=2.3.9",
-                "xim:libXrender@>=0.9.11",
-                "xim:libdatrie@>=0.2.14",
-                "xim:libepoxy@>=1.5.10",
-                "xim:libffi@>=3.4.4",
-                "xim:libglvnd@>=1.7.0.1",
-                "xim:libjpeg-turbo@>=3.2.0",
-                "xim:libpng@>=1.6.43",
-                "xim:libpsl@>=0.23.3",
-                "xim:libselinux@>=3.11",
-                "xim:libsoup@>=3.6.6",
-                "xim:libthai@>=0.1.30",
-                "xim:libtiff@>=4.7.2",
-                "xim:libxcb@>=1.17.0",
-                "xim:nghttp2@>=1.70.0",
-                "xim:pango@>=1.52.1",
-                "xim:pcre2@>=10.42",
-                "xim:pixman@>=0.42.2",
-                "xim:sqlite@>=3.53.4",
-                "xim:util-linux@>=2.40.2",
-                "xim:xorgproto@>=2024.1",
-                "xim:zlib@>=1.3.1",
+                -- DIRECT dependencies only. These are exactly the four
+                -- modules the SDK's own cmake asks pkg-config for
+                -- (HuxerUILinuxStaticDependencies.cmake), with the floors it
+                -- states; everything else in the GTK stack arrives through
+                -- them, because each xim package declares its own deps.
+                --
+                -- An earlier revision listed the whole 36-entry closure that
+                -- upstream's mcpp.toml pins. Walking the index's own dep graph
+                -- from these four reaches 48 packages and covers all 36, so 32
+                -- of those entries were restating what gtk4/glib/libsoup
+                -- already declare -- and restating a transitive pin is how a
+                -- descriptor drifts out of step with the package that owns it.
+                --
+                -- glib carries a floor because the index offers 2.80.0 as well
+                -- as 2.88.3; the other three have a single version each today.
+                "xim:gtk4@>=4.14",       -- cmake: gtk4>=4.14
+                "xim:libepoxy@>=1.5",    -- cmake: epoxy>=1.5
+                "xim:glib@>=2.88",       -- cmake: gio-2.0
+                "xim:libsoup@>=3.0",     -- cmake: libsoup-3.0>=3.0
             },
             source = "https://github.com/HuxerUI/HuxerUI/releases/download/v${version}/huxerui-sdk-${version}-linux-${arch}.${ext}",
             ["latest"] = { ref = "0.3.0" },
