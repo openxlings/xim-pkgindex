@@ -185,7 +185,6 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
 import("xim.libxpkg.subos")
-import("xim.libxpkg.system")
 
 -- The upstream archives wrap the payload in a single
 -- `huxerui-sdk-<version>-<os>-<arch>/` directory. Locate it by content rather
@@ -287,6 +286,16 @@ function config()
     -- done this way still holds, because a consumer may run cmake directly,
     -- without the shim.
     --
+    -- `${XLINGS_DYNAMIC_SUBOS_DIR}`, NOT `system.subos_sysrootdir()`. The
+    -- spec requires a placeholder ("a literal absolute path pins the manifest
+    -- to the machine that wrote it"), and this one is resolved by the shim at
+    -- DISPATCH time rather than at install time -- graphics.lua states the
+    -- rule and `graphics.consumer_envs()` is the same construction. It matters
+    -- here because the xvm record is keyed by program and version with NO
+    -- subos dimension: baking the active subos's path at install time would
+    -- have handed every OTHER subos on the machine the wrong pkgconfig
+    -- directory, and silently.
+    --
     -- xvm PREPENDS rather than overwrites -- measured, with a caller value:
     --     PKG_CONFIG_PATH=/tmp/caller-marker huxerui build linux
     --     -- PCP_SEEN=[<subos>/usr/lib/pkgconfig:/tmp/caller-marker]
@@ -294,14 +303,15 @@ function config()
     -- install still wins nothing it did not already win.
     --
     -- Set on every platform: it is one path, harmless where nothing reads it.
-    local sysroot_pc = path.join(system.subos_sysrootdir(), "usr", "lib", "pkgconfig")
 
     -- `package.name` IS one of the programs ("huxerui"), so there is no
     -- separate binding root to register -- the program node is the root, the
     -- same shape slang.lua uses. Registering both `xvm.add("huxerui")` and a
     -- bare root of the same name trips xvm-duplicate-registration.
-    xvm.add("huxerui", { bindir = path.join(idir, "bin"),
-                         envs = { PKG_CONFIG_PATH = sysroot_pc } })
+    xvm.add("huxerui", {
+        bindir = path.join(idir, "bin"),
+        envs   = { PKG_CONFIG_PATH = "${XLINGS_DYNAMIC_SUBOS_DIR}/usr/lib/pkgconfig" },
+    })
 
     local tdir = tools_bindir(idir)
     if tdir then
