@@ -30,7 +30,9 @@ package = {
         -- host-loader payloads does not "fix" it by adding a glibc dep.
         --
         -- The DT_NEEDED closure of bin/huxerui + lib/libhuxerui.so, enumerated
-        -- from the 0.2.0 linux-x86_64 artifact with readelf:
+        -- from the 0.3.0 linux-x86_64 artifact with readelf (unchanged from
+        -- 0.2.0; re-measured at the bump by verify-huxerui-closure.sh, which
+        -- walked 63 objects and resolved all 230 edges inside data/xpkgs):
         --   glibc/gcc-runtime half:  libc.so.6, libm.so.6, libdl.so,
         --                            libstdc++.so.6, libgcc_s.so.1
         --   GTK4 desktop stack:      libgtk-4.so.1, libgdk_pixbuf-2.0.so.0,
@@ -63,7 +65,13 @@ package = {
         -- as notes rather than a failure.
         linux = {
             source = "https://github.com/HuxerUI/HuxerUI/releases/download/v${version}/huxerui-sdk-${version}-linux-${arch}.${ext}",
-            ["latest"] = { ref = "0.2.0" },
+            ["latest"] = { ref = "0.3.0" },
+            ["0.3.0"] = {
+                sha256 = {
+                    x86_64  = "5413ccd9d35d0ad50c08c67045d73cb9faff23c04005a554af0faa7a914eb916",
+                    aarch64 = "39a6529d14698cd0e168e62a6a7aae482e6914ce409feaa5d5ab524955bd1d41",
+                },
+            },
             ["0.2.0"] = {
                 sha256 = {
                     x86_64  = "f9da279919abc9f6b6a15d0115ce4a859ad9499396c5ee7ba2cb6667187a194a",
@@ -80,7 +88,14 @@ package = {
             -- `${arch}` template alone would 404 on Apple Silicon. `arch_alias`
             -- maps the canonical key to upstream's spelling for this platform.
             source = "https://github.com/HuxerUI/HuxerUI/releases/download/v${version}/huxerui-sdk-${version}-macos-${arch_alias}.${ext}",
-            ["latest"] = { ref = "0.2.0" },
+            ["latest"] = { ref = "0.3.0" },
+            ["0.3.0"] = {
+                arch_alias = { x86_64 = "x86_64", aarch64 = "arm64" },
+                sha256 = {
+                    x86_64  = "8b29dffe33cdb5b496f17e6c7905725e63f0a17f5e239b6c7c4f9719ea752f95",
+                    aarch64 = "87840f81bfc88b595ea1f23b825d9078be9bd609a526ee3e9dac6ff3010a099e",
+                },
+            },
             ["0.2.0"] = {
                 arch_alias = { x86_64 = "x86_64", aarch64 = "arm64" },
                 sha256 = {
@@ -92,7 +107,12 @@ package = {
         windows = {
             -- windows asset is a .zip; ${ext} resolves to `zip` on windows.
             source = "https://github.com/HuxerUI/HuxerUI/releases/download/v${version}/huxerui-sdk-${version}-windows-${arch}.${ext}",
-            ["latest"] = { ref = "0.2.0" },
+            ["latest"] = { ref = "0.3.0" },
+            ["0.3.0"] = {
+                sha256 = {
+                    x86_64 = "d1aca11de979070f950f16d319492d3f9fc0355d1ddbcb9bb926d79872bc2ef4",
+                },
+            },
             ["0.2.0"] = {
                 sha256 = {
                     x86_64 = "0793cd8d74ed2959ccec20af6fb5800959b9090113712e97781dbc78db9c9143",
