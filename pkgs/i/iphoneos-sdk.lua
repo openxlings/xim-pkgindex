@@ -178,54 +178,82 @@ package = {
 }
 
 import("xim.libxpkg.pkginfo")
-import("xim.libxpkg.system")
 import("xim.libxpkg.log")
 import("xim.libxpkg.xvm")
 
--- The directory the archive unpacks to, and the one a consumer names with
--- `-isysroot`. Spelled out rather than derived: a consumer hardcodes it, so a
--- guess here becomes a guess in every consumer.
+-- The archive's INTERNAL ROOT, which install() moves away. It is not the path
+-- a consumer names -- `install_dir()` itself is the sysroot, so `-isysroot
+-- <pkgdir>` carries no version and survives a bump. Spelled out rather than
+-- derived from the archive's file name: the two differ here, exactly as they
+-- do for `android-ndk`, and assuming they match is what that recipe records
+-- as a false assumption other recipes in this index rely on.
 local SDK_DIR = "iPhoneOS26.5.sdk"
 
 function install()
     local dir = pkginfo.install_dir()
-    local zip = pkginfo.install_file()
+    os.tryrm(dir)
 
-    -- `-x __MACOSX/*` because the archive was made on a Mac and carries an
-    -- AppleDouble sidecar for nearly every entry -- 24946 entries in total,
-    -- roughly half of them `._` resource forks that no compiler reads and that
-    -- double the extracted file count.
-    if not system.exec(string.format([[unzip -q -o "%s" -x "__MACOSX/*" -d "%s"]], zip, dir)) then
-        raise("iphoneos-sdk: unpacking " .. zip .. " failed")
+    -- THE FRAMEWORK HAS ALREADY EXTRACTED THE ARCHIVE, and the first revision
+    -- of this hook did not know that: it ran `unzip` on
+    -- `pkginfo.install_file()` and reported "unpacking failed" on both hosts.
+    -- The extraction had in fact succeeded -- CI's post-test dump listed the
+    -- complete `iPhoneOS26.5.sdk/{Developer,usr,System,SDKSettings.plist,...}`
+    -- tree -- so the hook was refusing an install that had worked. `llvm.lua`,
+    -- `llvm-tools.lua` and `android-ndk.lua` all use the idiom below: the
+    -- archive's internal root sits in the working directory and install()
+    -- moves it into place.
+    --
+    -- It also removes a dependency on the host's `unzip`, which a recipe that
+    -- fetches and checksums a pinned payload should not be leaving to the
+    -- machine -- the same argument `windows-sdk.lua` makes when it declares
+    -- `xim:curl` rather than trusting the host to have one.
+    if not os.isdir(SDK_DIR) then
+        raise("iphoneos-sdk: expected the extracted directory '" .. SDK_DIR
+              .. "' beside the downloaded archive and found none. Upstream "
+              .. "renamed the archive's internal root and this recipe's "
+              .. "SDK_DIR is stale.")
     end
 
-    local sdk = path.join(dir, SDK_DIR)
-    if not os.isdir(sdk) then
-        raise("iphoneos-sdk: the archive did not contain " .. SDK_DIR
-              .. "; upstream changed its layout and this recipe's SDK_DIR is stale")
-    end
+    -- `install_dir()` IS THE SYSROOT, rather than holding a `<version>.sdk`
+    -- directory inside it. A consumer hardcodes `-isysroot <pkgdir>` and an
+    -- SDK bump then changes nothing on its side; the alternative puts the
+    -- version in the path every consumer spells.
+    os.mv(SDK_DIR, dir)
 
-    -- THE ONE CHECK THAT DISTINGUISHES THIS SDK FROM AN EMPTY DIRECTORY, and
-    -- the value the module surface must be paired against. A consumer that
-    -- reads a bumped SDK with a surface generated for the old libc++ gets a
-    -- missing-header error naming the header, which is legible -- but only if
-    -- this value is recorded where it can be compared. Read from the SDK
-    -- rather than written here, so it cannot drift.
-    local config = path.join(sdk, "usr/include/c++/v1/__config")
+    -- The archive was made on a Mac and carries an AppleDouble sidecar for
+    -- nearly every entry -- 24946 entries in total, roughly half of them `._`
+    -- resource forks that no compiler reads. The framework's extraction has no
+    -- exclusion list, so they are dropped here instead.
+    os.tryrm(path.join(dir, "__MACOSX"))
+
+    -- THE VERDICT IS TAKEN FROM THE TREE, NOT FROM AN EXIT CODE. That is what
+    -- the first revision got wrong in the other direction as well: an
+    -- extraction can warn and succeed, or succeed and be truncated, and only
+    -- the result distinguishes them. These two checks are what say this is a
+    -- usable C++ sysroot rather than merely a directory.
+    local config = path.join(dir, "usr/include/c++/v1/__config")
     if not os.isfile(config) then
-        raise("iphoneos-sdk: " .. SDK_DIR .. " carries no libc++ headers at "
-              .. "usr/include/c++/v1; this is not a usable C++ sysroot")
+        raise("iphoneos-sdk: no libc++ headers at usr/include/c++/v1 under "
+              .. dir .. "; this is not a usable C++ sysroot")
     end
+    if not os.isdir(path.join(dir, "System/Library/Frameworks")) then
+        raise("iphoneos-sdk: no System/Library/Frameworks under " .. dir
+              .. "; an iOS link needs the framework stubs")
+    end
+
+    -- The value the module surface must be paired against, read from the SDK
+    -- rather than written here so it cannot drift. Measured 26.5: `210106`, a
+    -- PUBLIC revision -- llvmorg-21.1.6 exists -- which is what makes the
+    -- absent surface derivable rather than a dead end.
     local version = try { function()
         return os.iorun(string.format([[grep -m1 "define _LIBCPP_VERSION" "%s"]], config))
     end }
     if version then
         log.info("iphoneos-sdk: " .. version:trim())
-        log.info("iphoneos-sdk: the generated std module surface is ABSENT from "
-                 .. "this SDK; derive it from the matching llvmorg tag")
     end
-
-    log.info("iphoneos-sdk: -isysroot " .. sdk)
+    log.info("iphoneos-sdk: the generated std module surface is ABSENT from "
+             .. "this SDK; derive it from the matching llvmorg tag")
+    log.info("iphoneos-sdk: -isysroot " .. dir)
     return true
 end
 
