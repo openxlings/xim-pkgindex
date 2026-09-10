@@ -164,6 +164,28 @@ package = {
     },
 }
 
+-- WHAT A REGIONAL `url` MAP ACTUALLY DOES, MEASURED (2026-09-11).
+--
+-- The two-entry map is REDUNDANCY, not selection. Measured against this
+-- package by breaking each host in turn and clearing both the store entry and
+-- the download cache between runs:
+--
+--   mirror   GLOBAL   CN     result
+--   CN       dead     live   downloaded
+--   CN       live     dead   downloaded
+--   GLOBAL   dead     live   downloaded
+--   GLOBAL   live     dead   downloaded
+--   CN       dead     dead   no download
+--
+-- So `--mirror` is at most an ordering preference: xlings will reach the other
+-- host when the preferred one fails, and only an unreachable PAIR fails the
+-- install. The last row is why the other four mean anything -- without it,
+-- "downloaded" is also what a probe that cannot detect failure prints.
+--
+-- The consequence for a reviewer: a CN entry buys a second source for every
+-- user, not a different source for CN users, and a claim that `--mirror CN`
+-- "downloads from GitCode" is only true in the sense that it may.
+
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 

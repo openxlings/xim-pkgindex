@@ -33,11 +33,17 @@
 -- the URL is what keeps this recipe's download byte-for-byte reproducible
 -- regardless of what upstream ships next.
 --
--- NO CN MIRROR. `storage.googleapis.com` is not re-hosted here (~285 MB for
--- x86_64 alone, and every version bump would need re-uploading both arches);
--- this follows the same "GLOBAL only, not yet mirrored" shape as
--- `pkgs/q/qemu-user-aarch64.lua` rather than inventing a GitCode URL that
--- does not exist.
+-- BOTH REGIONS. `storage.googleapis.com` for GLOBAL, and both archives
+-- re-hosted on GitCode for CN (284 MB x86_64 + 263 MB aarch64, uploaded and
+-- then downloaded back and hashed -- gtc has reported `uploaded` for an
+-- object that was not what arrived). Emscripten is MIT / NCSA licensed, so
+-- re-hosting it is legitimate; the size argument this replaces was a reason to
+-- postpone the work, not a reason the work was wrong.
+--
+-- A version bump has to re-upload both arches. That is the cost, and it is
+-- stated here so the next person bumping this knows the CN entry is not
+-- self-maintaining: the URL is pinned to the tag, so a bump with no upload
+-- leaves a CN entry pointing at nothing.
 --
 -- THE INSTALLED LAYOUT (relative to `pkginfo.install_dir()`; every path a
 -- consumer -- including mcpp's toolchain registry -- hardcodes should be
@@ -215,7 +221,10 @@ package = {
             -- for this entry.
             ["latest"] = { ref = "6.0.9" },
             ["6.0.9"] = {
-                url = "https://storage.googleapis.com/webassembly/emscripten-releases-builds/linux/f04ea239d533260dd1db760dd2d668d5f9a88d6b/wasm-binaries${arch_alias}.tar.xz",
+                url = {
+                    GLOBAL = "https://storage.googleapis.com/webassembly/emscripten-releases-builds/linux/f04ea239d533260dd1db760dd2d668d5f9a88d6b/wasm-binaries${arch_alias}.tar.xz",
+                    CN     = "https://gitcode.com/xlings-res/emsdk/releases/download/6.0.9/wasm-binaries${arch_alias}.tar.xz",
+                },
                 arch_alias = { x86_64 = "", aarch64 = "-arm64" },
                 sha256 = {
                     x86_64 = "d5c6c2917fbc1cae1a7d1e581f1c0b2817369dd57f94c7a0d05921476f1a7287",
