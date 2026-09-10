@@ -172,16 +172,27 @@ function install()
     end
     os.mv("platform-tools", dir)
 
-    local adb = path.join(dir, "adb")
-    if not os.isfile(adb) then
-        raise("android-platform-tools: no adb at " .. adb
-              .. " -- payload does not look like platform-tools for linux-x86_64")
+    -- The executable name carries the host's suffix, and so must the
+    -- assertion: the archives are per-platform, and a check written for one
+    -- of them reports "the payload is wrong" on every other host. Naming the
+    -- host in the message rather than a fixed platform string is the point --
+    -- the failure has to say which payload was actually inspected.
+    local exe = is_host("windows") and ".exe" or ""
+    for _, prog in ipairs({"adb", "fastboot"}) do
+        local bin = path.join(dir, prog .. exe)
+        if not os.isfile(bin) then
+            raise("android-platform-tools: no " .. prog .. exe .. " at " .. bin
+                  .. " -- payload does not look like platform-tools for "
+                  .. os.host() .. "-" .. os.arch())
+        end
+        -- The zip stores no unix modes at all, so the executable bit has to
+        -- be restored rather than merely preserved (same pattern as
+        -- pkgs/a/aria2-next.lua). Windows has no mode to restore and no
+        -- chmod to run.
+        if not is_host("windows") then
+            os.exec("chmod 755 \"" .. bin .. "\"")
+        end
     end
-    -- The archive stores the executable bit; restoring it explicitly
-    -- keeps this correct on an extractor that drops unix modes (same
-    -- pattern as pkgs/a/aria2-next.lua).
-    os.exec("chmod 755 \"" .. adb .. "\"")
-    os.exec("chmod 755 \"" .. path.join(dir, "fastboot") .. "\"")
 
     return true
 end
