@@ -45,10 +45,10 @@ package = {
     repo = "https://github.com/AppImage/appimagetool",
     docs = "https://docs.appimage.org/",
 
-    -- Not yet mirrored to GitCode: this is the first recipe to reference
-    -- these assets, so no xlings-res/appimagetool release exists there.
-    -- `mirror` republishes the two hashes declared below once this is
-    -- merged; `update` is deliberately NOT set -- the auto-updater reads
+    -- Mirrored to GitCode as xlings-res/appimagetool@1.9.1, byte-identical to
+    -- upstream and verified by downloading both assets back and hashing them
+    -- (see the `source` map below). `mirror` keeps that copy in step on a
+    -- later bump; `update` is deliberately NOT set -- the auto-updater reads
     -- GitHub "latest release", which for this repository is the
     -- non-dotted, mutable "continuous" tag explained above, and blindly
     -- wiring that in would either propose "continuous" as a version key
@@ -183,12 +183,42 @@ package = {
     -- exactly one download, one sha256, and one upstream release cycle to
     -- track for this whole package.
     xpm = {
+        -- TWO REGIONS, ONE CHECKSUM, AND THAT IS THE WHOLE CONTRACT A MIRROR
+        -- CARRIES. The version entry pins one sha256 per architecture and
+        -- neither region is exempt from it, so a mirror that drifted from
+        -- upstream by one byte fails verification rather than installing
+        -- something else. The two were confirmed byte-identical by downloading
+        -- the GitCode copies back and hashing them, which is the only check
+        -- that distinguishes a published asset from a reported upload.
+        --
+        -- `source` at platform scope rather than a per-version `url`: the
+        -- shape is regular, the template covers both arches, and the two
+        -- regions differ only in host. Canonical arch names match upstream's
+        -- asset names literally (x86_64, aarch64), so no arch_alias is needed
+        -- and neither is ${ext} -- an AppImage is not an archive.
         linux = {
+            -- INSIDE THE PLATFORM TABLE, MATCHING THE 23 RECIPES THAT
+            -- ALREADY CARRY A REGIONAL MAP (see qemu-arm.lua). Both positions
+            -- were measured against xlings 2026.9.5.1 and BOTH WORK: with
+            -- GLOBAL pointed at a nonexistent host and `--mirror CN` set, the
+            -- install downloads from GitCode either way. The platform position
+            -- is chosen for consistency with the rest of the index, not
+            -- because the root position fails.
+            --
+            -- THE MEASUREMENT THAT MADE THIS ANSWERABLE IS WORTH RECORDING,
+            -- because three earlier attempts measured the wrong object: a
+            -- `--add-xpkg` into a fresh `XLINGS_HOME` is discarded when that
+            -- home resyncs its indexes ("catalog build failed ... resyncing"),
+            -- so the install read the PUBLISHED recipe and reported the
+            -- upstream URL -- which looks exactly like a mirror that is not
+            -- being consulted. A local recipe is only under test in a home
+            -- where `--add-xpkg` persists.
+            source = {
+                GLOBAL = "https://github.com/AppImage/appimagetool/releases/download/${version}/appimagetool-${arch}.AppImage",
+                CN     = "https://gitcode.com/xlings-res/appimagetool/releases/download/${version}/appimagetool-${arch}.AppImage",
+            },
             ["latest"] = { ref = "1.9.1" },
             ["1.9.1"] = {
-                -- Canonical arch names match upstream's asset names
-                -- literally (x86_64, aarch64) -- no arch_alias needed.
-                url = "https://github.com/AppImage/appimagetool/releases/download/${version}/appimagetool-${arch}.AppImage",
                 sha256 = {
                     x86_64  = "ed4ce84f0d9caff66f50bcca6ff6f35aae54ce8135408b3fa33abfc3cb384eb0",
                     aarch64 = "f0837e7448a0c1e4e650a93bb3e85802546e60654ef287576f46c71c126a9158",

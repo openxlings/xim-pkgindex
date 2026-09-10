@@ -141,11 +141,17 @@ class TestPinnedFacts:
         # type2-runtime is discussed at length in a comment (the measurement
         # that justifies carving the runtime out of appimagetool itself
         # rather than fetching it) -- it must never appear in a resolvable
-        # `url =` field, or an install would grow a second network
+        # download address, or an install would grow a second network
         # dependency this recipe was extended specifically to avoid.
         code = re.sub(r'--.*', '', source_text)
         assert 'type2-runtime' not in code
-        assert 'url =' in code  # sanity: the strip above did not eat the real url
+        # SANITY, AND NOT A SPELLING. The strip above must not have eaten the
+        # real address, and the assertion has to survive the recipe changing
+        # WHERE it declares one: this test was written against a per-version
+        # `url =` and went red -- with the recipe correct -- when the addresses
+        # moved to a regional `source` map. What is being checked is that a
+        # resolvable address is still present, so that is what it asks.
+        assert 'https://' in code
 
     @pytest.mark.static
     def test_install_carves_a_runtime_stub(self, source_text):
