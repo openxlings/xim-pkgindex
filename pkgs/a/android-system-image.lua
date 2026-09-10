@@ -137,6 +137,192 @@
 -- runner that consumes two independently-versioned payloads.
 --
 -- ═══════════════════════════════════════════════════════════════════════
+-- A SECOND, INDEPENDENT PATH: qemu-user AGAINST THIS IMAGE'S RAW
+-- system.img -- NO EMULATOR, NO BOOT, NO KVM -- MEASURED END TO END
+-- (2026-09-11)
+-- ═══════════════════════════════════════════════════════════════════════
+--
+-- android-emulator.lua's header documents that the emulator ENGINE
+-- refuses arm64-v8a on an x86_64 host, unconditionally, across all four
+-- currently-served builds. That is a property of the engine. This section
+-- measures a completely different mechanism reaching the same goal -- the
+-- DEFAULT (dynamic) aarch64-linux-android configuration actually
+-- executing -- using only this package's own downloaded bytes, a
+-- qemu-user binary, and xim:android-ndk. No boot, no AVD, no KVM, no
+-- device.
+--
+-- system.img IS A RAW ext4 IMAGE, NOT ANDROID'S SPARSE CONTAINER FORMAT --
+-- MEASURED, NOT ASSUMED. `simg2img` IS NOT NEEDED FOR THIS ARTIFACT.
+--
+-- The first 32 bytes of the downloaded arm64-v8a system.img are zero,
+-- which is not the Android sparse format's own magic (0xED26FF3A, always
+-- at offset 0) -- it is the ordinary ext4 boot-sector reserve before the
+-- superblock at byte 1024. `debugfs -R "show_super_stats -h" system.img`
+-- confirms it directly, no conversion tool involved:
+--
+--   Filesystem volume name:   system
+--   Filesystem magic number:  0xEF53
+--   Block size:               4096
+--   Block count:              655360   (4096 * 655360 == the exact
+--                                        2684354560-byte file size)
+--
+-- i.e. this file is not compressed, chunked, or sparse in the Android
+-- transport sense at all -- it is a complete raw ext4 filesystem, openable
+-- by any ext4 tool with zero preprocessing. `simg2img` (from the separate
+-- `android-sdk-libsparse-utils` package, NOT installed on the host this
+-- was measured on, and NOT bundled by android-emulator.lua's package
+-- either -- checked, it ships img2simg but not the reverse tool) was
+-- never actually needed, and is not declared as a dependency here. This
+-- is a property of THIS artifact, measured directly, not a general claim
+-- about every image Google serves -- an image that genuinely ships in the
+-- sparse container format would need it, and this recipe would need to
+-- grow that step if a future version key turns out to be one.
+--
+-- THE PARTITION'S OWN ROOT IS WHAT `/system` NEEDS TO BE, DIRECTLY.
+--
+-- `debugfs -R "ls -l /" system.img` lists `bin/`, `lib64/`, `framework/`,
+-- etc. AT THE PARTITION ROOT -- API 24's pre-Treble, non-"system-as-root"
+-- layout (that reorganization came later), so this partition's root is
+-- byte-for-byte what a device mounts at `/system`. That is exactly what
+-- `qemu-aarch64 -L <prefix>` needs: an artifact's PT_INTERP of
+-- `/system/bin/linker64` resolves as `<prefix>/system/bin/linker64`, so
+-- presenting this partition's root AS `<prefix>/system/` is sufficient --
+-- no `/etc/ld.config.txt` linker-namespace file exists in this image
+-- either (checked, absent, as expected -- that bionic feature postdates
+-- API 24, so its absence is not a gap here).
+--
+-- FOUR FILES, MEASURED SUFFICIENT -- NOT A FULL PARTITION DUMP.
+--
+-- The two test artifacts (hello_aarch64-linux-android_{,std_}dynamic, NDK
+-- r30) both declare `interpreter /system/bin/linker64` and
+-- `NEEDED libc++_shared.so/libm.so/libdl.so/libc.so` (`readelf -d`).
+-- Single-shot `debugfs -R "dump <in-image-path> <out-file>" system.img`
+-- (no `cd` first, no mount, no loop device, no root privilege) pulls
+-- exactly what those four NEEDED entries plus the interpreter require:
+--
+--   debugfs -R "dump /bin/linker64   <root>/system/bin/linker64"   system.img
+--   debugfs -R "dump /lib64/libc.so  <root>/system/lib64/libc.so"  system.img
+--   debugfs -R "dump /lib64/libdl.so <root>/system/lib64/libdl.so" system.img
+--   debugfs -R "dump /lib64/libm.so  <root>/system/lib64/libm.so"  system.img
+--   chmod +x <root>/system/bin/linker64
+--
+-- (`debugfs` ships with e2fsprogs, present on essentially every Linux base
+-- install; probed with a warning in install() below rather than a hard
+-- `deps` entry -- the same posture android-emulator.lua takes for libX11,
+-- a host tool this index does not itself vend.) The extracted `linker64`
+-- is a genuine `ELF ... ARM aarch64 ... static-pie linked`, and `libc.so`
+-- a genuine `ELF ... ARM aarch64 ... dynamically linked` -- the real
+-- bionic runtime this image ships, not stubs.
+--
+-- MEASURED, NOT ASSUMED: `libc++_shared.so` IS ABSENT FROM THIS IMAGE.
+--
+-- `debugfs -R "ls -l /lib64" system.img` lists `libc++.so`, `libc.so`,
+-- `libdl.so`, `libm.so`, `libstdc++.so` -- no `libc++_shared.so`. Same gap
+-- android-emulator.lua's header measured for the x86_64/device path: this
+-- is the NDK's OWN C++ runtime, never part of any system image, arm64 or
+-- x86_64. It has to come from xim:android-ndk, and this was checked
+-- rather than assumed to be the same answer as the x86_64 case.
+--
+-- THE WORKING INVOCATION -- BOTH ARTIFACTS, REPEATED RUNS, TWO
+-- INDEPENDENT qemu-aarch64 BUILDS.
+--
+-- With `<root>` holding only the four extracted files above (no copy of
+-- libc++_shared.so anywhere near it):
+--
+--   LD_LIBRARY_PATH=<xim:android-ndk installdir>/toolchains/llvm/prebuilt/
+--     linux-x86_64/sysroot/usr/lib/aarch64-linux-android \
+--   qemu-aarch64 -L <root>  hello_aarch64-linux-android_dynamic
+--
+--     linker: ...: unsupported flags DT_FLAGS_1=0x8000001
+--     WARNING: linker: ...: unsupported flags DT_FLAGS_1=0x8000001
+--     linker: .../android-ndk/.../libc++_shared.so: unused DT entry:
+--       type 0x70000001 arg 0x0
+--     WARNING: linker: ...libc++_shared.so: unused DT entry: type
+--       0x70000001 arg 0x0
+--     android-exec-ok
+--   exit code: 0
+--
+-- (the four "linker:"/"WARNING:" lines are real bionic runtime log
+-- output about ELF dynamic-section flags this old, API-24-era linker64
+-- does not recognize -- harmless, non-fatal, do not affect the exit code
+-- or the program's own output.) The `import std` artifact the same way:
+--
+--   1-2-3
+--   exit code: 0
+--
+-- THE LIBRARY WAS NEVER COPIED INTO `<root>` -- MEASURED, THE PART OF
+-- THIS RESULT THAT ACTUALLY MATTERS FOR PACKAGING. `LD_LIBRARY_PATH`
+-- named xim:android-ndk's OWN, completely unmodified install directory,
+-- OUTSIDE `<root>` entirely, and the guest bionic linker (running as
+-- qemu-aarch64's translated guest code) resolved it there anyway -- the
+-- linker's own log line above names that real host path verbatim. So no
+-- file ever needs to be copied or symlinked between this package's
+-- install directory and xim:android-ndk's: two independently-versioned,
+-- read-only xim packages, joined only by one env var and one flag at run
+-- time, with an identical result whether the flag is spelled `-L <root>`
+-- or `QEMU_LD_PREFIX=<root>` (both measured). Determinism checked: two
+-- repeated runs of the `import std` artifact, plus the whole sequence
+-- independently re-run against a FRESH download of xim:qemu-user-
+-- aarch64's own pinned binary (sha256 b5dd968d..., matched that package's
+-- own pin exactly) instead of the host's apt `qemu-user` -- same output,
+-- same exit code, every time.
+--
+-- THIS IS THE DEFAULT CONFIGURATION, NOT A STATIC-ONLY FINDING. The two
+-- artifacts above are the ordinary dynamic NDK build (mcpp's own row
+-- model carries `defaultStatic = false` for this target) -- not a static
+-- fallback. A static aarch64-linux-android artifact already ran under
+-- plain `qemu-aarch64` with no `-L` at all before this investigation
+-- (re-verified here as a control: `android-exec-ok`, exit 0) -- that part
+-- of the row's tier was never in question. What changes is the DEFAULT
+-- one.
+--
+-- NOTHING NEW NEEDS PACKAGING FOR EITHER MISSING PIECE:
+--
+--   qemu-aarch64      already xim:qemu-user-aarch64 (pkgs/q/qemu-user-
+--                     aarch64.lua), packaged for an unrelated reason
+--                     (xlings' own aarch64 CI needing to run its
+--                     cross-built output). Re-verified directly against
+--                     THIS use case, not assumed to behave the same
+--                     because it is "the same program": fresh download,
+--                     sha256 matched that package's own pin, -L /
+--                     LD_LIBRARY_PATH behavior identical to the host's
+--                     apt qemu-user.
+--   libc++_shared.so  already xim:android-ndk (pkgs/a/android-ndk.lua).
+--   simg2img          NOT needed -- see above, this image is raw ext4.
+--
+-- THE ONE OPEN DESIGN QUESTION -- INSTALL TIME vs USE TIME EXTRACTION --
+-- AND WHY install() BELOW NOW DOES IT AT INSTALL TIME, ARM64-V8A KEYS
+-- ONLY.
+--
+-- Extracting those four files costs opening a 2.5 GB partition and four
+-- `debugfs` invocations; done once per install that is a few seconds and
+-- a little over 1 MB. Done on every `mcpp run` / `mcpp test` invocation
+-- instead, it is a few seconds paid EVERY TIME a runner executes one
+-- artifact -- exactly the cost a `runner` contract (spawn one process,
+-- read its exit code) should not carry. So install() below extracts once,
+-- for arm64-v8a version keys only (never for x86_64 keys -- those are
+-- consumed by the actual emulator via `-sysdir`, never by qemu-user,
+-- since an x86_64 guest on an x86_64 host needs no user-mode CPU
+-- translation at all), into a new subdirectory ADDED TO, not replacing,
+-- the existing flat emulator-facing layout (`-sysdir` still needs that
+-- flat layout):
+--
+--   <install_dir>/qemu-user-root/system/bin/linker64
+--   <install_dir>/qemu-user-root/system/lib64/{libc,libdl,libm}.so
+--
+-- A runner declares:
+--
+--   LD_LIBRARY_PATH=<xim:android-ndk installdir>/toolchains/llvm/prebuilt/
+--     linux-x86_64/sysroot/usr/lib/aarch64-linux-android \
+--   <xim:qemu-user-aarch64 installdir>/bin/qemu-aarch64-static \
+--     -L <this package's installdir for 24-default-arm64-v8a>/qemu-user-root \
+--     <artifact>
+--
+-- three independently-versioned xim packages, zero merged directories,
+-- zero files copied between them at run time -- only at this package's
+-- own install time, and only from bytes it already owns.
+--
+-- ═══════════════════════════════════════════════════════════════════════
 -- LICENCE AND HOST ARCH SCOPE
 -- ═══════════════════════════════════════════════════════════════════════
 --
@@ -165,6 +351,12 @@
 --       renamed to this package's install directory, unmodified beyond
 --       that), matching this package's "no SDK-root nesting invented"
 --       stance above.
+--   <install_dir>/qemu-user-root/system/bin/linker64
+--   <install_dir>/qemu-user-root/system/lib64/{libc,libdl,libm}.so
+--       ARM64-V8A VERSION KEYS ONLY. Added to, not replacing, the flat
+--       layout above -- see "A SECOND, INDEPENDENT PATH" for why this
+--       exists and what it is for (a qemu-user `-L`/`QEMU_LD_PREFIX`
+--       target). Not produced for x86_64 keys: nothing consumes it there.
 package = {
     spec = "2",
     homepage = "https://developer.android.com/tools/releases/platforms",
@@ -185,6 +377,24 @@ package = {
 
     xpm = {
         linux = {
+            -- THE EXTRACTION TOOL COMES FROM THE ECOSYSTEM.
+            --
+            -- `system.img` is a raw ext4 filesystem (measured -- see "A
+            -- SECOND, INDEPENDENT PATH" above), and reading four files out of
+            -- it needs `debugfs`. That was a host probe with a warning telling
+            -- the user to install e2fsprogs, which made the qemu-user route
+            -- conditional on what happens to be on the machine -- a leak, and
+            -- the one thing this package exists to close. `xim:e2fsprogs`
+            -- already ships `debugfs` (pkgs/e/e2fsprogs.lua declares it in
+            -- `sbin_programs`), so the loop closes by declaring it.
+            --
+            -- Declared for every key rather than only the non-x86_64 ones:
+            -- `deps` is a property of the descriptor and the arm64-v8a key is
+            -- the reason this package can answer for `aarch64-linux-android`
+            -- at all. One extra small payload on an x86_64-only install is a
+            -- better trade than an extraction step whose availability depends
+            -- on the host.
+            deps = { "xim:e2fsprogs" },
             -- No `latest` key -- see the header: these versions are not
             -- totally ordered, so there is no single unambiguous newest.
             ["24-default-x86_64"] = {
@@ -198,7 +408,12 @@ package = {
                 -- Same manifest, same measurement. Downloads and extracts
                 -- correctly (verified); does not BOOT on an x86_64 host --
                 -- see android-emulator.lua's header for why that is a
-                -- property of the engine, not of this image.
+                -- property of the engine, not of this image. The default
+                -- (dynamic) configuration DOES run on an x86_64 host
+                -- through a different mechanism that does not boot
+                -- anything -- see "A SECOND, INDEPENDENT PATH" above,
+                -- which is why install() below extracts a qemu-user-root
+                -- for this abi.
                 url = "https://dl.google.com/android/repository/sys-img/android/arm64-v8a-24_r09.zip",
                 sha256 = "3c3a70dcffe8c162984ec190fc3388bf237b241b3ba80bf7aa5c86e130d8f59b",
             },
@@ -208,6 +423,8 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.system")
+import("xim.libxpkg.log")
 
 -- The two ABI directory names this recipe's versions currently produce.
 -- Checked both because install() does not otherwise know which version
@@ -247,6 +464,52 @@ function install()
               .. "without the initial-data template (see android-"
               .. "emulator.lua's \"avdmanager IS NOT NEEDED\" section: this "
               .. "file is what gets copied into a hand-written AVD directory)")
+    end
+
+    -- qemu-user needs `/system/bin/linker64` and its three core NEEDED
+    -- libraries reachable at a `<root>/system/...` path it can be pointed
+    -- at with `-L` / `QEMU_LD_PREFIX` -- see "A SECOND, INDEPENDENT PATH"
+    -- above for the full measurement. Only non-x86_64 keys need this: an
+    -- x86_64 guest on an x86_64 host needs no user-mode CPU translation,
+    -- so only the flat layout above (consumed by the emulator's
+    -- `-sysdir`) is ever used for that key. Extracted once, here, rather
+    -- than on every runner invocation -- see the header for why.
+    if found ~= "x86_64" then
+        -- `debugfs` is a declared dependency (see the xpm block), so its
+        -- absence is a broken installation and not a host variation to warn
+        -- about. Refused rather than skipped: a skip here would produce a
+        -- package that installs successfully and cannot serve the one route
+        -- the arm64-v8a key exists for, and the failure would surface later
+        -- as a runner that cannot find `linker64`.
+        local debugfs_ok = try { function() return os.iorun("debugfs -V") end }
+        if not debugfs_ok or not tostring(debugfs_ok):find("debugfs", 1, true) then
+            raise("android-system-image: 'debugfs' is not runnable, but "
+                  .. "xim:e2fsprogs is a declared dependency of this package "
+                  .. "-- the dependency did not install, or its shim is not "
+                  .. "on PATH for this hook. The qemu-user route for "
+                  .. found .. " cannot be prepared without it.")
+        else
+            local qroot = path.join(dir, "qemu-user-root", "system")
+            os.mkdir(path.join(qroot, "bin"))
+            os.mkdir(path.join(qroot, "lib64"))
+
+            local function dump_one(in_image_path, out_file)
+                system.exec("debugfs -R \"dump " .. in_image_path .. " "
+                            .. out_file .. "\" " .. system_img)
+                if not os.isfile(out_file) then
+                    raise("android-system-image: debugfs failed to extract "
+                          .. in_image_path .. " from " .. system_img
+                          .. " into " .. out_file .. " -- upstream's "
+                          .. "internal partition layout may have changed")
+                end
+            end
+
+            dump_one("/bin/linker64", path.join(qroot, "bin", "linker64"))
+            dump_one("/lib64/libc.so", path.join(qroot, "lib64", "libc.so"))
+            dump_one("/lib64/libdl.so", path.join(qroot, "lib64", "libdl.so"))
+            dump_one("/lib64/libm.so", path.join(qroot, "lib64", "libm.so"))
+            system.exec("chmod +x " .. path.join(qroot, "bin", "linker64"))
+        end
     end
 
     return true

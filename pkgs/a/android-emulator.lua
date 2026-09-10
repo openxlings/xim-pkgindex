@@ -65,12 +65,84 @@
 -- package (verified with `find`), so the refusal is a launcher-level
 -- policy decision, not a missing backend. There is no undocumented
 -- override flag in the binary's own strings. So dynamic aarch64-linux-
--- android execution is NOT reachable through this package on an x86_64
--- host at any time budget -- it needs an aarch64 HOST (a Linux/aarch64 CI
--- runner, or Apple Silicon under a macOS build of this same emulator,
--- neither available to verify here). Static aarch64-linux-android already
--- runs under plain `qemu-aarch64` (a separate, already-`verified` path);
--- this package does not change that row's tier on an x86_64 CI runner.
+-- android execution is NOT reachable through THIS PACKAGE'S ENGINE on an
+-- x86_64 host at any time budget -- it needs an aarch64 HOST (a Linux/
+-- aarch64 CI runner, or Apple Silicon under a macOS build of this same
+-- emulator, neither available to verify here). Static aarch64-linux-
+-- android already runs under plain `qemu-aarch64` (a separate, already-
+-- `verified` path); this package does not change that row's tier on an
+-- x86_64 CI runner. (A materially different, non-emulator mechanism DOES
+-- reach the default/dynamic configuration on an x86_64 host -- see
+-- android-system-image.lua's "A SECOND, INDEPENDENT PATH" section, which
+-- is where that finding actually lives, not here.)
+--
+-- ALL FOUR CURRENTLY-SERVED LINUX EMULATOR BUILDS WERE CHECKED, NOT ONE.
+--
+-- The natural follow-up -- "is 15917651 just the one this index happened
+-- to pick, and does some OTHER served build skip the gate" -- was tested
+-- directly rather than left as a plausible guess (2026-09-11). Parsing
+-- repository2-3.xml for every linux-host remotePackage archive entry
+-- under path "emulator" currently served finds exactly four:
+--
+--   37.1.1   (build 16013376)   emulator_linux_x64-16013376.zip
+--   37.1.2   (build 16173978)   emulator_linux_x64-16173978.zip
+--   37.1.11  (build 15917651)   emulator-linux_x64-15917651.zip  <- pinned here
+--   37.2.8   (build 16259959)   emulator-linux_x64-16259959.zip
+--
+-- All four were fetched (sha1 verified against the manifest) and booted
+-- against the same hand-written arm64-v8a AVD this file's header used.
+-- They split into two groups, and NEITHER group boots this image:
+--
+--   37.1.11 and 37.2.8 -- the two hyphen-named, emulator/qemu/linux-
+--   x86_64/...-layout builds -- carry the identical gate string in their
+--   `emulator` binary and fail identically. Independently re-run for
+--   37.2.8, not inferred from the shared string alone:
+--     Android emulator version 37.2.8.0 (build_id 16259959)
+--     Found AVD target architecture: arm64
+--     FATAL | QEMU2 emulator does not support arm64 CPU architecture
+--
+--   37.1.1 and 37.1.2 -- underscore-named, carrying an emulator/fishtank/
+--   subtree and emulator/bin/qemu-system-aarch64 (a different path than
+--   the other two), an "[ALPHA]" / "Copyright 2026" / "Welcome to
+--   goldfish" banner -- do NOT contain the gate string at all (`strings
+--   emulator | grep -i "does not support"` finds nothing architecture-
+--   related), which first looked like a real candidate for "an older
+--   build without the gate". Booting either against this same API 24
+--   image reaches a DIFFERENT, earlier failure instead (both
+--   independently run):
+--     ERROR main.cc:443 | Unknown AVD name [mcpp_arm64_api24], use
+--       -list-avds to see valid list.
+--     ERROR main.cc:446 | System image file not found:
+--       VerifiedBootParams.textproto
+--   i.e. this channel's launcher validates the system image against a
+--   newer (Android-Verified-Boot-era) manifest shape before it ever
+--   reaches a CPU-architecture check, and a 2016-era API 24 image has no
+--   VerifiedBootParams.textproto. This is not a version-ordering
+--   coincidence: "37.1.1" build 16013376 is not chronologically OLDER
+--   than "37.1.11" build 15917651 despite the smaller middle digit -- the
+--   fishtank banner reads "Copyright 2026", same as the other two. The
+--   four manifest entries are four release channels of the CURRENT
+--   generation, not a spread reaching back to the pre-ranchu/QEMU2
+--   (goldfish/QEMU1) engine that predates this gate -- that engine, if it
+--   still exists anywhere, is not in the manifest Google currently serves.
+--
+-- So Hypothesis B -- "an older emulator release without the arm64 gate,
+-- the way ARM AVDs worked before x86 images existed" -- is refuted for
+-- every build this manifest currently serves, not only the one this
+-- package pins. No new version key is added here for that reason: there
+-- is no build to add that both lacks the gate AND boots this image.
+--
+-- Documentation aside, not measured here: a GitHub-hosted arm64 Linux
+-- runner (ubuntu-24.04-arm / ubuntu-22.04-arm, generally available for
+-- public repositories since a 2025-01-16 changelog and extended to
+-- private repositories 2026-01-29) would sidestep this specific
+-- x86_64-host gate by making host and guest architecture match, but as of
+-- an open upstream issue (actions/runner-images#14062) that runner class
+-- does not expose /dev/kvm, so this same engine would still only reach
+-- the slow software-virtualization path there, not the ~10s KVM path this
+-- header measured for x86_64. Neither claim in this paragraph was
+-- re-verified on such a runner -- it is read from current documentation
+-- and a tracked upstream issue, stated as that and no more.
 --
 -- ═══════════════════════════════════════════════════════════════════════
 -- avdmanager IS NOT NEEDED, AND DELIBERATELY NOT USED
@@ -108,20 +180,22 @@
 --   crosses the host  libc/libm/libdl/libpthread/librt/libgcc_s (core
 --   boundary anyway   glibc -- always present, matching xim:android-ndk's
 --                     own "empty deps" reasoning, contributing.md SS5.1)
---   ALSO crosses it   libX11.so.6, and transitively libxcb.so.1,
+--   FROM THE ECOSYSTEM libX11.so.6, and transitively libxcb.so.1,
 --                     libXau.so.6, libXdmcp.so.6, libbsd.so.0, libmd.so.0
+--                     -- declared as `deps` (see the xpm block)
 --
--- The libX11 chain is the one host requirement beyond KVM, and it is
--- unconditional: DT_NEEDED entries load at exec time regardless of
--- `-no-window` -- verified, the same binary refuses to start at all
--- without it, headless or not. This is not declared as a hard `deps`
--- entry. pkgs/g/godot.lua establishes the exact precedent for a prebuilt
--- GUI-stack binary in this index: probe with `hostlib.dirs_of` and
--- `log.warn` if absent, rather than forcing every consumer through an
--- xim-managed X11 stack a desktop or CI-with-Xvfb host already has. `xim:
--- libX11` exists in this index (pkgs/l/libX11.lua) for a host that
--- genuinely has none; this package points there rather than depending on
--- it, for the same reason godot.lua does.
+-- The libX11 chain is unconditional: DT_NEEDED entries load at exec time
+-- regardless of `-no-window`, and the same binary refuses to start at all
+-- without them, headless or not (verified). So the chain is a dependency
+-- of this package and is declared as one. Every link already exists in
+-- this index, so closing the loop required declaring rather than adding.
+--
+-- It was a `hostlib.dirs_of` probe with a warning pointing at the host
+-- distribution, on the precedent of pkgs/g/godot.lua. That precedent does
+-- not hold here: xlings is a user-space distribution, and a payload that
+-- needs a library says so rather than telling the user to find it. A
+-- warning is the right shape only for something no package can supply --
+-- which, in this recipe, is KVM and nothing else.
 --
 -- KVM ITSELF is not something this package can supply or verify at
 -- install time in general (`/dev/kvm` group membership is a host
@@ -183,6 +257,34 @@ package = {
 
     xpm = {
         linux = {
+            -- EVERY LIBRARY THIS BINARY NEEDS COMES FROM THE ECOSYSTEM.
+            --
+            -- `emulator` links libX11 UNCONDITIONALLY: the DT_NEEDED entries
+            -- load at exec time regardless of `-no-window`, and the same
+            -- binary refuses to start at all without them, headless or not
+            -- (verified). So this is a dependency of the package, not a
+            -- suggestion to the user.
+            --
+            -- It was a `hostlib.dirs_of` probe with a `log.warn` pointing at
+            -- "the host distribution", on the precedent of pkgs/g/godot.lua.
+            -- That precedent is wrong for this index: xlings is a user-space
+            -- distribution, so a payload that needs a library declares it and
+            -- the ecosystem supplies it. Every link in the chain already
+            -- exists here -- libX11, libxcb, libXau, libXdmcp, libbsd, libmd
+            -- -- so nothing had to be added to close it, only declared.
+            --
+            -- The transitive links are named rather than left to libX11's own
+            -- deps because a DT_NEEDED chain is not a resolution order: if any
+            -- one of them is missing the loader fails at exec with a message
+            -- naming that library and not this package.
+            deps = {
+                "xim:libX11@>=1.8",
+                "xim:libxcb@>=1.17",
+                "xim:libXau@>=1.0",
+                "xim:libXdmcp@>=1.1",
+                "xim:libbsd@>=0.12",
+                "xim:libmd@>=1.1",
+            },
             ["latest"] = { ref = "37.1.11" },
             ["37.1.11"] = {
                 -- Measured 2026-09-11: fetched with curl, size and sha1
@@ -197,7 +299,6 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
-import("xim.pkgindex.hostlib")
 
 function install()
     local dir = pkginfo.install_dir()
@@ -245,13 +346,6 @@ function config()
     -- even for a fully headless `-no-window -no-audio` boot -- said loudly
     -- here because "headless" is exactly the case where a consumer would
     -- otherwise assume no GUI library is needed.
-    if #hostlib.dirs_of("libX11.so.6") == 0 then
-        log.warn("android-emulator: no 64-bit libX11.so.6 on this host -- "
-                 .. "the emulator binary will not start at all, even with "
-                 .. "-no-window, because libX11 is an unconditional link-time "
-                 .. "dependency rather than a conditional one. Install it "
-                 .. "from the host distribution, or `xlings install libX11`.")
-    end
 
     -- KVM is a runtime concern the emulator itself reports (falling back to
     -- slow software virtualization rather than refusing), not something
