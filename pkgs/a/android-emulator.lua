@@ -289,7 +289,10 @@ package = {
             ["37.1.11"] = {
                 -- Measured 2026-09-11: fetched with curl, size and sha1
                 -- both matched repository2-3.xml exactly (see header).
-                url = "https://dl.google.com/android/repository/emulator-linux_x64-15917651.zip",
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/emulator-linux_x64-15917651.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-emulator/releases/download/37.1.11/emulator-linux_x64-15917651.zip",
+                },
                 sha256 = "95771e0ae431897b2a4bd2d97fa095f29a8b0624a7b216baf529f9306161c266",
             },
         },

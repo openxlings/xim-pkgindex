@@ -18,7 +18,7 @@ package = {
     docs = "https://docs.python.org/3",
 
     -- xim pkg info
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable", -- dev, stable, deprecated
     categories = {"python", "plang", "interpreter"},
     keywords = {"python", "programming", "scripting", "language"},
@@ -32,11 +32,41 @@ package = {
             -- and the payload keeps python-build-standalone's INTERP, which is
             -- the HOST's /lib64/ld-linux-x86-64.so.2.
             deps = { "xim:glibc@>=2.39" },
+            -- BOTH ARCHES, AND BOTH REGIONS.
+            --
+            -- The single-arch table was the reason `xim:emsdk` could not
+            -- declare a Python dependency: `em++` is a `#!/bin/sh` wrapper
+            -- that execs whatever `python3` is first on PATH, so without an
+            -- aarch64 payload here the only way emsdk could run at all on
+            -- aarch64 was a HOST interpreter -- which is the leak this index
+            -- exists to close. python-build-standalone publishes the aarch64
+            -- Linux build alongside the x86_64 one; it is the same upstream
+            -- release, downloaded and hashed here (2026-09-11).
+            --
+            -- The GLOBAL URL is upstream's own. It was absent -- the table
+            -- named only the GitCode object, so a `--mirror GLOBAL` install
+            -- still went through the CN host. Safe to add because the mirror
+            -- is byte-identical: the x86_64 object's sha256 fetched from
+            -- github.com/astral-sh/python-build-standalone matches this
+            -- recipe's recorded hash exactly, which is what says the two
+            -- hosts serve the same artifact rather than merely the same name.
+            --
+            -- No `arch_alias`: upstream's asset names are literally `x86_64`
+            -- and `aarch64`, so the canonical arch names substitute directly.
+            source = {
+                GLOBAL = "https://github.com/astral-sh/python-build-standalone/releases/download/20260310/cpython-${version}%2B20260310-${arch}-unknown-linux-gnu-install_only.tar.gz",
+                CN     = "https://gitcode.com/xlings-res/mirror-cn/releases/download/python/cpython-${version}%2B20260310-${arch}-unknown-linux-gnu-install_only.tar.gz",
+            },
             ["latest"] = { ref = "3.13.12" },
             ["3.13.12"] = {
-                url = "https://gitcode.com/xlings-res/mirror-cn/releases/download/python/cpython-3.13.12%2B20260310-x86_64-unknown-linux-gnu-install_only.tar.gz",
-                sha256 = "a1d58266fede23e795b1b7d1dee3cc77470538fd14292a46cc96e735af030fec",
+                sha256 = {
+                    x86_64  = "a1d58266fede23e795b1b7d1dee3cc77470538fd14292a46cc96e735af030fec",
+                    aarch64 = "563bf262875fc0c6a22dbbb35ab7df3082184f5a587c16c534b8712e4e05c7c2",
+                },
             },
+            -- 3.12.13 stays x86_64-only and unhashed, as it was: nothing
+            -- consumes it, and mirroring a second aarch64 payload for a
+            -- version with no consumer would be work with no reader.
             ["3.12.13"] = {
                 url = "https://gitcode.com/xlings-res/mirror-cn/releases/download/python/cpython-3.12.13%2B20260310-x86_64-unknown-linux-gnu-install_only.tar.gz",
                 sha256 = nil,

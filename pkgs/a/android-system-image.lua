@@ -401,7 +401,10 @@ package = {
                 -- Measured 2026-09-11 against
                 -- https://dl.google.com/android/repository/sys-img/android/
                 -- sys-img2-3.xml: size and sha1 both matched exactly.
-                url = "https://dl.google.com/android/repository/sys-img/android/x86_64-24_r08.zip",
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/sys-img/android/x86_64-24_r08.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-system-image/releases/download/24-default-x86_64/x86_64-24_r08.zip",
+                },
                 sha256 = "c122b69f70a229186314ec9a6f7abedcc7a6ff7ed52cb6fdce0d4f1585c09f92",
             },
             ["24-default-arm64-v8a"] = {
@@ -414,7 +417,10 @@ package = {
                 -- anything -- see "A SECOND, INDEPENDENT PATH" above,
                 -- which is why install() below extracts a qemu-user-root
                 -- for this abi.
-                url = "https://dl.google.com/android/repository/sys-img/android/arm64-v8a-24_r09.zip",
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/sys-img/android/arm64-v8a-24_r09.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-system-image/releases/download/24-default-arm64-v8a/arm64-v8a-24_r09.zip",
+                },
                 sha256 = "3c3a70dcffe8c162984ec190fc3388bf237b241b3ba80bf7aa5c86e130d8f59b",
             },
         },

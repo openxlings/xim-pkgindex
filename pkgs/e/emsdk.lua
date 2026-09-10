@@ -90,15 +90,18 @@
 --
 -- `emscripten/em++` is a `#!/bin/sh` script (see `create_entry_points.py`
 -- upstream) that execs `$EMSDK_PYTHON`, or failing that whatever `python3`
--- (then `python`) is first on PATH, to run `em++.py`. This package installs
--- no Python of its own -- `xim:python` covers x86_64 only today, and making
--- it a hard dependency would make this recipe's aarch64 half uninstallable
--- -- so a CONSUMER (mcpp) MUST ensure a `python3` or `python` interpreter is
--- resolvable on PATH, or set `EMSDK_PYTHON` to an absolute interpreter path,
--- whenever it invokes any `em*` entry point. This is a real, unremovable
--- property of upstream's design: the interpreter is chosen by the shell
--- wrapper before any config file is even opened, so nothing this recipe
--- writes into `.emscripten` can substitute for it.
+-- (then `python`) is first on PATH, to run `em++.py`. That the interpreter is
+-- chosen by a shell wrapper before any config file is opened is a real and
+-- unremovable property of upstream's design -- nothing this recipe writes into
+-- `.emscripten` can substitute for it.
+--
+-- WHICH INTERPRETER IT FINDS IS THIS INDEX'S PROBLEM, AND IT IS SOLVED BY
+-- DECLARING ONE. `xim:python` is a runtime dependency, so `python3` on PATH is
+-- an xvm shim answering for the current SubOS rather than whatever the machine
+-- happens to have. It was previously left undeclared with the argument that
+-- `xim:python` covered x86_64 only -- true at the time, and an argument for
+-- adding the missing payload rather than for depending on the host.
+-- pkgs/p/python.lua now carries both arches (2026-09-11).
 --
 -- Once python3 is found, everything else is self-contained. `em++.py`
 -- resolves `LLVM_ROOT`, `BINARYEN_ROOT` and `NODE_JS` from
@@ -185,6 +188,17 @@ package = {
                     "xim:gcc-runtime@15.1.0",
                     "xim:zlib@1.3.1",
                     "xim:node@>=18",
+                    -- THE INTERPRETER IS A DEPENDENCY, NOT A HOST ASSUMPTION.
+                    --
+                    -- `em++` is a `#!/bin/sh` wrapper that execs whatever
+                    -- `python3` is first on PATH, so without this the whole
+                    -- toolchain depended on a host interpreter -- which is the
+                    -- one thing this index exists to avoid. It was left
+                    -- undeclared because `xim:python` covered x86_64 only and
+                    -- declaring it would have made this recipe's aarch64 half
+                    -- uninstallable. That is now false: pkgs/p/python.lua
+                    -- carries both arches (2026-09-11).
+                    "xim:python@>=3.12",
                 },
                 -- A BUILD dep so install order is deterministic instead of
                 -- trusting patchelf to already be on the shim PATH -- the

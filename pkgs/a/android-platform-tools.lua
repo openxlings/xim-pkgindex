@@ -133,7 +133,10 @@ package = {
         linux = {
             ["latest"] = { ref = "37.0.1" },
             ["37.0.1"] = {
-                url = "https://dl.google.com/android/repository/platform-tools_r37.0.1-linux.zip",
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/platform-tools_r37.0.1-linux.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-platform-tools/releases/download/37.0.1/platform-tools_r37.0.1-linux.zip",
+                },
                 sha256 = "d230f13842f60f782a8645f9c813f8f845bf36089ea7289f28c48f17979313f1",
             },
         },
@@ -141,14 +144,20 @@ package = {
             -- One archive for both Apple arches: a universal binary.
             ["latest"] = { ref = "37.0.1" },
             ["37.0.1"] = {
-                url = "https://dl.google.com/android/repository/platform-tools_r37.0.1-darwin.zip",
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/platform-tools_r37.0.1-darwin.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-platform-tools/releases/download/37.0.1/platform-tools_r37.0.1-darwin.zip",
+                },
                 sha256 = "ee39ad5967e95c2a07f04dbcbde96b1a0c916ba376096db5d2f498b7727a5d1d",
             },
         },
         windows = {
             ["latest"] = { ref = "37.0.1" },
             ["37.0.1"] = {
-                url = "https://dl.google.com/android/repository/platform-tools_r37.0.1-win.zip",
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/platform-tools_r37.0.1-win.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-platform-tools/releases/download/37.0.1/platform-tools_r37.0.1-win.zip",
+                },
                 sha256 = "45f4d63113e895ebde0c90f194099a4676b6ac653bd28d54314a9e022bbc1a99",
             },
         },
