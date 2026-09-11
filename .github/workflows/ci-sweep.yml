@@ -1,0 +1,142 @@
+# Periodic lifecycle sweep — the net under `ci-test.yml`.
+#
+# WHY THIS EXISTS
+#
+# ci-test.yml installs only what a push CHANGED. That is the right default:
+# 260 recipes on three platforms is not a per-push budget. But it means a
+# recipe's install hook is exercised exactly when someone edits it, and never
+# otherwise — so a hook can be wrong for years and nothing says so.
+#
+# That is not a hypothetical. `xim:wix`'s install hook had NEVER run in CI:
+# `tests/w/test_wix.py` is static-only, and until `huxerui.huxerui` arrived no
+# package in either index depended on it. Its extractor reached for the host's
+# `tar`, which is unreachable in the environment xlings runs hooks in, and the
+# first consumer to pull wix in found that out — on someone else's PR, three
+# repositories away from the recipe at fault (openxlings/xim-pkgindex#809).
+#
+# A sweep turns "whoever depends on it first" into "the calendar".
+#
+# ROTATION, NOT FULL COVERAGE PER RUN
+#
+# A weekly full sweep would be ~260 installs per platform. Instead each run
+# takes one slice of SLICES, chosen by ISO week, so every recipe is exercised
+# once per SLICES weeks at a bounded cost per run. The slice is a function of
+# the file list and the week alone — no state, and re-running a week reproduces
+# the same set.
+#
+# `workflow_dispatch` takes an explicit slice, which is how you re-run the one
+# that failed without waiting for the calendar to come round again.
+name: ci-sweep
+
+on:
+  schedule:
+    # Mondays 04:00 UTC — off the hour, and clear of mcpp-index's Sunday 06:00
+    # full regression so the two are not competing for the same runners.
+    - cron: "0 4 * * 1"
+  workflow_dispatch:
+    inputs:
+      slice:
+        description: "Slice index to run (blank = pick from the ISO week)"
+        required: false
+        default: ""
+  # A workflow that only fires on a schedule cannot be reviewed before it
+  # lands: the PR that adds it reports no checks, and the first real run is
+  # after merge on someone else's Monday. So it watches itself.
+  pull_request:
+    paths:
+      - '.github/workflows/ci-sweep.yml'
+
+env:
+  # Every recipe every SLICES weeks. Raise it if a run gets too long; lower it
+  # to tighten the loop. Nothing else depends on the value.
+  SLICES: "4"
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      files: ${{ steps.pick.outputs.files }}
+      slice: ${{ steps.pick.outputs.slice }}
+      count: ${{ steps.pick.outputs.count }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: pick
+        shell: bash
+        run: |
+          set -euo pipefail
+          n="${SLICES}"
+          if [ -n "${{ inputs.slice }}" ]; then
+            s="${{ inputs.slice }}"
+          else
+            s=$(( $(date -u +%V) % n ))
+          fi
+
+          # Sorted so the partition is stable: the same recipe lands in the
+          # same slice until the file list itself changes.
+          mapfile -t all < <(git ls-files 'pkgs/*/*.lua' | sort)
+          sel=()
+          for i in "${!all[@]}"; do
+            [ $(( i % n )) -eq "$s" ] && sel+=("${all[$i]}")
+          done
+
+          echo "slice $s of $n — ${#sel[@]} of ${#all[@]} recipes"
+          printf '  %s\n' "${sel[@]}"
+          echo "files=${sel[*]}"    >> "$GITHUB_OUTPUT"
+          echo "slice=$s"           >> "$GITHUB_OUTPUT"
+          echo "count=${#sel[@]}"   >> "$GITHUB_OUTPUT"
+
+  linux:
+    needs: plan
+    runs-on: ubuntu-latest
+    name: sweep linux (slice ${{ needs.plan.outputs.slice }}, ${{ needs.plan.outputs.count }} recipes)
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 2 }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Install xlings
+        run: |
+          export XLINGS_NON_INTERACTIVE=1
+          export XLINGS_VERSION=v2026.8.10.1
+          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
+          echo "XLINGS_HOME=$HOME/.xlings" >> "$GITHUB_ENV"
+          echo "$HOME/.xlings/bin"               >> "$GITHUB_PATH"
+          echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
+      - name: Refresh package index
+        run: xlings update
+      - name: ELF + Lua tooling for the closure check
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends binutils patchelf lua5.4
+      - name: Install/uninstall sweep
+        run: |
+          chmod +x .github/scripts/posix-test.sh .github/scripts/dep-closure-check.sh
+          .github/scripts/posix-test.sh "${{ needs.plan.outputs.files }}" "${{ github.workspace }}" linux
+
+  windows:
+    needs: plan
+    runs-on: windows-latest
+    name: sweep windows (slice ${{ needs.plan.outputs.slice }})
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 2 }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Install xlings
+        shell: pwsh
+        run: |
+          $env:XLINGS_NON_INTERACTIVE = "1"
+          $env:XLINGS_VERSION = "v2026.8.10.1"
+          iex (Invoke-WebRequest -Uri "https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.ps1" -UseBasicParsing).Content
+          $h = "$env:USERPROFILE\.xlings"
+          Add-Content $env:GITHUB_PATH "$h\bin"
+          Add-Content $env:GITHUB_PATH "$h\subos\current\bin"
+          Add-Content $env:GITHUB_ENV  "XLINGS_HOME=$h"
+      - name: Refresh package index
+        run: xlings update
+      - name: Install/uninstall sweep
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -File .github/scripts/windows-test.ps1 `
+            -ChangedFiles "${{ needs.plan.outputs.files }}" `
+            -WorkspaceRoot "${{ github.workspace }}"
