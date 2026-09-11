@@ -469,9 +469,36 @@ end
 -- `path_from_root`, which is already correct because it is relative to
 -- `em++.py`'s own location rather than to anything this recipe computes.
 local function __write_emscripten_config(dir, node_bin)
-    local cfg = "LLVM_ROOT = '" .. path.join(dir, "bin") .. "'\n"
-        .. "BINARYEN_ROOT = '" .. dir .. "'\n"
-        .. "NODE_JS = '" .. node_bin .. "'\n"
+    -- `.emscripten` IS PYTHON SOURCE, AND A WINDOWS PATH IS NOT A PYTHON
+    -- STRING LITERAL.
+    --
+    -- `em++.py` evaluates this file. On Windows the paths arrive with
+    -- backslashes, so `C:\Users\...` puts `\U` inside a single-quoted Python
+    -- literal and Python reads it as a unicode escape:
+    --
+    --   em++: error: error in evaluating config file (...\.emscripten):
+    --     (unicode error) 'unicodeescape' codec can't decode bytes in position
+    --     2-3: truncated \UXXXXXXXX escape
+    --     text: LLVM_ROOT = 'C:\Users\runneradmin\...\6.0.9/bin'
+    --
+    -- Note the path in that message is MIXED -- `path.join` contributed a
+    -- forward slash to an otherwise backslashed path -- which is the same
+    -- mixed-separator property that breaks a cmd.exe command line, surfacing
+    -- here as a different failure in a different language.
+    --
+    -- Forward slashes throughout. Python accepts them on Windows, emscripten's
+    -- own tooling normalises them, and one spelling means the file reads the
+    -- same on every host. Escaping the backslashes instead would work and
+    -- would leave two spellings of every path in a file that is generated.
+    --
+    -- THIS WAS FOUND ONLY AFTER THE INVOCATION WAS FIXED. Three earlier shapes
+    -- failed before `em++` ever started, so its own diagnostic never appeared
+    -- and this defect sat behind them. A failure that prevents a program from
+    -- running hides every failure that program would have reported.
+    local function fwd(v) return (tostring(v):gsub("\\", "/")) end
+    local cfg = "LLVM_ROOT = '" .. fwd(path.join(dir, "bin")) .. "'\n"
+        .. "BINARYEN_ROOT = '" .. fwd(dir) .. "'\n"
+        .. "NODE_JS = '" .. fwd(node_bin) .. "'\n"
     io.writefile(path.join(dir, "emscripten", ".emscripten"), cfg)
 end
 

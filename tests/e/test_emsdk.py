@@ -371,6 +371,48 @@ class TestStatic:
         assert 'alias = prog .. exe' not in code
 
     @pytest.mark.static
+    def test_the_generated_config_is_python_safe(self, meta):
+        """`.emscripten` is Python SOURCE, and a Windows path is not a Python
+        string literal.
+
+        `em++.py` evaluates this file. With backslashes, `C:\\Users\\...`
+        puts `\\U` inside a single-quoted literal and Python reads it as a
+        unicode escape:
+
+            em++: error: error in evaluating config file (...\\.emscripten):
+              (unicode error) 'unicodeescape' codec can't decode bytes in
+              position 2-3: truncated \\UXXXXXXXX escape
+
+        The path in that message was MIXED -- `path.join` contributed a forward
+        slash to an otherwise backslashed path -- which is the same
+        mixed-separator property that breaks a cmd.exe command line, surfacing
+        as a different failure in a different language.
+
+        FOUND ONLY AFTER THE INVOCATION WAS FIXED: three earlier shapes failed
+        before `em++` ever started, so its own diagnostic never appeared. A
+        failure that prevents a program from running hides every failure that
+        program would have reported.
+
+        Asserted on the WRITER, because the file itself only exists after an
+        install.
+        """
+        code = _code(meta.raw_content)
+        body = code[code.index("__write_emscripten_config"):]
+        body = body[:body.index("\nend\n") + 5]
+
+        assert 'gsub("\\\\", "/")' in body, (
+            "paths are not normalised to forward slashes; a backslashed path "
+            "in this file is evaluated by Python as containing escapes"
+        )
+        # Every value written must pass through the normaliser.
+        for key in ("LLVM_ROOT", "BINARYEN_ROOT", "NODE_JS"):
+            line = next((l for l in body.splitlines() if key in l), None)
+            assert line is not None, f"{key} is no longer written"
+            assert "fwd(" in line, (
+                f"{key} is written without normalising its path: {line.strip()}"
+            )
+
+    @pytest.mark.static
     def test_config_writes_final_paths_before_first_invocation(self, meta):
         """DO NOT RELOCATE finding: `.emscripten` must be written with the
         final install_dir-based paths, and the first-ever `em++` invocation
