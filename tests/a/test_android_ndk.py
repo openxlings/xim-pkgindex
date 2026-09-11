@@ -18,8 +18,11 @@ from tests.lib.platform_utils import skip_if_not, xpkgs_dir
 PKG = "android-ndk"
 PKG_FILE = "pkgs/a/android-ndk.lua"
 
-# Relative layout this recipe documents and mcpp's toolchain registry
-# hardcodes -- see the header comment in pkgs/a/android-ndk.lua.
+# Relative layout this recipe documents and mcpp's toolchain registry derives
+# per host -- see `host_tag()` in pkgs/a/android-ndk.lua. The TestVerify cases
+# below are Linux-only (`skip_if_not('linux')`), so they spell the Linux tag;
+# the recipe itself must not, which `test_the_host_tag_is_derived_not_pinned`
+# asserts.
 HOST_TAG = "linux-x86_64"
 TOOLCHAIN_REL = os.path.join("toolchains", "llvm", "prebuilt", HOST_TAG)
 CLANGXX_REL = os.path.join(TOOLCHAIN_REL, "bin", "clang++")
@@ -129,18 +132,38 @@ class TestPinnedFacts:
         assert re.search(r'CN\s*=', code), "no CN key"
 
     @pytest.mark.static
-    def test_every_host_upstream_publishes_for(self, meta):
-        """REVERSED. This pinned `linux` only, which was true of the recipe and
-        not of upstream: Google publishes android-ndk for every host this index
-        serves. Declaring one was an incomplete addition rather than a
-        conclusion, so the test now asserts the completion -- one per host, and the darwin archive is a UNIVERSAL build serving both Apple arches.
+    def test_the_hosts_that_can_actually_serve_this_package(self, meta):
+        """REVERSED TWICE, and the second reversal is the interesting one.
 
-        Execution evidence remains Linux-only and the recipe says so; the
-        index's own macos-install-test and windows-test are the measurement for
-        the other two legs.
+        It first pinned `linux` only, which was true of the recipe and not of
+        upstream: Google publishes android-ndk for every host this index
+        serves. So it was widened to all three -- and `windows` is wrong for a
+        reason no url table can express.
+
+        Google's Windows archive downloads and has the layout this recipe
+        expects, and it does NOT contain the libc++ module surface. Measured by
+        reading each archive's central directory:
+
+            archive   entries   share/libc++/v1/std.cppm   std/*.inc
+            linux      ~10000   present                    110
+            darwin      10024   present                    110
+            windows      9108   ABSENT                       0
+
+        mcpp is module-first, so that payload cannot serve: the install would
+        succeed and the self-test would fail on a file that is not there. An
+        entry that can never serve is worse than none -- the same rule that
+        kept the emsdk Windows CN asset out after its upload would not land.
+
+        Asserted as an EXACT SET, not as "at least these". A future addition
+        has to come with its own measurement rather than slipping in, and a
+        future REMOVAL cannot pass either.
         """
-        for host in ("linux", "macosx", "windows"):
-            assert meta.platforms.get(host), f"no {host} table"
+        declared = {h for h in ("linux", "macosx", "windows")
+                    if meta.platforms.get(h)}
+        assert declared == {"linux", "macosx"}, (
+            f"declared {sorted(declared)}; windows is deliberately absent "
+            f"because its archive ships no libc++ module surface"
+        )
 
     @pytest.mark.static
     def test_arch_scope_is_stated_per_platform(self, source_text):
@@ -160,7 +183,7 @@ class TestPinnedFacts:
 
     @pytest.mark.static
     def test_release_pattern_accepts_every_archive_this_recipe_downloads(
-            self, source_text):
+            self, meta, source_text):
         """The defect this asserts against shipped, and both new hosts hit it.
 
         install() derives the extracted directory from the downloaded file's
@@ -183,8 +206,15 @@ class TestPinnedFacts:
             for u in re.findall(r'https?://[^"\s]+', code)
             if u.rsplit('/', 1)[-1].endswith('.zip')
         })
-        assert len(basenames) >= 3, (
-            f"expected an archive per host, found {basenames}"
+        # The denominator is the number of PLATFORM TABLES, so withdrawing or
+        # adding a host moves it automatically. A hardcoded count would have
+        # had to be edited by whoever withdrew `windows`, and the edit would
+        # have looked like loosening the test.
+        declared = [h for h in ("linux", "macosx", "windows")
+                    if meta.platforms.get(h)]
+        assert len(basenames) == len(declared), (
+            f"{len(declared)} platform table(s) declared but {len(basenames)} "
+            f"distinct archive name(s) found: {basenames}"
         )
 
         m = re.search(r'base:match\(\s*"([^"]+)"\s*\)', code)
@@ -214,6 +244,28 @@ class TestPinnedFacts:
                 f"{base!r} carries host token {hit.group(2)!r}, which install() "
                 f"does not accept"
             )
+
+    @pytest.mark.static
+    def test_the_host_tag_is_derived_not_pinned(self, source_text):
+        """`toolchains/llvm/prebuilt/<host>` names the HOST, never the target.
+
+        It was a top-level `local HOST_TAG = "linux-x86_64"`, written on the one
+        host the recipe then served, and the macOS install job is what reported
+        it: "no clang++ at .../prebuilt/linux-x86_64/bin/clang++ -- payload does
+        not look like an NDK for linux-x86_64", where the string names the
+        question that was asked.
+
+        Measured per archive: `linux-x86_64`, `darwin-x86_64`,
+        `windows-x86_64`. `darwin-x86_64` covers Apple silicon too, because
+        that archive is a universal build and there is no `darwin-arm64`.
+        """
+        code = re.sub(r'--.*', '', source_text)
+        assert not re.search(r'local\s+HOST_TAG\s*=', code), (
+            "the host tag must be derived per host, not pinned to one"
+        )
+        assert 'function host_tag()' in code
+        for tag in ("linux-x86_64", "darwin-x86_64", "windows-x86_64"):
+            assert tag in code, f"host_tag() does not name {tag}"
 
     @pytest.mark.static
     def test_no_ci_automation_declared(self, source_text):

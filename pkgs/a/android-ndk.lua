@@ -279,16 +279,36 @@ package = {
                 sha256 = "d125634de97b26deb1e1bb1a562f9d839aa5803d1784a1e414485f5ccbe6739f",
             },
         },
-        windows = {
-            ["latest"] = { ref = "30.0.16248370" },
-            ["30.0.16248370"] = {
-                url = {
-                    GLOBAL = "https://dl.google.com/android/repository/android-ndk-r30-windows.zip",
-                    CN     = "https://gitcode.com/xlings-res/android-ndk/releases/download/30.0.16248370/android-ndk-r30-windows.zip",
-                },
-                sha256 = "b830098aaf18b67a42eb831c404e15e5f2990a474f054ac145b0bc957ac6d729",
-            },
-        },
+        -- NO `windows` TABLE, AND IT IS A MEASURED UPSTREAM FACT RATHER THAN
+        -- AN OMISSION.
+        --
+        -- Google does publish `android-ndk-r30-windows.zip`, it downloads, and
+        -- its layout is the one this recipe expects (`prebuilt/windows-x86_64`,
+        -- `bin/clang++.exe`). What it does not contain is the libc++ MODULE
+        -- SURFACE, which is the whole reason this package exists here.
+        -- Measured by reading each archive's central directory:
+        --
+        --   archive   entries   share/libc++/v1/std.cppm   std/*.inc
+        --   linux      ~10000   present                    110
+        --   darwin      10024   present                    110
+        --   windows      9108   ABSENT                       0
+        --
+        -- mcpp is module-first, so a payload that cannot compile a module
+        -- interface unit is worse than its absence: the install would succeed,
+        -- the self-test would fail on a file that is not there, and a user who
+        -- forced past it would get a toolchain that cannot build any mcpp
+        -- project. An entry that can never serve is worse than none, which is
+        -- the same rule that kept the emsdk Windows CN asset out of
+        -- pkgs/e/emsdk.lua after its upload would not land.
+        --
+        -- Declaring it and refusing in install() was considered and rejected:
+        -- it makes a Windows user download 695 MB to be told no. The refusal
+        -- they get instead is xim's own "no payload for this platform", before
+        -- anything is fetched.
+        --
+        -- The hook code is host-general anyway (`host_tag()`, the `.exe`
+        -- suffix), so if a future NDK ships the surface on Windows this becomes
+        -- a url table and nothing else.
     },
 }
 
@@ -296,12 +316,30 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
 
--- The one Linux host directory name upstream has used since the r19 unified-
--- toolchain redesign. Stable across point releases (confirmed present,
--- unrenamed, in r30); if a future major release ever changes it, the
--- assertions in install() below name the exact path they expected and fail
--- loudly rather than silently skipping the check.
-local HOST_TAG = "linux-x86_64"
+-- The host directory name under `toolchains/llvm/prebuilt/`, which upstream
+-- has used since the r19 unified-toolchain redesign. It names the HOST, never
+-- the target: a Linux x86_64 machine building for aarch64 still reads
+-- `linux-x86_64`.
+--
+-- THIS WAS A CONSTANT SPELLING ONE HOST, and it was the host it was written
+-- on. Measured by reading each r30 archive's central directory:
+--
+--   android-ndk-r30-linux.zip    prebuilt/linux-x86_64
+--   android-ndk-r30-darwin.zip   prebuilt/darwin-x86_64
+--   android-ndk-r30-windows.zip  prebuilt/windows-x86_64
+--
+-- `darwin-x86_64` on Apple silicon too: the darwin archive is a universal
+-- build, so there is no `darwin-arm64` to select. A function rather than a
+-- top-level constant, so the value is derived when it is used.
+--
+-- If a future major release renames any of them, the assertions in install()
+-- name the exact path they expected and fail loudly rather than silently
+-- skipping the check.
+local function host_tag()
+    if is_host("windows") then return "windows-x86_64" end
+    if is_host("macosx")  then return "darwin-x86_64"  end
+    return "linux-x86_64"
+end
 
 -- The libc++ revision this recipe was written and measured against ("THE
 -- RELEASE THIS RECIPE PINS" above). Read back out of the installed
@@ -315,7 +353,7 @@ local HOST_TAG = "linux-x86_64"
 local EXPECTED_LIBCPP_VERSION = "210000"  -- clang 21.0.0, NDK r30
 
 local function toolchain_dir(install_dir)
-    return path.join(install_dir, "toolchains", "llvm", "prebuilt", HOST_TAG)
+    return path.join(install_dir, "toolchains", "llvm", "prebuilt", host_tag())
 end
 
 -- Count files in `dir` whose name ends in `suffix`, via `ls` (matching
@@ -448,10 +486,13 @@ function install()
     local toolchain = toolchain_dir(dir)
 
     -- Compiler present.
-    local clangxx = path.join(toolchain, "bin", "clang++")
+    -- Measured in the same read: the Windows payload spells it
+    -- `bin/clang++.exe`, the other two `bin/clang++`.
+    local clangxx = path.join(toolchain, "bin",
+                              "clang++" .. (is_host("windows") and ".exe" or ""))
     if not os.isfile(clangxx) then
         raise("android-ndk: no clang++ at " .. clangxx
-              .. " -- payload does not look like an NDK for " .. HOST_TAG)
+              .. " -- payload does not look like an NDK for " .. host_tag())
     end
 
     -- Bionic sysroot present (api-level.h is bionic's own marker header,
