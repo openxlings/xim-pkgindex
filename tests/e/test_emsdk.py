@@ -79,13 +79,29 @@ class TestStatic:
         assert "os.arch()" not in code
 
     @pytest.mark.static
-    def test_no_invented_cn_mirror(self, meta):
-        """storage.googleapis.com is not re-hosted; the recipe follows the
-        'not yet mirrored' shape (qemu-user-aarch64.lua) rather than
-        inventing a gitcode.com/xlings-res URL that does not exist."""
+    def test_the_cn_mirror_is_real_and_tag_pinned(self, meta):
+        """REVERSED. This pinned the absence of a CN entry, on the grounds
+        that one would be 'a gitcode.com/xlings-res URL that does not exist'.
+        The objects now exist: both archives were uploaded and then downloaded
+        back and hashed (2026-09-11), which is the only check that separates a
+        real mirror from a URL -- gtc reports `obs_callback 400` on a
+        successful upload, so its exit status says nothing.
+
+        Emscripten is MIT / NCSA, so re-hosting is legitimate; the four
+        Android packages keep one upstream URL each for the opposite reason
+        (Android SDK Terms), and pkgs/i/iphoneos-sdk.lua for the same reason
+        again. The licence decides, not the size.
+
+        The CN URL is pinned to the release tag, so a version bump with no
+        upload would leave it pointing at nothing -- asserted here so that
+        bump fails a test rather than a user's install."""
         code = _code(meta.raw_content)
-        assert "gitcode.com" not in code
         assert "storage.googleapis.com/webassembly/emscripten-releases-builds" in code
+        assert "gitcode.com/xlings-res/emsdk/releases/download/" in code
+        ver = re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"([^"]+)"', code)
+        assert ver, "no latest ref"
+        assert f"emsdk/releases/download/{ver.group(1)}/" in code, (
+            f"the CN URL is not pinned to the {ver.group(1)} tag")
 
     @pytest.mark.static
     def test_per_arch_sha256_declared(self, meta):
