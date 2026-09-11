@@ -421,12 +421,28 @@ local function selftest_std_module(install_dir)
         clangxx, stdcppm, pcm)
     local out = try { function() return os.iorun(cmd) end }
 
+    -- THE SIZE IS READ IN-PROCESS, AND THE SUBPROCESS THAT USED TO DO IT WAS
+    -- THE THING THAT FAILED.
+    --
+    -- This ran `stat -c%s`, which is the GNU flag. macOS ships BSD stat, where
+    -- the spelling is `-f%z` and `-c` is an error -- so on the macOS install
+    -- job the precompile SUCCEEDED, the measurement returned nothing, and the
+    -- self-test raised "did not produce a usable BMI (got 0 bytes)" with an
+    -- empty clang output underneath it. The criterion failed, not the thing it
+    -- was measuring, and the diagnostic accused the toolchain.
+    --
+    -- `io.open` plus a seek to the end is plain Lua: no host branch to get
+    -- wrong, no subprocess, and it does not read the 30 MB it is measuring.
+    -- It also avoids `os.filesize`, because this hook runtime has already been
+    -- measured to leave `os.arch()` and `os.files()` unbound and there is no
+    -- reason to assume a third.
     local size = 0
     if os.isfile(pcm) then
-        local size_out = try { function()
-            return os.iorun(string.format('stat -c%%s "%s"', pcm))
-        end }
-        size = tonumber((size_out or ""):match("%d+")) or 0
+        local handle = io.open(pcm, "rb")
+        if handle then
+            size = handle:seek("end") or 0
+            handle:close()
+        end
     end
     os.tryrm(scratch)
 

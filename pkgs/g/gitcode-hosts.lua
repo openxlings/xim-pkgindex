@@ -112,9 +112,28 @@ function update_hosts(new_hosts_content)
         os.sleep(1000) -- wait for the script to finish
         os.tryrm(new_hosts)
     else
-        local permission = os.iorun([[stat -c "%a" ]] .. hosts_file[os.host()])
-        system.exec("sudo chmod 666 " .. hosts_file[os.host()])
-        io.writefile(hosts_file[os.host()], new_hosts_content)
-        system.exec("sudo chmod " .. permission .. " " .. hosts_file[os.host()])
+        -- `stat -c` IS THE GNU FLAG, AND THIS PACKAGE DECLARES macosx.
+        --
+        -- macOS ships BSD stat, where the spelling is `-f%Lp` and `-c` is an
+        -- error. The consequence here is worse than a failed read: the mode is
+        -- captured, the file is opened up to 666 to be written, and then
+        -- restored with the captured mode -- so an empty capture makes the
+        -- restoring command `sudo chmod  /etc/hosts`, which fails, and the
+        -- hosts file is left WORLD-WRITABLE. Found while fixing the identical
+        -- flag in pkgs/a/android-ndk.lua.
+        local target = hosts_file[os.host()]
+        local stat_flag = is_host("macosx") and [[-f "%Lp"]] or [[-c "%a"]]
+        local permission = os.iorun("stat " .. stat_flag .. " " .. target)
+        permission = (permission or ""):match("%d+")
+        -- AND THE MODE IS NOT OPTIONAL. Without this the failure above is
+        -- silent; refusing before the file is opened up leaves it as it was.
+        if not permission then
+            raise("gitcode-hosts: could not read the current mode of "
+                  .. target .. "; refusing to open it up for writing, because "
+                  .. "the mode could not then be restored")
+        end
+        system.exec("sudo chmod 666 " .. target)
+        io.writefile(target, new_hosts_content)
+        system.exec("sudo chmod " .. permission .. " " .. target)
     end
 end
