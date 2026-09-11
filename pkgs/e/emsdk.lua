@@ -101,10 +101,20 @@
 -- unremovable property of upstream's design -- nothing this recipe writes into
 -- `.emscripten` can substitute for it.
 --
--- WHICH INTERPRETER IT FINDS IS THIS INDEX'S PROBLEM, AND IT IS SOLVED BY
--- DECLARING ONE. `xim:python` is a runtime dependency, so `python3` on PATH is
--- an xvm shim answering for the current SubOS rather than whatever the machine
--- happens to have. It was previously left undeclared with the argument that
+-- WHICH INTERPRETER IT FINDS IS THIS INDEX'S PROBLEM, AND DECLARING ONE IS
+-- ONLY HALF OF IT. `xim:python` is a runtime dependency, so for a CONSUMER
+-- `python3` on PATH is an xvm shim answering for the current SubOS rather than
+-- whatever the machine happens to have.
+--
+-- INSIDE THIS INSTALL HOOK IT IS NOT. Shims are not on PATH there -- the same
+-- property that made pkgs/a/android-system-image.lua's `debugfs` lookup fail
+-- with the dependency correctly installed -- so install()'s own self-check
+-- searched the MACHINE. On the Linux and macOS runners a system python3 exists
+-- and it passed silently, which is a host fallthrough wearing an ecosystem
+-- name. On Windows the archive bundles no python (measured: zero `python`
+-- entries in its central directory) and the launcher found nothing it could
+-- use. `__selfcheck_import_std` therefore resolves `xim:python` through
+-- `dep_install_dir` and sets `EMSDK_PYTHON` explicitly. It was previously left undeclared with the argument that
 -- `xim:python` covered x86_64 only -- true at the time, and an argument for
 -- adding the missing payload rather than for depending on the host.
 -- pkgs/p/python.lua now carries both arches (2026-09-11).
@@ -337,6 +347,45 @@ local REQUIRED_ENTRY_POINTS = { ["em++"] = true, ["emcc"] = true }
 -- contributing.md R6 and llvm.lua's `__find_glibc_runtime`, which this
 -- mirrors). Returns nil when the dependency did not resolve to a real
 -- payload.
+-- The declared `xim:python`'s interpreter, resolved through the dependency
+-- rather than through PATH -- for the same reason `__find_node` is.
+--
+-- `em++` execs `$EMSDK_PYTHON`, or failing that whatever `python3` (then
+-- `python`) is first on PATH. The header above argued that a declared
+-- `xim:python` makes the PATH lookup an xvm shim, and that is true for a
+-- CONSUMER and false inside this install hook: shims are not on PATH there.
+-- So install()'s own self-check found whatever the MACHINE had, which on the
+-- Linux and macOS runners is a system python3 -- a host fallthrough that
+-- passed silently -- and on Windows is nothing the launcher accepts:
+--
+--   The filename, directory name, or volume label syntax is incorrect.
+--   emsdk: could not precompile the shipped libc++ module surface (std.cppm)
+--
+-- The Windows archive bundles no python of its own (measured: zero `python`
+-- entries in its central directory), so the interpreter has to come from the
+-- dependency. Layouts differ: pkgs/p/python.lua registers `bin/python3` on
+-- POSIX and on Windows registers nothing at all, installing `python.exe` at
+-- the payload root.
+local function __find_python()
+    local py_dir = pkginfo.dep_install_dir("xim:python")
+    if not py_dir then
+        return nil
+    end
+    for _, rel in ipairs({
+        path.join("bin", "python3"),
+        path.join("bin", "python"),
+        "python.exe",
+        "python3.exe",
+        path.join("bin", "python3.exe"),
+    }) do
+        local candidate = path.join(py_dir, rel)
+        if os.isfile(candidate) then
+            return candidate
+        end
+    end
+    return nil
+end
+
 local function __find_node()
     local node_dir = pkginfo.dep_install_dir("xim:node")
     if not node_dir then
@@ -424,6 +473,33 @@ end
 -- is what calls out to node (see the header comment), so a wrong or
 -- unusable NODE_JS fails HERE, not on a consumer's first real build.
 local function __selfcheck_import_std(dir, node_bin)
+    -- RUN THE INTERPRETER ON `em++.py`, NOT THE WRAPPER.
+    --
+    -- The wrapper's whole job is to find an interpreter, and inside an install
+    -- hook it cannot find the declared one: xvm shims are not on PATH there.
+    -- Naming the interpreter and the script removes the search instead of
+    -- trying to steer it, and it is the same command on every host -- no
+    -- `.exe`, no `$EMSDK_PYTHON`, no dependence on which `os` names this hook
+    -- runtime happens to bind (`os.setenv` is not among the ones this index
+    -- has verified; `os.files`, `os.exists` and `os.iorunv` are documented as
+    -- absent in pkgs/l/libinput-quirks.lua).
+    --
+    -- `em++.py` is present in all three archives, measured in their central
+    -- directories alongside `em++` / `em++.exe`.
+    local py = __find_python()
+    if not py then
+        raise("emsdk: xim:python payload not found (this package's deps declare"
+            .. " xim:python@>=3.12); `em++` is a wrapper around `em++.py` and"
+            .. " needs an interpreter, and inside an install hook the xvm shim"
+            .. " for one is not on PATH -- so it must be named explicitly.")
+    end
+    local emxx_py = path.join(dir, "emscripten", "em++.py")
+    if not os.isfile(emxx_py) then
+        raise("emsdk: no emscripten/em++.py in the payload at " .. dir
+            .. "; the self-check invokes the interpreter on the script rather"
+            .. " than on the wrapper, so this file is required.")
+    end
+
     local scratch = path.join(dir, ".selfcheck")
     os.tryrm(scratch)
     os.mkdir(scratch)
@@ -441,8 +517,6 @@ int main() {
     -- Same host suffix the install probe applies; this is the call that
     -- actually EXECUTES the driver, so an unsuffixed path here fails on
     -- Windows after the probe has already passed.
-    local emxx = path.join(dir, "emscripten",
-                           "em++" .. (is_host("windows") and ".exe" or ""))
     local stdcppm = path.join(dir, "emscripten", "cache", "sysroot", "share", "libc++", "v1", "std.cppm")
     local stdpcm = path.join(scratch, "std.pcm")
     local appjs = path.join(scratch, "app.js")
@@ -450,8 +524,9 @@ int main() {
     -- No added flags: measured against this exact payload, `std.cppm`
     -- #includes this same payload's own headers and needs nothing else.
     local out1 = try { function()
-        return os.iorun(string.format('"%s" -std=c++23 --precompile "%s" -o "%s"',
-                                       emxx, stdcppm, stdpcm))
+        return os.iorun(string.format(
+            '"%s" "%s" -std=c++23 --precompile "%s" -o "%s"',
+            py, emxx_py, stdcppm, stdpcm))
     end }
     if not os.isfile(stdpcm) then
         raise("emsdk: could not precompile the shipped libc++ module surface"
@@ -461,8 +536,8 @@ int main() {
 
     local out2 = try { function()
         return os.iorun(string.format(
-            '"%s" -std=c++23 -fmodule-file=std="%s" "%s" "%s" -o "%s"',
-            emxx, stdpcm, app_cpp, stdpcm, appjs))
+            '"%s" "%s" -std=c++23 -fmodule-file=std="%s" "%s" "%s" -o "%s"',
+            py, emxx_py, stdpcm, app_cpp, stdpcm, appjs))
     end }
     if not os.isfile(appjs) then
         raise("emsdk: compiling/linking the `import std` probe failed (this is"

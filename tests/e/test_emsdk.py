@@ -140,6 +140,55 @@ class TestStatic:
             assert dep in code, f"missing declared dependency {dep}"
 
     @pytest.mark.static
+    def test_the_selfcheck_names_its_interpreter_and_script(self, meta):
+        """`em++` is a wrapper whose whole job is to find an interpreter, and
+        inside an install hook it cannot find the declared one.
+
+        Upstream's wrapper execs `$EMSDK_PYTHON`, or failing that whatever
+        `python3` is first on PATH. xvm shims are NOT on PATH inside an install
+        hook -- the same property that made android-system-image's `debugfs`
+        lookup fail with its dependency correctly installed -- so this
+        package's own self-check searched the MACHINE. On the Linux and macOS
+        runners a system python3 exists and it passed silently, which is a host
+        fallthrough wearing an ecosystem name. On Windows the archive bundles
+        no python at all (measured: zero `python` entries in its central
+        directory) and the launcher reported
+
+            The filename, directory name, or volume label syntax is incorrect.
+
+        So the self-check names the interpreter AND the script, which removes
+        the search rather than steering it and is the same command on every
+        host: no `.exe`, no environment variable, and no dependence on which
+        `os` names this hook runtime binds.
+        """
+        code = _code(meta.raw_content)
+
+        assert 'dep_install_dir("xim:python")' in code, (
+            "the interpreter must be resolved through the declared dependency, "
+            "not left to a PATH search"
+        )
+        assert 'em++.py' in code, (
+            "the self-check must invoke the script, not the wrapper"
+        )
+        # Every invocation that runs the driver names python first. Checked on
+        # the lines that RUN something, because the names also appear in prose.
+        runners = [l for l in code.splitlines()
+                   if 'os.iorun' in l or 'system.exec' in l]
+        assert runners, "no invocation lines found; the search is wrong"
+
+        body = code[code.index("__selfcheck_import_std"):]
+        body = body[:body.index("\nend\n") + 5]
+        # The wrapper must not be invoked from the self-check at all: an
+        # `em++`/`em++.exe` path there is the search coming back.
+        assert not re.search(r'"em\+\+"\s*\.\.\s*\(is_host', body), (
+            "the self-check still builds a host-suffixed wrapper path"
+        )
+        assert 'os.setenv' not in code, (
+            "`os.setenv` is not among the `os` names this index has verified "
+            "as bound inside an install hook; name the interpreter instead"
+        )
+
+    @pytest.mark.static
     def test_the_node_lookup_is_not_one_hosts_layout(self, meta):
         """`bin/node` is not where node is on every host, and this package's
         own diagnostic pointed the wrong way when it wasn't.
@@ -238,14 +287,17 @@ class TestStatic:
             "the host suffix must be computed with the index's own idiom"
         )
 
-        # The three sites, each identified by what it does rather than by a
-        # line number: probe, execute, register.
+        # TWO SITES NEED THE SUFFIX, AND THE THIRD STOPPED HAVING A PATH.
+        #
+        # This asserted three: probe, execute, register. The middle one is gone
+        # by design -- the self-check now invokes the INTERPRETER on `em++.py`
+        # rather than the wrapper, because the wrapper's job is to find an
+        # interpreter and inside an install hook it cannot find the declared
+        # one. So there is no driver path there to suffix, which is a stronger
+        # position than a correctly suffixed one:
+        # `test_the_selfcheck_names_its_interpreter_and_script` states it.
         assert 'path.join(extracted, "emscripten", "em++" .. exe)' in code, (
             "the install probe does not apply the host suffix to the driver"
-        )
-        assert 'is_host("windows") and ".exe" or ""))' in code, (
-            "the self-check builds an unsuffixed driver path, so it would fail "
-            "on Windows after the probe already passed"
         )
         assert 'os.isfile(path.join(bindir, prog .. exe))' in code, (
             "config() tests unsuffixed file names, so it would register no "
