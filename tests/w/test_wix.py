@@ -75,6 +75,24 @@ class TestStatic:
         assert "xim:curl" in meta.raw_content
 
     @pytest.mark.static
+    def test_declares_the_extractor(self, meta):
+        """解压器同理 —— 这一条是被一次真实失败换来的。
+
+        install() 原来用宿主的 `tar`。它在 mcpp 从源码构建 huxerui 时失败,
+        而同一个钩子里 `curl` 是好的 —— payload 已经下载并校验通过, 否则
+        根本走不到解压那步。声明过的依赖够得着, 宿主工具够不着。
+        """
+        assert "xim:7zip" in meta.raw_content
+
+        # 只看代码, 不看注释 —— 上面那段注释引用了当初的失败原文, 里面
+        # 就有 `tar -xf`, 而那是史料不是调用。
+        code = "\n".join(
+            line for line in meta.raw_content.splitlines()
+            if not line.lstrip().startswith("--")
+        )
+        assert "tar -xf" not in code, "解压器不能退回宿主的 tar"
+
+    @pytest.mark.static
     def test_每个_payload_都有落地锚点(self):
         """解压出空目录也是"目录存在"; 每个 payload 要有一个必须存在的文件。"""
         source = open(PKG_FILE, encoding="utf-8").read()

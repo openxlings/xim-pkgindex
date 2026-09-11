@@ -60,7 +60,11 @@ package = {
             -- it: Windows has shipped one since 10 1803, but a recipe that
             -- downloads a pinned payload set should not leave the downloader
             -- itself to the host.
-            deps = { "xim:curl@8.21.0" },
+            --
+            -- 7zip is here for exactly the same reason, and it took a failure
+            -- to notice the asymmetry: the EXTRACTOR was still the host's.
+            -- See the note above install().
+            deps = { "xim:curl@8.21.0", "xim:7zip@26.02" },
             ["latest"] = { ref = "5.0.2" },
             ["5.0.2"] = { },
         },
@@ -151,50 +155,37 @@ local function fetch_verified(entry, dir)
     return true
 end
 
--- A .nupkg IS a zip, and Windows can open one two ways.
+-- THE EXTRACTOR IS A DECLARED DEPENDENCY, like the downloader.
 --
--- bsdtar (`tar.exe`, in System32 since Windows 10 1803) is the fast one, and
--- unlike Expand-Archive it does not insist on a `.zip` extension -- which is
--- why this hook used it alone. But it is a HOST tool, and a host tool that is
--- merely "usually there" is exactly what this package already declined to
--- accept for the downloader: `xim:curl` is a declared dependency for that
--- reason, and `tests/w/test_wix.py::test_declares_the_downloader` guards it.
--- tar was the one exception, and nothing had ever exercised it -- test_wix.py
--- is static-only, and until now no package in either index pulled wix, so its
--- install hook had never run in CI at all.
+-- This hook used the host's `tar`. bsdtar has shipped in System32 since
+-- Windows 10 1803, so it looked as safe as curl -- and the recipe had already
+-- decided curl was NOT safe enough to leave to the host, declaring
+-- `xim:curl` and guarding that with
+-- `tests/w/test_wix.py::test_declares_the_downloader`. The extractor was the
+-- one place the same standard was not applied, and nothing had ever exercised
+-- it: test_wix.py is static-only, and until huxerui arrived no package in
+-- either index pulled wix in, so install() had never run in CI at all.
 --
 -- The first consumer found it. Building `huxerui.huxerui` from source
--- provisions wix (upstream declares it in `[xlings.workspace]`), and on a
--- clean windows-latest runner:
+-- provisions wix (upstream declares it in `[xlings.workspace]`) and on a clean
+-- windows-latest runner:
 --
 --     E_INTERNAL: [wix] failed: install hook failed:
---     exec failed after 1 attempt(s): tar -xf "...\\wix.nupkg" -C "...\\tool"
---     ; wix installed but registered none of its declared programs
+--     exec failed after 1 attempt(s): tar -xf "...wix.nupkg" -C "...\\tool"
 --
--- So tar stays as the fast path and PowerShell's Expand-Archive becomes the
--- fallback -- every supported Windows has it, and the `.zip` name it wants is
--- one copy away. `code.lua` and `ollama.lua` already extract exactly this way.
--- The anchor check below still runs either way: "the archive opened" and "the
--- tool is there" are different claims.
+-- WHAT THAT FAILURE ACTUALLY SHOWS, and it is not "tar is missing": `curl`
+-- ran fine in the SAME hook moments earlier -- the .nupkg was downloaded and
+-- sha-verified, which is the only reason execution reached tar at all. A
+-- declared dependency was reachable where a host tool was not. Whatever the
+-- mechanism, the remedy is the one this package already chose once: declare
+-- the tool.
+--
+-- 7-Zip identifies an archive by content, so the `.nupkg` extension -- the
+-- sole reason tar was picked over Expand-Archive originally -- stops being a
+-- consideration. `-y` answers the overwrite prompt; `-o` takes no space.
 local function extract(nupkg, dest)
-    local ok, err = pcall(system.exec, string.format('tar -xf "%s" -C "%s"',
-                                                     winpath(nupkg), winpath(dest)))
-    if ok then return true end
-    log.warn("wix: tar could not read " .. path.filename(nupkg)
-             .. " (" .. tostring(err) .. "); falling back to Expand-Archive")
-
-    local zip = path.join(path.directory(nupkg), path.basename(nupkg) .. ".zip")
-    os.tryrm(zip)
-    os.cp(nupkg, zip)
-    local ok2, err2 = pcall(system.exec, string.format(
-        [[powershell -NoProfile -ExecutionPolicy Bypass -Command ]]
-        .. [["Expand-Archive -Path '%s' -DestinationPath '%s' -Force"]],
-        winpath(zip), winpath(dest)))
-    os.tryrm(zip)
-    if not ok2 then
-        log.error("wix: Expand-Archive also failed (" .. tostring(err2) .. ")")
-        return false
-    end
+    system.exec(string.format('7z x -y "%s" -o"%s"',
+                              winpath(nupkg), winpath(dest)))
     return true
 end
 
