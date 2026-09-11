@@ -39,6 +39,12 @@ on:
         description: "Slice index to run (blank = pick from the ISO week)"
         required: false
         default: ""
+  # A workflow that only fires on a schedule cannot be reviewed before it
+  # lands: the PR that adds it reports no checks, and the first real run is
+  # after merge on someone else's Monday. So it watches itself.
+  pull_request:
+    paths:
+      - '.github/workflows/ci-sweep.yml'
 
 env:
   # Every recipe every SLICES weeks. Raise it if a run gets too long; lower it
