@@ -33,6 +33,55 @@ def source_text():
 
 class TestStatic:
     @pytest.mark.static
+    def test_debugfs_is_resolved_and_probed_functionally(self, source_text):
+        """Two defects, one line apart, and both were invisible by design.
+
+        RESOLUTION. The hook invoked `debugfs` by bare name. `xim:e2fsprogs`
+        registers a shim and that shim is not on PATH inside an install hook,
+        so with the dependency correctly installed the arm64-v8a key could not
+        be installed at all. contributing.md R6 already requires resolution
+        through `pkginfo.dep_install_dir`, and this file's own header cites it.
+
+        PROBE. The check was `debugfs -V`, and a version string is the one
+        answer debugfs gives without touching an image. The payload's
+        statically-linked debugfs answers it and then dies on every command
+        that opens a filesystem -- measured against a control image made by
+        the same payload's own mke2fs, so the image is not the variable. A
+        probe that cannot fail on a broken binary is not a probe.
+
+        Asserted as properties of the source rather than by running an install,
+        because the install needs a 2.6 GB image.
+        """
+        code = re.sub(r'--.*', '', source_text)
+
+        assert 'dep_install_dir("xim:e2fsprogs")' in code, (
+            "debugfs must be resolved through the declared dependency, not PATH"
+        )
+        # No bare-name invocation left anywhere in the code.
+        assert not re.search(r'["\s(]debugfs\s+-', code), (
+            "a bare-name `debugfs -...` invocation remains; it resolves to the "
+            "host's copy or to nothing"
+        )
+        # The probe must open a filesystem. `-V` is specifically not enough.
+        #
+        # SCOPED TO INVOCATIONS, NOT TO THE CHARACTERS. A flat
+        # `'debugfs -V' not in code` also matched the raise message that
+        # EXPLAINS why -V is insufficient -- stripping comments is not enough
+        # when the text also lives in a string literal. The question is "does
+        # anything RUN it", so only lines that run something are examined.
+        runners = [l for l in code.splitlines()
+                   if ('os.iorun' in l or 'system.exec' in l or 'os.execv' in l)]
+        assert runners, "no invocation lines found at all; the search is wrong"
+        for line in runners:
+            assert '-V' not in line, (
+                f"a readiness check invokes `-V`, which succeeds on the broken "
+                f"payload binary: {line.strip()}"
+            )
+        assert '-R \\"features\\"' in code or '-R "features"' in code, (
+            "the probe must issue a command that opens the filesystem"
+        )
+
+    @pytest.mark.static
     def test_required_fields(self, meta):
         assert_required_fields(meta)
 

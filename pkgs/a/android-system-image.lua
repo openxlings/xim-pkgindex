@@ -226,6 +226,19 @@
 -- THE WORKING INVOCATION -- BOTH ARTIFACTS, REPEATED RUNS, TWO
 -- INDEPENDENT qemu-aarch64 BUILDS.
 --
+-- AND THE EXTRACTION THAT FEEDS IT IS CURRENTLY BLOCKED, which this record
+-- has to say or it describes a route the ecosystem cannot take. The four
+-- files below are extracted with `debugfs`, and
+-- `xim:e2fsprogs@1.47.3`'s debugfs is a broken static build -- SIGFPE on every
+-- filesystem-opening command, while dumpe2fs/e2fsck/tune2fs from the same
+-- payload work (see the KNOWN DEFECT note in pkgs/e/e2fsprogs.lua for the
+-- measurements). The runs recorded below were performed with the HOST's
+-- debugfs 1.47.0, which the bare name falls through to from a directory with
+-- no xlings project config; that is what made the measurement look
+-- reproducible. `install()` now refuses with a message naming the payload
+-- instead of extracting nothing, and closing this needs a repin of
+-- e2fsprogs rather than a change here.
+--
 -- With `<root>` holding only the four extracted files above (no copy of
 -- libc++_shared.so anywhere near it):
 --
@@ -490,20 +503,108 @@ function install()
         -- package that installs successfully and cannot serve the one route
         -- the arm64-v8a key exists for, and the failure would surface later
         -- as a runner that cannot find `linker64`.
-        local debugfs_ok = try { function() return os.iorun("debugfs -V") end }
-        if not debugfs_ok or not tostring(debugfs_ok):find("debugfs", 1, true) then
-            raise("android-system-image: 'debugfs' is not runnable, but "
-                  .. "xim:e2fsprogs is a declared dependency of this package "
-                  .. "-- the dependency did not install, or its shim is not "
-                  .. "on PATH for this hook. The qemu-user route for "
+        -- RESOLVED THROUGH THE DEPENDENCY'S INSTALL DIR, NOT THROUGH PATH,
+        -- WHICH IS THIS INDEX'S OWN RULE AND WAS BROKEN HERE.
+        --
+        -- This probed `debugfs -V` on PATH and then invoked `debugfs` the same
+        -- way. `xim:e2fsprogs` registers a shim, and that shim is NOT on PATH
+        -- inside an install hook -- so with the dependency correctly installed
+        -- the probe still failed and the package could not be installed at
+        -- all:
+        --
+        --   android-system-image: 'debugfs' is not runnable, but xim:e2fsprogs
+        --   is a declared dependency of this package -- the dependency did not
+        --   install, or its shim is not on PATH for this hook.
+        --
+        -- The message named both possibilities and the second one was true.
+        -- Only the arm64-v8a key reaches this branch, which is why it survived:
+        -- the x86_64 key needs no user-mode translation and installs fine.
+        --
+        -- contributing.md R6 already requires this shape, and this file's own
+        -- header cites it; `pkgs/e/emsdk.lua`'s `__find_node` and `llvm.lua`'s
+        -- `__find_glibc_runtime` are the two existing examples. e2fsprogs puts
+        -- it in `sbin/`, with `bin/` accepted so a future layout change is a
+        -- one-line addition rather than a broken install.
+        local debugfs_bin
+        local e2fs_dir = pkginfo.dep_install_dir("xim:e2fsprogs")
+        if e2fs_dir then
+            for _, sub in ipairs({"sbin", "bin"}) do
+                local candidate = path.join(e2fs_dir, sub, "debugfs")
+                if os.isfile(candidate) then debugfs_bin = candidate break end
+            end
+        end
+        if not debugfs_bin then
+            raise("android-system-image: no `debugfs` in the xim:e2fsprogs "
+                  .. "payload (looked in sbin/ and bin/ under "
+                  .. tostring(e2fs_dir) .. "). It is a declared dependency of "
+                  .. "this package, so this is a broken installation rather "
+                  .. "than a host variation. The qemu-user route for "
                   .. found .. " cannot be prepared without it.")
-        else
+        end
+
+        -- THE PROBE HAS TO OPEN A FILESYSTEM, BECAUSE `-V` PASSES ON A BINARY
+        -- THAT CANNOT.
+        --
+        -- This checked `debugfs -V` and took a version string as proof. That
+        -- is the one command debugfs answers without touching the image, and
+        -- `xim:e2fsprogs@1.47.3`'s statically-linked `debugfs` answers it and
+        -- then dies on everything else. Measured against a control ext4 image
+        -- created by the SAME payload's `mke2fs`:
+        --
+        --   command                     payload 1.47.3   host 1.47.0
+        --   debugfs -V                  ok               ok
+        --   debugfs -R "features"       SIGFPE (136)     ok
+        --   debugfs -R "ls /"           SIGFPE (136)     ok
+        --   debugfs -R "dump ..."       SIGFPE (136)     ok
+        --   dumpe2fs -h / e2fsck / tune2fs   ok          ok
+        --
+        -- So exactly one program in that payload is non-functional, and the
+        -- old probe was blind to it by construction. `debugfs` is also the one
+        -- program there that links libss and readline, which is where a static
+        -- build of it is known to be fragile.
+        --
+        -- IT ESCAPED NOTICE BECAUSE THE SHIM FELL THROUGH TO THE HOST. Run
+        -- from a directory with no xlings project config, the `debugfs` shim
+        -- resolved to /usr/sbin/debugfs (1.47.0) and worked, which is how this
+        -- recipe's header came to document an invocation that the ecosystem
+        -- cannot actually perform. The `dep_install_dir` resolution above is
+        -- what made the breakage visible instead of silently correct.
+        -- `try { os.iorun }` is the idiom this file and pkgs/e/emsdk.lua
+        -- already use: os.iorun raises on a non-zero exit (a signal included),
+        -- and try turns that into nil. `os.execv` with redirection options is
+        -- deliberately avoided -- this hook runtime has been measured to leave
+        -- `os.arch()` and `os.files()` unbound, so an unverified API is not
+        -- the thing to put in a check.
+        local probe = try { function()
+            return os.iorun(string.format('"%s" -R "features" "%s"',
+                                          debugfs_bin, system_img))
+        end }
+        if not probe or not tostring(probe):find("features", 1, true) then
+            raise("android-system-image: the `debugfs` in xim:e2fsprogs at "
+                  .. debugfs_bin .. " cannot open a filesystem "
+                  .. "(`-R features` produced no feature list), so the four "
+                  .. "bionic files this key needs cannot be extracted from "
+                  .. system_img .. ".\n"
+                  .. "This is a defect in that payload rather than in this "
+                  .. "image: the same build's dumpe2fs, e2fsck and tune2fs all "
+                  .. "work, and only debugfs fails -- on every "
+                  .. "filesystem-opening command, including against a control "
+                  .. "image made by the payload's own mke2fs. `debugfs -V` "
+                  .. "succeeds on it, which is why a version probe could not "
+                  .. "see this.\n"
+                  .. "The x86_64 key of this package is unaffected: an x86_64 "
+                  .. "guest on an x86_64 host needs no user-mode translation "
+                  .. "and therefore no extraction.")
+        end
+
+        do
             local qroot = path.join(dir, "qemu-user-root", "system")
             os.mkdir(path.join(qroot, "bin"))
             os.mkdir(path.join(qroot, "lib64"))
 
             local function dump_one(in_image_path, out_file)
-                system.exec("debugfs -R \"dump " .. in_image_path .. " "
+                system.exec("\"" .. debugfs_bin .. "\" -R \"dump "
+                            .. in_image_path .. " "
                             .. out_file .. "\" " .. system_img)
                 if not os.isfile(out_file) then
                     raise("android-system-image: debugfs failed to extract "
