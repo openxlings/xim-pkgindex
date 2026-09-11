@@ -366,24 +366,60 @@ local REQUIRED_ENTRY_POINTS = { ["em++"] = true, ["emcc"] = true }
 -- dependency. Layouts differ: pkgs/p/python.lua registers `bin/python3` on
 -- POSIX and on Windows registers nothing at all, installing `python.exe` at
 -- the payload root.
+local PYTHON_CANDIDATES = {
+    path.join("bin", "python3"),
+    path.join("bin", "python"),
+    "python.exe",
+    "python3.exe",
+    path.join("bin", "python3.exe"),
+    path.join("bin", "python.exe"),
+    -- The CPython Windows installer's own layouts. `Scripts/` is where it puts
+    -- pip and pythonw; `tools/` appears in some redistributable arrangements.
+    path.join("Scripts", "python.exe"),
+    path.join("tools", "python.exe"),
+    path.join("python", "python.exe"),
+}
+
+-- Returns the interpreter, or nil plus a description of everything that was
+-- examined.
+--
+-- THE SECOND RETURN EXISTS BECAUSE THE FIRST GUESS WAS WRONG AND THE MESSAGE
+-- COULD NOT SAY WHY. `xim:python@3.12.6` installed on the Windows runner and
+-- this function still answered nil, so the candidate list is wrong -- and the
+-- refusal named neither the directory it looked in nor what it tried, which
+-- makes the next attempt another guess. There is no precedent to copy:
+-- `pkgs/m/meson.lua` is the only other consumer of this payload and it joins
+-- `bin` unconditionally, while `vcstool.lua` and `rosdep.lua` use
+-- `Scripts\python.exe` inside a VENV THEY CREATE, which is a different object.
+--
+-- `os.dirs` is bound inside an install hook and `os.files` is not (see
+-- pkgs/l/libinput-quirks.lua), so the report lists SUBDIRECTORIES. That is
+-- enough to tell "the payload is not where dep_install_dir says" from "it is
+-- there and the interpreter has another name".
 local function __find_python()
     local py_dir = pkginfo.dep_install_dir("xim:python")
     if not py_dir then
-        return nil
+        return nil, "pkginfo.dep_install_dir(\"xim:python\") returned nothing"
     end
-    for _, rel in ipairs({
-        path.join("bin", "python3"),
-        path.join("bin", "python"),
-        "python.exe",
-        "python3.exe",
-        path.join("bin", "python3.exe"),
-    }) do
+    for _, rel in ipairs(PYTHON_CANDIDATES) do
         local candidate = path.join(py_dir, rel)
         if os.isfile(candidate) then
             return candidate
         end
     end
-    return nil
+
+    local report = "payload dir: " .. py_dir
+        .. "\n       is a directory: " .. tostring(os.isdir(py_dir))
+        .. "\n       tried:"
+    for _, rel in ipairs(PYTHON_CANDIDATES) do
+        report = report .. "\n         " .. rel
+    end
+    local subdirs = os.dirs(path.join(py_dir, "*")) or {}
+    report = report .. "\n       subdirectories present (" .. #subdirs .. "):"
+    for _, d in ipairs(subdirs) do
+        report = report .. "\n         " .. path.filename(d)
+    end
+    return nil, report
 end
 
 local function __find_node()
@@ -486,12 +522,12 @@ local function __selfcheck_import_std(dir, node_bin)
     --
     -- `em++.py` is present in all three archives, measured in their central
     -- directories alongside `em++` / `em++.exe`.
-    local py = __find_python()
+    local py, why = __find_python()
     if not py then
-        raise("emsdk: xim:python payload not found (this package's deps declare"
-            .. " xim:python@>=3.12); `em++` is a wrapper around `em++.py` and"
-            .. " needs an interpreter, and inside an install hook the xvm shim"
-            .. " for one is not on PATH -- so it must be named explicitly.")
+        raise("emsdk: no interpreter in the xim:python payload. `em++` is a"
+            .. " wrapper around `em++.py` and needs one, and inside an install"
+            .. " hook the xvm shim for it is not on PATH -- so it has to be"
+            .. " named explicitly.\n       " .. tostring(why))
     end
     local emxx_py = path.join(dir, "emscripten", "em++.py")
     if not os.isfile(emxx_py) then
