@@ -511,12 +511,53 @@ end
 -- Run the payload's own python on one of emscripten's scripts, and capture the
 -- output.
 --
--- NON-WINDOWS ONLY, AND THE CALLER IS WHAT ENFORCES THAT. The self-check
--- returns early on Windows because this hook runtime cannot spawn the compiler
--- there -- three shapes measured, see `__selfcheck_import_std`. A Windows
--- branch here would be code that looks like it handles the case and never
--- runs, which is worse than its absence: the next reader would trust it.
+-- ON WINDOWS: A SCRIPT FILE, RUN WITH `os.exec`, REDIRECTING ITS OWN OUTPUT.
+--
+-- Three shapes failed here before this one, all with the same message, once,
+-- and with no compiler output and no Python traceback:
+--
+--   "<py>" "<script>" -std=c++23 --precompile "<in>" -o "<out>"
+--   powershell -NoProfile -ExecutionPolicy Bypass -Command "& '<py>' ..."
+--   "<scratch>\run-emxx.bat"                      (one token, no quoting)
+--
+--   The filename, directory name, or volume label syntax is incorrect.
+--
+-- ALL THREE USED `os.iorun`, AND THAT WAS THE VARIABLE. Every Windows
+-- invocation in this index that works uses `os.exec` or `system.exec` --
+-- pkgs/7/7zip.lua and pkgs/v/vcstool.lua both do, and both are working Windows
+-- packages. Three attempts varied the command STRING while holding the CALL
+-- constant, and the call was the thing that was wrong.
+--
+-- `os.iorun` was chosen because this function has to return the compiler's
+-- output for the diagnostic. A script that redirects itself removes that
+-- requirement: the output goes to a file and is read back, so the invocation
+-- is free to be the form this index has already proven.
+--
+-- `cmd.exe /d /s /c "<bat>"` is the documented shape -- `/d` skips AutoRun,
+-- `/s` fixes the quote handling -- and a batch file is not an executable
+-- image, so it needs cmd either way.
 local function __run_py(py, script, argv)
+    if is_host("windows") then
+        local function w(v) return (tostring(v):gsub("/", "\\")) end
+        local scratch = path.directory(tostring(argv[#argv]))
+        local bat = w(path.join(scratch, "run-emxx.bat"))
+        local out = w(path.join(scratch, "run-emxx.out"))
+
+        local line = string.format('"%s" "%s"', w(py), w(script))
+        for _, a in ipairs(argv) do
+            line = line .. string.format(' "%s"', w(a))
+        end
+        line = line .. string.format(' > "%s" 2>&1', out)
+
+        io.writefile(bat, "@echo off\r\n" .. line .. "\r\n")
+
+        -- os.exec raises on a non-zero exit; the caller decides by whether the
+        -- ARTEFACT appeared, so a failure here still has to return the log.
+        try { function()
+            os.exec(string.format('cmd.exe /d /s /c "%s"', bat))
+        end }
+        return os.isfile(out) and (io.readfile(out) or "") or ""
+    end
     local parts = {}
     for _, a in ipairs(argv) do
         table.insert(parts, string.format('"%s"', tostring(a)))
@@ -539,49 +580,6 @@ local function __selfcheck_import_std(dir, node_bin)
     --
     -- `em++.py` is present in all three archives, measured in their central
     -- directories alongside `em++` / `em++.exe`.
-    -- THE EXECUTION HALF OF THIS SELF-CHECK DOES NOT RUN ON WINDOWS, AND WHAT
-    -- THAT COSTS IS BOUNDED.
-    --
-    -- Three invocation shapes were tried on a Windows runner and all three
-    -- produced the same error, once, with no compiler output and no Python
-    -- traceback:
-    --
-    --   "<py>" "<script>" -std=c++23 --precompile "<in>" -o "<out>"
-    --   powershell -NoProfile -ExecutionPolicy Bypass -Command "& '<py>' ..."
-    --   "<scratch>\run-emxx.bat"                         (one token, no quoting)
-    --
-    --   The filename, directory name, or volume label syntax is incorrect.
-    --
-    -- The last one carries no quoting that a splitter could mangle, which
-    -- rules out the explanation the first two shared. Whatever remains is a
-    -- property of how this hook runtime spawns on Windows, and it is not
-    -- observable from the outside: the message names no path, and the run
-    -- produces nothing else.
-    --
-    -- WHAT IS NOT AFFECTED, and this is the reason a skip is acceptable here
-    -- rather than a withdrawal of the platform: mcpp spawns the compiler
-    -- through its own process handling, not through this hook, and Windows is
-    -- a supported mcpp host. A user's build does not travel this code path.
-    -- The payload itself was measured complete for Windows by reading the
-    -- archive's central directory -- `em++.exe`, `bin/clang.exe` and
-    -- `emscripten/cache/sysroot/share/libc++/v1/std.cppm` are all present, and
-    -- install() asserts each of those files before moving anything.
-    --
-    -- SO WHAT IS GIVEN UP IS THE COMPILE, NOT THE CONTENTS. On Linux and macOS
-    -- this check still precompiles the module surface and links and runs a
-    -- program through node, which is the strong claim; on Windows the package
-    -- rests on the file assertions plus that measurement. That is weaker and
-    -- is stated rather than hidden -- an unverified install that works is
-    -- better than no Windows wasm at all, and better than a green check that
-    -- measured nothing.
-    if is_host("windows") then
-        log.warn("emsdk: skipping the import-std self-check on Windows -- this "
-                 .. "hook runtime cannot spawn the compiler here (three shapes "
-                 .. "measured, see the comment above). The payload's files were "
-                 .. "asserted by install(); the compile was not exercised.")
-        return true
-    end
-
     local py, why = __find_python()
     if not py then
         raise("emsdk: no interpreter in the xim:python payload. `em++` is a"

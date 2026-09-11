@@ -140,50 +140,59 @@ class TestStatic:
             assert dep in code, f"missing declared dependency {dep}"
 
     @pytest.mark.static
-    def test_the_windows_skip_is_narrow_and_the_file_checks_remain(self, meta):
-        """The self-check's EXECUTION half is skipped on Windows; its file
-        assertions are not.
+    def test_the_windows_invocation_uses_exec_not_iorun(self, meta):
+        """Three shapes failed here, and the call -- not the string -- was the
+        variable.
 
-        Three invocation shapes were measured there and all three produced the
-        same error with no compiler output and no traceback -- including a
-        one-token `.bat`, which carries no quoting a splitter could mangle and
-        so rules out the explanation the other two shared. What remains is
-        unobservable from outside the runtime.
+        All three used `os.iorun`:
 
-        THE SKIP HAS TO BE NARROW OR IT IS A LIE. install() asserts `em++.exe`,
-        `bin/clang.exe` and the vendored `std.cppm` before moving anything, and
-        the Windows archive was measured complete by reading its central
-        directory. What is given up is the COMPILE, not the contents -- and a
-        user's build does not travel this code path at all, because mcpp spawns
-        the compiler through its own process handling.
+            "<py>" "<script>" -std=c++23 --precompile "<in>" -o "<out>"
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "& '<py>' …"
+            "<scratch>\\run-emxx.bat"                (one token, no quoting)
 
-        So this asserts the skip is bounded: it must be inside the self-check,
-        it must warn, and the install-time file probe must still apply to every
-        host.
+        each producing `The filename, directory name, or volume label syntax is
+        incorrect.` once, with no compiler output and no traceback. Every
+        Windows invocation in this index that WORKS uses `os.exec` or
+        `system.exec` -- 7zip.lua and vcstool.lua both do, and both are working
+        Windows packages.
+
+        `os.iorun` was chosen because this function must return the compiler's
+        output for the diagnostic. A script that redirects itself removes that
+        requirement, which frees the invocation to be the proven form.
+
+        Asserted because the natural "simplification" is to collapse this back
+        to one `os.iorun` string, and that fails only on a Windows runner.
         """
         code = _code(meta.raw_content)
+        runner = code[code.index("local function __run_py"):]
+        runner = runner[:runner.index("\nend\n") + 5]
+        win = runner[runner.index('is_host("windows")'):]
+        win = win[:win.index("local parts")] if "local parts" in win else win
 
-        # The skip is inside the self-check, not around the whole install.
-        body = code[code.index("__selfcheck_import_std"):]
-        body = body[:body.index("\nend\n") + 5]
-        assert 'is_host("windows")' in body, "no host branch in the self-check"
-        assert 'log.warn' in body, (
-            "the Windows path returns without saying so; a silent skip is how "
-            "an unverified install becomes an unnoticed one"
+        assert "os.exec(" in win, (
+            "the Windows branch does not use os.exec; os.iorun is what failed "
+            "three times here"
         )
-
-        # And the file probe is NOT host-conditional: every host asserts the
-        # three files before anything is moved.
-        install = code[code.index("function install()"):]
-        install = install[:install.index("\nfunction config()")]
-        probe = install[install.index("required_probe"):]
-        probe = probe[:probe.index("os.mv(")]
-        assert 'is_host("windows")' not in probe.replace('.. exe', ''), (
-            "the install-time file probe became host-conditional; it is what "
-            "the Windows package now rests on"
+        assert "os.iorun" not in win, (
+            "the Windows branch still reaches for os.iorun"
         )
-        for needed in ('em++" .. exe', 'clang" .. exe', 'std.cppm'):
-            assert needed in probe, f"the probe no longer asserts {needed}"
+        assert "cmd.exe /d /s /c" in win, (
+            "the documented cmd shape is required: /d skips AutoRun and /s "
+            "fixes quote handling, and a .bat is not an executable image"
+        )
+        # The script must capture its own output, or the diagnostic is empty --
+        # which is what made the first three failures unreadable.
+        assert "2>&1" in win and "io.readfile" in win, (
+            "the script does not redirect and read back its output, so a "
+            "failure would carry no compiler diagnostic"
+        )
+        assert 'gsub("/", "\\\\")' in win, (
+            "paths are not backslash-normalised inside the generated script"
+        )
+        # And the POSIX branch keeps the direct form.
+        assert 'os.iorun(string.format(\'"%s" "%s" %s\'' in runner, (
+            "the POSIX branch changed shape"
+        )
 
     @pytest.mark.static
     def test_the_selfcheck_names_its_interpreter_and_script(self, meta):
@@ -325,10 +334,16 @@ class TestStatic:
         """
         code = _code(meta.raw_content)
 
-        assert ".bat" not in code, (
-            "no emscripten entry point ships as .bat on Windows; all nine are "
-            ".exe (measured from the archive's central directory)"
-        )
+        # SCOPED TO ENTRY POINTS. This read `".bat" not in code`, which was
+        # right while nothing else in the file used one -- and then the Windows
+        # invocation became a generated `run-emxx.bat`, which is a script this
+        # recipe WRITES rather than an entry point it expects to find. The
+        # claim is about upstream's names: all nine ship as `<name>.exe`,
+        # measured from the archive's central directory, and none as `.bat`.
+        for entry in ("em++", "emcc", "emar", "emrun", "em-config"):
+            assert f'{entry}.bat' not in code, (
+                f"{entry}.bat is expected somewhere; upstream ships {entry}.exe"
+            )
         assert 'is_host("windows") and ".exe" or ""' in code, (
             "the host suffix must be computed with the index's own idiom"
         )
