@@ -252,7 +252,7 @@ package = {
     docs = "https://developer.android.com/studio/run/emulator-command-line",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"tool", "android", "emulator"},
     keywords = {"android", "emulator", "avd", "qemu", "kvm"},
@@ -296,6 +296,53 @@ package = {
                     CN     = "https://gitcode.com/xlings-res/android-emulator/releases/download/37.1.11/emulator-linux_x64-15917651.zip",
                 },
                 sha256 = "95771e0ae431897b2a4bd2d97fa095f29a8b0624a7b216baf529f9306161c266",
+            },
+        },
+        -- macOS AND WINDOWS. `repository2-3.xml` publishes an archive per host
+        -- for the SAME pinned revision, and this index serves all three hosts,
+        -- so declaring only linux was an incomplete addition rather than a
+        -- conclusion. Read out of that manifest on 2026-09-11:
+        --
+        --   macosx   emulator-darwin_x64-15917651.zip       444 MB
+        --            sha1 7df8b0acbe915217dcbb576222bddfcc23e81230
+        --   macosx   emulator-darwin_aarch64-15917651.zip   376 MB
+        --            sha1 f22f44948a2b7f0a0103645b9a639290eef92426
+        --   windows  emulator-windows_x64-15917651.zip      421 MB
+        --            sha1 54fa750822ff462d57e04fc8e98e60f08df2bb61
+        --
+        -- TWO ARCHIVES FOR macOS, so this table needs an `arch_alias` where
+        -- the others do not -- Apple silicon gets its own build rather than a
+        -- universal one, unlike the NDK.
+        --
+        -- AND ONE CLAIM THIS DOES NOT MAKE. The header's arm64 gate is
+        -- measured on an x86_64 HOST: `QEMU2 emulator does not support arm64
+        -- CPU architecture`. An Apple-silicon host runs arm64 guests natively
+        -- through HVF and there is every reason to expect the gate is absent
+        -- there -- which is exactly why it is not asserted here. Nothing in
+        -- this index has run that, and a row claiming it would be a guess
+        -- wearing a measurement's clothes.
+        macosx = {
+            ["latest"] = { ref = "37.1.11" },
+            ["37.1.11"] = {
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/emulator-darwin_${arch_alias}-15917651.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-emulator/releases/download/37.1.11/emulator-darwin_${arch_alias}-15917651.zip",
+                },
+                arch_alias = { x86_64 = "x64", aarch64 = "aarch64" },
+                sha256 = {
+                    x86_64  = "c1a3890f95b8868198918fad05ffca16fa20404d93547ba545ff5a5867ee7005",
+                    aarch64 = "22530de9363f34ea945ecb5cad74523abd4b615f27f3c1a9899efb183ea9e144",
+                },
+            },
+        },
+        windows = {
+            ["latest"] = { ref = "37.1.11" },
+            ["37.1.11"] = {
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/emulator-windows_x64-15917651.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-emulator/releases/download/37.1.11/emulator-windows_x64-15917651.zip",
+                },
+                sha256 = "5ff441f3b12ace9b13e9cf96fb0007d233967718652a8110705e995ac47bfeb7",
             },
         },
     },

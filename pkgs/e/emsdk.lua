@@ -232,6 +232,72 @@ package = {
                 },
             },
         },
+        -- macOS AND WINDOWS, because upstream publishes them and a toolchain
+        -- that exists for a host this index serves should be installable
+        -- there. Measured 2026-09-11 with HEAD against the same commit hash
+        -- the linux entry pins:
+        --
+        --   mac/<hash>/wasm-binaries.tar.xz        251 MB  x86_64
+        --   mac/<hash>/wasm-binaries-arm64.tar.xz  262 MB  aarch64
+        --   win/<hash>/wasm-binaries.zip           623 MB  x86_64
+        --
+        -- THE WINDOWS ARCHIVE IS A .zip AND NOT A .tar.xz, which is why the
+        -- `${ext}` is spelled per platform rather than shared: probing
+        -- `win/<hash>/wasm-binaries.tar.xz` returns 404, and a shared template
+        -- would have produced exactly that URL.
+        --
+        -- THE EXECUTION EVIDENCE IS LINUX ONLY. install() was run end to end
+        -- on linux-x86_64 -- `em++` compiled and linked an `import std`
+        -- program and `node` ran it -- and the other three archives are
+        -- declared with hashes taken from the downloads themselves. The
+        -- index's own macos-install-test and windows-test are the measurement
+        -- for those legs; stating the scope here rather than letting the
+        -- table imply more than was checked.
+        macosx = {
+            deps = { runtime = { "xim:node@>=18", "xim:python@>=3.12" } },
+            ["latest"] = { ref = "6.0.9" },
+            ["6.0.9"] = {
+                url = {
+                    GLOBAL = "https://storage.googleapis.com/webassembly/emscripten-releases-builds/mac/f04ea239d533260dd1db760dd2d668d5f9a88d6b/wasm-binaries${arch_alias}.tar.xz",
+                    CN     = "https://gitcode.com/xlings-res/emsdk/releases/download/6.0.9/wasm-binaries-mac${arch_alias}.tar.xz",
+                },
+                arch_alias = { x86_64 = "", aarch64 = "-arm64" },
+                sha256 = {
+                    x86_64  = "4d069a21f0527ae9e6decccb12933b0a68a0314d66253dee2f9b4a5c9c418613",
+                    aarch64 = "b60514308507f64f4138d3c55bdb6979f20222288700fde603dced23b65dd533",
+                },
+            },
+        },
+        windows = {
+            deps = { runtime = { "xim:node@>=18", "xim:python@>=3.12" } },
+            ["latest"] = { ref = "6.0.9" },
+            ["6.0.9"] = {
+                -- NO CN ENTRY FOR THIS ONE ARCHIVE, AND THE REASON IS AN
+                -- UPLOAD THAT WOULD NOT LAND rather than a licence or a
+                -- decision. Three attempts on 2026-09-11, each answering
+                --
+                --   upload failed: {"message":"Fail to read response body,
+                --   url:.../releases/6.0.9/obs_callback...,code:400,err:EOF"}
+                --
+                -- and each leaving a 128-byte error body served at the object's
+                -- URL instead of the 624 MB archive.
+                --
+                -- THE ERROR ITSELF IS UNINFORMATIVE, which is why the check
+                -- that caught this is the download-back: the two emsdk LINUX
+                -- uploads reported the same `obs_callback 400` and both
+                -- objects are correct, and `android-ndk-r30-darwin.zip` is
+                -- 930 MB and uploaded cleanly -- so it is neither a size limit
+                -- nor a reliable failure signal. Only re-fetching the object
+                -- and hashing it separates the two.
+                --
+                -- A CN entry naming a 404 is worse than none: it would make
+                -- every `--mirror CN` install of the Windows payload fail at
+                -- the download with a hash mismatch on an error page. Left as
+                -- GLOBAL-only until an upload verifies.
+                url = "https://storage.googleapis.com/webassembly/emscripten-releases-builds/win/f04ea239d533260dd1db760dd2d668d5f9a88d6b/wasm-binaries.zip",
+                sha256 = "f7512eab6e69ad9d7de5adbf39e68d7d6773b317b13e70ec5003ef1d10f92980",
+            },
+        },
     },
 }
 
@@ -395,9 +461,16 @@ function install()
     -- happens to already be sitting there. Assertions come first, before
     -- anything is moved out of that shared directory.
     local extracted = "install"
+    -- THE EXECUTABLE NAMES CARRY THE HOST'S SUFFIX. The probe named `em++`
+    -- and `bin/clang` unsuffixed, which is every archive this recipe served
+    -- while it declared only `xpm.linux` -- and would refuse a correct
+    -- Windows payload, where the driver is `em++.bat` beside `em++` and the
+    -- compiler is `bin/clang.exe`. `std.cppm` has no suffix on any host.
+    local exe = is_host("windows") and ".exe" or ""
     local required_probe = {
-        path.join(extracted, "emscripten", "em++"),
-        path.join(extracted, "bin", "clang"),
+        is_host("windows") and path.join(extracted, "emscripten", "em++.bat")
+                            or path.join(extracted, "emscripten", "em++"),
+        path.join(extracted, "bin", "clang" .. exe),
         path.join(extracted, "emscripten", "cache", "sysroot", "share", "libc++", "v1", "std.cppm"),
     }
     for _, p in ipairs(required_probe) do
