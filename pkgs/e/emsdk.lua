@@ -342,11 +342,39 @@ local function __find_node()
     if not node_dir then
         return nil
     end
-    local node_bin = path.join(node_dir, "bin", "node")
-    if not os.isfile(node_bin) then
-        return nil
+    -- NODE'S OWN LAYOUT DIFFERS BY HOST, AND pkgs/n/node.lua IS WHERE THAT
+    -- RULE LIVES. Its `config()` reads:
+    --
+    --   local bindir = pkginfo.install_dir()
+    --   if os.host() ~= "windows" then
+    --       bindir = path.join(pkginfo.install_dir(), "bin")
+    --   end
+    --
+    -- so upstream's Windows archive puts `node.exe` at the root while the
+    -- other two put `node` under `bin/`. This function hardcoded `bin/node`,
+    -- which was every archive it had ever seen -- and the Windows install then
+    -- failed at the config write, with `xim:node` already correctly declared
+    -- AND installed:
+    --
+    --   emsdk: xim:node payload not found (this package's deps declare
+    --   xim:node); refusing to write a NODE_JS-less emscripten config that
+    --   cannot link anything
+    --
+    -- The message pointed at the declaration, which was the one thing that was
+    -- right. Both candidates are tried rather than branching, so an archive
+    -- that adopts the other layout keeps working.
+    for _, rel in ipairs({
+        path.join("bin", "node"),
+        path.join("bin", "node.exe"),
+        "node",
+        "node.exe",
+    }) do
+        local candidate = path.join(node_dir, rel)
+        if os.isfile(candidate) then
+            return candidate
+        end
     end
-    return node_bin
+    return nil
 end
 
 -- Write `emscripten/.emscripten` with absolute paths baked in, so nothing

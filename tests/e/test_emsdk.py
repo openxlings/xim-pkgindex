@@ -140,6 +140,46 @@ class TestStatic:
             assert dep in code, f"missing declared dependency {dep}"
 
     @pytest.mark.static
+    def test_the_node_lookup_is_not_one_hosts_layout(self, meta):
+        """`bin/node` is not where node is on every host, and this package's
+        own diagnostic pointed the wrong way when it wasn't.
+
+        pkgs/n/node.lua's `config()` states the rule:
+
+            local bindir = pkginfo.install_dir()
+            if os.host() ~= "windows" then
+                bindir = path.join(pkginfo.install_dir(), "bin")
+            end
+
+        Upstream's Windows archive puts `node.exe` at the root; the other two
+        put `node` under `bin/`. `__find_node` hardcoded `bin/node` -- every
+        archive it had ever seen -- so on Windows the install failed at the
+        config write with `xim:node` correctly declared AND already installed:
+
+            emsdk: xim:node payload not found (this package's deps declare
+            xim:node); refusing to write a NODE_JS-less emscripten config
+
+        The message named the declaration, which was the one thing that was
+        right. That is why this asserts the LOOKUP rather than the declaration:
+        a first version of this test checked the deps and passed with the
+        Windows entry gutted, because the deps were never the problem.
+        """
+        code = _code(meta.raw_content)
+        finder = code[code.index("__find_node"):]
+        finder = finder[:finder.index("\nend\n") + 5]
+
+        assert 'node.exe' in finder, (
+            "__find_node never looks for node.exe, so it cannot find node on "
+            "Windows"
+        )
+        # And it must not depend on ONE layout: the root-level spelling has to
+        # be tried too, which is where the Windows archive puts it.
+        assert re.search(r'["\']node(\.exe)?["\']', finder), (
+            "__find_node only looks under bin/, which is not where the Windows "
+            "archive puts node"
+        )
+
+    @pytest.mark.static
     def test_declares_patchelf_as_a_build_dep(self, meta):
         code = _code(meta.raw_content)
         assert "xim:patchelf" in code
