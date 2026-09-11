@@ -72,6 +72,33 @@ package = {
                 sha256 = nil,
             }
         },
+        -- macOS, ADDED BECAUSE A DEP CHECK REFUSED THE OMISSION, and the
+        -- refusal was right:
+        --
+        --   dep `xim:python@>=3.12` is declared under xpm.macosx, but `python`
+        --   has sections for [linux, windows] only -- it cannot be resolved on
+        --   macosx.
+        --
+        -- `xim:emsdk` declares that dep on all three hosts because `em++` is a
+        -- shell wrapper that execs `python3` on every one of them. So the
+        -- omission here was not a scope decision, it was a hole one platform
+        -- wide -- and the index's own dep check is what found it rather than a
+        -- macOS user discovering emsdk unusable.
+        --
+        -- Same upstream release as the linux entry, and the same install():
+        -- python-build-standalone's macOS archives extract to `python/` too.
+        -- Downloaded and hashed 2026-09-11; not executed, since no macOS host
+        -- was involved -- the index's macos-install-test is that measurement.
+        macosx = {
+            ["latest"] = { ref = "3.13.12" },
+            ["3.13.12"] = {
+                url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260310/cpython-3.13.12%2B20260310-${arch}-apple-darwin-install_only.tar.gz",
+                sha256 = {
+                    x86_64  = "d778d46b49c640a54a13dc2bd356561b4d4f85466a2d21bc0ab1483a209bb05c",
+                    aarch64 = "8b49181b776a9ebc8323a645dc55126b389d62c50a0b9f072e37811a9391244d",
+                },
+            },
+        },
         windows = {
             ["latest"] = { ref = "3.12.6"},
             ["3.12.6"] = {

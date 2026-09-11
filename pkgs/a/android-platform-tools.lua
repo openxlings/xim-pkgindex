@@ -255,7 +255,7 @@ function install()
         if not os.isfile(bin) then
             raise("android-platform-tools: no " .. prog .. exe .. " at " .. bin
                   .. " -- payload does not look like platform-tools for "
-                  .. os.host() .. "-" .. os.arch())
+                  .. os.host())
         end
         -- The zip stores no unix modes at all, so the executable bit has to
         -- be restored rather than merely preserved (same pattern as
