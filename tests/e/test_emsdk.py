@@ -425,6 +425,38 @@ class TestStatic:
             )
 
     @pytest.mark.static
+    def test_the_payload_describes_its_runner_to_mcpp(self, meta):
+        """An Emscripten artefact is a JavaScript launcher whose first line is
+        `#!/usr/bin/env node`. Without a runner of the payload's own, an
+        artefact run with nothing declared depends on the machine's PATH.
+        Measured 2026-09-12 in an xlings sandbox with no node on PATH:
+
+            /usr/bin/env: 'node': No such file or directory
+
+        Asserted on the writer, because the file only exists after an install:
+        it names the node the emscripten config names, through the same
+        forward-slash normaliser, and install() writes it after the config and
+        before the first invocation.
+        """
+        code = _code(meta.raw_content)
+        body = code[code.index("local function __write_mcpp_descriptor"):]
+        body = body[:body.index("\nend\n") + 5]
+
+        assert '".mcpp-toolchain.json"' in body
+        assert '"schema": 1' in body
+        assert '"frontend": "%s"' in body
+        assert '"runner": "%s"' in body
+        assert "fwd(node_bin)" in body, "the runner is written without normalising its path"
+        assert 'gsub("\\\\", "/")' in body
+        # The descriptor asserts that what it names exists.
+        assert "os.isfile(node_bin)" in body
+
+        install_body = code[code.index("function install()"):]
+        assert install_body.index("__write_emscripten_config(dir, node_bin)") \
+            < install_body.index("__write_mcpp_descriptor(dir, node_bin)") \
+            < install_body.index("__selfcheck_import_std(dir")
+
+    @pytest.mark.static
     def test_config_writes_final_paths_before_first_invocation(self, meta):
         """DO NOT RELOCATE finding: `.emscripten` must be written with the
         final install_dir-based paths, and the first-ever `em++` invocation
