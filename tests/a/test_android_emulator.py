@@ -123,13 +123,37 @@ class TestPinnedFacts:
         assert 'avdmanager' not in code
 
     @pytest.mark.static
-    def test_no_hard_libx11_dependency(self, source_text):
-        # Matches pkgs/g/godot.lua's precedent for the identical situation:
-        # probe with hostlib and warn, never a hard `deps` on xim:libX11.
+    def test_the_x11_chain_comes_from_the_ecosystem(self, source_text):
+        # REVERSED, DELIBERATELY. This used to pin the opposite fact -- probe
+        # the host with `hostlib.dirs_of` and warn, on pkgs/g/godot.lua's
+        # precedent -- and that precedent does not hold in this index: xlings
+        # is a user-space distribution, so a payload that needs a library
+        # declares it and the ecosystem supplies it. `emulator` links libX11
+        # UNCONDITIONALLY (DT_NEEDED loads at exec time regardless of
+        # `-no-window`, verified), so it is a dependency and not a suggestion.
+        #
+        # Every link is named because a DT_NEEDED chain is not a resolution
+        # order: a missing one fails at exec naming that library rather than
+        # this package.
         code = re.sub(r'--.*', '', source_text)
-        assert not re.search(r'deps\s*=\s*\{[^}]*libX11', code)
-        assert 'hostlib.dirs_of("libX11.so.6")' in source_text
-        assert 'log.warn' in source_text
+        deps = re.search(r'deps\s*=\s*\{([^}]*)\}', code)
+        assert deps, "no deps block"
+        for lib in ("libX11", "libxcb", "libXau", "libXdmcp", "libbsd", "libmd"):
+            assert lib in deps.group(1), f"{lib} is not declared"
+        assert 'hostlib' not in code, "the host probe is back"
+
+    @pytest.mark.static
+    def test_the_only_warning_left_is_the_one_no_package_can_supply(self, source_text):
+        # `/dev/kvm` is a kernel device. A warning is the right shape for
+        # exactly that and for nothing that an xim package could provide, so
+        # this asserts the count rather than the absence -- a second warning
+        # appearing is the thing to catch.
+        code = re.sub(r'--.*', '', source_text)
+        warns = re.findall(r'log\.warn\(', code)
+        assert len(warns) == 1, f"expected one warning (/dev/kvm), found {len(warns)}"
+        i = code.index('log.warn(')
+        assert '/dev/kvm' in code[max(0, i - 400):i + 400], (
+            "the single remaining warning is not the KVM one")
 
     @pytest.mark.static
     def test_arm64_gate_documented(self, source_text):
