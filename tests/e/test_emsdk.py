@@ -164,7 +164,7 @@ class TestStatic:
         to one `os.iorun` string, and that fails only on a Windows runner.
         """
         code = _code(meta.raw_content)
-        runner = code[code.index("local function __run_py"):]
+        runner = code[code.index("local function __run_captured"):]
         runner = runner[:runner.index("\nend\n") + 5]
         win = runner[runner.index('is_host("windows")'):]
         win = win[:win.index("local parts")] if "local parts" in win else win
@@ -190,8 +190,20 @@ class TestStatic:
             "paths are not backslash-normalised inside the generated script"
         )
         # And the POSIX branch keeps the direct form.
-        assert 'os.iorun(string.format(\'"%s" "%s" %s\'' in runner, (
+        assert "os.iorun(string.format('\"%s\" %s'" in runner, (
             "the POSIX branch changed shape"
+        )
+
+        # EVERY invocation goes through the helper. The node step was left on a
+        # bare os.iorun when this helper was python-specific, and that site
+        # surfaced only after the other two were fixed and the probe reached
+        # the run -- `node did not print the expected "1-2-3" (got: )`.
+        body = code[code.index("__selfcheck_import_std"):]
+        body = body[:body.index("\nend\n") + 5]
+        stray = [l.strip() for l in body.splitlines()
+                 if "os.iorun" in l or ("os.exec" in l and "__run_captured" not in l)]
+        assert not stray, (
+            f"an invocation in the self-check bypasses the helper: {stray}"
         )
 
     @pytest.mark.static

@@ -535,42 +535,47 @@ end
 -- is also the one check that exercises NODE_JS end to end: the link step
 -- is what calls out to node (see the header comment), so a wrong or
 -- unusable NODE_JS fails HERE, not on a consumer's first real build.
--- Run the payload's own python on one of emscripten's scripts, and capture the
--- output.
+-- Run one of this payload's own programs and capture its output.
+--
+-- GENERAL, BECAUSE THE THIRD CALLER PROVED IT HAD TO BE. This began as a
+-- python-specific helper for the two `em++.py` invocations, and `node` was
+-- left on a bare `os.iorun(string.format('"%s" "%s"', ...))` -- the same
+-- construction, the same defect, one site further on. It surfaced only after
+-- the first two were fixed and the probe reached the run: `node did not print
+-- the expected "1-2-3" (got: )`, with the Windows message appearing twice and
+-- no output at all.
 --
 -- ON WINDOWS: A SCRIPT FILE, RUN WITH `os.exec`, REDIRECTING ITS OWN OUTPUT.
+-- Shapes that failed here, all on `os.iorun`:
 --
--- Three shapes failed here before this one, all with the same message, once,
--- and with no compiler output and no Python traceback:
---
---   "<py>" "<script>" -std=c++23 --precompile "<in>" -o "<out>"
---   powershell -NoProfile -ExecutionPolicy Bypass -Command "& '<py>' ..."
---   "<scratch>\run-emxx.bat"                      (one token, no quoting)
+--   "<exe>" "<arg>" ...
+--   powershell -NoProfile -ExecutionPolicy Bypass -Command "& '<exe>' ..."
+--   "<scratch>\run.bat"                          (one token, no quoting)
 --
 --   The filename, directory name, or volume label syntax is incorrect.
 --
--- ALL THREE USED `os.iorun`, AND THAT WAS THE VARIABLE. Every Windows
--- invocation in this index that works uses `os.exec` or `system.exec` --
--- pkgs/7/7zip.lua and pkgs/v/vcstool.lua both do, and both are working Windows
--- packages. Three attempts varied the command STRING while holding the CALL
--- constant, and the call was the thing that was wrong.
---
--- `os.iorun` was chosen because this function has to return the compiler's
--- output for the diagnostic. A script that redirects itself removes that
--- requirement: the output goes to a file and is read back, so the invocation
--- is free to be the form this index has already proven.
+-- Every Windows invocation in this index that WORKS uses `os.exec` or
+-- `system.exec` (pkgs/7/7zip.lua, pkgs/v/vcstool.lua). Three attempts varied
+-- the command STRING while holding the CALL constant, and the call was wrong.
+-- `os.iorun` was chosen because this function must return the output; a script
+-- that redirects itself removes that requirement and frees the invocation to
+-- be the proven form.
 --
 -- `cmd.exe /d /s /c "<bat>"` is the documented shape -- `/d` skips AutoRun,
--- `/s` fixes the quote handling -- and a batch file is not an executable
--- image, so it needs cmd either way.
-local function __run_py(py, script, argv)
+-- `/s` fixes quote handling -- and a batch file is not an executable image, so
+-- it needs cmd either way.
+--
+-- `scratch` is passed rather than derived from the last argument: the previous
+-- version took `path.directory(argv[#argv])`, which happened to be right for
+-- an `-o <path>` call and would silently write the script somewhere else for a
+-- call whose last argument is not a path.
+local function __run_captured(scratch, exe, argv)
     if is_host("windows") then
         local function w(v) return (tostring(v):gsub("/", "\\")) end
-        local scratch = path.directory(tostring(argv[#argv]))
-        local bat = w(path.join(scratch, "run-emxx.bat"))
-        local out = w(path.join(scratch, "run-emxx.out"))
+        local bat = w(path.join(scratch, "run-captured.bat"))
+        local out = w(path.join(scratch, "run-captured.out"))
 
-        local line = string.format('"%s" "%s"', w(py), w(script))
+        local line = string.format('"%s"', w(exe))
         for _, a in ipairs(argv) do
             line = line .. string.format(' "%s"', w(a))
         end
@@ -578,8 +583,9 @@ local function __run_py(py, script, argv)
 
         io.writefile(bat, "@echo off\r\n" .. line .. "\r\n")
 
-        -- os.exec raises on a non-zero exit; the caller decides by whether the
-        -- ARTEFACT appeared, so a failure here still has to return the log.
+        -- os.exec raises on a non-zero exit; every caller decides by its own
+        -- criterion (an artefact appearing, or the output matching), so a
+        -- failure still has to return the log.
         try { function()
             os.exec(string.format('cmd.exe /d /s /c "%s"', bat))
         end }
@@ -589,8 +595,7 @@ local function __run_py(py, script, argv)
     for _, a in ipairs(argv) do
         table.insert(parts, string.format('"%s"', tostring(a)))
     end
-    return os.iorun(string.format('"%s" "%s" %s', py, script,
-                                  table.concat(parts, " ")))
+    return os.iorun(string.format('"%s" %s', exe, table.concat(parts, " ")))
 end
 
 local function __selfcheck_import_std(dir, node_bin)
@@ -645,8 +650,9 @@ int main() {
     -- No added flags: measured against this exact payload, `std.cppm`
     -- #includes this same payload's own headers and needs nothing else.
     local out1 = try { function()
-        return __run_py(py, emxx_py,
-                        {"-std=c++23", "--precompile", stdcppm, "-o", stdpcm})
+        return __run_captured(scratch, py,
+                              {emxx_py, "-std=c++23", "--precompile",
+                               stdcppm, "-o", stdpcm})
     end }
     if not os.isfile(stdpcm) then
         raise("emsdk: could not precompile the shipped libc++ module surface"
@@ -655,9 +661,10 @@ int main() {
     end
 
     local out2 = try { function()
-        return __run_py(py, emxx_py,
-                        {"-std=c++23", "-fmodule-file=std=" .. stdpcm,
-                         app_cpp, stdpcm, "-o", appjs})
+        return __run_captured(scratch, py,
+                              {emxx_py, "-std=c++23",
+                               "-fmodule-file=std=" .. stdpcm,
+                               app_cpp, stdpcm, "-o", appjs})
     end }
     if not os.isfile(appjs) then
         raise("emsdk: compiling/linking the `import std` probe failed (this is"
@@ -666,7 +673,7 @@ int main() {
     end
 
     local ran = try { function()
-        return os.iorun(string.format('"%s" "%s"', node_bin, appjs))
+        return __run_captured(scratch, node_bin, {appjs})
     end }
     if not ran or not ran:find("1-2-3", 1, true) then
         raise("emsdk: node did not print the expected \"1-2-3\" from the"
