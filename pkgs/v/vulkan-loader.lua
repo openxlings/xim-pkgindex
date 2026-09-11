@@ -12,6 +12,21 @@ package = {
     type = "package",
     archs = {"x86_64"},
     status = "stable",
+
+    -- PLATFORMS CARRY DIFFERENT VERSIONS, ON PURPOSE. windows has 1.4.357 as
+    -- well as 1.4.313; linux has 1.4.313 only.
+    --
+    -- The linux payload is hand-built inside an xlings subos so that it links
+    -- this ecosystem's glibc rather than the host's
+    -- (.agents/tools/graphics/build-in-subos.sh), and the X/GL stack --
+    -- mesa, lavapipe -- is validated against it. Rebuilding it is its own
+    -- deliberate change, not a side effect of this one. The windows payload is
+    -- built on a runner, from the tag mcpp-index's compat.vulkan consumes
+    -- (vulkan-sdk-1.4.357.0), so that xlings and mcpp hand a Windows program the
+    -- same loader. Both versions export the identical 265-name surface of
+    -- `vulkan-1.def`, measured, so nothing that works against one breaks
+    -- against the other.
+    platform_versions_diverge = true,
     categories = {"graphics", "vulkan", "lib"},
     keywords = {"vulkan", "graphics", "vulkan-loader"},
 
