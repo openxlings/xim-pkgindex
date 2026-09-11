@@ -159,6 +159,63 @@ class TestPinnedFacts:
         )
 
     @pytest.mark.static
+    def test_release_pattern_accepts_every_archive_this_recipe_downloads(
+            self, source_text):
+        """The defect this asserts against shipped, and both new hosts hit it.
+
+        install() derives the extracted directory from the downloaded file's
+        name, because the zip's internal root is the RELEASE ("android-ndk-r30")
+        while the file carries a host token. The pattern was written as
+        `%-linux%.zip$` on the one host the recipe then served, so adding
+        `xpm.macosx` and `xpm.windows` made it wrong: `android-ndk-r30-darwin.zip`
+        and `android-ndk-r30-windows.zip` both raised instead of extracting.
+
+        THE DENOMINATOR IS THE DESCRIPTOR'S OWN URL TABLES, not a list written
+        here -- a list would have been written from the same Linux-shaped
+        assumption. Every basename the recipe can download is fed to the
+        recipe's OWN pattern, read out of the source rather than restated, so
+        this cannot pass by re-implementing the bug.
+        """
+        code = re.sub(r'--.*', '', source_text)
+
+        basenames = sorted({
+            u.rsplit('/', 1)[-1]
+            for u in re.findall(r'https?://[^"\s]+', code)
+            if u.rsplit('/', 1)[-1].endswith('.zip')
+        })
+        assert len(basenames) >= 3, (
+            f"expected an archive per host, found {basenames}"
+        )
+
+        m = re.search(r'base:match\(\s*"([^"]+)"\s*\)', code)
+        assert m, "could not find the release-derivation pattern in install()"
+        lua_pattern = m.group(1)
+        py_pattern = (lua_pattern.replace('%-', '-')
+                                 .replace('%.', r'\.')
+                                 .replace('%d', r'\d'))
+        assert '%' not in py_pattern, (
+            f"pattern uses a Lua class this test cannot translate: {lua_pattern}"
+        )
+
+        tokens = set(re.findall(r'host_token\s*==\s*"([a-z]+)"', code))
+        assert tokens == {"linux", "darwin", "windows"}, (
+            f"the accepted host tokens are {sorted(tokens)}; upstream publishes "
+            f"linux, darwin and windows and all three are declared above"
+        )
+
+        for base in basenames:
+            hit = re.fullmatch(py_pattern, base)
+            assert hit, (
+                f"install() cannot derive a release directory from {base!r} "
+                f"(pattern {lua_pattern!r}) -- this is the archive the "
+                f"descriptor itself points at"
+            )
+            assert hit.group(2) in tokens, (
+                f"{base!r} carries host token {hit.group(2)!r}, which install() "
+                f"does not accept"
+            )
+
+    @pytest.mark.static
     def test_no_ci_automation_declared(self, source_text):
         # A version bump here needs a human to re-verify the module surface
         # and the ctype workaround (see the header comment) -- `ci.mirror`

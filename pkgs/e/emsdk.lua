@@ -410,7 +410,11 @@ int main() {
 }
 ]])
 
-    local emxx = path.join(dir, "emscripten", "em++")
+    -- Same host suffix the install probe applies; this is the call that
+    -- actually EXECUTES the driver, so an unsuffixed path here fails on
+    -- Windows after the probe has already passed.
+    local emxx = path.join(dir, "emscripten",
+                           "em++" .. (is_host("windows") and ".exe" or ""))
     local stdcppm = path.join(dir, "emscripten", "cache", "sysroot", "share", "libc++", "v1", "std.cppm")
     local stdpcm = path.join(scratch, "std.pcm")
     local appjs = path.join(scratch, "app.js")
@@ -464,12 +468,20 @@ function install()
     -- THE EXECUTABLE NAMES CARRY THE HOST'S SUFFIX. The probe named `em++`
     -- and `bin/clang` unsuffixed, which is every archive this recipe served
     -- while it declared only `xpm.linux` -- and would refuse a correct
-    -- Windows payload, where the driver is `em++.bat` beside `em++` and the
-    -- compiler is `bin/clang.exe`. `std.cppm` has no suffix on any host.
+    -- Windows payload, where the compiler is `bin/clang.exe`. `std.cppm` has
+    -- no suffix on any host.
+    --
+    -- THE SUFFIX IS `.exe`, NOT `.bat`. The first Windows version of this
+    -- probe guessed `.bat` from how emscripten's own installer wraps these
+    -- entry points on Windows, and the archive disagrees. Measured by reading
+    -- the central directory of `wasm-binaries.zip` (12882 entries): all nine
+    -- entry points this recipe registers ship as `<name>.exe` beside a
+    -- `<name>.py`, and no `.bat` exists for any of them. One rule covers the
+    -- whole set, which is why `exe` is computed once and applied uniformly
+    -- rather than special-casing the driver.
     local exe = is_host("windows") and ".exe" or ""
     local required_probe = {
-        is_host("windows") and path.join(extracted, "emscripten", "em++.bat")
-                            or path.join(extracted, "emscripten", "em++"),
+        path.join(extracted, "emscripten", "em++" .. exe),
         path.join(extracted, "bin", "clang" .. exe),
         path.join(extracted, "emscripten", "cache", "sysroot", "share", "libc++", "v1", "std.cppm"),
     }
@@ -510,10 +522,15 @@ function config()
 
     xvm.add(package.name)
 
+    -- The FILE carries the host suffix; the SHIM does not. `xvm.add` is given
+    -- the bare upstream name on every host (the idiom qemu-riscv.lua uses for
+    -- `qemu-system-riscv64`), so a user types `em++` everywhere -- only the
+    -- existence check has to spell the real file.
+    local exe = is_host("windows") and ".exe" or ""
     local n = 0
     local required_hits = 0
     for _, prog in ipairs(ENTRY_POINTS) do
-        if os.isfile(path.join(bindir, prog)) then
+        if os.isfile(path.join(bindir, prog .. exe)) then
             xvm.add(prog, { bindir = bindir, alias = prog, binding = binding })
             n = n + 1
             if REQUIRED_ENTRY_POINTS[prog] then

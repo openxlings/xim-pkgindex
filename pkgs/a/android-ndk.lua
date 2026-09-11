@@ -408,22 +408,35 @@ function install()
     local dir = pkginfo.install_dir()
     os.tryrm(dir)
 
-    -- The zip's internal root directory is named after the RELEASE ("r30"),
-    -- not after the downloaded file, which upstream names
-    -- "android-ndk-r30-linux.zip" -- measured with `unzip -l` while writing
-    -- this recipe: the two strings differ by the trailing "-linux". Every
+    -- The zip's internal root directory is named after the RELEASE ("r30")
+    -- and is the SAME on every host; the downloaded file carries a host token
+    -- the directory does not, so the two strings differ by that token. Every
     -- other recipe in this index that derives an extraction directory from
     -- `pkginfo.install_file()` relies on the archive's stem MATCHING that
     -- directory (fd.lua, jdk-zulu.lua); that assumption is false here, so
     -- the release token is pulled out of the file name with an explicit
     -- pattern instead of being assumed equal to it.
+    --
+    -- THE PATTERN ONCE NAMED ONE HOST, AND IT WAS THE ONE HOST THE PATTERN
+    -- WAS WRITTEN ON. It read `%-linux%.zip$`, measured with `unzip -l` on
+    -- the Linux archive, at a time when this recipe declared only `xpm.linux`
+    -- -- so it was not wrong, it was unfinished, and adding `xpm.macosx` and
+    -- `xpm.windows` is what made it wrong. Both new hosts failed at exactly
+    -- this line: `android-ndk-r30-darwin.zip` and `android-ndk-r30-windows.zip`
+    -- are the upstream names. The host token is now accepted and CHECKED
+    -- against the three upstream spellings rather than matched as `%a+`, so a
+    -- future archive named something else raises here instead of extracting
+    -- into a directory this recipe never verified.
     local archive = pkginfo.install_file() or ""
     local base = archive:match("([^/\\]+)$") or archive
-    local release = base:match("^(android%-ndk%-r%d+[a-z]?)%-linux%.zip$")
-    if not release then
+    local release, host_token =
+        base:match("^(android%-ndk%-r%d+[a-z]?)%-([a-z]+)%.zip$")
+    local known_host_token =
+        host_token == "linux" or host_token == "darwin" or host_token == "windows"
+    if not release or not known_host_token then
         raise("android-ndk: cannot derive the release directory name from "
               .. "downloaded file '" .. base .. "' (expected "
-              .. "android-ndk-rNN[<letter>]-linux.zip)")
+              .. "android-ndk-rNN[<letter>]-<linux|darwin|windows>.zip)")
     end
     if not os.isdir(release) then
         raise("android-ndk: expected extracted directory '" .. release

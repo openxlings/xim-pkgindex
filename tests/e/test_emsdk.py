@@ -166,6 +166,58 @@ class TestStatic:
         assert 'bindir = path.join(dir, "bin")' not in code
 
     @pytest.mark.static
+    def test_windows_entry_points_are_exe_and_every_driver_path_is_suffixed(
+            self, meta):
+        """MEASURED, AND THE FIRST GUESS WAS WRONG.
+
+        Adding `xpm.windows` required the entry-point paths to carry a host
+        suffix. The first version guessed `.bat`, from how emscripten's own
+        installer wraps these scripts on Windows, and the archive disagrees:
+        reading the central directory of `wasm-binaries.zip` (12882 entries)
+        shows all nine entry points this recipe registers ship as `<name>.exe`
+        beside a `<name>.py`, and no `.bat` exists for any of them. So one rule
+        covers the whole set and `.bat` must not appear at all.
+
+        THREE PLACES NEED THE SUFFIX, NOT ONE, and the install probe passing is
+        what hides the other two: the probe checks the file exists, the
+        self-check EXECUTES the driver, and config() decides which shims get
+        registered. A recipe that suffixed only the probe would install, then
+        fail in the self-check -- or register nothing and report success.
+
+        The SHIM keeps the bare upstream name on every host (the qemu-riscv.lua
+        idiom), so a user types `em++` everywhere; only paths to real files
+        carry the suffix.
+        """
+        code = _code(meta.raw_content)
+
+        assert ".bat" not in code, (
+            "no emscripten entry point ships as .bat on Windows; all nine are "
+            ".exe (measured from the archive's central directory)"
+        )
+        assert 'is_host("windows") and ".exe" or ""' in code, (
+            "the host suffix must be computed with the index's own idiom"
+        )
+
+        # The three sites, each identified by what it does rather than by a
+        # line number: probe, execute, register.
+        assert 'path.join(extracted, "emscripten", "em++" .. exe)' in code, (
+            "the install probe does not apply the host suffix to the driver"
+        )
+        assert 'is_host("windows") and ".exe" or ""))' in code, (
+            "the self-check builds an unsuffixed driver path, so it would fail "
+            "on Windows after the probe already passed"
+        )
+        assert 'os.isfile(path.join(bindir, prog .. exe))' in code, (
+            "config() tests unsuffixed file names, so it would register no "
+            "shims on Windows"
+        )
+
+        # And the shim names stay bare -- suffixing these would make a user
+        # type `em++.exe` on one host and `em++` on the others.
+        assert 'alias = prog' in code
+        assert 'alias = prog .. exe' not in code
+
+    @pytest.mark.static
     def test_config_writes_final_paths_before_first_invocation(self, meta):
         """DO NOT RELOCATE finding: `.emscripten` must be written with the
         final install_dir-based paths, and the first-ever `em++` invocation
