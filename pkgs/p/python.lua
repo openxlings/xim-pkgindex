@@ -72,11 +72,81 @@ package = {
                 sha256 = nil,
             }
         },
+        -- macOS, ADDED BECAUSE A DEP CHECK REFUSED THE OMISSION, and the
+        -- refusal was right:
+        --
+        --   dep `xim:python@>=3.12` is declared under xpm.macosx, but `python`
+        --   has sections for [linux, windows] only -- it cannot be resolved on
+        --   macosx.
+        --
+        -- `xim:emsdk` declares that dep on all three hosts because `em++` is a
+        -- shell wrapper that execs `python3` on every one of them. So the
+        -- omission here was not a scope decision, it was a hole one platform
+        -- wide -- and the index's own dep check is what found it rather than a
+        -- macOS user discovering emsdk unusable.
+        --
+        -- Same upstream release as the linux entry, and the same install():
+        -- python-build-standalone's macOS archives extract to `python/` too.
+        -- Downloaded and hashed 2026-09-11; not executed, since no macOS host
+        -- was involved -- the index's macos-install-test is that measurement.
+        macosx = {
+            ["latest"] = { ref = "3.13.12" },
+            ["3.13.12"] = {
+                url = "https://github.com/astral-sh/python-build-standalone/releases/download/20260310/cpython-3.13.12%2B20260310-${arch}-apple-darwin-install_only.tar.gz",
+                sha256 = {
+                    x86_64  = "d778d46b49c640a54a13dc2bd356561b4d4f85466a2d21bc0ab1483a209bb05c",
+                    aarch64 = "8b49181b776a9ebc8323a645dc55126b389d62c50a0b9f072e37811a9391244d",
+                },
+            },
+        },
+        -- WINDOWS WAS AN INSTALLER INVOCATION, NOT A PAYLOAD, AND THE
+        -- DIFFERENCE IS INVISIBLE UNTIL SOMETHING ASKS FOR THE PAYLOAD.
+        --
+        -- The old entry was `python-3.12.6-amd64.exe`, driven with
+        -- `/passive InstallAllUsers=1 PrependPath=1 TargetDir=<install_dir>`.
+        -- On a Windows runner that left `<install_dir>` EXISTING AND EMPTY, and
+        -- `xim` reported the package installed -- so the package's own
+        -- post-install check passed on a directory-existence test, and anything
+        -- reading `pkginfo.dep_install_dir("xim:python")` got a directory with
+        -- nothing in it. Measured through pkgs/e/emsdk.lua, whose diagnostic
+        -- reported:
+        --
+        --   payload dir: C:\Users\runneradmin\.xlings\data\xpkgs\xim-x-python\3.12.6
+        --   is a directory: true
+        --   subdirectories present (0):
+        --
+        -- `InstallAllUsers=1` needs elevation and `/passive` cannot ask for it,
+        -- which is the likeliest reason; either way the payload was empty while
+        -- the install reported success.
+        --
+        -- python-build-standalone publishes Windows, which is what the other
+        -- two platform tables already use. Measured 2026-09-11: the archive
+        -- extracts to `python/` exactly as the Linux and macOS ones do, so
+        -- install() needs no host branch at all, and the interpreter lands at
+        -- `<install_dir>/python.exe`. No installer, no elevation, and a real
+        -- relocatable payload that `dep_install_dir` can point at.
+        --
+        -- `Scripts/` ships EMPTY -- this distribution carries no pip -- so
+        -- config() bootstraps it with `python -m ensurepip`, which keeps the
+        -- `pip`/`pip3` shims this package has always registered.
         windows = {
-            ["latest"] = { ref = "3.12.6"},
-            ["3.12.6"] = {
-                url = "https://gitee.com/sunrisepeak/xlings-pkg/releases/download/python12/python-3.12.6-amd64.exe",
-                sha256 = "5914748e6580e70bedeb7c537a0832b3071de9e09a2e4e7e3d28060616045e0a",
+            ["latest"] = { ref = "3.13.12" },
+            ["3.13.12"] = {
+                url = {
+                    GLOBAL = "https://github.com/astral-sh/python-build-standalone/releases/download/20260310/cpython-3.13.12%2B20260310-x86_64-pc-windows-msvc-install_only.tar.gz",
+                    CN     = "https://gitcode.com/xlings-res/mirror-cn/releases/download/python/cpython-3.13.12%2B20260310-x86_64-pc-windows-msvc-install_only.tar.gz",
+                },
+                sha256 = "6204052c096536f9fa926f8312a1dcd5ac0846dc182a0c05ee0011d580546af0",
+            },
+            -- Kept alongside for the same reason the linux table keeps one:
+            -- `xim:emsdk` declares `xim:python@>=3.12`, and a consumer pinning
+            -- the 3.12 line must resolve to something on every host.
+            ["3.12.13"] = {
+                url = {
+                    GLOBAL = "https://github.com/astral-sh/python-build-standalone/releases/download/20260310/cpython-3.12.13%2B20260310-x86_64-pc-windows-msvc-install_only.tar.gz",
+                    CN     = "https://gitcode.com/xlings-res/mirror-cn/releases/download/python/cpython-3.12.13%2B20260310-x86_64-pc-windows-msvc-install_only.tar.gz",
+                },
+                sha256 = "b9f9d17a11944c13a3a2798c8b48ec861b2f10710dc345094f567beed4271427",
             },
         },
     },
@@ -89,21 +159,73 @@ import("xim.libxpkg.log")
 import("xim.pkgindex.sysroot")
 
 function install()
-    if os.host() == "windows" then
-        local install_cmd = pkginfo.install_file()
-            .. [[ /passive InstallAllUsers=1 PrependPath=1 Include_test=1 Include_pip=1 ]]
-            .. [[ TargetDir="]] .. pkginfo.install_dir() .. [["]]
-        os.exec(install_cmd)
-    else
-        -- python-build-standalone tarball extracts to "python/" directory
-        os.tryrm(pkginfo.install_dir())
-        os.mv("python", pkginfo.install_dir())
+    -- ONE PATH FOR EVERY HOST. All three platform tables now name a
+    -- python-build-standalone tarball and all three extract to `python/`, so
+    -- the host branch that used to drive the Windows installer is gone (see
+    -- the note on the windows table for what it left behind).
+    os.tryrm(pkginfo.install_dir())
+    os.mv("python", pkginfo.install_dir())
+
+    -- AND THE OUTCOME IS CHECKED, BECAUSE THE OLD PATH DID NOT CHECK ITS OWN.
+    -- An install that reports success with an empty payload is worse than one
+    -- that fails: every consumer downstream then reads a directory with
+    -- nothing in it and reports its own unrelated-looking error.
+    local interpreter = os.host() == "windows"
+        and path.join(pkginfo.install_dir(), "python.exe")
+        or  path.join(pkginfo.install_dir(), "bin", "python3")
+    if not os.isfile(interpreter) then
+        raise("python: the payload has no interpreter at " .. interpreter
+              .. " after extraction; refusing to report an install that a"
+              .. " consumer would read as an empty directory")
     end
     return true
 end
 
 function config()
     if os.host() == "windows" then
+        -- SHIMS ON WINDOWS TOO, WHICH THIS PACKAGE COULD NOT REGISTER BEFORE.
+        --
+        -- The old path drove the official installer with `PrependPath=1`, so
+        -- the interpreter reached a user through WINDOWS' PATH rather than
+        -- through xvm -- which is why this branch only said "restart the
+        -- terminal" and registered nothing. The consequence was not only a
+        -- missing shim: `xlings use python <v>` could not select between
+        -- versions there, and `dep_install_dir` pointed at an empty directory.
+        --
+        -- The payload is relocatable now, so the same registrations the other
+        -- hosts get apply. The interpreter is `python.exe` at the payload root
+        -- (measured), and there is no `python3.exe` -- so `python` is the real
+        -- name and `python3` is the alias, which is the inverse of the POSIX
+        -- branch below.
+        local bindir = pkginfo.install_dir()
+
+        -- pip IS NOT IN THIS DISTRIBUTION. `Scripts/` ships empty (measured),
+        -- and the installer this replaced supplied pip through
+        -- `Include_pip=1`. `ensurepip` is the documented way to get it and the
+        -- module is present in the payload, so the shims this package has
+        -- always registered keep working.
+        local py = path.join(bindir, "python.exe")
+        local ensured = try { function()
+            return os.iorun(string.format('"%s" -m ensurepip --upgrade', py))
+        end }
+        if not ensured then
+            log.warn("python: `ensurepip` did not complete; the pip shims are "
+                     .. "skipped and `python -m ensurepip` can be run by hand")
+        end
+
+        xvm.add("python", { bindir = bindir })
+        xvm.add("python3", { bindir = bindir, alias = "python" })
+
+        local scripts = path.join(bindir, "Scripts")
+        if os.isfile(path.join(scripts, "pip.exe")) then
+            xvm.add("pip", { bindir = scripts,
+                             binding = "python@" .. pkginfo.version() })
+            xvm.add("pip3", { bindir = scripts, alias = "pip",
+                              binding = "python@" .. pkginfo.version() })
+        else
+            log.warn("python: no Scripts/pip.exe after ensurepip; pip shims "
+                     .. "not registered")
+        end
         log.info("Please restart the terminal to take effect.")
     else
         local bindir = path.join(pkginfo.install_dir(), "bin")
@@ -137,23 +259,17 @@ function config()
 end
 
 function uninstall()
-    if os.host() == "windows" then
-        -- The MSI uninstaller path lives at `pkginfo.install_file()` —
-        -- the same .exe used to install. In CI's
-        -- install-then-uninstall flow the installer file isn't always
-        -- present on disk when uninstall fires, so a hard `return false`
-        -- here turned every windows-install-test on this package into
-        -- a CI failure. Treat the absence as "nothing to undo" so the
-        -- post-uninstall checks (no leftover shim, etc.) still run.
-        if not os.isfile(pkginfo.install_file()) then
-            log.warn("python installer not found, skipping MSI uninstall: " .. tostring(pkginfo.install_file()))
-        else
-            os.exec(pkginfo.install_file() .. [[ /uninstall /passive ]])
-        end
-    else
-        xvm.remove("python", pkginfo.version())
-        xvm.remove("pip", "python-" .. pkginfo.version())
-    end
+    -- THE MSI BRANCH IS GONE WITH THE MSI. It ran
+    -- `<installer>.exe /uninstall /passive`, and carried a workaround for the
+    -- installer file not being on disk when uninstall fires -- a whole branch
+    -- whose subject no longer exists now that Windows extracts a tarball like
+    -- the other two hosts.
+    --
+    -- What remains is what the POSIX branch already did, and it is correct on
+    -- every host: withdraw the registrations. The payload directory itself is
+    -- xim's to remove.
+    xvm.remove("python", pkginfo.version())
+    xvm.remove("pip", "python-" .. pkginfo.version())
 
     return true
 end
