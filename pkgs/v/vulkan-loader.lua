@@ -79,6 +79,34 @@ package = {
         -- vkCreateInstance and vkGetInstanceProcAddr before publishing. An
         -- artifact that exists is not an artifact that works.
         windows = {
+            -- HOW THE DLL REACHES A CONSUMER'S EXE, and why it is a
+            -- declaration rather than a PATH entry.
+            --
+            -- A PE resolves imports by NAME against the directory of the exe
+            -- and then the search path. mcpp closes that for prebuilt-DLL
+            -- packages already: every `*.dll` under a dependency's runtime
+            -- library_dirs is COPIED beside the produced executable, into its
+            -- bin/ (mcpp `src/build/plan.cppm`, `runtimeDeployFiles`). The
+            -- filter is the `.dll` extension and not a platform `if`, so a
+            -- Linux payload shipping .so populates nothing and non-Windows
+            -- builds are unchanged -- its own comment names the case this is:
+            -- "only a Windows prebuilt-DLL package ... populates it".
+            --
+            -- So `bin` here, where the loader's DLL lives, and NOT `lib`,
+            -- which holds the import library the linker reads.
+            --
+            -- MEASURED, after getting this wrong once. The first attempt
+            -- declared PATH through `subos.env` instead (see config()). It
+            -- installs cleanly under a full xlings -- xim-pkgindex's own
+            -- windows-test passes, subos "default" present -- and fails
+            -- inside mcpp's project sandbox with `config hook failed`
+            -- (mcpplibs/mcpp-index#391). Two environments, one descriptor,
+            -- opposite results: the declaration was reaching for a subos that
+            -- a sandbox does not present the same way. This path needs no
+            -- subos at all.
+            exports = {
+                runtime = { libdirs = { "bin" } },
+            },
             ["latest"] = { ref = "1.4.313" },
             ["1.4.313"] = {
                 url = {
@@ -95,7 +123,6 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
-import("xim.libxpkg.subos")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
@@ -143,28 +170,31 @@ function config()
     xvm.add(package.name)
 
     if os.host() == "windows" then
-        -- PATH, because that is where Windows looks. There is no RPATH to
-        -- stamp and no sysroot to declare into: `sysroot.declare_libs` builds
-        -- a linker view for ELF, and `exports.runtime.libdirs` is read by
-        -- xlings's elfpatch, which has nothing to patch here. A PE resolves
-        -- its imports by NAME, against the directory of the exe and then the
-        -- search path -- so the payload's bin/ has to be on it.
+        -- NOTHING TO DECLARE HERE, and that is the correction.
         --
-        -- `${pkgdir}` and not an absolute path: the spec requires a
-        -- placeholder, and a literal would pin the declaration to the machine
-        -- that wrote it. `prepend` and not `set`, because PATH is a list and
-        -- more than one provider is entitled to be on it -- a `set` by one
-        -- provider beats every other prepend in xlings's resolution.
+        -- This branch used to prepend the payload's bin/ to PATH through
+        -- `subos.env`. That was the wrong layer twice over. It claimed
+        -- `exports.runtime.libdirs` was elfpatch-only and had nothing to say
+        -- on Windows -- it is also what mcpp reads to COPY a dependency's
+        -- DLLs beside the executable it builds, which is the mechanism this
+        -- package actually needs and is now declared in the windows xpm block
+        -- above. And PATH is process-wide: it would put our loader in front
+        -- of the system's for every child of that shell, not just for the
+        -- consumer that asked for it.
         --
-        -- WHAT THIS DOES NOT DO: give a consumer an ICD. The loader finds
-        -- drivers through the registry, so on a machine without a GPU driver
-        -- `vkEnumerateInstanceVersion` answers and device enumeration comes
-        -- back empty. That is the honest state of such a machine, and it is
-        -- what a headless CI runner can be held to.
-        if type(subos.env) == "function" then
-            subos.env{ var = "PATH", op = "prepend",
-                       value = "${pkgdir}/bin", binding = binding }
-        end
+        -- It also did not work. Under a full xlings the declaration is
+        -- recorded and the install passes (xim-pkgindex windows-test,
+        -- subos "default"); under mcpp's project sandbox the same descriptor
+        -- fails with `config hook failed` (mcpplibs/mcpp-index#391). A
+        -- payload whose only job is to be found beside an exe should not
+        -- depend on how a subos got set up, and now does not.
+        --
+        -- WHAT THIS STILL DOES NOT DO: give a consumer an ICD. The loader
+        -- finds drivers through HKLM\SOFTWARE\Khronos\Vulkan\Drivers, so
+        -- on a machine without a GPU driver `vkEnumerateInstanceVersion`
+        -- answers and device enumeration comes back empty. That is the honest
+        -- state of such a machine, and it is what a headless CI runner can be
+        -- held to.
         return true
     end
 
