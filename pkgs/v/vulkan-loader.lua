@@ -107,7 +107,19 @@ package = {
             exports = {
                 runtime = { libdirs = { "bin" } },
             },
-            ["latest"] = { ref = "1.4.313" },
+            -- 1.4.357 matches compat.vulkan's headers and import library
+            -- (vulkan-sdk-1.4.357.0); built by the same workflow, which loads the
+            -- DLL and resolves its entry points before publishing. Its exports are
+            -- exactly the 265 names in that tag's `loader/vulkan-1.def`. 1.4.313
+            -- stays for anything that pinned it.
+            ["latest"] = { ref = "1.4.357" },
+            ["1.4.357"] = {
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/vulkan-loader/releases/download/1.4.357/vulkan-loader-1.4.357-windows-x86_64.zip",
+                    CN     = "https://gitcode.com/xlings-res/vulkan-loader/releases/download/1.4.357/vulkan-loader-1.4.357-windows-x86_64.zip",
+                },
+                sha256 = "893d369de3103783b6a606c3730ace910c05ca0c293239c4bee17d02ac941395",
+            },
             ["1.4.313"] = {
                 url = {
                     GLOBAL = "https://github.com/xlings-res/vulkan-loader/releases/download/1.4.313/vulkan-loader-1.4.313-windows-x86_64.zip",
@@ -129,7 +141,15 @@ import("xim.pkgindex.selfcontain")
 function install()
     local dir = pkginfo.install_dir()
     os.tryrm(dir)
-    os.mv("vulkan-loader-1.4.313", dir)
+    -- The archive's top directory carries the version. Naming it literally
+    -- worked while one version existed; with two, the other one's install
+    -- moved nothing and reported success on an empty payload.
+    local top = "vulkan-loader-" .. pkginfo.version()
+    if not os.isdir(top) then
+        log.error("vulkan-loader: expected %s in the extracted archive", top)
+        return false
+    end
+    os.mv(top, dir)
 
     if os.host() == "windows" then
         -- NOTHING TO SEAL. `selfcontain.seal` rewrites ELF RPATH; a PE has no
