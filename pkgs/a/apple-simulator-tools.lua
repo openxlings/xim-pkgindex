@@ -182,9 +182,26 @@ exit $?
 function install()
     local dir = pkginfo.install_dir()
     os.tryrm(dir)
-    os.mkdir(dir)
+    -- `bin/`, AND THE FIRST VERSION OF THIS RECIPE WROTE THE PROGRAM ONE LEVEL
+    -- UP.
+    --
+    -- mcpp's runner lookup searches `<payload>/bin` for a program a manifest's
+    -- `runner` names. Measured 2026-09-11 on a macos-15 runner, with this
+    -- package correctly installed and declared:
+    --
+    --   error: runner 'simctl-run' for 'aarch64-ios-sim' was not found on any
+    --          search path.
+    --   Searched: .../xim-x-apple-simulator-tools/0.1.0/bin
+    --
+    -- The directory searched was right and the program was not in it. `bin/`
+    -- is the convention a consumer can rely on, so that is where a package
+    -- that exists to provide a program puts it -- `xim:7zip`'s flat layout is
+    -- a payload whose program is incidental, and this one's is the whole
+    -- package.
+    local bindir = path.join(dir, "bin")
+    os.mkdir(bindir)
 
-    local program = path.join(dir, "simctl-run")
+    local program = path.join(bindir, "simctl-run")
     local f = io.open(program, "w")
     if not f then
         raise("apple-simulator-tools: cannot write " .. program)
@@ -215,7 +232,7 @@ function install()
 end
 
 function config()
-    local dir = pkginfo.install_dir()
+    local dir = path.join(pkginfo.install_dir(), "bin")
     -- One program, registered under its own name, because that name is what a
     -- manifest's `runner` writes. mcpp's runner lookup searches the declared
     -- dependency's bin directory before PATH, so this resolves without the
