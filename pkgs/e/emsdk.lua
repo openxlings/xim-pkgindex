@@ -502,6 +502,50 @@ local function __write_emscripten_config(dir, node_bin)
     io.writefile(path.join(dir, "emscripten", ".emscripten"), cfg)
 end
 
+-- `.mcpp-toolchain.json` (schema 1): what mcpp would otherwise have to know
+-- about emsdk, stated by the payload that knows it.
+--
+-- `runner` IS WHY THIS FILE EXISTS. An Emscripten link produces a JavaScript
+-- launcher whose first line is `#!/usr/bin/env node`, so an artefact run with
+-- nothing declared asked the machine's PATH for node -- while the node this
+-- package declares, and writes into NODE_JS above, sat in the store. Measured
+-- 2026-09-12 in an xlings sandbox with no node on PATH:
+--
+--   mcpp run --target wasm32-emscripten
+--     /usr/bin/env: 'node': No such file or directory
+--
+-- The runner is the same absolute path NODE_JS carries, through the same
+-- forward-slash normaliser, because JSON reads a backslash as an escape. mcpp
+-- honours an absolute runner only inside the store that holds this payload,
+-- which is where a declared dependency's payload is; an engine that predates
+-- the key ignores it, so this file can ship before the engine that reads it.
+--
+-- `frontend` is written because it is true and costs nothing: it is the answer
+-- mcpp's built-in `emscripten/` guess already gives.
+local function __write_mcpp_descriptor(dir, node_bin)
+    local function fwd(v) return (tostring(v):gsub("\\", "/")) end
+    local exe = is_host("windows") and ".exe" or ""
+    local frontend = "emscripten/em++" .. exe
+    local body = string.format([[{
+  "schema": 1,
+  "frontend": "%s",
+  "runner": "%s"
+}
+]], frontend, fwd(node_bin))
+    io.writefile(path.join(dir, ".mcpp-toolchain.json"), body)
+
+    -- ASSERT THE FILE DESCRIBES THIS PAYLOAD, not that the write returned: a
+    -- descriptor that points at nothing is worse than none.
+    if not os.isfile(path.join(dir, "emscripten", "em++" .. exe)) then
+        raise("emsdk: the descriptor names " .. frontend
+            .. ", which does not exist under " .. dir)
+    end
+    if not os.isfile(node_bin) then
+        raise("emsdk: the descriptor names the runner " .. fwd(node_bin)
+            .. ", which does not exist")
+    end
+end
+
 -- Assert on the artifact: `_LIBCPP_VERSION` read back out of the INSTALLED
 -- payload's own header must match what this recipe's version claims (see
 -- EXPECTED_LIBCPP_VERSION above).
@@ -739,6 +783,7 @@ function install()
     -- comment. A pristine download carries no sanity.txt, so this is that
     -- first invocation and there is nothing for it to conflict with.
     __write_emscripten_config(dir, node_bin)
+    __write_mcpp_descriptor(dir, node_bin)
 
     __selfcheck_import_std(dir, node_bin)
 
