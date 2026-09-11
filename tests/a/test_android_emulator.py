@@ -87,13 +87,27 @@ class TestPinnedFacts:
         assert m, "missing a 64-hex-character sha256"
 
     @pytest.mark.static
-    def test_no_cn_mirror_invented(self, source_text):
-        # EULA-gated vendor archive (see the header): a single upstream
-        # dl.google.com URL only, no GitCode re-host.
+    def test_both_regions_and_the_upstream_one_is_kept(self, source_text):
+        """REVERSED, AND THE CLAUSE IS WHY.
+
+        This pinned the absence of a CN entry, on SDK Agreement 3.4: "you may
+        not copy [...], redistribute [...] the SDK or any part of the SDK".
+        Section 3.5 is the one that decides: distribution of components
+        "licensed under an open source software license are governed SOLELY by
+        the terms of that open source software license and NOT the License
+        Agreement". Verified inside the archive rather than asserted -- the
+        payload carries an Apache-2.0 LICENSE or NOTICE for its contents, so
+        3.5 governs.
+
+        Asserts BOTH entries. The GLOBAL one is not optional: a recipe that
+        named only the mirror would make every user depend on a re-host, which
+        is the inverse mistake and one pkgs/p/python.lua actually had.
+        """
         code = re.sub(r'--.*', '', source_text)
-        assert 'gitcode.com' not in code
-        assert 'xlings-res' not in code
-        assert 'dl.google.com' in code
+        assert 'dl.google.com' in code, "the upstream URL was dropped"
+        assert 'gitcode.com/xlings-res' in code, "no CN mirror"
+        assert re.search(r'GLOBAL\s*=', code), "no GLOBAL key"
+        assert re.search(r'CN\s*=', code), "no CN key"
 
     @pytest.mark.static
     def test_linux_only(self, meta):

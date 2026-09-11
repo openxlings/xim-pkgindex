@@ -75,7 +75,7 @@
 -- than a downstream consumer's first `import std;`.
 --
 -- ═══════════════════════════════════════════════════════════════════════
--- LICENCE, AND WHY THIS RECIPE HAS NO CN MIRROR
+-- LICENCE, AND WHICH CLAUSE DECIDES THE MIRROR
 -- ═══════════════════════════════════════════════════════════════════════
 --
 -- The download is gated behind Google's "Android Software Development Kit
@@ -87,13 +87,31 @@
 -- components back out from under that restriction. The archive's own
 -- NOTICE.toolchain lists exactly which licences those are (BSD-2-Clause,
 -- BSD-3-Clause, MIT OR Apache-2.0-WITH-LLVM-exception for the LLVM/bionic
--- content) -- but the archive AS DISTRIBUTED BY GOOGLE is the combined work
--- the EULA describes, and re-hosting that combined work is the thing this
--- recipe declines to do, matching this index's existing posture toward
--- other EULA-gated vendor toolchains (pkgs/c/cann-toolkit.lua, pkgs/m/
--- msvc.lua, pkgs/w/windows-sdk.lua): fetch the vendor's own URL directly, no
--- GitCode mirror invented, no `ci = { mirror = true }`. dl.google.com is
--- itself a global CDN, so nothing is lost in reach by not re-hosting.
+-- content).
+--
+-- THIS RECIPE USED TO READ 3.5 AND DECLINE THE MIRROR ANYWAY, on the argument
+-- that "the archive AS DISTRIBUTED BY GOOGLE is the combined work the EULA
+-- describes". That argument is recorded here rather than deleted, because it
+-- is the reading a reviewer will reach for and it is worth knowing it was
+-- considered. It does not survive the clause's own wording: 3.5 says
+-- distribution of open-source-licensed components is governed SOLELY by that
+-- licence and NOT the License Agreement, and every file in this archive is
+-- such a component -- `NOTICE` opens with "Licensed under the Apache License,
+-- Version 2.0" and NOTICE.toolchain enumerates the rest. A combined work made
+-- entirely of parts whose licences permit redistribution has no part that
+-- forbids it.
+--
+-- THE DISTINCTION FROM THE OTHER EULA-GATED PAYLOADS IS NOW SPECIFIC INSTEAD
+-- OF SHARED. `pkgs/m/msvc.lua`, `pkgs/w/windows-sdk.lua`,
+-- `pkgs/c/cann-toolkit.lua` and `pkgs/i/iphoneos-sdk.lua` keep one upstream
+-- URL each because their contents are proprietary -- there is no component
+-- licence to invoke, so 3.4-style prohibitions are the only terms that apply.
+-- Grouping this package with them read as a policy about EULAs; it is a
+-- conclusion about what is inside each archive.
+--
+-- dl.google.com is itself a global CDN, so the mirror adds a second source
+-- rather than reach -- which is what a regional map does anyway (see the
+-- measurement in pkgs/a/android-platform-tools.lua).
 --
 -- No `ci = { update = true }` either, for the reason pkgs/p/picolibc-riscv
 -- .lua gives for the same omission: a version bump here is not safe to
@@ -216,7 +234,10 @@ package = {
                 -- writing. No SHA256 is published there, hence "computed
                 -- locally" rather than "copied from upstream" for the value
                 -- below.
-                url = "https://dl.google.com/android/repository/android-ndk-r30-linux.zip",
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/android-ndk-r30-linux.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-ndk/releases/download/30.0.16248370/android-ndk-r30-linux.zip",
+                },
                 sha256 = "753611f410d002cfcd3f3dc2ef49aad532089d3180b436c060a90bf0fcb64df2",
             },
         },

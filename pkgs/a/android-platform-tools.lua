@@ -133,7 +133,10 @@ package = {
         linux = {
             ["latest"] = { ref = "37.0.1" },
             ["37.0.1"] = {
-                url = "https://dl.google.com/android/repository/platform-tools_r37.0.1-linux.zip",
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/platform-tools_r37.0.1-linux.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-platform-tools/releases/download/37.0.1/platform-tools_r37.0.1-linux.zip",
+                },
                 sha256 = "d230f13842f60f782a8645f9c813f8f845bf36089ea7289f28c48f17979313f1",
             },
         },
@@ -141,22 +144,66 @@ package = {
             -- One archive for both Apple arches: a universal binary.
             ["latest"] = { ref = "37.0.1" },
             ["37.0.1"] = {
-                url = "https://dl.google.com/android/repository/platform-tools_r37.0.1-darwin.zip",
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/platform-tools_r37.0.1-darwin.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-platform-tools/releases/download/37.0.1/platform-tools_r37.0.1-darwin.zip",
+                },
                 sha256 = "ee39ad5967e95c2a07f04dbcbde96b1a0c916ba376096db5d2f498b7727a5d1d",
             },
         },
         windows = {
             ["latest"] = { ref = "37.0.1" },
             ["37.0.1"] = {
-                url = "https://dl.google.com/android/repository/platform-tools_r37.0.1-win.zip",
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/platform-tools_r37.0.1-win.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-platform-tools/releases/download/37.0.1/platform-tools_r37.0.1-win.zip",
+                },
                 sha256 = "45f4d63113e895ebde0c90f194099a4676b6ac653bd28d54314a9e022bbc1a99",
             },
         },
     },
 }
 
--- WHAT A REGIONAL `url` MAP ACTUALLY DOES, MEASURED (2026-09-11), AND WHY
--- THIS PACKAGE STILL HAS NONE.
+-- WHICH CLAUSE GOVERNS A MIRROR, AND THE ONE THIS INDEX HAD MISSED.
+--
+-- Every Android package here declares `licenses = {"Android Software
+-- Development Kit License Agreement"}`, and that agreement's section 3.4 says:
+--
+--   "Except to the extent required by applicable third party licenses, you may
+--    not copy (except for backup purposes), modify, adapt, redistribute,
+--    decompile, reverse engineer, disassemble, or create derivative works of
+--    the SDK or any part of the SDK."
+--
+-- Read alone, that forbids a mirror, and these recipes were written that way --
+-- "fetch dl.google.com directly, no CN mirror, no re-host". The next clause is
+-- the one that decides:
+--
+--   3.5 "Use, reproduction and distribution of components of the SDK licensed
+--        under an open source software license are governed SOLELY by the terms
+--        of that open source software license and NOT the License Agreement."
+--
+-- So the question is not what the SDK Agreement says, it is what each
+-- COMPONENT's own licence says. Checked inside the archives themselves rather
+-- than asserted (2026-09-11):
+--
+--   emulator-linux_x64-*.zip   emulator/LICENSE       the Apache-2.0 grant, verbatim
+--   platform-tools_r*.zip      NOTICE.txt             Apache License
+--   android-ndk-r*.zip         NOTICE                 "Licensed under the Apache
+--                                                      License, Version 2.0"
+--   <abi>-24_r*.zip            NOTICE.txt             AOSP `default` build; OSS
+--                                                      notices throughout
+--
+-- All four are open-source-licensed components, so 3.5 applies and 3.4 does
+-- not. The mirrors are legitimate.
+--
+-- THE DISTINCTION THIS SHARPENS RATHER THAN WEAKENS: pkgs/i/iphoneos-sdk.lua
+-- still carries no CN entry, and now for a reason that is specific instead of
+-- shared. Apple's SDK has no equivalent of 3.5 and its components are not
+-- open-source licensed, so holding a copy really is redistribution. "The
+-- licence decides" was the right rule; applying it to these four without
+-- reading past 3.4 was the error.
+
+-- WHAT A REGIONAL `url` MAP ACTUALLY DOES, MEASURED (2026-09-11).
 --
 -- The measurement first, because it is worth keeping wherever a regional map
 -- IS used. The two-entry map is REDUNDANCY, not selection. Measured by
@@ -177,15 +224,8 @@ package = {
 -- entry therefore buys a second source for every user, not a different source
 -- for CN users.
 --
--- AND THE LICENCE IS WHAT DECIDES WHETHER THERE CAN BE ONE. This recipe's
--- `licenses` field is the Android Software Development Kit License Agreement,
--- which is the same reason pkgs/i/iphoneos-sdk.lua carries no CN entry: a `CN`
--- URL would mean xlings-res holds a copy, and holding a copy is what
--- redistribution IS. So this stays one upstream URL, and the mirror question
--- is a licence conclusion rather than an unfinished recipe.
---
--- Mirrored in this ecosystem where the licence permits it: `xim:emsdk`
--- (MIT / NCSA) and `xim:python` (PSF) both carry regional maps.
+-- Also mirrored in this ecosystem: `xim:emsdk` (MIT / NCSA) and `xim:python`
+-- (PSF).
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
