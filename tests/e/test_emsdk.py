@@ -140,6 +140,53 @@ class TestStatic:
             assert dep in code, f"missing declared dependency {dep}"
 
     @pytest.mark.static
+    def test_the_windows_invocation_uses_this_indexs_own_idiom(self, meta):
+        """One shell string built from `path.join` does not run on Windows, and
+        the failure names no path:
+
+            The filename, directory name, or volume label syntax is incorrect.
+
+        printed once per invocation, with the compiler's own output empty. The
+        reasons are already written down here, in pkgs/v/vcstool.lua:
+        `path.join` returns MIXED-SEPARATOR strings that cmd.exe mis-parses as
+        switches, CreateProcess will not auto-append `.exe` to an absolute
+        path, and cmd.exe reads `<` inside a quoted argument as a redirect.
+        `os.iorunv` would sidestep all three and is one of the names this hook
+        runtime leaves unbound.
+
+        So the shape is the one vcstool.lua and 7zip.lua already use for the
+        same reasons: backslashes throughout, PowerShell's call operator, and
+        single-quoted arguments. Asserted because a future edit that "simplifies"
+        this back to one `os.iorun` string would pass every other test here and
+        fail only on a Windows runner.
+        """
+        code = _code(meta.raw_content)
+        runner = code[code.index("local function __run_py"):]
+        runner = runner[:runner.index("\nend\n") + 5]
+
+        assert 'is_host("windows")' in runner, (
+            "the runner does not branch on the host at all"
+        )
+        assert 'gsub("/", "\\\\")' in runner, (
+            "paths are not backslash-normalised; path.join yields mixed "
+            "separators that cmd.exe mis-parses as switches"
+        )
+        assert 'powershell' in runner and '-NoProfile' in runner, (
+            "the Windows branch does not drive PowerShell"
+        )
+        assert '-ExecutionPolicy Bypass' in runner, (
+            "PowerShell without -ExecutionPolicy Bypass can be refused by policy"
+        )
+        # Single-quoted arguments, which is what makes the call operator safe.
+        assert '"\'" ..' in runner or "\"'\" .." in runner, (
+            "arguments are not single-quoted for PowerShell"
+        )
+        # And the POSIX branch is still a plain invocation.
+        assert 'os.iorun(string.format(\'"%s" "%s" %s\'' in runner, (
+            "the POSIX branch changed shape"
+        )
+
+    @pytest.mark.static
     def test_the_selfcheck_names_its_interpreter_and_script(self, meta):
         """`em++` is a wrapper whose whole job is to find an interpreter, and
         inside an install hook it cannot find the declared one.

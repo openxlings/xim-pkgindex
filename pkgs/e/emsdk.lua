@@ -508,6 +508,46 @@ end
 -- is also the one check that exercises NODE_JS end to end: the link step
 -- is what calls out to node (see the header comment), so a wrong or
 -- unusable NODE_JS fails HERE, not on a consumer's first real build.
+-- Run the payload's own python on one of emscripten's scripts, and capture the
+-- output.
+--
+-- ON WINDOWS THIS CANNOT BE ONE SHELL STRING BUILT FROM `path.join`, and the
+-- failure says so in a sentence that names no path:
+--
+--   The filename, directory name, or volume label syntax is incorrect.
+--
+-- printed once per invocation, with the compiler's own output empty. The
+-- reasons are already written down in this index, in pkgs/v/vcstool.lua:
+-- `path.join` returns MIXED-SEPARATOR strings that cmd.exe mis-parses as
+-- switches, CreateProcess will not auto-append `.exe` to an absolute path, and
+-- cmd.exe reads `<` inside a quoted argument as a redirect. `os.iorunv`, which
+-- would sidestep all three, is one of the names this hook runtime leaves
+-- unbound.
+--
+-- So: backslashes throughout, and PowerShell's call operator with
+-- single-quoted arguments -- the same shape vcstool.lua and 7zip.lua use for
+-- the same reasons. `-std=c++23` and `-fmodule-file=std=<path>` single-quote
+-- safely; no argument here contains a `'`.
+local function __run_py(py, script, argv)
+    if is_host("windows") then
+        local function w(v) return (tostring(v):gsub("/", "\\")) end
+        local quoted = {}
+        for _, a in ipairs(argv) do
+            table.insert(quoted, "'" .. w(a) .. "'")
+        end
+        return os.iorun(string.format(
+            [[powershell -NoProfile -ExecutionPolicy Bypass -Command ]]
+            .. [["& '%s' '%s' %s"]],
+            w(py), w(script), table.concat(quoted, " ")))
+    end
+    local parts = {}
+    for _, a in ipairs(argv) do
+        table.insert(parts, string.format('"%s"', tostring(a)))
+    end
+    return os.iorun(string.format('"%s" "%s" %s', py, script,
+                                  table.concat(parts, " ")))
+end
+
 local function __selfcheck_import_std(dir, node_bin)
     -- RUN THE INTERPRETER ON `em++.py`, NOT THE WRAPPER.
     --
@@ -560,9 +600,8 @@ int main() {
     -- No added flags: measured against this exact payload, `std.cppm`
     -- #includes this same payload's own headers and needs nothing else.
     local out1 = try { function()
-        return os.iorun(string.format(
-            '"%s" "%s" -std=c++23 --precompile "%s" -o "%s"',
-            py, emxx_py, stdcppm, stdpcm))
+        return __run_py(py, emxx_py,
+                        {"-std=c++23", "--precompile", stdcppm, "-o", stdpcm})
     end }
     if not os.isfile(stdpcm) then
         raise("emsdk: could not precompile the shipped libc++ module surface"
@@ -571,9 +610,9 @@ int main() {
     end
 
     local out2 = try { function()
-        return os.iorun(string.format(
-            '"%s" "%s" -std=c++23 -fmodule-file=std="%s" "%s" "%s" -o "%s"',
-            py, emxx_py, stdpcm, app_cpp, stdpcm, appjs))
+        return __run_py(py, emxx_py,
+                        {"-std=c++23", "-fmodule-file=std=" .. stdpcm,
+                         app_cpp, stdpcm, "-o", appjs})
     end }
     if not os.isfile(appjs) then
         raise("emsdk: compiling/linking the `import std` probe failed (this is"
