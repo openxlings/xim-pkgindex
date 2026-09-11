@@ -1,5 +1,6 @@
 """Tests for the android-ndk package."""
 import glob
+import json
 import os
 import re
 import subprocess
@@ -102,6 +103,56 @@ class TestPinnedFacts:
                 f"{k} is not dotted digits -- the release name (\"r30\") "
                 f"must never become a version key, only Pkg.Revision"
             )
+
+    @pytest.mark.static
+    def test_the_recipe_writes_the_mcpp_descriptor(self, source_text):
+        """THE PAYLOAD DESCRIBES ITSELF, AND THIS RECIPE IS WHERE IT DOES.
+
+        Three facts about this NDK used to live inside mcpp's engine: the
+        `toolchains/llvm/prebuilt/<host>/bin` layout, the API floor's location
+        in `meta/platforms.json`, and the `-D__BIONIC_CTYPE_INLINE=` its libc++
+        module surface needs. This recipe already computes all three for its
+        own probes, so the engine was re-deriving facts their owner held --
+        which is why a second such SDK meant editing the engine rather than
+        publishing a package.
+
+        `.mcpp-toolchain.json` (schema 1) is the seam, and asserting its
+        content here is the point of writing it here: a malformed descriptor is
+        refused BY NAME by the engine, so the recipe is where the mistake has
+        to be caught.
+
+        A source assertion rather than an installed-file one: the installed
+        check is below under `verify`, where a payload exists. This one runs
+        everywhere and fails when a key is dropped.
+        """
+        code = re.sub(r'--.*', '', source_text)
+        assert '.mcpp-toolchain.json' in code, (
+            "the recipe does not write the descriptor mcpp reads"
+        )
+        assert '"schema": 1' in code, "the descriptor must declare its schema"
+        for key in ('"frontend"', '"platform_floor"', '"std_module_defines"'):
+            assert key in code, f"the descriptor omits {key}"
+        assert '__BIONIC_CTYPE_INLINE=' in code, (
+            "the define this payload's libc++ module surface needs is not "
+            "carried in the descriptor"
+        )
+        # THE FLOOR IS READ, NOT WRITTEN DOWN. A constant here would become a
+        # version in a diagnostic and then in somebody's command line, and the
+        # NDK's floor moves with the NDK.
+        assert 'platforms.json' in code, (
+            "the floor must come from the payload's own declaration"
+        )
+        assert not re.search(r'"platform_floor"\s*:\s*"?\d', code), (
+            "the floor is hardcoded in the descriptor rather than read from "
+            "the payload"
+        )
+        # AND THE PATH IS FORWARD-SLASHED ON EVERY HOST, because a backslash in
+        # JSON is an escape character -- a mistake this index has already paid
+        # for once, in pkgs/e/emsdk.lua.
+        assert 'path.join' not in code.split('local rel = ')[1].split('}')[0], (
+            "the descriptor's relative path is composed with path.join, which "
+            "produces backslashes on Windows and an invalid JSON escape"
+        )
 
     @pytest.mark.static
     def test_sha256_present_and_64_hex(self, source_text):
@@ -373,6 +424,36 @@ class TestVerify:
         )
         assert os.path.isfile(os.path.join(pkgdir, SHAREV1_REL, "std.cppm"))
         assert os.path.isfile(os.path.join(pkgdir, SHAREV1_REL, "std.compat.cppm"))
+
+    @pytest.mark.verify
+    @skip_if_not('linux')
+    def test_the_installed_descriptor_describes_this_payload(self):
+        """The file is only worth writing if it is TRUE of the payload it sits
+        in, so this reads it back and checks each key against the tree.
+
+        The one way it can be false while looking right is a frontend path that
+        does not resolve -- which is exactly what the engine's own hardcoded
+        guess got wrong on a host whose tag it derived differently.
+        """
+        pkgdir = self._installed_pkgdir()
+        descriptor = os.path.join(pkgdir, ".mcpp-toolchain.json")
+        assert os.path.isfile(descriptor), f"no descriptor under {pkgdir}"
+        with open(descriptor, encoding="utf-8") as handle:
+            d = json.load(handle)
+
+        assert d["schema"] == 1
+        # The frontend it names is the compiler that is there.
+        assert os.path.isfile(os.path.join(pkgdir, d["frontend"])), (
+            f'the descriptor names {d["frontend"]}, which does not exist'
+        )
+        assert "/" in d["frontend"] and "\\" not in d["frontend"], (
+            "the path must be forward-slashed for every consumer"
+        )
+        # The floor it names is the floor the payload declares.
+        with open(os.path.join(pkgdir, "meta", "platforms.json"),
+                  encoding="utf-8") as handle:
+            assert d["platform_floor"] == str(json.load(handle)["min"])
+        assert d["std_module_defines"] == ["__BIONIC_CTYPE_INLINE="]
 
     @pytest.mark.verify
     @skip_if_not('linux')

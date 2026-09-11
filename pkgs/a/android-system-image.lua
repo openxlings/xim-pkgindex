@@ -196,23 +196,25 @@
 -- The two test artifacts (hello_aarch64-linux-android_{,std_}dynamic, NDK
 -- r30) both declare `interpreter /system/bin/linker64` and
 -- `NEEDED libc++_shared.so/libm.so/libdl.so/libc.so` (`readelf -d`).
--- Single-shot `debugfs -R "dump <in-image-path> <out-file>" system.img`
--- (no `cd` first, no mount, no loop device, no root privilege) pulls
--- exactly what those four NEEDED entries plus the interpreter require:
+-- One `7zz x` (no mount, no loop device, no root privilege) pulls exactly
+-- what those four NEEDED entries plus the interpreter require:
 --
---   debugfs -R "dump /bin/linker64   <root>/system/bin/linker64"   system.img
---   debugfs -R "dump /lib64/libc.so  <root>/system/lib64/libc.so"  system.img
---   debugfs -R "dump /lib64/libdl.so <root>/system/lib64/libdl.so" system.img
---   debugfs -R "dump /lib64/libm.so  <root>/system/lib64/libm.so"  system.img
+--   7zz x system.img -o<root>/system -y \
+--     bin/linker64 lib64/libc.so lib64/libdl.so lib64/libm.so
 --   chmod +x <root>/system/bin/linker64
 --
--- (`debugfs` ships with e2fsprogs, present on essentially every Linux base
--- install; probed with a warning in install() below rather than a hard
--- `deps` entry -- the same posture android-emulator.lua takes for libX11,
--- a host tool this index does not itself vend.) The extracted `linker64`
--- is a genuine `ELF ... ARM aarch64 ... static-pie linked`, and `libc.so`
--- a genuine `ELF ... ARM aarch64 ... dynamically linked` -- the real
--- bionic runtime this image ships, not stubs.
+-- Measured 2026-09-11 with `xim:7zip` 26.02 against this image: `Everything
+-- is Ok / Files: 4`, and the in-image directories are preserved, so the
+-- extraction writes the `<root>/system/{bin,lib64}` tree qemu-user needs
+-- directly rather than composing four destinations. The entry names carry no
+-- leading slash -- that is how 7-Zip names ext4 entries, also measured.
+--
+-- THE TOOL IS `xim:7zip` AND NOT THE OBVIOUS `debugfs`, for a reason
+-- recorded below and in pkgs/e/e2fsprogs.lua: the ecosystem's debugfs is a
+-- broken static build. The extracted `linker64` is a genuine `ELF ... ARM
+-- aarch64 ... static-pie linked`, and `libc.so` a genuine `ELF ... ARM
+-- aarch64 ... dynamically linked` -- the real bionic runtime this image
+-- ships, not stubs.
 --
 -- MEASURED, NOT ASSUMED: `libc++_shared.so` IS ABSENT FROM THIS IMAGE.
 --
@@ -226,18 +228,21 @@
 -- THE WORKING INVOCATION -- BOTH ARTIFACTS, REPEATED RUNS, TWO
 -- INDEPENDENT qemu-aarch64 BUILDS.
 --
--- AND THE EXTRACTION THAT FEEDS IT IS CURRENTLY BLOCKED, which this record
--- has to say or it describes a route the ecosystem cannot take. The four
--- files below are extracted with `debugfs`, and
--- `xim:e2fsprogs@1.47.3`'s debugfs is a broken static build -- SIGFPE on every
--- filesystem-opening command, while dumpe2fs/e2fsck/tune2fs from the same
--- payload work (see the KNOWN DEFECT note in pkgs/e/e2fsprogs.lua for the
--- measurements). The runs recorded below were performed with the HOST's
--- debugfs 1.47.0, which the bare name falls through to from a directory with
--- no xlings project config; that is what made the measurement look
--- reproducible. `install()` now refuses with a message naming the payload
--- instead of extracting nothing, and closing this needs a repin of
--- e2fsprogs rather than a change here.
+-- AND THE EXTRACTION THAT FEEDS IT WAS BLOCKED FOR ONE RELEASE, which this
+-- record keeps because the reason generalises. The four files were extracted
+-- with `debugfs`, and `xim:e2fsprogs@1.47.3`'s debugfs is a broken static
+-- build -- SIGFPE on every filesystem-opening command, while
+-- dumpe2fs/e2fsck/tune2fs from the same payload work (see the KNOWN DEFECT
+-- note in pkgs/e/e2fsprogs.lua for the measurements). The runs recorded below
+-- were first performed with the HOST's debugfs 1.47.0, which the bare name
+-- falls through to from a directory with no xlings project config; that is
+-- what made the measurement look reproducible when the ecosystem could not
+-- reproduce it.
+--
+-- THE ROUTE AROUND IT IS A DIFFERENT TOOL, NOT A REPIN. `xim:7zip` reads
+-- ext4, is already in this index, and is now the declared dependency; the
+-- e2fsprogs defect stays recorded and unowned here, because nothing else in
+-- the index depends on that `debugfs` and the repin belongs to that package.
 --
 -- With `<root>` holding only the four extracted files above (no copy of
 -- libc++_shared.so anywhere near it):
@@ -393,16 +398,38 @@ package = {
 
     xpm = {
         linux = {
-            -- THE EXTRACTION TOOL COMES FROM THE ECOSYSTEM.
+            -- THE EXTRACTION TOOL COMES FROM THE ECOSYSTEM, AND IT IS NOT
+            -- THE OBVIOUS ONE.
             --
             -- `system.img` is a raw ext4 filesystem (measured -- see "A
             -- SECOND, INDEPENDENT PATH" above), and reading four files out of
-            -- it needs `debugfs`. That was a host probe with a warning telling
-            -- the user to install e2fsprogs, which made the qemu-user route
-            -- conditional on what happens to be on the machine -- a leak, and
-            -- the one thing this package exists to close. `xim:e2fsprogs`
-            -- already ships `debugfs` (pkgs/e/e2fsprogs.lua declares it in
-            -- `sbin_programs`), so the loop closes by declaring it.
+            -- it needs a program that can open ext4. The obvious answer is
+            -- `debugfs` from `xim:e2fsprogs`, and that is what this declared;
+            -- the measured answer is that the payload's `debugfs` is a broken
+            -- static build which SIGFPEs on every filesystem-opening command
+            -- while dumpe2fs, e2fsck and tune2fs from the SAME payload work
+            -- (pkgs/e/e2fsprogs.lua records the measurements). So declaring it
+            -- produced a package that installed and could not serve the one
+            -- route the arm64-v8a key exists for.
+            --
+            -- `xim:7zip` reads ext4. Measured 2026-09-11 against this exact
+            -- image:
+            --
+            --   7zz l system.img            Type = Ext, Label = system
+            --   7zz x system.img -o<dir> \
+            --     bin/linker64 lib64/libc.so lib64/libdl.so lib64/libm.so
+            --                               Everything is Ok / Files: 4
+            --
+            -- One command instead of four, the in-image paths carry no
+            -- leading slash, and the directory layout is preserved -- which is
+            -- exactly the `<root>/system/{bin,lib64}` shape qemu-user needs,
+            -- so the extraction writes it directly instead of composing it.
+            --
+            -- THE OTHER PACKAGE'S DEFECT IS NOT FIXED BY THIS, and it is not
+            -- worked around either: nothing else in the index depends on that
+            -- `debugfs`, so the repin belongs to e2fsprogs and this recipe
+            -- simply stops being the only consumer of a program that does not
+            -- work.
             --
             -- Declared for every key rather than only the non-x86_64 ones:
             -- `deps` is a property of the descriptor and the arm64-v8a key is
@@ -410,7 +437,7 @@ package = {
             -- at all. One extra small payload on an x86_64-only install is a
             -- better trade than an extraction step whose availability depends
             -- on the host.
-            deps = { "xim:e2fsprogs" },
+            deps = { "xim:7zip" },
             -- No `latest` key -- see the header: these versions are not
             -- totally ordered, so there is no single unambiguous newest.
             ["24-default-x86_64"] = {
@@ -497,127 +524,112 @@ function install()
     -- `-sysdir`) is ever used for that key. Extracted once, here, rather
     -- than on every runner invocation -- see the header for why.
     if found ~= "x86_64" then
-        -- `debugfs` is a declared dependency (see the xpm block), so its
-        -- absence is a broken installation and not a host variation to warn
-        -- about. Refused rather than skipped: a skip here would produce a
-        -- package that installs successfully and cannot serve the one route
-        -- the arm64-v8a key exists for, and the failure would surface later
-        -- as a runner that cannot find `linker64`.
+        -- THE EXTRACTOR IS A DECLARED DEPENDENCY, SO ITS ABSENCE IS A BROKEN
+        -- INSTALLATION AND NOT A HOST VARIATION TO WARN ABOUT. Refused rather
+        -- than skipped: a skip here produces a package that installs
+        -- successfully and cannot serve the one route the arm64-v8a key exists
+        -- for, and the failure surfaces later as a runner that cannot find
+        -- `linker64`.
+        --
         -- RESOLVED THROUGH THE DEPENDENCY'S INSTALL DIR, NOT THROUGH PATH,
-        -- WHICH IS THIS INDEX'S OWN RULE AND WAS BROKEN HERE.
+        -- which is this index's own rule (contributing.md R6) and was broken
+        -- here once already: the previous version probed `debugfs -V` on PATH,
+        -- and a xim shim is NOT on PATH inside an install hook, so with the
+        -- dependency correctly installed the probe still failed.
         --
-        -- This probed `debugfs -V` on PATH and then invoked `debugfs` the same
-        -- way. `xim:e2fsprogs` registers a shim, and that shim is NOT on PATH
-        -- inside an install hook -- so with the dependency correctly installed
-        -- the probe still failed and the package could not be installed at
-        -- all:
-        --
-        --   android-system-image: 'debugfs' is not runnable, but xim:e2fsprogs
-        --   is a declared dependency of this package -- the dependency did not
-        --   install, or its shim is not on PATH for this hook.
-        --
-        -- The message named both possibilities and the second one was true.
-        -- Only the arm64-v8a key reaches this branch, which is why it survived:
-        -- the x86_64 key needs no user-mode translation and installs fine.
-        --
-        -- contributing.md R6 already requires this shape, and this file's own
-        -- header cites it; `pkgs/e/emsdk.lua`'s `__find_node` and `llvm.lua`'s
-        -- `__find_glibc_runtime` are the two existing examples. e2fsprogs puts
-        -- it in `sbin/`, with `bin/` accepted so a future layout change is a
-        -- one-line addition rather than a broken install.
-        local debugfs_bin
-        local e2fs_dir = pkginfo.dep_install_dir("xim:e2fsprogs")
-        if e2fs_dir then
-            for _, sub in ipairs({"sbin", "bin"}) do
-                local candidate = path.join(e2fs_dir, sub, "debugfs")
-                if os.isfile(candidate) then debugfs_bin = candidate break end
+        -- `xim:7zip` puts its program at the payload ROOT rather than in
+        -- `bin/` (pkgs/7/7zip.lua moves `7zz` straight into install_dir), and
+        -- both names are accepted so a future layout change is an entry in
+        -- this list rather than a broken install.
+        local zbin
+        local z_dir = pkginfo.dep_install_dir("xim:7zip")
+        if z_dir then
+            for _, rel in ipairs({"7zz", "7zzs", "7z",
+                                  path.join("bin", "7zz"),
+                                  path.join("bin", "7z")}) do
+                local candidate = path.join(z_dir, rel)
+                if os.isfile(candidate) then zbin = candidate break end
             end
         end
-        if not debugfs_bin then
-            raise("android-system-image: no `debugfs` in the xim:e2fsprogs "
-                  .. "payload (looked in sbin/ and bin/ under "
-                  .. tostring(e2fs_dir) .. "). It is a declared dependency of "
+        if not zbin then
+            raise("android-system-image: no 7-Zip program in the xim:7zip "
+                  .. "payload (looked for 7zz, 7zzs and 7z under "
+                  .. tostring(z_dir) .. "). It is a declared dependency of "
                   .. "this package, so this is a broken installation rather "
                   .. "than a host variation. The qemu-user route for "
                   .. found .. " cannot be prepared without it.")
         end
 
-        -- THE PROBE HAS TO OPEN A FILESYSTEM, BECAUSE `-V` PASSES ON A BINARY
-        -- THAT CANNOT.
+        -- THE PROBE HAS TO OPEN THE FILESYSTEM, BECAUSE A VERSION STRING
+        -- PASSES ON A BINARY THAT CANNOT.
         --
-        -- This checked `debugfs -V` and took a version string as proof. That
-        -- is the one command debugfs answers without touching the image, and
-        -- `xim:e2fsprogs@1.47.3`'s statically-linked `debugfs` answers it and
-        -- then dies on everything else. Measured against a control ext4 image
-        -- created by the SAME payload's `mke2fs`:
+        -- This is the lesson the debugfs route taught and it is kept for the
+        -- new one: `debugfs -V` was the one command that binary answered
+        -- without touching the image, and it answered it and then SIGFPEd on
+        -- everything else. So the probe here LISTS the image and requires the
+        -- answer to name the filesystem type -- a statement that can only come
+        -- from having opened it.
         --
-        --   command                     payload 1.47.3   host 1.47.0
-        --   debugfs -V                  ok               ok
-        --   debugfs -R "features"       SIGFPE (136)     ok
-        --   debugfs -R "ls /"           SIGFPE (136)     ok
-        --   debugfs -R "dump ..."       SIGFPE (136)     ok
-        --   dumpe2fs -h / e2fsck / tune2fs   ok          ok
-        --
-        -- So exactly one program in that payload is non-functional, and the
-        -- old probe was blind to it by construction. `debugfs` is also the one
-        -- program there that links libss and readline, which is where a static
-        -- build of it is known to be fragile.
-        --
-        -- IT ESCAPED NOTICE BECAUSE THE SHIM FELL THROUGH TO THE HOST. Run
-        -- from a directory with no xlings project config, the `debugfs` shim
-        -- resolved to /usr/sbin/debugfs (1.47.0) and worked, which is how this
-        -- recipe's header came to document an invocation that the ecosystem
-        -- cannot actually perform. The `dep_install_dir` resolution above is
-        -- what made the breakage visible instead of silently correct.
-        -- `try { os.iorun }` is the idiom this file and pkgs/e/emsdk.lua
-        -- already use: os.iorun raises on a non-zero exit (a signal included),
-        -- and try turns that into nil. `os.execv` with redirection options is
-        -- deliberately avoided -- this hook runtime has been measured to leave
-        -- `os.arch()` and `os.files()` unbound, so an unverified API is not
-        -- the thing to put in a check.
+        -- `try { os.iorun }` is the idiom this file already uses: os.iorun
+        -- raises on a non-zero exit (a signal included), and try turns that
+        -- into nil. This hook runtime has been measured to leave `os.arch()`
+        -- and `os.files()` unbound, so an unverified API is not the thing to
+        -- put in a check.
         local probe = try { function()
-            return os.iorun(string.format('"%s" -R "features" "%s"',
-                                          debugfs_bin, system_img))
+            return os.iorun(string.format('"%s" l "%s"', zbin, system_img))
         end }
-        if not probe or not tostring(probe):find("features", 1, true) then
-            raise("android-system-image: the `debugfs` in xim:e2fsprogs at "
-                  .. debugfs_bin .. " cannot open a filesystem "
-                  .. "(`-R features` produced no feature list), so the four "
-                  .. "bionic files this key needs cannot be extracted from "
-                  .. system_img .. ".\n"
-                  .. "This is a defect in that payload rather than in this "
-                  .. "image: the same build's dumpe2fs, e2fsck and tune2fs all "
-                  .. "work, and only debugfs fails -- on every "
-                  .. "filesystem-opening command, including against a control "
-                  .. "image made by the payload's own mke2fs. `debugfs -V` "
-                  .. "succeeds on it, which is why a version probe could not "
-                  .. "see this.\n"
-                  .. "The x86_64 key of this package is unaffected: an x86_64 "
+        if not probe or not tostring(probe):find("Type = Ext", 1, true) then
+            raise("android-system-image: the 7-Zip at " .. zbin
+                  .. " cannot open " .. system_img .. " as a filesystem "
+                  .. "(`l` did not report `Type = Ext`), so the four bionic "
+                  .. "files this key needs cannot be extracted.\n"
+                  .. "This image IS a raw ext4 filesystem -- measured -- so "
+                  .. "the fault is in the extractor or in the download. The "
+                  .. "x86_64 key of this package is unaffected: an x86_64 "
                   .. "guest on an x86_64 host needs no user-mode translation "
                   .. "and therefore no extraction.")
         end
 
         do
+            -- ONE COMMAND, AND THE LAYOUT COMES OUT RIGHT BY ITSELF.
+            --
+            -- qemu-user needs `<root>/system/bin/linker64` and the three core
+            -- NEEDED libraries under `<root>/system/lib64/` -- see "A SECOND,
+            -- INDEPENDENT PATH" above for the full measurement. 7-Zip
+            -- preserves the in-image directories, so extracting the four
+            -- paths into `<dir>/qemu-user-root/system` produces that tree
+            -- directly; the previous route dumped four files to four composed
+            -- destinations, which is four places for the layout to be stated.
+            --
+            -- Extracted once, here, rather than on every runner invocation --
+            -- see the header for why.
             local qroot = path.join(dir, "qemu-user-root", "system")
-            os.mkdir(path.join(qroot, "bin"))
-            os.mkdir(path.join(qroot, "lib64"))
+            os.mkdir(qroot)
 
-            local function dump_one(in_image_path, out_file)
-                system.exec("\"" .. debugfs_bin .. "\" -R \"dump "
-                            .. in_image_path .. " "
-                            .. out_file .. "\" " .. system_img)
-                if not os.isfile(out_file) then
-                    raise("android-system-image: debugfs failed to extract "
-                          .. in_image_path .. " from " .. system_img
-                          .. " into " .. out_file .. " -- upstream's "
-                          .. "internal partition layout may have changed")
+            -- No leading slash: that is how 7-Zip names entries in an ext4
+            -- image, measured against this image with `7zz l`.
+            local WANTED = {
+                {"bin/linker64",   path.join(qroot, "bin", "linker64")},
+                {"lib64/libc.so",  path.join(qroot, "lib64", "libc.so")},
+                {"lib64/libdl.so", path.join(qroot, "lib64", "libdl.so")},
+                {"lib64/libm.so",  path.join(qroot, "lib64", "libm.so")},
+            }
+            local args = ""
+            for _, w in ipairs(WANTED) do args = args .. ' "' .. w[1] .. '"' end
+            system.exec(string.format('"%s" x "%s" -o"%s" -y%s',
+                                      zbin, system_img, qroot, args))
+
+            -- EVERY FILE, NOT THE COMMAND'S EXIT CODE. 7-Zip exits 0 having
+            -- extracted nothing when a named entry is absent from the archive
+            -- (it reports a warning), so the only honest check is the files.
+            for _, w in ipairs(WANTED) do
+                if not os.isfile(w[2]) then
+                    raise("android-system-image: 7-Zip did not extract "
+                          .. w[1] .. " from " .. system_img .. " into "
+                          .. w[2] .. " -- upstream's internal partition "
+                          .. "layout may have changed")
                 end
             end
-
-            dump_one("/bin/linker64", path.join(qroot, "bin", "linker64"))
-            dump_one("/lib64/libc.so", path.join(qroot, "lib64", "libc.so"))
-            dump_one("/lib64/libdl.so", path.join(qroot, "lib64", "libdl.so"))
-            dump_one("/lib64/libm.so", path.join(qroot, "lib64", "libm.so"))
             system.exec("chmod +x " .. path.join(qroot, "bin", "linker64"))
         end
     end

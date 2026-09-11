@@ -391,6 +391,103 @@ local function read_libcpp_version(toolchain)
     return content:match("#%s*define%s+_LIBCPP_VERSION%s+(%d+)")
 end
 
+-- THE NDK'S OWN MINIMUM API LEVEL, out of the payload's own declaration.
+--
+-- `meta/platforms.json` is upstream's statement of the range it supports --
+-- `{"min": 21, "max": 37}` for r30 -- and a consumer that needs a default
+-- level needs exactly this number: bionic refuses an unversioned triple, so
+-- "leave it out" is not an option a build tool has.
+--
+-- A PATTERN RATHER THAN A JSON PARSER. This hook runtime has been measured to
+-- leave several `os.*` functions unbound, and adding a JSON dependency to
+-- read one integer would be a larger surface than the thing it reads. The key
+-- is at the top level of a file upstream generates, and a mismatch is visible
+-- as a nil here rather than as a wrong number.
+local function read_min_api_level(install_dir)
+    local meta = path.join(install_dir, "meta", "platforms.json")
+    local f = io.open(meta, "r")
+    if not f then return nil end
+    local content = f:read("*a")
+    f:close()
+    return content:match('"min"%s*:%s*(%d+)')
+end
+
+-- WHAT THIS PAYLOAD IS, WRITTEN DOWN WHERE A BUILD TOOL CAN READ IT.
+--
+-- Three facts about this NDK used to live inside mcpp's engine: the
+-- `toolchains/llvm/prebuilt/<host>/bin` layout, the API floor's location in
+-- `meta/platforms.json`, and the `-D__BIONIC_CTYPE_INLINE=` its libc++ module
+-- surface needs. THIS RECIPE ALREADY COMPUTES ALL THREE -- `host_tag()` for
+-- its own path assertions, the floor's file for nothing yet, and that define
+-- in `selftest_std_module` -- so the engine was re-deriving facts their owner
+-- already held, and a second such SDK meant editing the engine rather than
+-- publishing a package.
+--
+-- `.mcpp-toolchain.json` (schema 1) is that seam. mcpp reads it if present and
+-- behaves exactly as before if absent, so this is additive for every payload
+-- including the ones already released. A malformed one is REFUSED by name
+-- rather than ignored, which is why the assertions below are worth having:
+-- the file this writes is a contract, and the recipe's own tests are the
+-- place its content is checked.
+--
+-- `frontend` is host-resolved here, which is the point: the engine stops
+-- needing to know that the NDK spells this host `linux-x86_64` and that
+-- Windows adds `.exe`.
+local function write_mcpp_descriptor(install_dir, clangxx)
+    local floor = read_min_api_level(install_dir)
+    if not floor then
+        raise("android-ndk: could not read the minimum API level out of "
+              .. path.join(install_dir, "meta", "platforms.json")
+              .. ". bionic refuses an unversioned target triple, so a "
+              .. "consumer with no level of its own has no default to fall "
+              .. "back to -- refusing rather than publishing a descriptor "
+              .. "that omits the one number it exists to carry.")
+    end
+
+    -- Relative to the payload root, with forward slashes on every host: the
+    -- consumer joins it to a root of its own, and a backslash in JSON is an
+    -- escape character. This recipe has already paid for that once in
+    -- pkgs/e/emsdk.lua, where a Windows path written into a Python source
+    -- file became an invalid unicode escape.
+    local rel = table.concat({
+        "toolchains", "llvm", "prebuilt", host_tag(), "bin",
+        "clang++" .. (is_host("windows") and ".exe" or ""),
+    }, "/")
+
+    local descriptor = path.join(install_dir, ".mcpp-toolchain.json")
+    local f = io.open(descriptor, "w")
+    if not f then
+        raise("android-ndk: cannot write " .. descriptor)
+    end
+    f:write(string.format([[{
+  "schema": 1,
+  "frontend": "%s",
+  "platform_floor": "%s",
+  "std_module_defines": ["__BIONIC_CTYPE_INLINE="]
+}
+]], rel, floor))
+    f:close()
+
+    -- ASSERT THE FILE DESCRIBES THIS PAYLOAD, not that the write returned.
+    -- The whole value of the descriptor is that it is true, and the one way
+    -- it can be false while looking right is a path that does not resolve --
+    -- which is exactly what the engine's own hardcoded guess used to get
+    -- wrong on a host whose tag it derived differently.
+    local named = path.join(install_dir, rel)
+    if not os.isfile(named) then
+        raise("android-ndk: the descriptor names " .. rel
+              .. ", which does not exist under " .. install_dir
+              .. " -- a descriptor that points at nothing is worse than none")
+    end
+    if named ~= clangxx then
+        raise("android-ndk: the descriptor names " .. named
+              .. " and this install verified " .. clangxx
+              .. " -- two answers to where this payload keeps its compiler")
+    end
+    log.debug("android-ndk: descriptor written (floor %s, frontend %s)",
+              floor, rel)
+end
+
 -- ASSERT ON THE ARTIFACT, NOT THE INTENT (docs/V2/xpackage-spec.md, rule
 -- R4). This precompiles the PAYLOAD'S OWN vendored std.cppm, against the
 -- PAYLOAD'S OWN sysroot, with the PAYLOAD'S OWN clang++ -- exactly what a
@@ -569,6 +666,11 @@ function install()
     -- __BIONIC_CTYPE_INLINE is still the right macro name if this call
     -- fails, because that is exactly what would make it fail.
     selftest_std_module(dir)
+
+    -- AFTER the self-test, deliberately. The descriptor asserts that this
+    -- payload's `import std` works with that define, and writing the claim
+    -- before measuring it would publish a contract on an unverified payload.
+    write_mcpp_descriptor(dir, clangxx)
 
     return true
 end
