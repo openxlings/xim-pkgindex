@@ -146,14 +146,26 @@
 --       Pkg.Revision / Pkg.ReleaseName, unmodified, for a consumer that
 --       wants to confirm which build it got without re-deriving it.
 --
--- HOST ARCH SCOPE. `archs = {"x86_64"}` because upstream ships exactly one
--- Linux host build -- verified against the downloads page's own table,
--- which lists a single "Linux 64-bit (x86)" row. There is no linux/aarch64
--- NDK distribution to select between, so the `os.arch()`-is-unbound pitfall
--- (pkgs/n/node.lua, pkgs/j/jdk-zulu.lua) does not arise here for arch
--- selection. It reappears in a different shape in install() below: deriving
+-- HOST ARCH SCOPE, AND IT DIFFERS PER PLATFORM.
+--
+-- `archs = {"x86_64", "aarch64"}` is a statement about the package, and the
+-- platform tables are where the truth per host lives -- the same shape
+-- pkgs/7/7zip.lua, pkgs/b/bun.lua and pkgs/c/cuda-nvcc.lua use:
+--
+--   linux    ONE x86_64 build. Upstream's downloads page lists a single
+--            "Linux 64-bit (x86)" row and there is no linux/aarch64 NDK, so
+--            an aarch64 Linux host has nothing to select. That is a property
+--            of upstream, not an omission here.
+--   macosx   ONE archive, and it is a UNIVERSAL build -- so it serves both
+--            Apple arches and there is nothing to select either.
+--   windows  ONE x86_64 build.
+--
+-- So no table needs `arch_alias` and the `os.arch()`-is-unbound pitfall
+-- (pkgs/n/node.lua, pkgs/j/jdk-zulu.lua) does not arise for arch selection on
+-- any host. It reappears in a different shape in install() below: deriving
 -- the archive's INTERNAL extraction directory name, which is not the same
--- string as the downloaded file name.
+-- string as the downloaded file name -- and which now differs across three
+-- files rather than one.
 package = {
     spec = "2",
     homepage = "https://developer.android.com/ndk",
@@ -171,7 +183,7 @@ package = {
     docs = "https://developer.android.com/ndk/guides",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"compiler", "toolchain", "cross", "android"},
     keywords = {"android", "ndk", "clang", "bionic", "cross-compile",
@@ -239,6 +251,42 @@ package = {
                     CN     = "https://gitcode.com/xlings-res/android-ndk/releases/download/30.0.16248370/android-ndk-r30-linux.zip",
                 },
                 sha256 = "753611f410d002cfcd3f3dc2ef49aad532089d3180b436c060a90bf0fcb64df2",
+            },
+        },
+        -- macOS AND WINDOWS. Upstream publishes an NDK for every host this
+        -- index serves, and a toolchain that exists for a host should be
+        -- installable there. Measured 2026-09-11 with HEAD:
+        --
+        --   android-ndk-r30-darwin.zip    929 MB
+        --   android-ndk-r30-windows.zip   694 MB
+        --
+        -- The darwin archive is a universal build, so one entry serves both
+        -- Apple arches -- which is why `archs` is not narrowed per platform.
+        --
+        -- THE EXECUTION EVIDENCE IS LINUX ONLY, and the difference matters for
+        -- more than politeness: install() derives the archive's internal
+        -- directory name from the FILE name, and the three files differ. The
+        -- index's own macos-install-test and windows-test are the measurement
+        -- for those two legs. Stated here rather than left for a reader to
+        -- infer from the table's shape.
+        macosx = {
+            ["latest"] = { ref = "30.0.16248370" },
+            ["30.0.16248370"] = {
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/android-ndk-r30-darwin.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-ndk/releases/download/30.0.16248370/android-ndk-r30-darwin.zip",
+                },
+                sha256 = "d125634de97b26deb1e1bb1a562f9d839aa5803d1784a1e414485f5ccbe6739f",
+            },
+        },
+        windows = {
+            ["latest"] = { ref = "30.0.16248370" },
+            ["30.0.16248370"] = {
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/android-ndk-r30-windows.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-ndk/releases/download/30.0.16248370/android-ndk-r30-windows.zip",
+                },
+                sha256 = "b830098aaf18b67a42eb831c404e15e5f2990a474f054ac145b0bc957ac6d729",
             },
         },
     },

@@ -110,19 +110,33 @@ class TestPinnedFacts:
         assert re.search(r'CN\s*=', code), "no CN key"
 
     @pytest.mark.static
-    def test_linux_only(self, meta):
-        assert meta.platforms.get("linux")
-        assert "macosx" not in meta.platforms
-        assert "windows" not in meta.platforms
+    def test_every_host_upstream_publishes_for(self, meta):
+        """REVERSED. This pinned `linux` only, which was true of the recipe and
+        not of upstream: Google publishes android-emulator for every host this index
+        serves. Declaring one was an incomplete addition rather than a
+        conclusion, so the test now asserts the completion -- one per host, and macOS gets two because Apple silicon has its own build.
+
+        Execution evidence remains Linux-only and the recipe says so; the
+        index's own macos-install-test and windows-test are the measurement for
+        the other two legs.
+        """
+        for host in ("linux", "macosx", "windows"):
+            assert meta.platforms.get(host), f"no {host} table"
 
     @pytest.mark.static
-    def test_single_host_arch(self, source_text):
+    def test_arch_scope_is_stated_per_platform(self, source_text):
+        """REVERSED with the platform completion. `archs` is a statement about
+        the PACKAGE and the platform tables carry the truth per host -- the
+        shape 7zip.lua, bun.lua and cuda-nvcc.lua use. Upstream publishes one
+        archive per host, so no table needs an `arch_alias` for selection and
+        the `os.arch()`-is-unbound pitfall does not arise.
+        """
         m = re.search(r'archs\s*=\s*\{([^}]*)\}', source_text)
         assert m, "no archs field"
         archs = re.findall(r'"([^"]+)"', m.group(1))
-        assert archs == ["x86_64"], (
-            f"expected exactly one host arch (x86_64, matching upstream's "
-            f"single Linux build), got {archs}"
+        assert archs == ["x86_64", "aarch64"], (
+            f"expected both host arches, with the platform tables deciding "
+            f"what each host is served, got {archs}"
         )
 
     @pytest.mark.static
