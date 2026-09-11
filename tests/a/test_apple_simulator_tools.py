@@ -195,6 +195,39 @@ class TestIndex:
         assert_xim_add_succeeds(PKG_FILE)
 
 
+    @pytest.mark.static
+    def test_the_program_goes_in_bin(self, source_text):
+        """mcpp's runner lookup searches `<payload>/bin`.
+
+        The first version of this recipe wrote the program one level up, and
+        the failure named the directory it had searched:
+
+            error: runner 'simctl-run' for 'aarch64-ios-sim' was not found on
+                   any search path.
+            Searched: .../xim-x-apple-simulator-tools/0.1.0/bin
+
+        The directory was right and the program was not in it. `bin/` is the
+        convention a consumer can rely on, so a package that exists to provide
+        a program puts it there -- and the xvm registration has to name the
+        same directory, which is the half a move like this forgets.
+        """
+        code = re.sub(r'--.*', '', source_text)
+        assert re.search(r'bindir\s*=\s*path\.join\(dir,\s*"bin"\)', code), (
+            "the install hook does not compose a bin/ directory"
+        )
+        assert re.search(r'program\s*=\s*path\.join\(bindir', code), (
+            "the program is not written into bin/"
+        )
+        # THE REGISTRATION AND THE WRITE MUST NAME ONE DIRECTORY. A recipe that
+        # wrote to `bin/` and registered the root would install correctly and
+        # produce a shim that resolves to nothing.
+        assert re.search(r'xvm\.add\("simctl-run",\s*\{\s*bindir\s*=\s*dir',
+                         code), (
+            "the xvm registration does not name the directory the program was "
+            "written to"
+        )
+
+
 class TestVerify:
     @pytest.mark.verify
     @skip_if_not('macosx')
@@ -204,6 +237,7 @@ class TestVerify:
         hits = []
         for ns in ("xim", "local"):
             hits += sorted(glob.glob(os.path.join(
-                xpkgs_dir(), f"{ns}-x-apple-simulator-tools", "*", "simctl-run")))
-        assert hits, "no installed simctl-run found"
+                xpkgs_dir(), f"{ns}-x-apple-simulator-tools", "*", "bin",
+                "simctl-run")))
+        assert hits, "no installed bin/simctl-run found"
         assert os.access(hits[-1], os.X_OK), f"{hits[-1]} is not executable"
