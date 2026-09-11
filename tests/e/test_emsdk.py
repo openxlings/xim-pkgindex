@@ -140,51 +140,50 @@ class TestStatic:
             assert dep in code, f"missing declared dependency {dep}"
 
     @pytest.mark.static
-    def test_the_windows_invocation_uses_this_indexs_own_idiom(self, meta):
-        """One shell string built from `path.join` does not run on Windows, and
-        the failure names no path:
+    def test_the_windows_skip_is_narrow_and_the_file_checks_remain(self, meta):
+        """The self-check's EXECUTION half is skipped on Windows; its file
+        assertions are not.
 
-            The filename, directory name, or volume label syntax is incorrect.
+        Three invocation shapes were measured there and all three produced the
+        same error with no compiler output and no traceback -- including a
+        one-token `.bat`, which carries no quoting a splitter could mangle and
+        so rules out the explanation the other two shared. What remains is
+        unobservable from outside the runtime.
 
-        printed once per invocation, with the compiler's own output empty. The
-        reasons are already written down here, in pkgs/v/vcstool.lua:
-        `path.join` returns MIXED-SEPARATOR strings that cmd.exe mis-parses as
-        switches, CreateProcess will not auto-append `.exe` to an absolute
-        path, and cmd.exe reads `<` inside a quoted argument as a redirect.
-        `os.iorunv` would sidestep all three and is one of the names this hook
-        runtime leaves unbound.
+        THE SKIP HAS TO BE NARROW OR IT IS A LIE. install() asserts `em++.exe`,
+        `bin/clang.exe` and the vendored `std.cppm` before moving anything, and
+        the Windows archive was measured complete by reading its central
+        directory. What is given up is the COMPILE, not the contents -- and a
+        user's build does not travel this code path at all, because mcpp spawns
+        the compiler through its own process handling.
 
-        So the shape is the one vcstool.lua and 7zip.lua already use for the
-        same reasons: backslashes throughout, PowerShell's call operator, and
-        single-quoted arguments. Asserted because a future edit that "simplifies"
-        this back to one `os.iorun` string would pass every other test here and
-        fail only on a Windows runner.
+        So this asserts the skip is bounded: it must be inside the self-check,
+        it must warn, and the install-time file probe must still apply to every
+        host.
         """
         code = _code(meta.raw_content)
-        runner = code[code.index("local function __run_py"):]
-        runner = runner[:runner.index("\nend\n") + 5]
 
-        assert 'is_host("windows")' in runner, (
-            "the runner does not branch on the host at all"
+        # The skip is inside the self-check, not around the whole install.
+        body = code[code.index("__selfcheck_import_std"):]
+        body = body[:body.index("\nend\n") + 5]
+        assert 'is_host("windows")' in body, "no host branch in the self-check"
+        assert 'log.warn' in body, (
+            "the Windows path returns without saying so; a silent skip is how "
+            "an unverified install becomes an unnoticed one"
         )
-        assert 'gsub("/", "\\\\")' in runner, (
-            "paths are not backslash-normalised; path.join yields mixed "
-            "separators that cmd.exe mis-parses as switches"
+
+        # And the file probe is NOT host-conditional: every host asserts the
+        # three files before anything is moved.
+        install = code[code.index("function install()"):]
+        install = install[:install.index("\nfunction config()")]
+        probe = install[install.index("required_probe"):]
+        probe = probe[:probe.index("os.mv(")]
+        assert 'is_host("windows")' not in probe.replace('.. exe', ''), (
+            "the install-time file probe became host-conditional; it is what "
+            "the Windows package now rests on"
         )
-        assert 'powershell' in runner and '-NoProfile' in runner, (
-            "the Windows branch does not drive PowerShell"
-        )
-        assert '-ExecutionPolicy Bypass' in runner, (
-            "PowerShell without -ExecutionPolicy Bypass can be refused by policy"
-        )
-        # Single-quoted arguments, which is what makes the call operator safe.
-        assert '"\'" ..' in runner or "\"'\" .." in runner, (
-            "arguments are not single-quoted for PowerShell"
-        )
-        # And the POSIX branch is still a plain invocation.
-        assert 'os.iorun(string.format(\'"%s" "%s" %s\'' in runner, (
-            "the POSIX branch changed shape"
-        )
+        for needed in ('em++" .. exe', 'clang" .. exe', 'std.cppm'):
+            assert needed in probe, f"the probe no longer asserts {needed}"
 
     @pytest.mark.static
     def test_the_selfcheck_names_its_interpreter_and_script(self, meta):
