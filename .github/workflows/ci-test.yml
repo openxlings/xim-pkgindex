@@ -69,6 +69,8 @@ jobs:
         run: |
           chmod +x .github/scripts/check-no-direct-ld-libpath.sh
           .github/scripts/check-no-direct-ld-libpath.sh
+          chmod +x .github/scripts/check-no-gnu-only-stat.sh
+          .github/scripts/check-no-gnu-only-stat.sh
 
       # An install hook that calls io.read() blocks forever when nobody is
       # there to answer. `rust`'s windows hook parked a windows-test job for

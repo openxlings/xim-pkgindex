@@ -33,6 +33,92 @@ def source_text():
 
 class TestStatic:
     @pytest.mark.static
+    def test_extractor_is_resolved_and_probed_functionally(self, source_text):
+        """Two defects, one line apart, and both were invisible by design.
+
+        RESOLUTION. The hook invoked its extractor by bare name. A xim shim is
+        not on PATH inside an install hook, so with the dependency correctly
+        installed the arm64-v8a key could not be installed at all.
+        contributing.md R6 already requires resolution through
+        `pkginfo.dep_install_dir`, and this file's own header cites it.
+
+        PROBE. The check was `debugfs -V`, and a version string is the one
+        answer that binary gives without touching an image. The payload's
+        statically-linked debugfs answers it and then dies on every command
+        that opens a filesystem -- measured against a control image made by
+        the same payload's own mke2fs, so the image is not the variable. A
+        probe that cannot fail on a broken binary is not a probe.
+
+        THE EXTRACTOR IS NOW `xim:7zip`, and neither assertion is about
+        debugfs: they are about resolving a declared dependency's program and
+        about a probe that has to open the filesystem to answer. That is why
+        this test survived the tool change with its subject renamed rather
+        than being deleted with it.
+
+        Asserted as properties of the source rather than by running an install,
+        because the install needs a 2.6 GB image.
+        """
+        code = re.sub(r'--.*', '', source_text)
+
+        assert 'dep_install_dir("xim:7zip")' in code, (
+            "the extractor must be resolved through the declared dependency, "
+            "not PATH"
+        )
+        # SCOPED TO INVOCATIONS, NOT TO THE CHARACTERS -- and this test broke
+        # that rule once while its own comment stated it. A flat search over
+        # the source for a bare `7z ` matched the raise message that names the
+        # programs it looked for ("... 7zz, 7zzs and 7z under ..."), and a flat
+        # search for `-V` matched the message EXPLAINING why a version probe is
+        # insufficient. Stripping comments is not enough when the text also
+        # lives in a string literal. The question is "does anything RUN it", so
+        # only lines that run something are examined.
+        runners = [l for l in code.splitlines()
+                   if ('os.iorun' in l or 'system.exec' in l or 'os.execv' in l)]
+        assert runners, "no invocation lines found at all; the search is wrong"
+        for line in runners:
+            # A bare-name invocation resolves to the host's copy or to nothing.
+            for tool in ("debugfs", "7zz", "7zzs", "7z"):
+                assert not re.search(r'["\s(]' + tool + r'["\s]', line), (
+                    f"a bare-name `{tool}` invocation remains: {line.strip()}"
+                )
+            # The probe must open a filesystem. A version string is
+            # specifically not enough.
+            assert '-V' not in line, (
+                f"a readiness check invokes `-V`, which succeeds on a binary "
+                f"that cannot open an image: {line.strip()}"
+            )
+        # `l` lists the archive, which requires opening it; the assertion is on
+        # what the ANSWER must contain, because that is the part a broken
+        # binary cannot produce.
+        assert 'Type = Ext' in code, (
+            "the probe must require an answer that only comes from having "
+            "opened the filesystem"
+        )
+
+    @pytest.mark.static
+    def test_the_extraction_checks_every_file_not_the_exit_code(self, source_text):
+        """7-Zip exits 0 having extracted nothing when an entry is absent.
+
+        It reports a warning and returns success, so a check on the command's
+        exit status passes while `<root>/system/bin/linker64` does not exist --
+        and the failure then surfaces as a runner that cannot find the
+        interpreter, which names neither this package nor the image layout
+        that changed.
+
+        The denominator is the recipe's own list of wanted files, so a fifth
+        file added later is covered without editing this test.
+        """
+        code = re.sub(r'--.*', '', source_text)
+        wanted = re.findall(r'\{"((?:bin|lib64)/[a-z0-9_.+-]+)"', code)
+        assert len(wanted) >= 4, (
+            f"expected the four bionic files, found {wanted}"
+        )
+        assert 'os.isfile(w[2])' in code, (
+            "the extraction must assert the FILES exist, not that the command "
+            "exited zero"
+        )
+
+    @pytest.mark.static
     def test_required_fields(self, meta):
         assert_required_fields(meta)
 

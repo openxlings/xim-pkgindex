@@ -146,14 +146,26 @@
 --       Pkg.Revision / Pkg.ReleaseName, unmodified, for a consumer that
 --       wants to confirm which build it got without re-deriving it.
 --
--- HOST ARCH SCOPE. `archs = {"x86_64"}` because upstream ships exactly one
--- Linux host build -- verified against the downloads page's own table,
--- which lists a single "Linux 64-bit (x86)" row. There is no linux/aarch64
--- NDK distribution to select between, so the `os.arch()`-is-unbound pitfall
--- (pkgs/n/node.lua, pkgs/j/jdk-zulu.lua) does not arise here for arch
--- selection. It reappears in a different shape in install() below: deriving
+-- HOST ARCH SCOPE, AND IT DIFFERS PER PLATFORM.
+--
+-- `archs = {"x86_64", "aarch64"}` is a statement about the package, and the
+-- platform tables are where the truth per host lives -- the same shape
+-- pkgs/7/7zip.lua, pkgs/b/bun.lua and pkgs/c/cuda-nvcc.lua use:
+--
+--   linux    ONE x86_64 build. Upstream's downloads page lists a single
+--            "Linux 64-bit (x86)" row and there is no linux/aarch64 NDK, so
+--            an aarch64 Linux host has nothing to select. That is a property
+--            of upstream, not an omission here.
+--   macosx   ONE archive, and it is a UNIVERSAL build -- so it serves both
+--            Apple arches and there is nothing to select either.
+--   windows  ONE x86_64 build.
+--
+-- So no table needs `arch_alias` and the `os.arch()`-is-unbound pitfall
+-- (pkgs/n/node.lua, pkgs/j/jdk-zulu.lua) does not arise for arch selection on
+-- any host. It reappears in a different shape in install() below: deriving
 -- the archive's INTERNAL extraction directory name, which is not the same
--- string as the downloaded file name.
+-- string as the downloaded file name -- and which now differs across three
+-- files rather than one.
 package = {
     spec = "2",
     homepage = "https://developer.android.com/ndk",
@@ -171,7 +183,7 @@ package = {
     docs = "https://developer.android.com/ndk/guides",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"compiler", "toolchain", "cross", "android"},
     keywords = {"android", "ndk", "clang", "bionic", "cross-compile",
@@ -241,6 +253,62 @@ package = {
                 sha256 = "753611f410d002cfcd3f3dc2ef49aad532089d3180b436c060a90bf0fcb64df2",
             },
         },
+        -- macOS AND WINDOWS. Upstream publishes an NDK for every host this
+        -- index serves, and a toolchain that exists for a host should be
+        -- installable there. Measured 2026-09-11 with HEAD:
+        --
+        --   android-ndk-r30-darwin.zip    929 MB
+        --   android-ndk-r30-windows.zip   694 MB
+        --
+        -- The darwin archive is a universal build, so one entry serves both
+        -- Apple arches -- which is why `archs` is not narrowed per platform.
+        --
+        -- THE EXECUTION EVIDENCE IS LINUX ONLY, and the difference matters for
+        -- more than politeness: install() derives the archive's internal
+        -- directory name from the FILE name, and the three files differ. The
+        -- index's own macos-install-test and windows-test are the measurement
+        -- for those two legs. Stated here rather than left for a reader to
+        -- infer from the table's shape.
+        macosx = {
+            ["latest"] = { ref = "30.0.16248370" },
+            ["30.0.16248370"] = {
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/android-ndk-r30-darwin.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-ndk/releases/download/30.0.16248370/android-ndk-r30-darwin.zip",
+                },
+                sha256 = "d125634de97b26deb1e1bb1a562f9d839aa5803d1784a1e414485f5ccbe6739f",
+            },
+        },
+        -- NO `windows` TABLE, AND IT IS A MEASURED UPSTREAM FACT RATHER THAN
+        -- AN OMISSION.
+        --
+        -- Google does publish `android-ndk-r30-windows.zip`, it downloads, and
+        -- its layout is the one this recipe expects (`prebuilt/windows-x86_64`,
+        -- `bin/clang++.exe`). What it does not contain is the libc++ MODULE
+        -- SURFACE, which is the whole reason this package exists here.
+        -- Measured by reading each archive's central directory:
+        --
+        --   archive   entries   share/libc++/v1/std.cppm   std/*.inc
+        --   linux      ~10000   present                    110
+        --   darwin      10024   present                    110
+        --   windows      9108   ABSENT                       0
+        --
+        -- mcpp is module-first, so a payload that cannot compile a module
+        -- interface unit is worse than its absence: the install would succeed,
+        -- the self-test would fail on a file that is not there, and a user who
+        -- forced past it would get a toolchain that cannot build any mcpp
+        -- project. An entry that can never serve is worse than none, which is
+        -- the same rule that kept the emsdk Windows CN asset out of
+        -- pkgs/e/emsdk.lua after its upload would not land.
+        --
+        -- Declaring it and refusing in install() was considered and rejected:
+        -- it makes a Windows user download 695 MB to be told no. The refusal
+        -- they get instead is xim's own "no payload for this platform", before
+        -- anything is fetched.
+        --
+        -- The hook code is host-general anyway (`host_tag()`, the `.exe`
+        -- suffix), so if a future NDK ships the surface on Windows this becomes
+        -- a url table and nothing else.
     },
 }
 
@@ -248,12 +316,30 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
 
--- The one Linux host directory name upstream has used since the r19 unified-
--- toolchain redesign. Stable across point releases (confirmed present,
--- unrenamed, in r30); if a future major release ever changes it, the
--- assertions in install() below name the exact path they expected and fail
--- loudly rather than silently skipping the check.
-local HOST_TAG = "linux-x86_64"
+-- The host directory name under `toolchains/llvm/prebuilt/`, which upstream
+-- has used since the r19 unified-toolchain redesign. It names the HOST, never
+-- the target: a Linux x86_64 machine building for aarch64 still reads
+-- `linux-x86_64`.
+--
+-- THIS WAS A CONSTANT SPELLING ONE HOST, and it was the host it was written
+-- on. Measured by reading each r30 archive's central directory:
+--
+--   android-ndk-r30-linux.zip    prebuilt/linux-x86_64
+--   android-ndk-r30-darwin.zip   prebuilt/darwin-x86_64
+--   android-ndk-r30-windows.zip  prebuilt/windows-x86_64
+--
+-- `darwin-x86_64` on Apple silicon too: the darwin archive is a universal
+-- build, so there is no `darwin-arm64` to select. A function rather than a
+-- top-level constant, so the value is derived when it is used.
+--
+-- If a future major release renames any of them, the assertions in install()
+-- name the exact path they expected and fail loudly rather than silently
+-- skipping the check.
+local function host_tag()
+    if is_host("windows") then return "windows-x86_64" end
+    if is_host("macosx")  then return "darwin-x86_64"  end
+    return "linux-x86_64"
+end
 
 -- The libc++ revision this recipe was written and measured against ("THE
 -- RELEASE THIS RECIPE PINS" above). Read back out of the installed
@@ -267,7 +353,7 @@ local HOST_TAG = "linux-x86_64"
 local EXPECTED_LIBCPP_VERSION = "210000"  -- clang 21.0.0, NDK r30
 
 local function toolchain_dir(install_dir)
-    return path.join(install_dir, "toolchains", "llvm", "prebuilt", HOST_TAG)
+    return path.join(install_dir, "toolchains", "llvm", "prebuilt", host_tag())
 end
 
 -- Count files in `dir` whose name ends in `suffix`, via `ls` (matching
@@ -305,6 +391,103 @@ local function read_libcpp_version(toolchain)
     return content:match("#%s*define%s+_LIBCPP_VERSION%s+(%d+)")
 end
 
+-- THE NDK'S OWN MINIMUM API LEVEL, out of the payload's own declaration.
+--
+-- `meta/platforms.json` is upstream's statement of the range it supports --
+-- `{"min": 21, "max": 37}` for r30 -- and a consumer that needs a default
+-- level needs exactly this number: bionic refuses an unversioned triple, so
+-- "leave it out" is not an option a build tool has.
+--
+-- A PATTERN RATHER THAN A JSON PARSER. This hook runtime has been measured to
+-- leave several `os.*` functions unbound, and adding a JSON dependency to
+-- read one integer would be a larger surface than the thing it reads. The key
+-- is at the top level of a file upstream generates, and a mismatch is visible
+-- as a nil here rather than as a wrong number.
+local function read_min_api_level(install_dir)
+    local meta = path.join(install_dir, "meta", "platforms.json")
+    local f = io.open(meta, "r")
+    if not f then return nil end
+    local content = f:read("*a")
+    f:close()
+    return content:match('"min"%s*:%s*(%d+)')
+end
+
+-- WHAT THIS PAYLOAD IS, WRITTEN DOWN WHERE A BUILD TOOL CAN READ IT.
+--
+-- Three facts about this NDK used to live inside mcpp's engine: the
+-- `toolchains/llvm/prebuilt/<host>/bin` layout, the API floor's location in
+-- `meta/platforms.json`, and the `-D__BIONIC_CTYPE_INLINE=` its libc++ module
+-- surface needs. THIS RECIPE ALREADY COMPUTES ALL THREE -- `host_tag()` for
+-- its own path assertions, the floor's file for nothing yet, and that define
+-- in `selftest_std_module` -- so the engine was re-deriving facts their owner
+-- already held, and a second such SDK meant editing the engine rather than
+-- publishing a package.
+--
+-- `.mcpp-toolchain.json` (schema 1) is that seam. mcpp reads it if present and
+-- behaves exactly as before if absent, so this is additive for every payload
+-- including the ones already released. A malformed one is REFUSED by name
+-- rather than ignored, which is why the assertions below are worth having:
+-- the file this writes is a contract, and the recipe's own tests are the
+-- place its content is checked.
+--
+-- `frontend` is host-resolved here, which is the point: the engine stops
+-- needing to know that the NDK spells this host `linux-x86_64` and that
+-- Windows adds `.exe`.
+local function write_mcpp_descriptor(install_dir, clangxx)
+    local floor = read_min_api_level(install_dir)
+    if not floor then
+        raise("android-ndk: could not read the minimum API level out of "
+              .. path.join(install_dir, "meta", "platforms.json")
+              .. ". bionic refuses an unversioned target triple, so a "
+              .. "consumer with no level of its own has no default to fall "
+              .. "back to -- refusing rather than publishing a descriptor "
+              .. "that omits the one number it exists to carry.")
+    end
+
+    -- Relative to the payload root, with forward slashes on every host: the
+    -- consumer joins it to a root of its own, and a backslash in JSON is an
+    -- escape character. This recipe has already paid for that once in
+    -- pkgs/e/emsdk.lua, where a Windows path written into a Python source
+    -- file became an invalid unicode escape.
+    local rel = table.concat({
+        "toolchains", "llvm", "prebuilt", host_tag(), "bin",
+        "clang++" .. (is_host("windows") and ".exe" or ""),
+    }, "/")
+
+    local descriptor = path.join(install_dir, ".mcpp-toolchain.json")
+    local f = io.open(descriptor, "w")
+    if not f then
+        raise("android-ndk: cannot write " .. descriptor)
+    end
+    f:write(string.format([[{
+  "schema": 1,
+  "frontend": "%s",
+  "platform_floor": "%s",
+  "std_module_defines": ["__BIONIC_CTYPE_INLINE="]
+}
+]], rel, floor))
+    f:close()
+
+    -- ASSERT THE FILE DESCRIBES THIS PAYLOAD, not that the write returned.
+    -- The whole value of the descriptor is that it is true, and the one way
+    -- it can be false while looking right is a path that does not resolve --
+    -- which is exactly what the engine's own hardcoded guess used to get
+    -- wrong on a host whose tag it derived differently.
+    local named = path.join(install_dir, rel)
+    if not os.isfile(named) then
+        raise("android-ndk: the descriptor names " .. rel
+              .. ", which does not exist under " .. install_dir
+              .. " -- a descriptor that points at nothing is worse than none")
+    end
+    if named ~= clangxx then
+        raise("android-ndk: the descriptor names " .. named
+              .. " and this install verified " .. clangxx
+              .. " -- two answers to where this payload keeps its compiler")
+    end
+    log.debug("android-ndk: descriptor written (floor %s, frontend %s)",
+              floor, rel)
+end
+
 -- ASSERT ON THE ARTIFACT, NOT THE INTENT (docs/V2/xpackage-spec.md, rule
 -- R4). This precompiles the PAYLOAD'S OWN vendored std.cppm, against the
 -- PAYLOAD'S OWN sysroot, with the PAYLOAD'S OWN clang++ -- exactly what a
@@ -335,12 +518,28 @@ local function selftest_std_module(install_dir)
         clangxx, stdcppm, pcm)
     local out = try { function() return os.iorun(cmd) end }
 
+    -- THE SIZE IS READ IN-PROCESS, AND THE SUBPROCESS THAT USED TO DO IT WAS
+    -- THE THING THAT FAILED.
+    --
+    -- This ran `stat -c%s`, which is the GNU flag. macOS ships BSD stat, where
+    -- the spelling is `-f%z` and `-c` is an error -- so on the macOS install
+    -- job the precompile SUCCEEDED, the measurement returned nothing, and the
+    -- self-test raised "did not produce a usable BMI (got 0 bytes)" with an
+    -- empty clang output underneath it. The criterion failed, not the thing it
+    -- was measuring, and the diagnostic accused the toolchain.
+    --
+    -- `io.open` plus a seek to the end is plain Lua: no host branch to get
+    -- wrong, no subprocess, and it does not read the 30 MB it is measuring.
+    -- It also avoids `os.filesize`, because this hook runtime has already been
+    -- measured to leave `os.arch()` and `os.files()` unbound and there is no
+    -- reason to assume a third.
     local size = 0
     if os.isfile(pcm) then
-        local size_out = try { function()
-            return os.iorun(string.format('stat -c%%s "%s"', pcm))
-        end }
-        size = tonumber((size_out or ""):match("%d+")) or 0
+        local handle = io.open(pcm, "rb")
+        if handle then
+            size = handle:seek("end") or 0
+            handle:close()
+        end
     end
     os.tryrm(scratch)
 
@@ -360,22 +559,35 @@ function install()
     local dir = pkginfo.install_dir()
     os.tryrm(dir)
 
-    -- The zip's internal root directory is named after the RELEASE ("r30"),
-    -- not after the downloaded file, which upstream names
-    -- "android-ndk-r30-linux.zip" -- measured with `unzip -l` while writing
-    -- this recipe: the two strings differ by the trailing "-linux". Every
+    -- The zip's internal root directory is named after the RELEASE ("r30")
+    -- and is the SAME on every host; the downloaded file carries a host token
+    -- the directory does not, so the two strings differ by that token. Every
     -- other recipe in this index that derives an extraction directory from
     -- `pkginfo.install_file()` relies on the archive's stem MATCHING that
     -- directory (fd.lua, jdk-zulu.lua); that assumption is false here, so
     -- the release token is pulled out of the file name with an explicit
     -- pattern instead of being assumed equal to it.
+    --
+    -- THE PATTERN ONCE NAMED ONE HOST, AND IT WAS THE ONE HOST THE PATTERN
+    -- WAS WRITTEN ON. It read `%-linux%.zip$`, measured with `unzip -l` on
+    -- the Linux archive, at a time when this recipe declared only `xpm.linux`
+    -- -- so it was not wrong, it was unfinished, and adding `xpm.macosx` and
+    -- `xpm.windows` is what made it wrong. Both new hosts failed at exactly
+    -- this line: `android-ndk-r30-darwin.zip` and `android-ndk-r30-windows.zip`
+    -- are the upstream names. The host token is now accepted and CHECKED
+    -- against the three upstream spellings rather than matched as `%a+`, so a
+    -- future archive named something else raises here instead of extracting
+    -- into a directory this recipe never verified.
     local archive = pkginfo.install_file() or ""
     local base = archive:match("([^/\\]+)$") or archive
-    local release = base:match("^(android%-ndk%-r%d+[a-z]?)%-linux%.zip$")
-    if not release then
+    local release, host_token =
+        base:match("^(android%-ndk%-r%d+[a-z]?)%-([a-z]+)%.zip$")
+    local known_host_token =
+        host_token == "linux" or host_token == "darwin" or host_token == "windows"
+    if not release or not known_host_token then
         raise("android-ndk: cannot derive the release directory name from "
               .. "downloaded file '" .. base .. "' (expected "
-              .. "android-ndk-rNN[<letter>]-linux.zip)")
+              .. "android-ndk-rNN[<letter>]-<linux|darwin|windows>.zip)")
     end
     if not os.isdir(release) then
         raise("android-ndk: expected extracted directory '" .. release
@@ -387,10 +599,13 @@ function install()
     local toolchain = toolchain_dir(dir)
 
     -- Compiler present.
-    local clangxx = path.join(toolchain, "bin", "clang++")
+    -- Measured in the same read: the Windows payload spells it
+    -- `bin/clang++.exe`, the other two `bin/clang++`.
+    local clangxx = path.join(toolchain, "bin",
+                              "clang++" .. (is_host("windows") and ".exe" or ""))
     if not os.isfile(clangxx) then
         raise("android-ndk: no clang++ at " .. clangxx
-              .. " -- payload does not look like an NDK for " .. HOST_TAG)
+              .. " -- payload does not look like an NDK for " .. host_tag())
     end
 
     -- Bionic sysroot present (api-level.h is bionic's own marker header,
@@ -451,6 +666,11 @@ function install()
     -- __BIONIC_CTYPE_INLINE is still the right macro name if this call
     -- fails, because that is exactly what would make it fail.
     selftest_std_module(dir)
+
+    -- AFTER the self-test, deliberately. The descriptor asserts that this
+    -- payload's `import std` works with that define, and writing the claim
+    -- before measuring it would publish a contract on an unverified payload.
+    write_mcpp_descriptor(dir, clangxx)
 
     return true
 end

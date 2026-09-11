@@ -1,5 +1,6 @@
 """Tests for the android-ndk package."""
 import glob
+import json
 import os
 import re
 import subprocess
@@ -18,8 +19,11 @@ from tests.lib.platform_utils import skip_if_not, xpkgs_dir
 PKG = "android-ndk"
 PKG_FILE = "pkgs/a/android-ndk.lua"
 
-# Relative layout this recipe documents and mcpp's toolchain registry
-# hardcodes -- see the header comment in pkgs/a/android-ndk.lua.
+# Relative layout this recipe documents and mcpp's toolchain registry derives
+# per host -- see `host_tag()` in pkgs/a/android-ndk.lua. The TestVerify cases
+# below are Linux-only (`skip_if_not('linux')`), so they spell the Linux tag;
+# the recipe itself must not, which `test_the_host_tag_is_derived_not_pinned`
+# asserts.
 HOST_TAG = "linux-x86_64"
 TOOLCHAIN_REL = os.path.join("toolchains", "llvm", "prebuilt", HOST_TAG)
 CLANGXX_REL = os.path.join(TOOLCHAIN_REL, "bin", "clang++")
@@ -101,6 +105,56 @@ class TestPinnedFacts:
             )
 
     @pytest.mark.static
+    def test_the_recipe_writes_the_mcpp_descriptor(self, source_text):
+        """THE PAYLOAD DESCRIBES ITSELF, AND THIS RECIPE IS WHERE IT DOES.
+
+        Three facts about this NDK used to live inside mcpp's engine: the
+        `toolchains/llvm/prebuilt/<host>/bin` layout, the API floor's location
+        in `meta/platforms.json`, and the `-D__BIONIC_CTYPE_INLINE=` its libc++
+        module surface needs. This recipe already computes all three for its
+        own probes, so the engine was re-deriving facts their owner held --
+        which is why a second such SDK meant editing the engine rather than
+        publishing a package.
+
+        `.mcpp-toolchain.json` (schema 1) is the seam, and asserting its
+        content here is the point of writing it here: a malformed descriptor is
+        refused BY NAME by the engine, so the recipe is where the mistake has
+        to be caught.
+
+        A source assertion rather than an installed-file one: the installed
+        check is below under `verify`, where a payload exists. This one runs
+        everywhere and fails when a key is dropped.
+        """
+        code = re.sub(r'--.*', '', source_text)
+        assert '.mcpp-toolchain.json' in code, (
+            "the recipe does not write the descriptor mcpp reads"
+        )
+        assert '"schema": 1' in code, "the descriptor must declare its schema"
+        for key in ('"frontend"', '"platform_floor"', '"std_module_defines"'):
+            assert key in code, f"the descriptor omits {key}"
+        assert '__BIONIC_CTYPE_INLINE=' in code, (
+            "the define this payload's libc++ module surface needs is not "
+            "carried in the descriptor"
+        )
+        # THE FLOOR IS READ, NOT WRITTEN DOWN. A constant here would become a
+        # version in a diagnostic and then in somebody's command line, and the
+        # NDK's floor moves with the NDK.
+        assert 'platforms.json' in code, (
+            "the floor must come from the payload's own declaration"
+        )
+        assert not re.search(r'"platform_floor"\s*:\s*"?\d', code), (
+            "the floor is hardcoded in the descriptor rather than read from "
+            "the payload"
+        )
+        # AND THE PATH IS FORWARD-SLASHED ON EVERY HOST, because a backslash in
+        # JSON is an escape character -- a mistake this index has already paid
+        # for once, in pkgs/e/emsdk.lua.
+        assert 'path.join' not in code.split('local rel = ')[1].split('}')[0], (
+            "the descriptor's relative path is composed with path.join, which "
+            "produces backslashes on Windows and an invalid JSON escape"
+        )
+
+    @pytest.mark.static
     def test_sha256_present_and_64_hex(self, source_text):
         m = re.search(r'sha256\s*=\s*"([0-9a-fA-F]{64})"', source_text)
         assert m, "missing a 64-hex-character sha256"
@@ -129,20 +183,140 @@ class TestPinnedFacts:
         assert re.search(r'CN\s*=', code), "no CN key"
 
     @pytest.mark.static
-    def test_linux_only(self, meta):
-        assert meta.platforms.get("linux")
-        assert "macosx" not in meta.platforms
-        assert "windows" not in meta.platforms
+    def test_the_hosts_that_can_actually_serve_this_package(self, meta):
+        """REVERSED TWICE, and the second reversal is the interesting one.
+
+        It first pinned `linux` only, which was true of the recipe and not of
+        upstream: Google publishes android-ndk for every host this index
+        serves. So it was widened to all three -- and `windows` is wrong for a
+        reason no url table can express.
+
+        Google's Windows archive downloads and has the layout this recipe
+        expects, and it does NOT contain the libc++ module surface. Measured by
+        reading each archive's central directory:
+
+            archive   entries   share/libc++/v1/std.cppm   std/*.inc
+            linux      ~10000   present                    110
+            darwin      10024   present                    110
+            windows      9108   ABSENT                       0
+
+        mcpp is module-first, so that payload cannot serve: the install would
+        succeed and the self-test would fail on a file that is not there. An
+        entry that can never serve is worse than none -- the same rule that
+        kept the emsdk Windows CN asset out after its upload would not land.
+
+        Asserted as an EXACT SET, not as "at least these". A future addition
+        has to come with its own measurement rather than slipping in, and a
+        future REMOVAL cannot pass either.
+        """
+        declared = {h for h in ("linux", "macosx", "windows")
+                    if meta.platforms.get(h)}
+        assert declared == {"linux", "macosx"}, (
+            f"declared {sorted(declared)}; windows is deliberately absent "
+            f"because its archive ships no libc++ module surface"
+        )
 
     @pytest.mark.static
-    def test_single_host_arch(self, source_text):
+    def test_arch_scope_is_stated_per_platform(self, source_text):
+        """REVERSED with the platform completion. `archs` is a statement about
+        the PACKAGE and the platform tables carry the truth per host -- the
+        shape 7zip.lua, bun.lua and cuda-nvcc.lua use. Upstream publishes one
+        archive per host, so no table needs an `arch_alias` for selection and
+        the `os.arch()`-is-unbound pitfall does not arise.
+        """
         m = re.search(r'archs\s*=\s*\{([^}]*)\}', source_text)
         assert m, "no archs field"
         archs = re.findall(r'"([^"]+)"', m.group(1))
-        assert archs == ["x86_64"], (
-            f"expected exactly one host arch (x86_64, matching upstream's "
-            f"single Linux build), got {archs}"
+        assert archs == ["x86_64", "aarch64"], (
+            f"expected both host arches, with the platform tables deciding "
+            f"what each host is served, got {archs}"
         )
+
+    @pytest.mark.static
+    def test_release_pattern_accepts_every_archive_this_recipe_downloads(
+            self, meta, source_text):
+        """The defect this asserts against shipped, and both new hosts hit it.
+
+        install() derives the extracted directory from the downloaded file's
+        name, because the zip's internal root is the RELEASE ("android-ndk-r30")
+        while the file carries a host token. The pattern was written as
+        `%-linux%.zip$` on the one host the recipe then served, so adding
+        `xpm.macosx` and `xpm.windows` made it wrong: `android-ndk-r30-darwin.zip`
+        and `android-ndk-r30-windows.zip` both raised instead of extracting.
+
+        THE DENOMINATOR IS THE DESCRIPTOR'S OWN URL TABLES, not a list written
+        here -- a list would have been written from the same Linux-shaped
+        assumption. Every basename the recipe can download is fed to the
+        recipe's OWN pattern, read out of the source rather than restated, so
+        this cannot pass by re-implementing the bug.
+        """
+        code = re.sub(r'--.*', '', source_text)
+
+        basenames = sorted({
+            u.rsplit('/', 1)[-1]
+            for u in re.findall(r'https?://[^"\s]+', code)
+            if u.rsplit('/', 1)[-1].endswith('.zip')
+        })
+        # The denominator is the number of PLATFORM TABLES, so withdrawing or
+        # adding a host moves it automatically. A hardcoded count would have
+        # had to be edited by whoever withdrew `windows`, and the edit would
+        # have looked like loosening the test.
+        declared = [h for h in ("linux", "macosx", "windows")
+                    if meta.platforms.get(h)]
+        assert len(basenames) == len(declared), (
+            f"{len(declared)} platform table(s) declared but {len(basenames)} "
+            f"distinct archive name(s) found: {basenames}"
+        )
+
+        m = re.search(r'base:match\(\s*"([^"]+)"\s*\)', code)
+        assert m, "could not find the release-derivation pattern in install()"
+        lua_pattern = m.group(1)
+        py_pattern = (lua_pattern.replace('%-', '-')
+                                 .replace('%.', r'\.')
+                                 .replace('%d', r'\d'))
+        assert '%' not in py_pattern, (
+            f"pattern uses a Lua class this test cannot translate: {lua_pattern}"
+        )
+
+        tokens = set(re.findall(r'host_token\s*==\s*"([a-z]+)"', code))
+        assert tokens == {"linux", "darwin", "windows"}, (
+            f"the accepted host tokens are {sorted(tokens)}; upstream publishes "
+            f"linux, darwin and windows and all three are declared above"
+        )
+
+        for base in basenames:
+            hit = re.fullmatch(py_pattern, base)
+            assert hit, (
+                f"install() cannot derive a release directory from {base!r} "
+                f"(pattern {lua_pattern!r}) -- this is the archive the "
+                f"descriptor itself points at"
+            )
+            assert hit.group(2) in tokens, (
+                f"{base!r} carries host token {hit.group(2)!r}, which install() "
+                f"does not accept"
+            )
+
+    @pytest.mark.static
+    def test_the_host_tag_is_derived_not_pinned(self, source_text):
+        """`toolchains/llvm/prebuilt/<host>` names the HOST, never the target.
+
+        It was a top-level `local HOST_TAG = "linux-x86_64"`, written on the one
+        host the recipe then served, and the macOS install job is what reported
+        it: "no clang++ at .../prebuilt/linux-x86_64/bin/clang++ -- payload does
+        not look like an NDK for linux-x86_64", where the string names the
+        question that was asked.
+
+        Measured per archive: `linux-x86_64`, `darwin-x86_64`,
+        `windows-x86_64`. `darwin-x86_64` covers Apple silicon too, because
+        that archive is a universal build and there is no `darwin-arm64`.
+        """
+        code = re.sub(r'--.*', '', source_text)
+        assert not re.search(r'local\s+HOST_TAG\s*=', code), (
+            "the host tag must be derived per host, not pinned to one"
+        )
+        assert 'function host_tag()' in code
+        for tag in ("linux-x86_64", "darwin-x86_64", "windows-x86_64"):
+            assert tag in code, f"host_tag() does not name {tag}"
 
     @pytest.mark.static
     def test_no_ci_automation_declared(self, source_text):
@@ -250,6 +424,36 @@ class TestVerify:
         )
         assert os.path.isfile(os.path.join(pkgdir, SHAREV1_REL, "std.cppm"))
         assert os.path.isfile(os.path.join(pkgdir, SHAREV1_REL, "std.compat.cppm"))
+
+    @pytest.mark.verify
+    @skip_if_not('linux')
+    def test_the_installed_descriptor_describes_this_payload(self):
+        """The file is only worth writing if it is TRUE of the payload it sits
+        in, so this reads it back and checks each key against the tree.
+
+        The one way it can be false while looking right is a frontend path that
+        does not resolve -- which is exactly what the engine's own hardcoded
+        guess got wrong on a host whose tag it derived differently.
+        """
+        pkgdir = self._installed_pkgdir()
+        descriptor = os.path.join(pkgdir, ".mcpp-toolchain.json")
+        assert os.path.isfile(descriptor), f"no descriptor under {pkgdir}"
+        with open(descriptor, encoding="utf-8") as handle:
+            d = json.load(handle)
+
+        assert d["schema"] == 1
+        # The frontend it names is the compiler that is there.
+        assert os.path.isfile(os.path.join(pkgdir, d["frontend"])), (
+            f'the descriptor names {d["frontend"]}, which does not exist'
+        )
+        assert "/" in d["frontend"] and "\\" not in d["frontend"], (
+            "the path must be forward-slashed for every consumer"
+        )
+        # The floor it names is the floor the payload declares.
+        with open(os.path.join(pkgdir, "meta", "platforms.json"),
+                  encoding="utf-8") as handle:
+            assert d["platform_floor"] == str(json.load(handle)["min"])
+        assert d["std_module_defines"] == ["__BIONIC_CTYPE_INLINE="]
 
     @pytest.mark.verify
     @skip_if_not('linux')

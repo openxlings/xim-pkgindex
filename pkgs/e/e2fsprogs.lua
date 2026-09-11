@@ -16,6 +16,40 @@ package = {
     categories = {"system", "filesystem", "utilities"},
     keywords = {"ext2", "ext3", "ext4", "fsck", "mke2fs", "resize2fs", "tune2fs"},
 
+    -- KNOWN DEFECT IN THIS PAYLOAD: `debugfs` IS NON-FUNCTIONAL.
+    --
+    -- Measured 2026-09-11 against a control ext4 image created by this same
+    -- payload's `mke2fs`, and against an Android system.img:
+    --
+    --   command                          1.47.3 (this)   1.47.0 (host)
+    --   debugfs -V                       ok              ok
+    --   debugfs -R "features"            SIGFPE (136)    ok
+    --   debugfs -R "ls /"                SIGFPE (136)    ok
+    --   debugfs -R "dump <p> <out>"      SIGFPE (136)    ok
+    --   dumpe2fs -h                      ok              ok
+    --   e2fsck -fn                       ok              ok
+    --   tune2fs -l                       ok              ok
+    --
+    -- Exactly one program of the set is affected, it fails on EVERY command
+    -- that opens a filesystem, and it fails with an empty environment too, so
+    -- this is the build rather than the invocation. `debugfs` is also the only
+    -- program here that links libss and readline, which is where a static
+    -- build of it is known to be fragile.
+    --
+    -- IT WENT UNNOTICED BECAUSE THE NAME FALLS THROUGH TO THE HOST. Run from a
+    -- directory with no xlings project config, the `debugfs` shim resolved to
+    -- /usr/sbin/debugfs and worked -- so a measurement taken that way records
+    -- the HOST's behaviour under an ecosystem name. pkgs/a/android-system-
+    -- image.lua's arm64-v8a key is the consumer this blocks, and it now
+    -- resolves debugfs through `pkginfo.dep_install_dir` and probes it
+    -- FUNCTIONALLY, because `-V` succeeds on the broken binary.
+    --
+    -- `debugfs` stays in the `programs` list on purpose. Dropping it would
+    -- make the bare name resolve to the host's copy, which is the silent
+    -- host-ecosystem fallthrough this index exists to avoid; a shim that fails
+    -- loudly is the lesser problem. What closes this is a repin to a build
+    -- whose debugfs works, not a change here.
+    --
     -- The xlings-res tarball ships statically-linked ELF binaries
     -- (built by github.com/ronpscg/e2fsprogs-static-builds): no glibc /
     -- musl runtime dep, no INTERP/RPATH to patch. Programs we expose

@@ -140,6 +140,162 @@ class TestStatic:
             assert dep in code, f"missing declared dependency {dep}"
 
     @pytest.mark.static
+    def test_the_windows_invocation_uses_exec_not_iorun(self, meta):
+        """Three shapes failed here, and the call -- not the string -- was the
+        variable.
+
+        All three used `os.iorun`:
+
+            "<py>" "<script>" -std=c++23 --precompile "<in>" -o "<out>"
+            powershell -NoProfile -ExecutionPolicy Bypass -Command "& '<py>' …"
+            "<scratch>\\run-emxx.bat"                (one token, no quoting)
+
+        each producing `The filename, directory name, or volume label syntax is
+        incorrect.` once, with no compiler output and no traceback. Every
+        Windows invocation in this index that WORKS uses `os.exec` or
+        `system.exec` -- 7zip.lua and vcstool.lua both do, and both are working
+        Windows packages.
+
+        `os.iorun` was chosen because this function must return the compiler's
+        output for the diagnostic. A script that redirects itself removes that
+        requirement, which frees the invocation to be the proven form.
+
+        Asserted because the natural "simplification" is to collapse this back
+        to one `os.iorun` string, and that fails only on a Windows runner.
+        """
+        code = _code(meta.raw_content)
+        runner = code[code.index("local function __run_captured"):]
+        runner = runner[:runner.index("\nend\n") + 5]
+        win = runner[runner.index('is_host("windows")'):]
+        win = win[:win.index("local parts")] if "local parts" in win else win
+
+        assert "os.exec(" in win, (
+            "the Windows branch does not use os.exec; os.iorun is what failed "
+            "three times here"
+        )
+        assert "os.iorun" not in win, (
+            "the Windows branch still reaches for os.iorun"
+        )
+        assert "cmd.exe /d /s /c" in win, (
+            "the documented cmd shape is required: /d skips AutoRun and /s "
+            "fixes quote handling, and a .bat is not an executable image"
+        )
+        # The script must capture its own output, or the diagnostic is empty --
+        # which is what made the first three failures unreadable.
+        assert "2>&1" in win and "io.readfile" in win, (
+            "the script does not redirect and read back its output, so a "
+            "failure would carry no compiler diagnostic"
+        )
+        assert 'gsub("/", "\\\\")' in win, (
+            "paths are not backslash-normalised inside the generated script"
+        )
+        # And the POSIX branch keeps the direct form.
+        assert "os.iorun(string.format('\"%s\" %s'" in runner, (
+            "the POSIX branch changed shape"
+        )
+
+        # EVERY invocation goes through the helper. The node step was left on a
+        # bare os.iorun when this helper was python-specific, and that site
+        # surfaced only after the other two were fixed and the probe reached
+        # the run -- `node did not print the expected "1-2-3" (got: )`.
+        body = code[code.index("__selfcheck_import_std"):]
+        body = body[:body.index("\nend\n") + 5]
+        stray = [l.strip() for l in body.splitlines()
+                 if "os.iorun" in l or ("os.exec" in l and "__run_captured" not in l)]
+        assert not stray, (
+            f"an invocation in the self-check bypasses the helper: {stray}"
+        )
+
+    @pytest.mark.static
+    def test_the_selfcheck_names_its_interpreter_and_script(self, meta):
+        """`em++` is a wrapper whose whole job is to find an interpreter, and
+        inside an install hook it cannot find the declared one.
+
+        Upstream's wrapper execs `$EMSDK_PYTHON`, or failing that whatever
+        `python3` is first on PATH. xvm shims are NOT on PATH inside an install
+        hook -- the same property that made android-system-image's `debugfs`
+        lookup fail with its dependency correctly installed -- so this
+        package's own self-check searched the MACHINE. On the Linux and macOS
+        runners a system python3 exists and it passed silently, which is a host
+        fallthrough wearing an ecosystem name. On Windows the archive bundles
+        no python at all (measured: zero `python` entries in its central
+        directory) and the launcher reported
+
+            The filename, directory name, or volume label syntax is incorrect.
+
+        So the self-check names the interpreter AND the script, which removes
+        the search rather than steering it and is the same command on every
+        host: no `.exe`, no environment variable, and no dependence on which
+        `os` names this hook runtime binds.
+        """
+        code = _code(meta.raw_content)
+
+        assert 'dep_install_dir("xim:python")' in code, (
+            "the interpreter must be resolved through the declared dependency, "
+            "not left to a PATH search"
+        )
+        assert 'em++.py' in code, (
+            "the self-check must invoke the script, not the wrapper"
+        )
+        # Every invocation that runs the driver names python first. Checked on
+        # the lines that RUN something, because the names also appear in prose.
+        runners = [l for l in code.splitlines()
+                   if 'os.iorun' in l or 'system.exec' in l]
+        assert runners, "no invocation lines found; the search is wrong"
+
+        body = code[code.index("__selfcheck_import_std"):]
+        body = body[:body.index("\nend\n") + 5]
+        # The wrapper must not be invoked from the self-check at all: an
+        # `em++`/`em++.exe` path there is the search coming back.
+        assert not re.search(r'"em\+\+"\s*\.\.\s*\(is_host', body), (
+            "the self-check still builds a host-suffixed wrapper path"
+        )
+        assert 'os.setenv' not in code, (
+            "`os.setenv` is not among the `os` names this index has verified "
+            "as bound inside an install hook; name the interpreter instead"
+        )
+
+    @pytest.mark.static
+    def test_the_node_lookup_is_not_one_hosts_layout(self, meta):
+        """`bin/node` is not where node is on every host, and this package's
+        own diagnostic pointed the wrong way when it wasn't.
+
+        pkgs/n/node.lua's `config()` states the rule:
+
+            local bindir = pkginfo.install_dir()
+            if os.host() ~= "windows" then
+                bindir = path.join(pkginfo.install_dir(), "bin")
+            end
+
+        Upstream's Windows archive puts `node.exe` at the root; the other two
+        put `node` under `bin/`. `__find_node` hardcoded `bin/node` -- every
+        archive it had ever seen -- so on Windows the install failed at the
+        config write with `xim:node` correctly declared AND already installed:
+
+            emsdk: xim:node payload not found (this package's deps declare
+            xim:node); refusing to write a NODE_JS-less emscripten config
+
+        The message named the declaration, which was the one thing that was
+        right. That is why this asserts the LOOKUP rather than the declaration:
+        a first version of this test checked the deps and passed with the
+        Windows entry gutted, because the deps were never the problem.
+        """
+        code = _code(meta.raw_content)
+        finder = code[code.index("__find_node"):]
+        finder = finder[:finder.index("\nend\n") + 5]
+
+        assert 'node.exe' in finder, (
+            "__find_node never looks for node.exe, so it cannot find node on "
+            "Windows"
+        )
+        # And it must not depend on ONE layout: the root-level spelling has to
+        # be tried too, which is where the Windows archive puts it.
+        assert re.search(r'["\']node(\.exe)?["\']', finder), (
+            "__find_node only looks under bin/, which is not where the Windows "
+            "archive puts node"
+        )
+
+    @pytest.mark.static
     def test_declares_patchelf_as_a_build_dep(self, meta):
         code = _code(meta.raw_content)
         assert "xim:patchelf" in code
@@ -164,6 +320,109 @@ class TestStatic:
         assert 'path.join(dir, "emscripten")' in code
         # bindir for xvm.add must never be the native-tool `bin/` directory.
         assert 'bindir = path.join(dir, "bin")' not in code
+
+    @pytest.mark.static
+    def test_windows_entry_points_are_exe_and_every_driver_path_is_suffixed(
+            self, meta):
+        """MEASURED, AND THE FIRST GUESS WAS WRONG.
+
+        Adding `xpm.windows` required the entry-point paths to carry a host
+        suffix. The first version guessed `.bat`, from how emscripten's own
+        installer wraps these scripts on Windows, and the archive disagrees:
+        reading the central directory of `wasm-binaries.zip` (12882 entries)
+        shows all nine entry points this recipe registers ship as `<name>.exe`
+        beside a `<name>.py`, and no `.bat` exists for any of them. So one rule
+        covers the whole set and `.bat` must not appear at all.
+
+        THREE PLACES NEED THE SUFFIX, NOT ONE, and the install probe passing is
+        what hides the other two: the probe checks the file exists, the
+        self-check EXECUTES the driver, and config() decides which shims get
+        registered. A recipe that suffixed only the probe would install, then
+        fail in the self-check -- or register nothing and report success.
+
+        The SHIM keeps the bare upstream name on every host (the qemu-riscv.lua
+        idiom), so a user types `em++` everywhere; only paths to real files
+        carry the suffix.
+        """
+        code = _code(meta.raw_content)
+
+        # SCOPED TO ENTRY POINTS. This read `".bat" not in code`, which was
+        # right while nothing else in the file used one -- and then the Windows
+        # invocation became a generated `run-emxx.bat`, which is a script this
+        # recipe WRITES rather than an entry point it expects to find. The
+        # claim is about upstream's names: all nine ship as `<name>.exe`,
+        # measured from the archive's central directory, and none as `.bat`.
+        for entry in ("em++", "emcc", "emar", "emrun", "em-config"):
+            assert f'{entry}.bat' not in code, (
+                f"{entry}.bat is expected somewhere; upstream ships {entry}.exe"
+            )
+        assert 'is_host("windows") and ".exe" or ""' in code, (
+            "the host suffix must be computed with the index's own idiom"
+        )
+
+        # TWO SITES NEED THE SUFFIX, AND THE THIRD STOPPED HAVING A PATH.
+        #
+        # This asserted three: probe, execute, register. The middle one is gone
+        # by design -- the self-check now invokes the INTERPRETER on `em++.py`
+        # rather than the wrapper, because the wrapper's job is to find an
+        # interpreter and inside an install hook it cannot find the declared
+        # one. So there is no driver path there to suffix, which is a stronger
+        # position than a correctly suffixed one:
+        # `test_the_selfcheck_names_its_interpreter_and_script` states it.
+        assert 'path.join(extracted, "emscripten", "em++" .. exe)' in code, (
+            "the install probe does not apply the host suffix to the driver"
+        )
+        assert 'os.isfile(path.join(bindir, prog .. exe))' in code, (
+            "config() tests unsuffixed file names, so it would register no "
+            "shims on Windows"
+        )
+
+        # And the shim names stay bare -- suffixing these would make a user
+        # type `em++.exe` on one host and `em++` on the others.
+        assert 'alias = prog' in code
+        assert 'alias = prog .. exe' not in code
+
+    @pytest.mark.static
+    def test_the_generated_config_is_python_safe(self, meta):
+        """`.emscripten` is Python SOURCE, and a Windows path is not a Python
+        string literal.
+
+        `em++.py` evaluates this file. With backslashes, `C:\\Users\\...`
+        puts `\\U` inside a single-quoted literal and Python reads it as a
+        unicode escape:
+
+            em++: error: error in evaluating config file (...\\.emscripten):
+              (unicode error) 'unicodeescape' codec can't decode bytes in
+              position 2-3: truncated \\UXXXXXXXX escape
+
+        The path in that message was MIXED -- `path.join` contributed a forward
+        slash to an otherwise backslashed path -- which is the same
+        mixed-separator property that breaks a cmd.exe command line, surfacing
+        as a different failure in a different language.
+
+        FOUND ONLY AFTER THE INVOCATION WAS FIXED: three earlier shapes failed
+        before `em++` ever started, so its own diagnostic never appeared. A
+        failure that prevents a program from running hides every failure that
+        program would have reported.
+
+        Asserted on the WRITER, because the file itself only exists after an
+        install.
+        """
+        code = _code(meta.raw_content)
+        body = code[code.index("__write_emscripten_config"):]
+        body = body[:body.index("\nend\n") + 5]
+
+        assert 'gsub("\\\\", "/")' in body, (
+            "paths are not normalised to forward slashes; a backslashed path "
+            "in this file is evaluated by Python as containing escapes"
+        )
+        # Every value written must pass through the normaliser.
+        for key in ("LLVM_ROOT", "BINARYEN_ROOT", "NODE_JS"):
+            line = next((l for l in body.splitlines() if key in l), None)
+            assert line is not None, f"{key} is no longer written"
+            assert "fwd(" in line, (
+                f"{key} is written without normalising its path: {line.strip()}"
+            )
 
     @pytest.mark.static
     def test_config_writes_final_paths_before_first_invocation(self, meta):

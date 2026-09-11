@@ -252,7 +252,7 @@ package = {
     docs = "https://developer.android.com/studio/run/emulator-command-line",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"tool", "android", "emulator"},
     keywords = {"android", "emulator", "avd", "qemu", "kvm"},
@@ -298,6 +298,53 @@ package = {
                 sha256 = "95771e0ae431897b2a4bd2d97fa095f29a8b0624a7b216baf529f9306161c266",
             },
         },
+        -- macOS AND WINDOWS. `repository2-3.xml` publishes an archive per host
+        -- for the SAME pinned revision, and this index serves all three hosts,
+        -- so declaring only linux was an incomplete addition rather than a
+        -- conclusion. Read out of that manifest on 2026-09-11:
+        --
+        --   macosx   emulator-darwin_x64-15917651.zip       444 MB
+        --            sha1 7df8b0acbe915217dcbb576222bddfcc23e81230
+        --   macosx   emulator-darwin_aarch64-15917651.zip   376 MB
+        --            sha1 f22f44948a2b7f0a0103645b9a639290eef92426
+        --   windows  emulator-windows_x64-15917651.zip      421 MB
+        --            sha1 54fa750822ff462d57e04fc8e98e60f08df2bb61
+        --
+        -- TWO ARCHIVES FOR macOS, so this table needs an `arch_alias` where
+        -- the others do not -- Apple silicon gets its own build rather than a
+        -- universal one, unlike the NDK.
+        --
+        -- AND ONE CLAIM THIS DOES NOT MAKE. The header's arm64 gate is
+        -- measured on an x86_64 HOST: `QEMU2 emulator does not support arm64
+        -- CPU architecture`. An Apple-silicon host runs arm64 guests natively
+        -- through HVF and there is every reason to expect the gate is absent
+        -- there -- which is exactly why it is not asserted here. Nothing in
+        -- this index has run that, and a row claiming it would be a guess
+        -- wearing a measurement's clothes.
+        macosx = {
+            ["latest"] = { ref = "37.1.11" },
+            ["37.1.11"] = {
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/emulator-darwin_${arch_alias}-15917651.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-emulator/releases/download/37.1.11/emulator-darwin_${arch_alias}-15917651.zip",
+                },
+                arch_alias = { x86_64 = "x64", aarch64 = "aarch64" },
+                sha256 = {
+                    x86_64  = "c1a3890f95b8868198918fad05ffca16fa20404d93547ba545ff5a5867ee7005",
+                    aarch64 = "22530de9363f34ea945ecb5cad74523abd4b615f27f3c1a9899efb183ea9e144",
+                },
+            },
+        },
+        windows = {
+            ["latest"] = { ref = "37.1.11" },
+            ["37.1.11"] = {
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/emulator-windows_x64-15917651.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-emulator/releases/download/37.1.11/emulator-windows_x64-15917651.zip",
+                },
+                sha256 = "5ff441f3b12ace9b13e9cf96fb0007d233967718652a8110705e995ac47bfeb7",
+            },
+        },
     },
 }
 
@@ -318,12 +365,22 @@ function install()
     end
     os.mv("emulator", dir)
 
-    local emu = path.join(dir, "emulator")
+    -- THREE LINUX ASSUMPTIONS LIVED IN THIS HOOK, and each was invisible
+    -- while the recipe declared only `xpm.linux`. The index's own
+    -- macos-install-test and windows-test found all three on the first run
+    -- after the platform tables were completed, which is what those jobs are
+    -- for: the executable suffix, the message naming `linux_x64` on every
+    -- host, and the qemu subdirectory below.
+    local exe = is_host("windows") and ".exe" or ""
+    local emu = path.join(dir, "emulator" .. exe)
     if not os.isfile(emu) then
-        raise("android-emulator: no emulator binary at " .. emu
-              .. " -- payload does not look like the linux_x64 emulator build")
+        raise("android-emulator: no emulator" .. exe .. " binary at " .. emu
+              .. " -- payload does not look like the emulator build for "
+              .. os.host())
     end
-    os.exec("chmod 755 \"" .. emu .. "\"")
+    if not is_host("windows") then
+        os.exec("chmod 755 \"" .. emu .. "\"")
+    end
 
     -- The one host-arch gate worth asserting at install time rather than
     -- leaving to a confusing first boot: this exact package cannot run an
@@ -331,11 +388,64 @@ function install()
     -- header). Assert the aarch64 qemu-system binaries are at least
     -- PRESENT (a truncated archive would be a different, install-time
     -- failure), without claiming they are usable here.
-    local qemu_dir = path.join(dir, "qemu", "linux-x86_64")
-    if not os.isfile(path.join(qemu_dir, "qemu-system-x86_64")) then
-        raise("android-emulator: no qemu-system-x86_64 under " .. qemu_dir
-              .. " -- this host's own architecture backend is missing, "
-              .. "which is a stronger failure than the documented arm64 gate")
+    -- THE QEMU SUBDIRECTORY IS NAMED FOR THE HOST, SO ASK THE PAYLOAD RATHER
+    -- THAN COMPUTE THE NAME.
+    --
+    -- Upstream's archives differ -- `qemu/linux-x86_64`, `qemu/darwin-x86_64`,
+    -- `qemu/darwin-aarch64`, `qemu/windows-x86_64` -- and hardcoding the first
+    -- reported this host's own backend missing on every other host, a message
+    -- that accuses the payload while describing the probe.
+    --
+    -- COMPUTING IT FROM `os.arch()` WAS THE SECOND WRONG ANSWER, and a worse
+    -- one: `os.arch()` is unbound in the install-hook runtime (the pitfall
+    -- pkgs/n/node.lua and pkgs/j/jdk-zulu.lua both avoid, and which this
+    -- package's own test pins). node.lua's shape is the established one -- the
+    -- DESCRIPTOR resolves the arch, because xim knows it there and a hook does
+    -- not.
+    --
+    -- Enumerating is better than either, and not merely a workaround: each
+    -- archive contains exactly ONE host directory, so what is present IS the
+    -- answer, and asserting it needs no knowledge of which host this is. A
+    -- computed name can be right about the host and wrong about the payload;
+    -- this cannot.
+    local qemu_root = path.join(dir, "qemu")
+    local backends = os.dirs(path.join(qemu_root, "*"))
+    if #backends ~= 1 then
+        raise("android-emulator: expected exactly one host backend directory "
+              .. "under " .. qemu_root .. ", found " .. #backends
+              .. " -- upstream ships one per archive, so this is not the "
+              .. "emulator build for any single host")
+    end
+    local qemu_dir = backends[1]
+    -- AT LEAST ONE GUEST BACKEND, CHECKED BY NAME BECAUSE `os.files` IS NOT
+    -- BOUND EITHER.
+    --
+    -- `os.files(...)` answered `attempt to call a nil value (field 'files')`
+    -- -- the same class of surprise as `os.arch()` above, and found the same
+    -- way: by running the install rather than by reading. `os.dirs` IS bound
+    -- (pkgs/q/qemu-arm.lua relies on it), which is why the enumeration above
+    -- stands; only the file-side glob is unavailable.
+    --
+    -- The four names are upstream's whole set for any host archive, so an
+    -- explicit list costs nothing and uses only `os.isfile`, which every
+    -- recipe here already depends on. An archive with a host directory and no
+    -- emulator inside it is a truncated download rather than the documented
+    -- arm64 gate, and the two read very differently to a user.
+    local guests = { "qemu-system-x86_64", "qemu-system-i386",
+                     "qemu-system-aarch64", "qemu-system-armel" }
+    local found_guest = false
+    for _, g in ipairs(guests) do
+        if os.isfile(path.join(qemu_dir, g .. exe))
+        or os.isfile(path.join(qemu_dir, g .. "-headless" .. exe)) then
+            found_guest = true
+            break
+        end
+    end
+    if not found_guest then
+        raise("android-emulator: no qemu-system-* binary under " .. qemu_dir
+              .. " -- the host backend directory is present and carries none "
+              .. "of " .. table.concat(guests, ", ") .. ", which is a "
+              .. "truncated payload and not the documented arm64 gate")
     end
 
     return true
