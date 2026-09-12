@@ -92,12 +92,72 @@
 --       upstream's own flat layout, unmodified beyond the top-level
 --       rename from "platform-tools" (the zip's own internal directory
 --       name) to this package's install directory.
+--   <install_dir>/bin/adb-run
+--       a program THIS RECIPE writes, not upstream's -- see "adb-run" below.
+--
+-- ═══════════════════════════════════════════════════════════════════════
+-- adb-run -- an mcpp `runner`, added 2026-09-12 (design record mcpp
+-- .agents/docs/2026-09-12-622-a-ui-framework-on-android-ios-and-web.md,
+-- section 4.2)
+-- ═══════════════════════════════════════════════════════════════════════
+--
+-- Registered beside `adb`/`fastboot`, the way `simctl-run` is registered
+-- beside nothing in `apple-simulator-tools.lua` -- a program, not a manifest
+-- flag, for the identical "A SESSION IS NOT A FLAG" reason that header
+-- states: installing, waiting for a pid, and streaming a log until the
+-- process exits is a session with a beginning and an end.
+--
+-- TWO OPERAND SHAPES, DECIDED BY THE FILE:
+--
+--   *.apk           `adb install -r`, then `am start -W -n <id>/<activity>`.
+--                   The id/activity pair is read with `aapt2 dump badging`
+--                   when `aapt2` is reachable (on PATH, or beside this
+--                   script -- the same `xim:android-build-tools` payload's
+--                   `bin/`), otherwise from the sidecar
+--                   `assets/mcpp-run.json` the APK carries
+--                   (`{"package": ..., "activity": ...}`, read with
+--                   `unzip -p` because the id is needed before the app is
+--                   known to be queryable). `log.redirect-stdio` is set
+--                   first, so the application's own stdout/stderr reach
+--                   Android's log and this program's `adb logcat --pid=`
+--                   -- without it, only what the app explicitly logs through
+--                   the Java/NDK log APIs is visible. The pid is read with a
+--                   short `pidof` retry loop (the process record lags
+--                   `am start -W`'s own "drawn" wait slightly), the log is
+--                   streamed to stdout until `pidof` no longer finds it, and
+--                   the exit status is 0 on a clean exit, non-zero when a
+--                   `FATAL EXCEPTION` line appears in that pid's own log or
+--                   an unfiltered `adb logcat -d` names a tombstone for that
+--                   pid (a native crash is reported by `tombstoned`, a
+--                   different process, so `--pid` alone does not carry it).
+--   anything else   `adb push` to `/data/local/tmp/<name>`, `chmod 755`,
+--                   one `adb shell` invocation of it with the remaining
+--                   arguments and a trailing `; echo __rc=$?` this script
+--                   parses back out, its output printed, the temporary file
+--                   removed, its exit status returned.
+--
+-- DEVICE SELECTION IS adb's OWN. This program passes no `-s`; `ANDROID_
+-- SERIAL`, or adb's single-device default, is the caller's configuration,
+-- exactly as `SIMCTL_RUN_UDID` is an override rather than a decision in
+-- `apple-simulator-tools.lua`'s own runner.
+--
+-- HOST COVERAGE: this is a POSIX shell script, written into every host's
+-- `bin/` alike, but it only RUNS where a POSIX shell is on PATH -- linux and
+-- macosx directly, and Windows only under an environment that provides one
+-- (Git Bash, WSL, MSYS2), the same coverage boundary `simctl-run`'s own
+-- `bash -n` install-time check exists to assert without requiring a device.
+--
+-- WHAT IS UNMEASURED: the tombstone-detection path (no crashing test binary
+-- was run against a real device or emulator while writing this script --
+-- see tests/a/test_android_platform_tools.py and the PR report for what was
+-- actually exercised, which is the bare-executable path against
+-- `adb devices`' first attached target).
 package = {
     spec = "2",
     homepage = "https://developer.android.com/tools/releases/platform-tools",
 
     name = "android-platform-tools",
-    description = "Android SDK Platform Tools: adb and fastboot, Google's own prebuilt binaries",
+    description = "Android SDK Platform Tools: adb, fastboot and adb-run, Google's own prebuilt binaries plus an mcpp runner",
 
     maintainers = {"Google", "The Android Open Source Project"},
     licenses = {"Android Software Development Kit License Agreement"},
@@ -129,9 +189,31 @@ package = {
     -- it is written down: `android-ndk.lua` scopes itself to Linux alone on
     -- the same principle, and the difference here is that these two archives
     -- were actually hashed rather than merely believed to exist.
+    -- VERSION BUMPED TO "37.0.1-2" FOR adb-run, WITH THE IDENTICAL ARCHIVE.
+    --
+    -- Google's own upstream revision is still 37.0.1 (re-checked against
+    -- repository2-3.xml on 2026-09-12; no newer platform-tools has shipped),
+    -- so there is no new upstream byte to pin. `adb-run` (see the header
+    -- section above) is a program this recipe writes at install time, not
+    -- part of the downloaded archive, and a bare recipe edit under an
+    -- unchanged version key would leave an already-installed 37.0.1 without
+    -- it until a manual reinstall. The "-N" revision suffix is the shape
+    -- `pkgs/q/qemu-arm.lua` (and its riscv/x86 siblings) already use for the
+    -- identical situation -- a recipe-side revision layered on one upstream
+    -- release -- so `latest` now resolves to "37.0.1-2", url/sha256
+    -- unchanged from "37.0.1" (the bytes are the same archive), and the bare
+    -- "37.0.1" entries stay in the table so a manifest already pinned to
+    -- them keeps resolving exactly as before.
     xpm = {
         linux = {
-            ["latest"] = { ref = "37.0.1" },
+            ["latest"] = { ref = "37.0.1-2" },
+            ["37.0.1-2"] = {
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/platform-tools_r37.0.1-linux.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-platform-tools/releases/download/37.0.1/platform-tools_r37.0.1-linux.zip",
+                },
+                sha256 = "d230f13842f60f782a8645f9c813f8f845bf36089ea7289f28c48f17979313f1",
+            },
             ["37.0.1"] = {
                 url = {
                     GLOBAL = "https://dl.google.com/android/repository/platform-tools_r37.0.1-linux.zip",
@@ -142,7 +224,14 @@ package = {
         },
         macosx = {
             -- One archive for both Apple arches: a universal binary.
-            ["latest"] = { ref = "37.0.1" },
+            ["latest"] = { ref = "37.0.1-2" },
+            ["37.0.1-2"] = {
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/platform-tools_r37.0.1-darwin.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-platform-tools/releases/download/37.0.1/platform-tools_r37.0.1-darwin.zip",
+                },
+                sha256 = "ee39ad5967e95c2a07f04dbcbde96b1a0c916ba376096db5d2f498b7727a5d1d",
+            },
             ["37.0.1"] = {
                 url = {
                     GLOBAL = "https://dl.google.com/android/repository/platform-tools_r37.0.1-darwin.zip",
@@ -152,7 +241,14 @@ package = {
             },
         },
         windows = {
-            ["latest"] = { ref = "37.0.1" },
+            ["latest"] = { ref = "37.0.1-2" },
+            ["37.0.1-2"] = {
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/platform-tools_r37.0.1-win.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-platform-tools/releases/download/37.0.1/platform-tools_r37.0.1-win.zip",
+                },
+                sha256 = "45f4d63113e895ebde0c90f194099a4676b6ac653bd28d54314a9e022bbc1a99",
+            },
             ["37.0.1"] = {
                 url = {
                     GLOBAL = "https://dl.google.com/android/repository/platform-tools_r37.0.1-win.zip",
@@ -230,6 +326,215 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 
+-- adb-run -- see the header section above for the full design reading.
+-- Measured 2026-09-12 against this package's own installed `adb` (37.0.1),
+-- `bash -n`, and one real bare-executable round trip when a device was
+-- attached (see tests/a/test_android_platform_tools.py); the tombstone path
+-- is unmeasured (no crashing binary was run).
+local __adb_run_sh = [==[
+#!/usr/bin/env bash
+# adb-run --- install and run an Android application, or push and run a bare
+# executable, on whichever device/emulator `adb` currently sees.
+#
+# Usage:
+#   adb-run <path-to.apk>
+#   adb-run <path-to-executable> [arguments...]
+#
+# Used as an mcpp `runner`:
+#
+#   [target.x86_64-linux-android]
+#   runner = ["adb-run"]
+#
+# DEVICE SELECTION IS adb's OWN. This program passes no `-s`; `ANDROID_
+# SERIAL`, or adb's single-device default, is the caller's configuration --
+# the identical boundary `apple-simulator-tools.lua`'s `simctl-run` keeps
+# with `SIMCTL_RUN_UDID` (an override, never a decision this program makes
+# for the caller).
+#
+# THE EXIT STATUS IS THE PROGRAM'S. For a bare executable that is Linux's own
+# exit(2) status, forwarded verbatim; for an installed application, which the
+# platform hands nothing back for directly, it is 0 on a clean exit and
+# non-zero when that pid's own log carries a `FATAL EXCEPTION` or an
+# unfiltered log names a tombstone for that pid.
+set -uo pipefail
+
+if [ "$#" -lt 1 ]; then
+    echo "adb-run: usage: adb-run <apk-or-executable> [arguments...]" >&2
+    exit 2
+fi
+
+operand="$1"; shift
+
+if ! command -v adb > /dev/null 2>&1; then
+    echo "adb-run: no adb on PATH. xim:android-platform-tools provides it;" >&2
+    echo "         declare it as a dependency of whatever resolves this" >&2
+    echo "         runner." >&2
+    exit 2
+fi
+
+if [ ! -f "$operand" ]; then
+    echo "adb-run: $operand does not exist" >&2
+    exit 2
+fi
+
+# Portable POSIX single-quoting, for the ONE command line `adb shell` sends
+# to the device's remote shell when given more than one argv element: adb
+# joins them with a plain space itself before handing the result to
+# `sh -c`, so an argument carrying whitespace or a shell metacharacter has
+# to be quoted here, not by adb.
+__quote() {
+    printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"
+}
+
+case "$operand" in
+    *.apk)
+        # ═══════════════════ AN APPLICATION ═══════════════════
+        if ! adb install -r "$operand" >&2; then
+            echo "adb-run: adb install -r failed for $operand" >&2
+            exit 2
+        fi
+
+        # THE APPLICATION ID AND LAUNCHABLE ACTIVITY. aapt2 reads the
+        # manifest the way the platform itself does, so it is authoritative
+        # when reachable -- on PATH, or beside this script (the same
+        # xim:android-build-tools payload's bin/, since a project that packs
+        # an APK also declares that dependency). Otherwise the APK is
+        # expected to carry the sidecar `mcpp:plugins`' dist-apk member
+        # writes, `assets/mcpp-run.json`, read with `unzip -p` because the
+        # id is needed before the package is known to be queryable on the
+        # device.
+        aapt2=""
+        if command -v aapt2 > /dev/null 2>&1; then
+            aapt2="aapt2"
+        else
+            here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+            for candidate in "$here/aapt2" "$here/../aapt2"; do
+                if [ -x "$candidate" ]; then
+                    aapt2="$candidate"
+                    break
+                fi
+            done
+        fi
+
+        app_id=""
+        activity=""
+        if [ -n "$aapt2" ]; then
+            badging="$("$aapt2" dump badging "$operand" 2>/dev/null)"
+            app_id="$(printf '%s\n' "$badging" | sed -n "s/^package: name='\([^']*\)'.*/\1/p" | head -1)"
+            activity="$(printf '%s\n' "$badging" | sed -n "s/^launchable-activity: name='\([^']*\)'.*/\1/p" | head -1)"
+        fi
+
+        if [ -z "$app_id" ] || [ -z "$activity" ]; then
+            sidecar="$(unzip -p "$operand" assets/mcpp-run.json 2>/dev/null)"
+            if [ -z "$sidecar" ]; then
+                echo "adb-run: could not determine the application id and" >&2
+                echo "         activity: aapt2 was not found on PATH or" >&2
+                echo "         beside this script, and $operand carries no" >&2
+                echo "         assets/mcpp-run.json sidecar." >&2
+                exit 2
+            fi
+            app_id="$(printf '%s' "$sidecar" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("package",""))' 2>/dev/null)"
+            activity="$(printf '%s' "$sidecar" | python3 -c 'import json,sys; print(json.load(sys.stdin).get("activity",""))' 2>/dev/null)"
+        fi
+
+        if [ -z "$app_id" ] || [ -z "$activity" ]; then
+            echo "adb-run: package/activity could not be determined for $operand" >&2
+            exit 2
+        fi
+
+        # REDIRECT THE APPLICATION'S OWN stdio INTO LOGCAT. Without this, an
+        # installed application's `printf`/`std::cout` never reach this
+        # program -- only what it explicitly logs through the Java/NDK log
+        # APIs would. Bionic honours this documented system property in the
+        # zygote-forked process's own stdio setup.
+        adb shell setprop log.redirect-stdio true >&2
+
+        if ! adb shell am start -W -n "$app_id/$activity" >&2; then
+            echo "adb-run: am start failed for $app_id/$activity" >&2
+            exit 2
+        fi
+
+        # THE PID, RETRIED BRIEFLY: `am start -W` returns once the activity
+        # is drawn, and the process record `pidof` reads is populated at
+        # zygote-fork time, slightly earlier -- so failing once before
+        # finding it is ordinary.
+        pid=""
+        for _ in 1 2 3 4 5 6 7 8 9 10; do
+            pid="$(adb shell pidof "$app_id" 2>/dev/null | tr -d '\r\n ')"
+            [ -n "$pid" ] && break
+            sleep 1
+        done
+
+        if [ -z "$pid" ]; then
+            echo "adb-run: $app_id started but no pid was found (pidof)" >&2
+            exit 2
+        fi
+
+        # STREAM THE PROCESS'S OWN LOG TO STDOUT until it exits. `mcpp run`/
+        # `mcpp test` read this program's stdout as the application's
+        # output, so the log has to reach the caller and not only a file.
+        logfile="$(mktemp)"
+        adb logcat --pid="$pid" > "$logfile" 2>/dev/null &
+        logcat_pid=$!
+
+        while adb shell pidof "$app_id" 2>/dev/null | grep -q .; do
+            sleep 1
+        done
+
+        # A moment for the last lines to arrive before the pipe is cut.
+        sleep 1
+        kill "$logcat_pid" 2>/dev/null
+        wait "$logcat_pid" 2>/dev/null
+
+        cat "$logfile"
+
+        status=0
+        if grep -q "FATAL EXCEPTION" "$logfile"; then
+            status=1
+        fi
+        # A NATIVE CRASH IS REPORTED BY A DIFFERENT PROCESS (tombstoned), so
+        # `--pid` above does not carry it; a separate unfiltered dump is read
+        # for a tombstone naming this pid. UNMEASURED -- see the header
+        # comment at the top of this file.
+        if adb logcat -d 2>/dev/null \
+                | grep -qE "pid: $pid[,)].*[Tt]ombstone|[Tt]ombstone.*pid: $pid[,)]"; then
+            status=1
+        fi
+        rm -f "$logfile"
+        exit "$status"
+        ;;
+
+    *)
+        # ═══════════════════ A BARE EXECUTABLE ═══════════════════
+        name="$(basename "$operand")"
+        remote="/data/local/tmp/$name"
+
+        if ! adb push "$operand" "$remote" >&2; then
+            echo "adb-run: adb push failed for $operand" >&2
+            exit 2
+        fi
+        adb shell chmod 755 "$remote" >&2
+
+        remote_cmd="$(__quote "$remote")"
+        for a in "$@"; do
+            remote_cmd="$remote_cmd $(__quote "$a")"
+        done
+
+        out="$(adb shell "$remote_cmd; echo __rc=\$?" | tr -d '\r')"
+        rc="$(printf '%s\n' "$out" | tail -1 | sed -n 's/^__rc=\([0-9-]*\)$/\1/p')"
+        printf '%s\n' "$out" | sed '$d'
+
+        adb shell rm -f "$remote" >&2
+
+        if [ -z "$rc" ]; then
+            echo "adb-run: could not read the remote exit status for $operand" >&2
+            exit 2
+        fi
+        exit "$rc"
+        ;;
+esac
+]==]
+
 function install()
     local dir = pkginfo.install_dir()
     os.tryrm(dir)
@@ -266,6 +571,37 @@ function install()
         end
     end
 
+    -- adb-run: written into bin/ regardless of host (see "HOST COVERAGE" in
+    -- the header section), the same directory convention
+    -- apple-simulator-tools.lua uses for the identical reason -- a consumer
+    -- can rely on `<payload>/bin` being searched.
+    local bindir = path.join(dir, "bin")
+    os.mkdir(bindir)
+    local runner = path.join(bindir, "adb-run")
+    local f = io.open(runner, "w")
+    if not f then
+        raise("android-platform-tools: cannot write " .. runner)
+    end
+    f:write(__adb_run_sh)
+    f:close()
+
+    if not os.isfile(runner) then
+        raise("android-platform-tools: " .. runner .. " was not written")
+    end
+
+    -- POSIX ONLY, matching the identical chmod guard above: Windows has no
+    -- chmod and, on a plain install with no Git Bash/WSL, no bash either.
+    -- The file is still written there (see "HOST COVERAGE" in the header
+    -- section) -- this is the "cannot verify, do not claim" gap that leaves,
+    -- stated rather than silently skipped.
+    if not is_host("windows") then
+        os.iorun('chmod +x "' .. runner .. '"')
+        local ok = try { function() return os.iorun('bash -n "' .. runner .. '"') end }
+        if ok == nil then
+            raise("android-platform-tools: " .. runner .. " is not valid shell")
+        end
+    end
+
     return true
 end
 
@@ -282,10 +618,15 @@ function config()
     xvm.add(package.name)
     xvm.add("adb", { bindir = bindir })
     xvm.add("fastboot", { bindir = bindir })
+    -- adb-run lives one level down, in the bin/ this recipe writes (see
+    -- install()), the same split apple-simulator-tools.lua has between its
+    -- payload root and its own program.
+    xvm.add("adb-run", { bindir = path.join(bindir, "bin") })
     return true
 end
 
 function uninstall()
+    xvm.remove("adb-run")
     xvm.remove("fastboot")
     xvm.remove("adb")
     xvm.remove(package.name)

@@ -176,6 +176,49 @@ class TestStatic:
         )
 
     @pytest.mark.static
+    def test_version_bumped_to_0_2_0(self, source_text):
+        code = re.sub(r'--.*', '', source_text)
+        assert '"0.2.0"' in code
+        assert '"0.1.0"' not in code, \
+            "the 0.1.0 xpm entry should have been replaced, not duplicated"
+
+    @pytest.mark.static
+    def test_existence_check_covers_both_a_file_and_a_bundle_directory(self, script_code):
+        """A `.app` operand is a DIRECTORY; the original `[ ! -f ]` check
+        would reject every bundle before the branch below ever saw it."""
+        assert re.search(r'\[\s*!\s*-e\s*"\$artifact"\s*\]', script_code), \
+            "the top-level existence check must accept a directory too (-e, not -f)"
+
+    @pytest.mark.static
+    def test_app_branch_installs_then_launches(self, script_code):
+        assert "simctl install" in script_code
+        assert "simctl launch" in script_code
+        assert "--console-pty" in script_code
+        assert "--terminate-running-process" in script_code
+
+    @pytest.mark.static
+    def test_app_branch_reads_bundle_id_with_plistbuddy(self, script_code):
+        assert "/usr/libexec/PlistBuddy" in script_code
+        assert "CFBundleIdentifier" in script_code
+
+    @pytest.mark.static
+    def test_app_branch_forwards_remaining_arguments(self, script_code):
+        assert re.search(r'simctl launch --console-pty --terminate-running-process "\$udid" "\$bundle_id" "\$@"',
+                          script_code)
+
+    @pytest.mark.static
+    def test_bare_executable_branch_unchanged(self, script_code):
+        """0.2.0 must not have touched the 0.1.0 spawn path -- it is an
+        `elif`/second-branch addition, not a rewrite."""
+        assert re.search(r'xcrun simctl spawn "\$udid" "\$artifact" "\$@"\n\s*exit \$\?',
+                          script_code)
+
+    @pytest.mark.static
+    def test_header_states_the_unmeasured_exit_status(self, source_text):
+        assert "UNMEASURED" in source_text
+        assert "console-pty" in source_text.lower() or "console_pty" in source_text.lower()
+
+    @pytest.mark.static
     def test_every_refusal_names_what_is_missing(self, script):
         """A runner that fails silently is indistinguishable from a program
         that produced no output, and `mcpp run` prints what the runner printed.
