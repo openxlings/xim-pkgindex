@@ -206,6 +206,56 @@
 -- absent).
 --
 -- ═══════════════════════════════════════════════════════════════════════
+-- THE EMULATOR SIGSEGVS WITHOUT A HAND-BUILT SDK ROOT -- MEASURED AND FIXED
+-- ═══════════════════════════════════════════════════════════════════════
+--
+-- MEASURED 2026-09-12, launching the plain `emulator` binary this package
+-- installs, with no environment set by hand: it SIGSEGVs at startup, no
+-- message, before any AVD is even named -- confirmed (mcpp-plugins #622,
+-- commit 827dd0b) to be a NULL `this`-pointer read at offset 0x98 inside
+-- the binary's own SDK-root detection.
+--
+-- THE CAUSE. `emulator` never asks this package where its OWN payload
+-- lives; it auto-detects an "SDK root" by walking up from `argv[0]`'s own
+-- directory and expecting `platform-tools/` to sit BESIDE the directory
+-- upstream calls `emulator/` -- exactly the layout the real Android SDK's
+-- `sdkmanager` lays every component into, one levelled tree. This
+-- package's own install directory IS that `emulator/` half, but
+-- `xim:android-platform-tools` (a separate recipe, a separate xpkgs store
+-- entry, see that file's own "WHY THIS PACKAGE EXISTS ON ITS OWN" section)
+-- installs to an entirely unrelated directory. Upstream's own code
+-- dereferences whatever it finds walking up from a store path that will
+-- never contain a `platform-tools/` sibling, and null is what it finds.
+--
+-- THE FIX. `install()` now depends on `xim:android-platform-tools`
+-- (`pkginfo.dep_install_dir`, never a bare `adb` on PATH -- the same
+-- boundary `android-build-tools.lua` keeps for `xim:jdk-temurin`) and
+-- builds `<install_dir>/sdk-root/` with two symlinks, `emulator` pointing
+-- at this package's own install directory and `platform-tools` pointing
+-- at that dependency's -- the exact sibling layout upstream's own
+-- detection is walking up to find, built from two independently-installed
+-- payloads instead of one merged download. `config()` no longer registers
+-- the raw binary as `emulator`; it registers a wrapper
+-- (`bin/emulator`, the shape `apple-simulator-tools.lua`'s `simctl-run`
+-- and `android-platform-tools.lua`'s `adb-run` both already use for a
+-- generated, non-upstream program) that defaults `ANDROID_SDK_ROOT` and
+-- `ANDROID_HOME` to that directory -- ONLY if the caller has not already
+-- set them, so a consumer with a real Android Studio SDK is never
+-- overridden -- and `exec`s the real binary. `ln -sf` through the shell is
+-- what does the linking, not a `os.ln` xmake helper (there is none; see
+-- `libcuda-host-link.lua`'s identical note), on every host but Windows,
+-- where neither plain symlinks nor `ln` can be assumed and this gap is
+-- left declared rather than guessed at (see WINDOWS, below).
+--
+-- WINDOWS IS UNMEASURED, DECLARED AS A GAP RATHER THAN GUESSED AT. This
+-- package's own Windows table was completed on strength of an archive
+-- hash, never a run (see the LICENCE section below), and creating a real
+-- symlink on Windows needs either Developer Mode or an elevated process --
+-- neither of which an install hook can assume. `install()` and `config()`
+-- both skip the sdk-root/wrapper machinery on Windows and `config()` logs
+-- why, rather than writing a wrapper batch file no host here has run.
+--
+-- ═══════════════════════════════════════════════════════════════════════
 -- LICENCE, VERIFICATION, AND HOST ARCH SCOPE
 -- ═══════════════════════════════════════════════════════════════════════
 --
@@ -279,6 +329,13 @@ package = {
             -- deps because a DT_NEEDED chain is not a resolution order: if any
             -- one of them is missing the loader fails at exec with a message
             -- naming that library and not this package.
+            --
+            -- `xim:android-platform-tools` is the newest entry, added with
+            -- the "-2" revision below: the SDK-root fix's own `sdk-root/
+            -- platform-tools` symlink needs a real, separately-installed
+            -- payload to point at (see the header's "THE EMULATOR SIGSEGVS"
+            -- section). A version range, not an exact pin, because any
+            -- revision's `platform-tools/adb` layout satisfies it.
             deps = {
                 "xim:libX11@>=1.8",
                 "xim:libxcb@>=1.17",
@@ -286,8 +343,21 @@ package = {
                 "xim:libXdmcp@>=1.1",
                 "xim:libbsd@>=0.12",
                 "xim:libmd@>=1.1",
+                "xim:android-platform-tools@>=37.0.1",
             },
-            ["latest"] = { ref = "37.1.11" },
+            -- VERSION BUMPED TO "37.1.11-2" FOR THE SDK-ROOT FIX, THE SAME
+            -- SHAPE `android-platform-tools.lua` USES FOR ITS OWN RECIPE-
+            -- SIDE-ONLY CHANGES: no new upstream byte (still build 15917651),
+            -- `latest` moves to "37.1.11-2", and the bare "37.1.11" stays
+            -- resolvable for anyone already pinned to it.
+            ["latest"] = { ref = "37.1.11-2" },
+            ["37.1.11-2"] = {
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/emulator-linux_x64-15917651.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-emulator/releases/download/37.1.11/emulator-linux_x64-15917651.zip",
+                },
+                sha256 = "95771e0ae431897b2a4bd2d97fa095f29a8b0624a7b216baf529f9306161c266",
+            },
             ["37.1.11"] = {
                 -- Measured 2026-09-11: fetched with curl, size and sha1
                 -- both matched repository2-3.xml exactly (see header).
@@ -322,7 +392,28 @@ package = {
         -- this index has run that, and a row claiming it would be a guess
         -- wearing a measurement's clothes.
         macosx = {
-            ["latest"] = { ref = "37.1.11" },
+            -- Same reasoning as linux's own deps note above: the SDK-root
+            -- fix's `sdk-root/platform-tools` symlink needs a real
+            -- `xim:android-platform-tools` payload, and that recipe already
+            -- serves macosx (a universal binary, one entry for both Apple
+            -- arches). `ln`/bash are both standard on macOS, so the fix
+            -- applies here exactly as it does on linux; UNMEASURED all the
+            -- same, matching every other macOS claim in this file.
+            deps = {
+                "xim:android-platform-tools@>=37.0.1",
+            },
+            ["latest"] = { ref = "37.1.11-2" },
+            ["37.1.11-2"] = {
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/emulator-darwin_${arch_alias}-15917651.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-emulator/releases/download/37.1.11/emulator-darwin_${arch_alias}-15917651.zip",
+                },
+                arch_alias = { x86_64 = "x64", aarch64 = "aarch64" },
+                sha256 = {
+                    x86_64  = "c1a3890f95b8868198918fad05ffca16fa20404d93547ba545ff5a5867ee7005",
+                    aarch64 = "22530de9363f34ea945ecb5cad74523abd4b615f27f3c1a9899efb183ea9e144",
+                },
+            },
             ["37.1.11"] = {
                 url = {
                     GLOBAL = "https://dl.google.com/android/repository/emulator-darwin_${arch_alias}-15917651.zip",
@@ -335,8 +426,20 @@ package = {
                 },
             },
         },
+        -- WINDOWS GETS THE VERSION BUMP FOR STRUCTURAL CONSISTENCY ONLY --
+        -- no `deps`, no sdk-root, no wrapper (see the header's "WINDOWS IS
+        -- UNMEASURED" section). This table's own `latest` moves to
+        -- "37.1.11-2" in step with the other two hosts, rather than being
+        -- the one host left pinned to a key the other tables retire.
         windows = {
-            ["latest"] = { ref = "37.1.11" },
+            ["latest"] = { ref = "37.1.11-2" },
+            ["37.1.11-2"] = {
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/emulator-windows_x64-15917651.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-emulator/releases/download/37.1.11/emulator-windows_x64-15917651.zip",
+                },
+                sha256 = "5ff441f3b12ace9b13e9cf96fb0007d233967718652a8110705e995ac47bfeb7",
+            },
             ["37.1.11"] = {
                 url = {
                     GLOBAL = "https://dl.google.com/android/repository/emulator-windows_x64-15917651.zip",
@@ -351,6 +454,36 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
+import("xim.libxpkg.system")
+
+-- The `emulator` wrapper install() writes into `bin/` on every host but
+-- Windows (see the header's "THE EMULATOR SIGSEGVS" section). Shaped
+-- exactly like `android-build-tools.lua`'s own `WRAPPER_TEMPLATE`: a baked
+-- default, `: "${VAR:=default}"` so a caller's own environment always wins,
+-- then `exec` the real binary by absolute path.
+local EMULATOR_WRAPPER_TEMPLATE = [==[
+#!/usr/bin/env bash
+# emulator (xim:android-emulator wrapper).
+#
+# The archive's own `emulator` binary auto-detects its SDK root by walking
+# up from its own path and expecting `platform-tools/` as a sibling of
+# `emulator/` -- a layout this package's install directory alone never has
+# (measured 2026-09-12: SIGSEGV, NULL `this`-pointer at offset 0x98, before
+# any AVD is even named; see pkgs/a/android-emulator.lua's own header).
+# `sdk-root/`, built at install time beside this wrapper, supplies exactly
+# that sibling layout from two independently-installed payloads.
+#
+# `: "${VAR:=default}"` sets ONLY IF UNSET -- a caller with a real Android
+# SDK already exported keeps it; nothing here overrides that caller.
+set -uo pipefail
+
+: "${ANDROID_SDK_ROOT:=%s}"
+: "${ANDROID_HOME:=%s}"
+export ANDROID_SDK_ROOT
+export ANDROID_HOME
+
+exec "%s" "$@"
+]==]
 
 function install()
     local dir = pkginfo.install_dir()
@@ -448,12 +581,88 @@ function install()
               .. "truncated payload and not the documented arm64 gate")
     end
 
+    -- THE SDK-ROOT FIX. See the header's "THE EMULATOR SIGSEGVS" section
+    -- for the measured cause. Windows is excluded: neither a plain symlink
+    -- nor `ln` can be assumed there without admin/Developer Mode, and this
+    -- gap is left declared (see the header's "WINDOWS IS UNMEASURED").
+    if not is_host("windows") then
+        local pt_dir = pkginfo.dep_install_dir("xim:android-platform-tools")
+        if not pt_dir then
+            raise("android-emulator: xim:android-platform-tools payload not "
+                  .. "found (this package's deps declare it); refusing to "
+                  .. "build sdk-root/ without a platform-tools payload to "
+                  .. "link to")
+        end
+
+        local sdk_root = path.join(dir, "sdk-root")
+        os.tryrm(sdk_root)
+        os.mkdir(sdk_root)
+
+        -- `ln -sf` THROUGH THE SHELL, NOT `os.ln`: xmake's lua has no
+        -- `os.ln` helper (the same absence `libcuda-host-link.lua` and
+        -- `nvidia-video-host-link.lua` both note for the identical reason).
+        -- `-f` is harmless: `sdk_root` was just freshly created above.
+        system.exec(string.format([[ln -sf "%s" "%s"]],
+                                   dir, path.join(sdk_root, "emulator")))
+        system.exec(string.format([[ln -sf "%s" "%s"]],
+                                   pt_dir, path.join(sdk_root, "platform-tools")))
+
+        if not os.isfile(path.join(sdk_root, "emulator", "emulator" .. exe)) then
+            raise("android-emulator: sdk-root/emulator/emulator" .. exe
+                  .. " does not resolve through the symlink just created "
+                  .. "at " .. sdk_root)
+        end
+
+        -- THE WRAPPER. Written into `bin/` (a fresh subdirectory of this
+        -- package's own install dir, matching `android-platform-tools.lua`'s
+        -- `adb-run` and `android-build-tools.lua`'s own Java wrappers) so
+        -- `config()` can register IT, not the raw binary, as `emulator`.
+        local bindir = path.join(dir, "bin")
+        os.mkdir(bindir)
+        local wrapper = path.join(bindir, "emulator")
+        local text = string.format(EMULATOR_WRAPPER_TEMPLATE,
+                                    sdk_root, sdk_root, emu)
+        local f = io.open(wrapper, "w")
+        if not f then
+            raise("android-emulator: cannot write " .. wrapper)
+        end
+        f:write(text)
+        f:close()
+        os.iorun('chmod +x "' .. wrapper .. '"')
+
+        if not os.isfile(wrapper) then
+            raise("android-emulator: " .. wrapper .. " was not written")
+        end
+        local ok = try { function() return os.iorun('bash -n "' .. wrapper .. '"') end }
+        if ok == nil then
+            raise("android-emulator: " .. wrapper .. " is not valid shell")
+        end
+    else
+        log.warn("android-emulator: no sdk-root/ or wrapper is built on "
+                 .. "Windows -- the archive's own SIGSEGV-on-missing-SDK-"
+                 .. "root defect (see this recipe's header) is UNMEASURED, "
+                 .. "not fixed, on this host")
+    end
+
     return true
 end
 
 function config()
+    local dir = pkginfo.install_dir()
     xvm.add(package.name)
-    xvm.add("emulator", { bindir = pkginfo.install_dir() })
+
+    -- `emulator` RESOLVES TO THE WRAPPER, NOT THE RAW BINARY, ON EVERY HOST
+    -- BUT WINDOWS. See the header's "THE EMULATOR SIGSEGVS" section: the
+    -- raw binary crashes without a hand-built SDK root, and the wrapper
+    -- `install()` writes into `bin/` is what supplies one, defaulting
+    -- `ANDROID_SDK_ROOT`/`ANDROID_HOME` only if the caller has not already
+    -- set them. Windows keeps registering the raw binary directly -- no
+    -- wrapper is written there (unmeasured, see the header).
+    if not is_host("windows") then
+        xvm.add("emulator", { bindir = path.join(dir, "bin") })
+    else
+        xvm.add("emulator", { bindir = dir })
+    end
 
     -- Matching pkgs/g/godot.lua's exact precedent for a prebuilt GUI-stack
     -- binary: probe, warn, do not fail the install. The emulator's own
