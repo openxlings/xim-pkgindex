@@ -109,7 +109,19 @@
 --
 -- TWO OPERAND SHAPES, DECIDED BY THE FILE:
 --
---   *.apk           `adb install -r`, then `am start -W -n <id>/<activity>`.
+--   *.apk           `adb install -r`, then a PLAIN `am start -n <id>/
+--                   <activity>` -- NOT `-W`. MEASURED 2026-09-12: `-W`
+--                   blocks until ActivityManager reports the launch idle,
+--                   and an activity that calls `finish()` from `onCreate`
+--                   (exactly what `mcpp run` launches for a "run to
+--                   completion" native activity, `tests/apk-consumer`'s own
+--                   fixture among them) is torn down before that report
+--                   ever fires -- `am start -W` hung indefinitely (two
+--                   independent invocations still alive at 691s and 354s,
+--                   confirmed by hand, `kill`ed rather than waited out).
+--                   `-W`'s own output was never read here (the whole
+--                   invocation is redirected to `>&2`), so dropping it costs
+--                   nothing in the ordinary case either.
 --                   The id/activity pair is read with `aapt2 dump badging`
 --                   when `aapt2` is reachable (on PATH, or beside this
 --                   script -- the same `xim:android-build-tools` payload's
@@ -122,10 +134,22 @@
 --                   Android's log and this program's `adb logcat --pid=`
 --                   -- without it, only what the app explicitly logs through
 --                   the Java/NDK log APIs is visible. The pid is read with a
---                   short `pidof` retry loop (the process record lags
---                   `am start -W`'s own "drawn" wait slightly), the log is
---                   streamed to stdout until `pidof` no longer finds it, and
---                   the exit status is 0 on a clean exit, non-zero when a
+--                   short `pidof` retry loop (the process record lags a
+--                   plain `am start`'s own return slightly). The log is
+--                   streamed to stdout until EITHER `pidof` no longer finds
+--                   the process OR the activity record disappears from
+--                   `dumpsys activity activities` -- MEASURED 2026-09-12:
+--                   `finish()` ends the activity, not the process (`dumpsys
+--                   activity processes` names it `cch-empty`, kept
+--                   indefinitely by ActivityManager for reuse), so `pidof`
+--                   alone never goes empty for that case; the activity
+--                   record disappearing is the signal `finish()` actually
+--                   produces, checked in addition to `pidof` so a genuine
+--                   crash (which ends both at once) is unaffected. Either
+--                   way this script then force-stops the app, so a clean
+--                   `finish()` leaves no cached process behind for the next
+--                   `adb-run` of the same package to silently reuse. The
+--                   exit status is 0 on a clean exit, non-zero when a
 --                   `FATAL EXCEPTION` line appears in that pid's own log or
 --                   an unfiltered `adb logcat -d` names a tombstone for that
 --                   pid (a native crash is reported by `tombstoned`, a
@@ -204,9 +228,25 @@ package = {
     -- unchanged from "37.0.1" (the bytes are the same archive), and the bare
     -- "37.0.1" entries stay in the table so a manifest already pinned to
     -- them keeps resolving exactly as before.
+    --
+    -- VERSION BUMPED AGAIN TO "37.0.1-3" FOR THE SAME REASON, ONE SCRIPT
+    -- FIX LATER (2026-09-12): `adb-run`'s own `am start -W` hangs
+    -- indefinitely for an activity that finishes from `onCreate`, and its
+    -- pid-detection loop never returns for one that finishes cleanly
+    -- (`finish()` ends the activity, not the process -- see the header
+    -- section's "TWO OPERAND SHAPES" for what was measured). Same shape as
+    -- the "-2" bump: no new upstream byte, `latest` moves to "37.0.1-3",
+    -- and "37.0.1-2"/"37.0.1" both stay resolvable.
     xpm = {
         linux = {
-            ["latest"] = { ref = "37.0.1-2" },
+            ["latest"] = { ref = "37.0.1-3" },
+            ["37.0.1-3"] = {
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/platform-tools_r37.0.1-linux.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-platform-tools/releases/download/37.0.1/platform-tools_r37.0.1-linux.zip",
+                },
+                sha256 = "d230f13842f60f782a8645f9c813f8f845bf36089ea7289f28c48f17979313f1",
+            },
             ["37.0.1-2"] = {
                 url = {
                     GLOBAL = "https://dl.google.com/android/repository/platform-tools_r37.0.1-linux.zip",
@@ -224,7 +264,14 @@ package = {
         },
         macosx = {
             -- One archive for both Apple arches: a universal binary.
-            ["latest"] = { ref = "37.0.1-2" },
+            ["latest"] = { ref = "37.0.1-3" },
+            ["37.0.1-3"] = {
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/platform-tools_r37.0.1-darwin.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-platform-tools/releases/download/37.0.1/platform-tools_r37.0.1-darwin.zip",
+                },
+                sha256 = "ee39ad5967e95c2a07f04dbcbde96b1a0c916ba376096db5d2f498b7727a5d1d",
+            },
             ["37.0.1-2"] = {
                 url = {
                     GLOBAL = "https://dl.google.com/android/repository/platform-tools_r37.0.1-darwin.zip",
@@ -241,7 +288,14 @@ package = {
             },
         },
         windows = {
-            ["latest"] = { ref = "37.0.1-2" },
+            ["latest"] = { ref = "37.0.1-3" },
+            ["37.0.1-3"] = {
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/platform-tools_r37.0.1-win.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-platform-tools/releases/download/37.0.1/platform-tools_r37.0.1-win.zip",
+                },
+                sha256 = "45f4d63113e895ebde0c90f194099a4676b6ac653bd28d54314a9e022bbc1a99",
+            },
             ["37.0.1-2"] = {
                 url = {
                     GLOBAL = "https://dl.google.com/android/repository/platform-tools_r37.0.1-win.zip",
@@ -449,15 +503,27 @@ case "$operand" in
         # zygote-forked process's own stdio setup.
         adb shell setprop log.redirect-stdio true >&2
 
-        if ! adb shell am start -W -n "$app_id/$activity" >&2; then
+        # PLAIN `am start`, NOT `-W`. `-W` blocks until ActivityManager
+        # reports the launch complete/idle, and MEASURED 2026-09-12: for an
+        # activity that calls `finish()` from `onCreate` (this fixture's
+        # own row, and any other "run to completion" native activity), that
+        # report never arrives -- the activity is torn down before it is
+        # ever reported idle, and `adb shell am start -W` hangs forever
+        # (confirmed: two independent invocations still alive at 691s and
+        # 354s, killed by hand, `am start` -- no `-W` -- returns
+        # immediately in the same situation). `-W`'s own "Status/WaitTime/
+        # TotalTime" block was never read by this script (its whole
+        # invocation is redirected to `>&2`), so it bought nothing here;
+        # the retry loop directly below already tolerates the ordinary
+        # case where the process record lags a plain `am start`'s return.
+        if ! adb shell am start -n "$app_id/$activity" >&2; then
             echo "adb-run: am start failed for $app_id/$activity" >&2
             exit 2
         fi
 
-        # THE PID, RETRIED BRIEFLY: `am start -W` returns once the activity
-        # is drawn, and the process record `pidof` reads is populated at
-        # zygote-fork time, slightly earlier -- so failing once before
-        # finding it is ordinary.
+        # THE PID, RETRIED BRIEFLY: the process record `pidof` reads is
+        # populated at zygote-fork time, slightly after `am start` itself
+        # returns -- so failing once before finding it is ordinary.
         pid=""
         for _ in 1 2 3 4 5 6 7 8 9 10; do
             pid="$(adb shell pidof "$app_id" 2>/dev/null | tr -d '\r\n ')"
@@ -477,7 +543,23 @@ case "$operand" in
         adb logcat --pid="$pid" > "$logfile" 2>/dev/null &
         logcat_pid=$!
 
-        while adb shell pidof "$app_id" 2>/dev/null | grep -q .; do
+        # WAIT FOR THE RUN TO END -- TWO DISTINCT ENDINGS, NEITHER COVERING
+        # THE OTHER. A crash kills the process outright (`pidof` goes
+        # empty). A well-behaved activity that calls `finish()` (this
+        # fixture's own `ANativeActivity_finish`) only ends the ACTIVITY --
+        # MEASURED 2026-09-12: the process itself is kept by
+        # ActivityManager as a cached, reusable process (`dumpsys activity
+        # processes` names it `cch-empty` indefinitely afterward), so a
+        # loop keyed on `pidof` alone never returns for that case, which is
+        # every activity this fixture, or anything shaped like it, launches
+        # through `mcpp run`. The activity record disappearing from
+        # `dumpsys activity activities` is the signal `finish()` actually
+        # produces (confirmed absent within the same second the activity
+        # finishes), checked in addition to, not instead of, `pidof`, so a
+        # crash still ends the loop exactly as before.
+        while adb shell dumpsys activity activities 2>/dev/null \
+                | grep -q "$app_id/" \
+              && adb shell pidof "$app_id" 2>/dev/null | grep -q .; do
             sleep 1
         done
 
@@ -501,6 +583,13 @@ case "$operand" in
             status=1
         fi
         rm -f "$logfile"
+
+        # A CLEAN `finish()` LEAVES THE PROCESS CACHED, NOT DEAD (see
+        # above); force-stopping it here is what actually reclaims it, so
+        # the NEXT `adb-run` of the same package starts from a fresh
+        # process rather than silently reusing this one's.
+        adb shell am force-stop "$app_id" >&2 2>/dev/null || true
+
         exit "$status"
         ;;
 

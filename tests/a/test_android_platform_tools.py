@@ -102,12 +102,15 @@ class TestStatic:
     @pytest.mark.static
     def test_version_bumped_with_bare_pin_kept_for_compat(self, code):
         """adb-run is written by this recipe, not part of the downloaded
-        archive, so a bare recipe edit under the old version key would leave
-        an already-installed 37.0.1 without it -- hence "37.0.1-2". The bare
-        "37.0.1" key must still resolve for anyone already pinned to it."""
+        archive, so a bare recipe edit under an unchanged version key would
+        leave an already-installed revision without the fix -- hence the
+        "-N" suffix, bumped again to "37.0.1-3" for the `am start -W`/pid-
+        detection fix. Every earlier "-N" key, and the bare "37.0.1", must
+        still resolve for anyone already pinned to it."""
+        assert '"37.0.1-3"' in code
         assert '"37.0.1-2"' in code
         assert '"37.0.1"' in code
-        assert re.search(r'ref\s*=\s*"37\.0\.1-2"', code)
+        assert re.search(r'ref\s*=\s*"37\.0\.1-3"', code)
 
     @pytest.mark.static
     def test_adb_run_registered_in_its_own_bin_subdir(self, code):
@@ -138,8 +141,27 @@ class TestStatic:
     @pytest.mark.static
     def test_apk_branch_installs_and_starts(self, script_code):
         assert "adb install -r" in script_code
-        assert "am start -W -n" in script_code
+        assert "am start -n" in script_code
         assert "log.redirect-stdio" in script_code
+
+    @pytest.mark.static
+    def test_apk_branch_does_not_use_am_start_wait(self, script_code):
+        """MEASURED 2026-09-12: `-W` hangs indefinitely for an activity that
+        finishes from `onCreate` (two independent invocations killed by hand
+        after 691s and 354s) -- see the recipe's own header. `am start -W`
+        must not appear anywhere in the apk branch."""
+        assert "am start -W" not in script_code
+
+    @pytest.mark.static
+    def test_run_loop_ends_on_activity_finish_not_only_process_death(self, script_code):
+        """MEASURED 2026-09-12: `finish()` ends the activity, not the
+        process -- ActivityManager keeps it `cch-empty` indefinitely. The
+        streaming loop must also end when the activity record disappears
+        from `dumpsys activity activities`, not only when `pidof` goes
+        empty, and the app must be force-stopped afterward so a clean
+        finish does not leave a cached process for the next run to reuse."""
+        assert "dumpsys activity activities" in script_code
+        assert re.search(r'am force-stop', script_code)
 
     @pytest.mark.static
     def test_id_and_activity_have_two_sources(self, script_code):
