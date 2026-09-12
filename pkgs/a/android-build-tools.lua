@@ -174,10 +174,42 @@
 -- the consumer's active `xlings use java` selection. `jdk-temurin.lua`'s own
 -- `install_dir()` IS `JAVA_HOME` on every platform (its `payload_dir()`
 -- normalises macOS's `Contents/Home` into the same shape), so no further
--- host branching is needed to find `bin/java`. Version floor `>=11`:
--- `lib/d8.jar`'s own `com/android/tools/r8/D8.class` carries class file
--- major version 55 (measured: the class file's bytes 6-8), which is Java
--- 11's format.
+-- host branching is needed to find `bin/java`.
+--
+-- THE PIN IS THE EXACT STORE KEY, "25.0.4+7", NOT A RANGE. This was
+-- `>=11` first (the true floor: `lib/d8.jar`'s own
+-- `com/android/tools/r8/D8.class` carries class file major version 55,
+-- measured from the class file's bytes 6-8, which is Java 11's format), and
+-- it was WRONG, measured rather than assumed: `jdk-temurin.lua` publishes
+-- an ALIAS entry, `["25.0.4"] = { ref = "25.0.4+7" }`, and
+-- `pkginfo.dep_install_dir` resolving a RANGE constraint against that table
+-- picked the alias's own key ("25.0.4") as the dependency's "version" and
+-- joined it to the store root directly -- `.../xim-x-jdk-temurin/25.0.4`,
+-- a path that does not exist on disk; only `.../25.0.4+7` does. `dep_
+-- install_dir` does not dereference `ref` on this path, so any `>=`/`^`/`~`
+-- constraint that can match an alias key inherits a broken path, silently,
+-- because the record it returns still looks well-formed (a name and a
+-- version string) -- see `.upload/XLINGS-ISSUE.md` in this repository's own
+-- working tree for the reproduction and the exact defect report. Pinning
+-- the exact key this alias already points at, `25.0.4+7`, is not a
+-- narrowing for its own sake: it is the one spelling that names a directory
+-- `jdk-temurin.lua`'s own table maps to ITSELF, so no alias indirection is
+-- ever in the resolution path for this dependency. A future JDK 25 point
+-- release is a deliberate re-pin here, the same "a version bump here is a
+-- human step" posture `android-ndk.lua` and `picolibc-riscv.lua` both take
+-- for their own exact pins, not a `>=` range trying to track it.
+--
+-- THE WRAPPER ALSO DOES NOT TRUST THE BAKED PATH ALONE, as a second,
+-- independent line of defence against the identical defect surfacing
+-- through some other resolution path this recipe does not control (a future
+-- xlings version, a different `xim:jdk-temurin`-alike namespace, a home
+-- with the payload moved). At run time, if `$JAVA_HOME/bin/java` is not
+-- executable, the wrapper globs the payload store itself for
+-- `xim-x-jdk-*/*/bin/java`, sorts by version, and uses the newest match
+-- before giving up -- see `__JDK_FALLBACK` in the script below. This is a
+-- fallback, not the primary mechanism: the exact pin above is what makes
+-- the baked path correct in the first place, and the glob is what keeps a
+-- wrong bake from being silently fatal.
 --
 -- ═══════════════════════════════════════════════════════════════════════
 -- INSTALLED LAYOUT
@@ -234,7 +266,7 @@ package = {
             -- declaration belongs here, matching android-ndk.lua's and
             -- emsdk.lua's identical "only core glibc crosses the boundary"
             -- reasoning).
-            deps = { runtime = { "xim:jdk-temurin@>=11" } },
+            deps = { runtime = { "xim:jdk-temurin@25.0.4+7" } },
             ["latest"] = { ref = "37.0.0" },
             ["37.0.0"] = {
                 url = {
@@ -246,7 +278,7 @@ package = {
         macosx = {
             -- One archive for both Apple arches: a universal binary (see
             -- HOST ARCH SCOPE above).
-            deps = { runtime = { "xim:jdk-temurin@>=11" } },
+            deps = { runtime = { "xim:jdk-temurin@25.0.4+7" } },
             ["latest"] = { ref = "37.0.0" },
             ["37.0.0"] = {
                 url = {
@@ -256,7 +288,7 @@ package = {
             },
         },
         windows = {
-            deps = { runtime = { "xim:jdk-temurin@>=11" } },
+            deps = { runtime = { "xim:jdk-temurin@25.0.4+7" } },
             ["latest"] = { ref = "37.0.0" },
             ["37.0.0"] = {
                 url = {
@@ -288,16 +320,59 @@ local EXTRACT_DIR = "android-37.0"
 -- path of the archive's own launcher, both filled in at install time so
 -- nothing here depends on the consumer's PATH or active `xlings use`
 -- selection.
+--
+-- THE BAKED PATH IS CHECKED, NOT TRUSTED, at run time -- see the header's
+-- "THE WRAPPER ALSO DOES NOT TRUST THE BAKED PATH ALONE" paragraph. If
+-- `$JAVA_HOME/bin/java` from the exact pin this recipe resolved at install
+-- time is not there (a moved home, or the resolver defect resurfacing
+-- through a path this recipe does not control), the wrapper globs the
+-- payload store's own `xim-x-jdk-*/*/bin/java` -- every JDK distribution
+-- this index or another index installs shares that `xim-x-jdk-<flavor>`
+-- naming, the same convention `jdk-temurin.lua`'s own header names for
+-- itself -- takes the newest match by version-sort, and only then fails,
+-- naming the dependency rather than printing a bare "No such file".
 local WRAPPER_TEMPLATE = [==[
 #!/usr/bin/env bash
 # %s (xim:android-build-tools wrapper).
 #
 # The archive's own launcher execs a bare `java` unconditionally and reads
 # no JAVA_HOME (measured 2026-09-12; see pkgs/a/android-build-tools.lua's
-# header). JAVA_HOME is exported anyway for anything downstream that reads
-# it; PATH is what actually makes `java` resolve here.
-set -euo pipefail
-export JAVA_HOME="%s"
+# header). PATH is what actually makes `java` resolve here; JAVA_HOME is
+# exported anyway for anything downstream that reads it.
+#
+# NO `-e` HERE, UNLIKE THE FIRST VERSION OF THIS WRAPPER: the fallback
+# probe below assigns a command substitution that legitimately fails (no
+# match, or `ls`/ `sort` absent) and is meant to be handled by the `if`
+# that follows it, not to abort the script -- `set -e` would exit on that
+# assignment before the fallback ever ran.
+set -uo pipefail
+
+JAVA_HOME="%s"
+
+if [ ! -x "$JAVA_HOME/bin/java" ]; then
+    # THE BAKED PATH FROM INSTALL TIME IS MISSING. Fall back to the newest
+    # xim:jdk-* payload actually on disk before giving up -- see this
+    # file's own header, "THE WRAPPER ALSO DOES NOT TRUST THE BAKED PATH
+    # ALONE".
+    __bindir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+    # bindir -> install_dir -> this package's namespace dir -> the xpkgs
+    # store root, where every "<ns>-x-<name>/<version>" directory lives
+    # side by side, including every "xim-x-jdk-<flavor>" one.
+    __store_root="$(dirname "$(dirname "$(dirname "$__bindir")")")"
+    __fallback_java="$(ls -d "$__store_root"/xim-x-jdk-*/*/bin/java 2>/dev/null | sort -V | tail -1)"
+    if [ -n "$__fallback_java" ] && [ -x "$__fallback_java" ]; then
+        JAVA_HOME="$(dirname "$(dirname "$__fallback_java")")"
+    else
+        echo "$(basename "$0"): xim:jdk-temurin's java was not found at" >&2
+        echo "$(basename "$0"): $JAVA_HOME/bin/java, and no" >&2
+        echo "$(basename "$0"): $__store_root/xim-x-jdk-*/*/bin/java exists" >&2
+        echo "$(basename "$0"): either. Declare xim:jdk-temurin as a" >&2
+        echo "$(basename "$0"): dependency, or install it directly." >&2
+        exit 2
+    fi
+fi
+
+export JAVA_HOME
 export PATH="$JAVA_HOME/bin:$PATH"
 exec "%s" "$@"
 ]==]

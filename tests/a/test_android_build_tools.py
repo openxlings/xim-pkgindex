@@ -100,6 +100,49 @@ class TestStatic:
             "xim:jdk-temurin must be declared once per host (linux, macosx, windows)"
 
     @pytest.mark.static
+    def test_jdk_dependency_is_pinned_to_an_exact_non_alias_key(self, code):
+        """A range constraint (`>=11`) was measured to resolve to
+        jdk-temurin.lua's own alias entry ("25.0.4" -> ref "25.0.4+7") and
+        bake a path that does not exist on disk (`dep_install_dir` does not
+        dereference `ref`). The dependency must be pinned to the exact key
+        the alias points at, "25.0.4+7", which jdk-temurin.lua's own table
+        maps to itself -- so no alias indirection is ever in this
+        dependency's resolution path. See .upload/XLINGS-ISSUE.md."""
+        assert code.count('"xim:jdk-temurin@25.0.4+7"') == 3, \
+            "expected the exact pin on all three hosts (linux, macosx, windows)"
+        assert ">=11" not in code and ">=" not in code, \
+            "no range constraint should remain on this dependency"
+
+    @pytest.mark.static
+    def test_wrapper_has_a_runtime_fallback_independent_of_the_bake(self, meta):
+        """A second, independent line of defence against the same class of
+        resolver defect resurfacing through a path this recipe does not
+        control: if the baked JAVA_HOME/bin/java is missing at run time, the
+        wrapper globs the payload store for the newest xim-x-jdk-*/*/bin/java
+        before failing."""
+        rc = meta.raw_content
+        assert 'if [ ! -x "$JAVA_HOME/bin/java" ]' in rc
+        assert 'xim-x-jdk-*/*/bin/java' in rc
+        assert 'sort -V' in rc, "the newest match must be chosen by version sort"
+        assert '__store_root' in rc
+        # The three `dirname` calls must walk bin/ -> install_dir -> the
+        # package's own namespace dir -> the xpkgs store root (four levels
+        # up from bin/, three `dirname` applications from bindir).
+        assert re.search(
+            r'dirname "\$\(dirname "\$\(dirname "\$__bindir"\)"\)"', rc), \
+            "store_root must be three dirname calls up from bin/"
+        assert 'xim:jdk-temurin as a' in rc, \
+            "the final refusal must name the dependency, not print a bare error"
+
+    @pytest.mark.static
+    def test_wrapper_does_not_use_set_dash_e(self, meta):
+        """The fallback probe's command substitution legitimately fails (no
+        match); `set -e` would abort the wrapper on that assignment before
+        the fallback's own `if` ever ran."""
+        assert 'set -uo pipefail' in meta.raw_content
+        assert 'set -euo pipefail' not in meta.raw_content
+
+    @pytest.mark.static
     def test_no_glibc_dependency_declared(self, code):
         """aapt2/zipalign's own NEEDED set (measured with readelf -d) is core
         glibc only -- libc, libm, libpthread, librt, libdl, libgcc_s -- which
@@ -159,7 +202,8 @@ class TestStatic:
         resolve, so the wrapper must set both -- JAVA_HOME for anything
         downstream that reads it, PATH for the two programs themselves."""
         assert "WRAPPER_TEMPLATE" in meta.raw_content
-        assert 'export JAVA_HOME="%s"' in meta.raw_content
+        assert 'JAVA_HOME="%s"' in meta.raw_content
+        assert 'export JAVA_HOME' in meta.raw_content
         assert 'export PATH="$JAVA_HOME/bin:$PATH"' in meta.raw_content
 
     @pytest.mark.static
