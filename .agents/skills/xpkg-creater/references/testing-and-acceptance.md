@@ -46,6 +46,13 @@ xim -r <pkg>
 xim -l <pkg>
 ```
 
+```bash
+# 8) 测完把 recipe 从本地覆盖层拿掉(xlings ≥ 2026.9.12.1)
+xlings config --remove-xpkg <pkg>
+# 忘了也没关系:与主索引字节相同的副本会在下次 `xlings update` 时自动清掉;
+# 改过的副本会一直留在覆盖层并压住主索引,`xlings config --list-xpkg` 能看到它。
+```
+
 验收重点：
 - 能搜索到
 - 能安装成功
