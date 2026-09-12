@@ -171,17 +171,24 @@ class TestPinnedFacts:
         assert 'hostlib' not in code, "the host probe is back"
 
     @pytest.mark.static
-    def test_the_only_warning_left_is_the_one_no_package_can_supply(self, source_text):
-        # `/dev/kvm` is a kernel device. A warning is the right shape for
-        # exactly that and for nothing that an xim package could provide, so
-        # this asserts the count rather than the absence -- a second warning
-        # appearing is the thing to catch.
+    def test_warnings_are_only_for_what_no_package_can_supply(self, source_text):
+        # `/dev/kvm` is a kernel device -- a warning is the right shape for
+        # exactly that and for nothing that an xim package could provide.
+        # The sdk-root/wrapper Windows gap (2026-09-12) joins it for the
+        # identical reason: creating a real symlink there needs admin/
+        # Developer Mode, which an install hook cannot grant either -- so
+        # this asserts the count rather than the absence, the same shape
+        # this test used before the second warning was a real gap and not
+        # a bug. A THIRD warning appearing is the thing to catch.
         code = re.sub(r'--.*', '', source_text)
-        warns = re.findall(r'log\.warn\(', code)
-        assert len(warns) == 1, f"expected one warning (/dev/kvm), found {len(warns)}"
-        i = code.index('log.warn(')
-        assert '/dev/kvm' in code[max(0, i - 400):i + 400], (
-            "the single remaining warning is not the KVM one")
+        warn_positions = [m.start() for m in re.finditer(r'log\.warn\(', code)]
+        assert len(warn_positions) == 2, (
+            f"expected two warnings (/dev/kvm, Windows sdk-root), found {len(warn_positions)}")
+        contexts = [code[max(0, i - 400):i + 400] for i in warn_positions]
+        assert any('/dev/kvm' in c for c in contexts), (
+            "no warning mentions /dev/kvm")
+        assert any('sdk-root' in c for c in contexts), (
+            "no warning mentions the Windows sdk-root gap")
 
     @pytest.mark.static
     def test_arm64_gate_documented(self, source_text):
@@ -201,6 +208,73 @@ class TestPinnedFacts:
         # pkgs/j/jdk-zulu.lua).
         code = re.sub(r'--.*', '', source_text)
         assert 'os.arch(' not in code
+
+
+class TestSdkRootFix:
+    """The 2026-09-12 fix: the emulator finds its SDK root without a
+    hand-built directory. See pkgs/a/android-emulator.lua's own
+    "THE EMULATOR SIGSEGVS" header section for what was measured."""
+
+    @pytest.mark.static
+    def test_sigsegv_and_cause_documented(self, source_text):
+        assert "SIGSEGV" in source_text
+        assert "0x98" in source_text
+        assert "platform-tools" in source_text
+
+    @pytest.mark.static
+    def test_platform_tools_declared_as_a_dependency(self, source_text):
+        code = re.sub(r'--.*', '', source_text)
+        assert 'xim:android-platform-tools@>=37.0.1' in code
+
+    @pytest.mark.static
+    def test_sdk_root_built_from_two_symlinks(self, source_text):
+        code = re.sub(r'--.*', '', source_text)
+        assert 'sdk-root' in code
+        assert re.search(r'ln -sf', code), "no ln -sf (os.ln does not exist)"
+        assert code.count('ln -sf') >= 2, "expected one symlink per sibling"
+
+    @pytest.mark.static
+    def test_wrapper_defaults_env_without_overriding_caller(self, source_text):
+        code = re.sub(r'--.*', '', source_text)
+        assert ': "${ANDROID_SDK_ROOT:=' in code
+        assert ': "${ANDROID_HOME:=' in code
+        assert 'export ANDROID_SDK_ROOT' in code
+        assert 'export ANDROID_HOME' in code
+
+    @pytest.mark.static
+    def test_wrapper_registered_instead_of_raw_binary_on_posix(self, source_text):
+        code = re.sub(r'--.*', '', source_text)
+        assert re.search(r'xvm\.add\("emulator",\s*\{\s*bindir\s*=\s*path\.join\(dir,\s*"bin"\)', code)
+
+    @pytest.mark.static
+    def test_wrapper_syntax_checked_at_install_time(self, source_text):
+        code = re.sub(r'--.*', '', source_text)
+        assert 'bash -n' in code
+
+    @pytest.mark.static
+    def test_windows_gap_declared_not_silently_skipped(self, source_text):
+        code = re.sub(r'--.*', '', source_text)
+        assert 'is_host("windows")' in code
+        assert 'UNMEASURED' in source_text
+
+    @pytest.mark.static
+    def test_version_bumped_with_bare_pin_kept_for_compat(self, source_text):
+        code = re.sub(r'--.*', '', source_text)
+        assert '"37.1.11-2"' in code
+        assert '"37.1.11"' in code
+        assert code.count('ref = "37.1.11-2"') == 3, (
+            "expected latest to move to 37.1.11-2 on all three host tables")
+
+    @pytest.mark.static
+    def test_the_wrapper_script_itself_is_valid_shell(self, source_text, tmp_path):
+        import subprocess
+        m = re.search(r'EMULATOR_WRAPPER_TEMPLATE = \[==\[(.*?)\]==\]', source_text, re.S)
+        assert m, "the embedded emulator wrapper template was not found"
+        script = m.group(1) % ("/tmp/sdk-root", "/tmp/sdk-root", "/tmp/sdk-root/emulator/emulator")
+        p = tmp_path / "emulator"
+        p.write_text(script, encoding="utf-8")
+        r = subprocess.run(["bash", "-n", str(p)], capture_output=True, text=True)
+        assert r.returncode == 0, r.stderr
 
 
 class TestLifecycle:
@@ -225,9 +299,18 @@ class TestVerify:
     def _installed_adb() -> str:
         """Locate a separately-installed android-platform-tools payload
         (a different package, owned by pkgs/a/android-platform-tools.lua)
-        the same way _installed_pkgdir looks up this one. Skips rather than
-        fails when it is not present -- this package's own install must
-        not depend on that one having been installed too.
+        the same way _installed_pkgdir looks up this one.
+
+        UPDATED 2026-09-12: android-emulator's own `deps` now names
+        `xim:android-platform-tools` on linux/macosx (the sdk-root fix's
+        `sdk-root/platform-tools` symlink needs a real payload to point
+        at -- see this recipe's header), so an android-emulator install on
+        those hosts always brings one along. This still skips rather than
+        fails: a Windows install carries no such dependency (see the
+        header's "WINDOWS IS UNMEASURED" section), and a test environment
+        that installed this package by hand, bypassing the recipe's own
+        `deps` resolution, is a real possibility this helper does not want
+        to turn into a hard failure of a DIFFERENT package's own test.
         """
         for ns in ("xim", "local"):
             hits = sorted(glob.glob(os.path.join(xpkgs_dir(), f"{ns}-x-android-platform-tools", "*")))
