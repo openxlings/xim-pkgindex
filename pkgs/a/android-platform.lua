@@ -18,10 +18,14 @@
 -- ═══════════════════════════════════════════════════════════════════════
 --
 -- https://dl.google.com/android/repository/repository2-3.xml,
--- `<remotePackage path="platforms;android-35">` and
--- `platforms;android-34">`, both `channelRef` = `channel-0` (stable):
+-- `<remotePackage path="platforms;android-36">`, `platforms;android-35">`
+-- and `platforms;android-34">`, all `channelRef` = `channel-0` (stable):
 --
 --   api   Pkg.Revision   url                        size       sha1
+--   36    2              platform-36_r02.zip        65878410   2c1a80dd4d
+--                                                               9f7d0e6dd3
+--                                                               36ec603d9b
+--                                                               5c55a6f576
 --   35    2              platform-35_r02.zip        64273788   0bb560a90a
 --                                                               7a2cbd0dd8
 --                                                               348224d518
@@ -34,8 +38,10 @@
 -- (API 34's own package carries an `extension-level` of 7, which is why its
 -- file name is `platform-34-ext7_r03.zip` rather than `platform-34_r03.zip`
 -- -- read from the manifest, not guessed from API 35's pattern; templating
--- one file name from the other would have produced a 404.) Both fetched
--- directly with curl; size and sha1 matched the manifest exactly for both,
+-- one file name from the other would have produced a 404. API 36's own
+-- package is the plain `platform-36_r02.zip`; the `-ext18`/`-ext19`
+-- packages beside it are extension SDKs, not this level.) All three fetched
+-- directly with curl; size and sha1 matched the manifest exactly for each,
 -- and the sha256 values below were computed from those verified downloads
 -- (the manifest itself carries no sha256, as for every Google SDK component
 -- this index reads this way).
@@ -51,10 +57,10 @@
 -- sysroot (docs/contributing.md ss5.2: "载荷与宿主无关 => 一个 sha256 服务全
 -- 平台").
 --
--- EXTRACTION LAYOUT. Both archives share the pattern `android-<api>/`
--- (`android-35/`, `android-34/`) as their sole internal top-level
--- directory, with `android.jar` and `framework.aidl` directly under it
--- (measured with `unzip -l` against both downloads) -- this recipe installs
+-- EXTRACTION LAYOUT. All three archives share the pattern `android-<api>/`
+-- (`android-36/`, `android-35/`, `android-34/`) as their sole internal
+-- top-level directory, with `android.jar` and `framework.aidl` directly
+-- under it (measured with `unzip -l` against each download) -- this recipe installs
 -- that directory's contents at `install_dir()`'s own root, unmodified
 -- beyond the rename, so a consumer's `-I <install_dir>/android.jar` and
 -- `-I <install_dir>/framework.aidl` (aapt2's and aidl's own flag spelling)
@@ -66,10 +72,11 @@
 --
 -- Same SDK Agreement, same ss3.4/ss3.5 argument `android-ndk.lua` and
 -- `android-build-tools.lua` both make in full (not repeated here). This
--- archive's own `data/NOTICE.txt` (766444 bytes, identical size in both the
+-- archive's own `data/NOTICE.txt` (766444 bytes, identical size in the
 -- API 34 and API 35 downloads -- measured, so the underlying attribution
--- set did not change between these two levels) opens differently from
--- build-tools' NOTICE:
+-- set did not change between those two levels; 766391 bytes in API 36's,
+-- a 53-byte difference that is a revised notice, not a new component)
+-- opens differently from build-tools' NOTICE:
 --
 --   Notices for files contained in the tools directory:
 --   ============================================================
@@ -143,6 +150,11 @@ package = {
         -- top-level host keys directly and a fourth key would only add
         -- indirection for no narrower answer.
         linux = {
+            ["36"] = { ref = "36-r2" },
+            ["36-r2"] = {
+                url = { GLOBAL = "https://dl.google.com/android/repository/platform-36_r02.zip" },
+                sha256 = "37607369a28c5b640b3a7998868d45898ebcb777565a0e85f9acf36f29631d2e",
+            },
             ["35"] = { ref = "35-r2" },
             ["35-r2"] = {
                 url = { GLOBAL = "https://dl.google.com/android/repository/platform-35_r02.zip" },
@@ -153,13 +165,18 @@ package = {
                 url = { GLOBAL = "https://dl.google.com/android/repository/platform-34-ext7_r03.zip" },
                 sha256 = "16fdb74c55e59ae3ef52def135aec713508467bd56d7dabcd8c9be31fa8b20f3",
             },
-            -- Neither API level is "latest": a consumer pins the level its
+            -- No API level is "latest": a consumer pins the level its
             -- own `compileSdkVersion`/`min_api_level` names (design record
             -- section 3.2), so there is no single most-recent answer the way
-            -- there is for a toolchain. `xlings install android-platform@35`
-            -- and `@34` are both first-class, permanent entries.
+            -- there is for a toolchain. `xlings install android-platform@36`,
+            -- `@35` and `@34` are all first-class, permanent entries.
         },
         macosx = {
+            ["36"] = { ref = "36-r2" },
+            ["36-r2"] = {
+                url = { GLOBAL = "https://dl.google.com/android/repository/platform-36_r02.zip" },
+                sha256 = "37607369a28c5b640b3a7998868d45898ebcb777565a0e85f9acf36f29631d2e",
+            },
             ["35"] = { ref = "35-r2" },
             ["35-r2"] = {
                 url = { GLOBAL = "https://dl.google.com/android/repository/platform-35_r02.zip" },
@@ -172,6 +189,11 @@ package = {
             },
         },
         windows = {
+            ["36"] = { ref = "36-r2" },
+            ["36-r2"] = {
+                url = { GLOBAL = "https://dl.google.com/android/repository/platform-36_r02.zip" },
+                sha256 = "37607369a28c5b640b3a7998868d45898ebcb777565a0e85f9acf36f29631d2e",
+            },
             ["35"] = { ref = "35-r2" },
             ["35-r2"] = {
                 url = { GLOBAL = "https://dl.google.com/android/repository/platform-35_r02.zip" },

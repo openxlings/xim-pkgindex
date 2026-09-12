@@ -68,9 +68,10 @@ class TestStatic:
         assert_uses_new_api(PKG_FILE)
 
     @pytest.mark.static
-    def test_both_api_levels_declared_on_every_host(self, code):
+    def test_every_api_level_declared_on_every_host(self, code):
         for host in ("linux", "macosx", "windows"):
             assert re.search(host + r'\s*=\s*\{', code), f"no {host} table"
+        assert code.count('["36"]') == 3, "API 36 must be aliased on every host"
         assert code.count('["35"]') == 3, "API 35 must be aliased on every host"
         assert code.count('["34"]') == 3, "API 34 must be aliased on every host"
 
@@ -82,13 +83,14 @@ class TestStatic:
         difference here would mean a copy-paste error, not a real per-host
         distinction. `code` has comments stripped, so only the three live
         xpm entries are counted."""
-        urls_35 = re.findall(r'platform-35_r02\.zip', code)
-        assert len(urls_35) == 3, "the API 35 URL must appear once per host (3 total)"
-        hashes = re.findall(
-            r'\["35-r2"\]\s*=\s*\{\s*url = \{ GLOBAL = "[^"]+" \},\s*sha256 = "([0-9a-f]{64})"',
-            code)
-        assert len(hashes) == 3 and len(set(hashes)) == 1, \
-            "API 35's sha256 must be identical across all three host tables"
+        for level, revision in (("36", "36-r2"), ("35", "35-r2")):
+            urls = re.findall(r'platform-' + level + r'_r02\.zip', code)
+            assert len(urls) == 3, f"the API {level} URL must appear once per host (3 total)"
+            hashes = re.findall(
+                r'\["' + revision + r'"\]\s*=\s*\{\s*url = \{ GLOBAL = "[^"]+" \},\s*sha256 = "([0-9a-f]{64})"',
+                code)
+            assert len(hashes) == 3 and len(set(hashes)) == 1, \
+                f"API {level}'s sha256 must be identical across all three host tables"
 
     @pytest.mark.static
     def test_every_sha256_is_64_hex_chars(self, meta):
@@ -123,15 +125,16 @@ class TestIndex:
 class TestVerify:
     @pytest.mark.verify
     @skip_if_not('linux')
-    def test_installed_api35_has_both_files(self):
+    @pytest.mark.parametrize("revision", ["36-r2", "35-r2"])
+    def test_installed_level_has_both_files(self, revision):
         from tests.lib.platform_utils import xpkgs_dir
         import glob
         import os
         hits = []
         for ns in ("xim", "local"):
-            hits += sorted(glob.glob(f"{xpkgs_dir()}/{ns}-x-android-platform/35-r2"))
+            hits += sorted(glob.glob(f"{xpkgs_dir()}/{ns}-x-android-platform/{revision}"))
         if not hits:
-            pytest.skip("android-platform@35-r2 is not installed")
+            pytest.skip(f"android-platform@{revision} is not installed")
         d = hits[-1]
         assert os.path.isfile(os.path.join(d, "android.jar"))
         assert os.path.isfile(os.path.join(d, "framework.aidl"))
