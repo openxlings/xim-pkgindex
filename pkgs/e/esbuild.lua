@@ -31,10 +31,17 @@
 --   npm platform    xlings host/arch    size      sha256 (below)
 --   linux-x64       linux/x86_64        4395720   f7efc127...
 --   linux-arm64     linux/aarch64       4042485   d5e01d21...
+--   linux-ia32      linux/x86           4069529   d9a45a87...
 --   darwin-x64      macosx/x86_64       4469597   bf56cdf7...
 --   darwin-arm64    macosx/aarch64      4191694   2e0d011f...
 --   win32-x64       windows/x86_64      4484984   c77076b4...
 --   win32-arm64     windows/aarch64     4079682   01979ffa...
+--   win32-ia32      windows/x86         4229555   a0b88687...
+--
+-- Every host and arch this index's vocabulary names and npm ships a package
+-- for. npm also publishes riscv64, loong64, ppc64, s390x, FreeBSD and
+-- Android packages; the index has no arch or host key for those yet, so they
+-- are not declared rather than declared under a name xlings would not match.
 --
 -- ARCHIVE LAYOUT (measured with `tar tzf`): the POSIX packages carry
 -- `package/bin/esbuild`, the win32 packages `package/esbuild.exe` at the
@@ -64,7 +71,7 @@ package = {
     docs = "https://esbuild.github.io/api/",
 
     type = "package",
-    archs = {"x86_64", "aarch64"},
+    archs = {"x86_64", "aarch64", "x86"},
     status = "stable",
     categories = {"tool", "web", "javascript"},
     keywords = {"esbuild", "bundler", "minifier", "javascript", "typescript", "web", "wasm"},
@@ -83,6 +90,10 @@ package = {
                 aarch64 = {
                     url = { GLOBAL = "https://registry.npmjs.org/@esbuild/linux-arm64/-/linux-arm64-0.25.12.tgz" },
                     sha256 = "d5e01d210e026823d559e2b82554cdcdab6fd87c4a57b519b392ef183c1f87fd",
+                },
+                x86 = {
+                    url = { GLOBAL = "https://registry.npmjs.org/@esbuild/linux-ia32/-/linux-ia32-0.25.12.tgz" },
+                    sha256 = "d9a45a87621f08f3be3017c95283fb5e4f48bdb3808daedd7c57c755a9c9f83b",
                 },
             },
         },
@@ -109,6 +120,10 @@ package = {
                 aarch64 = {
                     url = { GLOBAL = "https://registry.npmjs.org/@esbuild/win32-arm64/-/win32-arm64-0.25.12.tgz" },
                     sha256 = "01979ffafb4bb6a63d824cd57ed76bd257d1e3eed804c3e47fdfd80005dcfa66",
+                },
+                x86 = {
+                    url = { GLOBAL = "https://registry.npmjs.org/@esbuild/win32-ia32/-/win32-ia32-0.25.12.tgz" },
+                    sha256 = "a0b88687c8262d88922c08f9aa70f5a8d2d5bf38309046a1b718fc8eb7ad4872",
                 },
             },
         },

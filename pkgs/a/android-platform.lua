@@ -133,7 +133,7 @@ package = {
     type = "package",
     -- Host-independent payload -- see EXTRACTION LAYOUT above -- so every
     -- arch this index otherwise serves resolves to the one download.
-    archs = {"x86_64", "aarch64"},
+    archs = {"x86_64", "aarch64", "x86"},
     status = "stable",
     categories = {"tool", "android", "sdk"},
     keywords = {"android", "android.jar", "framework.aidl", "platform",

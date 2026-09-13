@@ -70,15 +70,16 @@ class TestStatic:
     @pytest.mark.static
     def test_every_host_carries_both_arches(self, code):
         """npm names the platform, not xlings, so each host table carries a
-        per-arch map and the six tarballs are six distinct downloads."""
+        per-arch map; every host/arch the index names and npm ships is here."""
         for host in ("linux", "macosx", "windows"):
             assert re.search(host + r'\s*=\s*\{', code), f"no {host} table"
         urls = re.findall(r'registry\.npmjs\.org/@esbuild/([a-z0-9-]+)/-/\1-' + re.escape(VERSION) + r'\.tgz', code)
         assert sorted(urls) == sorted(
-            ["linux-x64", "linux-arm64", "darwin-x64", "darwin-arm64", "win32-x64", "win32-arm64"]
+            ["linux-x64", "linux-arm64", "linux-ia32", "darwin-x64", "darwin-arm64",
+             "win32-x64", "win32-arm64", "win32-ia32"]
         ), urls
         hashes = re.findall(r'sha256 = "([0-9a-f]{64})"', code)
-        assert len(hashes) == 6 and len(set(hashes)) == 6, "six tarballs, six hashes"
+        assert len(hashes) == 8 and len(set(hashes)) == 8, "eight tarballs, eight hashes"
 
     @pytest.mark.static
     def test_latest_points_at_the_measured_version(self, code):
