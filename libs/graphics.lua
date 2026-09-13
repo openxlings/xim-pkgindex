@@ -134,6 +134,12 @@ graphics.SHARE_DIR      = "share"
 -- Where the Vulkan loader looks, relative to the subos: it searches
 -- $XDG_DATA_DIRS/vulkan/icd.d and mesa puts ${subosdir}/share on that list.
 graphics.VULKAN_ICD_DIR = "share/vulkan/icd.d"
+-- Where the same loader looks for layer manifests: `$XDG_DATA_DIRS/vulkan/
+-- explicit_layer.d`, one directory over from the ICDs. A layer is not a
+-- driver -- it is ordinary software (the Khronos validation layer is the one
+-- that matters) -- which is why it is a payload of its own rather than a row
+-- in the host-link farm.
+graphics.VULKAN_LAYER_DIR = "share/vulkan/explicit_layer.d"
 
 -- Where the OpenCL ICD loader looks for vendor manifests, relative to the
 -- subos. Same shared-directory shape as VULKAN_ICD_DIR and for the same
@@ -478,6 +484,38 @@ function graphics.declare_vulkan_icd(install_dir, rel_dir, tag)
             xvm.files{
                 src = path.join(rel_dir, base),
                 dst = path.join(graphics.VULKAN_ICD_DIR, base),
+                binding = tag,
+            }
+            n = n + 1
+        end
+    end
+    f:close()
+    return n > 0
+end
+
+-- Place a Vulkan layer manifest into the subos, where the loader looks.
+--
+-- The same shape as declare_vulkan_icd, one directory over: the loader
+-- searches `$XDG_DATA_DIRS/vulkan/explicit_layer.d`, so a manifest that stays
+-- in the payload is never found and `vkCreateInstance` with the layer
+-- requested fails. The manifest's `library_path` has to be ABSOLUTE by the
+-- time it is declared (the recipe rewrites it in install(), as mesa does for
+-- its ICDs): a relative path is resolved against the manifest's own
+-- directory, which after this call is the subos, not the payload.
+function graphics.declare_vulkan_layer(install_dir, rel_dir, tag)
+    if not xvm.files then return false end
+    local dir = path.join(install_dir, rel_dir)
+    if not os.isdir(dir) then return true end   -- a build that ships no layer
+    local f = io.popen(string.format([[ls -1 "%s"/*.json 2>/dev/null]], dir))
+    if not f then return false end
+    local n = 0
+    for line in f:lines() do
+        local p = line:gsub("[\r\n]+$", "")
+        if p ~= "" then
+            local base = p:match("([^/]+)$")
+            xvm.files{
+                src = path.join(rel_dir, base),
+                dst = path.join(graphics.VULKAN_LAYER_DIR, base),
                 binding = tag,
             }
             n = n + 1
