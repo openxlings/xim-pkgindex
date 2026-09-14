@@ -16,7 +16,12 @@
 -- The extension is what a bundle with the stock installer UI needs: `wix
 -- build` takes it as `-ext <install_dir>/bal/wixext5/
 -- WixToolset.BootstrapperApplications.wixext.dll`, a path, so no extension
--- cache under the user's profile is involved. The last two are for projects
+-- cache under the user's profile is involved. Measured on windows-2022
+-- (.github/workflows/wix-bundle.yml): a bundle using
+-- `bal:WixStandardBootstrapperApplication` is refused without the extension
+-- (WIX0200, exit 44) and builds with it. The bundle's file name matters: `wix`
+-- refuses `-o setup.exe` (WIX0388, exit 388), because Windows applies
+-- installer compatibility shims to an executable named like an installer. The last two are for projects
 -- that build their OWN bootstrapper application (a custom installer UI)
 -- rather than using WiX's stock one. They are here because a project that
 -- needs them needs them at the same version as the tool, and splitting the

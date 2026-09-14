@@ -85,10 +85,19 @@ $out = & $wix build bundle.wxs -o without-extension.exe 2>&1
 Reading "bundle-without-extension" "exit=$LASTEXITCODE $($out -join ' | ')"
 if ($LASTEXITCODE -eq 0) { Fail "a bundle using bal: elements built without the extension, so the extension criterion measures nothing" }
 
-# 4. The bundle with the extension.
-$out = & $wix build -ext $ext bundle.wxs -o setup.exe 2>&1
+# 4. The bundle with the extension. Not `setup.exe`: WiX refuses that name
+#    (WIX0388, measured on this job's first run), because Windows applies
+#    installer compatibility shims to an executable named like an installer,
+#    and a shim loads DLLs a bundle does not ask for.
+$out = & $wix build -ext $ext bundle.wxs -o XimWixCheck.exe 2>&1
 Reading "bundle" "exit=$LASTEXITCODE $($out -join ' | ')"
-if ($LASTEXITCODE -ne 0 -or -not (Test-Path setup.exe)) { Fail "wix build -ext did not produce setup.exe" }
-Reading "setup-size" (Get-Item setup.exe).Length
+if ($LASTEXITCODE -ne 0 -or -not (Test-Path XimWixCheck.exe)) { Fail "wix build -ext did not produce XimWixCheck.exe" }
+Reading "bundle-size" (Get-Item XimWixCheck.exe).Length
+
+# 5. The name WiX refuses, recorded for the consumers that choose a bundle's
+#    file name.
+$out = & $wix build -ext $ext bundle.wxs -o setup.exe 2>&1
+Reading "bundle-named-setup" "exit=$LASTEXITCODE $($out -join ' | ')"
+if ($LASTEXITCODE -eq 0) { Fail "wix built a bundle named setup.exe, which the first run measured it refusing; the recipe note is wrong" }
 
 Write-Host "wix: every criterion held"
