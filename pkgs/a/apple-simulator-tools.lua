@@ -50,7 +50,8 @@ package = {
     -- whose executable loads neither UIKit nor SwiftUI is SPAWNED from its
     -- installed location, and only an application that loads one of them is
     -- LAUNCHED. The reason is a measurement of what `simctl launch` reports
-    -- (macos-15, Xcode 16, 20 runs per cell, mcpp#635 runs 2 and 3):
+    -- (the macos-15-arm64 image 20260828.587, 20 runs per cell, mcpp#635
+    -- runs 2 and 3):
     --
     --   two applications that exit 7 (one at once, one after a second),
     --   launched with `--console-pty`, `--console`, or `--stdout`/`--stderr`
