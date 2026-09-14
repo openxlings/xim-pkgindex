@@ -154,11 +154,40 @@
 --                   an unfiltered `adb logcat -d` names a tombstone for that
 --                   pid (a native crash is reported by `tombstoned`, a
 --                   different process, so `--pid` alone does not carry it).
---   anything else   `adb push` to `/data/local/tmp/<name>`, `chmod 755`,
---                   one `adb shell` invocation of it with the remaining
---                   arguments and a trailing `; echo __rc=$?` this script
---                   parses back out, its output printed, the temporary file
---                   removed, its exit status returned.
+--   anything else   `adb push` into a directory of its own under
+--                   `/data/local/tmp/`, `chmod 755`, the files
+--                   `MCPP_RUNTIME_FILES` names pushed beside it (see RUNTIME
+--                   FILES below), one `adb shell` invocation of it from that
+--                   directory with the remaining arguments and a trailing
+--                   `; echo __rc=$?` this script parses back out, its output
+--                   printed, the directory removed, its exit status returned.
+--
+-- RUNTIME FILES, added 2026-09-14 (37.0.1-4; mcpp#634, design record mcpp
+-- .agents/docs/2026-09-14-634-cmake-parity-items-by-home.md, section 5.6).
+-- A test program reads the files its build deployed beside it, and on an
+-- emulator the earlier revision pushed only the executable: measured on an
+-- API 34 x86_64 emulator (mcpp#635 run 2), a test that opens `data/data.txt`
+-- relative to its own directory failed with `open failed:
+-- /data/local/tmp/data/data.txt`. mcpp now hands every runner the variable
+-- `MCPP_RUNTIME_FILES`: the path of a file with one line per runtime file,
+-- the destination relative to the artifact's directory, a TAB, and the
+-- absolute source on the build machine. A TAB separates the fields because a
+-- path, a Windows user directory in particular, may contain a space. Each
+-- source is pushed to `<run directory>/<destination>`, and the program runs
+-- with the run directory as its working directory, so a path relative to the
+-- program and a path relative to the working directory name the same file.
+-- An absent variable or an empty file transfers nothing. A line without a
+-- TAB, a destination that is absolute or climbs out of the run directory,
+-- and a source that is not a file are refused, naming the line, before the
+-- program runs. The `.apk` branch does not read the variable: an
+-- application carries its files in its own archive.
+--
+-- ONE DIRECTORY PER RUN. The program and its files are pushed into
+-- `/data/local/tmp/adb-run.<pid>.<random>/`, removed after the run, so two
+-- runs never share a destination and nothing a run pushed outlives it. Until
+-- 37.0.1-3 the program was pushed to `/data/local/tmp/<name>` and ran from
+-- `/`; a program that reads neither its own path nor its working directory
+-- behaves the same under both revisions.
 --
 -- DEVICE SELECTION IS adb's OWN. This program passes no `-s`; `ANDROID_
 -- SERIAL`, or adb's single-device default, is the caller's configuration,
@@ -237,9 +266,20 @@ package = {
     -- section's "TWO OPERAND SHAPES" for what was measured). Same shape as
     -- the "-2" bump: no new upstream byte, `latest` moves to "37.0.1-3",
     -- and "37.0.1-2"/"37.0.1" both stay resolvable.
+    --
+    -- "37.0.1-4" (2026-09-14) is the same shape again, for the runtime files
+    -- `adb-run` now transfers (see RUNTIME FILES in the header). Every
+    -- earlier key stays resolvable.
     xpm = {
         linux = {
-            ["latest"] = { ref = "37.0.1-3" },
+            ["latest"] = { ref = "37.0.1-4" },
+            ["37.0.1-4"] = {
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/platform-tools_r37.0.1-linux.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-platform-tools/releases/download/37.0.1/platform-tools_r37.0.1-linux.zip",
+                },
+                sha256 = "d230f13842f60f782a8645f9c813f8f845bf36089ea7289f28c48f17979313f1",
+            },
             ["37.0.1-3"] = {
                 url = {
                     GLOBAL = "https://dl.google.com/android/repository/platform-tools_r37.0.1-linux.zip",
@@ -264,7 +304,14 @@ package = {
         },
         macosx = {
             -- One archive for both Apple arches: a universal binary.
-            ["latest"] = { ref = "37.0.1-3" },
+            ["latest"] = { ref = "37.0.1-4" },
+            ["37.0.1-4"] = {
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/platform-tools_r37.0.1-darwin.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-platform-tools/releases/download/37.0.1/platform-tools_r37.0.1-darwin.zip",
+                },
+                sha256 = "ee39ad5967e95c2a07f04dbcbde96b1a0c916ba376096db5d2f498b7727a5d1d",
+            },
             ["37.0.1-3"] = {
                 url = {
                     GLOBAL = "https://dl.google.com/android/repository/platform-tools_r37.0.1-darwin.zip",
@@ -288,7 +335,14 @@ package = {
             },
         },
         windows = {
-            ["latest"] = { ref = "37.0.1-3" },
+            ["latest"] = { ref = "37.0.1-4" },
+            ["37.0.1-4"] = {
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/platform-tools_r37.0.1-win.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-platform-tools/releases/download/37.0.1/platform-tools_r37.0.1-win.zip",
+                },
+                sha256 = "45f4d63113e895ebde0c90f194099a4676b6ac653bd28d54314a9e022bbc1a99",
+            },
             ["37.0.1-3"] = {
                 url = {
                     GLOBAL = "https://dl.google.com/android/repository/platform-tools_r37.0.1-win.zip",
@@ -410,6 +464,14 @@ local __adb_run_sh = [==[
 # platform hands nothing back for directly, it is 0 on a clean exit and
 # non-zero when that pid's own log carries a `FATAL EXCEPTION` or an
 # unfiltered log names a tombstone for that pid.
+#
+# RUNTIME FILES. For a bare executable, the file MCPP_RUNTIME_FILES names
+# lists the files the program reads at run time, one per line:
+#
+#   <destination relative to the program's directory><TAB><absolute source>
+#
+# Each is pushed beside the program, and the program runs from that
+# directory. An absent variable or an empty file transfers nothing.
 set -uo pipefail
 
 if [ "$#" -lt 1 ]; then
@@ -596,15 +658,89 @@ case "$operand" in
     *)
         # ═══════════════════ A BARE EXECUTABLE ═══════════════════
         name="$(basename "$operand")"
-        remote="/data/local/tmp/$name"
+
+        # THE RUNTIME FILES ARE READ AND CHECKED BEFORE THE DEVICE IS TOUCHED.
+        # A refusal names the line: a runner that skipped a file it could not
+        # place would turn a missing file into a test failure reported
+        # somewhere else.
+        runtime_list="${MCPP_RUNTIME_FILES:-}"
+        dests=()
+        srcs=()
+        if [ -n "$runtime_list" ]; then
+            if [ ! -f "$runtime_list" ]; then
+                echo "adb-run: MCPP_RUNTIME_FILES names $runtime_list, which is not a file" >&2
+                exit 2
+            fi
+            lineno=0
+            while IFS= read -r line || [ -n "$line" ]; do
+                lineno=$((lineno + 1))
+                line="${line%$'\r'}"
+                [ -z "$line" ] && continue
+                case "$line" in
+                    *$'\t'*) ;;
+                    *)
+                        echo "adb-run: $runtime_list:$lineno has no TAB between the destination and the source" >&2
+                        exit 2
+                        ;;
+                esac
+                dest="${line%%$'\t'*}"
+                src="${line#*$'\t'}"
+                case "$dest" in
+                    ""|/*|..|../*|*/..|*/../*)
+                        echo "adb-run: $runtime_list:$lineno: the destination '$dest' is not a path inside the program's directory" >&2
+                        exit 2
+                        ;;
+                esac
+                if [ ! -f "$src" ]; then
+                    echo "adb-run: $runtime_list:$lineno: the source $src is not a file" >&2
+                    exit 2
+                fi
+                dests+=("$dest")
+                srcs+=("$src")
+            done < "$runtime_list"
+        fi
+
+        # ONE DIRECTORY PER RUN, removed afterwards: two runs never share a
+        # destination, and nothing a run pushed outlives it.
+        remote_dir="/data/local/tmp/adb-run.$$.$RANDOM"
+        remote="$remote_dir/$name"
+        __cleanup() {
+            adb shell rm -rf "$(__quote "$remote_dir")" > /dev/null 2>&1
+        }
+
+        if ! adb shell mkdir -p "$(__quote "$remote_dir")" >&2; then
+            echo "adb-run: could not create $remote_dir on the device" >&2
+            exit 2
+        fi
 
         if ! adb push "$operand" "$remote" >&2; then
             echo "adb-run: adb push failed for $operand" >&2
+            __cleanup
             exit 2
         fi
-        adb shell chmod 755 "$remote" >&2
+        adb shell chmod 755 "$(__quote "$remote")" >&2
 
-        remote_cmd="$(__quote "$remote")"
+        # THE RUNTIME FILES, BESIDE THE PROGRAM.
+        i=0
+        while [ "$i" -lt "${#dests[@]}" ]; do
+            dest="${dests[$i]}"
+            src="${srcs[$i]}"
+            i=$((i + 1))
+            dest_dir="$(dirname "$dest")"
+            if [ "$dest_dir" != "." ]; then
+                adb shell mkdir -p "$(__quote "$remote_dir/$dest_dir")" >&2
+            fi
+            if ! adb push "$src" "$remote_dir/$dest" >&2; then
+                echo "adb-run: adb push failed for $src" >&2
+                __cleanup
+                exit 2
+            fi
+        done
+
+        # FROM THE PROGRAM'S OWN DIRECTORY, so that a path relative to the
+        # program and a path relative to the working directory name the same
+        # file.
+        remote_cmd="cd $(__quote "$remote_dir") && ./$(__quote "$name")"
         for a in "$@"; do
             remote_cmd="$remote_cmd $(__quote "$a")"
         done
@@ -613,7 +749,7 @@ case "$operand" in
         rc="$(printf '%s\n' "$out" | tail -1 | sed -n 's/^__rc=\([0-9-]*\)$/\1/p')"
         printf '%s\n' "$out" | sed '$d'
 
-        adb shell rm -f "$remote" >&2
+        __cleanup
 
         if [ -z "$rc" ]; then
             echo "adb-run: could not read the remote exit status for $operand" >&2

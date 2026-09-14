@@ -104,13 +104,13 @@ class TestStatic:
         """adb-run is written by this recipe, not part of the downloaded
         archive, so a bare recipe edit under an unchanged version key would
         leave an already-installed revision without the fix -- hence the
-        "-N" suffix, bumped again to "37.0.1-3" for the `am start -W`/pid-
-        detection fix. Every earlier "-N" key, and the bare "37.0.1", must
-        still resolve for anyone already pinned to it."""
-        assert '"37.0.1-3"' in code
-        assert '"37.0.1-2"' in code
-        assert '"37.0.1"' in code
-        assert re.search(r'ref\s*=\s*"37\.0\.1-3"', code)
+        "-N" suffix: "37.0.1-3" for the `am start -W`/pid-detection fix, and
+        "37.0.1-4" for the runtime files. Every earlier "-N" key, and the bare
+        "37.0.1", must still resolve for anyone already pinned to it."""
+        for key in ('"37.0.1-4"', '"37.0.1-3"', '"37.0.1-2"', '"37.0.1"'):
+            assert key in code, f"{key} is no longer resolvable"
+        latest = re.findall(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"([^"]+)"', code)
+        assert latest == ["37.0.1-4"] * 3, latest
 
     @pytest.mark.static
     def test_adb_run_registered_in_its_own_bin_subdir(self, code):
@@ -196,13 +196,145 @@ class TestStatic:
         assert "/data/local/tmp/" in script_code
         assert "chmod 755" in script_code
         assert "__rc=" in script_code
-        assert re.search(r'adb shell rm -f', script_code)
+        # The run directory, program and runtime files included, is removed.
+        assert re.search(r'adb shell rm -rf', script_code)
+
+    @pytest.mark.static
+    def test_runtime_files_come_from_the_variable_and_are_checked_first(self, script_code):
+        """The list is read and every line checked before the device is
+        touched, so a malformed list costs no transfer and leaves nothing
+        behind."""
+        assert "MCPP_RUNTIME_FILES" in script_code
+        check = script_code.index("has no TAB between the destination and the source")
+        first_device_call = script_code.index('adb shell mkdir -p "$(__quote "$remote_dir")"')
+        assert check < first_device_call
+        assert re.search(r'remote_cmd="cd \$\(__quote "\$remote_dir"\) && \./\$\(__quote "\$name"\)"',
+                         script_code), "the program does not run from its own directory"
 
     @pytest.mark.static
     def test_every_refusal_names_what_is_missing(self, script):
         for wanted in ("does not exist", "no adb on PATH",
                        "could not determine the application id"):
             assert wanted in script, f"no refusal names: {wanted}"
+
+
+class TestRuntimeFilesAgainstAFakeAdb:
+    """adb-run executed against a stand-in `adb` whose device filesystem is a
+    directory: `push` copies into it and `shell` runs the command with
+    `/data/local/tmp` mapped into it. What is measured is adb-run's own
+    decisions -- which files it pushes where, the working directory it runs
+    the program from, the status it returns, what it removes and what it
+    refuses -- which no device is needed for. The transfer on a real emulator
+    is measured by .github/workflows/android-runner.yml.
+    """
+
+    FAKE_ADB = r"""#!/usr/bin/env bash
+map() { printf '%s' "$1" | sed "s#/data/local/tmp#$FAKEROOT/data/local/tmp#g"; }
+echo "adb $*" >> "$FAKEROOT/adb.log"
+case "$1" in
+  push)  mkdir -p "$(dirname "$(map "$3")")"; cp "$2" "$(map "$3")" ;;
+  shell) shift; sh -c "$(map "$*")" ;;
+esac
+"""
+
+    PROBE = r"""#!/bin/sh
+d=$(dirname "$0")
+[ -f "$d/data/data.txt" ] && echo "beside-program: $(cat "$d/data/data.txt")"
+[ -f data/data.txt ] && echo "working-directory: $(cat data/data.txt)"
+echo "args: $*"
+[ -f data/data.txt ] || exit 3
+exit 7
+"""
+
+    @pytest.fixture
+    def env(self, script, tmp_path):
+        import os
+        import stat
+        bindir = tmp_path / "bin"
+        bindir.mkdir()
+        (tmp_path / "device" / "data" / "local" / "tmp").mkdir(parents=True)
+        # A Lua long string drops the newline that follows its opening
+        # bracket, and the extraction keeps it: without the strip the file
+        # would not begin with its `#!` line.
+        for name, text in (("adb", self.FAKE_ADB), ("adb-run", script.lstrip("\n"))):
+            f = bindir / name
+            f.write_text(text, encoding="utf-8")
+            f.chmod(f.stat().st_mode | stat.S_IEXEC)
+        probe = tmp_path / "probe"
+        probe.write_text(self.PROBE, encoding="utf-8")
+        probe.chmod(probe.stat().st_mode | stat.S_IEXEC)
+        # A source directory with a space in it: the reason the list is
+        # separated by a TAB.
+        data = tmp_path / "host dir" / "data"
+        data.mkdir(parents=True)
+        (data / "data.txt").write_text("marker-634\n", encoding="utf-8")
+        e = dict(os.environ)
+        e["PATH"] = f"{bindir}:{e['PATH']}"
+        e["FAKEROOT"] = str(tmp_path / "device")
+        e.pop("MCPP_RUNTIME_FILES", None)
+        return {"env": e, "tmp": tmp_path, "probe": probe, "data": data / "data.txt",
+                "adb_run": bindir / "adb-run"}
+
+    def _run(self, env, *args, runtime_list=None):
+        import subprocess
+        e = dict(env["env"])
+        if runtime_list is not None:
+            e["MCPP_RUNTIME_FILES"] = str(runtime_list)
+        # By absolute path: a name would be looked up on the calling
+        # process's PATH, where an installed adb-run may come first.
+        return subprocess.run([str(env["adb_run"]), str(env["probe"]), *args], env=e,
+                              capture_output=True, text=True, timeout=60)
+
+    def _left_on_device(self, env):
+        return sorted(p.name for p in (env["tmp"] / "device" / "data" / "local" / "tmp").iterdir())
+
+    @pytest.mark.static
+    @skip_if_not('linux')
+    def test_without_the_variable_nothing_is_transferred(self, env):
+        r = self._run(env, "a b", "c")
+        assert r.returncode == 3, r.stdout + r.stderr
+        assert "args: a b c" in r.stdout
+        assert "beside-program" not in r.stdout
+        assert self._left_on_device(env) == []
+
+    @pytest.mark.static
+    @skip_if_not('linux')
+    def test_listed_files_are_pushed_beside_the_program(self, env):
+        listing = env["tmp"] / "runtime-files.tsv"
+        listing.write_text(f"data/data.txt\t{env['data']}\n", encoding="utf-8")
+        r = self._run(env, "a b", runtime_list=listing)
+        assert r.returncode == 7, r.stdout + r.stderr
+        assert "beside-program: marker-634" in r.stdout
+        assert "working-directory: marker-634" in r.stdout
+        assert "args: a b" in r.stdout
+        assert self._left_on_device(env) == []
+
+    @pytest.mark.static
+    @skip_if_not('linux')
+    def test_an_empty_list_transfers_nothing(self, env):
+        listing = env["tmp"] / "empty.tsv"
+        listing.write_text("", encoding="utf-8")
+        r = self._run(env, runtime_list=listing)
+        assert r.returncode == 3, r.stdout + r.stderr
+        assert self._left_on_device(env) == []
+
+    @pytest.mark.static
+    @skip_if_not('linux')
+    @pytest.mark.parametrize("line, refusal", [
+        ("data/data.txt {src}", "has no TAB between the destination and the source"),
+        ("../escape.txt\t{src}", "is not a path inside the program's directory"),
+        ("/abs.txt\t{src}", "is not a path inside the program's directory"),
+        ("data/data.txt\t/nonexistent/data.txt", "is not a file"),
+    ])
+    def test_a_bad_line_is_refused_before_the_device_is_touched(self, env, line, refusal):
+        listing = env["tmp"] / "bad.tsv"
+        listing.write_text(line.format(src=env["data"]) + "\n", encoding="utf-8")
+        r = self._run(env, runtime_list=listing)
+        assert r.returncode == 2, r.stdout + r.stderr
+        assert refusal in r.stderr
+        assert f"{listing}:1" in r.stderr, "the refusal does not name the line"
+        log = env["tmp"] / "device" / "adb.log"
+        assert not log.exists() or log.read_text() == "", "adb was called before the list was checked"
 
 
 class TestIndex:
