@@ -1,0 +1,6 @@
+[package]
+name = "bundletool-version"
+version = "0.1.0"
+
+[xlings.workspace]
+"xim:bundletool" = "1.18.3"

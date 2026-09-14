@@ -1,0 +1,61 @@
+name: android runner
+
+# `adb-run` (xim:android-platform-tools) on an API 34 x86_64 emulator: a
+# program that reads `data/data.txt` relative to its own directory and to its
+# working directory, run without MCPP_RUNTIME_FILES, with it, with an empty
+# list and with a malformed one. The emulator configuration is the one
+# measured on mcpp-community/mcpp#635.
+
+on:
+  pull_request:
+    paths:
+      - 'pkgs/a/android-platform-tools.lua'
+      - '.github/workflows/android-runner.yml'
+      - '.github/scripts/program-checks/install-xlings.sh'
+      - '.github/scripts/program-checks/install-recipe.sh'
+      - '.github/scripts/program-checks/adb-run.sh'
+  workflow_dispatch:
+
+concurrency:
+  group: android-runner-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  adb-run:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Install xlings
+        timeout-minutes: 15
+        run: bash .github/scripts/program-checks/install-xlings.sh
+
+      - name: Install android-platform-tools from this checkout
+        timeout-minutes: 10
+        run: bash .github/scripts/program-checks/install-recipe.sh pkgs/a/android-platform-tools.lua adb-run ADB_RUN
+
+      - name: Compile the probe before the emulator starts
+        timeout-minutes: 10
+        run: bash .github/scripts/program-checks/adb-run.sh prebuild
+
+      - name: adb-run transfers the runtime files on an emulator
+        timeout-minutes: 40
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: bash .github/scripts/program-checks/adb-run.sh run

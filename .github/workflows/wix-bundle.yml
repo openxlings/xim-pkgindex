@@ -1,0 +1,58 @@
+name: wix bundle
+
+# xim:wix on Windows: the recipe from this checkout installs every payload's
+# anchors, `wix` builds an MSI, and the BootstrapperApplications extension the
+# recipe carries turns the MSI into a bundle with WiX's stock installer UI.
+
+on:
+  pull_request:
+    paths:
+      - 'pkgs/w/wix.lua'
+      - '.github/workflows/wix-bundle.yml'
+      - '.github/scripts/program-checks/wix.ps1'
+  workflow_dispatch:
+
+concurrency:
+  group: wix-bundle-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  wix:
+    runs-on: windows-2022
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install xlings
+        timeout-minutes: 15
+        shell: pwsh
+        run: |
+          $env:XLINGS_NON_INTERACTIVE = "1"
+          $env:XLINGS_VERSION = "v2026.8.10.1"
+          iex (Invoke-WebRequest `
+            -Uri "https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.ps1" `
+            -UseBasicParsing).Content
+          $xlingsHome = "$env:USERPROFILE\.xlings"
+          if (-not (Test-Path "$xlingsHome\bin\xlings.exe")) {
+            throw "xlings install did not produce $xlingsHome\bin\xlings.exe"
+          }
+          Add-Content $env:GITHUB_PATH "$xlingsHome\bin"
+          Add-Content $env:GITHUB_PATH "$xlingsHome\subos\current\bin"
+          Add-Content $env:GITHUB_ENV  "XLINGS_HOME=$xlingsHome"
+
+      - name: Refresh the package index
+        timeout-minutes: 10
+        run: xlings update
+
+      - name: Install wix from this checkout
+        timeout-minutes: 20
+        shell: pwsh
+        run: |
+          xlings config --add-xpkg pkgs/w/wix.lua
+          xlings install local:wix -y
+          if ($LASTEXITCODE -ne 0) { throw "xlings install local:wix exited $LASTEXITCODE" }
+
+      - name: The anchors, an MSI, and a bundle through the extension
+        timeout-minutes: 10
+        shell: pwsh
+        run: pwsh -NoProfile -File .github/scripts/program-checks/wix.ps1

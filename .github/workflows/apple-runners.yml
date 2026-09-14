@@ -1,0 +1,63 @@
+name: apple runners
+
+# The runner programs for Apple targets, run on the platform they serve.
+#
+# `macos-install-test` in ci-test.yml installs a changed recipe and removes
+# it; it never runs the program the recipe writes. These jobs install the
+# recipe from this checkout and run its program on bundles built in the job:
+# `macapp-run` (xim:macapp-run) on macOS application bundles, and `simctl-run`
+# (xim:apple-simulator-tools) on iOS simulator bundles. Each criterion prints a
+# READING line and the step fails on the first criterion that does not hold.
+
+on:
+  pull_request:
+    paths:
+      - 'pkgs/m/macapp-run.lua'
+      - 'pkgs/a/apple-simulator-tools.lua'
+      - '.github/workflows/apple-runners.yml'
+      - '.github/scripts/program-checks/install-xlings.sh'
+      - '.github/scripts/program-checks/install-recipe.sh'
+      - '.github/scripts/program-checks/macapp-run.sh'
+      - '.github/scripts/program-checks/simctl-run.sh'
+  workflow_dispatch:
+
+concurrency:
+  group: apple-runners-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  macapp-run:
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install xlings
+        timeout-minutes: 15
+        run: bash .github/scripts/program-checks/install-xlings.sh
+
+      - name: Install macapp-run from this checkout
+        timeout-minutes: 10
+        run: bash .github/scripts/program-checks/install-recipe.sh pkgs/m/macapp-run.lua macapp-run MACAPP_RUN
+
+      - name: macapp-run runs a bundle's executable with its streams and status
+        timeout-minutes: 10
+        run: bash .github/scripts/program-checks/macapp-run.sh
+
+  simctl-run:
+    runs-on: macos-15
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install xlings
+        timeout-minutes: 15
+        run: bash .github/scripts/program-checks/install-xlings.sh
+
+      - name: Install apple-simulator-tools from this checkout
+        timeout-minutes: 10
+        run: bash .github/scripts/program-checks/install-recipe.sh pkgs/a/apple-simulator-tools.lua simctl-run SIMCTL_RUN
+
+      - name: simctl-run returns an installed bundle's status and output
+        timeout-minutes: 60
+        run: bash .github/scripts/program-checks/simctl-run.sh

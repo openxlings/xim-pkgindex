@@ -1,0 +1,7 @@
+[package]
+name = "libxml2-pkgconfig"
+version = "0.1.0"
+
+# The recipe revision that relocates and declares `libxml-2.0.pc`.
+[xlings.workspace]
+"xim:libxml2" = "2.13.5-1"

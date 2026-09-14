@@ -1,0 +1,46 @@
+name: consumer through the index override
+
+# A consumer's CI can build against a recipe this repository has not merged:
+# mcpp seeds a new home's registry from `[index.repos.xim] url` in its
+# `config.toml`, and that registry's index is then the named checkout
+# (measured on mcpp-community/mcpp#635). This job does exactly that with the
+# pull request's checkout, and builds the fixtures under .github/consumers/
+# that exercise a file the pull request changes. Each fixture's check.sh reads
+# the state the build left -- an installed payload, a pkg-config view, a
+# program's output -- and the job finally asserts that the registry's index is
+# this checkout.
+
+on:
+  pull_request:
+    paths:
+      - 'pkgs/**'
+      - 'libs/**'
+      - '.github/consumers/**'
+      - '.github/scripts/consumer-through-index-override.sh'
+      - '.github/workflows/consumer-through-index-override.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: consumer-through-index-override-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  MCPP_VERSION: 2026.9.14.1
+
+jobs:
+  consumers:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Changed files
+        id: changed
+        uses: tj-actions/changed-files@v46
+
+      - name: Build the consumer fixtures of the changed files
+        timeout-minutes: 50
+        env:
+          CHANGED_FILES: ${{ steps.changed.outputs.all_changed_files }}
+          EVENT: ${{ github.event_name }}
+        run: bash .github/scripts/consumer-through-index-override.sh
