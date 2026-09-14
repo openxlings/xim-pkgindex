@@ -57,14 +57,16 @@ class TestStatic:
 
     @pytest.mark.static
     def test_every_payload_is_pinned(self):
-        """三个 payload 各自一个 sha256。
+        """Each of the four payloads carries its own sha256.
 
-        这个包自己下载一组 payload, 框架的单 url 校验覆盖不到它们 ——
-        少一个 sha256 就是少一次校验, 而这些字节会变成链接进安装器的 .lib。
+        This package downloads a set of payloads itself, which the framework's
+        single-url check does not cover: a missing digest is a missing
+        verification, and these bytes become .lib files linked into an
+        installer and the extension `wix build` loads.
         """
         source = open(PKG_FILE, encoding="utf-8").read()
         digests = [line for line in source.splitlines() if "sha256 =" in line]
-        assert len(digests) == 3, f"期望 3 个 payload 摘要, 实得 {len(digests)}"
+        assert len(digests) == 4, f"expected 4 payload digests, found {len(digests)}"
         for line in digests:
             hexpart = line.split('"')[1]
             assert len(hexpart) == 64 and all(c in "0123456789abcdef" for c in hexpart), line
@@ -93,8 +95,53 @@ class TestStatic:
         assert "tar -xf" not in code, "解压器不能退回宿主的 tar"
 
     @pytest.mark.static
-    def test_每个_payload_都有落地锚点(self):
-        """解压出空目录也是"目录存在"; 每个 payload 要有一个必须存在的文件。"""
+    def test_every_payload_has_anchors(self):
+        """An archive that extracted to nothing still leaves a directory, so
+        every payload names the files that must exist after extraction, and a
+        payload with two purposes names one file per purpose."""
         source = open(PKG_FILE, encoding="utf-8").read()
-        assert source.count("anchor =") == 3, "每个 payload 都要有 anchor"
-        assert "wix.exe" in source and "balutil.lib" in source and "dutil.lib" in source
+        code = "\n".join(l for l in source.splitlines() if not l.lstrip().startswith("--"))
+        assert code.count("anchors =") == 4, "every payload needs its anchors"
+        for anchor in ("tools/net6.0/any/wix.exe",
+                       "wixext5/WixToolset.BootstrapperApplications.wixext.dll",
+                       "build/native/v14/x64/balutil.lib",
+                       "runtimes/win-x64/native/mbanative.dll",
+                       "build/native/v14/x64/dutil.lib"):
+            assert f'"{anchor}"' in code, f"no anchor names {anchor}"
+
+    @pytest.mark.static
+    def test_installed_and_install_check_every_anchor(self):
+        """installed() and install() iterate the anchor list; a check of the
+        first anchor alone would pass a bootstrapper payload that lost
+        mbanative.dll."""
+        source = open(PKG_FILE, encoding="utf-8").read()
+        for hook in ("function installed()", "function install()"):
+            start = source.index(hook)
+            end = source.index("\nend\n", start)
+            assert "ipairs(entry.anchors)" in source[start:end], f"{hook} does not check every anchor"
+
+    @pytest.mark.static
+    def test_the_bootstrapper_extension_is_a_payload(self):
+        """A bundle with WiX's stock installer UI needs
+        WixToolset.BootstrapperApplications.wixext, at the tool's version."""
+        source = open(PKG_FILE, encoding="utf-8").read()
+        assert 'id = "wixtoolset.bootstrapperapplications.wixext"' in source
+        assert 'into = "bal"' in source
+
+    @pytest.mark.static
+    def test_the_revision_is_latest_and_5_0_2_stays(self, meta):
+        """5.0.2-1 adds the extension; an installation made under 5.0.2 keeps
+        what it fetched, so a consumer that needs the extension pins the
+        revision, and consumers pinned to 5.0.2 keep resolving."""
+        code = "\n".join(l for l in meta.raw_content.splitlines()
+                         if not l.lstrip().startswith("--"))
+        assert '["latest"] = { ref = "5.0.2-1" }' in code
+        assert '["5.0.2-1"] = { }' in code
+        assert '["5.0.2"] = { }' in code
+
+    @pytest.mark.static
+    def test_the_recipe_states_the_link_the_native_archives_need(self, meta):
+        """The archives are MSVC-built; the statement of what links them is
+        part of the recipe, measured on windows-2022."""
+        assert "MSVC-ABI" in meta.raw_content
+        assert "import libraries" in meta.raw_content

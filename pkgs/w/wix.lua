@@ -1,18 +1,38 @@
 -- WiX Toolset v5 as an xlings payload package.
 --
--- Three NuGet packages rather than one, because that is how WiX ships and
+-- Four NuGet packages rather than one, because that is how WiX ships and
 -- because a consumer usually wants only the first:
 --
 --   wix                                  the `wix` command -- builds .msi and
 --                                        bundle .exe from .wxs sources
+--   WixToolset.BootstrapperApplications.wixext
+--                                        the extension that provides WiX's
+--                                        stock bootstrapper applications
+--                                        (`bal:WixStandardBootstrapperApplication`)
+--                                        to a bundle .wxs
 --   WixToolset.BootstrapperApplicationApi headers + balutil.lib + mbanative.dll
 --   WixToolset.DUtil                     headers + dutil.lib
 --
--- The last two are for projects that build their OWN bootstrapper application
--- (a custom installer UI) rather than using WiX's stock one. They are here
--- because a project that needs them needs them at the same version as the
--- tool, and splitting the three into separate packages would make that
--- somebody's job to remember.
+-- The extension is what a bundle with the stock installer UI needs: `wix
+-- build` takes it as `-ext <install_dir>/bal/wixext5/
+-- WixToolset.BootstrapperApplications.wixext.dll`, a path, so no extension
+-- cache under the user's profile is involved. The last two are for projects
+-- that build their OWN bootstrapper application (a custom installer UI)
+-- rather than using WiX's stock one. They are here because a project that
+-- needs them needs them at the same version as the tool, and splitting the
+-- packages would make that somebody's job to remember.
+--
+-- THE NATIVE ARCHIVES NEED AN MSVC-ABI LINK AND THE WINDOWS IMPORT LIBRARIES.
+-- balutil.lib and dutil.lib are compiled by MSVC (v14 toolset). Measured on
+-- windows-2022 (mcpp#635, runs 1 and 2): a program that calls
+-- `DutilInitialize` links and runs, exit 0, both under mcpp's default
+-- Windows toolchain (lld-link, the `x86_64-windows-msvc` row) and under
+-- `msvc@system` (MSVC 19.44.35228), once the Windows import libraries the
+-- archives reference are named on the link (`user32`, `advapi32`, `ole32`,
+-- `shell32`, `oleaut32` and their neighbours); without them every unresolved
+-- symbol is a Windows import (`MessageBoxA`, `RegOpenKeyExW`,
+-- `CoInitializeEx`), none a WiX symbol. A MinGW link of the same archives
+-- fails on MSVC's security-cookie and mangled `StringCch*` symbols.
 --
 -- WHY NOT `dotnet tool install wix`: that is the documented route and it
 -- resolves a version range against nuget.org at install time, which is the
@@ -65,7 +85,15 @@ package = {
             -- to notice the asymmetry: the EXTRACTOR was still the host's.
             -- See the note above install().
             deps = { "xim:curl@8.21.0", "xim:7zip@26.02" },
-            ["latest"] = { ref = "5.0.2" },
+            -- "5.0.2-1" is a recipe revision over the same WiX 5.0.2 release:
+            -- it adds the BootstrapperApplications extension and the
+            -- mbanative.dll anchor. An installation made under "5.0.2" before
+            -- this change keeps the three payloads it fetched, because xlings
+            -- does not run the install hook of a version that is already
+            -- installed; a consumer that needs the extension pins "5.0.2-1".
+            -- "5.0.2" stays resolvable for the consumers pinned to it.
+            ["latest"] = { ref = "5.0.2-1" },
+            ["5.0.2-1"] = { },
             ["5.0.2"] = { },
         },
     },
@@ -80,28 +108,37 @@ import("xim.libxpkg.xvm")
 -- id: the nuget package id, lowercased -- which is also how the flat container
 -- addresses it and how the .nupkg is named.
 -- into: subdirectory of the install dir, mirroring the layout a consumer sees.
+-- anchors: the files checked after extraction. Not a manifest -- anchors: an
+-- archive that extracted to nothing still leaves a directory behind, and "the
+-- directory exists" is not "the tool is there". A payload that serves two
+-- purposes has one anchor per purpose: the bootstrapper API is both a link
+-- input (balutil.lib) and a file a custom bootstrapper ships beside itself
+-- (mbanative.dll), and either can be the half an extraction lost.
 local PAYLOADS = {
     {
         id = "wix",
         into = "tool",
         sha256 = "f30ef0c74e2a986126539c5780be93ac24e8136eaf723b1937b26272703ae173",
-        -- One file per payload, checked after extraction. Not a manifest --
-        -- an anchor: an archive that extracted to nothing still leaves a
-        -- directory behind, and "the directory exists" is not "the tool is
-        -- there".
-        anchor = "tools/net6.0/any/wix.exe",
+        anchors = { "tools/net6.0/any/wix.exe" },
+    },
+    {
+        id = "wixtoolset.bootstrapperapplications.wixext",
+        into = "bal",
+        sha256 = "29c693cee4862760281c06858cc14c4aaaf077bd38df13d0652468af4492d644",
+        anchors = { "wixext5/WixToolset.BootstrapperApplications.wixext.dll" },
     },
     {
         id = "wixtoolset.bootstrapperapplicationapi",
         into = "bootstrapper",
         sha256 = "6e0d3c68a68dcedde4a3a68de896f124a7b19c4a823fac49856e2ee77cb16256",
-        anchor = "build/native/v14/x64/balutil.lib",
+        anchors = { "build/native/v14/x64/balutil.lib",
+                    "runtimes/win-x64/native/mbanative.dll" },
     },
     {
         id = "wixtoolset.dutil",
         into = "dutil",
         sha256 = "aa4f0668044318820e6c31ffef9f4141830c9fd8ebbe038281329423916547fe",
-        anchor = "build/native/v14/x64/dutil.lib",
+        anchors = { "build/native/v14/x64/dutil.lib" },
     },
 }
 
@@ -192,8 +229,10 @@ end
 function installed()
     local idir = pkginfo.install_dir()
     for _, entry in ipairs(PAYLOADS) do
-        if not os.isfile(path.join(idir, entry.into, entry.anchor)) then
-            return false
+        for _, anchor in ipairs(entry.anchors) do
+            if not os.isfile(path.join(idir, entry.into, anchor)) then
+                return false
+            end
         end
     end
     return true
@@ -216,9 +255,11 @@ function install()
             log.error("wix: " .. entry.id .. " could not be extracted")
             return false
         end
-        if not os.isfile(path.join(dest, entry.anchor)) then
-            log.error("wix: " .. entry.id .. " extracted without " .. entry.anchor)
-            return false
+        for _, anchor in ipairs(entry.anchors) do
+            if not os.isfile(path.join(dest, anchor)) then
+                log.error("wix: " .. entry.id .. " extracted without " .. anchor)
+                return false
+            end
         end
     end
 
