@@ -2,8 +2,9 @@
 
 The payload is one jar for every host and a launcher this recipe writes. The
 assertions cover the pins (one url and one sha256 across platforms, the JDK at
-its exact store key) and the launchers as they are rendered by install(). A
-run of the installed program through an mcpp consumer is measured by
+its exact store key) and the launchers as they are rendered by install(). The
+installed program is run on Linux, macOS and Windows by
+.github/workflows/bundletool.yml, and through an mcpp consumer by
 .github/workflows/consumer-through-index-override.yml.
 """
 import os
@@ -150,13 +151,26 @@ class TestStatic:
         assert str(store) in r.stderr, "the refusal does not name the store it searched"
 
     @pytest.mark.static
-    def test_the_windows_launcher_passes_arguments_and_status(self, meta):
+    def test_the_windows_launcher_prefers_its_own_jdk(self, meta):
+        """The baked JDK is tried first and JAVA_HOME only when it is absent:
+        on windows-2022 an xvm `envs` JAVA_HOME was joined to the runner's own
+        with `;`, and a launcher that read the variable first found nothing."""
         text = _lua_format(_template(meta.raw_content, "local WINDOWS_LAUNCHER"),
-                           "C:\\jdk", "C:\\x\\bundletool-all.jar")
-        assert 'if not defined JAVA_HOME set "JAVA_HOME=C:\\jdk"' in text
-        assert '"%JAVA_HOME%\\bin\\java.exe" -jar "C:\\x\\bundletool-all.jar" %*' in text
+                           "C:\\jdk", "C:\\x\\bundletool-all.jar", "C:\\jdk")
+        lines = text.splitlines()
+        own = lines.index('set "BUNDLETOOL_JAVA=C:\\jdk\\bin\\java.exe"')
+        fallback = lines.index('set "BUNDLETOOL_JAVA=%JAVA_HOME%\\bin\\java.exe"')
+        assert own < lines.index('if exist "%BUNDLETOOL_JAVA%" goto run') < fallback
+        assert '"%BUNDLETOOL_JAVA%" -jar "C:\\x\\bundletool-all.jar" %*' in text
         assert "exit /b %ERRORLEVEL%" in text
         assert "exit /b 2" in text
+        assert "(" not in "".join(l for l in lines if l.startswith("if ")), \
+            "a parenthesised block breaks on a path that contains parentheses"
+
+    @pytest.mark.static
+    def test_the_windows_registration_passes_no_environment(self, code):
+        config = code[code.index("function config()"):code.index("function uninstall()")]
+        assert "envs" not in config
 
 
 class TestIndex:

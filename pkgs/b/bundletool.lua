@@ -47,8 +47,13 @@
 --             newest `xim-x-jdk-*/*/bin/java` in the payload store, as the
 --             android-build-tools wrappers do, and otherwise refuses naming
 --             the dependency.
---   windows   `bin/bundletool.bat`, which runs `%JAVA_HOME%\bin\java.exe`
---             with the baked JDK home as the default for `JAVA_HOME`.
+--   windows   `bin/bundletool.bat`, which runs the baked JDK's `java.exe`,
+--             and only when that file is absent the one under `JAVA_HOME`.
+--             The launcher reads no environment to find its own JDK, and the
+--             xvm registration passes none: measured on windows-2022, an xvm
+--             `envs = { JAVA_HOME = <jdk> }` joined the runner's own
+--             `JAVA_HOME` to the value with `;`, and a launcher that trusted
+--             the variable found no `java.exe` under the joined string.
 --
 -- ═══════════════════════════════════════════════════════════════════════
 -- INSTALLED LAYOUT
@@ -152,19 +157,25 @@ export JAVA_HOME
 exec "$JAVA_HOME/bin/java" -jar "%s" "$@"
 ]==]
 
--- `%s` placeholders: the JDK home resolved at install time, then the jar's
--- absolute path. `JAVA_HOME` from the environment wins, which is how the xvm
--- shim's `envs` and a caller's own JDK reach the program.
+-- `%s` placeholders: the JDK home resolved at install time, the jar's
+-- absolute path, and the JDK home again for the refusal. The baked JDK comes
+-- first; `JAVA_HOME` is consulted only when that JDK is absent, and only as a
+-- directory holding `bin\java.exe`. Labels rather than parenthesised blocks:
+-- a path with parentheses, expanded inside a block, ends the block.
 local WINDOWS_LAUNCHER = [==[
 @echo off
 rem bundletool (xim:bundletool launcher).
 setlocal
-if not defined JAVA_HOME set "JAVA_HOME=%s"
+set "BUNDLETOOL_JAVA=%s\bin\java.exe"
+if exist "%%BUNDLETOOL_JAVA%%" goto run
+if not defined JAVA_HOME goto nojava
 if not exist "%%JAVA_HOME%%\bin\java.exe" goto nojava
-"%%JAVA_HOME%%\bin\java.exe" -jar "%s" %%*
+set "BUNDLETOOL_JAVA=%%JAVA_HOME%%\bin\java.exe"
+:run
+"%%BUNDLETOOL_JAVA%%" -jar "%s" %%*
 exit /b %%ERRORLEVEL%%
 :nojava
-echo bundletool: java.exe was not found under "%%JAVA_HOME%%". Declare xim:jdk-temurin as a dependency, or install it. 1>&2
+echo bundletool: java.exe was found neither at "%s\bin\java.exe" nor under JAVA_HOME. Declare xim:jdk-temurin as a dependency, or install it. 1>&2
 exit /b 2
 ]==]
 
@@ -204,7 +215,8 @@ function install()
         if not f then
             raise("bundletool: cannot write " .. launcher)
         end
-        f:write((string.format(WINDOWS_LAUNCHER, winpath(jdk_home), winpath(jar))
+        f:write((string.format(WINDOWS_LAUNCHER, winpath(jdk_home), winpath(jar),
+                               winpath(jdk_home))
                  :gsub("\n", "\r\n")))
         f:close()
         if not os.isfile(launcher) then
@@ -234,12 +246,8 @@ end
 function config()
     local bindir = path.join(pkginfo.install_dir(), "bin")
     if is_host("windows") then
-        local jdk_home = pkginfo.dep_install_dir("xim:jdk-temurin")
-        xvm.add(package.name, {
-            bindir = bindir,
-            filename = "bundletool.bat",
-            envs = jdk_home and { JAVA_HOME = jdk_home } or nil,
-        })
+        -- No `envs`: the launcher carries its JDK (see JAVA in the header).
+        xvm.add(package.name, { bindir = bindir, filename = "bundletool.bat" })
     else
         xvm.add(package.name, { bindir = bindir })
     end

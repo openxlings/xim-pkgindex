@@ -1,0 +1,102 @@
+name: bundletool
+
+# xim:bundletool runs `bundletool version` through its launcher's store path
+# and through the xvm shim, on the three hosts its JDK serves. The runner images
+# export a JAVA_HOME of their own, which is the condition under which a launcher
+# that trusts JAVA_HOME fails: measured on this pull request's first
+# windows-test run, where the shim joined the runner's JAVA_HOME to the one the
+# recipe declared and the launcher exited 2.
+
+on:
+  pull_request:
+    paths:
+      - 'pkgs/b/bundletool.lua'
+      - '.github/workflows/bundletool.yml'
+      - '.github/scripts/program-checks/install-xlings.sh'
+      - '.github/scripts/program-checks/install-recipe.sh'
+  workflow_dispatch:
+
+concurrency:
+  group: bundletool-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  posix:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04, macos-15]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install xlings
+        timeout-minutes: 15
+        run: bash .github/scripts/program-checks/install-xlings.sh
+
+      - name: Install bundletool from this checkout
+        timeout-minutes: 15
+        run: bash .github/scripts/program-checks/install-recipe.sh pkgs/b/bundletool.lua bundletool BUNDLETOOL
+
+      - name: bundletool version, through the launcher and through the shim
+        timeout-minutes: 5
+        run: |
+          set -uo pipefail
+          echo "READING java-home-in-environment: ${JAVA_HOME:-unset}"
+          out=$("$BUNDLETOOL" version 2>&1); rc=$?
+          echo "READING launcher: exit=$rc $out"
+          [ "$rc" -eq 0 ] && [ "$out" = "1.18.3" ] || { echo "::error::the launcher printed '$out' with exit $rc"; exit 1; }
+          out=$(bundletool version 2>&1); rc=$?
+          echo "READING shim: exit=$rc $out ($(command -v bundletool))"
+          [ "$rc" -eq 0 ] && [ "$out" = "1.18.3" ] || { echo "::error::the shim printed '$out' with exit $rc"; exit 1; }
+
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install xlings
+        timeout-minutes: 15
+        shell: pwsh
+        run: |
+          $env:XLINGS_NON_INTERACTIVE = "1"
+          $env:XLINGS_VERSION = "v2026.8.10.1"
+          iex (Invoke-WebRequest `
+            -Uri "https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.ps1" `
+            -UseBasicParsing).Content
+          $xlingsHome = "$env:USERPROFILE\.xlings"
+          if (-not (Test-Path "$xlingsHome\bin\xlings.exe")) {
+            throw "xlings install did not produce $xlingsHome\bin\xlings.exe"
+          }
+          Add-Content $env:GITHUB_PATH "$xlingsHome\bin"
+          Add-Content $env:GITHUB_PATH "$xlingsHome\subos\current\bin"
+          Add-Content $env:GITHUB_ENV  "XLINGS_HOME=$xlingsHome"
+
+      - name: Refresh the package index
+        timeout-minutes: 10
+        run: xlings update
+
+      - name: Install bundletool from this checkout
+        timeout-minutes: 20
+        shell: pwsh
+        run: |
+          xlings config --add-xpkg pkgs/b/bundletool.lua
+          xlings install local:bundletool -y
+          if ($LASTEXITCODE -ne 0) { throw "xlings install local:bundletool exited $LASTEXITCODE" }
+
+      - name: bundletool version, through the launcher and through the shim
+        timeout-minutes: 5
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Continue"
+          Write-Host "READING java-home-in-environment: $env:JAVA_HOME"
+          $launcher = Join-Path $env:XLINGS_HOME "data\xpkgs\local-x-bundletool\1.18.3\bin\bundletool.bat"
+          if (-not (Test-Path $launcher)) { Write-Host "::error::$launcher is absent"; exit 1 }
+          $out = (& $launcher version 2>&1) -join " "
+          Write-Host "READING launcher: exit=$LASTEXITCODE $out"
+          if ($LASTEXITCODE -ne 0 -or $out.Trim() -ne "1.18.3") { Write-Host "::error::the launcher printed '$out'"; exit 1 }
+          $out = (& bundletool version 2>&1) -join " "
+          Write-Host "READING shim: exit=$LASTEXITCODE $out ($((Get-Command bundletool).Source))"
+          if ($LASTEXITCODE -ne 0 -or $out.Trim() -ne "1.18.3") { Write-Host "::error::the shim printed '$out'"; exit 1 }
