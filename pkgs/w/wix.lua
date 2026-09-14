@@ -28,11 +28,15 @@
 -- `DutilInitialize` links and runs, exit 0, both under mcpp's default
 -- Windows toolchain (lld-link, the `x86_64-windows-msvc` row) and under
 -- `msvc@system` (MSVC 19.44.35228), once the Windows import libraries the
--- archives reference are named on the link (`user32`, `advapi32`, `ole32`,
--- `shell32`, `oleaut32` and their neighbours); without them every unresolved
--- symbol is a Windows import (`MessageBoxA`, `RegOpenKeyExW`,
--- `CoInitializeEx`), none a WiX symbol. A MinGW link of the same archives
--- fails on MSVC's security-cookie and mangled `StringCch*` symbols.
+-- archives reference are named on the link. The link that ran named
+--
+--   user32 advapi32 ole32 oleaut32 shell32 shlwapi version crypt32 wininet
+--   msi rpcrt4 uuid gdi32 comctl32 wintrust
+--
+-- and without them every unresolved symbol was a Windows import
+-- (`MessageBoxA`, `RegOpenKeyExW`, `CoInitializeEx`), none a WiX symbol. A
+-- MinGW link of the same archives fails on MSVC's security-cookie and mangled
+-- `StringCch*` symbols.
 --
 -- WHY NOT `dotnet tool install wix`: that is the documented route and it
 -- resolves a version range against nuget.org at install time, which is the
