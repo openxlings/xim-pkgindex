@@ -19,7 +19,27 @@ package = {
     xpm = {
         linux = {
             deps = { "xim:glibc" },
-            ["latest"] = { ref = "2.13.5" },
+            -- "2.13.5-1" is a recipe revision over the same archive: the
+            -- install hook relocates `lib/pkgconfig/libxml-2.0.pc` and config()
+            -- declares it into the SubOS pkg-config view, which no earlier
+            -- revision did (measured on a fresh home with the GTK 4 stack,
+            -- mcpp#635: of every `.pc` an installed payload ships, only
+            -- `libxml-2.0.pc` was absent from the view). The hooks are this
+            -- recipe's text, so a fresh installation under either key
+            -- publishes the file; an installation made before this change
+            -- keeps its state until it is reinstalled, because xlings does not
+            -- run the install hook of a version that is already installed.
+            -- "2.13.5" stays: `xim:llvm` pins it exactly, and a range such as
+            -- wayland's `>=2.12` selects it too, since a key with a `-N`
+            -- suffix orders below the same version without one.
+            ["latest"] = { ref = "2.13.5-1" },
+            ["2.13.5-1"] = {
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/libxml2/releases/download/2.13.5/libxml2-2.13.5-linux-x86_64.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/libxml2/releases/download/2.13.5/libxml2-2.13.5-linux-x86_64.tar.gz",
+                },
+                sha256 = "f963896ed90c4599d06786f86203620e937a746a6be246065d7a3b01af2a7ed1",
+            },
             ["2.13.5"] = {
                 url = {
                     GLOBAL = "https://github.com/xlings-res/libxml2/releases/download/2.13.5/libxml2-2.13.5-linux-x86_64.tar.gz",
@@ -35,19 +55,30 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
 import("xim.pkgindex.selfcontain")
+import("xim.pkgindex.sysroot")
 
 local libs = {
     "libxml2.so", "libxml2.so.2",
 }
 
+-- The upstream release a version key names: a recipe revision ("2.13.5-1")
+-- installs the archive of the release it revises ("2.13.5"), whose top-level
+-- directory carries the release's version.
+local function upstream_version()
+    return (pkginfo.version():gsub("%-%d+$", ""))
+end
+
 function install()
-    local srcdir = "libxml2-" .. pkginfo.version() .. "-linux-x86_64"
-    os.tryrm(pkginfo.install_dir())
-    os.mv(srcdir, pkginfo.install_dir())
+    sysroot.adopt_payload("libxml2-" .. upstream_version() .. "-linux-x86_64")
 
     -- Stamp this payload's own dependency closure onto its libraries, so
     -- they resolve from our payloads and not from the host's ld.so.cache.
     selfcontain.seal(pkginfo.install_dir())
+
+    -- The archive's `.pc` was written for the prefix it was built in
+    -- (`prefix=/tmp/libxml2-install`); relocated here so that config() can
+    -- declare the payload's own copy into the view.
+    sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")
     return true
 end
 
@@ -91,6 +122,10 @@ function config()
             if os.isdir(sys_inc) then os.cp(inc_dir, sys_inc) end
         end
     end
+
+    -- `libxml-2.0.pc` into the SubOS pkg-config view, as every library
+    -- recipe that ships one does (sysroot.declare_pkgconfig).
+    sysroot.declare_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig", binding)
 
     return true
 end

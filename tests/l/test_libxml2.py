@@ -35,6 +35,35 @@ class TestStatic:
     def test_no_typos(self):
         assert_no_typos(PKG_FILE)
 
+    @pytest.mark.static
+    def test_the_pkgconfig_file_is_relocated_and_declared(self, meta):
+        """The payload ships `lib/pkgconfig/libxml-2.0.pc` written for the
+        prefix it was built in (`prefix=/tmp/libxml2-install`). install()
+        relocates it and config() declares it into the SubOS pkg-config view;
+        before this, it was the one `.pc` of the GTK 4 stack absent from the
+        view (measured on a fresh home, mcpp#635)."""
+        code = "\n".join(l for l in meta.raw_content.splitlines()
+                         if not l.lstrip().startswith("--"))
+        assert 'import("xim.pkgindex.sysroot")' in code
+        install = code[code.index("function install()"):code.index("function config()")]
+        config = code[code.index("function config()"):code.index("function uninstall()")]
+        assert 'sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")' in install
+        assert 'sysroot.declare_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig", binding)' in config
+
+    @pytest.mark.static
+    def test_the_revision_installs_the_release_it_revises(self, meta):
+        """"2.13.5-1" downloads the 2.13.5 archive, whose top-level directory
+        is `libxml2-2.13.5-linux-x86_64`, so the directory is named from the
+        upstream version and not from the version key."""
+        code = "\n".join(l for l in meta.raw_content.splitlines()
+                         if not l.lstrip().startswith("--"))
+        assert '["latest"] = { ref = "2.13.5-1" }' in code
+        assert '["2.13.5-1"] = {' in code
+        assert '["2.13.5"] = {' in code, "xim:llvm pins 2.13.5 exactly"
+        assert code.count("libxml2-2.13.5-linux-x86_64.tar.gz") == 4
+        assert 'gsub("%-%d+$", "")' in code
+        assert 'sysroot.adopt_payload("libxml2-" .. upstream_version() .. "-linux-x86_64")' in code
+
 
 class TestIndex:
     @pytest.mark.index
