@@ -176,11 +176,20 @@ class TestStatic:
         )
 
     @pytest.mark.static
-    def test_version_bumped_to_0_2_0(self, source_text):
+    def test_0_3_0_is_latest_and_0_2_0_stays_resolvable(self, source_text):
+        """0.3.0 is the program that spawns an installed non-UIKit bundle.
+
+        0.2.0 stays in the table because a consumer pins it (mcpp-plugins'
+        ios-app-consumer fixture writes `"xim:apple-simulator-tools" =
+        "0.2.0"`), and removing a key a published consumer pins breaks that
+        consumer before it can move. 0.1.0 was replaced by 0.2.0 and does not
+        come back.
+        """
         code = re.sub(r'--.*', '', source_text)
-        assert '"0.2.0"' in code
-        assert '"0.1.0"' not in code, \
-            "the 0.1.0 xpm entry should have been replaced, not duplicated"
+        assert re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"0\.3\.0"\s*\}', code)
+        assert '["0.3.0"]' in code
+        assert '["0.2.0"]' in code
+        assert '"0.1.0"' not in code
 
     @pytest.mark.static
     def test_existence_check_covers_both_a_file_and_a_bundle_directory(self, script_code):
@@ -214,9 +223,49 @@ class TestStatic:
                           script_code)
 
     @pytest.mark.static
-    def test_header_states_the_unmeasured_exit_status(self, source_text):
-        assert "UNMEASURED" in source_text
-        assert "console-pty" in source_text.lower() or "console_pty" in source_text.lower()
+    def test_header_records_the_measured_exit_status(self, source_text):
+        """0.2.0 shipped with the launch status marked UNMEASURED; 0.3.0
+        carries the measurement that replaced the note, and the decision it
+        made: `simctl launch` answered 0 for an application that exits 7 and
+        for one that aborts, while `simctl spawn` of the installed executable
+        answered 7 and 134."""
+        assert "UNMEASURED" not in source_text
+        for reading in ("exit 0 in 120 of 120", "exit 7 in 20 of 20",
+                        "exit 134", "get_app_container"):
+            assert reading in source_text, f"the header lost the reading: {reading}"
+
+    @pytest.mark.static
+    def test_a_bundle_is_spawned_unless_its_executable_loads_uikit(self, script_code):
+        """The launch path returns simctl's status, never the application's,
+        so it is taken only when the executable needs an application
+        lifecycle: its load commands name UIKit or SwiftUI. Every other bundle
+        is installed and its installed executable is spawned."""
+        assert re.search(r'xcrun otool -L "\$artifact/\$exe"', script_code), (
+            "the bundle's executable is not read for its load commands"
+        )
+        assert re.search(r'grep -Eq \'/\(UIKit\|SwiftUI\)\\\.framework/\'', script_code), (
+            "the launch path is not decided by UIKit or SwiftUI in the load commands"
+        )
+        assert re.search(r'simctl get_app_container "\$udid" "\$bundle_id" app', script_code)
+        assert re.search(r'xcrun simctl spawn "\$udid" "\$container/\$exe" "\$@"\n\s*exit \$\?',
+                         script_code), "the installed executable's status is not returned verbatim"
+        # The launch sits inside the UIKit branch, and the spawn after it.
+        uikit = script_code.index("(UIKit|SwiftUI)")
+        launch = script_code.index("simctl launch --console-pty")
+        container = script_code.index("get_app_container")
+        assert uikit < launch < container
+
+    @pytest.mark.static
+    def test_the_launch_path_says_its_status_is_simctls(self, script):
+        """A status that is not the application's must say so where the
+        caller reads it: `mcpp test` prints what the runner printed."""
+        assert "the status that follows is simctl's, not the application's" in script
+
+    @pytest.mark.static
+    def test_install_precedes_both_paths(self, script_code):
+        install = script_code.index('xcrun simctl install "$udid" "$artifact"')
+        assert install < script_code.index("simctl launch --console-pty")
+        assert install < script_code.index("get_app_container")
 
     @pytest.mark.static
     def test_every_refusal_names_what_is_missing(self, script):

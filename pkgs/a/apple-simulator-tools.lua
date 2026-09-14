@@ -2,7 +2,7 @@ package = {
     spec = "1",
 
     name = "apple-simulator-tools",
-    description = "simctl-run: run a bare Mach-O executable, or install and launch a .app, on an iOS simulator, as a `runner` argv prefix.",
+    description = "simctl-run: run a bare Mach-O executable, or install and run a .app, on an iOS simulator, as a `runner` argv prefix.",
 
     authors = {"mcpplibs"},
     maintainers = {"d2learn"},
@@ -38,22 +38,47 @@ package = {
     --
     -- 0.2.0, 2026-09-12 (design record mcpp .agents/docs/2026-09-12-622-a-ui
     -- -framework-on-android-ios-and-web.md, section 4.3): a UIKit application
-    -- needs the INSTALLED FORM, not the bare executable `spawn` takes. `.app`
-    -- is not a bundle-vs-executable stylistic choice; UIKit's own runtime
-    -- expects `UIApplicationMain` to run inside a process the simulator
-    -- launched from an installed bundle, with `Info.plist` and the bundle
-    -- structure in place before `main` is reached, which `simctl spawn` of a
-    -- bare Mach-O never provides. So the operand now decides the branch: a
-    -- path ending in `.app` is installed and launched; anything else keeps
-    -- the 0.1.0 behaviour verbatim. THE EXIT-STATUS BEHAVIOUR OF
-    -- `simctl launch --console-pty` IS UNMEASURED ON THIS HOST -- no
-    -- simulator was available while writing this change (see the install-
-    -- time-only verification note below and tests/a/test_apple_simulator_
-    -- tools.py). Whether it answers with the launched application's own
-    -- status or only with `simctl`'s is the first thing this recipe's own
-    -- criterion must record once a simulator is available to measure it
-    -- against, per design record section 4.3's own "the recipe says so" if
-    -- it does not.
+    -- needs the INSTALLED FORM, not the bare executable `spawn` takes. UIKit's
+    -- runtime expects `UIApplicationMain` to run inside a process the
+    -- simulator launched from an installed bundle, with `Info.plist` and the
+    -- bundle structure in place before `main` is reached. So the operand
+    -- decides the branch: a path ending in `.app` is installed; anything else
+    -- is spawned as in 0.1.0.
+    --
+    -- 0.3.0, 2026-09-14 (mcpp#634; design record mcpp .agents/docs/2026-09-14
+    -- -634-cmake-parity-items-by-home.md, section 7.2): an installed bundle
+    -- whose executable loads neither UIKit nor SwiftUI is SPAWNED from its
+    -- installed location, and only an application that loads one of them is
+    -- LAUNCHED. The reason is a measurement of what `simctl launch` reports
+    -- (macos-15, Xcode 16, 20 runs per cell, mcpp#635 runs 2 and 3):
+    --
+    --   two applications that exit 7 (one at once, one after a second),
+    --   launched with `--console-pty`, `--console`, or `--stdout`/`--stderr`
+    --   files, 20 launches per cell                 exit 0 in 120 of 120,
+    --                                               output kept in 119
+    --   `--console-pty` with an install before
+    --   each launch                                 exit 0 in 20 of 20,
+    --                                               output kept in 19
+    --   an application that calls abort(), launched  exit 0
+    --   `simctl spawn <device> <get_app_container>/<executable>`
+    --     of the application that exits 7           exit 7 in 20 of 20,
+    --                                               output kept in 20
+    --     of the application that calls abort()     exit 134
+    --
+    -- and the application is absent from `launchctl list` once it exits, so
+    -- neither simctl nor launchctl reports a launched application's status.
+    -- A runner whose status is always 0 makes every test pass; the spawn of
+    -- the installed executable returns the program's own status. An
+    -- application that loads UIKit or SwiftUI (the two frameworks through
+    -- which an iOS application's lifecycle begins) still needs the launch
+    -- path, whose status is simctl's, and the program prints one line saying
+    -- so before it launches. A UIKit application under `spawn` was not
+    -- measured and is not attempted.
+    --
+    -- 0.2.0 stays resolvable for consumers pinned to it (mcpp-plugins'
+    -- ios-app-consumer fixture). The program is this recipe's text, so a
+    -- fresh installation under either key writes the 0.3.0 program; an
+    -- installation made before this change keeps the program it wrote.
     type = "script",
     status = "stable",
     categories = {"apple", "ios", "simulator", "runner"},
@@ -63,7 +88,11 @@ package = {
         -- No url: the program is this recipe's own text. There is no upstream
         -- release to pin, because what is being packaged is the session, and
         -- the tools it drives ship with Xcode.
-        macosx = { ["0.2.0"] = { } },
+        macosx = {
+            ["latest"] = { ref = "0.3.0" },
+            ["0.3.0"] = { },
+            ["0.2.0"] = { },
+        },
     },
 }
 
@@ -90,8 +119,8 @@ import("xim.libxpkg.log")
 -- one-line alias for `xcrun simctl spawn booted`.
 local __simctl_run_sh = [==[
 #!/usr/bin/env bash
-# simctl-run --- run a Mach-O executable, or install and launch a .app, on
-# an iOS simulator.
+# simctl-run --- run a Mach-O executable, or install and run a .app, on an
+# iOS simulator.
 #
 # Usage:  simctl-run <executable-or-.app> [arguments...]
 #
@@ -198,16 +227,10 @@ if [ "$state" != "Booted" ]; then
 fi
 
 if [[ "$artifact" == *.app ]]; then
-    # A UIKIT APPLICATION NEEDS THE INSTALLED FORM (0.2.0; see this
-    # package's header comment). `spawn` takes a bare executable; a bundle
-    # is installed and launched instead.
+    # A BUNDLE IS INSTALLED, AND ITS EXECUTABLE DECIDES HOW IT RUNS (0.3.0;
+    # see this package's header comment for the measurements).
     if [ ! -d "$artifact" ]; then
         echo "simctl-run: $artifact is not a directory (a .app is a bundle)" >&2
-        exit 2
-    fi
-
-    if ! xcrun simctl install "$udid" "$artifact"; then
-        echo "simctl-run: simctl install failed for $artifact" >&2
         exit 2
     fi
 
@@ -216,18 +239,49 @@ if [[ "$artifact" == *.app ]]; then
         echo "simctl-run: could not read CFBundleIdentifier from $artifact/Info.plist" >&2
         exit 2
     fi
+    exe=$(/usr/libexec/PlistBuddy -c 'Print CFBundleExecutable' "$artifact/Info.plist" 2>/dev/null)
+    if [ -z "$exe" ]; then
+        echo "simctl-run: could not read CFBundleExecutable from $artifact/Info.plist" >&2
+        exit 2
+    fi
+    if [ ! -f "$artifact/$exe" ]; then
+        echo "simctl-run: $artifact has no executable $exe (its CFBundleExecutable)" >&2
+        exit 2
+    fi
 
-    # AND THE PROGRAM'S STATUS IS RETURNED UNCHANGED -- OR IS IT. Whether
-    # `launch --console-pty` answers with the LAUNCHED APPLICATION's own
-    # exit status, or only with `simctl`'s (which could report 0 for "the
-    # launch request succeeded" regardless of what the application does
-    # next), is UNMEASURED: no simulator was available on the host this
-    # change was written on. Returned unchanged here on the same principle
-    # the bare-executable branch below follows; the design record's own
-    # criterion (section 4.3) names the fallback if it turns out to answer
-    # only for `simctl` -- reading `simctl spawn launchctl print <udid>`'s
-    # process state for this bundle id instead.
-    xcrun simctl launch --console-pty --terminate-running-process "$udid" "$bundle_id" "$@"
+    # THE LOAD COMMANDS ARE READ, NOT GUESSED. An executable that loads UIKit
+    # or SwiftUI starts an application lifecycle, which needs the launch
+    # path; any other executable is a program, and its installed copy is
+    # spawned.
+    if ! load_commands=$(xcrun otool -L "$artifact/$exe" 2>&1); then
+        echo "simctl-run: could not read the load commands of $artifact/$exe:" >&2
+        echo "            $load_commands" >&2
+        exit 2
+    fi
+
+    if ! xcrun simctl install "$udid" "$artifact"; then
+        echo "simctl-run: simctl install failed for $artifact" >&2
+        exit 2
+    fi
+
+    if printf '%s\n' "$load_commands" | grep -Eq '/(UIKit|SwiftUI)\.framework/'; then
+        # THE STATUS IS SIMCTL'S, AND THE RUNNER SAYS SO. Measured: `simctl
+        # launch` returns 0 for an application that exits 7 and for one that
+        # aborts, and launchctl no longer lists the application once it exits.
+        echo "simctl-run: $exe loads UIKit or SwiftUI, so $bundle_id is launched; the status that follows is simctl's, not the application's" >&2
+        xcrun simctl launch --console-pty --terminate-running-process "$udid" "$bundle_id" "$@"
+        exit $?
+    fi
+
+    container=$(xcrun simctl get_app_container "$udid" "$bundle_id" app 2>/dev/null)
+    if [ -z "$container" ] || [ ! -f "$container/$exe" ]; then
+        echo "simctl-run: simctl get_app_container names no installed $exe for $bundle_id" >&2
+        exit 2
+    fi
+
+    # AND THE PROGRAM'S STATUS IS RETURNED UNCHANGED: measured to be the
+    # application's own status, a signal as a shell status, with its output.
+    xcrun simctl spawn "$udid" "$container/$exe" "$@"
     exit $?
 fi
 
