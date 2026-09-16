@@ -315,6 +315,19 @@ def test_preload_keeps_the_original_when_the_candidate_cannot_run(tmp_path):
 
 @needs_elf_tools
 @pytest.mark.static
+def test_preload_is_silent_about_a_node_that_never_started(tmp_path):
+    """A broken install is not the preload's failure; do not claim it is"""
+    install, exe = _forge(tmp_path)
+    (tmp_path / "glibc" / "lib64" / "libc.so.6").unlink()
+    (tmp_path / "glibc" / "lib64" / "libc.so.6").write_bytes(b"not an ELF")
+    before = exe.read_bytes()
+    r = _config(install)
+    assert exe.read_bytes() == before
+    assert "xlings#605" not in r.stderr, r.stderr
+
+
+@needs_elf_tools
+@pytest.mark.static
 def test_preload_without_patchelf_is_a_no_op_not_a_failure(tmp_path):
     install, exe = _forge(tmp_path)
     before = exe.read_bytes()

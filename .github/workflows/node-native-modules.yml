@@ -29,10 +29,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # ubuntu-24.04-arm: the aarch64 node runs on the host's loader (the
-        # glibc payload is x86_64 only), the branch where the hook must do
-        # nothing at all.
-        os: [ubuntu-24.04, ubuntu-24.04-arm, macos-15]
+        # No ubuntu-24.04-arm: xim:node on linux-aarch64 does not start on
+        # main either -- its runtime deps glibc and gcc-runtime are x86_64-only
+        # recipes (gcc-runtime 404s), so there is no node to load a module
+        # into. The host-loader branch of the hook is covered by the forged
+        # payload tests instead.
+        os: [ubuntu-24.04, macos-15]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     steps:

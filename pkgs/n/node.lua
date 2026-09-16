@@ -351,6 +351,10 @@ local function _preload_glibc_compat_sonames()
         "rpath=$(\"$pe\" --print-rpath \"$exe\" 2>/dev/null) || exit 0",
         "case \":$rpath:\" in *\":$libdir:\"*) ;; *) exit 0 ;; esac",
         "[ -f \"$libdir/libc.so.6\" ] || exit 0",
+        -- A node that does not start as installed is a different defect (a
+        -- missing runtime dep names itself in the closure check); blaming the
+        -- preload for it would point at the wrong cause.
+        "\"$exe\" --version >/dev/null 2>&1 || exit 0",
         "needed=$(\"$pe\" --print-needed \"$exe\" 2>/dev/null) || exit 0",
         "add=",
         "for so in " .. table.concat(_glibc_compat_sonames, " ") .. "; do",
