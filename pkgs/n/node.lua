@@ -260,6 +260,7 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
+import("xim.libxpkg.system")
 
 -- Arch-aware extracted-dir templates (node uses x64/arm64 tokens).
 local node_dir_template = {
@@ -290,8 +291,106 @@ function install()
     return false
 end
 
+-- glibc sonames a native module can NEED that nothing in node's process would
+-- ever find, so node loads them itself (xlings#605).
+--
+-- elfpatch points node at OUR loader, and our loader has no default search
+-- path and no ld.so.cache (glibc.lua: "/nonexistent/xlings-use-rpath-not-
+-- default-search"): a library is found through an RPATH, or not at all. A
+-- prebuilt addon usually carries its own DT_RUNPATH (sharp's libvips-cpp.so:
+-- `$ORIGIN/`), and an object with a DT_RUNPATH is searched ONLY on that
+-- RUNPATH -- node's own RPATH is never consulted for it, whichever tag node
+-- carries. So `NEEDED libresolv.so.2` in such a module is ENOENT, although
+-- the glibc payload beside node's libc ships the file, and although every
+-- host resolves it through /etc/ld.so.cache.
+--
+-- What the loader does check first is whether a library of that SONAME is
+-- already loaded. Adding these to node's NEEDED makes that true for the whole
+-- process, from the same directory as the libc node runs on -- one ABI, no
+-- per-process environment variable (LD_LIBRARY_PATH would be inherited by
+-- every host program node spawns, and those die on our libc). These are the
+-- libraries glibc 2.34 folded into libc and still ships as separate objects
+-- for binaries linked before that; addons built on older sysroots name them.
+local _glibc_compat_sonames = {
+    "libresolv.so.2", "libutil.so.1", "librt.so.1", "libanl.so.1",
+    "libdl.so.2", "libpthread.so.0",
+}
+
+local function _sh_quote(s)
+    return "'" .. tostring(s):gsub("'", "'\\''") .. "'"
+end
+
+-- Idempotent, and never fatal: config re-runs on every install that names
+-- node, and a node that cannot be patched is still the node it was before.
+-- Only a candidate that has RUN replaces the binary, and by rename -- an
+-- in-place write fails with ETXTBSY while any node process is running.
+local function _preload_glibc_compat_sonames()
+    if os.host() ~= "linux" then return end
+    local exe = path.join(pkginfo.install_dir(), "bin", "node")
+    if not os.isfile(exe) then return end
+
+    -- The payload patchelf first, as elfpatch resolves it; PATH otherwise.
+    -- type(), not truthiness: an unknown field on a module proxy is truthy.
+    local patchelf = "patchelf"
+    if type(pkginfo.tool_payload_dir) == "function" then
+        local ok, dir = pcall(pkginfo.tool_payload_dir, "patchelf")
+        if ok and dir and dir ~= "" and os.isfile(path.join(dir, "bin", "patchelf")) then
+            patchelf = path.join(dir, "bin", "patchelf")
+        end
+    end
+
+    local script = table.concat({
+        "exe=" .. _sh_quote(exe),
+        "pe=" .. _sh_quote(patchelf),
+        "command -v \"$pe\" >/dev/null 2>&1 || exit 0",
+        "interp=$(\"$pe\" --print-interpreter \"$exe\" 2>/dev/null) || exit 0",
+        "libdir=${interp%/*}",
+        -- Only when node runs on a loader whose directory is also on its own
+        -- RPATH, i.e. ours. On the host loader (no elfpatch, or an arch our
+        -- glibc does not cover) ld.so.cache already serves all of these.
+        "rpath=$(\"$pe\" --print-rpath \"$exe\" 2>/dev/null) || exit 0",
+        "case \":$rpath:\" in *\":$libdir:\"*) ;; *) exit 0 ;; esac",
+        "[ -f \"$libdir/libc.so.6\" ] || exit 0",
+        -- A node that does not start as installed is a different defect (a
+        -- missing runtime dep names itself in the closure check); blaming the
+        -- preload for it would point at the wrong cause.
+        "\"$exe\" --version >/dev/null 2>&1 || exit 0",
+        "needed=$(\"$pe\" --print-needed \"$exe\" 2>/dev/null) || exit 0",
+        "add=",
+        "for so in " .. table.concat(_glibc_compat_sonames, " ") .. "; do",
+        "  [ -e \"$libdir/$so\" ] || continue",
+        "  printf '%s\\n' \"$needed\" | grep -qxF \"$so\" && continue",
+        "  add=\"$add --add-needed $so\"",
+        "done",
+        "[ -n \"$add\" ] || exit 0",
+        "tmp=\"$exe.xlings-preload.$$\"",
+        "rm -f \"$tmp\"",
+        "if \"$pe\" $add --output \"$tmp\" \"$exe\" && \"$tmp\" --version >/dev/null 2>&1 && mv -f \"$tmp\" \"$exe\"; then exit 0; fi",
+        "rm -f \"$tmp\"",
+        "echo \"node: could not add$add to $exe; native modules that need them will not load (xlings#605)\" >&2",
+        "exit 0",
+    }, "\n") .. "\n"
+
+    local tmpfile = os.tmpname()
+    if not io.writefile(tmpfile, script) then
+        log.warn("node: could not write %s; glibc compat libraries not preloaded", tmpfile)
+        return
+    end
+    local ok, err = pcall(system.exec, "sh " .. _sh_quote(tmpfile))
+    os.remove(tmpfile)
+    if not ok then
+        log.warn("node: preloading glibc compat libraries failed: %s", tostring(err))
+    end
+end
+
 function config()
     log.debug("Configuring Node.js ...")
+    -- pcall: a hook runtime missing one primitive this uses (os.tmpname,
+    -- io.writefile) costs the preload, never node's registration.
+    local preloaded, perr = pcall(_preload_glibc_compat_sonames)
+    if not preloaded then
+        log.warn("node: glibc compat libraries not preloaded: %s", tostring(perr))
+    end
     local bindir = pkginfo.install_dir()
     if os.host() ~= "windows" then
         bindir = path.join(pkginfo.install_dir(), "bin")

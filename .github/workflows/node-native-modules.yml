@@ -1,0 +1,125 @@
+name: node native modules
+
+# xim:node loads native addons on every host it serves (xlings#605).
+# `ci-test.yml` installs a changed recipe and removes it; it never loads an
+# addon. On Linux node runs on xlings' own loader, which has no ld.so.cache, so
+# a module's own dependencies resolve through what node itself has loaded or
+# not at all -- invisible to `node --version`. Here a forged module reaches that
+# path (with a control proving it does), and sharp, the module #605 was reported
+# against, encodes a PNG on each platform.
+
+on:
+  pull_request:
+    paths:
+      - 'pkgs/n/node.lua'
+      - 'tests/n/test_node.py'
+      - 'tests/lua/node_preload_harness.lua'
+      - '.github/workflows/node-native-modules.yml'
+      - '.github/scripts/program-checks/install-xlings.sh'
+      - '.github/scripts/program-checks/install-recipe.sh'
+      - '.github/scripts/program-checks/node.sh'
+  workflow_dispatch:
+
+concurrency:
+  group: node-native-modules-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  posix:
+    strategy:
+      fail-fast: false
+      matrix:
+        # No ubuntu-24.04-arm: xim:node on linux-aarch64 does not start on
+        # main either -- its runtime deps glibc and gcc-runtime are x86_64-only
+        # recipes (gcc-runtime 404s), so there is no node to load a module
+        # into. The host-loader branch of the hook is covered by the forged
+        # payload tests instead.
+        os: [ubuntu-24.04, macos-15]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: ELF tooling and Lua for the preload tests
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends patchelf lua5.4 python3-pytest
+          patchelf --version
+
+      # Without patchelf the static job skips these, so this is where they run.
+      - name: The preload hook's decisions, on forged payloads
+        if: runner.os == 'Linux'
+        run: python3 -m pytest tests/n/test_node.py -m static --tb=short -q -rs
+
+      - name: Install xlings
+        timeout-minutes: 15
+        run: bash .github/scripts/program-checks/install-xlings.sh
+
+      - name: Install node from this checkout
+        timeout-minutes: 15
+        run: bash .github/scripts/program-checks/install-recipe.sh pkgs/n/node.lua node NODE
+
+      - name: node loads native modules
+        timeout-minutes: 15
+        run: bash .github/scripts/program-checks/node.sh
+
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install xlings
+        timeout-minutes: 15
+        shell: pwsh
+        run: |
+          $env:XLINGS_NON_INTERACTIVE = "1"
+          $env:XLINGS_VERSION = "v2026.8.10.1"
+          iex (Invoke-WebRequest `
+            -Uri "https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.ps1" `
+            -UseBasicParsing).Content
+          $xlingsHome = "$env:USERPROFILE\.xlings"
+          if (-not (Test-Path "$xlingsHome\bin\xlings.exe")) {
+            throw "xlings install did not produce $xlingsHome\bin\xlings.exe"
+          }
+          Add-Content $env:GITHUB_PATH "$xlingsHome\bin"
+          Add-Content $env:GITHUB_PATH "$xlingsHome\subos\current\bin"
+          Add-Content $env:GITHUB_ENV  "XLINGS_HOME=$xlingsHome"
+
+      - name: Refresh the package index
+        timeout-minutes: 10
+        run: xlings update
+
+      - name: Install node from this checkout
+        timeout-minutes: 15
+        shell: pwsh
+        run: |
+          xlings config --add-xpkg pkgs/n/node.lua
+          xlings install local:node -y
+          if ($LASTEXITCODE -ne 0) { throw "xlings install local:node exited $LASTEXITCODE" }
+
+      - name: node runs, and sharp encodes a PNG
+        timeout-minutes: 15
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Continue"
+          $found = @(Get-ChildItem (Join-Path $env:XLINGS_HOME "data\xpkgs\local-x-node") -Directory |
+                     ForEach-Object { Join-Path $_.FullName "node.exe" } | Where-Object { Test-Path $_ })
+          if ($found.Count -ne 1) { Write-Host "::error::expected one local-x-node\*\node.exe, found $($found.Count)"; exit 1 }
+          $node = $found[0]; $bindir = Split-Path $node
+          $env:PATH = "$bindir;$env:PATH"
+          $out = (& $node --version 2>&1) -join " "
+          Write-Host "READING node --version: exit=$LASTEXITCODE $out"
+          if ($LASTEXITCODE -ne 0) { Write-Host "::error::node --version exited $LASTEXITCODE"; exit 1 }
+
+          $w = Join-Path $env:RUNNER_TEMP "node-native"
+          New-Item -ItemType Directory -Force -Path $w | Out-Null
+          Set-Location $w
+          Set-Content -Path package.json -Value '{"name":"xlings-node-native","private":true}'
+          & (Join-Path $bindir "npm.cmd") install --no-audit --no-fund sharp
+          if ($LASTEXITCODE -ne 0) { Write-Host "::error::npm install sharp exited $LASTEXITCODE"; exit 1 }
+          Set-Content -Path png.js -Value 'require("sharp")({create:{width:4,height:4,channels:3,background:"red"}}).png().toBuffer().then(b=>console.log("PNG "+b.length)).catch(e=>{console.log(e.message);process.exit(1)})'
+          $out = (& $node png.js 2>&1) -join " "
+          Write-Host "READING sharp encodes a PNG: exit=$LASTEXITCODE $out"
+          if ($LASTEXITCODE -ne 0 -or $out -notmatch "PNG \d+") { Write-Host "::error::sharp did not load or encode: $out"; exit 1 }
