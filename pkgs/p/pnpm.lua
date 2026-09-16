@@ -62,6 +62,10 @@ package = {
                 url = "https://github.com/pnpm/pnpm/releases/download/v11.0.5/pnpm-linux-x64.tar.gz",
                 sha256 = "c1b55f53f5344cf0e26441d97b9ee2ee3b81791503c5cbd4bb93ae1898b8d211",
             },
+            ["7.33.7"] = {
+                url = "https://github.com/pnpm/pnpm/releases/download/v7.33.7/pnpm-linux-x64",
+                sha256 = "ee39e4fc291bd83a0cdf2087cc9de29c0ff7a7999edff845959ca08483f0cca0",
+            },
         },
         macosx = {
             url_template = "https://github.com/pnpm/pnpm/releases/download/v{version}/pnpm-darwin-arm64.tar.gz",
@@ -81,6 +85,10 @@ package = {
             ["11.0.5"] = {
                 url = "https://github.com/pnpm/pnpm/releases/download/v11.0.5/pnpm-darwin-arm64.tar.gz",
                 sha256 = "24d412b2d137c6bc91e09c039b0e8ced6b5ac8f1dc9ea1881f0521cdb3bc5318",
+            },
+            ["7.33.7"] = {
+                url = "https://github.com/pnpm/pnpm/releases/download/v7.33.7/pnpm-macos-arm64",
+                sha256 = "0e33b74ca8e2407e07f8be499e7e36531e239b81a627396f559e48270a0c012f",
             },
         },
         windows = {
@@ -102,6 +110,10 @@ package = {
                 url = "https://github.com/pnpm/pnpm/releases/download/v11.0.5/pnpm-win32-x64.zip",
                 sha256 = "c79329a48a5e67bbbf73578fe0ddd5ff1fef05ed8c9ce43cfdc675d4d173fa3a",
             },
+            ["7.33.7"] = {
+                url = "https://github.com/pnpm/pnpm/releases/download/v7.33.7/pnpm-win-x64.exe",
+                sha256 = "3c1329114beedf8a3882acdd7c7bd99153afb685fc6ac34ec54a6eb69cf721f6",
+            },
         },
     },
 }
@@ -109,11 +121,14 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.system")
+import("xim.libxpkg.elfpatch")
 
 -- Tarball / zip layouts (verified via tar -tzf / unzip -l):
 --   linux/macos: `pnpm` binary at top level + `dist/` directory of
 --                supporting JS modules. Both must end up in install_dir.
 --   windows:     `pnpm.exe` at top level + `dist/`.
+-- pnpm 7.33.7 predates those archives and ships one standalone executable
+-- per platform, so it is moved directly from pkginfo.install_file().
 --
 -- xlings auto-extracts the archive into a runtime working directory
 -- whose contents we then move into install_dir wholesale. The shape
@@ -123,6 +138,21 @@ import("xim.libxpkg.system")
 function install()
     os.tryrm(pkginfo.install_dir())
     os.mkdir(pkginfo.install_dir())
+
+    local exe = is_host("windows") and "pnpm.exe" or "pnpm"
+    local target = path.join(pkginfo.install_dir(), exe)
+
+    if pkginfo.version() == "7.33.7" then
+        -- pnpm 7 is a pkg-style single-file executable with its JS payload
+        -- appended after the ELF image. patchelf grows the section table and
+        -- makes that payload unreadable, so retain the upstream interpreter.
+        elfpatch.skip()
+        os.mv(pkginfo.install_file(), target)
+        if not is_host("windows") then
+            system.exec(string.format([[chmod +x "%s"]], target))
+        end
+        return os.isfile(target)
+    end
 
     if is_host("windows") then
         for _, entry in ipairs({"pnpm.exe", "dist"}) do
@@ -134,7 +164,7 @@ function install()
         end
     end
 
-    return true
+    return os.isfile(target) and os.isdir(path.join(pkginfo.install_dir(), "dist"))
 end
 
 function config()
