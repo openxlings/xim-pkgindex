@@ -1,0 +1,122 @@
+Make the loader's own directory its default library directory.
+
+WHAT IS WRONG TODAY
+
+A system glibc finds its own libraries because slibdir (/lib64) is a default
+search directory.  The default directories are searched for every object,
+whatever its RPATH or RUNPATH says, so they catch the libraries nobody's
+search path names.
+
+This payload is configured with --prefix=/nonexistent/xlings-use-rpath-not-
+default-search, because a relocatable package has no build path that equals
+every install path.  So its slibdir is compiled in as a directory that does not
+exist.  That cuts off the host's libraries, which is the point.  It also cuts
+off glibc's own libraries, which nobody meant to do.
+
+Measured, openxlings/xlings#605: sharp's libvips-cpp.so NEEDs libresolv.so.2
+and carries DT_RUNPATH=$ORIGIN/.  An object with a DT_RUNPATH is searched only
+on that RUNPATH; the RPATH of every object above it, the executable's
+included, is skipped.  So under xlings' node:
+
+    ERR_DLOPEN_FAILED: libresolv.so.2: cannot open shared object file
+
+That happens although libresolv.so.2 is in the very directory node's libc.so.6
+was loaded from.  It fails the same way whether node is tagged DT_RPATH or
+DT_RUNPATH.
+
+WHY THIS SHAPE
+
+The directory the loader was found in is slibdir as installed, and it is known
+at run time: the PT_INTERP name that found us, or /proc/self/exe when ld.so is
+invoked directly (ldd, ld.so --list).  Only the first default-directory entry is
+replaced.  It is not appended:
+the compiled-in one is dead by construction, and a real directory in its
+place keeps the lookup order a system glibc has.
+
+WHAT IT DOES NOT CHANGE
+
+  * the cache (there is none in the payload) and every other compiled-in
+    directory
+  * the trusted-directory list consulted in secure mode (is_trusted_path_
+    normalize still reads the compiled-in SYSTEM_DIRS), so a set-user-ID
+    program gains no preload source
+  * a relative or unknown loader name, which keeps the compiled-in value
+  * anything outside this payload: the directory holds glibc's objects only
+
+--- a/elf/dl-load.c
++++ b/elf/dl-load.c
+@@ -745,6 +745,74 @@
+   max_dirnamelen = SYSTEM_DIRS_MAX_LEN;
+   *aelem = NULL;
+ 
++#ifdef SHARED
++  /* xlings: the first default directory is the one this loader lives in.
++
++     A system glibc finds its own libraries -- libresolv.so.2, libutil.so.1,
++     libm.so.6 -- because slibdir is a default search directory, consulted
++     for every object whatever its RPATH or RUNPATH says.  A relocatable
++     payload is configured with a prefix that exists nowhere, because no
++     build path equals every install path, so that directory is compiled in
++     as a dead one: the host's libraries are correctly out of reach, and so,
++     by accident, are glibc's own.  The visible failure is an object that
++     carries a DT_RUNPATH of its own (so no RPATH anywhere is consulted for
++     it) and NEEDs a glibc library nothing has loaded yet -- sharp's libvips
++     and libresolv.so.2, xlings#605.
++
++     The directory the loader was found in is slibdir as installed, and it
++     is known at run time: it is the PT_INTERP name that found us, or, when
++     invoked directly, /proc/self/exe.  Only that one entry is replaced;
++     every other compiled-in directory, the (absent) cache and the trusted
++     directory list used in secure mode are unchanged, so nothing outside
++     this payload becomes reachable.  A relative or unknown name leaves the
++     compiled-in value in place.  */
++  {
++    const char *self_dir = NULL;
++    size_t self_len = 0;
++    char *owned = NULL;
++
++    if (_dl_rtld_map.l_name != NULL)
++      {
++	/* Invoked directly (ld.so --list, ldd, ld.so PROGRAM): the program
++	   name is argv[0] and may be relative; the kernel knows the file.  */
++	const char *origin = _dl_get_origin ();
++	if (origin != (char *) -1 && origin != NULL && origin[0] == '/')
++	  {
++	    self_dir = origin;
++	    self_len = strlen (origin);
++	  }
++      }
++    else if (_dl_rtld_map.l_libname != NULL
++	     && _dl_rtld_map.l_libname->name != NULL
++	     && _dl_rtld_map.l_libname->name[0] == '/')
++      {
++	/* No strrchr in rtld: find the last slash by hand.  */
++	const char *name = _dl_rtld_map.l_libname->name;
++	const char *slash = name;
++	for (const char *p = name; *p != '\0'; ++p)
++	  if (*p == '/')
++	    slash = p;
++	self_dir = name;
++	self_len = slash - name;
++      }
++
++    if (self_dir != NULL && self_len > 0)
++      {
++	owned = malloc (self_len + 2);
++	if (owned != NULL)
++	  {
++	    memcpy (owned, self_dir, self_len);
++	    owned[self_len] = '/';
++	    owned[self_len + 1] = '\0';
++	    __rtld_search_dirs.dirs[0]->dirname = owned;
++	    __rtld_search_dirs.dirs[0]->dirnamelen = self_len + 1;
++	    if (self_len + 1 > max_dirnamelen)
++	      max_dirnamelen = self_len + 1;
++	  }
++      }
++  }
++#endif
++
+   /* This points to the map of the main object.  If there is no main
+      object (e.g., under --help, use the dynamic loader itself as a
+      stand-in.  */
