@@ -150,6 +150,12 @@ log "configuring $UPSTREAM (prefix=$PREFIX)"
 #   built with a compiler newer than the release.
 # --with-headers: the subos's kernel headers, which is the one thing it does
 #   take from there.
+# --without-selinux: configure probes libselinux by LINKING, which finds the
+#   host's library, while the subos compiler cannot see the host's headers --
+#   so a host with libselinux fails in nss/makedb.c, and one where both are
+#   visible links a host library into the payload. 2.44.2 was built without it
+#   (its makedb NEEDs libc.so.6 only); this makes that a decision, not a host
+#   accident.
 ../configure \
     --prefix="$PREFIX" \
     --libdir="$PREFIX/lib" \
@@ -159,6 +165,7 @@ log "configuring $UPSTREAM (prefix=$PREFIX)"
     --disable-profile \
     --disable-nscd \
     --enable-stack-protector=strong \
+    --without-selinux \
     > "$WORK/$NAME-configure.log" 2>&1 \
     || { tail -30 "$WORK/$NAME-configure.log"; fail "configure"; }
 
@@ -362,6 +369,54 @@ if [[ -n "$LOADER" && -f "$PAYLOAD/lib/libc.so.6" ]]; then
     if ! "$LOADER" --library-path "$PAYLOAD/lib" "$PAYLOAD/lib/libc.so.6" \
             >/dev/null 2>&1; then
         echo "    libc.so.6 does not run under the built loader"
+        leaks=$((leaks+1))
+    fi
+fi
+
+# The loader's own directory is its default library directory
+# (glibc-$UPSTREAM-default-dir-follows-loader.patch, xlings#605) -- checked as
+# BEHAVIOUR, because the prefix string above is still in the loader either way.
+#
+# Both ways the loader finds its own name, since the patch takes a different
+# branch for each:
+#   * PT_INTERP: a program with NO RPATH at all must start, so libc.so.6 came
+#     from the loader's directory, and its RUNPATH names nothing real, so a
+#     glibc library it NEEDs can only have come from there too
+#   * direct invocation (`ld.so --list`, what ldd runs): /proc/self/exe
+# And the other half: a library only the HOST has stays unreachable. Without
+# that, a patch that re-enabled the host's directories would pass.
+if [[ -n "$LOADER" ]]; then
+    PROBE="$WORK/default-dir-probe"; rm -rf "$PROBE"; mkdir -p "$PROBE"
+    printf 'int main(void){return 0;}\n' > "$PROBE/main.c"
+    if "$CC" "$PROBE/main.c" -o "$PROBE/main" >/dev/null 2>&1 \
+       && patchelf --set-interpreter "$LOADER" --remove-rpath "$PROBE/main" \
+       && patchelf --add-needed libresolv.so.2 --set-rpath /nonexistent-probe "$PROBE/main"; then
+        if "$PROBE/main"; then
+            log "  default dir: a RUNPATH-only program on this loader finds libc and libresolv"
+        else
+            echo "    a program with no usable search path does not start on this loader;"
+            echo "    its own directory is not a default directory"
+            "$PROBE/main" 2>&1 | head -2 | sed 's/^/      /'
+            leaks=$((leaks+1))
+        fi
+        listed="$("$LOADER" --list "$PROBE/main" 2>&1)"
+        if ! grep -q "libresolv.so.2 => $(dirname "$(readlink -f "$LOADER")")/libresolv.so.2" <<<"$listed"; then
+            echo "    ld.so --list does not resolve libresolv.so.2 from the loader's directory:"
+            sed 's/^/      /' <<<"$listed"
+            leaks=$((leaks+1))
+        fi
+        host_only="$(ldconfig -p 2>/dev/null | awk '/libz\.so\.1 /{print $1; exit}')"
+        if [[ -n "$host_only" && ! -e "$PAYLOAD/lib/$host_only" ]]; then
+            patchelf --add-needed "$host_only" "$PROBE/main"
+            if "$PROBE/main" 2>/dev/null; then
+                echo "    $host_only, which only the host has, resolved under this loader"
+                leaks=$((leaks+1))
+            else
+                log "  host-only $host_only stays unreachable"
+            fi
+        fi
+    else
+        echo "    could not build the default-directory probe"
         leaks=$((leaks+1))
     fi
 fi

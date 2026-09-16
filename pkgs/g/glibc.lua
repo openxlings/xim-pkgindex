@@ -107,7 +107,7 @@ package = {
             -- direction: glibc runs older binaries on newer libc, never the
             -- reverse, so every 2.39-built payload in the index runs
             -- unchanged under 2.44.
-            ["latest"] = { ref = "2.44.2" },
+            ["latest"] = { ref = "2.44.3" },
             ["2.39"] = "XLINGS_RES",
             -- Built from source, not XLINGS_RES: the sha256 is checked, which
             -- an XLINGS_RES entry cannot do. Build recipe and the reason its
@@ -190,6 +190,37 @@ package = {
                     CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.2/glibc-2.44.2-linux-x86_64.tar.gz",
                 },
                 sha256 = "ed4bf048b8ed2b65433e0dd655f93133da4a9bd458276cfa986b7cccde835d08",
+            },
+            -- 2.44.3: THE LOADER'S OWN DIRECTORY IS ITS DEFAULT DIRECTORY.
+            --
+            -- Same upstream 2.44, same prefix, plus
+            -- .agents/tools/graphics/patches/glibc-2.44-default-dir-follows-loader.patch.
+            -- The reserved prefix above cut the host's libraries off, as meant,
+            -- and cut glibc's OWN libraries off with them, which nobody meant:
+            -- a system glibc reaches libresolv.so.2 through slibdir, a default
+            -- directory that serves every object whatever its RUNPATH says. Ours
+            -- had no such directory, so a prebuilt module carrying its own
+            -- DT_RUNPATH (sharp's libvips, openxlings/xlings#605) could not find
+            -- a glibc library sitting beside the libc it was already using --
+            -- and no RPATH on the program could help, because an object with a
+            -- DT_RUNPATH is searched on that alone.
+            --
+            -- `strings` shows no difference from 2.44.2 (the prefix is still
+            -- compiled in; only the first default-directory entry is replaced
+            -- at run time), so the difference is asserted as behaviour in
+            -- build-glibc.sh: a RUNPATH-only program starts and resolves
+            -- libresolv from the loader's directory, and the host-only libz.so.1
+            -- stays unreachable.
+            --
+            -- Moving `latest` with it for the reason given at 2.44.2. Existing
+            -- subos and already-patched payloads keep the glibc they were bound
+            -- to; new subos and new installs get this one.
+            ["2.44.3"] = {
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.3/glibc-2.44.3-linux-x86_64.tar.gz",
+                    CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.3/glibc-2.44.3-linux-x86_64.tar.gz",
+                },
+                sha256 = "b84de544a8c8b3e1e7a1103c829b393a37bc865f6720e391ec05f8ef69672845",
             },
         },
     },
