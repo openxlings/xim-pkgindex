@@ -19,6 +19,13 @@ def meta():
     return parse_xpkg(PKG_FILE)
 
 
+@pytest.fixture(scope='module')
+def code(meta):
+    """The recipe without its comments, so a test never matches prose."""
+    return "\n".join(l for l in meta.raw_content.splitlines()
+                      if not l.lstrip().startswith("--"))
+
+
 class TestStatic:
     @pytest.mark.static
     def test_required_fields(self, meta):
@@ -35,6 +42,76 @@ class TestStatic:
     @pytest.mark.static
     def test_no_typos(self):
         assert_no_typos(PKG_FILE)
+
+
+class TestResources:
+    """The version matrix: what is mirrored, and the two asset shapes 7.x and 8+
+    publish. Byte-identity of every CN copy below was checked by download on
+    2026-09-16; the sha256 in the recipe is what re-checks it at install time."""
+
+    @pytest.mark.static
+    def test_mirrored_versions_carry_both_urls(self, code):
+        """12.1.0 and 11.12.0 are on xlings-res/pnpm, once per platform."""
+        import re
+        cn = re.findall(r'CN = "([^"]+)"', code)
+        assert len(cn) == 6, cn
+        for version in ("12.1.0", "11.12.0"):
+            for asset in ("pnpm-linux-x64.tar.gz", "pnpm-darwin-arm64.tar.gz", "pnpm-win32-x64.zip"):
+                url = f"https://gitcode.com/xlings-res/pnpm/releases/download/{version}/{asset}"
+                assert url in cn, url
+
+    @pytest.mark.static
+    def test_unmirrored_versions_say_so_by_having_one_url(self, code):
+        """12.0.0, 11.0.5 and 7.33.7 are not on the mirror (checked), so they
+        carry GLOBAL alone rather than a CN URL that would 404."""
+        import re
+        for version in ("12.0.0", "11.0.5", "7.33.7"):
+            block = re.search(r'\["' + re.escape(version) + r'"\] = \{(.*?)\n            \},', code, re.S)
+            assert block, version
+            assert "CN =" not in block.group(1), f"{version} claims a mirror it is not on"
+
+    @pytest.mark.static
+    def test_seven_is_a_bare_executable_on_every_platform(self, code):
+        """7.x publishes one self-contained executable per platform, not the
+        archive-plus-dist/ that 8+ ships. install() has to handle both."""
+        for asset in ("v7.33.7/pnpm-linux-x64", "v7.33.7/pnpm-macos-arm64", "v7.33.7/pnpm-win-x64.exe"):
+            assert asset in code, asset
+
+    @pytest.mark.static
+    def test_install_handles_both_asset_shapes(self, code):
+        install = code[code.index("function install()"):code.index("function config()")]
+        assert 'os.isdir("dist")' in install, "the 8+ archive's dist/ must still move"
+        assert "pnpm-linux-x64" in install and "pnpm-macos-arm64" in install, \
+            "the 7.x bare executable must be recognised by its asset name"
+        assert "chmod +x" in install, "a downloaded executable arrives without the bit"
+
+    @pytest.mark.static
+    def test_only_the_bare_executable_skips_elfpatch(self, code):
+        """The 7.x asset is a `pkg` single-file executable: its JS payload sits
+        after the ELF image, so patchelf growing the file loses it. Measured
+        2026-09-16 on pnpm-linux-x64 7.33.7 -- `patchelf --set-rpath` alone took
+        49,884,244 bytes to 49,892,436 and `--version` then died in
+        pkg/prelude/bootstrap.js. claude.lua hit the same wall with a Bun binary
+        and answered it with empty `deps`; that is unavailable here because
+        `deps` is per-platform and 8+ on the same platform wants them, so the
+        skip is scoped to the branch that stages the bare executable."""
+        install = code[code.index("function install()"):code.index("function config()")]
+        seven = install[install.index("else"):]
+        assert "elfpatch.skip()" in seven, "the 7.x branch must opt out of elfpatch"
+        assert install.count("elfpatch.skip()") == 1, \
+            "8+ is an ordinary node build beside dist/ and keeps its patching"
+        assert 'import("xim.libxpkg.elfpatch")' in code
+
+    @pytest.mark.static
+    def test_the_bare_executable_is_actually_run_after_elfpatch(self, code):
+        """config() is the first hook after elfpatch, and for this shape nothing
+        short of running the binary can see the damage -- every existence check
+        passes on a broken one (contributing.md 5.1)."""
+        config = code[code.index("function config()"):code.index("function uninstall()")]
+        assert '--version' in config and "os.iorun" in config
+        assert 'os.isdir(path.join(dir, "dist"))' in config, \
+            "the run is scoped to the payload with no dist/, i.e. the 7.x one"
+        assert "pkginfo.version()" in config, "the reported version must be compared, not just printed"
 
 
 class TestIndex:
