@@ -11,6 +11,7 @@ per-arch 校验和。所以静态断言看两样东西 ——
 再加一条真正求值配方的检查 (需要 lua, 没有就 skip, 同 tests/test_hostlib.py):
 逐架构解析出来的 URL/hash 必须成对齐全。
 """
+import os
 import re
 import shutil
 import subprocess
@@ -174,6 +175,153 @@ def test_every_resolved_asset_is_a_complete_mirror_pair():
         per_version.setdefault((platform, version), set()).add(arch)
     for key, arches in sorted(per_version.items()):
         assert arches == {"x86_64", "aarch64"}, f"{key} 只解析出 {sorted(arches)}"
+
+
+# ── xlings#605: glibc compat sonames preloaded into node ────────────────────
+#
+# config() runs a shell script against the real payload, so these run it too:
+# a forged "our loader" layout (the host's own ld.so/libc reached through a
+# private lib dir on node's RPATH, exactly the shape elfpatch produces), and
+# assertions on the ELF that comes out. The dlopen differential itself needs our
+# real glibc -- the host's ld.so.cache would serve the soname either way -- so
+# that half lives in .github/workflows/node-native-modules.yml.
+
+PRELOAD_HARNESS = REPO / "tests" / "lua" / "node_preload_harness.lua"
+COMPAT = ["libresolv.so.2", "libutil.so.1", "librt.so.1", "libanl.so.1",
+          "libdl.so.2", "libpthread.so.0"]
+
+
+def _tool(*names):
+    for n in names:
+        if shutil.which(n):
+            return shutil.which(n)
+    return None
+
+
+_LUA = _tool("lua5.4", "lua")
+_CC = _tool("cc", "gcc")
+_PATCHELF = _tool("patchelf")
+
+needs_elf_tools = pytest.mark.skipif(
+    not (_LUA and _CC and _PATCHELF) or not Path("/proc/self/exe").exists(),
+    reason="needs lua, a C compiler and patchelf on a Linux host",
+)
+
+
+def _needed(exe):
+    out = subprocess.run([_PATCHELF, "--print-needed", str(exe)],
+                         capture_output=True, text=True, check=True).stdout
+    return out.split()
+
+
+def _forge(tmp_path, ours=True):
+    """An install dir holding bin/node, on our loader or on the host's."""
+    install = tmp_path / "node"
+    (install / "bin").mkdir(parents=True)
+    src = tmp_path / "main.c"
+    src.write_text('#include <stdio.h>\nint main(void){puts("v0.0.0");return 0;}\n')
+    exe = install / "bin" / "node"
+    subprocess.run([_CC, str(src), "-o", str(exe)], check=True)
+    # Set both halves explicitly, whatever the compiler stamped: a `cc` that is
+    # itself an xlings shim already links onto an xlings loader, which turned
+    # the host case below into a second copy of the "ours" case.
+    if not ours:
+        host_interp = subprocess.run([_PATCHELF, "--print-interpreter", "/bin/sh"],
+                                     capture_output=True, text=True, check=True).stdout.strip()
+        subprocess.run([_PATCHELF, "--set-interpreter", host_interp,
+                        "--remove-rpath", str(exe)], check=True)
+    else:
+        libdir = tmp_path / "glibc" / "lib64"
+        libdir.mkdir(parents=True)
+        interp = subprocess.run([_PATCHELF, "--print-interpreter", str(exe)],
+                                capture_output=True, text=True, check=True).stdout.strip()
+        host_libc = Path(subprocess.run([_CC, "-print-file-name=libc.so.6"],
+                                        capture_output=True, text=True,
+                                        check=True).stdout.strip()).resolve()
+        (libdir / Path(interp).name).symlink_to(Path(interp).resolve())
+        (libdir / "libc.so.6").symlink_to(host_libc)
+        for so in COMPAT:
+            cand = host_libc.parent / so
+            if cand.exists():
+                (libdir / so).symlink_to(cand.resolve())
+        subprocess.run([_PATCHELF, "--set-interpreter", str(libdir / Path(interp).name),
+                        "--force-rpath", "--set-rpath", str(libdir), str(exe)], check=True)
+    return install, exe
+
+
+def _config(install, patchelf_dir=None):
+    args = [_LUA, str(PRELOAD_HARNESS), str(REPO / PKG_FILE), str(install)]
+    if patchelf_dir:
+        args.append(str(patchelf_dir))
+    r = subprocess.run(args, capture_output=True, text=True,
+                       env={**os.environ, "PATH": f"{Path(_PATCHELF).parent}:/usr/bin:/bin"})
+    assert "CONFIG true" in r.stdout, r.stdout + r.stderr
+    return r
+
+
+@needs_elf_tools
+@pytest.mark.static
+def test_preload_on_our_loader_adds_every_compat_soname_the_libdir_ships(tmp_path):
+    install, exe = _forge(tmp_path)
+    shipped = [so for so in COMPAT if (tmp_path / "glibc" / "lib64" / so).exists()]
+    assert "libresolv.so.2" in shipped, "forged libdir lacks libresolv; the test would be vacuous"
+    assert "libresolv.so.2" not in _needed(exe)
+
+    _config(install)
+
+    needed = _needed(exe)
+    assert all(so in needed for so in shipped), f"missing from NEEDED: {needed}"
+    assert len(needed) == len(set(needed)), f"duplicate NEEDED: {needed}"
+    assert subprocess.run([str(exe)], capture_output=True).returncode == 0
+    assert not list((install / "bin").glob("node.xlings-preload.*")), "candidate left behind"
+
+
+@needs_elf_tools
+@pytest.mark.static
+def test_preload_is_idempotent(tmp_path):
+    install, exe = _forge(tmp_path)
+    _config(install)
+    before = (exe.read_bytes(), exe.stat().st_ino)
+    _config(install)
+    assert (exe.read_bytes(), exe.stat().st_ino) == before
+
+
+@needs_elf_tools
+@pytest.mark.static
+def test_preload_leaves_a_host_loader_node_alone(tmp_path):
+    """On the host's loader ld.so.cache already serves these; nothing to add"""
+    install, exe = _forge(tmp_path, ours=False)
+    before = exe.read_bytes()
+    _config(install)
+    assert exe.read_bytes() == before
+
+
+@needs_elf_tools
+@pytest.mark.static
+def test_preload_keeps_the_original_when_the_candidate_cannot_run(tmp_path):
+    install, exe = _forge(tmp_path)
+    bogus = tmp_path / "glibc" / "lib64" / "libresolv.so.2"
+    bogus.unlink()
+    bogus.write_bytes(b"not an ELF")
+    before = exe.read_bytes()
+
+    r = _config(install)
+
+    assert exe.read_bytes() == before, "a node that does not start replaced the working one"
+    assert subprocess.run([str(exe)], capture_output=True).returncode == 0
+    assert "xlings#605" in r.stderr, "the failure must be said, not swallowed"
+    assert not list((install / "bin").glob("node.xlings-preload.*")), "candidate left behind"
+
+
+@needs_elf_tools
+@pytest.mark.static
+def test_preload_without_patchelf_is_a_no_op_not_a_failure(tmp_path):
+    install, exe = _forge(tmp_path)
+    before = exe.read_bytes()
+    r = subprocess.run([_LUA, str(PRELOAD_HARNESS), str(REPO / PKG_FILE), str(install)],
+                       capture_output=True, text=True, env={**os.environ, "PATH": "/nonexistent"})
+    assert "CONFIG true" in r.stdout, r.stdout + r.stderr
+    assert exe.read_bytes() == before
 
 
 class TestIndex:
