@@ -72,11 +72,37 @@ package = {
             -- major still owns. Note the asset shape: 7.x publishes one bare,
             -- self-contained executable per platform, not the `.tar.gz` with a
             -- `dist/` beside it that 8+ ships, so install() handles both.
+            --
+            -- AND IT IS THE `linuxstatic` ASSET, NOT `linux`. Both exist for
+            -- this release; they differ in what they need from the machine, and
+            -- only one of them closes the loop:
+            --
+            --   pnpm-linux-x64        49,884,244  dynamic, INTERP -> host glibc
+            --   pnpm-linuxstatic-x64  42,457,484  statically linked, no INTERP,
+            --                                     no .dynamic section at all
+            --
+            -- The dynamic one cannot be made hermetic here. It is built with
+            -- `pkg` -- the JS payload sits after the ELF image and is found by
+            -- scanning back from the end of the file -- so pointing it at this
+            -- index's glibc would mean letting elfpatch rewrite it, and that
+            -- GROWS the file (measured 2026-09-16: 49,884,244 -> 49,892,436 from
+            -- `--set-rpath` alone), after which the payload is no longer where
+            -- the prelude looks and `pnpm --version` dies in
+            -- pkg/prelude/bootstrap.js with "Invalid or unexpected token".
+            -- claude.lua hit that exact wall with a Bun binary. Its answer was
+            -- to declare no deps and accept the host loader; the answer here is
+            -- better, because upstream publishes a build that needs no loader.
+            --
+            -- Static also means patchelf is not a hazard rather than a hazard
+            -- avoided: it REFUSES this file ("cannot find section '.dynamic'")
+            -- and leaves it byte-identical, so no opt-out is needed and none is
+            -- declared. Verified 2026-09-16, both directions.
+            --
             -- Not on the CN mirror (checked 2026-09-16): xlings-res/pnpm carries
             -- 12.1.0 and 11.12.0 only, so this one has GLOBAL alone until it does.
             ["7.33.7"] = {
-                url = "https://github.com/pnpm/pnpm/releases/download/v7.33.7/pnpm-linux-x64",
-                sha256 = "ee39e4fc291bd83a0cdf2087cc9de29c0ff7a7999edff845959ca08483f0cca0",
+                url = "https://github.com/pnpm/pnpm/releases/download/v7.33.7/pnpm-linuxstatic-x64",
+                sha256 = "69f63324da4776dafb2f2bdfcf3e69687f26280e37a55cb25f7ede15045d0c29",
             },
         },
         macosx = {
@@ -149,7 +175,6 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.system")
-import("xim.libxpkg.elfpatch")
 
 -- Tarball / zip layouts (verified via tar -tzf / unzip -l):
 --   linux/macos: `pnpm` binary at top level + `dist/` directory of
@@ -181,7 +206,8 @@ function install()
         -- the same way below, and argv[0] resolution has nothing to find for
         -- this one anyway -- the JS is inside the binary.
         local found = nil
-        for _, candidate in ipairs({"pnpm-linux-x64", "pnpm-linux-arm64",
+        for _, candidate in ipairs({"pnpm-linuxstatic-x64", "pnpm-linuxstatic-arm64",
+                                    "pnpm-linux-x64", "pnpm-linux-arm64",
                                     "pnpm-macos-arm64", "pnpm-macos-x64",
                                     "pnpm-win-x64.exe", "pnpm-win-arm64.exe"}) do
             if os.isfile(candidate) then found = candidate break end
@@ -191,33 +217,17 @@ function install()
         end
         os.mv(found, path.join(dir, exe))
 
-        -- AND IT MUST NOT BE PATCHED. This one is a `pkg` single-file
-        -- executable: the JS payload is appended after the ELF image and
-        -- found by scanning back from the end of the file. `deps` above
-        -- names xim:glibc, which hands xlings' predicate-driven elfpatch a
-        -- loader provider to key off -- and patchelf rewrites the section
-        -- table, which GROWS the file (measured 2026-09-16 on
-        -- pnpm-linux-x64 7.33.7: 49,884,244 -> 49,892,436, +8192 from
-        -- `--set-rpath` alone) and the payload is then no longer where the
-        -- prelude looks. `pnpm --version` dies in the bootstrap:
+        -- No elfpatch opt-out here, and that is the point: on linux this asset
+        -- is the statically linked build (see the version table), which has no
+        -- INTERP and no .dynamic section, so patchelf refuses it and leaves it
+        -- byte-identical. macos and windows are not ELF at all. The payload is
+        -- whole on every platform because nothing rewrites it -- which for a
+        -- `pkg` single-file executable is the only way it stays whole.
         --
-        --     pkg/prelude/bootstrap.js:1
-        --     `2@
-        --     SyntaxError: Invalid or unexpected token
-        --
-        -- Exactly claude.lua's Bun binary, by exactly the same route (there
-        -- the answer is empty `deps`, which is not available here: `deps`
-        -- is per-platform, and 8+ on the same platform does want them). So
-        -- the skip is scoped to the payload that cannot survive it -- 8+
-        -- ships an ordinary node build beside `dist/` and keeps its
-        -- patching. Unpatched, this binary keeps its own absolute INTERP
-        -- and runs against the host glibc, which is what upstream's own
-        -- installer produces too.
-        --
-        -- The two deps are still installed and simply unused here. That is
-        -- the cost of a per-platform `deps` table, and it is a wasted
-        -- download rather than a wrong answer.
-        elfpatch.skip()
+        -- The `deps` above are declared per-platform and so still resolve for
+        -- this version, where nothing uses them. A wasted download rather than
+        -- a wrong answer, and the cost of a dep table that cannot name a
+        -- version.
     end
 
     local installed = path.join(dir, exe)
@@ -235,13 +245,18 @@ function config()
     local dir = pkginfo.install_dir()
     local exe = is_host("windows") and "pnpm.exe" or "pnpm"
 
-    -- The bare-executable payload is RUN once, here, because this is the
-    -- first point after elfpatch -- and because for this shape nothing
-    -- short of running it can see the damage. Every existence check passes
-    -- on a broken pkg binary; it is `--version` that reports the truth, and
-    -- an install that registered a shim for it would fail in the consumer's
-    -- terminal instead (contributing.md 5.1). The 8+ shape has a `dist/`
-    -- beside it, is an ordinary node build, and is left alone.
+    -- The bare-executable payload is RUN once, here. config() is the first
+    -- hook after elfpatch, and for this shape nothing short of running it can
+    -- see the damage: every existence check passes on a `pkg` binary whose
+    -- appended payload has been shifted out from under the prelude, and only
+    -- `--version` reports the truth. An install that registered a shim for one
+    -- would fail in the consumer's terminal instead (contributing.md 5.1).
+    --
+    -- The static asset makes that damage unconstructible rather than merely
+    -- unlikely, so this is a check on the invariant, not on a workaround: if it
+    -- ever fires, something changed about the asset or about who is allowed to
+    -- rewrite it. The 8+ shape has a `dist/` beside it, is an ordinary node
+    -- build that is SUPPOSED to be patched, and is left alone.
     if not os.isdir(path.join(dir, "dist")) then
         local prog = path.join(dir, exe)
         local out = try { function() return os.iorun('"' .. prog .. '" --version') end }
@@ -250,9 +265,9 @@ function config()
         -- answer is the shape this guard exists to catch -- name that rather
         -- than reporting it as a mismatch against the empty string.
         if reported == "" then
-            raise("pnpm: " .. prog .. " printed no version (the payload was modified after "
-                  .. "staging -- a `pkg` single-file executable cannot survive elfpatch; "
-                  .. "see install())")
+            raise("pnpm: " .. prog .. " printed no version -- the payload was modified "
+                  .. "after staging. A `pkg` single-file executable does not survive having "
+                  .. "its ELF rewritten; see the version table in this recipe.")
         end
         if reported ~= pkginfo.version() then
             raise("pnpm: " .. prog .. " reports version " .. reported

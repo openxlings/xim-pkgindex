@@ -74,8 +74,25 @@ class TestResources:
     def test_seven_is_a_bare_executable_on_every_platform(self, code):
         """7.x publishes one self-contained executable per platform, not the
         archive-plus-dist/ that 8+ ships. install() has to handle both."""
-        for asset in ("v7.33.7/pnpm-linux-x64", "v7.33.7/pnpm-macos-arm64", "v7.33.7/pnpm-win-x64.exe"):
+        for asset in ("v7.33.7/pnpm-linuxstatic-x64", "v7.33.7/pnpm-macos-arm64",
+                      "v7.33.7/pnpm-win-x64.exe"):
             assert asset in code, asset
+
+    @pytest.mark.static
+    def test_seven_on_linux_takes_the_static_asset(self, code):
+        """Upstream publishes both for this release and they are not equivalent:
+
+            pnpm-linux-x64        dynamic, INTERP -> whatever glibc the host has
+            pnpm-linuxstatic-x64  statically linked, no INTERP, no .dynamic
+
+        The dynamic one cannot be closed over this index's glibc, because
+        reaching it means letting elfpatch rewrite a `pkg` single-file
+        executable and that loses the payload appended after the ELF image.
+        The static one needs nothing from the machine at all, so it is the one
+        that makes `xlings install pnpm@7.33.7` self-contained."""
+        assert "pnpm-linuxstatic-x64" in code
+        assert "v7.33.7/pnpm-linux-x64" not in code, \
+            "the dynamic asset would depend on the host loader"
 
     @pytest.mark.static
     def test_install_handles_both_asset_shapes(self, code):
@@ -86,21 +103,21 @@ class TestResources:
         assert "chmod +x" in install, "a downloaded executable arrives without the bit"
 
     @pytest.mark.static
-    def test_only_the_bare_executable_skips_elfpatch(self, code):
-        """The 7.x asset is a `pkg` single-file executable: its JS payload sits
-        after the ELF image, so patchelf growing the file loses it. Measured
-        2026-09-16 on pnpm-linux-x64 7.33.7 -- `patchelf --set-rpath` alone took
-        49,884,244 bytes to 49,892,436 and `--version` then died in
-        pkg/prelude/bootstrap.js. claude.lua hit the same wall with a Bun binary
-        and answered it with empty `deps`; that is unavailable here because
-        `deps` is per-platform and 8+ on the same platform wants them, so the
-        skip is scoped to the branch that stages the bare executable."""
-        install = code[code.index("function install()"):code.index("function config()")]
-        seven = install[install.index("else"):]
-        assert "elfpatch.skip()" in seven, "the 7.x branch must opt out of elfpatch"
-        assert install.count("elfpatch.skip()") == 1, \
-            "8+ is an ordinary node build beside dist/ and keeps its patching"
-        assert 'import("xim.libxpkg.elfpatch")' in code
+    def test_nothing_opts_out_of_elfpatch(self, code):
+        """An opt-out would be the wrong shape of fix here.
+
+        `elfpatch.skip()` on the dynamic asset does keep the binary whole, but
+        it keeps it whole by leaving it bound to the host's glibc -- the one
+        thing a package in this index exists to avoid. The static asset removes
+        the question: patchelf refuses a file with no `.dynamic` section
+        ("cannot find section '.dynamic'") and leaves it byte-identical, so
+        there is nothing to opt out of. Verified 2026-09-16, both directions.
+
+        8+ is an ordinary node build that is supposed to be patched."""
+        body = "\n".join(line for line in code.splitlines()
+                          if not line.lstrip().startswith("--"))
+        assert "elfpatch" not in body, \
+            "the comments may explain elfpatch; the code must not call it"
 
     @pytest.mark.static
     def test_the_bare_executable_is_actually_run_after_elfpatch(self, code):
@@ -108,7 +125,7 @@ class TestResources:
         short of running the binary can see the damage -- every existence check
         passes on a broken one (contributing.md 5.1)."""
         config = code[code.index("function config()"):code.index("function uninstall()")]
-        assert '--version' in config and "os.iorun" in config
+        assert "--version" in config and "os.iorun" in config
         assert 'os.isdir(path.join(dir, "dist"))' in config, \
             "the run is scoped to the payload with no dist/, i.e. the 7.x one"
         assert "pkginfo.version()" in config, "the reported version must be compared, not just printed"
