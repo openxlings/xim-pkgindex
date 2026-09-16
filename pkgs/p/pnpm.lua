@@ -98,10 +98,18 @@ package = {
             -- and leaves it byte-identical, so no opt-out is needed and none is
             -- declared. Verified 2026-09-16, both directions.
             --
-            -- Not on the CN mirror (checked 2026-09-16): xlings-res/pnpm carries
-            -- 12.1.0 and 11.12.0 only, so this one has GLOBAL alone until it does.
+            -- CN is gitcode.com/xlings-res/pnpm, where this release was published
+            -- 2026-09-16 alongside the 12.1.0 and 11.12.0 the mirror already
+            -- carried: the three 7.33.7 assets plus a `.sha256` sidecar each,
+            -- downloaded back from GitCode and `cmp`-ed against upstream
+            -- byte-for-byte. A pinned major is exactly the case that needs a
+            -- mirror -- someone reaches for 7.33.7 because a lockfile says so,
+            -- not because they chose it.
             ["7.33.7"] = {
-                url = "https://github.com/pnpm/pnpm/releases/download/v7.33.7/pnpm-linuxstatic-x64",
+                url = {
+                    GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v7.33.7/pnpm-linuxstatic-x64",
+                    CN = "https://gitcode.com/xlings-res/pnpm/releases/download/7.33.7/pnpm-linuxstatic-x64",
+                },
                 sha256 = "69f63324da4776dafb2f2bdfcf3e69687f26280e37a55cb25f7ede15045d0c29",
             },
         },
@@ -131,9 +139,12 @@ package = {
                 sha256 = "24d412b2d137c6bc91e09c039b0e8ced6b5ac8f1dc9ea1881f0521cdb3bc5318",
             },
             -- 7.33.7: one bare executable, and macos-arm64 rather than
-            -- darwin-arm64.tar.gz. Not on the CN mirror.
+            -- darwin-arm64.tar.gz. Mirrored 2026-09-16, same release as linux.
             ["7.33.7"] = {
-                url = "https://github.com/pnpm/pnpm/releases/download/v7.33.7/pnpm-macos-arm64",
+                url = {
+                    GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v7.33.7/pnpm-macos-arm64",
+                    CN = "https://gitcode.com/xlings-res/pnpm/releases/download/7.33.7/pnpm-macos-arm64",
+                },
                 sha256 = "0e33b74ca8e2407e07f8be499e7e36531e239b81a627396f559e48270a0c012f",
             },
         },
@@ -163,9 +174,12 @@ package = {
                 sha256 = "c79329a48a5e67bbbf73578fe0ddd5ff1fef05ed8c9ce43cfdc675d4d173fa3a",
             },
             -- 7.33.7: one bare executable, `win-x64.exe` rather than
-            -- `win32-x64.zip`. Not on the CN mirror.
+            -- `win32-x64.zip`. Mirrored 2026-09-16, same release as linux.
             ["7.33.7"] = {
-                url = "https://github.com/pnpm/pnpm/releases/download/v7.33.7/pnpm-win-x64.exe",
+                url = {
+                    GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v7.33.7/pnpm-win-x64.exe",
+                    CN = "https://gitcode.com/xlings-res/pnpm/releases/download/7.33.7/pnpm-win-x64.exe",
+                },
                 sha256 = "3c1329114beedf8a3882acdd7c7bd99153afb685fc6ac34ec54a6eb69cf721f6",
             },
         },

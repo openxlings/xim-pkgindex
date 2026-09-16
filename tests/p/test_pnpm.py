@@ -51,24 +51,43 @@ class TestResources:
 
     @pytest.mark.static
     def test_mirrored_versions_carry_both_urls(self, code):
-        """12.1.0 and 11.12.0 are on xlings-res/pnpm, once per platform."""
+        """12.1.0, 11.12.0 and 7.33.7 are on xlings-res/pnpm, once per platform.
+
+        7.33.7's copies were published 2026-09-16 and its three assets carry a
+        `.sha256` sidecar each, the shape the other two already had. A version
+        someone reaches for because a lockfile pins it is exactly the one that
+        needs a mirror."""
         import re
         cn = re.findall(r'CN = "([^"]+)"', code)
-        assert len(cn) == 6, cn
+        assert len(cn) == 9, cn
         for version in ("12.1.0", "11.12.0"):
             for asset in ("pnpm-linux-x64.tar.gz", "pnpm-darwin-arm64.tar.gz", "pnpm-win32-x64.zip"):
                 url = f"https://gitcode.com/xlings-res/pnpm/releases/download/{version}/{asset}"
                 assert url in cn, url
+        for asset in ("pnpm-linuxstatic-x64", "pnpm-macos-arm64", "pnpm-win-x64.exe"):
+            url = f"https://gitcode.com/xlings-res/pnpm/releases/download/7.33.7/{asset}"
+            assert url in cn, url
 
     @pytest.mark.static
     def test_unmirrored_versions_say_so_by_having_one_url(self, code):
-        """12.0.0, 11.0.5 and 7.33.7 are not on the mirror (checked), so they
-        carry GLOBAL alone rather than a CN URL that would 404."""
+        """12.0.0 and 11.0.5 are not on the mirror (checked), so they carry
+        GLOBAL alone rather than a CN URL that would 404."""
         import re
-        for version in ("12.0.0", "11.0.5", "7.33.7"):
+        for version in ("12.0.0", "11.0.5"):
             block = re.search(r'\["' + re.escape(version) + r'"\] = \{(.*?)\n            \},', code, re.S)
             assert block, version
             assert "CN =" not in block.group(1), f"{version} claims a mirror it is not on"
+
+    @pytest.mark.static
+    def test_the_mirrored_seven_assets_are_the_ones_the_recipe_downloads(self, code):
+        """A CN URL naming a different asset than GLOBAL would pass every static
+        check and then fail the sha256 at install time, in China only."""
+        import re
+        for block in re.findall(r'url = \{(.*?)\},', code, re.S):
+            g = re.search(r'GLOBAL = "([^"]+)"', block)
+            c = re.search(r'CN = "([^"]+)"', block)
+            assert g and c, block
+            assert g.group(1).rsplit("/", 1)[1] == c.group(1).rsplit("/", 1)[1], block
 
     @pytest.mark.static
     def test_seven_is_a_bare_executable_on_every_platform(self, code):
