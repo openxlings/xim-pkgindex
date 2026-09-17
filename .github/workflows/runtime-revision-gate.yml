@@ -1,0 +1,155 @@
+name: runtime revision gate
+
+# mcpp-community/mcpp#660: a package whose descriptor declares a C-runtime
+# binding (`exports = { runtime = { abi = ... } }` -- today glibc and musl)
+# moving its `["latest"] = { ref = ... }` broke consumers whose CI restores
+# only the xpkgs payload store from cache. A fresh install cannot see this
+# class of defect: it resolves the CURRENT index once and downloads exactly
+# what it names, so there is no earlier revision on disk for a new one to
+# disagree with. The only build shape that reproduces the incident is one
+# that (1) resolves the OLD revision once, so a toolchain is patched against
+# it, and then (2) resolves the NEW revision with xlings' own version-tracking
+# state gone -- as a cache action scoped to the payload directory would
+# leave it -- while the old payload directory is still on disk. See
+# .github/scripts/runtime-revision-gate.sh for the two-leg build itself and
+# .agents/docs/2026-09-17-issue-660-glibc-line-binding-analysis.md for the
+# incident detail.
+#
+# This workflow is a no-op for an ordinary pull request: the detect job runs
+# on every `pkgs/**` change, and the build job below it runs only when a
+# runtime-declaring package's latest revision actually moved between the
+# pull request's base and head.
+
+on:
+  pull_request:
+    paths:
+      - 'pkgs/**'
+  workflow_dispatch:
+    inputs:
+      mcpp_version:
+        description: >
+          Released mcpp version (e.g. 2026.9.17.1) to build the two legs
+          with. Empty uses this index's own latest mcpp (pkgs/m/mcpp.lua).
+        required: false
+        default: ''
+
+concurrency:
+  group: runtime-revision-gate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Detection is by the FIELD a descriptor declares, not by the package name
+  # `glibc` -- musl carries the same `exports.runtime.abi` shape, and this
+  # job would catch a move there identically. It always runs, and reports "no
+  # runtime revision moved" as a successful no-op when nothing in the pull
+  # request's `pkgs/**` diff is this class of change.
+  detect:
+    runs-on: ubuntu-24.04
+    outputs:
+      moved: ${{ steps.detect.outputs.moved }}
+      packages: ${{ steps.detect.outputs.packages }}
+      base_sha: ${{ steps.refs.outputs.base_sha }}
+      head_sha: ${{ steps.refs.outputs.head_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve the two commits to compare
+        id: refs
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "base_sha=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
+            echo "head_sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            # workflow_dispatch has no pull request to diff. Compare the
+            # dispatched commit against its own parent, so a manual run (for
+            # example, re-running this gate against the commit that is known
+            # to have moved a revision, to confirm a fix) has a base at all.
+            echo "base_sha=$(git rev-parse HEAD~1)" >> "$GITHUB_OUTPUT"
+            echo "head_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Detect a moved runtime revision
+        id: detect
+        run: |
+          python3 .github/scripts/detect-runtime-revision-move.py \
+            --repo . \
+            --base "${{ steps.refs.outputs.base_sha }}" \
+            --head "${{ steps.refs.outputs.head_sha }}" \
+            --github-output "$GITHUB_OUTPUT"
+
+  # The class of build the detect job above found a reason to run: build the
+  # OLD revision, throw away everything a CI cache would not have restored,
+  # then build the NEW revision in what is left. See
+  # .github/scripts/runtime-revision-gate.sh for the full design rationale.
+  gate:
+    needs: detect
+    if: needs.detect.outputs.moved == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: What moved
+        run: |
+          echo '${{ needs.detect.outputs.packages }}' | python3 -m json.tool
+
+      # Two on-disk checkouts of this index, at the base and head commits
+      # `detect` resolved above -- the two trees runtime-revision-gate.sh
+      # points mcpp's index override at, one leg each.
+      - name: Base and head index trees
+        id: trees
+        run: |
+          set -euo pipefail
+          git worktree add --detach "$RUNNER_TEMP/index-base" "${{ needs.detect.outputs.base_sha }}"
+          git worktree add --detach "$RUNNER_TEMP/index-head" "${{ needs.detect.outputs.head_sha }}"
+          echo "base_dir=$RUNNER_TEMP/index-base" >> "$GITHUB_OUTPUT"
+          echo "head_dir=$RUNNER_TEMP/index-head" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve the mcpp version to build with
+        id: mcpp_version
+        run: |
+          set -euo pipefail
+          v="${{ inputs.mcpp_version }}"
+          if [ -z "$v" ]; then
+            v="$(python3 .github/scripts/print-latest-ref.py pkgs/m/mcpp.lua --platform linux)"
+          fi
+          echo "mcpp version: $v"
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+
+      # The released mcpp, with its own vendored xlings -- the same asset
+      # layout .github/scripts/consumer-through-index-override.sh downloads,
+      # for the same reason: mcpp's private home (MCPP_HOME below) is driven
+      # by the xlings that ships beside a given mcpp release, so no system
+      # xlings is installed.
+      - name: Install the released mcpp
+        run: |
+          set -euo pipefail
+          version="${{ steps.mcpp_version.outputs.version }}"
+          asset="mcpp-$version-linux-x86_64"
+          curl -fsSL --retry 3 --retry-all-errors -o "$RUNNER_TEMP/mcpp.tar.gz" \
+            "https://github.com/mcpp-community/mcpp/releases/download/v$version/$asset.tar.gz"
+          tar -xzf "$RUNNER_TEMP/mcpp.tar.gz" -C "$RUNNER_TEMP"
+          mcpp_bin="$RUNNER_TEMP/$asset/bin/mcpp"
+          xlings_bin="$RUNNER_TEMP/$asset/registry/bin/xlings"
+          test -x "$mcpp_bin" && test -x "$xlings_bin" \
+            || { echo "::error::the mcpp tarball lacks bin/mcpp or its vendored xlings"; exit 1; }
+          "$mcpp_bin" --version
+          echo "MCPP=$mcpp_bin"                     >> "$GITHUB_ENV"
+          echo "MCPP_VENDORED_XLINGS=$xlings_bin"    >> "$GITHUB_ENV"
+
+      - name: Run the two-leg gate
+        env:
+          BASE_TREE: ${{ steps.trees.outputs.base_dir }}
+          HEAD_TREE: ${{ steps.trees.outputs.head_dir }}
+          MCPP_HOME: ${{ runner.temp }}/mcpp-home
+          MCPP_MIRROR: GLOBAL
+        run: bash .github/scripts/runtime-revision-gate.sh
