@@ -347,6 +347,32 @@ function __install_linux_cfg()
     return true
 end
 
+-- Ask `xcrun` for the SDK path `xcode-select` has active. This is the
+-- canonical query -- the same one mcpp's own SDK selection uses first
+-- (modules/platform/src/macos/macos.cppm, sdk_path()) -- and on a runner
+-- that carries an Xcode.app it answers with THAT SDK, not necessarily the
+-- Command Line Tools one.
+--
+-- Checking the fixed CommandLineTools path unconditionally, before asking
+-- xcrun, picked a broken SDK on the GitHub xcode-27 image: its .tbd files
+-- list an `arm64e.x1` architecture that ld64.lld 22.1.8 cannot parse
+-- (upstream support landed in llvm-project#222721, after 22.1.8), so every
+-- link against a clang++ built from this cfg failed with
+-- "could not load TAPI file ... malformed file" -- even a compile that
+-- itself passed a working `-isysroot` on its own command line, because on
+-- Darwin `-isysroot` only redirects header search; the linker's syslibroot
+-- follows `--sysroot`, which is exactly what this cfg writes.
+local function __xcrun_sdk_path()
+    local f = io.popen("xcrun --show-sdk-path 2>/dev/null")
+    if not f then return nil end
+    local out = f:read("*l")
+    f:close()
+    if out and out ~= "" and os.isdir(out) then
+        return out
+    end
+    return nil
+end
+
 function __install_macosx_cfg()
     local cxxinc = path.join(pkginfo.install_dir(), "include", "c++", "v1")
     local sdkroot = nil
@@ -355,6 +381,10 @@ function __install_macosx_cfg()
     if env_sdkroot and env_sdkroot ~= "" and os.isdir(env_sdkroot) then
         sdkroot = env_sdkroot
     else
+        sdkroot = __xcrun_sdk_path()
+    end
+
+    if not sdkroot then
         local candidates = {
             "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
             "/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk",
