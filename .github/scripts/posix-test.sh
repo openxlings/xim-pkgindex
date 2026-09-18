@@ -466,7 +466,24 @@ for rel_file in "${files[@]}"; do
                     info "install dir present but no version subdir: $dir"
                 fi
             else
-                while IFS= read -r v; do log_pass "install dir: $v"; done <<< "$versions"
+                while IFS= read -r v; do
+                    log_pass "install dir: $v"
+                    # Dump any compiler driver cfg file the install wrote
+                    # (clang.cfg / clang++.cfg and friends -- see llvm.lua's
+                    # __install_macosx_cfg / __install_linux_cfg). These are
+                    # the actual sysroot/link flags a compiled program gets;
+                    # printing them here, before the uninstall step below
+                    # removes them, is the only place in this job's log a
+                    # reviewer can see what was chosen rather than trust that
+                    # it worked. Generic on purpose: whatever future package
+                    # writes a *.cfg into its own bin/ gets the same log line,
+                    # not just this one.
+                    for cfg in "$v"/bin/*.cfg; do
+                        [[ -f "$cfg" ]] || continue
+                        info "$(basename "$cfg"):"
+                        while IFS= read -r cfgline; do info "    $cfgline"; done < "$cfg"
+                    done
+                done <<< "$versions"
                 [[ -n "$installed_version" ]] || installed_version=$(basename "$(printf '%s\n' "$versions" | head -1)")
             fi
         done <<< "$install_dirs"
