@@ -56,6 +56,34 @@ missing value is a second author of that value.
 > in anything that consumes a record is a violation, regardless of how good the
 > guess is.
 
+**"Not observed" is a value, and it is not the empty value.** The most common
+shape of this violation is not a guess at all — it is a reader that collapses
+"I could not read it" into "it is empty":
+
+```
+if not exists(path) then return {} end          -- violation
+if parse_failed  then return {} end             -- violation
+```
+
+An empty record is a legitimate state (a freshly created scope has nothing in
+it). "Could not be read" is not that state, and a consumer that DELETES things
+on the strength of the record cannot tell them apart.
+
+> **Criterion.** "Not observed" must travel as its own value, all the way to
+> the consumer. Any consumer that removes state must refuse to act on it. The
+> refusal is binary — observed or not — never a threshold: "it wanted to delete
+> suspiciously many, so don't" is a new heuristic, i.e. a second answerer to the
+> question R3 exists to keep singular.
+
+xlings' shim routing table failed this. It is a DERIVED table — rebuilt from the
+workspace rather than audited against it, which is correct — and that means an
+input of "nothing" derives "remove everything". An unreadable workspace file
+returned an empty workspace, and 172 routing entries were removed from a real
+home; the tool then reported them as missing (openxlings/xlings#582, #604).
+The same codebase had already implemented the rule correctly for the *other*
+input of the very same function, and independently rediscovered it a third time
+elsewhere — which is what a missing rule looks like from the inside.
+
 ### R3 — delete an answerer, do not reconcile answerers
 
 > **Criterion.** If a fix ADDS a path rather than REMOVING one, it is a
@@ -127,6 +155,13 @@ answerers then grows with the number of readers. Write one of:
 `XLINGS_HOME` is the same sentence in another form ("unset means
 `$HOME/.xlings`"), and it produced four independent computations of "where is
 the home" that agreed only because of the default.
+
+Two questions that *read* alike are the same trap. "Which scope does this
+command act on" and "which scope is the global one" have the same answer
+outside a project and different answers inside one; they were spelled with the
+same expression, and the one that meant "global" silently read the project's
+scope instead (openxlings/xlings#582). Name each question once, and let exactly
+one function answer it.
 
 ### Privileged declarations
 
