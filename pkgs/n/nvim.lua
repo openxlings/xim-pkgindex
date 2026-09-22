@@ -84,6 +84,13 @@ package = {
                     aarch64 = "51ab83afa66d663627c2ab1be43209b0f4e81360d4598b53efaa4d8195f24c89",
                 },
             },
+            ["0.12.2"] = {
+                arch_alias = { x86_64 = "x86_64", aarch64 = "arm64" },
+                sha256 = {
+                    x86_64 = "728321db960a9b6af6c03881892a6abfd743bf759bc62d233f52fa1be64ace3c",
+                    aarch64 = "eeddee1009734f9071266e6b1b8a70308cb60cbcc45f5e1c1023adc471450fee",
+                },
+            },
             ["0.11.5"] = {
                 arch_alias = { x86_64 = "x86_64", aarch64 = "arm64" },
                 sha256 = {
