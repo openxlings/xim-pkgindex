@@ -225,11 +225,35 @@ function __prune_stale_fixincludes()
     -- and grep does the recursion and the file discrimination in one call -- so
     -- there is nothing left to get wrong about the traversal.
     --
-    -- `|| true` because grep exits 1 when it matches nothing, which is the
-    -- healthy case here, and os.iorun raises on a non-zero exit.
+    -- No outer `sh -c` wrapper and no trailing `|| true`.
+    --
+    -- os.iorun does not raise on a non-zero exit, in either libxpkg
+    -- implementation: the Lua-prelude form (src/lua-stdlib/prelude.lua:182)
+    -- is `io.popen(cmd .. " 2>/dev/null")`, which returns whatever the
+    -- command wrote to stdout regardless of its exit status; the C++-executor
+    -- form (src/xpkg-executor.cppm:311-339) is
+    -- `std::system(cmd .. ' 2>/dev/null > "<tmp>"')` followed by reading that
+    -- temp file back, which likewise never inspects the exit code. grep
+    -- exiting 1 when it matches nothing -- the healthy case here -- was
+    -- therefore never something either caller needed guarding against.
+    --
+    -- `|| true` is not merely unneeded: appended without an enclosing quoted
+    -- `sh -c '...'`, it actively breaks the executor variant, because shell
+    -- redirection following `A || B` binds to B alone. The temp-file redirect
+    -- `os.iorun` appends would then capture only `true`'s (empty) output, and
+    -- a real match would never reach the file it reads back.
+    --
+    -- The previous form wrapped the whole pipeline in `sh -c '...'` and fed
+    -- it single-quoted %s substitutions, which nests single quotes inside
+    -- single quotes. A shell cannot escape a quote with another quote of the
+    -- same kind, so the outer shell split the string on those characters and
+    -- handed the inner `grep` neither the banner nor `root` as an operand;
+    -- with no file argument, GNU grep -r searched the process's CURRENT
+    -- WORKING DIRECTORY instead of the payload, so the prune was silently
+    -- inert -- it neither pruned the payload nor raised anything that would
+    -- have said so.
     local out = os.iorun(string.format(
-        "sh -c 'grep -rlF %s %s 2>/dev/null || true'",
-        __shq(banner), __shq(root)))
+        "grep -rlF %s %s", __shq(banner), __shq(root)))
 
     local pruned = 0
     for _, line in ipairs((out or ""):split("\n", { plain = true })) do
@@ -244,6 +268,13 @@ function __prune_stale_fixincludes()
                      .. " (see #560) -- the sysroot's own copy now wins")
         end
     end
+
+    -- Always logged, including the zero case: this is what lets an install
+    -- log tell "the search ran and found nothing" (this line, pruned = 0)
+    -- apart from "the search never ran" (no line at all, e.g. because `root`
+    -- was not a directory and the function returned above).
+    log.info("gcc: fixincludes prune searched " .. root .. ", removed "
+             .. pruned .. " header(s)")
 
     -- Deliberately not an error when zero: a payload built with a fixincludes
     -- that found nothing to fix is the healthy case, not a missing fix. 16.1.0 is
