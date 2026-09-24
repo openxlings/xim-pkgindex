@@ -51,8 +51,10 @@
 -- CN     = gitcode.com/xlings-res/codex, a byte-identical copy under the
 --          same filenames (tag drops the `rust-v` prefix), so mainland
 --          China installs don't go through github.com. Only the version
---          `latest` points at is mirrored — the six assets run
---          ~120-146 MB each.
+--          `latest` points at gets a new mirror — the six assets run
+--          ~120-155 MB each. Previously mirrored versions keep their CN
+--          entry (the assets stay up), so 0.146.1 still resolves through
+--          the mirror too.
 
 local _CODEX_GH = "https://github.com/openai/codex/releases/download"
 local _CODEX_CN = "https://gitcode.com/xlings-res/codex/releases/download"
@@ -132,7 +134,10 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "0.146.1" },
+            ["latest"] = { ref = "0.156.1" },
+            ["0.156.1"] = _linux("0.156.1",
+                "8b711520beddf385467b8da4d2c93736637c6ba1e46811cf0d8606b7c490b6f6",
+                "fdd47ed6aade0360796fd3f6f95a45096f327c15e19e8c7339f9dc5633041786", true),
             ["0.146.1"] = _linux("0.146.1",
                 "15d9b6aaa47ee02743266581f8ab96b6049e3a2a13a82fbd7920745ba9fc34cb",
                 "a72b2bd37dd69ece77f5584a418bc34ecfa4b28e769727134a1d604b4b2b8e5f", true),
@@ -148,7 +153,10 @@ package = {
                 "7a77d416f9ce16f18e09fdc57622a15aab6ad131c34e078ab9d55a13bb3d9b05"),
         },
         macosx = {
-            ["latest"] = { ref = "0.146.1" },
+            ["latest"] = { ref = "0.156.1" },
+            ["0.156.1"] = _macosx("0.156.1",
+                "618dbcd55419fa041871f777a14b107ceb3fe2d339ef81e21e6ab5374420dc71",
+                "fea42f9625091f011e38f059da974d52e57ba31831648bb1c7f0b1a385fde547", true),
             ["0.146.1"] = _macosx("0.146.1",
                 "5b61e447baa14747e1ea6ad10ad8fca1f8ef0d5e11f53ca88a144bf52cf12e06",
                 "a0be385972f38d02e81f9b40de1f842daf8354636fc295666b8630d2f6a5aec6", true),
@@ -163,7 +171,10 @@ package = {
                 "7da572ce5631deccb8b05c4cb4bbb608d65d5b3197f5e2c79fa7a156c02fc6d6"),
         },
         windows = {
-            ["latest"] = { ref = "0.146.1" },
+            ["latest"] = { ref = "0.156.1" },
+            ["0.156.1"] = _windows("0.156.1",
+                "a2e017db9807e6a2269a26fea0e1d9546469cef4d472a33016bc9f3ad7d3b733",
+                "85994caecdc7609c49fd585c1cdb5677fa9d0acbf789650cff23a13afc9505db", true),
             ["0.146.1"] = _windows("0.146.1",
                 "6b26524c4287564a2c6c3511e73dcd32ea3c8c0a994cc1caa731b63f7844c8b6",
                 "2048300c1572b94d3809df3c852e46c391ce702d70b08212557432749b994f49", true),

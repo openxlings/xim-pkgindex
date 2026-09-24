@@ -19,11 +19,11 @@
 --   https://downloads.claude.ai/claude-code-releases/<version>/manifest.json
 --     carries the authoritative per-platform sha256. Every hash below was
 --     taken from there; the ones for the mirrored versions (2.1.222,
---     2.1.258) were re-verified against the downloaded bytes before the CN
---     mirror was published.
+--     2.1.258, 2.1.281) were re-verified against the downloaded bytes
+--     before the CN mirror was published.
 --
---   https://downloads.claude.ai/claude-code-releases/latest  -> "2.1.258"
---   https://downloads.claude.ai/claude-code-releases/stable  -> "2.1.236"
+--   https://downloads.claude.ai/claude-code-releases/latest  -> "2.1.281"
+--   https://downloads.claude.ai/claude-code-releases/stable  -> "2.1.273"
 --
 -- Linux deliberately uses the **glibc** asset, not `linux-x64-musl`: the
 -- musl one is not static, it is dynamically linked against
@@ -79,7 +79,7 @@
 --          new mirror — each asset is ~200-280 MB, and older pins are rare
 --          enough not to be worth ~1.3 GB of mirror per release. Previously
 --          mirrored versions keep their CN entry (the assets stay up), so
---          2.1.222 still resolves through the mirror too.
+--          2.1.222 and 2.1.258 still resolve through the mirror too.
 
 local _CC_GLOBAL = "https://downloads.claude.ai/claude-code-releases"
 local _CC_CN = "https://gitcode.com/xlings-res/claude/releases/download"
@@ -156,12 +156,19 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "2.1.258" },
+            ["latest"] = { ref = "2.1.281" },
+            ["2.1.281"] = _linux("2.1.281",
+                "56fe3da88458465fb27d7e9299dddb3fead55750fb9c2de795f233b5eea6dce1",
+                "dd27b36438a4fed1670cd29bad2fda6a73b628b6da55443e5c2f647fe6ed328f", true),
+            -- 2.1.273 is upstream's `stable` channel head; kept as a pin
+            -- for anyone who wants the slower-moving line.
+            ["2.1.273"] = _linux("2.1.273",
+                "6c752e2cc7c110c9df15f26d8d134d438c5ae95dbd610efc1a308bf7f9c5f6c1",
+                "103cfab4d6ae898b6af692336fb662ffcc607075cc6408892bd350b3f549ebee"),
             ["2.1.258"] = _linux("2.1.258",
                 "704f1334ac65d3e89e1c6c1d7663293ad786a6166afdb71b5075337df630f976",
                 "43dc490af55262edcb3e9b1cb315de22cc09ccb08bd52a4c39bc5eabaa63100f", true),
-            -- 2.1.236 is upstream's `stable` channel head; kept as a pin
-            -- for anyone who wants the slower-moving line.
+            -- `stable`'s head back when 2.1.258 was the latest pin.
             ["2.1.236"] = _linux("2.1.236",
                 "6c8818fa22187aa555c242be4abbacc44d6b71a32ac9631ee7b2b5d12f51f752",
                 "c38d37deaf1643083326c48a6acc0afb09dada126e6bda77ef1a4410ae60ca12"),
@@ -195,7 +202,13 @@ package = {
                 "1fec8c8369606b4a6c00af963354b7d48aee793ed5db378fe4cf280149f3190a"),
         },
         macosx = {
-            ["latest"] = { ref = "2.1.258" },
+            ["latest"] = { ref = "2.1.281" },
+            ["2.1.281"] = _macosx("2.1.281",
+                "a9355cbb0d291ce948efcf61a6ef397401672f64fa5e5e67bca092fed6cd9088",
+                "a922981f6f3b55a251ef9f9dbaa0621a5f99cbcb5ca67f8a797476ccfc83f626", true),
+            ["2.1.273"] = _macosx("2.1.273",
+                "2030ecf911e301e778b3c5a49068d6751384c830e48ea14f11eb61dd23622cee",
+                "953e9880dbcb0b70f31c1f508de6a3fd389753d131688557fd992da9184693fb"),
             ["2.1.258"] = _macosx("2.1.258",
                 "c857db5cd712865623bd61e806cf3f7e8e279c9e5c7c0af5eca06ca6717fc7fb",
                 "b63136194160791c27cfa7b0403060d85eb0752991625fde8c09f9acacb17c78", true),
@@ -231,7 +244,13 @@ package = {
                 "2e8667322e0bd104087df2a8857f176acc75d7091aa02828825dfeb4a5708531"),
         },
         windows = {
-            ["latest"] = { ref = "2.1.258" },
+            ["latest"] = { ref = "2.1.281" },
+            ["2.1.281"] = _windows("2.1.281",
+                "39be063c2512b43347fe7b0ab18c46f1596141701c9c5fc895ddfca9a051067c",
+                "103730182fe4dd36b8ff7791a408ac6144b2c40e35ab7b56b3561ce1d385ecbb", true),
+            ["2.1.273"] = _windows("2.1.273",
+                "19654006672b6da7c945115eea99ca10051796016df563a65b3f0c7d72720ef0",
+                "1257608d7a34515d98c23a6884fbe658195f2de430ae1679f047f4d8afda20d6"),
             ["2.1.258"] = _windows("2.1.258",
                 "22f5f3a44093e14c75a4d1c8ce25c730b21dd634318fbe3268e9057d12b17c41",
                 "42675c431b6014ad7243fea0ed0e371045dedc89d94aac81a9a0f528e644ed97", true),
