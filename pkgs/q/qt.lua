@@ -578,14 +578,12 @@ function installed()
     local osname = os.host()
     local exe = osname == "windows" and ".exe" or ""
 
-    -- qtbase's build-time tools -- MEASURED (2026-09-26, linux-x86_64): Qt6
-    -- puts moc/uic/rcc under libexec/, not bin/ (the QT_HOST_PATH split
-    -- introduced for cross-compilation; bin/ keeps only the GUI-facing tools
-    -- -- assistant, designer, linguist, qmake, ...). Not independently
-    -- verified on windows/macosx by this author; if either ships moc under
-    -- bin/ instead, this check fails closed there rather than silently
-    -- passing on the wrong path.
-    if not os.isfile(path.join(d, "libexec", "moc" .. exe)) then return false end
+    -- qtbase's build-time tools. MEASURED: on linux and macosx Qt 6 puts
+    -- moc/uic/rcc under libexec/ (bin/ keeps the user-facing tools); on
+    -- windows they stay in bin/ -- this index's windows-test failed this
+    -- check against a complete install while it looked in libexec/ there.
+    local tools = osname == "windows" and "bin" or "libexec"
+    if not os.isfile(path.join(d, tools, "moc" .. exe)) then return false end
     -- qttranslations
     if not os.isfile(path.join(d, "bin", "lrelease" .. exe)) then return false end
 
