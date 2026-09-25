@@ -86,6 +86,47 @@ $skipped  = 0
 # Best-effort.
 & $xlingsCmd config --index-repo "scode:https://github.com/openxlings/xim-pkgindex-scode.git" 2>&1 | Out-Null
 
+# A PACKAGE THE PR ADDS, OVERLAID INTO THE xim INDEX -- the Windows half of
+# posix-test.sh's `overlay_recipe` (see its comment for the measurement behind
+# it, xim-pkgindex#680). A new recipe registered through `--add-xpkg` resolves
+# only as `local:<name>`, so a second new recipe in the same PR that depends on
+# it as `xim:<name>` fails with "package 'xim:<name>' not found" -- measured on
+# the PR that adds qt and qt-addons together. Copying the recipe into the
+# index tree and dropping the index's entry cache makes it resolve as
+# `xim:<name>`; when it still does not, the caller falls back to `--add-xpkg`.
+$indexDir = Join-Path $xlingsHome "data\xim-pkgindex"
+function Add-RecipeOverlay([string]$relFile) {
+    if (-not (Test-Path $indexDir -PathType Container)) { return $false }
+    $dst = Join-Path $indexDir $relFile
+    $isNew = -not (Test-Path $dst)
+    New-Item -ItemType Directory -Force -Path (Split-Path $dst) | Out-Null
+    Copy-Item -Force (Join-Path $WorkspaceRoot $relFile) $dst
+    if (-not $isNew) { return $true }
+    Remove-Item -Force -ErrorAction SilentlyContinue (Join-Path $indexDir ".xlings-index-cache.json")
+    $name = [System.IO.Path]::GetFileNameWithoutExtension($relFile)
+    $found = (& $xlingsCmd search $name 2>$null | Out-String) -match "xim:$([regex]::Escape($name))\b"
+    if ($found) { return $true }
+    Remove-Item -Force -ErrorAction SilentlyContinue $dst
+    return $false
+}
+
+# The PR's libs/ go with its recipes, as in posix-test.sh: an overlaid recipe
+# imports `xim.pkgindex.*` from the index it sits in.
+if ((Test-Path (Join-Path $WorkspaceRoot "libs")) -and (Test-Path $indexDir -PathType Container)) {
+    New-Item -ItemType Directory -Force -Path (Join-Path $indexDir "libs") | Out-Null
+    Copy-Item -Force -ErrorAction SilentlyContinue (Join-Path $WorkspaceRoot "libs\*.lua") (Join-Path $indexDir "libs")
+}
+
+# Every changed recipe is placed before any is installed, so a dependency the
+# PR adds resolves whichever order the files are tested in.
+foreach ($f in $files) {
+    $rel = $f -replace '/', '\'
+    if (-not (Test-Path (Join-Path $WorkspaceRoot $rel))) { continue }
+    if (-not (Add-RecipeOverlay $rel)) {
+        & $xlingsCmd config --add-xpkg (Join-Path $WorkspaceRoot $rel) 2>&1 | Out-Null
+    }
+}
+
 # Run xlings with a wall-clock limit, and make a hang report itself.
 #
 # `& $xlingsCmd install ... | Write-Host` has no timeout. When a hook blocks --
@@ -216,12 +257,18 @@ foreach ($relFile in $files) {
     }
 
     # --- register ---
+    # Overlay wins; `--add-xpkg` is the fallback, and `pkgNs` follows whichever ran.
     Log-Step "[$pkg] register (type=$pkgType)"
-    & $xlingsCmd config --add-xpkg $luaFile 2>&1 | Write-Host
-    if ($LASTEXITCODE -ne 0) {
-        Log-Fail "config --add-xpkg failed"
-        $failures += "$relFile (register)"
-        continue
+    if (Add-RecipeOverlay ($relFile -replace '/', '\')) {
+        if ($pkgNs -eq "local") { $pkgNs = "xim" }
+        Log-Info "overlaid into the index as ${pkgNs}:${pkg}"
+    } else {
+        & $xlingsCmd config --add-xpkg $luaFile 2>&1 | Write-Host
+        if ($LASTEXITCODE -ne 0) {
+            Log-Fail "config --add-xpkg failed"
+            $failures += "$relFile (register)"
+            continue
+        }
     }
 
     # `namespace = "config"` is not a package — it's a bundle of system-side
