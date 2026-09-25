@@ -71,12 +71,36 @@ local ROOT = "."
 -- to be empty most of the time.
 local EXEMPT = {
     -- ["pkgs/g/godot.lua"] = { ["graphics"] = "#540, remove once published" },
-    ["pkgs/x/xmake.lua"] = { ["ncurses"] = "#582, new in this PR; remove once published" },
 }
 
 local function is_exempt(file, name)
     local entry = EXEMPT[file]
     return entry ~= nil and entry[name] ~= nil
+end
+
+-- ── ...and the expiry is checked, not remembered ───────────────────────
+-- "Remove once published" was a promise the list could not keep on its own:
+-- xmake's ncurses entry (#582) outlived publication by seven weeks, and the
+-- bare name it licensed broke `xlings install xmake` for every home that
+-- lists `scode` as a peer index (scode ships its own `ncurses`).
+--
+-- "Published" is decidable: the exempted package's recipe exists on the
+-- branch this change is measured against. The wrapper passes that ref in
+-- DEP_NS_BASE_REF -- the PR's base on pull_request, HEAD~1 on push, which
+-- is main-before-this-merge for a squash. On the PR that ADDS the package
+-- the recipe is absent from the base, so the exemption holds; on any later
+-- change it is present, and the exemption fails with the fix spelled out.
+--
+-- Unset means "not measured", and is said out loud rather than read as
+-- "not published" -- a check that cannot look must not report a clean pass
+-- for the thing it did not look at.
+local BASE_REF = os.getenv("DEP_NS_BASE_REF")
+if BASE_REF == "" then BASE_REF = nil end
+
+local function on_base(root, relpath)
+    local cmd = string.format("git -C '%s' cat-file -e '%s:%s' 2>/dev/null",
+                              root, BASE_REF, relpath)
+    return os.execute(cmd) == true
 end
 
 -- ── the sandbox ────────────────────────────────────────────────────────
@@ -325,7 +349,7 @@ end
 local function mode_check(root)
     local provided = index_packages(root)
     local facts = index_facts(root)
-    local violations, unresolved, exempted = {}, {}, {}
+    local violations, unresolved, exempted, expired = {}, {}, {}, {}
     local wrong_ns, no_plat = {}, {}
     local seen = 0
 
@@ -352,8 +376,14 @@ local function mode_check(root)
         if not provided[name] then
             unresolved[#unresolved + 1] = { row = row, name = name }
         elseif is_exempt(row.file, name) then
-            exempted[#exempted + 1] = { row = row, name = name,
-                                        why = EXEMPT[row.file][name] }
+            if BASE_REF and on_base(root, provided[name]) then
+                expired[#expired + 1] = { row = row, name = name,
+                                          path = provided[name],
+                                          why = EXEMPT[row.file][name] }
+            else
+                exempted[#exempted + 1] = { row = row, name = name,
+                                            why = EXEMPT[row.file][name] }
+            end
         else
             violations[#violations + 1] = { row = row, name = name, path = provided[name] }
         end
@@ -398,10 +428,23 @@ local function mode_check(root)
             v.name, table.concat(list, ", "), r.platform, r.platform, v.name))
     end
 
+    for _, e in ipairs(expired) do
+        local r = e.row
+        io.write(string.format(
+            "::error file=%s::dep `%s` is exempted as not-yet-published (%s), but `%s` is already "
+            .. "on %s (%s). The exemption has expired: write `xim:%s` here and delete the entry "
+            .. "from EXEMPT in check-dep-namespace.lua.\n",
+            r.file, r.dep, e.why, e.name, BASE_REF, e.path, e.name))
+    end
+
     if #exempted > 0 then
         io.write(string.format("note: %d bare dep(s) exempted as not-yet-published:\n", #exempted))
         for _, e in ipairs(exempted) do
             io.write(string.format("  %s  %s  (%s)\n", e.row.file, e.row.dep, e.why))
+        end
+        if not BASE_REF then
+            io.write("note: DEP_NS_BASE_REF is unset, so whether these packages are already "
+                     .. "published was NOT checked\n")
         end
     end
 
@@ -417,11 +460,11 @@ local function mode_check(root)
         end
     end
 
-    if #bad > 0 or #violations > 0 or #wrong_ns > 0 or #no_plat > 0 then
+    if #bad > 0 or #violations > 0 or #wrong_ns > 0 or #no_plat > 0 or #expired > 0 then
         io.write(string.format(
-            "xpkg dep check: FAIL (%d bare, %d wrong-namespace, %d platform-missing, "
-            .. "%d unreadable recipe(s))\n",
-            #violations, #wrong_ns, #no_plat, #bad))
+            "xpkg dep check: FAIL (%d bare, %d expired exemption(s), %d wrong-namespace, "
+            .. "%d platform-missing, %d unreadable recipe(s))\n",
+            #violations, #expired, #wrong_ns, #no_plat, #bad))
         return 1
     end
     -- The count is part of the result on purpose. A check that read nothing
