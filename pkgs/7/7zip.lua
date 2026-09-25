@@ -3,7 +3,7 @@ package = {
 
     homepage = "https://www.7-zip.org",
     name = "7zip",
-    description = "7-Zip — a file archiver with a high compression ratio",
+    description = "7-Zip — a file archiver with a high compression ratio; on windows the install directory also carries 7z.dll for programs (e.g. via bit7z) that link the 7-Zip library instead of shelling out to the CLI",
 
     authors = {"Igor Pavlov"},
     licenses = {"LGPL-2.1-or-later"},
@@ -26,6 +26,22 @@ package = {
     -- arches), and self-extracting 7z archives (the `.exe` installers) on
     -- windows. Every sha256 below was verified by downloading the asset and
     -- hashing it; no xlings-res mirror exists for this upstream.
+    --
+    -- WINDOWS ALSO CARRIES 7z.dll. The `.exe` asset is upstream's official
+    -- full installer (not a console-only distribution), and its silent
+    -- install below (`/S /D=`) lays down `7z.dll` at the install root
+    -- alongside `7z.exe` -- the shared library upstream ships for programs
+    -- that link 7-Zip instead of shelling out to it (e.g. via bit7z), with
+    -- every format 7-Zip itself reads, including RAR extraction. This is a
+    -- STATED CONVENTION of this recipe: a consumer that wants the library
+    -- reads it from `<install_dir>/7z.dll`, not from PATH. Licence for that
+    -- code is LGPL-2.1-or-later, WITH the unRAR restriction on the RAR
+    -- decoder specifically (upstream's own DOC/License.txt) -- linking
+    -- 7z.dll does not waive that restriction.
+    --
+    -- Linux/macOS upstream ships only the `7zz` CLI binary; there is no
+    -- shared library asset on those platforms (no `lib7zip.so`/`.dylib` in
+    -- the archives below), so this is a Windows-only distinction.
     xpm = {
         linux = {
             ["latest"] = { ref = "26.02" },
