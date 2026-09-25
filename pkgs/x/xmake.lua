@@ -84,18 +84,22 @@ package = {
             -- xmake-adjacent binary crashing on that gap. In form H both
             -- resolve from host SONAMEs and look redundant.
             --
-            -- Bare name for ncurses, not `xim:ncurses`, deliberately: ncurses
-            -- entered the index recently enough that check-dep-namespace.lua
-            -- still carries it as a not-yet-published exemption, and a name the
-            -- compiled catalog lacks cannot be served by CI's overlay (a miss
-            -- triggers the auto-refresh that clobbers the overlay). The harness
-            -- registers new packages under local:, and bare names prefer primary repos
-            -- (local: in CI, xim: once published) over the scode sub-index —
-            -- so the bare form resolves correctly in every state this recipe
-            -- meets. posix-test.sh records the same rule: "a new package is
-            -- referenced bare, a changed published one with xim:". glibc is
-            -- long-published, so it takes the `xim:` form.
-            deps = { "ncurses", "xim:glibc@>=2.38" },
+            -- Both deps carry the `xim:` prefix. ncurses went bare while it was
+            -- new (#582): a package added in the same PR exists only under
+            -- `local:` in CI, so `xim:ncurses` named nothing there. That
+            -- exemption was meant to end at publication and did not, and the
+            -- bare name then broke `xlings install xmake` for anyone whose
+            -- config lists `scode` as a peer index: scode also ships an
+            -- `ncurses` (a source tarball -- no libncurses.so.6 at all), and a
+            -- bare name is resolved against every index the user configured,
+            -- not against the one this recipe lives in. "package 'ncurses' is
+            -- ambiguous", printed twice, on 2026.9.20.1.
+            --
+            -- Qualified, the name means one package on every client, old or
+            -- new. check-dep-namespace.lua now fails an exemption whose name is
+            -- already on the base branch, so the same permit cannot outlive its
+            -- reason again.
+            deps = { "xim:ncurses", "xim:glibc@>=2.38" },
             -- `source` map rather than `url_template`: it carries the CN leg,
             -- and version-check.py's bump appends `["<ver>"] = { sha256 }`
             -- against it, so the mirror survives future auto-bumps instead of

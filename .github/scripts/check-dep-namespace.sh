@@ -43,4 +43,37 @@ if ! LUA_CMD="$(find_lua)"; then
   exit 1
 fi
 
-exec "$LUA_CMD" "$CHECKER" --check "$ROOT_DIR"
+# What an exemption's expiry is measured against (see EXEMPT in the .lua).
+# In CI this must resolve; a checkout too shallow to see the base would turn
+# "expired" into "not measured", and that is the silence the expiry exists to
+# end. Locally it is optional -- the checker says when it did not look.
+resolve_base_ref() {
+  if [[ -n "${DEP_NS_BASE_REF:-}" ]]; then
+    echo "$DEP_NS_BASE_REF"; return 0
+  fi
+  [[ "${GITHUB_ACTIONS:-}" == "true" ]] || return 0
+  # --depth only on a clone that is ALREADY shallow (actions/checkout's
+  # default). On a full clone it would truncate the history to that depth.
+  local shallow=()
+  [[ "$(git rev-parse --is-shallow-repository)" == "true" ]] && shallow=(--depth=2)
+  if [[ -n "${GITHUB_BASE_REF:-}" ]]; then
+    git fetch --no-tags --quiet "${shallow[@]}" origin \
+      "+refs/heads/${GITHUB_BASE_REF}:refs/remotes/origin/${GITHUB_BASE_REF}" >&2
+    echo "origin/${GITHUB_BASE_REF}"
+  else
+    # push: the base is the commit this one landed on.
+    git fetch --no-tags --quiet "${shallow[@]}" origin "${GITHUB_SHA}" >&2
+    echo "${GITHUB_SHA}~1"
+  fi
+}
+
+BASE_REF="$(resolve_base_ref)"
+if [[ "${GITHUB_ACTIONS:-}" == "true" ]]; then
+  if [[ -z "$BASE_REF" ]] || ! git rev-parse --verify --quiet "${BASE_REF}^{commit}" >/dev/null; then
+    echo "::error::cannot resolve the base ref '${BASE_REF}' for the dep-namespace" \
+         "exemption expiry check; refusing to report a pass that did not look"
+    exit 1
+  fi
+fi
+
+DEP_NS_BASE_REF="$BASE_REF" exec "$LUA_CMD" "$CHECKER" --check "$ROOT_DIR"
