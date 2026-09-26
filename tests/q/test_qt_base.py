@@ -17,11 +17,11 @@ PKG = "qt-base"
 PKG_FILE = "pkgs/q/qt-base.lua"
 
 EXPECTED_COUNT = {
-    "windows-x86_64": 5,   # qtbase qttools d3dcompiler_47 opengl32sw qtqml
-    "windows-aarch64": 3,  # qtbase qttools qtqml
-    "linux-x86_64": 4,     # qtbase qttools icu qtqml
-    "linux-aarch64": 4,
-    "macosx": 3,
+    "windows-x86_64": 6,   # qtbase qttools qttranslations d3dcompiler_47 opengl32sw qtqml
+    "windows-aarch64": 4,  # qtbase qttools qttranslations qtqml
+    "linux-x86_64": 5,     # qtbase qttools qttranslations icu qtqml
+    "linux-aarch64": 5,
+    "macosx": 4,
 }
 
 

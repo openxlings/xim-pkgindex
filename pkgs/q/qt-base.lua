@@ -26,16 +26,16 @@
 --
 -- The platform extras are xim:qt's: d3dcompiler_47 and opengl32sw on
 -- windows-x86_64 (the software OpenGL fallback a deployed program may carry),
--- ICU on Linux (QtCore links it). Not here: qtsvg (an SVG image or icon
--- needs xim:qt), qtdeclarative beyond QtQml, qttranslations (Qt's own UI
--- strings), qtwayland. Every Qt archive entry below is xim:qt's, byte for
+-- ICU on Linux (QtCore links it). qttranslations (~1 MB) is here too: Qt's
+-- own UI strings, which windeployqt places beside a program. Not here: qtsvg
+-- (an SVG image or icon needs xim:qt), qtdeclarative beyond QtQml, qtwayland. Every Qt archive entry below is xim:qt's, byte for
 -- byte the same pin; the download, the mirrors and the extraction are
 -- libs/qtsdk.lua's, shared with qt.lua and qt-addons.lua.
 package = {
     spec = "2",
 
     name = "qt-base",
-    description = "Qt 6 qtbase and qttools (moc, uic, rcc, lupdate, lrelease) with the QtQml library they load, prebuilt, from the official online-installer repository; the widgets-and-console subset of xim:qt",
+    description = "Qt 6 qtbase, qttools (moc, uic, rcc, lupdate, lrelease) with the QtQml library they load, and qttranslations, prebuilt, from the official online-installer repository; the widgets-and-console subset of xim:qt",
 
     maintainers = {"The Qt Company"},
     licenses = {"LGPL-3.0-only"},
@@ -91,6 +91,9 @@ local BASE = {
         { module = "opengl32sw", name = "opengl32sw-64-mesa_11_2_2-signed_sha256.7z",
           path = "windows_x86/desktop/qt6_6111/qt6_6111_msvc2022_64/qt.qt6.6111.win64_msvc2022_64/6.11.1-0-202605090529opengl32sw-64-mesa_11_2_2-signed_sha256.7z",
           sha256 = "dde9302fbc8535cedf2fd75fa1826d6ac01e6fde230c976cd8ec05fe695b9db3" },
+        { module = "qttranslations", name = "qttranslations-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+          path = "windows_x86/desktop/qt6_6111/qt6_6111_msvc2022_64/qt.qt6.6111.win64_msvc2022_64/6.11.1-0-202605090529qttranslations-Windows-Windows_11_24H2-MSVC2022-Windows-Windows_11_24H2-X86_64.7z",
+          sha256 = "2da76e41de1ed46542b8648e5d92b18f916817fac1d76121a209d72a0123093c" },
         { module = "qtqml", name = "qtqml-6.11.1-windows-x86_64.7z",
           urls = { "https://github.com/xlings-res/qt-base/releases/download/6.11.1/qtqml-6.11.1-windows-x86_64.7z",
                    "https://gitcode.com/xlings-res/qt-base/releases/download/6.11.1/qtqml-6.11.1-windows-x86_64.7z" },
@@ -103,6 +106,9 @@ local BASE = {
         { module = "qttools", name = "qttools-Windows-Windows_11_23H2-MSVC2022-Windows-Windows_11_23H2-AARCH64.7z",
           path = "windows_arm64/desktop/qt6_6111/qt6_6111/qt.qt6.6111.win64_msvc2022_arm64/6.11.1-0-202605090529qttools-Windows-Windows_11_23H2-MSVC2022-Windows-Windows_11_23H2-AARCH64.7z",
           sha256 = "64e9e19c3e854f20d1de18e617dd641f6dd46d2a560040fb73d0ec664dc393bb" },
+        { module = "qttranslations", name = "qttranslations-Windows-Windows_11_23H2-MSVC2022-Windows-Windows_11_23H2-AARCH64.7z",
+          path = "windows_arm64/desktop/qt6_6111/qt6_6111/qt.qt6.6111.win64_msvc2022_arm64/6.11.1-0-202605090529qttranslations-Windows-Windows_11_23H2-MSVC2022-Windows-Windows_11_23H2-AARCH64.7z",
+          sha256 = "60b605002aa8a4313dc2699cfdb01f26c848b4e7d833870499550a3f43158b7b" },
         { module = "qtqml", name = "qtqml-6.11.1-windows-aarch64.7z",
           urls = { "https://github.com/xlings-res/qt-base/releases/download/6.11.1/qtqml-6.11.1-windows-aarch64.7z",
                    "https://gitcode.com/xlings-res/qt-base/releases/download/6.11.1/qtqml-6.11.1-windows-aarch64.7z" },
@@ -118,6 +124,9 @@ local BASE = {
         { module = "icu", name = "icu-linux-Rhel8.6-x86_64.7z",
           path = "linux_x64/desktop/qt6_6111/qt6_6111/qt.qt6.6111.linux_gcc_64/6.11.1-0-202605090529icu-linux-Rhel8.6-x86_64.7z",
           sha256 = "6ea4a612560b6eb39173bcfaa35abc08904fc124e4c0f93e1b39dd22368c33c8" },
+        { module = "qttranslations", name = "qttranslations-Linux-RHEL_9_6-GCC-Linux-RHEL_9_6-X86_64.7z",
+          path = "linux_x64/desktop/qt6_6111/qt6_6111/qt.qt6.6111.linux_gcc_64/6.11.1-0-202605090529qttranslations-Linux-RHEL_9_6-GCC-Linux-RHEL_9_6-X86_64.7z",
+          sha256 = "661a137438ad030ba74df2dcdbc8713a0f34b492970d2d53b01f795df3685367" },
         { module = "qtqml", name = "qtqml-6.11.1-linux-x86_64.7z",
           urls = { "https://github.com/xlings-res/qt-base/releases/download/6.11.1/qtqml-6.11.1-linux-x86_64.7z",
                    "https://gitcode.com/xlings-res/qt-base/releases/download/6.11.1/qtqml-6.11.1-linux-x86_64.7z" },
@@ -133,6 +142,9 @@ local BASE = {
         { module = "icu", name = "icu-linux-Debian11.6-arm64.7z",
           path = "linux_arm64/desktop/qt6_6111/qt6_6111/qt.qt6.6111.linux_gcc_arm64/6.11.1-0-202605090529icu-linux-Debian11.6-arm64.7z",
           sha256 = "4f5c713877407e2fcc093ff31012737a360580478047c910d02e6a6cfa4dac84" },
+        { module = "qttranslations", name = "qttranslations-Linux-Ubuntu_24_04-GCC-Linux-Ubuntu_24_04-AARCH64.7z",
+          path = "linux_arm64/desktop/qt6_6111/qt6_6111/qt.qt6.6111.linux_gcc_arm64/6.11.1-0-202605090529qttranslations-Linux-Ubuntu_24_04-GCC-Linux-Ubuntu_24_04-AARCH64.7z",
+          sha256 = "668321f808c6d2e7cf6c42d133393b63f20b5e8ff20a540aa937d7d523f4ea83" },
         { module = "qtqml", name = "qtqml-6.11.1-linux-aarch64.7z",
           urls = { "https://github.com/xlings-res/qt-base/releases/download/6.11.1/qtqml-6.11.1-linux-aarch64.7z",
                    "https://gitcode.com/xlings-res/qt-base/releases/download/6.11.1/qtqml-6.11.1-linux-aarch64.7z" },
@@ -145,6 +157,9 @@ local BASE = {
         { module = "qttools", name = "qttools-MacOS-MacOS_15-Clang-MacOS-MacOS_15-X86_64-ARM64.7z",
           path = "mac_x64/desktop/qt6_6111/qt6_6111/qt.qt6.6111.clang_64/6.11.1-0-202605090526qttools-MacOS-MacOS_15-Clang-MacOS-MacOS_15-X86_64-ARM64.7z",
           sha256 = "9db0742ae9ba77d8bc8c8992f0c0b12547f3d89966c7196812183b58f8e93a0f" },
+        { module = "qttranslations", name = "qttranslations-MacOS-MacOS_15-Clang-MacOS-MacOS_15-X86_64-ARM64.7z",
+          path = "mac_x64/desktop/qt6_6111/qt6_6111/qt.qt6.6111.clang_64/6.11.1-0-202605090526qttranslations-MacOS-MacOS_15-Clang-MacOS-MacOS_15-X86_64-ARM64.7z",
+          sha256 = "e0123d643a25517c829215d4c1adb6c05e165a805f75c36f88ff036ac1ad18fa" },
         { module = "qtqml", name = "qtqml-6.11.1-macosx-universal.7z",
           urls = { "https://github.com/xlings-res/qt-base/releases/download/6.11.1/qtqml-6.11.1-macosx-universal.7z",
                    "https://gitcode.com/xlings-res/qt-base/releases/download/6.11.1/qtqml-6.11.1-macosx-universal.7z" },
