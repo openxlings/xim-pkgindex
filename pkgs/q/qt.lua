@@ -98,17 +98,23 @@ package = {
         linux = {
             deps = {
                 "xim:7zip",
-                -- The libraries Qt's Linux build loads and does not carry
-                -- (readelf -d over lib/ and plugins/platforms/): QtCore's
-                -- glib, zstd and zlib; QtDBus's libdbus; QtGui's fontconfig,
-                -- freetype, X11, xkbcommon and EGL/GL (libglvnd); the xcb
-                -- platform plugin's xcb libraries. install() stamps their
-                -- directories onto the Qt libraries' RUNPATH (libs/qtsdk.lua).
+                -- Qt's official Linux build names these by SONAME and carries
+                -- RUNPATH=$ORIGIN only (readelf -d over lib/ and
+                -- plugins/platforms/). Declaring them with xim:glibc -- the
+                -- loader provider -- makes xlings patch the whole payload
+                -- after install(): every executable (moc, lupdate, ...) runs
+                -- under the xlings loader, and every ELF file's RUNPATH is the
+                -- closure of these packages and this payload's lib/, so the
+                -- tools and a program linked by mcpp share one loader and libc.
+                "xim:glibc",
                 "xim:glib", "xim:zstd", "xim:zlib", "xim:dbus",
                 "xim:fontconfig", "xim:freetype", "xim:libX11", "xim:libxkbcommon",
                 "xim:libglvnd", "xim:libxcb", "xim:xcb-util", "xim:xcb-util-cursor",
                 "xim:xcb-util-image", "xim:xcb-util-keysyms", "xim:xcb-util-renderutil",
                 "xim:xcb-util-wm",
+            },
+            exports = {
+                runtime = { libdirs = { "lib" } },
             },
             ["latest"] = { ref = "6.11.1" },
             ["6.11.1"] = {},
@@ -127,7 +133,6 @@ import("xim.libxpkg.log")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.fs")
 import("xim.pkgindex.qtsdk")
-import("xim.pkgindex.selfcontain")
 
 local BASE = {
     ["windows-x86_64"] = {
@@ -152,6 +157,17 @@ local BASE = {
         { module = "opengl32sw", name = "opengl32sw-64-mesa_11_2_2-signed_sha256.7z",
           path = "windows_x86/desktop/qt6_6111/qt6_6111_msvc2022_64/qt.qt6.6111.win64_msvc2022_64/6.11.1-0-202605090529opengl32sw-64-mesa_11_2_2-signed_sha256.7z",
           sha256 = "dde9302fbc8535cedf2fd75fa1826d6ac01e6fde230c976cd8ec05fe695b9db3" },
+        -- The VC++ runtime Qt's MSVC DLLs import (MSVCP140, VCRUNTIME140,
+        -- VCRUNTIME140_1, ...), taken from the redistributable Microsoft
+        -- publishes for app-local deployment and placed in bin/ beside Qt's
+        -- DLLs, so a program's runtime closure does not depend on the target
+        -- machine having the VC++ Redistributable installed. Same vsix and
+        -- pin as pkgs/m/msvc.lua's 14.44.35207 toolset.
+        { module = "vcruntime", name = "Microsoft.VC.14.44.17.14.CRT.Redist.X64.base.vsix",
+          urls = { "https://gitcode.com/xlings-res/msvc/releases/download/14.44.35207/Microsoft.VC.14.44.17.14.CRT.Redist.X64.base.vsix",
+                   "https://download.visualstudio.microsoft.com/download/pr/45d3b8dd-bced-4b37-9974-142f748d710c/4aaf54db0bfc9435f7c3660e1a00237a4b556042bfeea64bde44c2e0194e6ee5/Microsoft.VC.14.44.17.14.CRT.Redist.X64.base.vsix" },
+          pick = { from = "Contents/VC/Redist/MSVC/14.44.35112/x64/Microsoft.VC143.CRT", to = "bin" },
+          sha256 = "4aaf54db0bfc9435f7c3660e1a00237a4b556042bfeea64bde44c2e0194e6ee5" },
     },
     ["windows-aarch64"] = {
         { module = "qtbase", name = "qtbase-Windows-Windows_11_23H2-MSVC2022-Windows-Windows_11_23H2-AARCH64.7z",
@@ -260,10 +276,7 @@ function install()
     end
 
     qtsdk.ensure_qt_conf(install_dir)
-    if os.host() == "linux" then
-        selfcontain.seal(install_dir, { "lib" })
-        qtsdk.mark_sealed(marker_path())
-    end
+    qtsdk.mark_runtime(marker_path())
 
     return installed()
 end
@@ -284,9 +297,10 @@ function installed()
     for _, e in ipairs(list) do
         if marker[e.module] ~= e.sha256 then return false end
     end
-    -- A Linux payload installed before its runtime closure was stamped is
-    -- installed again, so an update reaches the machines that have it.
-    if not qtsdk.runtime_sealed(marker) then return false end
+    -- A payload installed before its runtime closure was declared (Linux:
+    -- the loader and RUNPATH; Windows: the VC++ runtime in bin/) is installed
+    -- again, so an update reaches the machines that have it.
+    if not qtsdk.runtime_current(marker) then return false end
 
     local d = pkginfo.install_dir()
     local osname = os.host()
@@ -315,6 +329,11 @@ function installed()
     -- qtbase shared library -- a file, not the lib/ dir
     if osname == "windows" then
         if not os.isfile(path.join(d, "lib", "Qt6Core.lib")) then return false end
+        -- the VC++ runtime placed beside Qt's DLLs (windows-x86_64)
+        if qtsdk.host_key() == "windows-x86_64"
+           and not os.isfile(path.join(d, "bin", "msvcp140.dll")) then
+            return false
+        end
     elseif osname == "linux" then
         if not os.isfile(path.join(d, "lib", "libQt6Core.so.6")) then return false end
         -- icu -- the module whose archive is flat (see FLAT_MODULE_SUBDIR):

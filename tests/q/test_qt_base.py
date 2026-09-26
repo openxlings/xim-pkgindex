@@ -17,7 +17,7 @@ PKG = "qt-base"
 PKG_FILE = "pkgs/q/qt-base.lua"
 
 EXPECTED_COUNT = {
-    "windows-x86_64": 6,   # qtbase qttools qttranslations d3dcompiler_47 opengl32sw qtqml
+    "windows-x86_64": 7,   # qtbase qttools qttranslations d3dcompiler_47 opengl32sw qtqml vcruntime
     "windows-aarch64": 4,  # qtbase qttools qttranslations qtqml
     "linux-x86_64": 5,     # qtbase qttools qttranslations icu qtqml
     "linux-aarch64": 5,
@@ -66,13 +66,21 @@ class TestStatic:
         """Qt 的 Linux 库按 SONAME 依赖 glib、libdbus、xcb 等，由依赖声明提供并写入 RUNPATH。"""
         m = re.search(r'linux\s*=\s*\{\s*deps\s*=\s*\{(.*?)\n            \}', meta.raw_content, re.DOTALL)
         assert m, "linux 平台没有 deps 列表"
-        for dep in ("xim:glib", "xim:zstd", "xim:zlib", "xim:dbus", "xim:fontconfig",
+        for dep in ("xim:glibc", "xim:glib", "xim:zstd", "xim:zlib", "xim:dbus", "xim:fontconfig",
                     "xim:freetype", "xim:libX11", "xim:libxkbcommon", "xim:libglvnd",
                     "xim:libxcb", "xim:xcb-util-wm"):
             assert f'"{dep}"' in m.group(1), f"linux deps 缺少 {dep}"
-        assert 'selfcontain.seal(install_dir, { "lib" })' in meta.raw_content
-        assert "qtsdk.mark_sealed(marker_path())" in meta.raw_content
-        assert "qtsdk.runtime_sealed(marker)" in meta.raw_content
+        assert re.search(r'exports\s*=\s*\{\s*runtime\s*=\s*\{\s*libdirs\s*=\s*\{\s*"lib"', meta.raw_content)
+        assert "qtsdk.mark_runtime(marker_path())" in meta.raw_content
+        assert "qtsdk.runtime_current(marker)" in meta.raw_content
+
+    @pytest.mark.static
+    def test_windows_x64_carries_the_vc_runtime(self):
+        """Qt 的 MSVC DLL 依赖 VC++ 运行时; windows-x86_64 把可再分发的 DLL 放入 bin/。"""
+        rest = dict(_entries(_table(PKG_FILE), "windows-x86_64"))["vcruntime"]
+        assert 'from = "Contents/VC/Redist/MSVC/14.44.35112/x64/Microsoft.VC143.CRT"' in rest
+        assert 'to = "bin"' in rest
+        assert '"bin", "msvcp140.dll"' in open(os.path.join(project_root(), PKG_FILE), encoding="utf-8").read()
 
     @pytest.mark.static
     def test_declares_7zip_dependency(self, meta):

@@ -301,7 +301,27 @@ function qtsdk.fetch_and_extract(list, install_dir, marker, tag)
             dest = path.join(install_dir, sub)
             fs.mkdir_p(dest)
         end
-        if not extract_7z(zbin, dst, dest) then
+        if e.pick then
+            -- An archive of which one directory's files are wanted (the VC++
+            -- redistributable): extracted beside the download, the files of
+            -- `pick.from` copied into `pick.to`, the rest discarded.
+            local scratch = path.join(work, "x-" .. e.module)
+            fs.mkdir_p(scratch)
+            if not extract_7z(zbin, dst, scratch) then
+                log.error(tag .. ": 7zip extraction failed for " .. e.name)
+                return false
+            end
+            local from = path.join(scratch, e.pick.from)
+            local into = path.join(install_dir, e.pick.to)
+            fs.mkdir_p(into)
+            local picked = os.files(path.join(from, "*"))
+            if #picked == 0 then
+                log.error(tag .. ": " .. e.name .. " has no files under " .. e.pick.from)
+                return false
+            end
+            for _, f in ipairs(picked) do os.cp(f, into) end
+            os.tryrm(scratch)
+        elseif not extract_7z(zbin, dst, dest) then
             log.error(tag .. ": 7zip extraction failed for " .. e.name)
             return false
         end
@@ -328,26 +348,27 @@ function qtsdk.read_marker(marker)
     return map
 end
 
--- THE RUNTIME CLOSURE, ON LINUX. Qt's official Linux libraries name glib,
--- libdbus, fontconfig, xcb and the rest by SONAME and carry RUNPATH=$ORIGIN
--- only: they expect a distribution to provide them. A recipe declares those
--- packages as its Linux deps and seals lib/ with xim.pkgindex.selfcontain,
--- which stamps their library directories onto every library there, so a
--- program that loads Qt resolves Qt's dependencies from the payloads rather
--- than the host, under any loader -- including a private one that does not
--- read the host's /usr/lib. `mark_sealed` then records `sealed <RUNTIME_SEAL>`
--- in the marker, and `runtime_sealed` answers false for a Linux payload
+-- THE RUNTIME CLOSURE. A recipe states what its payload loads and does not
+-- carry, per platform:
+--   linux    the libraries Qt names by SONAME, declared as deps together with
+--            xim:glibc; xlings then patches the payload after install() --
+--            each executable's interpreter and each ELF file's RUNPATH -- so
+--            the tools and the programs linked against Qt share one loader
+--            and libc (libxpkg elfpatch, the loader-provider predicate);
+--   windows  the VC++ runtime, an archive entry with `pick` that places the
+--            redistributable DLLs in bin/.
+-- `mark_runtime` records `runtime <RUNTIME_REV>` in the marker once install()
+-- has laid the payload out, and `runtime_current` answers false for a payload
 -- without it, so an update reaches the machines that installed Qt before.
-local RUNTIME_SEAL = "1"
+local RUNTIME_REV = "1"
 
-function qtsdk.mark_sealed(marker)
+function qtsdk.mark_runtime(marker)
     local text = os.isfile(marker) and (io.readfile(marker) or "") or ""
-    io.writefile(marker, text .. "sealed " .. RUNTIME_SEAL .. "\n")
+    io.writefile(marker, text .. "runtime " .. RUNTIME_REV .. "\n")
 end
 
-function qtsdk.runtime_sealed(marker_map)
-    if os.host() ~= "linux" then return true end
-    return marker_map ~= nil and marker_map.sealed == RUNTIME_SEAL
+function qtsdk.runtime_current(marker_map)
+    return marker_map ~= nil and marker_map.runtime == RUNTIME_REV
 end
 
 -- Written by qt.conf's own docs: relocatable installs need this file so
