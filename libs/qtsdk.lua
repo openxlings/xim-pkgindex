@@ -271,6 +271,23 @@ local FLAT_MODULE_SUBDIR = {
     opengl32sw = "bin",
 }
 
+-- The names of the regular files directly in `dir`. libxpkg's prelude has
+-- `os.dirs` and no `os.files`, so the listing is the shell's, as os.dirs does.
+local function files_in(dir)
+    local names = {}
+    local cmd = os.host() == "windows"
+        and ('dir /B /A-D "' .. winpath(dir) .. '" 2>nul')
+        or  ('ls -1 "' .. dir .. '" 2>/dev/null')
+    local f = io.popen(cmd)
+    if not f then return names end
+    for line in f:lines() do
+        local name = line:gsub("[\r\n]+$", "")
+        if name ~= "" and os.isfile(path.join(dir, name)) then table.insert(names, name) end
+    end
+    f:close()
+    return names
+end
+
 -- Fetch+verify+extract every archive in `list` into install_dir, recording
 -- each one into `marker` AS SOON AS it lands -- not the whole list up front
 -- -- so a mid-run failure leaves the marker naming only what actually made
@@ -301,7 +318,32 @@ function qtsdk.fetch_and_extract(list, install_dir, marker, tag)
             dest = path.join(install_dir, sub)
             fs.mkdir_p(dest)
         end
-        if not extract_7z(zbin, dst, dest) then
+        if e.pick then
+            -- An archive of which one directory's files are wanted (the VC++
+            -- redistributable): extracted beside the download, the files of
+            -- `pick.from` copied into `pick.to`, the rest discarded.
+            local scratch = path.join(work, "x-" .. e.module)
+            fs.mkdir_p(scratch)
+            if not extract_7z(zbin, dst, scratch) then
+                log.error(tag .. ": 7zip extraction failed for " .. e.name)
+                return false
+            end
+            local from = path.join(scratch, e.pick.from)
+            local into = path.join(install_dir, e.pick.to)
+            fs.mkdir_p(into)
+            local picked = files_in(from)
+            if #picked == 0 then
+                log.error(tag .. ": " .. e.name .. " has no files under " .. e.pick.from)
+                return false
+            end
+            for _, name in ipairs(picked) do
+                if not os.cp(path.join(from, name), path.join(into, name)) then
+                    log.error(tag .. ": could not copy " .. name .. " into " .. into)
+                    return false
+                end
+            end
+            os.tryrm(scratch)
+        elseif not extract_7z(zbin, dst, dest) then
             log.error(tag .. ": 7zip extraction failed for " .. e.name)
             return false
         end
@@ -326,6 +368,46 @@ function qtsdk.read_marker(marker)
         if mod then map[mod] = sha end
     end
     return map
+end
+
+-- THE RUNTIME CLOSURE. A recipe states what its payload loads and does not
+-- carry, per platform:
+--   linux    the libraries Qt names by SONAME, declared as deps together with
+--            xim:glibc; xlings then patches the payload after install() --
+--            each executable's interpreter and each ELF file's RUNPATH -- so
+--            the tools and the programs linked against Qt share one loader
+--            and libc (libxpkg elfpatch, the loader-provider predicate);
+--   windows  the VC++ runtime, an archive entry with `pick` that places the
+--            redistributable DLLs in bin/.
+-- `mark_runtime` records `runtime <RUNTIME_REV>` in the marker once install()
+-- has laid the payload out, and `runtime_current` answers false for a payload
+-- without it, so an update reaches the machines that installed Qt before.
+local RUNTIME_REV = "1"
+
+function qtsdk.mark_runtime(marker)
+    local text = os.isfile(marker) and (io.readfile(marker) or "") or ""
+    io.writefile(marker, text .. "runtime " .. RUNTIME_REV .. "\n")
+end
+
+function qtsdk.runtime_current(marker_map)
+    return marker_map ~= nil and marker_map.runtime == RUNTIME_REV
+end
+
+-- Removes the listed files, relative to install_dir. An entry ending in `*`
+-- removes every file of its directory whose name starts with the rest (a
+-- library's .so, .so.6 and .so.6.x.y); a missing file is not an error.
+function qtsdk.prune(install_dir, list)
+    for _, rel in ipairs(list) do
+        if rel:sub(-1) == "*" then
+            local dir = path.join(install_dir, path.directory(rel))
+            local stem = path.filename(rel):sub(1, -2)
+            for _, name in ipairs(files_in(dir)) do
+                if name:sub(1, #stem) == stem then os.tryrm(path.join(dir, name)) end
+            end
+        else
+            os.tryrm(path.join(install_dir, rel))
+        end
+    end
 end
 
 -- Written by qt.conf's own docs: relocatable installs need this file so

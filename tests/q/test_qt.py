@@ -58,6 +58,33 @@ class TestStatic:
         assert_no_typos(PKG_FILE)
 
     @pytest.mark.static
+    def test_linux_declares_its_runtime_closure(self, meta):
+        """Qt 的 Linux 库按 SONAME 依赖 glib、libdbus、xcb 等，由依赖声明提供并写入 RUNPATH。"""
+        m = re.search(r'linux\s*=\s*\{\s*deps\s*=\s*\{(.*?)\n            \}', meta.raw_content, re.DOTALL)
+        assert m, "linux 平台没有 deps 列表"
+        for dep in ("xim:glibc", "xim:glib", "xim:zstd", "xim:zlib", "xim:dbus", "xim:fontconfig",
+                    "xim:freetype", "xim:libX11", "xim:libxkbcommon", "xim:libglvnd",
+                    "xim:libxcb", "xim:xcb-util-wm", "xim:gcc-runtime", "xim:wayland",
+                    "xim:krb5", "xim:brotli"):
+            assert f'"{dep}"' in m.group(1), f"linux deps 缺少 {dep}"
+        assert re.search(r'exports\s*=\s*\{\s*runtime\s*=\s*\{\s*libdirs\s*=\s*\{\s*"lib"', meta.raw_content)
+        assert "qtsdk.mark_runtime(marker_path())" in meta.raw_content
+        # plugins no provider serves are removed, so D2 holds under the xlings loader
+        assert "qtsdk.prune(install_dir, PRUNE_LINUX)" in meta.raw_content
+        assert '"plugins/platformthemes/libqgtk3.so"' in meta.raw_content
+        assert "qtsdk.runtime_current(marker)" in meta.raw_content
+
+    @pytest.mark.static
+    def test_windows_x64_carries_the_vc_runtime(self):
+        """Qt 的 MSVC DLL 依赖 VC++ 运行时; windows-x86_64 把可再分发的 DLL 放入 bin/。"""
+        m = re.search(r'\["windows-x86_64"\]\s*=\s*\{(.*?)\n    \},', _base_table(), re.DOTALL)
+        assert m, "BASE 里没有 windows-x86_64"
+        rest = m.group(1)[m.group(1).index('module = "vcruntime"'):]
+        assert 'from = "Contents/VC/Redist/MSVC/14.44.35112/x64/Microsoft.VC143.CRT"' in rest
+        assert 'to = "bin"' in rest
+        assert '"bin", "msvcp140.dll"' in open(os.path.join(project_root(), PKG_FILE), encoding="utf-8").read()
+
+    @pytest.mark.static
     def test_declares_7zip_dependency(self, meta):
         """每个 archive 都是 .7z, 没有 xim:7zip 依赖就没法解压。"""
         for plat in ("windows", "linux", "macosx"):
