@@ -64,10 +64,14 @@ class TestStatic:
         assert m, "linux 平台没有 deps 列表"
         for dep in ("xim:glibc", "xim:glib", "xim:zstd", "xim:zlib", "xim:dbus", "xim:fontconfig",
                     "xim:freetype", "xim:libX11", "xim:libxkbcommon", "xim:libglvnd",
-                    "xim:libxcb", "xim:xcb-util-wm"):
+                    "xim:libxcb", "xim:xcb-util-wm", "xim:gcc-runtime", "xim:wayland",
+                    "xim:krb5", "xim:brotli"):
             assert f'"{dep}"' in m.group(1), f"linux deps 缺少 {dep}"
         assert re.search(r'exports\s*=\s*\{\s*runtime\s*=\s*\{\s*libdirs\s*=\s*\{\s*"lib"', meta.raw_content)
         assert "qtsdk.mark_runtime(marker_path())" in meta.raw_content
+        # plugins no provider serves are removed, so D2 holds under the xlings loader
+        assert "qtsdk.prune(install_dir, PRUNE_LINUX)" in meta.raw_content
+        assert '"plugins/platformthemes/libqgtk3.so"' in meta.raw_content
         assert "qtsdk.runtime_current(marker)" in meta.raw_content
 
     @pytest.mark.static

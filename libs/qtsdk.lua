@@ -393,6 +393,23 @@ function qtsdk.runtime_current(marker_map)
     return marker_map ~= nil and marker_map.runtime == RUNTIME_REV
 end
 
+-- Removes the listed files, relative to install_dir. An entry ending in `*`
+-- removes every file of its directory whose name starts with the rest (a
+-- library's .so, .so.6 and .so.6.x.y); a missing file is not an error.
+function qtsdk.prune(install_dir, list)
+    for _, rel in ipairs(list) do
+        if rel:sub(-1) == "*" then
+            local dir = path.join(install_dir, path.directory(rel))
+            local stem = path.filename(rel):sub(1, -2)
+            for _, name in ipairs(files_in(dir)) do
+                if name:sub(1, #stem) == stem then os.tryrm(path.join(dir, name)) end
+            end
+        else
+            os.tryrm(path.join(install_dir, rel))
+        end
+    end
+end
+
 -- Written by qt.conf's own docs: relocatable installs need this file so
 -- qmake/qtpaths report the right prefix after the tree is moved (which is
 -- exactly what os.mv into install_dir just did). Some archives already ship

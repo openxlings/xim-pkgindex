@@ -75,6 +75,10 @@ package = {
                 "xim:libglvnd", "xim:libxcb", "xim:xcb-util", "xim:xcb-util-cursor",
                 "xim:xcb-util-image", "xim:xcb-util-keysyms", "xim:xcb-util-renderutil",
                 "xim:xcb-util-wm",
+                -- libstdc++ and libgcc_s (every Qt library); the Wayland
+                -- client libraries (the wayland platform plugin); QtNetwork's
+                -- GSSAPI and Brotli decoder.
+                "xim:gcc-runtime", "xim:wayland", "xim:krb5", "xim:brotli",
             },
             exports = {
                 runtime = { libdirs = { "lib" } },
@@ -197,6 +201,30 @@ local BASE = {
     },
 }
 
+-- THE FILES NO PROVIDER SERVES, REMOVED ON LINUX. Under the xlings loader a
+-- library resolves only from a declared payload -- there is no host fallback
+-- -- so a plugin whose dependencies no package provides can never load, and
+-- dep-closure-check.sh (D2) refuses a payload that carries one. These are
+-- optional back ends outside a desktop program's needs: SQL drivers for
+-- servers with no client library here (Oracle, InterBase/Firebird, Mimer,
+-- MySQL, ODBC, PostgreSQL; SQLite stays), the GTK3 platform theme, the CUPS
+-- print back end, and the eglfs KMS integrations (libdrm, gbm).
+local PRUNE_LINUX = {
+    "plugins/sqldrivers/libqsqlibase.so", "plugins/sqldrivers/libqsqlmimer.so",
+    "plugins/sqldrivers/libqsqlmysql.so", "plugins/sqldrivers/libqsqloci.so",
+    "plugins/sqldrivers/libqsqlodbc.so", "plugins/sqldrivers/libqsqlpsql.so",
+    "plugins/platformthemes/libqgtk3.so",
+    "plugins/printsupport/libcupsprintersupport.so",
+    "plugins/egldeviceintegrations/libqeglfs-kms-egldevice-integration.so",
+    "plugins/egldeviceintegrations/libqeglfs-kms-integration.so",
+    "lib/libQt6EglFsKmsSupport.*", "lib/libQt6EglFsKmsGbmSupport.*",
+    -- qt-base carries no Qt Quick: the qttools programs and plugins that load
+    -- it (Linguist's GUI, the distance-field generator, the Quick designer
+    -- and help plugins) are xim:qt's.
+    "bin/linguist", "bin/qdistancefieldgenerator",
+    "plugins/designer/libqquickwidget.so", "plugins/help/libhelpplugin.so",
+}
+
 local function marker_path()
     return path.join(pkginfo.install_dir(), ".qt-base-archives.txt")
 end
@@ -222,6 +250,7 @@ function install()
     end
 
     qtsdk.ensure_qt_conf(install_dir)
+    if os.host() == "linux" then qtsdk.prune(install_dir, PRUNE_LINUX) end
     qtsdk.mark_runtime(marker_path())
 
     return installed()
