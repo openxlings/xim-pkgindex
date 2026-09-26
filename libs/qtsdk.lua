@@ -271,6 +271,23 @@ local FLAT_MODULE_SUBDIR = {
     opengl32sw = "bin",
 }
 
+-- The names of the regular files directly in `dir`. libxpkg's prelude has
+-- `os.dirs` and no `os.files`, so the listing is the shell's, as os.dirs does.
+local function files_in(dir)
+    local names = {}
+    local cmd = os.host() == "windows"
+        and ('dir /B /A-D "' .. winpath(dir) .. '" 2>nul')
+        or  ('ls -1 "' .. dir .. '" 2>/dev/null')
+    local f = io.popen(cmd)
+    if not f then return names end
+    for line in f:lines() do
+        local name = line:gsub("[\r\n]+$", "")
+        if name ~= "" and os.isfile(path.join(dir, name)) then table.insert(names, name) end
+    end
+    f:close()
+    return names
+end
+
 -- Fetch+verify+extract every archive in `list` into install_dir, recording
 -- each one into `marker` AS SOON AS it lands -- not the whole list up front
 -- -- so a mid-run failure leaves the marker naming only what actually made
@@ -314,12 +331,17 @@ function qtsdk.fetch_and_extract(list, install_dir, marker, tag)
             local from = path.join(scratch, e.pick.from)
             local into = path.join(install_dir, e.pick.to)
             fs.mkdir_p(into)
-            local picked = os.files(path.join(from, "*"))
+            local picked = files_in(from)
             if #picked == 0 then
                 log.error(tag .. ": " .. e.name .. " has no files under " .. e.pick.from)
                 return false
             end
-            for _, f in ipairs(picked) do os.cp(f, into) end
+            for _, name in ipairs(picked) do
+                if not os.cp(path.join(from, name), path.join(into, name)) then
+                    log.error(tag .. ": could not copy " .. name .. " into " .. into)
+                    return false
+                end
+            end
             os.tryrm(scratch)
         elseif not extract_7z(zbin, dst, dest) then
             log.error(tag .. ": 7zip extraction failed for " .. e.name)
