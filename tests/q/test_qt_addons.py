@@ -65,7 +65,7 @@ class TestStatic:
                 rf'{plat}\s*=\s*\{{\s*deps\s*=\s*\{{([^}}]*)\}}', meta.raw_content)
             assert block, f"{plat} 平台没有 deps 声明"
             assert '"xim:7zip"' in block.group(1), f"{plat} 缺 xim:7zip 依赖"
-            assert '"xim:qt@6.11.1"' in block.group(1), f"{plat} 缺 xim:qt@6.11.1 依赖"
+            assert '"xim:qt@6.11.1.1"' in block.group(1), f"{plat} 缺 xim:qt@6.11.1.1 依赖"
 
     @pytest.mark.static
     def test_addons_table_has_every_platform_and_field(self):

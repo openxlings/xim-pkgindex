@@ -17,7 +17,7 @@
 -- combined install would have qtbase's and the add-ons' directories be one
 -- tree, except split at the package boundary instead of at the filesystem.
 --
--- `deps = { "xim:qt@6.11.1" }` on every platform: every add-on module links
+-- `deps = { "xim:qt@6.11.1.1" }` on every platform: every add-on module links
 -- against qtbase/qtdeclarative, so installing qt-addons without qt installed
 -- resolves to a set of libraries and QML plugins with nothing to run them.
 --
@@ -71,18 +71,30 @@ package = {
 
     xpm = {
         windows = {
-            deps = { "xim:7zip", "xim:qt@6.11.1" },
-            ["latest"] = { ref = "6.11.1" },
+            deps = { "xim:7zip", "xim:qt@6.11.1.1" },
+            ["latest"] = { ref = "6.11.1.1" },
+            -- 6.11.1.1: the same archives under the key xim:qt 6.11.1.1 took,
+            -- so the add-ons pair with the base that carries its runtime
+            -- closure.
+            ["6.11.1.1"] = {},
             ["6.11.1"] = {},
         },
         linux = {
-            deps = { "xim:7zip", "xim:qt@6.11.1" },
-            ["latest"] = { ref = "6.11.1" },
+            deps = { "xim:7zip", "xim:qt@6.11.1.1" },
+            ["latest"] = { ref = "6.11.1.1" },
+            -- 6.11.1.1: the same archives under the key xim:qt 6.11.1.1 took,
+            -- so the add-ons pair with the base that carries its runtime
+            -- closure.
+            ["6.11.1.1"] = {},
             ["6.11.1"] = {},
         },
         macosx = {
-            deps = { "xim:7zip", "xim:qt@6.11.1" },
-            ["latest"] = { ref = "6.11.1" },
+            deps = { "xim:7zip", "xim:qt@6.11.1.1" },
+            ["latest"] = { ref = "6.11.1.1" },
+            -- 6.11.1.1: the same archives under the key xim:qt 6.11.1.1 took,
+            -- so the add-ons pair with the base that carries its runtime
+            -- closure.
+            ["6.11.1.1"] = {},
             ["6.11.1"] = {},
         },
     },
