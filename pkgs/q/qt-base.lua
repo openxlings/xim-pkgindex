@@ -76,9 +76,10 @@ package = {
                 "xim:xcb-util-image", "xim:xcb-util-keysyms", "xim:xcb-util-renderutil",
                 "xim:xcb-util-wm",
                 -- libstdc++ and libgcc_s (every Qt library); the Wayland
-                -- client libraries (the wayland platform plugin); QtNetwork's
-                -- GSSAPI and Brotli decoder.
-                "xim:gcc-runtime", "xim:wayland", "xim:krb5", "xim:brotli",
+                -- client libraries (the wayland platform plugin); libdrm (the
+                -- linuxfb platform plugin); QtNetwork's GSSAPI and Brotli
+                -- decoder.
+                "xim:gcc-runtime", "xim:wayland", "xim:libdrm", "xim:krb5", "xim:brotli",
             },
             exports = {
                 runtime = { libdirs = { "lib" } },
