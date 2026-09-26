@@ -29,15 +29,15 @@ package = {
             ["1.2.0"] = {
                 x86_64 = {
                     url = {
-                        GLOBAL = "https://github.com/xlings-res/brotli/releases/download/1.2.0/brotli-1.2.0-r1-linux-x86_64.tar.gz",
-                        CN     = "https://gitcode.com/xlings-res/brotli/releases/download/1.2.0/brotli-1.2.0-r1-linux-x86_64.tar.gz",
+                        GLOBAL = "https://github.com/xlings-res/brotli/releases/download/1.2.0/brotli-1.2.0-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/brotli/releases/download/1.2.0/brotli-1.2.0-linux-x86_64.tar.gz",
                     },
                     sha256 = "0b20a7cc550db8f1d2487df6a0194a91fe06ed799bb348d1d9fe197e5027de6c",
                 },
                 aarch64 = {
                     url = {
-                        GLOBAL = "https://github.com/xlings-res/brotli/releases/download/1.2.0/brotli-1.2.0-r1-linux-aarch64.tar.gz",
-                        CN     = "https://gitcode.com/xlings-res/brotli/releases/download/1.2.0/brotli-1.2.0-r1-linux-aarch64.tar.gz",
+                        GLOBAL = "https://github.com/xlings-res/brotli/releases/download/1.2.0/brotli-1.2.0-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/brotli/releases/download/1.2.0/brotli-1.2.0-linux-aarch64.tar.gz",
                     },
                     sha256 = "07f52426c97dbf9c4faf27403be3e198a8ddf4094062f8de5e658aeb2ee3c0b4",
                 },

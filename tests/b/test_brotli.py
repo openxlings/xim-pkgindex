@@ -40,7 +40,7 @@ class TestStatic:
     @pytest.mark.static
     def test_both_mirrors(self, meta):
         for arch in ("x86_64", "aarch64"):
-            name = f"brotli-1.2.0-r1-linux-{arch}.tar.gz"
+            name = f"brotli-1.2.0-linux-{arch}.tar.gz"
             assert f"https://github.com/xlings-res/brotli/releases/download/1.2.0/{name}" in meta.raw_content
             assert f"https://gitcode.com/xlings-res/brotli/releases/download/1.2.0/{name}" in meta.raw_content
 

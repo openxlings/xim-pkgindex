@@ -55,15 +55,7 @@ package = {
         -- (pkgs/q/qt.lua's header says why), extracted with xim:7zip.
         windows = {
             deps = { "xim:7zip" },
-            ["latest"] = { ref = "6.11.1.1" },
-            -- 6.11.1.1: the same Qt 6.11.1 archives under a new version key.
-            -- xlings decides "installed" by the payload on disk, not by
-            -- installed(), so a machine holding the 6.11.1 payload would keep
-            -- it; the new key installs the payload this recipe now lays out
-            -- (Linux: the runtime closure under the xlings loader; Windows
-            -- x64: the VC++ runtime in bin/). The fontconfig 2.15.0.1 and
-            -- libglvnd 1.7.0.1 pattern.
-            ["6.11.1.1"] = {},
+            ["latest"] = { ref = "6.11.1" },
             ["6.11.1"] = {},
         },
         linux = {
@@ -92,28 +84,12 @@ package = {
             exports = {
                 runtime = { libdirs = { "lib" } },
             },
-            ["latest"] = { ref = "6.11.1.1" },
-            -- 6.11.1.1: the same Qt 6.11.1 archives under a new version key.
-            -- xlings decides "installed" by the payload on disk, not by
-            -- installed(), so a machine holding the 6.11.1 payload would keep
-            -- it; the new key installs the payload this recipe now lays out
-            -- (Linux: the runtime closure under the xlings loader; Windows
-            -- x64: the VC++ runtime in bin/). The fontconfig 2.15.0.1 and
-            -- libglvnd 1.7.0.1 pattern.
-            ["6.11.1.1"] = {},
+            ["latest"] = { ref = "6.11.1" },
             ["6.11.1"] = {},
         },
         macosx = {
             deps = { "xim:7zip" },
-            ["latest"] = { ref = "6.11.1.1" },
-            -- 6.11.1.1: the same Qt 6.11.1 archives under a new version key.
-            -- xlings decides "installed" by the payload on disk, not by
-            -- installed(), so a machine holding the 6.11.1 payload would keep
-            -- it; the new key installs the payload this recipe now lays out
-            -- (Linux: the runtime closure under the xlings loader; Windows
-            -- x64: the VC++ runtime in bin/). The fontconfig 2.15.0.1 and
-            -- libglvnd 1.7.0.1 pattern.
-            ["6.11.1.1"] = {},
+            ["latest"] = { ref = "6.11.1" },
             ["6.11.1"] = {},
         },
     },

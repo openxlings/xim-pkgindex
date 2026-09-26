@@ -382,9 +382,10 @@ end
 -- `mark_runtime` records `runtime <RUNTIME_REV>` in the marker once install()
 -- has laid the payload out, and `runtime_current` answers false for a payload
 -- without it. xlings consults installed() for a payload it is installing, not
--- for one already on disk, so a revision of this layout also takes a new
--- version key (6.11.1.1), which is what reaches the machines that installed
--- Qt before.
+-- for one already on disk (openxlings/xlings#620), so a machine that holds a
+-- payload laid out by an earlier RUNTIME_REV keeps it until it is removed. A
+-- revision reaches such machines only under a new version key once the
+-- package has consumers; before that, the key stays and caches are cleared.
 local RUNTIME_REV = "1"
 
 function qtsdk.mark_runtime(marker)
