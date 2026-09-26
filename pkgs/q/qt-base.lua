@@ -59,7 +59,20 @@ package = {
             ["6.11.1"] = {},
         },
         linux = {
-            deps = { "xim:7zip" },
+            deps = {
+                "xim:7zip",
+                -- The libraries Qt's Linux build loads and does not carry
+                -- (readelf -d over lib/ and plugins/platforms/): QtCore's
+                -- glib, zstd and zlib; QtDBus's libdbus; QtGui's fontconfig,
+                -- freetype, X11, xkbcommon and EGL/GL (libglvnd); the xcb
+                -- platform plugin's xcb libraries. install() stamps their
+                -- directories onto the Qt libraries' RUNPATH (libs/qtsdk.lua).
+                "xim:glib", "xim:zstd", "xim:zlib", "xim:dbus",
+                "xim:fontconfig", "xim:freetype", "xim:libX11", "xim:libxkbcommon",
+                "xim:libglvnd", "xim:libxcb", "xim:xcb-util", "xim:xcb-util-cursor",
+                "xim:xcb-util-image", "xim:xcb-util-keysyms", "xim:xcb-util-renderutil",
+                "xim:xcb-util-wm",
+            },
             ["latest"] = { ref = "6.11.1" },
             ["6.11.1"] = {},
         },
@@ -76,6 +89,7 @@ import("xim.libxpkg.log")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.fs")
 import("xim.pkgindex.qtsdk")
+import("xim.pkgindex.selfcontain")
 
 local BASE = {
     ["windows-x86_64"] = {
@@ -192,6 +206,10 @@ function install()
     end
 
     qtsdk.ensure_qt_conf(install_dir)
+    if os.host() == "linux" then
+        selfcontain.seal(install_dir, { "lib" })
+        qtsdk.mark_sealed(marker_path())
+    end
 
     return installed()
 end
@@ -209,6 +227,9 @@ function installed()
     for _, e in ipairs(list) do
         if marker[e.module] ~= e.sha256 then return false end
     end
+    -- A Linux payload installed before its runtime closure was stamped is
+    -- installed again, so an update reaches the machines that have it.
+    if not qtsdk.runtime_sealed(marker) then return false end
 
     local d = pkginfo.install_dir()
     local osname = os.host()

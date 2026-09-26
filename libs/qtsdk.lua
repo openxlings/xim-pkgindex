@@ -328,6 +328,28 @@ function qtsdk.read_marker(marker)
     return map
 end
 
+-- THE RUNTIME CLOSURE, ON LINUX. Qt's official Linux libraries name glib,
+-- libdbus, fontconfig, xcb and the rest by SONAME and carry RUNPATH=$ORIGIN
+-- only: they expect a distribution to provide them. A recipe declares those
+-- packages as its Linux deps and seals lib/ with xim.pkgindex.selfcontain,
+-- which stamps their library directories onto every library there, so a
+-- program that loads Qt resolves Qt's dependencies from the payloads rather
+-- than the host, under any loader -- including a private one that does not
+-- read the host's /usr/lib. `mark_sealed` then records `sealed <RUNTIME_SEAL>`
+-- in the marker, and `runtime_sealed` answers false for a Linux payload
+-- without it, so an update reaches the machines that installed Qt before.
+local RUNTIME_SEAL = "1"
+
+function qtsdk.mark_sealed(marker)
+    local text = os.isfile(marker) and (io.readfile(marker) or "") or ""
+    io.writefile(marker, text .. "sealed " .. RUNTIME_SEAL .. "\n")
+end
+
+function qtsdk.runtime_sealed(marker_map)
+    if os.host() ~= "linux" then return true end
+    return marker_map ~= nil and marker_map.sealed == RUNTIME_SEAL
+end
+
 -- Written by qt.conf's own docs: relocatable installs need this file so
 -- qmake/qtpaths report the right prefix after the tree is moved (which is
 -- exactly what os.mv into install_dir just did). Some archives already ship

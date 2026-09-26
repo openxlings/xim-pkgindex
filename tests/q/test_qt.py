@@ -58,6 +58,19 @@ class TestStatic:
         assert_no_typos(PKG_FILE)
 
     @pytest.mark.static
+    def test_linux_declares_its_runtime_closure(self, meta):
+        """Qt 的 Linux 库按 SONAME 依赖 glib、libdbus、xcb 等，由依赖声明提供并写入 RUNPATH。"""
+        m = re.search(r'linux\s*=\s*\{\s*deps\s*=\s*\{(.*?)\n            \}', meta.raw_content, re.DOTALL)
+        assert m, "linux 平台没有 deps 列表"
+        for dep in ("xim:glib", "xim:zstd", "xim:zlib", "xim:dbus", "xim:fontconfig",
+                    "xim:freetype", "xim:libX11", "xim:libxkbcommon", "xim:libglvnd",
+                    "xim:libxcb", "xim:xcb-util-wm"):
+            assert f'"{dep}"' in m.group(1), f"linux deps 缺少 {dep}"
+        assert 'selfcontain.seal(install_dir, { "lib" })' in meta.raw_content
+        assert "qtsdk.mark_sealed(marker_path())" in meta.raw_content
+        assert "qtsdk.runtime_sealed(marker)" in meta.raw_content
+
+    @pytest.mark.static
     def test_declares_7zip_dependency(self, meta):
         """每个 archive 都是 .7z, 没有 xim:7zip 依赖就没法解压。"""
         for plat in ("windows", "linux", "macosx"):
