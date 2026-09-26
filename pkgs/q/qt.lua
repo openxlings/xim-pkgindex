@@ -68,7 +68,7 @@ package = {
     spec = "2",
 
     name = "qt",
-    description = "Qt 6 base modules (qtbase, qtsvg, qtdeclarative, qttools, qttranslations + platform extras), prebuilt from the official online-installer repository; VCPKG_ROOT-style multi-module install, no qtdoc/debug-info",
+    description = "Qt 6 base modules (qtbase, qtsvg, qtdeclarative, qttools, qttranslations and the platform extras), prebuilt, from the official online-installer repository, extracted into one prefix; documentation and debug symbols excluded",
 
     maintainers = {"The Qt Company"},
     licenses = {"LGPL-3.0-only"},
