@@ -31,7 +31,7 @@ def _base_table():
         path = os.path.join(project_root(), path)
     src = open(path, encoding="utf-8").read()
     start = src.index("local BASE = {")
-    end = src.index("\nlocal function winpath", start)
+    end = src.index("\nlocal function marker_path", start)
     return src[start:end]
 
 
@@ -90,7 +90,8 @@ class TestStatic:
         的某个平台里 -- 否则这张表在保护一个不存在的条目, 掩盖了真正需要
         特殊落盘目录的条目反而没被覆盖。
         """
-        path = os.path.join(project_root(), PKG_FILE)
+        # 这张表在 libs/qtsdk.lua (qt / qt-base / qt-addons 共用)。
+        path = os.path.join(project_root(), "libs/qtsdk.lua")
         src = open(path, encoding="utf-8").read()
         m = re.search(r'local FLAT_MODULE_SUBDIR = \{(.*?)\n\}', src, re.DOTALL)
         assert m, "没找到 FLAT_MODULE_SUBDIR"

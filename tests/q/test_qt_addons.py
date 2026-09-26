@@ -31,7 +31,7 @@ def _addons_table():
         path = os.path.join(project_root(), path)
     src = open(path, encoding="utf-8").read()
     start = src.index("local ADDONS = {")
-    end = src.index("\nlocal function winpath", start)
+    end = src.index("\nlocal function marker_path", start)
     return src[start:end]
 
 
