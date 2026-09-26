@@ -55,7 +55,15 @@ package = {
         -- (pkgs/q/qt.lua's header says why), extracted with xim:7zip.
         windows = {
             deps = { "xim:7zip" },
-            ["latest"] = { ref = "6.11.1" },
+            ["latest"] = { ref = "6.11.1.1" },
+            -- 6.11.1.1: the same Qt 6.11.1 archives under a new version key.
+            -- xlings decides "installed" by the payload on disk, not by
+            -- installed(), so a machine holding the 6.11.1 payload would keep
+            -- it; the new key installs the payload this recipe now lays out
+            -- (Linux: the runtime closure under the xlings loader; Windows
+            -- x64: the VC++ runtime in bin/). The fontconfig 2.15.0.1 and
+            -- libglvnd 1.7.0.1 pattern.
+            ["6.11.1.1"] = {},
             ["6.11.1"] = {},
         },
         linux = {
@@ -84,12 +92,28 @@ package = {
             exports = {
                 runtime = { libdirs = { "lib" } },
             },
-            ["latest"] = { ref = "6.11.1" },
+            ["latest"] = { ref = "6.11.1.1" },
+            -- 6.11.1.1: the same Qt 6.11.1 archives under a new version key.
+            -- xlings decides "installed" by the payload on disk, not by
+            -- installed(), so a machine holding the 6.11.1 payload would keep
+            -- it; the new key installs the payload this recipe now lays out
+            -- (Linux: the runtime closure under the xlings loader; Windows
+            -- x64: the VC++ runtime in bin/). The fontconfig 2.15.0.1 and
+            -- libglvnd 1.7.0.1 pattern.
+            ["6.11.1.1"] = {},
             ["6.11.1"] = {},
         },
         macosx = {
             deps = { "xim:7zip" },
-            ["latest"] = { ref = "6.11.1" },
+            ["latest"] = { ref = "6.11.1.1" },
+            -- 6.11.1.1: the same Qt 6.11.1 archives under a new version key.
+            -- xlings decides "installed" by the payload on disk, not by
+            -- installed(), so a machine holding the 6.11.1 payload would keep
+            -- it; the new key installs the payload this recipe now lays out
+            -- (Linux: the runtime closure under the xlings loader; Windows
+            -- x64: the VC++ runtime in bin/). The fontconfig 2.15.0.1 and
+            -- libglvnd 1.7.0.1 pattern.
+            ["6.11.1.1"] = {},
             ["6.11.1"] = {},
         },
     },
@@ -270,9 +294,8 @@ function installed()
     for _, e in ipairs(list) do
         if marker[e.module] ~= e.sha256 then return false end
     end
-    -- A payload installed before its runtime closure was declared (Linux:
-    -- the loader and RUNPATH; Windows: the VC++ runtime in bin/) is installed
-    -- again, so an update reaches the machines that have it.
+    -- A payload laid out before its runtime closure was declared (Linux: the
+    -- loader and RUNPATH; Windows: the VC++ runtime in bin/) is not this one.
     if not qtsdk.runtime_current(marker) then return false end
 
     local d = pkginfo.install_dir()
