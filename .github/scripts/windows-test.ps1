@@ -483,6 +483,20 @@ foreach ($relFile in $files) {
             Log-Info "  ($removeSpec registers no xvm version of its own -- see the note in this script)"
             continue
         }
+        # Removing xlings when it is the only installed version is refused by
+        # design (exit 2): that binary is the one running the command, and
+        # `xlings self uninstall` exists for it. Same tolerance posix-test.sh
+        # has carried since #543, and for the same reason: #878 made this
+        # script overlay the changed recipe into the index too, so a bump PR
+        # now installs `xim:xlings` -- the runner's own package -- where it
+        # used to install `local:xlings`, which the guard does not match.
+        # #876 (local:xlings@2026.9.26.2) passed; #883 (xim:xlings@2026.9.26.3)
+        # hit the guard with nothing about xlings or its recipe to blame.
+        if ($pkg -eq "xlings" -and $rc -eq 2) {
+            Log-Info "uninstall not asserted: this IS the running xlings, and it is"
+            Log-Info "  the only installed version (use ``xlings self uninstall``)"
+            continue
+        }
         Log-Fail "uninstall failed"
         $failures += "$relFile (uninstall)"
         continue
