@@ -93,15 +93,7 @@ import("xim.libxpkg.system")
 import("xim.libxpkg.log")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.fs")
-
--- Same repository, same mirror list as pkgs/q/qt.lua (see its header for
--- how these were chosen).
-local MIRRORS = {
-    "https://download.qt.io/online/qtsdkrepository/",
-    "https://mirrors.tuna.tsinghua.edu.cn/qt/online/qtsdkrepository/",
-    "https://mirrors.aliyun.com/qt/online/qtsdkrepository/",
-    "https://mirrors.ustc.edu.cn/qtproject/online/qtsdkrepository/",
-}
+import("xim.pkgindex.qtsdk")
 
 local ADDONS = {
     ["windows-x86_64"] = {
@@ -622,297 +614,13 @@ local ADDONS = {
           sha256 = "b01942d6667793528a7fab70788c4adbd74a5032403ac1f5562bec237ac190ba" },
     },
 }
--- path.join mixes separators on Windows -- keep the store path's existing
--- backslashes and turn any forward slashes this recipe adds into backslashes
--- too, matching msvc.lua's winpath() (7z.exe and its arguments both need it).
-local function winpath(p)
-    return (p:gsub("/", "\\"))
-end
-
--- "https://host/a/b" -> "host", for log lines that say WHICH mirror answered.
-local function host_of(url)
-    return (url:match("^%w+://([^/]+)")) or url
-end
-
--- windows: certutil, exactly as msvc.lua uses it (ships with every Windows,
--- prints the digest on its own line -- no quoting gymnastics like
--- Get-FileHash needs).
-local function sha256_of_windows(file)
-    local ok, out = pcall(os.iorun, string.format('certutil -hashfile "%s" SHA256', file))
-    if not ok or not out then return nil end
-    for line in out:gmatch("[^\r\n]+") do
-        local hex = line:gsub("%s+", ""):lower()
-        if #hex == 64 and hex:match("^%x+$") then return hex end
-    end
-    return nil
-end
-
--- linux/macosx: sha256sum first (coreutils, every Linux), shasum second
--- (macOS's own, no sha256sum by default). Whichever answers wins; a missing
--- command is just a pcall failure, not a hook crash.
-local function sha256_of_posix(file)
-    local ok, out = pcall(os.iorun, string.format('sha256sum "%s"', file))
-    if ok and out then
-        local hex = out:match("(%x+)")
-        if hex and #hex == 64 then return hex:lower() end
-    end
-    ok, out = pcall(os.iorun, string.format('shasum -a 256 "%s"', file))
-    if ok and out then
-        local hex = out:match("(%x+)")
-        if hex and #hex == 64 then return hex:lower() end
-    end
-    return nil
-end
-
-local function sha256_of(file)
-    if os.host() == "windows" then return sha256_of_windows(file) end
-    return sha256_of_posix(file)
-end
-
--- Host platform key into BASE/ADDONS ("windows-x86_64", "linux-aarch64",
--- "macosx", ...). Fails closed (returns nil) rather than guessing -- see the
--- header comment for why os.arch() cannot be used here.
-local function host_key()
-    local osname = os.host()
-    if osname == "macosx" then
-        -- one universal payload serves both Apple arches -- no branch needed
-        return "macosx"
-    end
-    local arch
-    if osname == "windows" then
-        local pa = (os.getenv("PROCESSOR_ARCHITECTURE") or ""):upper()
-        if pa == "ARM64" then
-            arch = "aarch64"
-        elseif pa == "AMD64" or pa == "X86" then
-            arch = "x86_64"
-        end
-    elseif osname == "linux" then
-        local ok, out = pcall(os.iorun, "uname -m")
-        local m = ok and (out or ""):gsub("%s+$", "") or ""
-        if m == "aarch64" or m == "arm64" then
-            arch = "aarch64"
-        elseif m == "x86_64" then
-            arch = "x86_64"
-        end
-    end
-    if not arch then return nil end
-    return osname .. "-" .. arch
-end
-
--- xim:7zip's program: `7zz` on linux/macosx (pkgs/7/7zip.lua moves it
--- straight to the install root), `7z.exe` on windows (the SFX installer's
--- own name, also at the install root).
-local function sevenzip_bin()
-    local dir = pkginfo.dep_install_dir("xim:7zip")
-    if not dir then return nil end
-    local rel = os.host() == "windows" and "7z.exe" or "7zz"
-    local p = path.join(dir, rel)
-    if os.isfile(p) then return p end
-    return nil
-end
-
--- Download one archive and prove it is the file this recipe pinned --
--- msvc.lua's fetch_verified(), generalized from ONE address per payload to a
--- shared mirror list every archive uses (see MIRRORS above).
-local function fetch_verified(relpath, dst, want)
-    want = want:lower()
-    if os.isfile(dst) then
-        if sha256_of(dst) == want then return true end
-        os.tryrm(dst)
-    end
-    local why = {}
-    for i, mirror in ipairs(MIRRORS) do
-        local url = mirror .. relpath
-        if i > 1 then
-            log.warn("qt: falling back to " .. host_of(url) .. " for " .. relpath ..
-                      " after: " .. table.concat(why, "; "))
-        else
-            log.info("qt: fetching " .. relpath .. " from " .. host_of(url))
-        end
-        -- pcall: curl -f exits non-zero on a 404 and system.exec RAISES on a
-        -- non-zero exit -- without this the first missing mirror would abort
-        -- the whole install instead of falling through to the next one.
-        pcall(system.exec, string.format('curl -fsSL --retry 3 -o "%s" "%s"', dst, url))
-        if os.isfile(dst) then
-            local got = sha256_of(dst)
-            if got == want then return true end
-            table.insert(why, host_of(url) .. ": sha256 " .. tostring(got))
-            os.tryrm(dst)
-        else
-            table.insert(why, host_of(url) .. ": no file")
-        end
-    end
-    log.error("qt: could not obtain " .. relpath ..
-              "\n  expected sha256 " .. want ..
-              "\n  tried:\n    " .. table.concat(why, "\n    "))
-    return false
-end
-
--- 7-Zip 21+ refuses to write a symlink whose target is ITSELF another
--- symlink from the same archive ("Dangerous link via another link was
--- ignored"), and exits non-zero even though every real payload extracted
--- fine -- it just leaves a 0-byte REGULAR FILE where the first-hop symlink
--- belongs. MEASURED (2026-09-26) against qtbase's own
--- lib/libQt6DBus.so -> libQt6DBus.so.6 -> libQt6DBus.so.6.11.1 chain: exit
--- code 2, both real payloads (`.so.6`, the versioned `.so.6.11.1`) land
--- correctly, only `libQt6DBus.so` itself comes out as an empty file instead
--- of a symlink. The fix recreates that one symlink from its already-correct
--- sibling (`ln -sf libFoo.so.<N> libFoo.so`) rather than fail the whole
--- archive over a placeholder any linker step needs anyway.
---
--- POSIX only. Checked against a real 7zz extraction of the macOS qtbase
--- archive too (2026-09-26): framework bundles ARE internally symlink chains
--- (Versions/Current -> A, QtCore -> Versions/Current/QtCore, ...), but each
--- symlink's target is a MULTI-COMPONENT path through a real directory, not
--- another symlink's bare name in the same directory -- 7-Zip's check does
--- not fire there (exit 0, every framework symlink came out correct). So this
--- is a linux-only repair, and rightly so: there was nothing to repair on
--- macOS to begin with.
---
--- `dest_dir` is where extract_7z() just unpacked ONE archive, and where the
--- broken placeholder ends up differs by archive shape (see
--- FLAT_MODULE_SUBDIR below): a normal Qt module archive is prefix-rooted, so
--- its `.so` files land in `dest_dir/lib`; a FLAT archive (icu) is instead
--- extracted directly into what is already install_dir/lib, so its `.so`
--- files land in `dest_dir` itself. Trying both candidates once is cheaper
--- than threading "which shape was this" through two more functions, and a
--- candidate that does not exist is just skipped.
-local function so_repair_dirs(dest_dir)
-    return { dest_dir, path.join(dest_dir, "lib") }
-end
-
-local function repair_broken_so_symlinks(dest_dir)
-    if os.host() == "windows" then return end
-    for _, libdir in ipairs(so_repair_dirs(dest_dir)) do
-        if os.isdir(libdir) then
-            pcall(system.exec, string.format(
-                [[sh -c 'cd "%s" && for f in *.so; do [ -f "$f" ] || continue; [ -s "$f" ] && continue; cand=$(ls -1 "$f".* 2>/dev/null | grep -E "\.so\.[0-9]+$" | sort -V | head -1); [ -n "$cand" ] && ln -sf "$(basename "$cand")" "$f"; done']],
-                libdir))
-        end
-    end
-end
-
--- True when no 0-byte "*.so" placeholder remains in either candidate dir --
--- the signal that repair_broken_so_symlinks() actually resolved everything
--- extract_7z()'s non-zero exit could have meant, as opposed to a real
--- failure (truncated download, corrupt archive, full disk, ...) that
--- happens to share a non-zero exit code with this one specific case.
-local function no_broken_so_placeholders(dest_dir)
-    for _, libdir in ipairs(so_repair_dirs(dest_dir)) do
-        if os.isdir(libdir) then
-            local ok, out = pcall(os.iorun, string.format(
-                'find "%s" -maxdepth 1 -name "*.so" -size 0 -type f', libdir))
-            if ok and out and out:match("%S") then return false end
-        end
-    end
-    return true
-end
-
--- Extract one .7z into dest_dir via the xim:7zip binary.
---
--- Windows: exe left UNQUOTED, arguments quoted -- msvc.lua's measured cmd /c
--- quoting gotcha (quoting the exe when more quoted args follow makes cmd
--- strip the outer quotes and mangle the line). `-o<dir>` is one token, no
--- space, so the quote sits right after `-o`. Every path is winpath()'d.
--- POSIX: no such hazard, quote everything normally.
-local function extract_7z(zbin, archive, dest_dir)
-    if os.host() == "windows" then
-        return pcall(system.exec, string.format('%s x -y "-o%s" "%s"',
-            winpath(zbin), winpath(dest_dir), winpath(archive)))
-    end
-    local ok = pcall(system.exec, string.format('"%s" x -y "-o%s" "%s"',
-        zbin, dest_dir, archive))
-    if ok then return true end
-    -- See repair_broken_so_symlinks() above for what this is and is not.
-    repair_broken_so_symlinks(dest_dir)
-    return no_broken_so_placeholders(dest_dir)
-end
-
--- A HANDFUL of archives in this repository are NOT laid out from the
--- install prefix root the way every Qt module archive is (qtbase, qtsvg,
--- qtcharts, ... all extract straight into install_dir with their own
--- include/, lib/, ... at the top). These three are flat single/few-file
--- redistributables Qt's own installer places into a SPECIFIC subdirectory
--- of the prefix, and this table is that mapping -- MEASURED by listing each
--- archive (`7zz l`) rather than assumed:
---   icu             -- linux/linux-aarch64 base: 12 files, ALL at archive
---                      root (libicu*.so.73[.2]), belongs under lib/
---   d3dcompiler_47  -- windows-x86_64 base: ONE file (d3dcompiler_47.dll)
---                      at archive root, belongs under bin/ (deployed beside
---                      an app's own Qt DLLs, Qt's documented convention)
---   opengl32sw      -- windows-x86_64 base: ONE file (opengl32sw.dll),
---                      same shape and reason as d3dcompiler_47
--- Every other module in BASE/ADDONS is prefix-rooted and needs no entry
--- here -- extracting an addon module straight into install_dir is correct.
-local FLAT_MODULE_SUBDIR = {
-    icu = "lib",
-    d3dcompiler_47 = "bin",
-    opengl32sw = "bin",
-}
-
--- Fetch+verify+extract every archive in `list` into install_dir, recording
--- each one into `marker` AS SOON AS it lands -- not the whole list up front
--- -- so a mid-run failure leaves the marker naming only what actually made
--- it in (xpackage-spec.md rule R4: assert on the artifact, not the intent).
--- installed() below treats the marker as authoritative and checks it
--- against THIS recipe's current list, module by module and sha256 by
--- sha256, plus a few sentinel files.
-local function fetch_and_extract(list, install_dir, marker)
-    local zbin = sevenzip_bin()
-    if not zbin then
-        log.error("qt: no 7-Zip binary found under the xim:7zip payload " ..
-                  "(declared dependency; this is a broken installation)")
-        return false
-    end
-    local work = path.join(install_dir, ".dl")
-    fs.mkdir_p(work)
-    fs.mkdir_p(install_dir)
-
-    local marker_lines = {}
-    for _, e in ipairs(list) do
-        local dst = path.join(work, e.name)
-        if not fetch_verified(e.path, dst, e.sha256) then
-            return false
-        end
-        local dest = install_dir
-        local sub = FLAT_MODULE_SUBDIR[e.module]
-        if sub then
-            dest = path.join(install_dir, sub)
-            fs.mkdir_p(dest)
-        end
-        if not extract_7z(zbin, dst, dest) then
-            log.error("qt: 7zip extraction failed for " .. e.name)
-            return false
-        end
-        os.tryrm(dst)
-        table.insert(marker_lines, e.module .. " " .. e.sha256)
-        -- Written after EVERY archive, not just at the end -- a hook that
-        -- dies partway through still leaves a marker naming what is really
-        -- there.
-        io.writefile(marker, table.concat(marker_lines, "\n") .. "\n")
-    end
-    os.tryrm(work)
-    return true
-end
-
--- Parses the marker `fetch_and_extract` wrote: "<module> <sha256>" per line.
-local function read_marker(marker)
-    if not os.isfile(marker) then return nil end
-    local content = io.readfile(marker) or ""
-    local map = {}
-    for line in content:gmatch("[^\n]+") do
-        local mod, sha = line:match("^(%S+)%s+(%x+)$")
-        if mod then map[mod] = sha end
-    end
-    return map
-end
 
 local function marker_path()
     return path.join(pkginfo.install_dir(), ".qt-addons-archives.txt")
 end
 
 function install()
-    local key = host_key()
+    local key = qtsdk.host_key()
     if not key then
         log.error("qt-addons: could not determine host platform/arch for this install")
         return false
@@ -927,7 +635,7 @@ function install()
     os.tryrm(install_dir)
     fs.mkdir_p(install_dir)
 
-    if not fetch_and_extract(list, install_dir, marker_path()) then
+    if not qtsdk.fetch_and_extract(list, install_dir, marker_path(), "qt-addons") then
         return false
     end
 
@@ -940,12 +648,12 @@ end
 -- per representative module, present on every platform this recipe lists)
 -- back it up against a hand-edited install directory.
 function installed()
-    local key = host_key()
+    local key = qtsdk.host_key()
     if not key then return false end
     local list = ADDONS[key]
     if not list then return false end
 
-    local marker = read_marker(marker_path())
+    local marker = qtsdk.read_marker(marker_path())
     if not marker then return false end
     for _, e in ipairs(list) do
         if marker[e.module] ~= e.sha256 then return false end
