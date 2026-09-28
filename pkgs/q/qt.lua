@@ -127,7 +127,12 @@ package = {
                 runtime = { libdirs = { "lib" } },
             },
             ["latest"] = { ref = "6.11.1" },
-            ["6.11.1"] = {},
+            -- Revision 1: a payload laid out before the runtime closure was
+            -- declared (no elfpatch, RUNPATH=$ORIGIN only) has no `runtime`
+            -- line in its archive marker, and installed() says so -- but
+            -- xlings asks the revision, not installed(), whether an
+            -- installed payload is current (xlings#632 §3). This replaces it.
+            ["6.11.1"] = { revision = 1 },
         },
         macosx = {
             deps = { "xim:7zip" },

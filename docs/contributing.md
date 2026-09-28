@@ -79,7 +79,8 @@ workflow 边界见 [CI 镜像与自动更新设计](../.agents/docs/2026-07-12-x
    `url`/`sha256`，并把 `revision` 增为 N（见 V2 规范的
    [`revision`](V2/xpackage-spec.md#revision--a-packaging-change-under-an-unchanged-version)
    一节）。`.github/scripts/check-revision.lua` 拒绝资源变化而 `revision` 未增加的
-   改动；改变安装结果的 hook 修改同样需要增加 `revision`，由 review 判断。
+   改动；改变安装结果的 hook 修改（包括 config 的效果，见 §5.4）同样需要增加
+   `revision`，由 review 判断。
 
 `xim-index` 索引工件属于独立发布链：它使用版本化 tarball、pointer 和 SHA256，不能
 把索引工件放进软件包的 `xlings-res/<package>` 目录，也不能把二进制资源当成索引工件。
@@ -178,6 +179,25 @@ redistributable 目录就是编译器的运行时。
 `tests/test_no_compiler_runtime_in_payloads.py` 检查配方源码:注释以外的代码行不得出现上述
 名字或 redistributable 归档。去掉运行时副本的配方同时提高 `revision`,使已安装的旧载荷在下次
 使用时被替换;`installed()` 也不得再断言这些文件存在。
+
+### 5.4 config 的效果与 `revision`（xlings 2026.9.29.1 起）
+
+payload 由整个 home 共享，config 却是每个 scope（subos 或项目）各跑一次。xlings 在每个 scope
+的 `.xlings.json` 里记录 `configured`（包 → 配置时的 `revision`）；一个包已安装、且本 scope
+按当前 `revision` 配置过时，`xlings install` 不会再跑它的 config（`--reconfig` 强制重跑）。
+由此有两条规则：
+
+1. **改变 config 效果的修改必须增加 `revision`**（注册的命令、sysroot 链接、`subos.env`
+   声明、写出的文件）。这是唯一能让每个 scope 在下一次安装时各自重新配置的信号；只改
+   hook 不加 revision，已配置过的 scope 永远看不到新 config。
+2. **config 不能把 scope 相关的数据写进共享 payload**（例如用 `system.subos_sysrootdir()`
+   的路径改写 payload 里的文件）。两个 scope 会互相覆盖，而且有了上面的记录之后，谁也
+   不会再改写回来。需要 scope 路径的内容写进 scope 自己（sysroot、`subos.env`），或者像
+   gcc 的 specs 那样写 payload 直达路径、在执行时再展开 scope。
+
+`installed()` 不是"已安装的 payload 是否最新"的信号：xlings 对已安装的 payload 只看
+`revision`。用 `installed()` 判定布局过期的配方（例如 qt 的 `runtime` 标记）同时要增加
+`revision`，旧 payload 才会被替换。
 
 ## 6. PR 清单
 
