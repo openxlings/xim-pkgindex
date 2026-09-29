@@ -114,11 +114,24 @@ end
 -- xim:7zip's program: `7zz` on linux/macosx (pkgs/7/7zip.lua moves it
 -- straight to the install root), `7z.exe` on windows (the SFX installer's
 -- own name, also at the install root).
+--
+-- 7-Zip is a BUILD dependency of every recipe that calls this: it is needed
+-- only while install() unpacks archives, and a runtime dependency would put
+-- `7z` and `7zz` on the user's PATH for good. A build dep is placed in the
+-- store and not activated, so the program is reached by its payload path.
+--
+-- Asked for by the BARE name, on purpose. xlings exports the payload as
+-- XLINGS_BUILDDEP_7ZIP_PATH -- namespace stripped -- while libxpkg 0.0.59 and
+-- earlier build the key from the string they are given, so "xim:7zip" looks up
+-- XLINGS_BUILDDEP_XIM_7ZIP_PATH, misses, falls back to dep_install_dir, and
+-- that has no record for a build dep (xlings records resolved_deps for runtime
+-- deps only). The bare name is the spelling that answers on every client.
 local function sevenzip_bin()
-    local dir = pkginfo.dep_install_dir("xim:7zip")
-    if not dir then return nil end
+    if type(pkginfo.build_dep) ~= "function" then return nil end
+    local bd = pkginfo.build_dep("7zip")
+    if not bd or not bd.path then return nil end
     local rel = os.host() == "windows" and "7z.exe" or "7zz"
-    local p = path.join(dir, rel)
+    local p = path.join(bd.path, rel)
     if os.isfile(p) then return p end
     return nil
 end
@@ -213,40 +226,89 @@ local function repair_broken_so_symlinks(dest_dir)
     end
 end
 
--- True when no 0-byte "*.so" placeholder remains in either candidate dir --
--- the signal that repair_broken_so_symlinks() actually resolved everything
--- extract_7z()'s non-zero exit could have meant, as opposed to a real
--- failure (truncated download, corrupt archive, full disk, ...) that
+-- How many 0-byte "*.so" placeholders sit in the candidate dirs. Zero after
+-- repair_broken_so_symlinks() is the signal that it actually resolved
+-- everything extract_7z()'s non-zero exit could have meant, as opposed to a
+-- real failure (truncated download, corrupt archive, full disk, ...) that
 -- happens to share a non-zero exit code with this one specific case.
-local function no_broken_so_placeholders(dest_dir)
+local function count_broken_so_placeholders(dest_dir)
+    local n = 0
     for _, libdir in ipairs(so_repair_dirs(dest_dir)) do
         if os.isdir(libdir) then
             local ok, out = pcall(os.iorun, string.format(
                 'find "%s" -maxdepth 1 -name "*.so" -size 0 -type f', libdir))
-            if ok and out and out:match("%S") then return false end
+            if ok and out then
+                for line in out:gmatch("[^\r\n]+") do
+                    if line:match("%S") then n = n + 1 end
+                end
+            end
         end
     end
-    return true
+    return n
+end
+
+local function no_broken_so_placeholders(dest_dir)
+    return count_broken_so_placeholders(dest_dir) == 0
+end
+
+-- The last `max` bytes of `text`, for an error message that has to carry a
+-- tool's whole output without being able to bound it.
+local function tail_of(text, max)
+    if #text <= max then return text end
+    return "[... " .. (#text - max) .. " bytes omitted]\n" .. text:sub(-max)
 end
 
 -- Extract one .7z into dest_dir via the xim:7zip binary.
+--
+-- `-bso0 -bsp0` silence 7-Zip's banner, file list and progress, which a hook
+-- would otherwise write straight onto the installer's screen; its errors stay
+-- on stderr. On POSIX both streams go to a file beside the archive, because a
+-- non-zero exit is not always a failure here (see above) and the output is
+-- what a real failure must show: the chained-link case is reported in ONE
+-- line, anything else prints what 7-Zip said.
 --
 -- Windows: exe left UNQUOTED, arguments quoted -- msvc.lua's measured cmd /c
 -- quoting gotcha (quoting the exe when more quoted args follow makes cmd
 -- strip the outer quotes and mangle the line). `-o<dir>` is one token, no
 -- space, so the quote sits right after `-o`. Every path is winpath()'d.
 -- POSIX: no such hazard, quote everything normally.
-local function extract_7z(zbin, archive, dest_dir)
+local function extract_7z(zbin, archive, dest_dir, tag)
     if os.host() == "windows" then
-        return pcall(system.exec, string.format('%s x -y "-o%s" "%s"',
+        return pcall(system.exec, string.format('%s x -y -bso0 -bsp0 "-o%s" "%s"',
             winpath(zbin), winpath(dest_dir), winpath(archive)))
     end
-    local ok = pcall(system.exec, string.format('"%s" x -y "-o%s" "%s"',
-        zbin, dest_dir, archive))
+    local out_file = archive .. ".out"
+    local ok = pcall(system.exec, string.format('"%s" x -y -bso0 -bsp0 "-o%s" "%s" >"%s" 2>&1',
+        zbin, dest_dir, archive, out_file))
+    local said = os.isfile(out_file) and (io.readfile(out_file) or "") or ""
+    os.tryrm(out_file)
     if ok then return true end
     -- See repair_broken_so_symlinks() above for what this is and is not.
+    local refused = count_broken_so_placeholders(dest_dir)
     repair_broken_so_symlinks(dest_dir)
-    return no_broken_so_placeholders(dest_dir)
+    if not no_broken_so_placeholders(dest_dir) then
+        log.error(tag .. ": 7-Zip failed on " .. path.filename(archive) ..
+                  " and its .so links could not be recreated:\n" .. tail_of(said, 8192))
+        return false
+    end
+    if refused > 0 then
+        log.info(string.format("%s: 7-Zip refused %d chained .so links; recreated", tag, refused))
+    end
+    -- Whatever 7-Zip said that is not the link message this repaired is not
+    -- hidden. (A non-zero exit with no placeholder at all is treated as it
+    -- always has been -- there is nothing to repair -- but it is no longer
+    -- silent.)
+    local other = {}
+    for line in said:gmatch("[^\r\n]+") do
+        if line:match("%S") and not line:match("^ERROR: Dangerous link via another link was ignored : .*%.so ") then
+            table.insert(other, line)
+        end
+    end
+    if #other > 0 then
+        log.warn(tag .. ": 7-Zip reported on " .. path.filename(archive) .. ":\n  " ..
+                 tail_of(table.concat(other, "\n  "), 8192))
+    end
+    return true
 end
 
 -- A HANDFUL of archives in this repository are NOT laid out from the
@@ -299,7 +361,7 @@ function qtsdk.fetch_and_extract(list, install_dir, marker, tag)
     local zbin = sevenzip_bin()
     if not zbin then
         log.error(tag .. ": no 7-Zip binary found under the xim:7zip payload " ..
-                  "(declared dependency; this is a broken installation)")
+                  "(declared build dependency; this is a broken installation)")
         return false
     end
     local work = path.join(install_dir, ".dl")
@@ -324,7 +386,7 @@ function qtsdk.fetch_and_extract(list, install_dir, marker, tag)
             -- `pick.from` copied into `pick.to`, the rest discarded.
             local scratch = path.join(work, "x-" .. e.module)
             fs.mkdir_p(scratch)
-            if not extract_7z(zbin, dst, scratch) then
+            if not extract_7z(zbin, dst, scratch, tag) then
                 log.error(tag .. ": 7zip extraction failed for " .. e.name)
                 return false
             end
@@ -343,7 +405,7 @@ function qtsdk.fetch_and_extract(list, install_dir, marker, tag)
                 end
             end
             os.tryrm(scratch)
-        elseif not extract_7z(zbin, dst, dest) then
+        elseif not extract_7z(zbin, dst, dest, tag) then
             log.error(tag .. ": 7zip extraction failed for " .. e.name)
             return false
         end

@@ -54,7 +54,7 @@ package = {
         -- Empty version entries: install() fetches the archive set itself
         -- (pkgs/q/qt.lua's header says why), extracted with xim:7zip.
         windows = {
-            deps = { "xim:7zip" },
+            deps = { build = { "xim:7zip" } },
             ["latest"] = { ref = "6.11.1" },
             -- Revision 1: the payload no longer carries the MSVC C++ runtime
             -- (docs/contributing.md §5.3). The program's build places the
@@ -65,26 +65,30 @@ package = {
         },
         linux = {
             deps = {
-                "xim:7zip",
-                -- Qt's official Linux build names these by SONAME and carries
-                -- RUNPATH=$ORIGIN only (readelf -d over lib/ and
-                -- plugins/platforms/). Declaring them with xim:glibc -- the
-                -- loader provider -- makes xlings patch the whole payload
-                -- after install(): every executable (moc, lupdate, ...) runs
-                -- under the xlings loader, and every ELF file's RUNPATH is the
-                -- closure of these packages and this payload's lib/, so the
-                -- tools and a program linked by mcpp share one loader and libc.
-                "xim:glibc",
-                "xim:glib", "xim:zstd", "xim:zlib", "xim:dbus",
-                "xim:fontconfig", "xim:freetype", "xim:libX11", "xim:libxkbcommon",
-                "xim:libglvnd", "xim:libxcb", "xim:xcb-util", "xim:xcb-util-cursor",
-                "xim:xcb-util-image", "xim:xcb-util-keysyms", "xim:xcb-util-renderutil",
-                "xim:xcb-util-wm",
-                -- libstdc++ and libgcc_s (every Qt library); the Wayland
-                -- client libraries (the wayland platform plugin); libdrm (the
-                -- linuxfb platform plugin); QtNetwork's GSSAPI and Brotli
-                -- decoder.
-                "xim:gcc-runtime", "xim:wayland", "xim:libdrm", "xim:krb5", "xim:brotli",
+                runtime = {
+                    -- Qt's official Linux build names these by SONAME and carries
+                    -- RUNPATH=$ORIGIN only (readelf -d over lib/ and
+                    -- plugins/platforms/). Declaring them with xim:glibc -- the
+                    -- loader provider -- makes xlings patch the whole payload
+                    -- after install(): every executable (moc, lupdate, ...) runs
+                    -- under the xlings loader, and every ELF file's RUNPATH is the
+                    -- closure of these packages and this payload's lib/, so the
+                    -- tools and a program linked by mcpp share one loader and libc.
+                    "xim:glibc",
+                    "xim:glib", "xim:zstd", "xim:zlib", "xim:dbus",
+                    "xim:fontconfig", "xim:freetype", "xim:libX11", "xim:libxkbcommon",
+                    "xim:libglvnd", "xim:libxcb", "xim:xcb-util", "xim:xcb-util-cursor",
+                    "xim:xcb-util-image", "xim:xcb-util-keysyms", "xim:xcb-util-renderutil",
+                    "xim:xcb-util-wm",
+                    -- libstdc++ and libgcc_s (every Qt library); the Wayland
+                    -- client libraries (the wayland platform plugin); libdrm (the
+                    -- linuxfb platform plugin); QtNetwork's GSSAPI and Brotli
+                    -- decoder.
+                    "xim:gcc-runtime", "xim:wayland", "xim:libdrm", "xim:krb5", "xim:brotli",
+                },
+                -- 7-Zip only unpacks the archives in install(); it is not part of what the
+                -- payload loads, so it is a build dep (docs/contributing.md §5.5).
+                build = { "xim:7zip" },
             },
             exports = {
                 runtime = { libdirs = { "lib" } },
@@ -98,7 +102,7 @@ package = {
             ["6.11.1"] = { revision = 1 },
         },
         macosx = {
-            deps = { "xim:7zip" },
+            deps = { build = { "xim:7zip" } },
             ["latest"] = { ref = "6.11.1" },
             ["6.11.1"] = {},
         },

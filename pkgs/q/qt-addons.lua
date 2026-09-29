@@ -71,17 +71,17 @@ package = {
 
     xpm = {
         windows = {
-            deps = { "xim:7zip", "xim:qt@6.11.1" },
+            deps = { runtime = { "xim:qt@6.11.1" }, build = { "xim:7zip" } },
             ["latest"] = { ref = "6.11.1" },
             ["6.11.1"] = {},
         },
         linux = {
-            deps = { "xim:7zip", "xim:qt@6.11.1" },
+            deps = { runtime = { "xim:qt@6.11.1" }, build = { "xim:7zip" } },
             ["latest"] = { ref = "6.11.1" },
             ["6.11.1"] = {},
         },
         macosx = {
-            deps = { "xim:7zip", "xim:qt@6.11.1" },
+            deps = { runtime = { "xim:qt@6.11.1" }, build = { "xim:7zip" } },
             ["latest"] = { ref = "6.11.1" },
             ["6.11.1"] = {},
         },

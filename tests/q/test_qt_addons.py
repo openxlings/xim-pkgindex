@@ -5,6 +5,7 @@ import glob
 import subprocess
 import pytest
 from tests.lib.xpkg_parser import parse_xpkg
+from tests.lib.recipe_deps import declared_deps
 from tests.lib.assertions import (
     assert_required_fields, assert_valid_spec, assert_valid_type,
     assert_no_typos, assert_no_exec_xvm, assert_no_bashrc_modification,
@@ -59,13 +60,13 @@ class TestStatic:
 
     @pytest.mark.static
     def test_declares_qt_and_7zip_dependency(self, meta):
-        """每个模块都要链接 qtbase; 每个 archive 都是 .7z。"""
+        """每个模块都要链接 qtbase (runtime); 每个 archive 都是 .7z, 但 7-Zip 只在
+        install() 里用 (build, docs/contributing.md §5.5)。"""
+        deps = declared_deps(PKG_FILE)
         for plat in ("windows", "linux", "macosx"):
-            block = re.search(
-                rf'{plat}\s*=\s*\{{\s*deps\s*=\s*\{{([^}}]*)\}}', meta.raw_content)
-            assert block, f"{plat} 平台没有 deps 声明"
-            assert '"xim:7zip"' in block.group(1), f"{plat} 缺 xim:7zip 依赖"
-            assert '"xim:qt@6.11.1"' in block.group(1), f"{plat} 缺 xim:qt@6.11.1 依赖"
+            assert "xim:qt@6.11.1" in deps[plat]["runtime"], f"{plat} 缺 xim:qt@6.11.1 依赖"
+            assert "xim:7zip" in deps[plat]["build"], f"{plat} 缺 xim:7zip build 依赖"
+            assert "xim:7zip" not in deps[plat]["runtime"], f"{plat} 把 xim:7zip 声明成了 runtime 依赖"
 
     @pytest.mark.static
     def test_addons_table_has_every_platform_and_field(self):

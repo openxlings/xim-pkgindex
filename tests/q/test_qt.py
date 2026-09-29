@@ -5,6 +5,7 @@ import os
 import subprocess
 import pytest
 from tests.lib.xpkg_parser import parse_xpkg
+from tests.lib.recipe_deps import declared_deps
 from tests.lib.assertions import (
     assert_required_fields, assert_valid_spec, assert_valid_type,
     assert_no_typos, assert_no_exec_xvm, assert_no_bashrc_modification,
@@ -88,11 +89,13 @@ class TestStatic:
 
     @pytest.mark.static
     def test_declares_7zip_dependency(self, meta):
-        """每个 archive 都是 .7z, 没有 xim:7zip 依赖就没法解压。"""
+        """每个 archive 都是 .7z, 没有 xim:7zip 依赖就没法解压 —— 但 7-Zip 只在
+        install() 里用, 属于 build 依赖: 声明成 runtime 会把 7z/7zz 永久激活到
+        用户的 PATH 上 (docs/contributing.md §5.5)。"""
+        deps = declared_deps(PKG_FILE)
         for plat in ("windows", "linux", "macosx"):
-            assert re.search(
-                rf'{plat}\s*=\s*\{{\s*deps\s*=\s*\{{[^}}]*"xim:7zip"',
-                meta.raw_content), f"{plat} 平台缺少 xim:7zip 依赖声明"
+            assert "xim:7zip" in deps[plat]["build"], f"{plat} 平台缺少 xim:7zip build 依赖"
+            assert "xim:7zip" not in deps[plat]["runtime"], f"{plat} 平台把 xim:7zip 声明成了 runtime 依赖"
 
     @pytest.mark.static
     def test_base_table_has_every_platform_and_field(self):

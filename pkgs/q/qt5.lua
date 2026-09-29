@@ -12,13 +12,18 @@ package = {
     xpm = {
         linux = {
             deps = {
-                "xim:7zip", "xim:glibc", "xim:gcc-runtime", "xim:glib",
-                "xim:gtk3", "xim:atk", "xim:cairo", "xim:libcups", "xim:dbus",
-                "xim:libdrm", "xim:fontconfig", "xim:freetype", "xim:gdk-pixbuf",
-                "xim:krb5", "xim:pango", "xim:zlib", "xim:libglvnd",
-                "xim:libX11", "xim:libXext", "xim:libxcb", "xim:libxkbcommon",
-                "xim:xcb-util", "xim:xcb-util-image", "xim:xcb-util-keysyms",
-                "xim:xcb-util-renderutil", "xim:xcb-util-wm",
+                runtime = {
+                    "xim:glibc", "xim:gcc-runtime", "xim:glib",
+                    "xim:gtk3", "xim:atk", "xim:cairo", "xim:libcups", "xim:dbus",
+                    "xim:libdrm", "xim:fontconfig", "xim:freetype", "xim:gdk-pixbuf",
+                    "xim:krb5", "xim:pango", "xim:zlib", "xim:libglvnd",
+                    "xim:libX11", "xim:libXext", "xim:libxcb", "xim:libxkbcommon",
+                    "xim:xcb-util", "xim:xcb-util-image", "xim:xcb-util-keysyms",
+                    "xim:xcb-util-renderutil", "xim:xcb-util-wm",
+                },
+                -- 7-Zip only unpacks the archives in install(); it is not part of what the
+                -- payload loads, so it is a build dep (docs/contributing.md §5.5).
+                build = { "xim:7zip" },
             },
             exports = { runtime = { libdirs = {"lib"} } },
             ["latest"] = { ref = "5.15.2" },
