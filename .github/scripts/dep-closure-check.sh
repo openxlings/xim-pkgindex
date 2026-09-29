@@ -53,6 +53,17 @@
 # all legitimate reasons, and failing on them would train people to delete
 # correct declarations.
 #
+# D3  (advisory, never a failure) a declared RUNTIME dep that is a tool and
+#     provides no library at all -- an installed payload with a program and
+#     no shared object, such as 7zip, patchelf or cmake -- is probably here
+#     for install(). A runtime dep is activated in the user's workspace, so
+#     that puts its programs on their PATH for good; if only install() uses
+#     it, it belongs under `build`. It is a hint and not a check because a
+#     tool can be a runtime dependency on purpose (the app runs it), and
+#     because a dlopen'd name is invisible to a static scan. It stays quiet
+#     for a package with no program in it (`xim:graphics`, a discovery
+#     package, ships an empty payload; data packages ship no executables).
+#
 # EXIT CODES -- the contract in .agents/tools/README.md
 #   0 proven   1 broken   2 inconclusive   3 could not be exercised here
 set -uo pipefail
@@ -197,6 +208,26 @@ if [[ $scanned -eq 0 ]]; then
     exit 3
 fi
 
+# ── D3: tool-only runtime deps (advisory) ───────────────────────────────
+# Prints, never fails. A dep with no installed payload is skipped: not
+# observed is not "provides nothing".
+d3_advisory() {
+    local d dir seen libs exe
+    while IFS= read -r d; do
+        [[ -n "$d" ]] || continue
+        seen=0; libs=0; exe=0
+        for dir in "$XPKGS"/*-x-"$d"; do
+            [[ -d "$dir" ]] || continue
+            seen=1
+            [[ -n "$(find "$dir" -mindepth 2 -maxdepth 6 -name '*.so*' \( -type f -o -type l \) -print -quit 2>/dev/null)" ]] && libs=1
+            [[ -n "$(find "$dir" -mindepth 2 -maxdepth 4 -type f -perm -u+x ! -name '.*' ! -name '*.so*' -print -quit 2>/dev/null)" ]] && exe=1
+        done
+        if [[ $seen -eq 1 && $libs -eq 0 && $exe -eq 1 ]]; then
+            say "D3: $d provides no library; if only install() uses it, declare it under build"
+        fi
+    done <<<"$declared"
+}
+
 # ── the assertions ──────────────────────────────────────────────────────
 undeclared=(); hostonly=(); used=()
 for n in $(printf '%s\n' "${!NEEDED_BY[@]}" | sort); do
@@ -221,6 +252,7 @@ if [[ $sealed -eq 0 ]]; then
     say "D1/D2 are reported but not enforced -- the host is its provider by design."
     [[ ${#undeclared[@]} -gt 0 ]] && say "  would-be undeclared: ${#undeclared[@]}"
     [[ ${#hostonly[@]}   -gt 0 ]] && say "  host-provided sonames: ${#hostonly[@]}"
+    d3_advisory
     exit 0
 fi
 
@@ -255,6 +287,8 @@ while IFS= read -r d; do
     grep -qxF "$d" <<<"$used_list" \
         || say "warn: declares '$d', but nothing in the payload names a soname it provides"
 done <<<"$declared"
+
+d3_advisory
 
 if [[ $rc -eq 0 ]]; then
     say "dependency closure: $scanned ELF, ${#NEEDED_BY[@]} external soname(s), all accounted for"

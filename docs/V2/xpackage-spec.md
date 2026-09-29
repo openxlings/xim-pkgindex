@@ -544,6 +544,14 @@ returns nil. If a hook uses a package's payload, that package is a dependency:
 declare it. For a payload the hook installed *itself* (`pkgmanager.install`),
 use `pkginfo.tool_payload_dir`, which keeps its own store scan.
 
+**Build-only dependencies are the exception, and only for `build_dep`.** A tool
+that `install()` alone uses (`7zip`, `patchelf`) is declared under `deps.build`
+and asked for with `pkginfo.build_dep("7zip")` -- the BARE name. xlings exports
+the payload as `XLINGS_BUILDDEP_<NAME>_PATH` with the namespace stripped, and
+libxpkg 0.0.59 and earlier build the key from the string they are given, so
+`build_dep("xim:7zip")` misses the variable and then misses `dep_install_dir`
+too: a build dep has no `resolved_deps` record. `docs/contributing.md` §5.5.
+
 Measured (openxlings/xlings#524): six of the seven `dep_install_dir` call sites
 in this index passed a bare name while declaring a namespaced, ranged one. They
 worked while a store scan covered for it; when xlings 2026.8.10.1 began

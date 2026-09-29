@@ -199,6 +199,39 @@ payload 由整个 home 共享，config 却是每个 scope（subos 或项目）�
 `revision`。用 `installed()` 判定布局过期的配方（例如 qt 的 `runtime` 标记）同时要增加
 `revision`，旧 payload 才会被替换。
 
+### 5.5 只在 `install()` 里用的工具:`deps.build`
+
+`runtime` 依赖会被激活到用户的 workspace(它的命令出现在 PATH 上),并进入 RPATH 闭包。
+一个只在 `install()` 里解包或打补丁的工具 —— 7zip、patchelf、cmake 这类**只有程序、没有库**的包 ——
+不属于运行时;声明成 `runtime`,用户装一个 chatgpt 或 qt,就永久多出 `7z` 和 `7zz`。这类依赖写在 `build` 下:
+
+```lua
+deps = {
+    runtime = { "xim:glibc", "xim:gtk3" },
+    build   = { "xim:7zip@26.02" },
+}
+```
+
+- 用分离形状,不要在同一个 `deps` 里混写位置列表和 `build`(`tests/test_deps_shape.py`)。
+- build 依赖已经安装在 store 里,但**没有激活**:`7zz` 不在 PATH 上,要用绝对路径。取路径用
+  `pkginfo.build_dep("<裸名>")`,返回 `{ path, bin, ... }`;7zip 的程序在 payload 根,所以是
+  `path.join(bd.path, "7zz")`。
+- **`build_dep` 用裸名,不带命名空间**(`"7zip"`,不是 `"xim:7zip"`)。xlings 导出
+  `XLINGS_BUILDDEP_<NAME>_PATH` 时去掉命名空间,而 libxpkg ≤ 0.0.59 用传入的字符串拼键名:
+  `build_dep("xim:7zip")` 查 `XLINGS_BUILDDEP_XIM_7ZIP_PATH`,查不到,退回 `dep_install_dir`,
+  而 xlings 只为 runtime 依赖记录 `resolved_deps`,于是返回 nil。这与
+  [V2 规范](V2/xpackage-spec.md#ask-with-the-coordinate-you-declared)对 `dep_install_dir` 的要求相反,
+  只适用于 `build_dep`;`dep_install_dir` 对 build 依赖没有记录,不要用。
+- `.github/scripts/dep-closure-check.sh` 的 **D3** 提醒漏网的:某个声明的 runtime 依赖没有提供任何共享库、
+  但装着程序(`D3: 7zip provides no library; if only install() uses it, declare it under build`)。
+  它只是提示,从不失败 —— 应用可以合法地在运行时调用一个工具(emsdk 运行 node);它看不到的也不少。
+
+**ChatGPT 不带 Chromium 的 Qt UI 集成。** `libqt5_shim.so`、`libqt6_shim.so` 只在 KDE 会话或
+`--ui-toolkit=qt` 时被 dlopen,其他情况走 gtk3;为它们声明 `qt5` 和 `qt-base` 会给每个安装多带
+10 个包、约 620 MB。`install()` 删掉这两个文件,`deps` 不再声明 Qt,`revision` 增为 1。
+KDE 下的行为(回退到 GTK)由 `chatgpt-runtime.yml` 在虚拟 X 服务器上验证;详见
+`.agents/docs/chatgpt.md`。
+
 ## 6. PR 清单
 
 PR 描述至少包含：
