@@ -49,13 +49,45 @@ for platform, entries in pairs(package.xpm) do
             assert((platform == "linux") == (resources.x86_64 ~= nil))
             assert((platform == "macosx") == (resources.aarch64 ~= nil))
             for arch, asset in pairs(resources) do
-                assert(asset.url:match("^https://persistent%.oaistatic%.com/"))
-                assert(asset.url:find(version, 1, true))
-                assert(#asset.sha256 == 64 and asset.sha256:match("^[0-9a-f]+$"))
+                -- `revision` sits beside the arch keys; it is not an asset
+                if arch ~= "revision" then
+                    assert(asset.url:match("^https://persistent%.oaistatic%.com/"))
+                    assert(asset.url:find(version, 1, true))
+                    assert(#asset.sha256 == 64 and asset.sha256:match("^[0-9a-f]+$"))
+                end
             end
         end
     end
 end
+'''
+    subprocess.run([lua, "-", str(RECIPE)], input=code, text=True, check=True)
+
+
+@pytest.mark.static
+def test_deps_split_build_from_runtime():
+    """7-Zip only unpacks the deb, so it is a build dep and never on the user's
+    PATH; the Qt packages were only for Chromium's optional Qt UI shims, which
+    the payload no longer keeps."""
+    lua = shutil.which("lua") or shutil.which("lua5.4")
+    if not lua:
+        pytest.skip("Lua is required to evaluate the descriptor")
+    code = r'''
+import = function() end
+dofile(arg[1])
+local deps = package.xpm.linux.deps
+-- the split form: a positional list next to `build` reads the same and is
+-- dropped by clients older than libxpkg 0.0.52
+assert(#deps == 0 and type(deps.runtime) == "table" and type(deps.build) == "table")
+local function has(list, pattern)
+    for _, d in ipairs(list) do if d:match(pattern) then return true end end
+    return false
+end
+assert(has(deps.build, "^xim:7zip"), "7zip must be a build dep")
+assert(not has(deps.runtime, "7zip"), "7zip must not be a runtime dep")
+for _, list in ipairs({ deps.runtime, deps.build }) do
+    assert(not has(list, "^xim:qt"), "the Qt packages only fed the removed UI shims")
+end
+assert(has(deps.runtime, "^xim:gtk3$"), "gtk3 is what replaces the Qt UI")
 '''
     subprocess.run([lua, "-", str(RECIPE)], input=code, text=True, check=True)
 
@@ -98,6 +130,8 @@ def test_deb_install_roundtrip(tmp_path, version):
     static = bytearray(64)
     static[0:4] = b"\x7fELF"; static[4] = 2; static[5] = 1; static[18:20] = b"\x3e\x00"
     (app / "resources").mkdir(exist_ok=True)
+    (app / "libqt5_shim.so").write_bytes(b"shim")
+    (app / "libqt6_shim.so").write_bytes(b"shim")
     (app / "resources/static-helper").write_bytes(bytes(static))
     (app / "resources/app.asar").write_bytes(b"fixture")
     (app / "resources/asar-link").symlink_to("app.asar")
@@ -129,7 +163,11 @@ pkginfo = {
     install_dir = function() return target end,
     install_file = function() return archive end,
     version = function() return "26.924.22138" end,
-    dep_install_dir = function() return dep end,
+    -- 7-Zip is a build dep: the only way to it is build_dep, by its bare name
+    build_dep = function(name)
+        assert(name == "7zip", "asked for " .. tostring(name))
+        return { path = dep }
+    end,
     resolved_dep = function() return { install_dir = dep } end,
 }
 patched = {}
@@ -164,6 +202,8 @@ print("PATCHED " .. table.concat(patched, ","))
         # the dynamic program is patched; the static helper is left as shipped
         assert "PATCHED ChatGPT\n" in result.stdout, result.stdout
         assert not (target / ".unpack").exists()
+        # Chromium's optional Qt UI integration is not kept; nothing declares Qt
+        assert not list((target / "app").glob("libqt*_shim.so"))
         assert (target / "app/resources/app.asar").read_bytes() == b"fixture"
         assert os.access(target / "app/ChatGPT", os.X_OK)
         assert (target / "app/resources/asar-link").is_symlink()
@@ -259,7 +299,7 @@ def test_installed_linux_native_modules():
         headers = subprocess.check_output(["readelf", "-l", str(executable)], text=True)
         loader = re.search(r"Requesting program interpreter: (.+?)\]", headers).group(1)
         assert loader.startswith(str(home) + "/data/xpkgs/")
-        targets = [executable, executable.parent / "libqt5_shim.so", executable.parent / "libqt6_shim.so"]
+        targets = [executable]
         for native in executable.parent.rglob("*.node"):
             if "musl" in str(native) or "android" in str(native):
                 continue

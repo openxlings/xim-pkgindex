@@ -39,32 +39,44 @@ package = {
                 "app",
                 "app/resources/cua_node/lib/node_modules/@img/sharp-libvips-linux-x64/lib",
             } } },
-            -- Grouped by how the app reaches them. 7zip unpacks the deb in
-            -- install(); everything else is the app's runtime closure.
+            -- Grouped by how the app reaches them. Everything under `runtime`
+            -- is the app's own closure; 7zip only unpacks the deb in
+            -- install(), so it is a build dep and is never put on the user's
+            -- PATH. install() reaches it by pkginfo.build_dep("7zip") -- the
+            -- bare name, because xlings exports the payload namespace-free
+            -- (XLINGS_BUILDDEP_7ZIP_PATH) and libxpkg <= 0.0.59 spells the key
+            -- from the string it is given, so "xim:7zip" misses on every
+            -- released client.
             deps = {
-                "xim:7zip@26.02",
-                -- DT_NEEDED of ChatGPT and its native modules (readelf -d)
-                "xim:glibc", "xim:gcc-runtime", "xim:glib", "xim:dbus", "xim:expat",
-                "xim:nss", "xim:nspr", "xim:atk", "xim:at-spi2-atk", "xim:at-spi2-core",
-                "xim:libcups", "xim:cairo", "xim:pango", "xim:gdk-pixbuf", "xim:gtk3",
-                "xim:libxcb", "xim:libxkbcommon", "xim:libX11", "xim:libXext",
-                "xim:libXcomposite", "xim:libXdamage", "xim:libXfixes", "xim:libXrandr",
-                "xim:alsa-lib", "xim:mesa", "xim:libudev", "xim:libusb", "xim:openssl",
-                "xim:tpm2-tss",
-                -- dlopen'd by Chromium/Electron: the keyring-backed credential
-                -- store (without it: a plain-text store) and notifications
-                "xim:libsecret", "xim:libnotify",
-                -- Chromium's optional Qt UI shims (KDE, --ui-toolkit=qt)
-                "xim:qt5", "xim:qt-base",
-                -- GL/EGL/Vulkan discovery for the GPU process
-                "xim:graphics",
+                runtime = {
+                    -- DT_NEEDED of ChatGPT and its native modules (readelf -d)
+                    "xim:glibc", "xim:gcc-runtime", "xim:glib", "xim:dbus", "xim:expat",
+                    "xim:nss", "xim:nspr", "xim:atk", "xim:at-spi2-atk", "xim:at-spi2-core",
+                    "xim:libcups", "xim:cairo", "xim:pango", "xim:gdk-pixbuf", "xim:gtk3",
+                    "xim:libxcb", "xim:libxkbcommon", "xim:libX11", "xim:libXext",
+                    "xim:libXcomposite", "xim:libXdamage", "xim:libXfixes", "xim:libXrandr",
+                    "xim:alsa-lib", "xim:mesa", "xim:libudev", "xim:libusb", "xim:openssl",
+                    "xim:tpm2-tss",
+                    -- dlopen'd by Chromium/Electron: the keyring-backed credential
+                    -- store (without it: a plain-text store) and notifications
+                    "xim:libsecret", "xim:libnotify",
+                    -- GL/EGL/Vulkan discovery for the GPU process
+                    "xim:graphics",
+                },
+                build = { "xim:7zip@26.02" },
             },
             ["latest"] = { ref = "26.924.22138" },
+            -- Revision 1: install() no longer keeps libqt5_shim.so and
+            -- libqt6_shim.so (see there), and xim:qt5 / xim:qt-base left the
+            -- deps. xlings replaces a payload of revision 0 on its next
+            -- install, after which those two packages can be collected.
             ["26.924.22138"] = {
                 x86_64 = deb("26.924.22138", "amd64", "ce3bb1aa82ccdfe3037ada2fd8d187796ea4a0d5ed031d0e4ec8adce8b7014e7"),
+                revision = 1,
             },
             ["26.917.71314"] = {
                 x86_64 = deb("26.917.71314", "amd64", "851ec28b65bde2ff1da9f37dcdf5b6e20a915c7568f8b2ce993c00428f018ae5"),
+                revision = 1,
             },
         },
         macosx = {
@@ -205,7 +217,7 @@ function install()
 
     if archive:match("%.deb$") then
         local unpack = dir .. "/.unpack"
-        local z = quote(pkginfo.dep_install_dir("xim:7zip") .. "/7zz")
+        local z = quote(assert(pkginfo.build_dep("7zip"), "xim:7zip (build dep) is not available").path .. "/7zz")
         os.tryrm(unpack)
         os.mkdir(unpack)
         -- ar -> xz -> tar as one stream: the 1.5 GiB data.tar never lands on
@@ -221,6 +233,14 @@ function install()
         os.tryrm(dir .. "/app")
         os.mv(app, dir .. "/app")
         os.tryrm(unpack)
+        -- Chromium's Qt UI integration. ChatGPT dlopens libqt%d_shim.so only
+        -- on KDE (version from KDE_SESSION_VERSION) or with --ui-toolkit=qt;
+        -- everywhere else it uses GTK, and gtk3 is already a DT_NEEDED of
+        -- ChatGPT. Without the shims a KDE session or that flag falls back to
+        -- GTK. Keeping them meant declaring xim:qt5 and xim:qt-base: ten
+        -- packages and ~620 MB in every install's closure, for a theme.
+        os.tryrm(dir .. "/app/libqt5_shim.so")
+        os.tryrm(dir .. "/app/libqt6_shim.so")
         patch_dynamic_elves(dir .. "/app")
         -- The deb's postinst loads an AppArmor profile that grants user
         -- namespaces to /usr/lib/chatgpt/ChatGPT, which Chromium's sandbox

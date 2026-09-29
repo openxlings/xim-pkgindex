@@ -13,6 +13,10 @@
 # 3. Every x86_64 glibc object resolves through the payload's own loader with
 #    nothing from outside the xlings home. musl and Android prebuilds are
 #    skipped: the app never loads them on a glibc host.
+# 4. The payload carries no Chromium Qt UI shim (libqt5_shim.so, libqt6_shim.so):
+#    nothing declares the Qt packages they load, so a shim left in would be a
+#    dlopen target that resolves nowhere. chatgpt-launch.sh starts the app in
+#    the situations that look for one.
 set -uo pipefail
 : "${CHATGPT_APP:?CHATGPT_APP must name the installed app/ directory}"
 home="${XLINGS_HOME:-$HOME/.xlings}"
@@ -71,3 +75,7 @@ while IFS= read -r f; do
 done < <(find "$CHATGPT_APP" -type f)
 reading "glibc objects resolved inside $home" "$checked"
 [ "$checked" -gt 0 ] || fail "no dynamic objects were checked"
+
+shims=$(find "$CHATGPT_APP" -name 'libqt*_shim.so' -print)
+reading "Qt UI shims" "${shims:-none}"
+[ -z "$shims" ] || fail "the payload still carries Chromium's Qt UI shims: $shims"

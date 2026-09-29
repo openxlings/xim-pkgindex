@@ -3,7 +3,9 @@ name: chatgpt runtime
 # `ci-test.yml` installs a changed recipe and removes it; it never runs anything
 # inside the payload. ChatGPT's first release passed it while elfpatch had
 # corrupted every statically linked helper the app ships (the codex app-server
-# dumped core), so this installs the recipe and executes what it installed.
+# dumped core), so this installs the recipe and executes what it installed --
+# the helpers, and then the app itself on a virtual X server, in the situations
+# where Chromium looks for the Qt UI shims the payload no longer carries.
 
 on:
   pull_request:
@@ -12,6 +14,7 @@ on:
       - '.github/workflows/chatgpt-runtime.yml'
       - '.github/scripts/program-checks/install-xlings.sh'
       - '.github/scripts/program-checks/chatgpt.sh'
+      - '.github/scripts/program-checks/chatgpt-launch.sh'
   workflow_dispatch:
 
 concurrency:
@@ -46,3 +49,14 @@ jobs:
       - name: The installed helpers run and resolve inside xlings
         timeout-minutes: 10
         run: bash .github/scripts/program-checks/chatgpt.sh
+
+      # KDE and --ui-toolkit=qt make Chromium dlopen libqt%d_shim.so. There is
+      # none any more (and no Qt package), so both have to end in GTK with the
+      # app running -- a crash here is the reason the shims would have to come
+      # back. `default` is the control for the other two.
+      - name: The app starts and stays up under KDE and --ui-toolkit=qt
+        timeout-minutes: 10
+        run: |
+          set -euo pipefail
+          command -v xvfb-run >/dev/null || { sudo apt-get update -q && sudo apt-get install -y -q xvfb; }
+          xvfb-run -a bash .github/scripts/program-checks/chatgpt-launch.sh
