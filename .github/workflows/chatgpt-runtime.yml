@@ -58,5 +58,7 @@ jobs:
         timeout-minutes: 10
         run: |
           set -euo pipefail
-          command -v xvfb-run >/dev/null || { sudo apt-get update -q && sudo apt-get install -y -q xvfb; }
+          # strace only backs the report of whether the app went for a Qt shim
+          { command -v xvfb-run >/dev/null && command -v strace >/dev/null; } \
+              || { sudo apt-get update -q && sudo apt-get install -y -q xvfb strace; }
           xvfb-run -a bash .github/scripts/program-checks/chatgpt-launch.sh

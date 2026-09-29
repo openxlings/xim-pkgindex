@@ -17,6 +17,12 @@
 # on this runner at all and the other two say nothing about Qt; the script
 # says so instead of blaming the shims.
 #
+# After the three, `kde` and `qt` run once more under strace, only to REPORT
+# whether the app went for a Qt shim at all. Chromium opens it by absolute path,
+# which the loader's own tracing (LD_DEBUG) does not show, and a case that
+# never reaches for the shim proves nothing about the fallback. That part
+# depends on strace and on ptrace being allowed, so it never fails the script.
+#
 # Needs a display (xvfb-run) and `chatgpt` on PATH -- the xvm shim, because it
 # carries the environment config() registered (XDG_DATA_DIRS for gtk3's
 # GSettings schemas, the graphics discovery variables). Every criterion prints
@@ -49,32 +55,41 @@ stop_app() {
     pkill -9 -f "$CHATGPT_APP/ChatGPT" 2>/dev/null
 }
 
-# run_case <name> [VAR=value ...] -- [app args ...]
-run_case() {
-    local name=$1; shift
+# start <log> <command words to run it under, or ""> [VAR=value ...] -- [app args ...]
+# --no-sandbox: hosted runners restrict unprivileged user namespaces, and the
+# AppArmor profile that would allow them needs root. The sandbox is not what is
+# under test. --disable-gpu: no GPU here, and the GPU process is not either.
+start() {
+    local log=$1 prefix=$2; shift 2
     local -a envs=()
     while [ "$#" -gt 0 ] && [ "$1" != "--" ]; do envs+=("$1"); shift; done
     shift
-    local dir; dir=$(mktemp -d)
     stop_app
-    # --no-sandbox: hosted runners restrict unprivileged user namespaces, and
-    # the AppArmor profile that would allow them needs root. The sandbox is not
-    # what is under test. --disable-gpu: no GPU here, and the GPU process is
-    # not either.
-    # LD_DEBUG=libs only makes the loader say what it looked for: whether the
-    # Qt shim was asked for at all is printed, not asserted (see below).
-    env LD_DEBUG=libs "${envs[@]}" chatgpt --no-sandbox --disable-gpu \
-        "--user-data-dir=$dir/profile" "$@" >"$dir/out.log" 2>&1 &
+    # shellcheck disable=SC2086  # $prefix is a list of command words, or empty
+    env "${envs[@]}" $prefix chatgpt --no-sandbox --disable-gpu \
+        "--user-data-dir=$(dirname "$log")/profile" "$@" >"$log" 2>&1 &
+}
+
+wait_for_browser() {
     local pid=""
     for _ in $(seq 1 30); do
         pid=$(main_pid)
         [ -n "$pid" ] && break
         sleep 1
     done
+    echo "$pid"
+}
+
+# run_case <name> [VAR=value ...] -- [app args ...]
+run_case() {
+    local name=$1; shift
+    local dir; dir=$(mktemp -d)
+    start "$dir/out.log" "" "$@"
+    local pid; pid=$(wait_for_browser)
     local why=""
     [ "$name" = default ] && why=" (the control: without Qt in play the app does not stay up on this runner, so the other cases say nothing)"
     if [ -z "$pid" ]; then
-        grep -av '^ *[0-9]*:' "$dir/out.log" | tail -n 60
+        tail -n 60 "$dir/out.log"
         stop_app
         fail "$name: the ChatGPT browser process never started$why"
     fi
@@ -82,20 +97,38 @@ run_case() {
     # made; two looks, so a process that dies late is not taken for one that
     # stays.
     sleep 20
-    kill -0 "$pid" 2>/dev/null || { grep -av '^ *[0-9]*:' "$dir/out.log" | tail -n 60; stop_app; fail "$name: exited within 20s$why"; }
+    kill -0 "$pid" 2>/dev/null || { tail -n 60 "$dir/out.log"; stop_app; fail "$name: exited within 20s$why"; }
     sleep 10
-    kill -0 "$pid" 2>/dev/null || { grep -av '^ *[0-9]*:' "$dir/out.log" | tail -n 60; stop_app; fail "$name: exited within 30s$why"; }
+    kill -0 "$pid" 2>/dev/null || { tail -n 60 "$dir/out.log"; stop_app; fail "$name: exited within 30s$why"; }
     local maps; maps=$(cat "/proc/$pid/maps" 2>/dev/null)
     local gtk=0 qt=0
     grep -q 'libgtk-3' <<<"$maps" && gtk=1
     grep -qi 'libQt' <<<"$maps" && qt=1
-    # Informational: a 0 here means the app never reached for the shim, so the
-    # case exercised nothing and the `up 30s` above is the control again.
-    local asked; asked=$(grep -ac 'libqt[56]_shim' "$dir/out.log")
-    reading "$name" "pid=$pid up 30s, libgtk-3 mapped=$gtk, Qt mapped=$qt, loader lookups of a Qt shim=$asked"
-    grep -av '^ *[0-9]*:' "$dir/out.log" | tail -n 15 | sed 's/^/    | /'
+    reading "$name" "pid=$pid up 30s, libgtk-3 mapped=$gtk, Qt mapped=$qt"
+    tail -n 15 "$dir/out.log" | sed 's/^/    | /'
     stop_app
     [ "$qt" -eq 0 ] || fail "$name: a Qt library is mapped into the app"
+    rm -rf "$dir"
+    return 0
+}
+
+# trace_case <name> [VAR=value ...] -- [app args ...]: reports, never fails.
+trace_case() {
+    local name=$1; shift
+    if ! command -v strace >/dev/null; then
+        reading "$name (traced)" "strace is not installed; not reported"
+        return 0
+    fi
+    local dir; dir=$(mktemp -d)
+    start "$dir/out.log" "strace -f -qq -e trace=file -o $dir/strace.log" "$@"
+    local pid; pid=$(wait_for_browser)
+    sleep 25
+    local up=no
+    [ -n "$pid" ] && kill -0 "$pid" 2>/dev/null && up=yes
+    local tried; tried=$(grep -a 'libqt[56]_shim' "$dir/strace.log" 2>/dev/null)
+    reading "$name (traced)" "up after 25s=$up, file syscalls=$(wc -l <"$dir/strace.log" 2>/dev/null || echo 0), attempts on a Qt shim=$(printf '%s' "$tried" | grep -c .)"
+    printf '%s\n' "$tried" | head -n 5 | sed 's/^/    | /'
+    stop_app
     rm -rf "$dir"
     return 0
 }
@@ -103,3 +136,6 @@ run_case() {
 run_case default --
 run_case kde XDG_CURRENT_DESKTOP=KDE KDE_SESSION_VERSION=6 --
 run_case qt -- --ui-toolkit=qt
+
+trace_case kde XDG_CURRENT_DESKTOP=KDE KDE_SESSION_VERSION=6 --
+trace_case qt -- --ui-toolkit=qt
