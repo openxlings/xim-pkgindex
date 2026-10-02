@@ -51,7 +51,21 @@ package = {
             -- res_versioned: version-bump bot tracks mcpp-community/mcpp releases
             -- and appends checked XLINGS_RES entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "2026.10.1.3" },
+            ["latest"] = { ref = "2026.10.3.1" },
+            -- 2026.10.3.1 is the manual 2026-10-03 release (linux-x86_64 only —
+            -- release.yml could not complete a full 4-platform build on the
+            -- ubuntu-24.04 canary runner pool). Same source tarball + sha256
+            -- as 2026.10.2.1; the canary design (WS10) is intact, the bump
+            -- exists so the index points at a published GitHub Release +
+            -- xlings-res mirrors. A future release with all four platforms
+            -- supersedes this entry; the file's `platform_versions_diverge`
+            -- flag keeps this asymmetry auditable.
+            ["2026.10.3.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "51a139384611d5b6d73bdeeca0c02377539dbd4f322e86b151e387a65313ba05",
+                },
+            },
             ["2026.10.1.3"] = {
                 url = "XLINGS_RES",
                 sha256 = {
