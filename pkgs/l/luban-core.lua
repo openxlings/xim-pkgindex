@@ -7,7 +7,7 @@ package = {
     spec = "1",
     name = "luban-core",
     namespace = "subos",
-    description = "Luban Core: luban-tiny plus GNU bash and coreutils, a C/C++ toolchain, TLS and curl",
+    description = "Luban Core: luban-tiny plus GNU bash and coreutils, a C/C++ toolchain and TLS",
     homepage = "https://github.com/openxlings/xlings",
     licenses = {"Apache-2.0"},
     type = "subos",
@@ -46,7 +46,6 @@ local manifest = [[
     "xim:binutils@2.42.1",
     "xim:make@4.3",
     "xim:openssl@3.1.5",
-    "xim:curl@8.21.0",
     "xim:xz@5.8.3",
     "xim:zlib@1.3.1"
   ],
