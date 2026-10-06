@@ -23,9 +23,9 @@ package = {
     -- Upstream ships a single static-musl binary that bundles 400+ applets
     -- (sh, ls, cat, awk, grep, …). Each applet is invoked by argv[0]
     -- dispatch — `busybox ls /tmp` works, and so does a `ls` symlink that
-    -- points at busybox. We declare only `busybox`; users who want
-    -- individual applet shims can run `busybox --install -s <dir>` on the
-    -- installed binary to populate them.
+    -- points at busybox. We declare only `busybox`: a home's PATH does not
+    -- gain `ls`. The payload carries a link per applet (install()), which
+    -- is what a root's /usr/bin is made from.
     programs = {"busybox"},
     xvm_enable = true,
 
@@ -45,6 +45,9 @@ package = {
             ["1.35.0"] = {
                 url = __busybox_url("1.35.0"),
                 sha256 = "6e123e7f3202a8c1e9b1f94d8941580a25135382b99e8d3e34fb858bba311348",
+                -- 1: the payload's bin/ carries a relative link per applet
+                -- (see install()).
+                revision = 1,
             },
         },
     },
@@ -65,7 +68,15 @@ function install()
     local target = path.join(bindir, "busybox")
     os.mv(pkginfo.install_file(), target)
     os.execute('chmod +x "' .. target .. '"')
-    return true
+    -- One relative link per applet beside the binary (bin/sh -> busybox).
+    -- Only `busybox` is registered, so a home's PATH gains nothing; a ROOT
+    -- made from this payload (xlings subos new --rootfs) puts a package's
+    -- bin/ into its /usr/bin, and gets sh, ls, init, mount... the way a
+    -- distribution would. Done by busybox's own shell: no host shell needed.
+    os.execute(string.format(
+        '"%s" sh -c \'cd "$1" && for a in $(./busybox --list); do [ "$a" = busybox ] || ln -sf busybox "$a"; done\' _ "%s"',
+        target, bindir))
+    return os.isfile(path.join(bindir, "sh"))
 end
 
 function config()
