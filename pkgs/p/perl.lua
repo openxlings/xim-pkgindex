@@ -92,6 +92,8 @@ package = {
                     x86_64 = "b9e884be3df92028df0d023b482f033440ade29c5b9e715313d971b1542eff72",
                     aarch64 = "31b49b6b581b10d7d519ca358205cf4343c0ce1436ab443e421fd44be5ca4a9d",
                 },
+                -- 1: the scripts' shebangs name this payload's perl (install()).
+                revision = 1,
             },
         },
         macosx = {
@@ -102,6 +104,7 @@ package = {
                     x86_64 = "c6b62e520fd9d4f733d6426d4adf0058675bb79bd9c36a77d9ae7909798436d7",
                     aarch64 = "2daae82c24f114eb708cee183bf1fe1ba86e1acc33c897dad55268dd221472f4",
                 },
+                revision = 1,
             },
         },
     },
@@ -123,14 +126,49 @@ function install()
     -- interpreter is actually in place — `return true` over an empty dir gets
     -- stamped as installed and leaves dangling xvm shims behind.
     local staged = path.join(pkginfo.install_dir(), "bin", "perl")
-    if os.isfile(staged) then return true end
-
-    local payload = "perl-" .. pkginfo.version()
-    if os.isdir(payload) then
-        os.tryrm(pkginfo.install_dir())
-        os.mv(payload, pkginfo.install_dir())
+    if not os.isfile(staged) then
+        local payload = "perl-" .. pkginfo.version()
+        if os.isdir(payload) then
+            os.tryrm(pkginfo.install_dir())
+            os.mv(payload, pkginfo.install_dir())
+        end
     end
-    return os.isfile(staged)
+    if not os.isfile(staged) then return false end
+    __fix_shebangs(path.join(pkginfo.install_dir(), "bin"))
+    return true
+end
+
+-- The tree was built in /build/stage, and its scripts (perldoc, pod2man,
+-- prove, cpan, ... 29 of them) say `#!/build/stage/bin/perl`: on any machine
+-- but the build's they do not start ("required file not found"). Point them
+-- at this payload's perl. The interpreter is static, so the path is all they
+-- need.
+function __fix_shebangs(bindir)
+    local perl = path.join(bindir, "perl")
+    -- io.popen, as this index's other payload recipes list a directory.
+    local names = {}
+    local ls = io.popen('ls -1A "' .. bindir .. '"')
+    if ls then
+        for name in ls:lines() do names[#names + 1] = name end
+        ls:close()
+    end
+    for _, name in ipairs(names) do
+        local file = path.join(bindir, name)
+        local f = io.open(file, "rb")
+        if f then
+            local head = f:read(64) or ""
+            f:close()
+            if head:sub(1, 2) == "#!" and head:find("^#![^\n]*/build/stage/bin/perl") then
+                local r = io.open(file, "rb")
+                local text = r:read("*a")
+                r:close()
+                text = text:gsub("^#![^\n]*/build/stage/bin/perl", "#!" .. perl, 1)
+                local w = io.open(file, "wb")
+                w:write(text)
+                w:close()
+            end
+        end
+    end
 end
 
 function config()
