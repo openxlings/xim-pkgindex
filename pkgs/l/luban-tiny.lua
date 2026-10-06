@@ -76,6 +76,9 @@ function install()
 ::askfirst:-/bin/sh -l
 ::ctrlaltdel:/sbin/reboot
 ::shutdown:/bin/umount -a -r
+# `xlings subos boot <name> --now`: init re-execs stage-0, which hands / to
+# that SubOS without restarting the kernel.
+::restart:/usr/bin/xlings-init
 ]])
     write(F .. "init.d/rcS", [[
 #!/bin/sh
