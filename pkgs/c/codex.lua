@@ -134,7 +134,10 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "0.156.1" },
+            ["latest"] = { ref = "0.160.1" },
+            ["0.160.1"] = _linux("0.160.1",
+                "340801565906a7028f6baaa9ab6853addaef221f0016a1417a7c1ffdd96c21f0",
+                "dff0954438fa455c2197ddb1f421d8d68625d98de610f76bedb6e5bc837ea35b", true),
             ["0.156.1"] = _linux("0.156.1",
                 "8b711520beddf385467b8da4d2c93736637c6ba1e46811cf0d8606b7c490b6f6",
                 "fdd47ed6aade0360796fd3f6f95a45096f327c15e19e8c7339f9dc5633041786", true),
@@ -153,7 +156,10 @@ package = {
                 "7a77d416f9ce16f18e09fdc57622a15aab6ad131c34e078ab9d55a13bb3d9b05"),
         },
         macosx = {
-            ["latest"] = { ref = "0.156.1" },
+            ["latest"] = { ref = "0.160.1" },
+            ["0.160.1"] = _macosx("0.160.1",
+                "a98f330c9b1652cef2edc7bc2ee4c47a0fe19fa098b686381be3c8842abf0ac0",
+                "f73527ee09c6db869acbb37b709866b339ea74ef91d2de255e9c74ec960c6314", true),
             ["0.156.1"] = _macosx("0.156.1",
                 "618dbcd55419fa041871f777a14b107ceb3fe2d339ef81e21e6ab5374420dc71",
                 "fea42f9625091f011e38f059da974d52e57ba31831648bb1c7f0b1a385fde547", true),
@@ -171,7 +177,10 @@ package = {
                 "7da572ce5631deccb8b05c4cb4bbb608d65d5b3197f5e2c79fa7a156c02fc6d6"),
         },
         windows = {
-            ["latest"] = { ref = "0.156.1" },
+            ["latest"] = { ref = "0.160.1" },
+            ["0.160.1"] = _windows("0.160.1",
+                "25c6fe4e46d5bff939312fc46de67ace37561f6f1f89b409af63fd8cc6098425",
+                "844e17c492175ec62f8c11890ed89ef208d3502d2c79622c3be9876d2755f085", true),
             ["0.156.1"] = _windows("0.156.1",
                 "a2e017db9807e6a2269a26fea0e1d9546469cef4d472a33016bc9f3ad7d3b733",
                 "85994caecdc7609c49fd585c1cdb5677fa9d0acbf789650cff23a13afc9505db", true),
