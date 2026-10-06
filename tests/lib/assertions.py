@@ -123,13 +123,14 @@ def assert_config_registers_package_name(meta: XpkgMeta):
     豁免条件:
     - ref 包 (无 config hook)
     - 有自定义 installed() hook 的包
-    - type 为 script/config/bugfix/template 的包
+    - type 为 script/config/bugfix/template/subos 的包（subos 类型由 xlings 的默认
+      config 注册为 subos-base；自己写 config 反而会跳过它）
     """
     if meta.is_ref:
         return
     if meta.has_installed:
         return
-    if meta.pkg_type in ("script", "config", "bugfix", "template"):
+    if meta.pkg_type in ("script", "config", "bugfix", "template", "subos"):
         return
     if not meta.has_config:
         pytest.fail(

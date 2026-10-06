@@ -56,7 +56,7 @@ end
 function config()
     -- A library entry, not a program: nothing to run, and a root's
     -- projection takes the payload's lib/modules from it.
-    xvm.add("vmlinuz", {
+    xvm.add("linux-kernel", {
         type = "lib",
         bindir = modules_dir(),
         filename = "vmlinuz",
@@ -66,6 +66,6 @@ function config()
 end
 
 function uninstall()
-    xvm.remove("vmlinuz")
+    xvm.remove("linux-kernel")
     return true
 end
