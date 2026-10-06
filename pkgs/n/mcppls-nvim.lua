@@ -26,14 +26,18 @@ package = {
     -- editors/nvim directory of this repository"). The archive's top
     -- directory is `mcpp-language-server-<version>/`, codeload's tag name.
     --
-    -- GLOBAL is GitHub's codeload tarball for the tag; CN is the same bytes
-    -- uploaded as a release asset of the gitcode.com/xlings-res/mcppls
+    -- GLOBAL is GitHub's tag archive (`archive/refs/tags` — the redirect
+    -- target is codeload, same bytes, but the plain codeload URL's basename
+    -- has no .tar.gz suffix, and the saved file's name is what xim unpacks
+    -- by: measured on all three CI runners, the codeload form downloaded
+    -- fine and extracted nothing, so `mv` found no tree); CN is the same
+    -- bytes uploaded as a release asset of the gitcode.com/xlings-res/mcppls
     -- mirror (verified by re-download), so one sha256 serves both legs.
     xpm = {
         linux = {
             deps = { "xim:mcppls", "xim:nvim@>=0.10" },
             source = {
-                GLOBAL = "https://codeload.github.com/Sunrisepeak/mcpp-language-server/tar.gz/refs/tags/v${version}",
+                GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/archive/refs/tags/v${version}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v${version}/src-${version}.tar.gz",
             },
             ["latest"] = { ref = "0.0.11" },
@@ -47,7 +51,7 @@ package = {
         macosx = {
             deps = { "xim:mcppls", "xim:nvim@>=0.10" },
             source = {
-                GLOBAL = "https://codeload.github.com/Sunrisepeak/mcpp-language-server/tar.gz/refs/tags/v${version}",
+                GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/archive/refs/tags/v${version}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v${version}/src-${version}.tar.gz",
             },
             ["latest"] = { ref = "0.0.11" },
@@ -60,7 +64,7 @@ package = {
         windows = {
             deps = { "xim:mcppls", "xim:nvim@>=0.10" },
             source = {
-                GLOBAL = "https://codeload.github.com/Sunrisepeak/mcpp-language-server/tar.gz/refs/tags/v${version}",
+                GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/archive/refs/tags/v${version}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v${version}/src-${version}.tar.gz",
             },
             ["latest"] = { ref = "0.0.11" },
