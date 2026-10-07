@@ -10,6 +10,7 @@ package = {
     repo = "https://github.com/Sunrisepeak/mcpp-language-server",
     docs = "https://github.com/Sunrisepeak/mcpp-language-server#readme",
     homepage = "https://github.com/Sunrisepeak/mcpp-language-server",
+    ci = { update = true },
 
     -- xim pkg info
     type = "package",

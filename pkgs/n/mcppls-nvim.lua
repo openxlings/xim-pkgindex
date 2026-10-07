@@ -110,6 +110,34 @@ if vim.g.mcppls_auto_start == false then
   return
 end
 require('mcppls').setup()
+
+-- And pop completions up while typing (Neovim >= 0.11 has the built-in
+-- completion UI; on 0.10, omnifunc is set on attach — use CTRL-X CTRL-O).
+-- Also opt out with:  vim.g.mcppls_auto_complete = false
+if vim.g.mcppls_auto_complete ~= false then
+  -- the popup is a builtin completion menu; menuone shows it for a single
+  -- match, noselect keeps the first item from being inserted on Enter
+  if vim.o.completeopt == 'menu,preview' or vim.o.completeopt == 'menu,popup' then
+    vim.o.completeopt = 'menuone,noselect'
+  end
+  local function enable_completion(client, buf)
+    if vim.lsp.completion then
+      pcall(vim.lsp.completion.enable, true, client.id, buf, { autotrigger = true })
+    end
+  end
+  -- LSP attaches to the buffers opened after this file is sourced (plugin/
+  -- scripts run before the first file loads), so this is the only hook we
+  -- need. LspAttach's client comes as data.client_id — resolve it there.
+  vim.api.nvim_create_autocmd('LspAttach', {
+    callback = function(args)
+      local client = args.client
+        or (args.data and vim.lsp.get_client_by_id(args.data.client_id))
+      if client and client.name == 'mcppls' then
+        enable_completion(client, args.buf)
+      end
+    end,
+  })
+end
 ]==]
 end
 
