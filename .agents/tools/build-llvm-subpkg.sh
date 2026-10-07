@@ -230,6 +230,16 @@ do_libcxx() {
             || die "libatomic architecture does not match $ARCH: $atomic_real"
         base=$(basename "$atomic_real")            # e.g. libatomic.so.1.2.0
         cp "$atomic_real" "$cxxdir/$base"
+        {
+            printf 'Library: %s\n' "$base"
+            printf 'Bootstrap compiler: %s\n' "$(gcc --version | head -1)"
+            printf 'Source library digest: '; sha256sum "$atomic_real"
+            printf 'License: GPL-3.0 with GCC Runtime Library Exception\n'
+            readelf -h "$atomic_real"
+        } > "$DEST/LIBATOMIC-PROVENANCE.txt"
+        if [ -f /usr/share/doc/libatomic1/copyright ]; then
+            cp /usr/share/doc/libatomic1/copyright "$DEST/LIBATOMIC-LICENSE.txt"
+        fi
         ln -sf "$base" "$cxxdir/libatomic.so.1"
         ln -sf libatomic.so.1 "$cxxdir/libatomic.so"
         atomic_a=$(gcc -print-file-name=libatomic.a 2>/dev/null)
@@ -339,6 +349,15 @@ if [ "$PLATFORM" = "linux" ]; then
         so_patched=$((so_patched + 1))
     done < <(find "$DEST/lib" -type f \( -name '*.so' -o -name '*.so.*' \) -print0)
     log "  + \$ORIGIN RUNPATH on $so_patched shared libraries"
+    : > "$DEST/ELF-MANIFEST.txt"
+    while IFS= read -r -d '' elf; do
+        [ "$(head -c 4 "$elf")" = $'\x7fELF' ] || continue
+        {
+            printf '\nFile: %s\n' "${elf#"$DEST/"}"
+            sha256sum "$elf"
+            readelf -h -l -d -V "$elf"
+        } >> "$DEST/ELF-MANIFEST.txt"
+    done < <(find "$DEST" -type f -print0)
 fi
 
 # --- repack ----------------------------------------------------------------

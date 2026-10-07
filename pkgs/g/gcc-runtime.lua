@@ -36,7 +36,15 @@ package = {
             -- compatible (versioned symbols GLIBCXX_3.4.x), so a single
             -- modern gcc-runtime covers all consumers.
             ["latest"] = { ref = "15.1.0" },
-            ["15.1.0"] = "XLINGS_RES",
+            ["15.1.0"] = {
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/gcc-runtime/releases/download/15.1.0/gcc-runtime-15.1.0-linux-x86_64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/gcc-runtime/releases/download/15.1.0/gcc-runtime-15.1.0-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "4ec5c74bc73bc42540ac3c39124e403613be5c9aaa93c036bd938d32884495a5",
+                },
+            },
 
             deps = {
                 runtime = { "xim:glibc@>=2.39" },

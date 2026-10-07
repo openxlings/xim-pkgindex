@@ -61,15 +61,10 @@ local libs = {
     "libxml2.so", "libxml2.so.2",
 }
 
--- The upstream release a version key names: a recipe revision ("2.13.5-1")
--- installs the archive of the release it revises ("2.13.5"), whose top-level
--- directory carries the release's version.
-local function upstream_version()
-    return (pkginfo.version():gsub("%-%d+$", ""))
-end
-
+-- The archive stem identifies the upstream release and host architecture.
+-- Recipe revision keys may differ from that identity.
 function install()
-    sysroot.adopt_payload("libxml2-" .. upstream_version() .. "-linux-x86_64")
+    sysroot.adopt_payload(pkginfo.install_file():replace(".tar.gz", ""):replace(".tar.xz", ""))
 
     -- Stamp this payload's own dependency closure onto its libraries, so
     -- they resolve from our payloads and not from the host's ld.so.cache.

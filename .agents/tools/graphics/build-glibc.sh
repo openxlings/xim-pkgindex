@@ -147,6 +147,12 @@ TARBALL="$SRC/glibc-$UPSTREAM.tar.xz"
     curl -fsSL --retry 3 -o "$TARBALL" \
         "https://ftp.gnu.org/gnu/glibc/glibc-$UPSTREAM.tar.xz" || fail "download"
 }
+if [[ "$UPSTREAM" == 2.44 ]]; then
+    printf '%s  %s\n' 37f600f2bef3c5e8300147059568b2a2e40a7ad6ccc65ce942556d49429cc667 "$TARBALL" \
+        | sha256sum -c - || fail "source archive SHA256 mismatch"
+else
+    fail "upstream $UPSTREAM has no reviewed source digest"
+fi
 BUILDDIR="$SRC/glibc-$UPSTREAM"
 rm -rf "$BUILDDIR"; mkdir -p "$BUILDDIR"
 tar xf "$TARBALL" -C "$BUILDDIR" --strip-components=1 || fail "extract"
@@ -191,7 +197,7 @@ command -v "$CC" >/dev/null || fail "compiler not found: $CC"
 # glibc builds against the KERNEL headers and nothing else; handing it the
 # sysroot's include directory puts the OLD glibc's headers ahead of the ones it
 # is building, and the failures read as glibc's own source being broken.
-unset CPPFLAGS LDFLAGS LD_LIBRARY_PATH
+unset CPPFLAGS LDFLAGS LD_LIBRARY_PATH LD_PRELOAD CPATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH LIBRARY_PATH GCC_EXEC_PREFIX COMPILER_PATH
 
 mkdir -p "$BUILDDIR/_b" && cd "$BUILDDIR/_b" || fail "cd"
 log "configuring $UPSTREAM (prefix=$PREFIX)"
@@ -239,6 +245,14 @@ STEM="$NAME-$ASSET_VERSION-linux-$BUILD_ARCH"
 PAYLOAD="$WORK/payload/$STEM"
 rm -rf "$PAYLOAD"; mkdir -p "$PAYLOAD"
 cp -a "$STAGE$PREFIX/." "$PAYLOAD/" || fail "payload copy"
+
+cp "$BUILDDIR/COPYING.LIB" "$PAYLOAD/LICENSE"
+{
+    printf 'Upstream: glibc %s\nPackage: %s revision %s\nArchitecture: %s\n' "$UPSTREAM" "$VERSION" "$REVISION" "$BUILD_ARCH"
+    printf 'Bootstrap compiler: %s\n' "$("$CC" --version | head -1)"
+    printf 'Source digest: '; sha256sum "$TARBALL"
+    printf 'Isolation patches:\n'; sha256sum "$PATCHDIR/glibc-$UPSTREAM-"*.patch
+} > "$PAYLOAD/PROVENANCE.txt"
 
 # lib64 beside lib, because that is where the recipe and every elfpatched
 # consumer look for the loader (`exports.runtime.loader = lib64/ld-linux-...`).
@@ -550,6 +564,19 @@ if [[ -n "$LOADER" ]]; then
 fi
 
 (( leaks == 0 )) || fail "$leaks problem(s) — payload not packaged"
+
+: > "$PAYLOAD/ELF-MANIFEST.txt"
+while IFS= read -r -d '' elf; do
+    [[ "$(head -c 4 "$elf")" == $'\x7fELF' ]] || continue
+    machine="Advanced Micro Devices X86-64"
+    [[ "$BUILD_ARCH" != aarch64 ]] || machine=AArch64
+    readelf -h "$elf" | grep -q "Machine:.*$machine" || fail "foreign ELF: $elf"
+    {
+        printf '\nFile: %s\n' "${elf#"$PAYLOAD/"}"
+        sha256sum "$elf"
+        readelf -h -l -d -V "$elf"
+    } >> "$PAYLOAD/ELF-MANIFEST.txt"
+done < <(find "$PAYLOAD" -type f -print0)
 
 # Reproducible packaging, the form build-in-subos.sh uses and states the
 # reason for: member order, owner and mtime fixed, and no gzip timestamp.

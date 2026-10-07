@@ -43,7 +43,7 @@ local libs = {
 }
 
 function install()
-    local srcdir = "zlib-" .. pkginfo.version() .. "-linux-x86_64"
+    local srcdir = pkginfo.install_file():replace(".tar.gz", ""):replace(".tar.xz", "")
     os.tryrm(pkginfo.install_dir())
     os.mv(srcdir, pkginfo.install_dir())
 
