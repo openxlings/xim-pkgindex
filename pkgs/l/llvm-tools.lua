@@ -53,6 +53,13 @@ package = {
                 },
                 sha256 = nil,
             },
+            ["23.1.3"] = {
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3/llvm-tools-23.1.3-linux-x86_64.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3/llvm-tools-23.1.3-linux-x86_64.tar.gz",
+                },
+                sha256 = "6c03abca4dff4e12368ed0ce17ec32efdefd92ca7083a3aaa12c113682cb6026",
+            },
         },
         windows = {
             ["latest"] = { ref = "22.1.8" },
@@ -69,6 +76,13 @@ package = {
                     CN = "https://gitcode.com/xlings-res/llvm/releases/download/22.1.8/llvm-tools-22.1.8-windows-x86_64.zip",
                 },
                 sha256 = nil,
+            },
+            ["23.1.3"] = {
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3/llvm-tools-23.1.3-windows-x86_64.zip",
+                    CN = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3/llvm-tools-23.1.3-windows-x86_64.zip",
+                },
+                sha256 = "a17a959e3df3fb00336f6f752a13b392a914e838b8bd93c22036c792ec2426df",
             },
         },
         -- Apple Silicon only, mirroring llvm.lua's macosx (which ships
@@ -93,6 +107,13 @@ package = {
                     CN = "https://gitcode.com/xlings-res/llvm/releases/download/22.1.8/llvm-tools-22.1.8-macosx-arm64.tar.xz",
                 },
                 sha256 = nil,
+            },
+            ["23.1.3"] = {
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3/llvm-tools-23.1.3-macosx-arm64.tar.xz",
+                    CN = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3/llvm-tools-23.1.3-macosx-arm64.tar.xz",
+                },
+                sha256 = "a66806a1d80e7088ea3ca9665ad021f64946138049a8b86937a15d6d2c39fb08",
             },
         },
     },

@@ -297,6 +297,33 @@ PY
     fi
 fi
 
+# --- Linux shared libraries carry $ORIGIN RUNPATH ----------------------------
+# DT_RUNPATH is NOT transitive: it covers only the object's own direct NEEDED.
+# The payload's libc++.so.1 NEEDs libatomic.so.1 (and libc++abi, libunwind)
+# from the same per-triple lib dir, and nothing else reliably finds them: an
+# executable's RUNPATH does not cover another object's dependencies, xlings
+# rewrites the .so rpaths only at INSTALL time, and on the machine that built
+# the 22.1.8 asset the gap was masked by a system libatomic in the loader
+# cache — its gate passed there and failed on a clean host (import std died
+# with `libatomic.so.1: cannot open`). Measured 2026-10-07: upstream ships
+# these .so files with no RUNPATH at all, in 22.1.8 and 23.1.3 alike. $ORIGIN
+# on each .so is what makes the archive itself self-contained — the state the
+# self-containment red line in the llvm-subpackaging skill describes.
+if [ "$PLATFORM" = "linux" ]; then
+    command -v patchelf >/dev/null 2>&1 \
+        || die "patchelf not found: needed to set \$ORIGIN RUNPATH on the payload's shared libraries"
+    so_patched=0
+    while IFS= read -r -d '' so; do
+        # Not every `*.so` is an ELF: libc++.so ships as an ASCII linker
+        # script (`INPUT(libc++.so.1 ...)`), which patchelf rejects with
+        # "missing ELF header". Real ELF files start with the \x7fELF magic.
+        [ "$(head -c 4 "$so")" = $'\x7fELF' ] || continue
+        patchelf --set-rpath '$ORIGIN' "$so" || die "patchelf --set-rpath failed on $so"
+        so_patched=$((so_patched + 1))
+    done < <(find "$DEST/lib" -type f \( -name '*.so' -o -name '*.so.*' \) -print0)
+    log "  + \$ORIGIN RUNPATH on $so_patched shared libraries"
+fi
+
 # --- repack ----------------------------------------------------------------
 mkdir -p "$OUT"
 OUT="$(cd "$OUT" && pwd)"   # absolutize: the zip step cd's into $WORK
