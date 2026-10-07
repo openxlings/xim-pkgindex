@@ -38,8 +38,12 @@ package = {
                 -- runtime that arrives afterwards is invisible to the loader.
                 "xim:gcc-runtime@15.1.0",
             },
+            -- Revision 1 regenerates Linux compiler cfgs with strict managed
+            -- header search. The published archives and their digests remain
+            -- unchanged; resource-map restructuring alone needs no revision.
             ["latest"] = { ref = "22.1.8" },
             ["20.1.7"] = {
+                revision = 1,
                 x86_64 = {
                     url = {
                         GLOBAL = "https://github.com/xlings-res/llvm/releases/download/20.1.7/llvm-20.1.7-linux-x86_64.tar.gz",
@@ -49,6 +53,7 @@ package = {
                 },
             },
             ["22.1.8"] = {
+                revision = 1,
                 x86_64 = {
                     url = {
                         GLOBAL = "https://github.com/xlings-res/llvm/releases/download/22.1.8/llvm-22.1.8-linux-x86_64.tar.gz",
@@ -63,6 +68,7 @@ package = {
             -- RUNPATH (set by the carve), so the archive is self-contained
             -- without the install-time rpath rewrite.
             ["23.1.3"] = {
+                revision = 1,
                 x86_64 = {
                     url = {
                         GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3/llvm-23.1.3-linux-x86_64.tar.gz",
@@ -265,10 +271,8 @@ end
 -- Locate the linux-headers payload's include dir (this package's own dep).
 --
 -- The payload marker (include/linux/limits.h) is still required rather than
--- assumed, so a husk cannot pass for a payload. Returns nil when absent
--- (warn-level: the cfg then omits the kernel-header line; compiles that need
--- <linux/*.h> surface a clear missing-header error instead of a broken
--- install).
+-- assumed, so a husk cannot pass for a payload. Returns nil when absent;
+-- installation rejects that missing dependency before writing compiler cfgs.
 --
 -- The `scode:linux-headers` fallback that used to follow is gone. It rested
 -- on a premise that stopped being true in openxlings/xlings#366:
@@ -323,7 +327,8 @@ function __install_linux_cfg()
         return false
     end
 
-    local common_flags = "-B" .. glibc_lib .. "\n"
+    local common_flags = "-nostdlibinc\n"
+        .. "-B" .. glibc_lib .. "\n"
         .. "-L" .. glibc_lib .. "\n"
         .. "-Wl,--dynamic-linker=" .. loader .. "\n"
         .. "-Wl,--enable-new-dtags,-rpath," .. glibc_lib .. "\n"
@@ -345,8 +350,9 @@ function __install_linux_cfg()
     if linux_inc then
         c_hdr_flags = c_hdr_flags .. "-isystem " .. linux_inc .. "\n"
     else
-        log.warn("linux-headers payload not found; cfg omits kernel headers"
-            .. " (compiles needing <linux/*.h> will report missing headers)")
+        log.error("linux-headers payload not found (this package's deps declare xim:linux-headers);"
+            .. " refusing to write a host-dependent clang cfg")
+        return false
     end
 
     local clang_cfg = common_flags .. c_hdr_flags

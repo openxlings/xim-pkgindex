@@ -94,3 +94,85 @@ assert(install() == false)
     result = subprocess.run([lua, str(harness), str(ROOT / "pkgs/g/glibc.lua")],
                             check=True, text=True, capture_output=True)
     assert "requires xlings >= 2026.10.8.1" in result.stdout
+
+
+def _compiler_cfg(mode):
+    lua = shutil.which("lua5.4") or shutil.which("lua")
+    assert lua
+    return subprocess.run([
+        lua, str(ROOT / "tests/lua/llvm_linux_cfg_harness.lua"),
+        str(ROOT / "pkgs/l/llvm.lua"), mode,
+    ], check=True, text=True, capture_output=True).stdout
+
+
+def test_linux_cfg_closes_system_header_search():
+    output = _compiler_cfg("complete")
+    assert "RESULT true" in output and "WRITTEN 3" in output
+    for section in output.split("FILE ")[1:]:
+        assert "-nostdlibinc\n" in section
+        assert "-isystem /managed/glibc/include\n" in section
+        assert "-isystem /managed/uapi/include\n" in section
+        assert "/usr/include" not in section and "/usr/local/include" not in section
+    cxx = output.split("FILE /managed/llvm/bin/clang++.cfg\n")[1]
+    assert cxx.index("/managed/llvm/include/c++/v1") < cxx.index("/managed/glibc/include")
+    assert "/managed/llvm/include/aarch64-unknown-linux-gnu/c++/v1" in cxx
+
+
+def test_missing_uapi_never_writes_partial_cfg():
+    output = _compiler_cfg("missing-headers")
+    assert "HOST MARKER true" in output
+    assert "RESULT false" in output and "WRITTEN 0" in output
+    assert "linux-headers payload not found" in output
+    assert "refusing to write a host-dependent clang cfg" in output
+
+
+def test_raw_verifier_requires_explicit_managed_uapi(tmp_path):
+    """Host header availability cannot rescue a missing native dependency."""
+    if not shutil.which("patchelf") or not shutil.which("file"):
+        pytest.skip("raw verifier requires patchelf and file")
+    import os
+    import tarfile
+    payload = tmp_path / "llvm-23.1.3-linux-aarch64"
+    (payload / "bin").mkdir(parents=True)
+    (payload / "lib/aarch64-unknown-linux-gnu").mkdir(parents=True)
+    (payload / "share/libc++/v1").mkdir(parents=True)
+    driver = payload / "bin/clang++"
+    driver.write_text("#!/bin/sh\necho unexpected-compiler-invocation >&2\nexit 99\n")
+    driver.chmod(0o755)
+    for module in ("std.cppm", "std.compat.cppm"):
+        (payload / "share/libc++/v1" / module).write_text("// fixture\n")
+    for lib in ("libc++.so.1", "libatomic.so.1"):
+        (payload / "lib/aarch64-unknown-linux-gnu" / lib).touch()
+    archive = tmp_path / "llvm.tar.gz"
+    with tarfile.open(archive, "w:gz") as package:
+        package.add(payload, arcname=payload.name)
+    glibc = tmp_path / "glibc"
+    (glibc / "lib").mkdir(parents=True)
+    (glibc / "include").mkdir()
+    (glibc / "include/stdlib.h").touch()
+    loader = glibc / "lib/ld-linux-aarch64.so.1"
+    loader.touch()
+    result = subprocess.run([
+        "bash", str(ROOT / ".agents/tools/verify-toolchain.sh"), str(archive),
+        "--loader", str(loader), "--linux-headers", str(tmp_path / "missing-uapi"),
+    ], capture_output=True, text=True, env={**os.environ, "CPATH": "/usr/include"})
+    assert result.returncode == 1, result.stdout + result.stderr
+    assert "managed Linux UAPI headers absent" in result.stdout
+    assert "unexpected-compiler-invocation" not in result.stderr
+
+
+def test_existing_linux_llvm_versions_advance_hook_revision():
+    lua = shutil.which("lua5.4") or shutil.which("lua")
+    assert lua
+    script = '''function import() end
+dofile(arg[1])
+for _, version in ipairs({"20.1.7", "22.1.8", "23.1.3"}) do
+  local entry = package.xpm.linux[version]
+  assert(entry.revision == 1)
+  assert(entry.x86_64.revision == nil)
+  assert(entry.x86_64.url.GLOBAL:find("llvm%-" .. version:gsub("%.", "%%.") .. "%-linux%-x86_64.tar.gz$"))
+end
+print("REVISION PASS")'''
+    result = subprocess.run([lua, "-", str(ROOT / "pkgs/l/llvm.lua")],
+                            input=script, capture_output=True, text=True, check=True)
+    assert "REVISION PASS" in result.stdout
