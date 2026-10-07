@@ -16,9 +16,13 @@ PKG = "jdk-corretto"
 PKG_FILE = "pkgs/j/jdk-corretto.lua"
 
 PLATFORMS = ("linux", "macosx", "windows")
-# 2 个版本 (25 / 21 LTS) x 每平台的架构数: linux 2 + macosx 2 + windows 1 = 5
-RESOURCE_COUNT = 10
-VERSIONS = {"25.0.4.7.1": "25.0.4", "21.0.12.8.1": "21.0.12"}
+# 3 个版本 (25 / 21 / 17 LTS) x 每平台的架构数: linux 2 + macosx 2 + windows 1 = 5
+RESOURCE_COUNT = 15
+VERSIONS = {"25.0.4.7.1": "25.0.4", "21.0.12.8.1": "21.0.12", "17.0.20.12.1": "17.0.20"}
+# 已发布 GitCode 镜像的版本。17.0.20.12.1 暂只声明单个 GLOBAL url —— 镜像资产尚未
+# 发布, 按贡献指南 §3(资产先行)/§4(检查 CN 实际响应) 不能预留 CN 地址; 镜像发布后
+# 补 CN 条目并把该版本移入本表
+MIRRORED_VERSIONS = ("25.0.4.7.1", "21.0.12.8.1")
 
 
 def _code(content: str) -> str:
@@ -63,16 +67,27 @@ class TestStatic:
                 f"{plain} -> {full} 别名应覆盖 {PLATFORMS}, 实际 {len(aliases)} 个"
 
     @pytest.mark.static
-    def test_every_resource_has_cn_mirror(self, meta):
-        """每个资源都要有 GLOBAL(upstream) + CN(gitcode) 两个源, 且 sha256 齐全"""
+    def test_cn_mirror_matches_published_versions(self, meta):
+        """已镜像版本 GLOBAL+CN 成对, sha256 覆盖全部资源
+
+        17.0.20.12.1 的 GitCode 镜像 release 尚未发布: 按贡献指南 §3(资产先行、
+        只在全部资源验证完成后提交 PR)/§4(检查 GLOBAL/CN 实际响应), 该版本暂只
+        声明单个 GLOBAL url; 镜像发布后补 CN 条目并移入 MIRRORED_VERSIONS。
+        """
         code = _code(meta.raw_content)
         global_urls = re.findall(r'GLOBAL = "https://corretto\.aws/[^"]+"', code)
         cn_urls = re.findall(
             r'CN = "https://gitcode\.com/xlings-res/jdk-corretto/[^"]+"', code)
         shas = re.findall(r'sha256 = "[0-9a-f]{64}"', code)
-        assert len(global_urls) == RESOURCE_COUNT, f"GLOBAL 源数量: {len(global_urls)}"
-        assert len(cn_urls) == RESOURCE_COUNT, f"CN 源数量: {len(cn_urls)}"
+        pending = re.findall(
+            r'url = "https://corretto\.aws/[^"]*17\.0\.20\.12\.1[^"]*"', code)
+        assert len(global_urls) == len(MIRRORED_VERSIONS) * 5, \
+            f"GLOBAL 源数量: {len(global_urls)}"
+        assert len(cn_urls) == len(MIRRORED_VERSIONS) * 5, \
+            f"CN 源数量: {len(cn_urls)}"
         assert len(shas) == RESOURCE_COUNT, f"sha256 数量: {len(shas)}"
+        assert len(pending) == 5, \
+            f"17.0.20.12.1 应有 5 个单 url 资源(镜像未发布): {len(pending)}"
 
     @pytest.mark.static
     def test_payload_layout_per_platform(self, meta):

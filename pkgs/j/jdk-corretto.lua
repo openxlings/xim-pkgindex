@@ -34,9 +34,15 @@ package = {
     -- PROVENANCE — Corretto publishes no per-file checksum sidecar (the
     -- `.sha256` URL next to the archive is 403), but every GitHub release body
     -- in corretto/corretto-<feature> carries a version-pinned MD5/SHA256 table
-    -- per artifact. The hashes below come from those tables (25.0.4.7.1 and
-    -- 21.0.12.8.1) and were re-verified against the downloaded archives while
-    -- publishing the CN mirror.
+    -- per artifact. The hashes below come from those tables (25.0.4.7.1,
+    -- 21.0.12.8.1 and 17.0.20.12.1) and were re-verified against the downloaded
+    -- archives while publishing the CN mirror.
+    --
+    -- 17.0.20.12.1 deliberately declares GLOBAL only: per the contribution
+    -- guide the PR is submitted after every declared resource is verified, and
+    -- the GitCode mirror release for this version does not exist yet, so a CN
+    -- entry would fail the "check the actual response of GLOBAL/CN URLs" rule.
+    -- Add the CN pair once the mirror release is published.
     --
     -- PAYLOAD LAYOUT — the one genuinely awkward part: each platform names its
     -- top-level directory from a different slice of the version, and none of
@@ -56,6 +62,7 @@ package = {
             ["latest"] = { ref = "25.0.4.7.1" },
             ["25.0.4"] = { ref = "25.0.4.7.1" },
             ["21.0.12"] = { ref = "21.0.12.8.1" },
+            ["17.0.20"] = { ref = "17.0.20.12.1" },
             ["25.0.4.7.1"] = {
                 x86_64 = {
                     url = {
@@ -88,11 +95,22 @@ package = {
                     sha256 = "fd94500b0d3d7e6e040a9dc1b34cbe25046454e5e3047b68c1842fa6894e9bbc",
                 },
             },
+            ["17.0.20.12.1"] = {
+                x86_64 = {
+                    url = "https://corretto.aws/downloads/resources/17.0.20.12.1/amazon-corretto-17.0.20.12.1-linux-x64.tar.gz",
+                    sha256 = "b852a8bc8890149c71141e784cde160d7ecb09bfa82b71209179b25902a0ebe3",
+                },
+                aarch64 = {
+                    url = "https://corretto.aws/downloads/resources/17.0.20.12.1/amazon-corretto-17.0.20.12.1-linux-aarch64.tar.gz",
+                    sha256 = "5e2c0d3c7b4468c82030f37f589f906a81630885fc977741e107110d210201ff",
+                },
+            },
         },
         macosx = {
             ["latest"] = { ref = "25.0.4.7.1" },
             ["25.0.4"] = { ref = "25.0.4.7.1" },
             ["21.0.12"] = { ref = "21.0.12.8.1" },
+            ["17.0.20"] = { ref = "17.0.20.12.1" },
             ["25.0.4.7.1"] = {
                 x86_64 = {
                     url = {
@@ -125,11 +143,22 @@ package = {
                     sha256 = "cb230d7ac82784a4438663cdaf91d0d04037a9b4fb99ea41e138d88ce1224ab7",
                 },
             },
+            ["17.0.20.12.1"] = {
+                x86_64 = {
+                    url = "https://corretto.aws/downloads/resources/17.0.20.12.1/amazon-corretto-17.0.20.12.1-macosx-x64.tar.gz",
+                    sha256 = "cf269b31d6b987b16cf8acf3ce20aaee561858d4d424c482e686d783c63ef2d4",
+                },
+                aarch64 = {
+                    url = "https://corretto.aws/downloads/resources/17.0.20.12.1/amazon-corretto-17.0.20.12.1-macosx-aarch64.tar.gz",
+                    sha256 = "0452dc114b8b651324f4416489861b84f3085746e4303ffa5349d6531d7f92e5",
+                },
+            },
         },
         windows = {
             ["latest"] = { ref = "25.0.4.7.1" },
             ["25.0.4"] = { ref = "25.0.4.7.1" },
             ["21.0.12"] = { ref = "21.0.12.8.1" },
+            ["17.0.20"] = { ref = "17.0.20.12.1" },
             ["25.0.4.7.1"] = {
                 x86_64 = {
                     url = {
@@ -146,6 +175,12 @@ package = {
                         CN = "https://gitcode.com/xlings-res/jdk-corretto/releases/download/21.0.12.8.1/amazon-corretto-21.0.12.8.1-windows-x64-jdk.zip",
                     },
                     sha256 = "de9ad88fb2575a1aff4715b192014ba31edd6e411d243371f377cff0560e34bc",
+                },
+            },
+            ["17.0.20.12.1"] = {
+                x86_64 = {
+                    url = "https://corretto.aws/downloads/resources/17.0.20.12.1/amazon-corretto-17.0.20.12.1-windows-x64-jdk.zip",
+                    sha256 = "1ac8d9dc48b170684ac6223113f524325bd842d14ed74dac28927f8165cffd3a",
                 },
             },
         },
