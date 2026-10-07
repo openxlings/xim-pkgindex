@@ -3,6 +3,7 @@ import glob
 import json
 import os
 import subprocess
+import tempfile
 
 import pytest
 from tests.lib.xpkg_parser import parse_xpkg
@@ -133,6 +134,24 @@ class TestVerify:
             f"plugin not installed into {pack}"
         assert os.path.isfile(os.path.join(pack, "lsp", "mcppls.lua")), \
             f"nvim-0.11 lsp config missing in {pack}"
+        assert os.path.isfile(os.path.join(pack, "plugin", "xim-mcppls-auto.lua")), \
+            f"auto-start shim missing in {pack}"
+
+    @pytest.mark.verify
+    @skip_if_not('linux')
+    def test_auto_start_without_setup(self):
+        # the whole point of the xim packaging: NO init.lua, NO explicit
+        # setup() — opening a C++ buffer alone must attach the server
+        with tempfile.TemporaryDirectory() as td:
+            cpp = os.path.join(td, "main.cpp")
+            with open(cpp, "w") as f:
+                f.write("int main() { return 0; }\n")
+            lua = ("vim.wait(30000, function() "
+                   "local get = vim.lsp.get_clients or vim.lsp.get_active_clients; "
+                   "return #(get({bufnr = 0, name = [[mcppls]]})) > 0 end, 200)")
+            cmd = (f'PATH="{SUBOS_BIN}:$PATH" nvim --headless {cpp} '
+                   f'"+lua assert({lua}, \'mcppls did not auto-attach\')" +qa')
+            assert_command_output(cmd)
 
     @pytest.mark.verify
     @skip_if_not('linux')

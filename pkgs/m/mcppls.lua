@@ -24,6 +24,11 @@ package = {
 
     programs = {"mcppls"},
 
+    -- The editors/nvim plugin built from this same tag is packaged
+    -- separately, as `mcppls-nvim` (pkgs/n/mcppls-nvim.lua), which declares
+    -- this package as a dependency; the plugin finds the server here via
+    -- the xvm shim on PATH.
+
     xvm_enable = true,
 
     -- Release assets, verbatim from upstream `SHA256SUMS` (v0.0.11):

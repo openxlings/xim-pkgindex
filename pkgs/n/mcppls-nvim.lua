@@ -2,7 +2,7 @@ package = {
     spec = "2",
     -- base info
     name = "mcppls-nvim",
-    description = "Neovim plugin for mcppls: C++20/23 named modules in Neovim (go-to-definition, hover, references, completion, import highlighting) through Neovim's own LSP client",
+    description = "Neovim plugin for mcppls, configured out of the box: module-aware C++20/23 completion, go-to-definition, hover, references and import highlighting through Neovim's own LSP client",
 
     authors = {"sunrisepeak"},
     maintainers = {"https://github.com/Sunrisepeak/mcpp-language-server/graphs/contributors"},
@@ -82,14 +82,35 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 
 -- The plugin root files: `lua/` carries the module (require('mcppls')),
--- `lsp/` the nvim-0.11+ built-in config for vim.lsp.enable('mcppls').
+-- `lsp/` the nvim-0.11+ built-in config for vim.lsp.enable('mcppls'),
+-- `plugin/xim-mcppls-auto.lua` the auto-start this package adds on top of
+-- the upstream tree (see __auto_start_lua()).
 function __required_files()
     local d = pkginfo.install_dir()
     return {
         path.join(d, "lua", "mcppls", "init.lua"),
         path.join(d, "lsp", "mcppls.lua"),
+        path.join(d, "plugin", "xim-mcppls-auto.lua"),
         path.join(d, "README.md"),
     }
+end
+
+-- Sourced by Neovim at startup from every runtimepath plugin/ directory —
+-- site pack start dirs included — so `require('mcppls').setup()` runs
+-- without the user writing any init.lua line: open a C/C++ file and the
+-- server attaches (completion, module-syntax highlighting, ...). setup()
+-- is idempotent upstream (augroup with clear = true), so a user who ALSO
+-- calls it from their own config loses nothing; anyone who wants manual
+-- control sets `vim.g.mcppls_auto_start = false` in their init.lua.
+function __auto_start_lua()
+    return [==[
+-- Added by the xim `mcppls-nvim` package: out-of-the-box auto-start.
+-- Opt out in your init.lua with:  vim.g.mcppls_auto_start = false
+if vim.g.mcppls_auto_start == false then
+  return
+end
+require('mcppls').setup()
+]==]
 end
 
 function installed()
@@ -130,6 +151,11 @@ function install()
     os.tryrm(pkginfo.install_dir())
     os.mv(path.join("mcpp-language-server-" .. pkginfo.version(), "editors", "nvim"),
         pkginfo.install_dir())
+    -- The out-of-the-box auto-start shim (upstream ships no plugin/ dir, so
+    -- the directory and the file are entirely ours).
+    os.mkdir(path.join(pkginfo.install_dir(), "plugin"))
+    io.writefile(path.join(pkginfo.install_dir(), "plugin", "xim-mcppls-auto.lua"),
+        __auto_start_lua())
     -- A failed extraction surfaces here, naming what did not land, rather
     -- than as a silent empty install dir behind a green install banner.
     local missing = {}
@@ -170,11 +196,10 @@ function config()
     end
 
     log.info("mcppls-nvim installed into: %s", pack_dir)
-    log.info("enable it in your init.lua (one line):")
-    log.info("  Neovim >= 0.11:  vim.lsp.enable('mcppls')")
-    log.info("  any Neovim >= 0.10:  require('mcppls').setup()")
-    log.info("the mcppls server is found on PATH via xvm; see the plugin README "
-        .. "for options (root_markers, semantic tokens, statusline, :McpplsStatus)")
+    log.info("auto-configured: opening a C/C++ file starts the mcppls server — "
+        .. "completion, module-syntax highlighting and go-to-definition work with no init.lua change")
+    log.info("to disable the auto-start:  vim.g.mcppls_auto_start = false  (init.lua), "
+        .. "then require('mcppls').setup() manually when wanted")
     return true
 end
 
