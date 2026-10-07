@@ -170,13 +170,36 @@ class TestStatic:
                 f"sha256 {m.group(1)!r} is not 64 hex characters"
 
     @pytest.mark.static
-    def test_the_three_sha256_values_are_distinct(self, meta):
-        """Three different archives (linux/macosx/windows) must not share a
-        hash -- a repeated value would mean a copy-paste rather than three
-        independent downloads."""
+    def test_the_sha256_values_are_distinct(self, meta):
+        """Six different archives (37.0.0 and 36.1.0, each linux/macosx/
+        windows) must not share a hash -- a repeated value would mean a
+        copy-paste rather than six independent downloads."""
         hashes = re.findall(r'sha256\s*=\s*"([0-9a-f]{64})"', meta.raw_content)
-        assert len(hashes) == 3, f"expected 3 sha256 entries, found {len(hashes)}"
-        assert len(set(hashes)) == 3, "two or more sha256 values are identical"
+        assert len(hashes) == 6, f"expected 6 sha256 entries, found {len(hashes)}"
+        assert len(set(hashes)) == 6, "two or more sha256 values are identical"
+
+    @pytest.mark.static
+    def test_every_version_has_its_extraction_directory(self, meta):
+        """The archive's top-level directory does not follow the version
+        ("android-37.0" for 37.0.0, "android-16" for 36.1.0, measured), so a
+        version added to the table without its EXTRACT_DIRS entry would fail
+        at install time instead of here."""
+        code = _code(meta.raw_content)
+        versions = set(re.findall(r'\["(\d+\.\d+\.\d+)"\]\s*=\s*\{\s*\n\s*url', code))
+        assert versions == {"37.0.0", "36.1.0"}, versions
+        block = re.search(r'local EXTRACT_DIRS = \{(.*?)\n\}', code, re.S)
+        assert block, "EXTRACT_DIRS table not found"
+        mapped = dict(re.findall(r'\["([^"]+)"\]\s*=\s*"([^"]+)"', block.group(1)))
+        assert mapped == {"37.0.0": "android-37.0", "36.1.0": "android-16"}, mapped
+
+    @pytest.mark.static
+    def test_uninstall_is_version_scoped(self, meta):
+        """Two revisions can be installed side by side; removing one must not
+        drop the other's xvm nodes."""
+        code = _code(meta.raw_content)
+        body = code.split("function uninstall()", 1)[1]
+        assert "xvm.remove(prog, version)" in body
+        assert "xvm.remove(package.name, version)" in body
 
     @pytest.mark.static
     def test_windows_launchers_are_bat_not_exe(self, code):
