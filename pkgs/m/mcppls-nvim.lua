@@ -14,13 +14,28 @@ package = {
     -- xim pkg info
     type = "package",
     -- The plugin is pure Lua — arch-independent. Both arches are declared so
-    -- the package tracks where its dependencies (nvim + mcppls) exist; the
+    -- the package tracks where its dependency (xim:mcppls) exists; the
     -- source archive is the same file for both, hence the identical sha256.
     archs = {"x86_64", "aarch64"},
     status = "dev", -- 0.0.x: upstream is pre-1.0, expect breaking changes
     categories = {"cpp", "language-server", "lsp", "nvim"},
     keywords = {"cpp", "c++", "modules", "lsp", "clangd", "mcpp", "nvim", "neovim", "plugin"},
 
+    -- Neovim itself is deliberately NOT a declared dep: the plugin drives
+    -- whatever Neovim >= 0.10 the machine already has — xim's, the distro's,
+    -- Homebrew's, Scoop's. The config target below is Neovim's own user site
+    -- pack (`:h stdpath("data")`-based), the same directory for every install
+    -- source, so the configuration is unified, not per-source. install()
+    -- detects `nvim` on PATH and only when it is absent asks xlings itself
+    -- for the index's editor package (`xim:nvim`) — the equivalent-dep,
+    -- deferred: `pkgmanager.install` reports nothing a recipe can read
+    -- (cuda-nvcc.lua's warning) and the bare spelling resolves to nothing
+    -- while this recipe is registered as a local overlay (how CI tests a
+    -- changed package), so both spellings are tried and the outcome is
+    -- re-detected and reported honestly. A distro Neovim older than 0.10 is
+    -- a platform fact to warn about, not an install failure. The server the
+    -- plugin drives is a hard dep and comes from this index.
+    --
     -- The plugin is the `editors/nvim` directory of the mcpp-language-server
     -- source tree at the matching tag (README: "The plugin is the
     -- editors/nvim directory of this repository"). The archive's top
@@ -35,7 +50,7 @@ package = {
     -- mirror (verified by re-download), so one sha256 serves both legs.
     xpm = {
         linux = {
-            deps = { "xim:mcppls", "xim:nvim@>=0.10" },
+            deps = { "xim:mcppls" },
             source = {
                 GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/archive/refs/tags/v${version}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v${version}/src-${version}.tar.gz",
@@ -49,7 +64,7 @@ package = {
             },
         },
         macosx = {
-            deps = { "xim:mcppls", "xim:nvim@>=0.10" },
+            deps = { "xim:mcppls" },
             source = {
                 GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/archive/refs/tags/v${version}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v${version}/src-${version}.tar.gz",
@@ -62,7 +77,7 @@ package = {
             },
         },
         windows = {
-            deps = { "xim:mcppls", "xim:nvim@>=0.10" },
+            deps = { "xim:mcppls" },
             source = {
                 GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/archive/refs/tags/v${version}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v${version}/src-${version}.tar.gz",
@@ -79,6 +94,7 @@ package = {
 
 import("xim.libxpkg.log")
 import("xim.libxpkg.pkginfo")
+import("xim.libxpkg.pkgmanager")
 import("xim.libxpkg.xvm")
 
 -- The plugin root files: `lua/` carries the module (require('mcppls')),
@@ -175,10 +191,77 @@ function __pack_dir()
     return path.join(__nvim_site_dir(), "pack", "xim", "start", "mcppls")
 end
 
+-- The Neovim the plugin will drive, detected at install time rather than
+-- declared as a dep: whatever `nvim` is on PATH — xim's shim, a distro
+-- package, Homebrew, Scoop — drives the same site-pack config. Returns the
+-- parsed "x.y.z" or nil when Neovim is not runnable from PATH.
+function __nvim_version()
+    local candidates = { "nvim --version" }
+    if os.host() == "windows" then
+        table.insert(candidates, "nvim.exe --version")
+    end
+    for _, cmd in ipairs(candidates) do
+        local ok, out = pcall(os.iorun, cmd)
+        if ok and type(out) == "string" then
+            local v = out:match("NVIM v(%d+%.%d+%.%d+)")
+            if v then
+                return v
+            end
+        end
+    end
+    return nil
+end
+
+function __version_at_least(v, minimum)
+    local vi, mi = {}, {}
+    for n in v:gmatch("%d+") do vi[#vi + 1] = tonumber(n) end
+    for n in minimum:gmatch("%d+") do mi[#mi + 1] = tonumber(n) end
+    for i = 1, math.max(#vi, #mi) do
+        local a, b = vi[i] or 0, mi[i] or 0
+        if a ~= b then
+            return a > b
+        end
+    end
+    return true
+end
+
+-- Make sure some Neovim >= 0.10 is available: use the machine's own first,
+-- and only when there is none on PATH ask xlings itself for the index's
+-- editor package. Both spellings, because `pkgmanager.install` reports
+-- nothing a recipe can read AND the bare name resolves to nothing while
+-- this recipe is a local overlay (cuda-nvcc.lua measured both); each
+-- attempt is followed by a fresh probe, and the final outcome is reported
+-- honestly — the plugin stays installed either way and activates the
+-- moment an adequate Neovim is on PATH.
+function __provision_nvim()
+    local ver = __nvim_version()
+    if ver then
+        log.info("Neovim %s detected on PATH", ver)
+        if not __version_at_least(ver, "0.10.0") then
+            log.warn("Neovim %s on PATH is older than the 0.10 the plugin requires; "
+                .. "upgrade it — the plugin activates automatically once you do", ver)
+        end
+        return ver
+    end
+    for _, coord in ipairs({ "xim:nvim", "nvim" }) do
+        log.info("no Neovim on PATH — installing the index's editor package %s", coord)
+        pcall(pkgmanager.install, coord)
+        ver = __nvim_version()
+        if ver then
+            log.info("Neovim %s available after installing %s", ver, coord)
+            return ver
+        end
+    end
+    log.warn("Neovim is still not available on PATH; install Neovim >= 0.10 "
+        .. "(any source works) and the plugin activates automatically")
+    return nil
+end
+
 function install()
     os.tryrm(pkginfo.install_dir())
     os.mv(path.join("mcpp-language-server-" .. pkginfo.version(), "editors", "nvim"),
         pkginfo.install_dir())
+    __provision_nvim()
     -- The out-of-the-box auto-start shim (upstream ships no plugin/ dir, so
     -- the directory and the file are entirely ours).
     os.mkdir(path.join(pkginfo.install_dir(), "plugin"))
