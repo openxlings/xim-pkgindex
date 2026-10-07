@@ -9,7 +9,7 @@ package = {
     repo = "https://gitlab.gnome.org/GNOME/libxml2",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"xml", "parsing", "library"},
     keywords = {"libxml2", "xml", "parser", "lib"},
@@ -34,18 +34,36 @@ package = {
             -- suffix orders below the same version without one.
             ["latest"] = { ref = "2.13.5-1" },
             ["2.13.5-1"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/libxml2/releases/download/2.13.5/libxml2-2.13.5-linux-x86_64.tar.gz",
-                    CN = "https://gitcode.com/xlings-res/libxml2/releases/download/2.13.5/libxml2-2.13.5-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libxml2/releases/download/2.13.5/libxml2-2.13.5-linux-x86_64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/libxml2/releases/download/2.13.5/libxml2-2.13.5-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "f963896ed90c4599d06786f86203620e937a746a6be246065d7a3b01af2a7ed1",
                 },
-                sha256 = "f963896ed90c4599d06786f86203620e937a746a6be246065d7a3b01af2a7ed1",
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libxml2/releases/download/2.13.5/libxml2-2.13.5-linux-aarch64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/libxml2/releases/download/2.13.5/libxml2-2.13.5-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "723f97d01c6a7618ace30842e1a03cfbd99965a340c1df263d31ba217cfd1cee",
+                },
             },
             ["2.13.5"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/libxml2/releases/download/2.13.5/libxml2-2.13.5-linux-x86_64.tar.gz",
-                    CN = "https://gitcode.com/xlings-res/libxml2/releases/download/2.13.5/libxml2-2.13.5-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libxml2/releases/download/2.13.5/libxml2-2.13.5-linux-x86_64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/libxml2/releases/download/2.13.5/libxml2-2.13.5-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "f963896ed90c4599d06786f86203620e937a746a6be246065d7a3b01af2a7ed1",
                 },
-                sha256 = "f963896ed90c4599d06786f86203620e937a746a6be246065d7a3b01af2a7ed1",
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libxml2/releases/download/2.13.5/libxml2-2.13.5-linux-aarch64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/libxml2/releases/download/2.13.5/libxml2-2.13.5-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "723f97d01c6a7618ace30842e1a03cfbd99965a340c1df263d31ba217cfd1cee",
+                },
             },
         },
     },

@@ -26,7 +26,7 @@ package = {
 
     -- xim pkg info
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable", -- dev, stable, deprecated
     categories = {"libc", "gnu"},
     keywords = {"libc", "gnu"},
@@ -155,11 +155,13 @@ package = {
             -- entry at a NEW asset under the same version key (2.44.3 below)
             -- and leaves the old asset published for cached indexes.
             ["2.44"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44/glibc-2.44-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44/glibc-2.44-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44/glibc-2.44-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44/glibc-2.44-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "0105292fd6b49f74fbf51f93af973b78a9fc18225cb1c757c720e90de3120182",
                 },
-                sha256 = "0105292fd6b49f74fbf51f93af973b78a9fc18225cb1c757c720e90de3120182",
             },
             -- 2.44.2 IS BACK, AND IT IS `latest`.
             --
@@ -212,11 +214,13 @@ package = {
             -- keep resolving, and on 2026.8.27.5 the declaration outranks
             -- `latest`, so they are not dragged forward.
             ["2.44.2"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.2/glibc-2.44.2-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.2/glibc-2.44.2-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.2/glibc-2.44.2-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.2/glibc-2.44.2-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "ed4bf048b8ed2b65433e0dd655f93133da4a9bd458276cfa986b7cccde835d08",
                 },
-                sha256 = "ed4bf048b8ed2b65433e0dd655f93133da4a9bd458276cfa986b7cccde835d08",
             },
             -- 2.44.3: THE LOADER'S OWN DIRECTORY IS ITS DEFAULT DIRECTORY.
             --
@@ -271,12 +275,21 @@ package = {
             -- only from a client that implements revision, which reinstalls
             -- the payload and says why.
             ["2.44.3"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.3-r1/glibc-2.44.3-r1-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.3-r1/glibc-2.44.3-r1-linux-x86_64.tar.gz",
-                },
-                sha256 = "5a02e37f735fdf6121babfd7616342b79b2440985d909bc42d711c48d0cb3623",
                 revision = 1,
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.3-r1/glibc-2.44.3-r1-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.3-r1/glibc-2.44.3-r1-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "5a02e37f735fdf6121babfd7616342b79b2440985d909bc42d711c48d0cb3623",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.3-r1/glibc-2.44.3-r1-linux-aarch64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.3-r1/glibc-2.44.3-r1-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "25dbdec6bc40784f138028e2c7418f7522b2b96f4ef81be2e60d8b77f0944c66",
+                },
             },
         },
     },

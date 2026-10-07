@@ -10,7 +10,7 @@ package = {
     docs = "https://llvm.org/docs/",
 
     type = "package",
-    archs = {"x86_64", "arm64"},
+    archs = {"x86_64", "arm64", "aarch64"},
     status = "stable",
     categories = {"compiler", "toolchain", "llvm"},
     keywords = {"llvm", "clang", "lld", "compiler", "linker"},
@@ -75,6 +75,13 @@ package = {
                         CN = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3/llvm-23.1.3-linux-x86_64.tar.gz",
                     },
                     sha256 = "08dfe7d3b297e352117c2c9929fa223ede5970741f98dff09e5ad71494f57443",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3/llvm-23.1.3-linux-aarch64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3/llvm-23.1.3-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "8a4697b6f22703c1fb8d808a0ef6022f3a9e9111a70e7a02009b7814bdbe46a9",
                 },
             },
         },
