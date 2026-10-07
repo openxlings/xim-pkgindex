@@ -16,9 +16,9 @@ PKG = "jdk-corretto"
 PKG_FILE = "pkgs/j/jdk-corretto.lua"
 
 PLATFORMS = ("linux", "macosx", "windows")
-# 2 个版本 (25 / 21 LTS) x 每平台的架构数: linux 2 + macosx 2 + windows 1 = 5
-RESOURCE_COUNT = 10
-VERSIONS = {"25.0.4.7.1": "25.0.4", "21.0.12.8.1": "21.0.12"}
+# 3 个版本 (25 / 21 / 17 LTS) x 每平台的架构数: linux 2 + macosx 2 + windows 1 = 5
+RESOURCE_COUNT = 15
+VERSIONS = {"25.0.4.7.1": "25.0.4", "21.0.12.8.1": "21.0.12", "17.0.20.12.1": "17.0.20"}
 
 
 def _code(content: str) -> str:
