@@ -26,12 +26,15 @@ package = {
     -- Homebrew's, Scoop's. The config target below is Neovim's own user site
     -- pack (`:h stdpath("data")`-based), the same directory for every install
     -- source, so the configuration is unified, not per-source. install()
-    -- detects `nvim` on PATH and only asks the system package manager for one
-    -- when it is absent (best effort: `pkgmanager.install` reports nothing a
-    -- recipe can read — cuda-nvcc.lua's warning — so the evidence is a fresh
-    -- `nvim --version`; and a distro Neovim older than 0.10 is a platform
-    -- fact to warn about, not an install failure). The server the plugin
-    -- drives is a hard dep and comes from this index.
+    -- detects `nvim` on PATH and only when it is absent asks xlings itself
+    -- for the index's editor package (`xim:nvim`) — the equivalent-dep,
+    -- deferred: `pkgmanager.install` reports nothing a recipe can read
+    -- (cuda-nvcc.lua's warning) and the bare spelling resolves to nothing
+    -- while this recipe is registered as a local overlay (how CI tests a
+    -- changed package), so both spellings are tried and the outcome is
+    -- re-detected and reported honestly. A distro Neovim older than 0.10 is
+    -- a platform fact to warn about, not an install failure. The server the
+    -- plugin drives is a hard dep and comes from this index.
     --
     -- The plugin is the `editors/nvim` directory of the mcpp-language-server
     -- source tree at the matching tag (README: "The plugin is the
@@ -223,29 +226,35 @@ function __version_at_least(v, minimum)
 end
 
 -- Make sure some Neovim >= 0.10 is available: use the machine's own first,
--- and only ask the system package manager when there is none on PATH. The
--- install attempt is best effort on purpose — `pkgmanager.install` reports
--- nothing a recipe can read (cuda-nvcc.lua), and what it does provide can
--- predate 0.10 (Debian/Ubuntu's neovim), so the outcome is re-detected and
--- reported honestly; the plugin itself stays installed either way and
--- activates the moment an adequate Neovim is on PATH.
+-- and only when there is none on PATH ask xlings itself for the index's
+-- editor package. Both spellings, because `pkgmanager.install` reports
+-- nothing a recipe can read AND the bare name resolves to nothing while
+-- this recipe is a local overlay (cuda-nvcc.lua measured both); each
+-- attempt is followed by a fresh probe, and the final outcome is reported
+-- honestly — the plugin stays installed either way and activates the
+-- moment an adequate Neovim is on PATH.
 function __provision_nvim()
     local ver = __nvim_version()
     if ver then
         log.info("Neovim %s detected on PATH", ver)
-    else
-        log.info("no Neovim on PATH — asking the system package manager for one")
-        pcall(pkgmanager.install, "neovim")
+        if not __version_at_least(ver, "0.10.0") then
+            log.warn("Neovim %s on PATH is older than the 0.10 the plugin requires; "
+                .. "upgrade it — the plugin activates automatically once you do", ver)
+        end
+        return ver
+    end
+    for _, coord in ipairs({ "xim:nvim", "nvim" }) do
+        log.info("no Neovim on PATH — installing the index's editor package %s", coord)
+        pcall(pkgmanager.install, coord)
         ver = __nvim_version()
+        if ver then
+            log.info("Neovim %s available after installing %s", ver, coord)
+            return ver
+        end
     end
-    if not ver then
-        log.warn("Neovim is still not available on PATH; install Neovim >= 0.10 "
-            .. "(any source works) and the plugin activates automatically")
-    elseif not __version_at_least(ver, "0.10.0") then
-        log.warn("Neovim %s on PATH is older than the 0.10 the plugin requires; "
-            .. "upgrade it — the plugin activates automatically once you do", ver)
-    end
-    return ver
+    log.warn("Neovim is still not available on PATH; install Neovim >= 0.10 "
+        .. "(any source works) and the plugin activates automatically")
+    return nil
 end
 
 function install()
