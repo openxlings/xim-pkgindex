@@ -1,5 +1,6 @@
 -- Linux ARM64 metadata requires xlings 2026.10.8.1 or newer, whose
--- catalog and hook loaders expose the process architecture consistently.
+-- catalog loader exposes the process architecture; resolved runtime exports
+-- are carried into hooks through their execution context.
 -- Older x86_64 clients retain their existing layout.
 local recipe_arch = (os.arch and os.arch()) or "x86_64"
 local runtime_metadata = {
