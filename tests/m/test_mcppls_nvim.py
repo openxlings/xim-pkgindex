@@ -1,4 +1,4 @@
-"""测试 mcppls-nvim 包（Neovim 插件，依赖 xim:mcppls + xim:nvim）"""
+"""测试 mcppls-nvim 包（Neovim 插件，硬依赖 xim:mcppls；nvim 运行时探测 + pkgmanager 兜底）"""
 import glob
 import json
 import os
@@ -18,7 +18,7 @@ from tests.lib.assertions import (
 from tests.lib.platform_utils import skip_if_not, xlings_home
 
 PKG = "mcppls-nvim"
-PKG_FILE = "pkgs/n/mcppls-nvim.lua"
+PKG_FILE = "pkgs/m/mcppls-nvim.lua"
 
 # 同 test_mcppls.py：钉住 subos bin，宿主机上自带的旧 mcppls/nvim 不得应答
 SUBOS_BIN = '$HOME/.xlings/subos/current/bin'
@@ -62,8 +62,10 @@ class TestStatic:
 
     @pytest.mark.static
     def test_deps_qualified(self, meta):
-        # The plugin needs the server and an editor; both must be namespaced
-        # deps so the closure resolves even when several indexes provide them.
+        # The server is the one hard dep, namespaced so the closure resolves
+        # even when several indexes provide it. Neovim is deliberately NOT a
+        # dep: it is detected on PATH at install time (any install source
+        # drives the same site-pack config), with a pkgmanager fallback.
         # (The parser records platforms as bare flags, so scan the recipe text.)
         import re
         deps_blocks = re.findall(r'deps\s*=\s*\{([^}]*)\}', meta.raw_content)
@@ -71,10 +73,32 @@ class TestStatic:
         for block in deps_blocks:
             deps = re.findall(r'"([^"]+)"', block)
             assert "xim:mcppls" in deps, f"missing xim:mcppls in: {deps}"
-            assert any(d.startswith("xim:nvim@") for d in deps), \
-                f"missing xim:nvim@>=... in: {deps}"
             for d in deps:
                 assert d.startswith("xim:"), f"unqualified dep: {d}"
+            assert not any("nvim" in d for d in deps), \
+                f"Neovim must stay a detected runtime, not a dep: {deps}"
+
+    @pytest.mark.static
+    def test_nvim_detected_not_depended(self, meta):
+        # the contract the recipe implements: probe `nvim --version`, fall
+        # back to the system package manager only when nothing answers, and
+        # never trust that fallback — re-probe afterwards
+        c = meta.raw_content
+        assert 'function __nvim_version()' in c, "missing the nvim detection helper"
+        assert 'nvim --version' in c, "missing the version probe"
+        assert 'pcall(pkgmanager.install' in c, "missing the pkgmanager fallback"
+        detect = c.index('function __nvim_version()')
+        fallback = c.index('pcall(pkgmanager.install')
+        assert detect < fallback, "detect FIRST, install only on absence"
+        assert c.rindex('__nvim_version()') > fallback, \
+            "re-probe after the fallback attempt (never trust the install)"
+
+    @pytest.mark.static
+    def test_version_gate(self, meta):
+        # the plugin needs Neovim >= 0.10; the recipe must compare, not assume
+        c = meta.raw_content
+        assert '__version_at_least' in c
+        assert '0.10.0' in c
 
 
 class TestIndex:

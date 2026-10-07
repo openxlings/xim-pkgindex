@@ -26,7 +26,7 @@ package = {
     programs = {"mcppls"},
 
     -- The editors/nvim plugin built from this same tag is packaged
-    -- separately, as `mcppls-nvim` (pkgs/n/mcppls-nvim.lua), which declares
+    -- separately, as `mcppls-nvim` (pkgs/m/mcppls-nvim.lua), which declares
     -- this package as a dependency; the plugin finds the server here via
     -- the xvm shim on PATH.
 
