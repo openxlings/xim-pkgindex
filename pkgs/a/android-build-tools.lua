@@ -62,9 +62,24 @@
 -- meaning "macOS only", exactly as `android-platform-tools.lua`'s own
 -- comment states for the identical reason.
 --
--- EXTRACTION LAYOUT. All three archives share one internal top-level
--- directory name regardless of host, `android-37.0/` (measured with
--- `unzip -l` against all three downloads) -- unlike the NDK's per-host
+-- 36.1.0 (ADDED 2026-10-07, same manifest, same procedure). `build-tools;
+-- 36.1.0` (`channel-0`, display-name "Android SDK Build-Tools 36.1") is the
+-- exact `buildTools` version Godot 4.7's Gradle build template pins in its
+-- `config.gradle` (`buildTools: '36.1.0'`, beside `compileSdk: 36` and AGP
+-- 8.6.1). AGP builds only against the exact revision a project names and,
+-- with no accepted licence file, fails rather than falling back to 37.0.0
+-- ("Failed to install the following Android SDK packages as some licences
+-- have not been accepted. build-tools;36.1.0") -- measured with a real Godot
+-- 4.7.2 Gradle export. With this revision present it builds, licence file or
+-- not. Archives `build-tools_r36.1_{linux,macosx,windows}.zip`, sha1
+-- 936a0d6b... / d365b05c... / 95f048ae... matching the manifest; sha256
+-- computed from those verified downloads.
+--
+-- EXTRACTION LAYOUT. All three archives of one revision share one internal
+-- top-level directory name regardless of host -- `android-37.0/` for 37.0.0,
+-- and, surprisingly, `android-16/` for 36.1.0 (measured with `unzip -Z1`
+-- against all six downloads; the name tracks nothing in the version) --
+-- unlike the NDK's per-host
 -- `android-ndk-r30-<host>/`. `aapt2`, `zipalign`, `apksigner`, `d8` and
 -- `NOTICE.txt` sit directly under it on Linux and macOS;
 -- `aapt2.exe`/`zipalign.exe`/`apksigner.bat`/`d8.bat` on Windows. This
@@ -235,7 +250,7 @@ package = {
     homepage = "https://developer.android.com/tools/releases/build-tools",
 
     name = "android-build-tools",
-    description = "Android SDK Build-Tools 37: aapt2, zipalign, apksigner and d8, Google's own prebuilt packaging tools",
+    description = "Android SDK Build-Tools (37, 36.1): aapt2, zipalign, apksigner and d8, Google's own prebuilt packaging tools",
 
     maintainers = {"Google", "The Android Open Source Project"},
     licenses = {"Android Software Development Kit License Agreement"},
@@ -274,6 +289,12 @@ package = {
                 },
                 sha256 = "01af179347cbcd9c208b7f8171f7b21f6dd1d2f85bcd15e88caa51d5d7b86060",
             },
+            ["36.1.0"] = {
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/build-tools_r36.1_linux.zip",
+                },
+                sha256 = "a7b5889e4a79fcf3b0976bef40d401f4240fb1eed891d9d91169da1111e11d78",
+            },
         },
         macosx = {
             -- One archive for both Apple arches: a universal binary (see
@@ -286,6 +307,12 @@ package = {
                 },
                 sha256 = "b5b1ac529028a49f11b596b89d9b34252e0f39388ee7dbd16ae3110f1c9c5722",
             },
+            ["36.1.0"] = {
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/build-tools_r36.1_macosx.zip",
+                },
+                sha256 = "cc56be1d4ea95041f32f4ebf3a4f5c6b990c7749d706852395006b5654eb82ff",
+            },
         },
         windows = {
             deps = { runtime = { "xim:jdk-temurin@25.0.4+7" } },
@@ -296,6 +323,12 @@ package = {
                 },
                 sha256 = "68075aa319ed8a01cf1a565ed1e61a3c1a801dd49191c35851248dc293c33b1a",
             },
+            ["36.1.0"] = {
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/build-tools_r36.1_windows.zip",
+                },
+                sha256 = "23189d2d52b40a070a05e9cf7e497c9563f67fee76902e8fd3135ef29ef4dbeb",
+            },
         },
     },
 }
@@ -304,14 +337,17 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
 
--- The one internal directory name every host's archive shares (measured
--- above). A future revision bump changes this string along with the
+-- The one internal directory name every host's archive of a revision shares
+-- (measured above). A new revision adds its own entry here along with the
 -- version table -- deliberately not templated from `pkginfo.version()`,
--- because `source.properties`' `Pkg.Revision` (major.minor.micro) and this
--- directory name (major.minor only, "android-37.0") already disagree within
--- this one revision, matching the same major/short-name mismatch
--- `android-ndk.lua` records for its own release-name-vs-Pkg.Revision case.
-local EXTRACT_DIR = "android-37.0"
+-- because `source.properties`' `Pkg.Revision` and this directory name
+-- disagree ("android-37.0" for 37.0.0, "android-16" for 36.1.0), matching
+-- the same major/short-name mismatch `android-ndk.lua` records for its own
+-- release-name-vs-Pkg.Revision case.
+local EXTRACT_DIRS = {
+    ["37.0.0"] = "android-37.0",
+    ["36.1.0"] = "android-16",
+}
 
 -- POSIX-only wrapper: exports JAVA_HOME (for anything downstream that reads
 -- it) and prepends the resolved JDK's bin/ to PATH (for apksigner/d8
@@ -384,11 +420,16 @@ function install()
     local dir = pkginfo.install_dir()
     os.tryrm(dir)
 
-    if not os.isdir(EXTRACT_DIR) then
-        raise("android-build-tools: expected extracted directory '"
-              .. EXTRACT_DIR .. "' not found beside the downloaded archive")
+    local extract_dir = EXTRACT_DIRS[pkginfo.version()]
+    if not extract_dir then
+        raise("android-build-tools: no extraction directory recorded for "
+              .. "version " .. tostring(pkginfo.version()))
     end
-    os.mv(EXTRACT_DIR, dir)
+    if not os.isdir(extract_dir) then
+        raise("android-build-tools: expected extracted directory '"
+              .. extract_dir .. "' not found beside the downloaded archive")
+    end
+    os.mv(extract_dir, dir)
 
     local exe = is_host("windows") and ".exe" or ""
     local bat = is_host("windows") and ".bat" or ""
@@ -493,12 +534,16 @@ function config()
 end
 
 function uninstall()
+    -- Version-scoped: with two revisions installed side by side (an AGP
+    -- project pins one, android-sdk links every one present), removing one
+    -- must leave the other's nodes in place.
+    local version = pkginfo.version()
     for _, prog in ipairs(JAVA_PROGRAMS) do
-        xvm.remove(prog)
+        xvm.remove(prog, version)
     end
     for _, prog in ipairs(NATIVE_PROGRAMS) do
-        xvm.remove(prog)
+        xvm.remove(prog, version)
     end
-    xvm.remove(package.name)
+    xvm.remove(package.name, version)
     return true
 end
