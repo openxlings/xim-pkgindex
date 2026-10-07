@@ -38,6 +38,12 @@ package = {
     -- 21.0.12.8.1 and 17.0.20.12.1) and were re-verified against the downloaded
     -- archives while publishing the CN mirror.
     --
+    -- 17.0.20.12.1 deliberately declares GLOBAL only: per the contribution
+    -- guide the PR is submitted after every declared resource is verified, and
+    -- the GitCode mirror release for this version does not exist yet, so a CN
+    -- entry would fail the "check the actual response of GLOBAL/CN URLs" rule.
+    -- Add the CN pair once the mirror release is published.
+    --
     -- PAYLOAD LAYOUT — the one genuinely awkward part: each platform names its
     -- top-level directory from a different slice of the version, and none of
     -- them is the version key itself (see payload_candidates below).
@@ -91,17 +97,11 @@ package = {
             },
             ["17.0.20.12.1"] = {
                 x86_64 = {
-                    url = {
-                        GLOBAL = "https://corretto.aws/downloads/resources/17.0.20.12.1/amazon-corretto-17.0.20.12.1-linux-x64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/jdk-corretto/releases/download/17.0.20.12.1/amazon-corretto-17.0.20.12.1-linux-x64.tar.gz",
-                    },
+                    url = "https://corretto.aws/downloads/resources/17.0.20.12.1/amazon-corretto-17.0.20.12.1-linux-x64.tar.gz",
                     sha256 = "b852a8bc8890149c71141e784cde160d7ecb09bfa82b71209179b25902a0ebe3",
                 },
                 aarch64 = {
-                    url = {
-                        GLOBAL = "https://corretto.aws/downloads/resources/17.0.20.12.1/amazon-corretto-17.0.20.12.1-linux-aarch64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/jdk-corretto/releases/download/17.0.20.12.1/amazon-corretto-17.0.20.12.1-linux-aarch64.tar.gz",
-                    },
+                    url = "https://corretto.aws/downloads/resources/17.0.20.12.1/amazon-corretto-17.0.20.12.1-linux-aarch64.tar.gz",
                     sha256 = "5e2c0d3c7b4468c82030f37f589f906a81630885fc977741e107110d210201ff",
                 },
             },
@@ -145,17 +145,11 @@ package = {
             },
             ["17.0.20.12.1"] = {
                 x86_64 = {
-                    url = {
-                        GLOBAL = "https://corretto.aws/downloads/resources/17.0.20.12.1/amazon-corretto-17.0.20.12.1-macosx-x64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/jdk-corretto/releases/download/17.0.20.12.1/amazon-corretto-17.0.20.12.1-macosx-x64.tar.gz",
-                    },
+                    url = "https://corretto.aws/downloads/resources/17.0.20.12.1/amazon-corretto-17.0.20.12.1-macosx-x64.tar.gz",
                     sha256 = "cf269b31d6b987b16cf8acf3ce20aaee561858d4d424c482e686d783c63ef2d4",
                 },
                 aarch64 = {
-                    url = {
-                        GLOBAL = "https://corretto.aws/downloads/resources/17.0.20.12.1/amazon-corretto-17.0.20.12.1-macosx-aarch64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/jdk-corretto/releases/download/17.0.20.12.1/amazon-corretto-17.0.20.12.1-macosx-aarch64.tar.gz",
-                    },
+                    url = "https://corretto.aws/downloads/resources/17.0.20.12.1/amazon-corretto-17.0.20.12.1-macosx-aarch64.tar.gz",
                     sha256 = "0452dc114b8b651324f4416489861b84f3085746e4303ffa5349d6531d7f92e5",
                 },
             },
@@ -185,10 +179,7 @@ package = {
             },
             ["17.0.20.12.1"] = {
                 x86_64 = {
-                    url = {
-                        GLOBAL = "https://corretto.aws/downloads/resources/17.0.20.12.1/amazon-corretto-17.0.20.12.1-windows-x64-jdk.zip",
-                        CN = "https://gitcode.com/xlings-res/jdk-corretto/releases/download/17.0.20.12.1/amazon-corretto-17.0.20.12.1-windows-x64-jdk.zip",
-                    },
+                    url = "https://corretto.aws/downloads/resources/17.0.20.12.1/amazon-corretto-17.0.20.12.1-windows-x64-jdk.zip",
                     sha256 = "1ac8d9dc48b170684ac6223113f524325bd842d14ed74dac28927f8165cffd3a",
                 },
             },
