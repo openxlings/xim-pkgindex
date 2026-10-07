@@ -41,6 +41,12 @@ package = {
             ["latest"] = { ref = "22.1.8" },
             ["20.1.7"] = "XLINGS_RES",
             ["22.1.8"] = "XLINGS_RES",
+            -- 23.1.3: the first release carrying the macOS 27 arm64e.x1
+            -- ld64.lld fix (llvm-project#222721 via ee66426); mcpp#669 moves
+            -- its LLVM line to it. Its shared libraries ship with $ORIGIN
+            -- RUNPATH (set by the carve), so the archive is self-contained
+            -- without the install-time rpath rewrite.
+            ["23.1.3"] = "XLINGS_RES",
         },
         -- macOS ships a slim, self-contained toolchain carved from the upstream
         -- full release (the 1.4GB upstream monolith is no longer mirrored):
@@ -63,11 +69,22 @@ package = {
                 },
                 sha256 = nil,
             },
+            ["23.1.3"] = {
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3/llvm-23.1.3-macosx-arm64.tar.xz",
+                    CN = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3/llvm-23.1.3-macosx-arm64.tar.xz",
+                },
+                -- Fixed by content (SPEC-006 §4.6); new entries no longer ship
+                -- with sha256 = nil (xim-pkgindex#27 covers backfilling the
+                -- old ones).
+                sha256 = "05a73afb2c64847a16bf8cdc32f23251cb124555b4f5806b6f53d295739b3e82",
+            },
         },
         windows = {
             ["latest"] = { ref = "22.1.8" },
             ["20.1.7"] = "XLINGS_RES",
             ["22.1.8"] = "XLINGS_RES",
+            ["23.1.3"] = "XLINGS_RES",
         },
     },
 }
