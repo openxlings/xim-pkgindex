@@ -54,6 +54,12 @@ done
 [ -n "$VERSION" ]  || die "--version is required (e.g. 22.1.8)"
 [ -n "$PLATFORM" ] || die "--platform is required (linux|macosx|windows)"
 [ -n "$ARCH" ]     || die "--arch is required (x86_64|arm64)"
+case "$PLATFORM:$ARCH" in
+    linux:arm64) ARCH=aarch64 ;;
+    macosx:aarch64) ARCH=arm64 ;;
+    linux:x86_64|linux:aarch64|macosx:arm64|windows:x86_64) ;;
+    *) die "unsupported platform/architecture: $PLATFORM/$ARCH" ;;
+esac
 [ -e "$IN" ]       || die "input not found: $IN"
 case "$PKG" in llvm|core|libcxx|tools) ;; *) die "--pkg must be llvm|core|libcxx|tools";; esac
 
@@ -218,6 +224,10 @@ do_libcxx() {
         atomic_real=$(readlink -f "$(gcc -print-file-name=libatomic.so.1)" 2>/dev/null)
         [ -n "$atomic_real" ] && [ -e "$atomic_real" ] \
             || die "libatomic: 'gcc -print-file-name=libatomic.so.1' did not resolve to a real file"
+        expected_machine="Advanced Micro Devices X86-64"
+        [ "$ARCH" != aarch64 ] || expected_machine=AArch64
+        readelf -h "$atomic_real" | grep -q "Machine:.*$expected_machine" \
+            || die "libatomic architecture does not match $ARCH: $atomic_real"
         base=$(basename "$atomic_real")            # e.g. libatomic.so.1.2.0
         cp "$atomic_real" "$cxxdir/$base"
         ln -sf "$base" "$cxxdir/libatomic.so.1"
@@ -312,6 +322,13 @@ fi
 if [ "$PLATFORM" = "linux" ]; then
     command -v patchelf >/dev/null 2>&1 \
         || die "patchelf not found: needed to set \$ORIGIN RUNPATH on the payload's shared libraries"
+    expected_machine="Advanced Micro Devices X86-64"
+    [ "$ARCH" != aarch64 ] || expected_machine=AArch64
+    while IFS= read -r -d '' elf; do
+        [ "$(head -c 4 "$elf")" = $'\x7fELF' ] || continue
+        readelf -h "$elf" | grep -q "Machine:.*$expected_machine" \
+            || die "foreign ELF in $ARCH payload: $elf"
+    done < <(find "$DEST" -type f -print0)
     so_patched=0
     while IFS= read -r -d '' so; do
         # Not every `*.so` is an ELF: libc++.so ships as an ASCII linker
@@ -339,5 +356,6 @@ for FMT in $FORMATS; do
     esac
     SHA="$(sha256sum "$OUTFILE" | cut -d' ' -f1)"
     printf "  %-10s %8s  %s\n" "$FMT" "$(du -h "$OUTFILE" | cut -f1)" "$SHA"
+    echo "$SHA  $(basename "$OUTFILE")" > "$OUTFILE.sha256"
     echo "$SHA  $(basename "$OUTFILE")" >> "$OUT/SHA256SUMS.txt"
 done

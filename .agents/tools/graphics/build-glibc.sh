@@ -75,7 +75,7 @@ fail() { echo "[gfx-build:$NAME] FAIL: $*" >&2; exit 1; }
 # exit-code contract in .agents/tools/README.md.
 skip() { echo "[gfx-build:$NAME] SKIP: $*" >&2; exit 3; }
 
-[[ -d "$SUBOS" ]] || skip "subos '$SUBOS_NAME' not found — xlings subos new $SUBOS_NAME"
+[[ -n "${GLIBC_BUILD_CC:-}" || -d "$SUBOS" ]] || skip "subos '$SUBOS_NAME' not found — xlings subos new $SUBOS_NAME"
 rm -rf "$STAGE"; mkdir -p "$SRC" "$STAGE" "$DIST"
 
 # Same shape as the published 2.39, so a home holding both resolves them the
@@ -165,9 +165,26 @@ for p in "$PATCHDIR/glibc-$UPSTREAM-"*.patch; do
 done
 shopt -u nullglob
 
-export PATH="$SUBOS/bin:$SUBOS/usr/bin:$PATH"
-export CC="$SUBOS/bin/gcc" CXX="$SUBOS/bin/g++"
-[[ -x "$CC" ]] || fail "no gcc in the subos"
+# A native CI builder may bootstrap with its distribution compiler. The
+# resulting payload still uses the same isolation patches and reserved prefix.
+BUILD_ARCH="${GLIBC_BUILD_ARCH:-$(uname -m)}"
+case "$BUILD_ARCH" in
+    arm64|aarch64) BUILD_ARCH=aarch64; LIBDIR=lib; LOADER_NAME=ld-linux-aarch64.so.1 ;;
+    x86_64) LIBDIR=lib64; LOADER_NAME=ld-linux-x86-64.so.2 ;;
+    *) fail "unsupported glibc build architecture: $BUILD_ARCH" ;;
+esac
+[[ "$BUILD_ARCH" == "$(uname -m)" || "$BUILD_ARCH" == aarch64 && "$(uname -m)" == arm64 ]] \
+    || fail "glibc builds and probes require a native $BUILD_ARCH host"
+if [[ -n "${GLIBC_BUILD_CC:-}" ]]; then
+    export CC="$GLIBC_BUILD_CC" CXX="${GLIBC_BUILD_CXX:-g++}"
+    KERNEL_HEADERS="${GLIBC_BUILD_HEADERS:?GLIBC_BUILD_HEADERS is required for standalone builds}"
+else
+    export PATH="$SUBOS/bin:$SUBOS/usr/bin:$PATH"
+    export CC="$SUBOS/bin/gcc" CXX="$SUBOS/bin/g++"
+    KERNEL_HEADERS="$SUBOS/usr/include"
+fi
+command -v "$CC" >/dev/null || fail "compiler not found: $CC"
+[[ -f "$KERNEL_HEADERS/linux/limits.h" ]] || fail "kernel UAPI headers absent: $KERNEL_HEADERS"
 
 # NO CPPFLAGS/LDFLAGS pointing at the subos.
 #
@@ -194,7 +211,7 @@ log "configuring $UPSTREAM (prefix=$PREFIX)"
 ../configure \
     --prefix="$PREFIX" \
     --libdir="$PREFIX/lib" \
-    --with-headers="$SUBOS/usr/include" \
+    --with-headers="$KERNEL_HEADERS" \
     --enable-kernel=4.19 \
     --disable-werror \
     --disable-profile \
@@ -218,14 +235,14 @@ make install DESTDIR="$STAGE" >> "$WORK/$NAME-build.log" 2>&1 \
 # assets up to 2.44.3 revision 0 hold `glibc-<version>/` and always take the
 # fallback, which picks the first directory holding a libc -- with a stale
 # `glibc-2.44.3/` beside `glibc-2.44.3-r1-.../`, the wrong one.
-STEM="$NAME-$ASSET_VERSION-linux-x86_64"
+STEM="$NAME-$ASSET_VERSION-linux-$BUILD_ARCH"
 PAYLOAD="$WORK/payload/$STEM"
 rm -rf "$PAYLOAD"; mkdir -p "$PAYLOAD"
 cp -a "$STAGE$PREFIX/." "$PAYLOAD/" || fail "payload copy"
 
 # lib64 beside lib, because that is where the recipe and every elfpatched
 # consumer look for the loader (`exports.runtime.loader = lib64/ld-linux-...`).
-if [[ ! -d "$PAYLOAD/lib64" ]]; then
+if [[ "$LIBDIR" == lib64 && ! -d "$PAYLOAD/lib64" ]]; then
     ln -s lib "$PAYLOAD/lib64" || fail "lib64 link"
 fi
 
@@ -281,7 +298,7 @@ fi
 log "checking the payload"
 leaks=0
 LOADER="$(find "$PAYLOAD" -maxdepth 2 -name 'ld-linux-*.so.*' ! -type l | head -1)"
-[[ -n "$LOADER" ]] || { echo "    no ld-linux in the payload"; leaks=$((leaks+1)); }
+[[ -n "$LOADER" && "$(basename "$LOADER")" == "$LOADER_NAME" ]] || { echo "    no ld-linux in the payload"; leaks=$((leaks+1)); }
 
 # The one that matters: the loader has to run and report the version we asked
 # for. A glibc that builds and does not run is not detectable from file lists.
@@ -546,3 +563,5 @@ tar --sort=name \
   | gzip -n -9 > "$TAR" || fail "tar"
 log "packaged $(basename "$TAR") ($(du -h "$TAR" | cut -f1))"
 log "sha256 $(sha256sum "$TAR" | cut -d' ' -f1)"
+
+(cd "$DIST" && sha256sum "$STEM.tar.gz" > "$STEM.tar.gz.sha256")
