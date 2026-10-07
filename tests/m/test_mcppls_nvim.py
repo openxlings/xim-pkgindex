@@ -94,6 +94,18 @@ class TestStatic:
             "re-probe after the fallback attempt (never trust the install)"
 
     @pytest.mark.static
+    def test_completion_left_to_nvim_defaults(self, meta):
+        # the shim auto-starts the SERVER only: completion stays on Neovim's
+        # default flow (omnifunc -> CTRL-X CTRL-O, or the user's own plugin).
+        # An opt-IN snippet may exist as COMMENTED example code — so judge
+        # active code only: strip Lua `--` comment lines, then assert.
+        import re
+        active = re.sub(r'(?m)^\s*--.*$', '', meta.raw_content)
+        assert 'vim.lsp.completion.enable' not in active, \
+            "the shim must not auto-trigger completions"
+        assert 'mcppls_auto_complete' not in active
+
+    @pytest.mark.static
     def test_version_gate(self, meta):
         # the plugin needs Neovim >= 0.10; the recipe must compare, not assume
         c = meta.raw_content
