@@ -360,11 +360,20 @@ local glibc_libs = {
 }
 
 function install()
-    if pkginfo.install_file():find("linux-aarch64", 1, true)
-       and recipe_arch ~= "aarch64" and recipe_arch ~= "arm64" then
-        log.error("glibc aarch64 requires xlings >= 2026.10.8.1; "
-            .. "this client's catalog loader does not expose the aarch64 process ABI")
-        return false
+    -- Hook executors reload recipes without the catalog LoaderContext.
+    -- Their top-level os.arch() is unbound even in a current client. Check
+    -- the catalog's resolved exports, passed into the hook at invocation,
+    -- rather than that executor's fallback metadata.
+    if pkginfo.install_file():find("linux-aarch64", 1, true) then
+        local exports = _RUNTIME and _RUNTIME.self_exports
+        local expected_loader = path.join(pkginfo.install_dir(),
+            "lib", "ld-linux-aarch64.so.1")
+        if not exports or exports.abi ~= "linux-aarch64-glibc"
+           or exports.loader ~= expected_loader then
+            log.error("glibc aarch64 requires xlings >= 2026.10.8.1; "
+                .. "the catalog must resolve the aarch64 runtime loader and ABI")
+            return false
+        end
     end
 
     -- The payload root, without assuming what the tarball called it.

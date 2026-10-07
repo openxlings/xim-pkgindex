@@ -56,3 +56,17 @@ The companion JSON records the filenames, sizes, hashes and admission run.
 Existing x86_64 assets were not replaced. Installed-client acceptance, native
 GNU self-hosting and ecosystem consumers remain pending; the candidate
 recipes are prepared for that admission without activating main.
+
+## 2026-10-08 installed-client guard correction
+
+[Candidate admission run 37697997630](https://github.com/mcpp-community/mcpp/actions/runs/37697997630)
+selected and downloaded the ARM64 resources with released xlings 2026.10.8.1,
+but failed the glibc install guard. Catalog loading exposes the process ABI;
+the separate hook executor reloads the recipe without that LoaderContext.
+Its top-level `os.arch()` fallback therefore cannot establish client compatibility.
+The install guard now requires the catalog-resolved `_RUNTIME.self_exports`
+to contain both `linux-aarch64-glibc` and the exact installed ARM64 loader path.
+This preserves rejection of absent, x86 or inconsistent catalog exports while
+accepting the current client whose hook architecture API is absent.
+No resource bytes, hashes, client floor or catalog metadata changed.
+Installed-client admission must be repeated against this correction.

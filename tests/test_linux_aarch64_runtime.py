@@ -74,26 +74,47 @@ def test_glibc_catalog_metadata_uses_process_architecture(arch, loader, libdir):
     assert f"EXPORT {loader} linux-{abi_arch}-glibc {libdir}" in result.stdout.splitlines()
 
 
-def test_raw_index_old_client_refuses_arm64_before_installation(tmp_path):
-    """A raw local recipe cannot silently bind ARM64 to an x86 loader."""
+@pytest.mark.parametrize("exports,allowed", [
+    ('nil', False),
+    ('{abi="linux-x86_64-glibc", loader="/isolated/glibc/lib64/ld-linux-x86-64.so.2"}', False),
+    ('{abi="linux-aarch64-glibc", loader="/isolated/glibc/lib64/ld-linux-x86-64.so.2"}', False),
+    ('{abi="linux-x86_64-glibc", loader="/isolated/glibc/lib/ld-linux-aarch64.so.1"}', False),
+    ('{abi="linux-aarch64-glibc", loader="/other/glibc/lib/ld-linux-aarch64.so.1"}', False),
+    ('{abi="linux-aarch64-glibc", loader="/isolated/glibc/lib/ld-linux-aarch64.so.1"}', True),
+])
+def test_arm64_install_checks_resolved_catalog_exports_without_hook_arch(tmp_path, exports, allowed):
+    """Real executors load first, then inject catalog exports for the hook."""
     lua = shutil.which("lua5.4") or shutil.which("lua")
     assert lua
-    harness = tmp_path / "old-client.lua"
+    harness = tmp_path / "executor.lua"
     harness.write_text('''
 os.arch = nil
+path = {join=function(...) return table.concat({...}, "/") end}
 function import(name)
   local key = name:match("[^.]+$")
   if key == "pkginfo" then
-    _G[key] = {install_file=function() return "glibc-2.44.3-r1-linux-aarch64.tar.gz" end}
+    _G[key] = {
+      install_file=function() return "glibc-2.44.3-r1-linux-aarch64.tar.gz" end,
+      install_dir=function() return "/isolated/glibc" end,
+    }
   elseif key == "log" then _G[key] = {error=function(msg) print(msg) end}
   else _G[key] = {} end
 end
 dofile(arg[1])
-assert(install() == false)
+-- Match create_executor followed by run_hook's context injection.
+_RUNTIME = {self_exports=''' + exports + '''}
+string.replace=function(s) return s end
+os.isdir=function() return true end
+os.tryrm=function() error("PAYLOAD_INSTALL_REACHED") end
+local ok, result = pcall(install)
+if ok then assert(result == false); print("REFUSED")
+else assert(result:find("PAYLOAD_INSTALL_REACHED", 1, true)); print("ALLOWED") end
 ''')
     result = subprocess.run([lua, str(harness), str(ROOT / "pkgs/g/glibc.lua")],
                             check=True, text=True, capture_output=True)
-    assert "requires xlings >= 2026.10.8.1" in result.stdout
+    assert ("ALLOWED" if allowed else "REFUSED") in result.stdout
+    if not allowed:
+        assert "requires xlings >= 2026.10.8.1" in result.stdout
 
 
 def _compiler_cfg(mode):
