@@ -324,6 +324,31 @@ if [[ -n "$LOADER" ]]; then
     esac
 fi
 
+# glibc's bundled 2009i timezone data is regression-only. Install the pinned
+# IANA data with the native zic that was built from this glibc source.
+TZ_VERSION=2026e
+TZ_TARBALL="$SRC/tzdata$TZ_VERSION.tar.gz"
+[[ -f "$TZ_TARBALL" ]] || curl -fsSL --retry 3 \
+    "https://data.iana.org/time-zones/releases/tzdata$TZ_VERSION.tar.gz" \
+    -o "$TZ_TARBALL" || fail "tzdata download"
+printf '%s  %s\n' b26882805f26aac59d5b222978e6580484b834ccdc98be89df2f05a6dc53a652 "$TZ_TARBALL" \
+    | sha256sum -c - || fail "tzdata source SHA256 mismatch"
+TZ_SRC="$WORK/tzdata-$TZ_VERSION"
+rm -rf "$TZ_SRC"; mkdir -p "$TZ_SRC" "$PAYLOAD/share/zoneinfo"
+tar xf "$TZ_TARBALL" -C "$TZ_SRC" || fail "tzdata extract"
+[[ "$(cat "$TZ_SRC/version")" == "$TZ_VERSION" ]] || fail "tzdata version mismatch"
+"$LOADER" --library-path "$PAYLOAD/lib" "$BUILDDIR/_b/timezone/zic" \
+    -b slim -d "$PAYLOAD/share/zoneinfo" \
+    "$TZ_SRC/africa" "$TZ_SRC/antarctica" "$TZ_SRC/asia" "$TZ_SRC/australasia" \
+    "$TZ_SRC/europe" "$TZ_SRC/northamerica" "$TZ_SRC/southamerica" \
+    "$TZ_SRC/etcetera" "$TZ_SRC/backward" || fail "tzdata compilation"
+cp "$TZ_SRC/LICENSE" "$PAYLOAD/TZDATA-LICENSE"
+cp "$TZ_SRC/zone.tab" "$TZ_SRC/zone1970.tab" "$TZ_SRC/iso3166.tab" "$PAYLOAD/share/zoneinfo/"
+{
+    printf '\nTimezone data: IANA %s\nSource digest: ' "$TZ_VERSION"
+    sha256sum "$TZ_TARBALL"
+} >> "$PAYLOAD/PROVENANCE.txt"
+
 # `strings X | grep -q Y` CANNOT BE USED HERE, and the reason is not style.
 #
 # This script runs under `set -o pipefail`. `grep -q` exits at the first match,
@@ -523,7 +548,7 @@ while IFS= read -r -d '' f; do
 done < <(grep -rlaFZ "$RESERVED_PREFIX" "$PAYLOAD")
 
 # The locale and conversion data the recipe makes reachable, checked here
-# without the relocation: C.utf8 compiled by the payload's own localedef from
+# before relocation: C.utf8 compiled by the payload's own localedef from
 # its own sources and loaded by its own libc (LOCPATH stands in for the
 # relocated lib/locale), and one conversion through its own gconv modules
 # (GCONV_PATH stands in for lib/gconv). A failure here is a defect of the
@@ -538,6 +563,8 @@ if [[ -n "$LOADER" ]]; then
         "$PAYLOAD/bin/localedef" --no-archive -i C -f UTF-8 "$LPROBE/C.utf8" \
         > "$LPROBE/localedef.log" 2>&1
     if [[ -f "$LPROBE/C.utf8/LC_CTYPE" ]]; then
+        mkdir -p "$PAYLOAD/lib/locale"
+        cp -a "$LPROBE/C.utf8" "$PAYLOAD/lib/locale/" || fail "compiled C.utf8 staging"
         charmap="$(LOCPATH="$LPROBE" LC_ALL=C.UTF-8 "$LOADER" --library-path "$PAYLOAD/lib" \
                    "$PAYLOAD/bin/locale" charmap 2>&1)"
         if [[ "$charmap" == "UTF-8" ]]; then
@@ -562,6 +589,98 @@ if [[ -n "$LOADER" ]]; then
         leaks=$((leaks+1))
     fi
 fi
+
+# Assert default timezone/locale/gconv paths after the same binary-prefix relocation the recipe
+# applies. The raw published payload is untouched; only these private copies
+# name the probe directory. No data-path override can mask a broken default.
+TPROBE="$WORK/runtime-data-probe"
+rm -rf "$TPROBE"; mkdir -p "$TPROBE/lib"
+cp -L "$LOADER" "$TPROBE/lib/$LOADER_NAME"
+cp -L "$PAYLOAD/lib/libc.so.6" "$TPROBE/lib/libc.so.6"
+ln -s "$PAYLOAD/share" "$TPROBE/share"
+ln -s "$PAYLOAD/lib/locale" "$TPROBE/lib/locale"
+ln -s "$PAYLOAD/lib/gconv" "$TPROBE/lib/gconv"
+# dlopen resolves only managed glibc modules through this private loader.
+for so in "$PAYLOAD"/lib/*.so*; do
+    [[ -f "$so" ]] || continue
+    name="$(basename "$so")"
+    [[ -e "$TPROBE/lib/$name" ]] || ln -s "$so" "$TPROBE/lib/$name"
+done
+python3 - "$PREFIX" "$TPROBE" "$TPROBE/lib/$LOADER_NAME" "$TPROBE/lib/libc.so.6" <<'PY' || fail "runtime data probe relocation"
+import pathlib, sys
+placeholder = sys.argv[1].encode()
+root = sys.argv[2].encode()
+if len(root) > len(placeholder):
+    raise SystemExit("runtime data probe root exceeds the reserved prefix")
+replacement = root + b"/" * (len(placeholder) - len(root))
+for filename in sys.argv[3:]:
+    file = pathlib.Path(filename)
+    before = file.read_bytes()
+    after = before.replace(placeholder, replacement)
+    assert len(before) == len(after)
+    file.write_bytes(after)
+PY
+cat > "$TPROBE/main.c" <<'C'
+#define _DEFAULT_SOURCE
+#include <stdlib.h>
+#include <stdio.h>
+#include <time.h>
+#include <locale.h>
+#include <langinfo.h>
+#include <wchar.h>
+#include <iconv.h>
+#include <string.h>
+#include <netdb.h>
+#include <pwd.h>
+#include <unistd.h>
+int main(void) {
+    const char *zones[] = {"Asia/Tokyo", "Etc/UTC"};
+    const long offsets[] = {32400, 0};
+    time_t epoch = 0;
+    for (int i = 0; i < 2; ++i) {
+        struct tm value;
+        if (setenv("TZ", zones[i], 1)) return 1;
+        tzset();
+        if (!localtime_r(&epoch, &value) || value.tm_gmtoff != offsets[i]) return 2;
+        printf("%s %ld\n", zones[i], value.tm_gmtoff);
+    }
+    if (!setlocale(LC_ALL, "C.UTF-8") || strcmp(nl_langinfo(CODESET), "UTF-8")) return 3;
+    const char utf8[] = "\xe4\xb8\xad";
+    wchar_t wc;
+    mbstate_t state = {0};
+    if (mbrtowc(&wc, utf8, 3, &state) != 3 || wc != 0x4e2d) return 4;
+    iconv_t cd = iconv_open("GBK", "UTF-8");
+    if (cd == (iconv_t)-1) return 5;
+    char *input = (char *)utf8, output[8] = {0}, *out = output;
+    size_t remaining = 3, capacity = sizeof(output);
+    if (iconv(cd, &input, &remaining, &out, &capacity) == (size_t)-1 || remaining ||
+        out - output != 2 || (unsigned char)output[0] != 0xd6 ||
+        (unsigned char)output[1] != 0xd0) return 6;
+    iconv_close(cd);
+    puts("C.UTF-8 and managed GBK conversion PASS");
+    /* NSS intentionally consumes host identity/network configuration. Its
+       implementations remain those of this managed glibc. No host modules
+       or locale data are supplied to this process. */
+    struct addrinfo hints = {0}, *addresses = NULL;
+    hints.ai_socktype = SOCK_STREAM;
+    if (getaddrinfo("localhost", NULL, &hints, &addresses) || !addresses) return 7;
+    freeaddrinfo(addresses);
+    struct passwd value, *user = NULL;
+    char buffer[16384];
+    if (getpwuid_r(getuid(), &value, buffer, sizeof(buffer), &user) || !user ||
+        user->pw_uid != getuid() || !user->pw_name || !*user->pw_name) return 8;
+    printf("NSS localhost and getpwuid_r(%lu) PASS; host configuration policy\n",
+           (unsigned long)getuid());
+    return 0;
+}
+C
+"$CC" "$TPROBE/main.c" -o "$TPROBE/main" || fail "runtime data probe compile"
+patchelf --remove-rpath "$TPROBE/main" || fail "runtime data probe rpath"
+patchelf --set-interpreter "$TPROBE/lib/$LOADER_NAME" "$TPROBE/main" || fail "runtime data probe interpreter"
+env -u TZDIR -u LD_LIBRARY_PATH -u LD_PRELOAD -u LOCPATH -u GCONV_PATH \
+    "$TPROBE/main" || fail "default managed runtime data / host NSS policy"
+log "  default managed data: Tokyo/UTC, C.UTF-8, GBK; NSS uses explicit host configuration policy"
+printf 'Runtime data policy: managed TZDIR, locale and gconv defaults; host NSS configuration/identity/network data, managed implementations only.\n' >> "$PAYLOAD/PROVENANCE.txt"
 
 (( leaks == 0 )) || fail "$leaks problem(s) — payload not packaged"
 
