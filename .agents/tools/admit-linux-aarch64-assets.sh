@@ -37,7 +37,9 @@ TOOLS="$WORK/llvm-tools-23.1.3-linux-aarch64"
 LIBS="$GLIBC/lib:$LLVM/lib:$LLVM/lib/aarch64-unknown-linux-gnu:$WORK/gcc-runtime-15.1.0-linux-aarch64/lib64:$WORK/zlib-1.3.1-linux-aarch64/lib:$WORK/libxml2-2.13.5-linux-aarch64/lib"
 unset LD_LIBRARY_PATH LD_PRELOAD CPATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH LOCPATH GCONV_PATH TZDIR
 : > "$OUT/managed-process-admission.log"
-for tool in clang clangd clang-tidy clang-format ld.lld llvm-ar llvm-nm llvm-objcopy llvm-objdump llvm-readelf llvm-readobj llvm-size llvm-strings llvm-strip; do
+# This required subset belongs to the existing Unix carve manifest.
+# llvm-strings is shipped by the Windows manifest only.
+for tool in clang clangd clang-tidy clang-format ld.lld llvm-ar llvm-nm llvm-objcopy llvm-objdump llvm-readelf llvm-readobj llvm-size llvm-strip; do
     binary="$LLVM/bin/$tool"
     [[ -e "$binary" ]] || binary="$TOOLS/bin/$tool"
     [[ -e "$binary" ]] || { echo "missing admitted tool: $tool" >&2; exit 1; }
