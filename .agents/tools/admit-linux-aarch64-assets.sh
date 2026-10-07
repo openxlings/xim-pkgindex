@@ -19,18 +19,23 @@ python3 - "$GLIBC" <<'PY'
 import pathlib, sys
 root = pathlib.Path(sys.argv[1])
 reserved = b'/nonexistent/xlings-use-rpath-not-default-search'
-placeholder = reserved + b'/' * (255 - len(reserved))
+padding = reserved + b'/padding-to-255-bytes-for-install-time-relocation'
+placeholder = padding + b'_' * (255 - len(padding))
 replacement = str(root).encode()
 assert len(replacement) <= len(placeholder)
 replacement += b'/' * (len(placeholder) - len(replacement))
+occurrences = 0
 for file in root.rglob('*'):
     if file.is_symlink() or not file.is_file():
         continue
     before = file.read_bytes()
     if placeholder in before:
+        occurrences += before.count(placeholder)
         after = before.replace(placeholder, replacement)
         assert len(after) == len(before)
         file.write_bytes(after)
+assert occurrences > 0, 'managed glibc reserved prefix was not relocated'
+print(f'Relocated {occurrences} reserved prefixes in the private glibc copy.')
 PY
 LLVM="$WORK/llvm-23.1.3-linux-aarch64"
 TOOLS="$WORK/llvm-tools-23.1.3-linux-aarch64"
@@ -80,7 +85,7 @@ PY
 gcc "$WORK/data.c" -o "$WORK/data"
 patchelf --remove-rpath "$WORK/data"
 patchelf --set-interpreter "$LOADER" "$WORK/data"
-"$WORK/data" | tee "$OUT/managed-data-admission.log"
+"$WORK/data" 2>&1 | tee "$OUT/managed-data-admission.log"
 bash .agents/tools/verify-toolchain.sh "$OUT/llvm-23.1.3-linux-aarch64.tar.gz" \
     --loader "$LOADER" --runtime-library-path "$LIBS" \
     --linux-headers "$WORK/linux-headers-5.11.1-linux-aarch64/include" \
