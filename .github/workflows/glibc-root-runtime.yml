@@ -1,0 +1,71 @@
+name: glibc root runtime
+
+on:
+  pull_request:
+    paths:
+      - '.agents/tools/graphics/build-glibc.sh'
+      - '.agents/tools/graphics/check-glibc-root-cache.sh'
+      - '.agents/tools/graphics/patches/glibc-*.patch'
+      - '.github/workflows/glibc-root-runtime.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: x86_64
+          - runner: ubuntu-24.04-arm
+            arch: aarch64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare native build tools
+        run: |
+          command -v gcc
+          command -v g++
+          command -v make
+          command -v bison
+          command -v gawk
+          if ! command -v patchelf; then
+            curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh -o /tmp/quick-install.sh
+            bash /tmp/quick-install.sh
+            export PATH="$HOME/.xlings/subos/current/bin:$HOME/.xlings/bin:$PATH"
+            xlings install patchelf -y
+            echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
+          fi
+      - name: Build and verify the logical-root cache boundary
+        env:
+          XLINGS_GFX_ARCH: ${{ matrix.arch }}
+          XLINGS_GFX_SUBOS: native-glibc
+          XLINGS_GFX_CC: /usr/bin/gcc
+          XLINGS_GFX_CXX: /usr/bin/g++
+          XLINGS_GFX_JOBS: '8'
+        run: |
+          export XLINGS_HOME="$RUNNER_TEMP/glibc-home"
+          export XLINGS_GFX_WORK="$RUNNER_TEMP/glibc-work"
+          headers="$XLINGS_HOME/subos/native-glibc/usr/include"
+          mkdir -p "$headers"
+          ln -s /usr/include/linux "$headers/linux"
+          ln -s /usr/include/asm-generic "$headers/asm-generic"
+          ln -s "/usr/include/$(gcc -dumpmachine)/asm" "$headers/asm"
+          bash .agents/tools/graphics/build-glibc.sh 2.44 2.44.3 2
+          cd "$XLINGS_GFX_WORK/dist"
+          sha256sum *.tar.gz > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: glibc-2.44.3-r2-linux-${{ matrix.arch }}
+          path: ${{ runner.temp }}/glibc-work/dist/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: glibc-build-logs-${{ matrix.arch }}
+          path: ${{ runner.temp }}/glibc-work/*log
+          if-no-files-found: ignore

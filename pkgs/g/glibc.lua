@@ -1,3 +1,5 @@
+local metadata_aarch64 = type(is_arch) == "function" and is_arch("aarch64")
+
 package = {
     spec = "1",
 
@@ -13,7 +15,7 @@ package = {
 
     -- xim pkg info
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable", -- dev, stable, deprecated
     categories = {"libc", "gnu"},
     keywords = {"libc", "gnu"},
@@ -61,8 +63,8 @@ package = {
             -- UnsatisfiedLinkError; see that recipe.
             exports = {
                 runtime = {
-                    loader = "lib64/ld-linux-x86-64.so.2",
-                    abi    = "linux-x86_64-glibc",
+                    loader = metadata_aarch64 and "lib64/ld-linux-aarch64.so.1" or "lib64/ld-linux-x86-64.so.2",
+                    abi    = metadata_aarch64 and "linux-aarch64-glibc" or "linux-x86_64-glibc",
                     -- libdirs not declared → falls back to {lib64, lib} convention
                 },
             },
@@ -253,17 +255,37 @@ package = {
             -- relocation itself; a machine that already holds 2.44.3 gets it
             -- only from a client that implements revision, which reinstalls
             -- the payload and says why.
+            -- Revision 2 also selects cache/preload from the logical loader
+            -- root. Each immutable resource is checked on its native architecture.
             ["2.44.3"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.3-r1/glibc-2.44.3-r1-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.3-r1/glibc-2.44.3-r1-linux-x86_64.tar.gz",
+                revision = 2,
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.3-r2/glibc-2.44.3-r2-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.3-r2/glibc-2.44.3-r2-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "6623ce68f9f82b49b9466fd8b13fbfe73303519f7a7549794befd2645f4d97f8",
                 },
-                sha256 = "5a02e37f735fdf6121babfd7616342b79b2440985d909bc42d711c48d0cb3623",
-                revision = 1,
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.3-r2/glibc-2.44.3-r2-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.3-r2/glibc-2.44.3-r2-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "17158a991a9e842c19b189845c850a438f4f2683ede38e6256c963aff2c87b96",
+                },
             },
         },
     },
 }
+
+
+-- Older resources were published only for x86_64. Preserve them for that
+-- architecture; an ARM reader must refuse them rather than install x86 bytes.
+if metadata_aarch64 then
+    package.xpm.linux["2.39"] = nil
+    package.xpm.linux["2.44"] = nil
+    package.xpm.linux["2.44.2"] = nil
+end
 
 import("xim.libxpkg.log")
 import("xim.libxpkg.pkginfo")
@@ -286,6 +308,7 @@ local PADDED_PREFIX = PADDING_HEAD .. string.rep("_", 255 - #PADDING_HEAD)
 local glibc_libs = {
     "crt1.o", "crti.o", "crtn.o", -- crt
     "ld-linux-x86-64.so.2", -- dynamic linker/loader
+    "ld-linux-aarch64.so.1",
     "libc.a", "libc.so", "libc.so.6", "libc_nonshared.a", -- C library
     "libdl.a", "libdl.so.2", -- dynamic loading
     -- `libm-<version>.a` is version-named and is added in config() rather than
@@ -954,7 +977,8 @@ function __generate_c_utf8()
     -- A payload program on the payload's loader, with `env` assignments first.
     local function run(env, program, args)
         return __run("env -u LD_PRELOAD -u LOCPATH -u GCONV_PATH " .. env .. " "
-            .. __sh_quote(path.join(libdir, "ld-linux-x86-64.so.2"))
+            .. __sh_quote(path.join(libdir, (_RUNTIME and _RUNTIME.arch == "aarch64")
+                and "ld-linux-aarch64.so.1" or "ld-linux-x86-64.so.2"))
             .. " --library-path " .. __sh_quote(libdir) .. " "
             .. __sh_quote(path.join(dir, "bin", program)) .. " " .. args)
     end

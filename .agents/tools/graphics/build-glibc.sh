@@ -60,6 +60,12 @@ if (( REVISION > 0 )); then
 else
     ASSET_VERSION="$VERSION"
 fi
+ARCH="${XLINGS_GFX_ARCH:-$(uname -m)}"
+case "$ARCH" in
+    x86_64|aarch64) ;;
+    arm64) ARCH=aarch64 ;;
+    *) echo "[gfx-build:glibc] unsupported architecture: $ARCH" >&2; exit 2 ;;
+esac
 NAME=glibc
 SUBOS_NAME="${XLINGS_GFX_SUBOS:-gfxbuild}"
 XHOME="${XLINGS_HOME:-$HOME/.xlings}"
@@ -102,7 +108,7 @@ rm -rf "$STAGE"; mkdir -p "$SRC" "$STAGE" "$DIST"
 # Consequences, all of them intended:
 #   * an unpatched binary fails LOUDLY at execve with ENOENT, rather than
 #     silently picking up the host's loader and mispairing GLIBC_PRIVATE
-#   * ld.so.cache never hits; we do not use ldconfig
+#   * a managed payload uses its own etc/cache; a logical root uses /etc
 #   * `--prefix` and DESTDIR are separate, so the install layout is unaffected
 #
 # PADDED TO 255 BYTES, SO THAT THE INSTALL CAN RELOCATE IT (openxlings/xlings#621)
@@ -166,7 +172,7 @@ done
 shopt -u nullglob
 
 export PATH="$SUBOS/bin:$SUBOS/usr/bin:$PATH"
-export CC="$SUBOS/bin/gcc" CXX="$SUBOS/bin/g++"
+export CC="${XLINGS_GFX_CC:-$SUBOS/bin/gcc}" CXX="${XLINGS_GFX_CXX:-$SUBOS/bin/g++}"
 [[ -x "$CC" ]] || fail "no gcc in the subos"
 
 # NO CPPFLAGS/LDFLAGS pointing at the subos.
@@ -205,7 +211,7 @@ log "configuring $UPSTREAM (prefix=$PREFIX)"
     || { tail -30 "$WORK/$NAME-configure.log"; fail "configure"; }
 
 log "building (this takes a while)"
-make -j"$(nproc)" > "$WORK/$NAME-build.log" 2>&1 \
+make -j"${XLINGS_GFX_JOBS:-$(nproc)}" > "$WORK/$NAME-build.log" 2>&1 \
     || { tail -30 "$WORK/$NAME-build.log"; fail "make"; }
 
 log "staging"
@@ -218,7 +224,7 @@ make install DESTDIR="$STAGE" >> "$WORK/$NAME-build.log" 2>&1 \
 # assets up to 2.44.3 revision 0 hold `glibc-<version>/` and always take the
 # fallback, which picks the first directory holding a libc -- with a stale
 # `glibc-2.44.3/` beside `glibc-2.44.3-r1-.../`, the wrong one.
-STEM="$NAME-$ASSET_VERSION-linux-x86_64"
+STEM="$NAME-$ASSET_VERSION-linux-$ARCH"
 PAYLOAD="$WORK/payload/$STEM"
 rm -rf "$PAYLOAD"; mkdir -p "$PAYLOAD"
 cp -a "$STAGE$PREFIX/." "$PAYLOAD/" || fail "payload copy"
@@ -341,14 +347,10 @@ if [[ -n "$LOADER" ]]; then
     # /etc/ld.so.preload -- rare on a dev box, common on the audited hosts
     # our users run the artifacts on.
     #
-    # Two assertions, because either one alone passes for the wrong reason:
-    # the literal must be GONE (the patch changed something) and the
-    # sysconfdir form must be PRESENT (it changed it to the right thing).
-    if grep -qx "/etc/ld.so.preload" "$ldump"; then
-        echo "    the loader still reads the host's /etc/ld.so.preload"
-        echo "    (glibc-$UPSTREAM-preload-follows-sysconfdir.patch did not take)"
-        leaks=$((leaks+1))
-    fi
+    # The compiled fallback must retain the private prefix. The logical-root
+    # suffix is also /etc/ld.so.preload; string pooling differs by architecture,
+    # so its presence alone cannot identify the path the loader will open.
+    # check-glibc-root-cache.sh proves both runtime choices below.
     if ! grep -qxF "$PREFIX/etc/ld.so.preload" "$ldump"; then
         echo "    the loader does not carry $PREFIX/etc/ld.so.preload"
         leaks=$((leaks+1))
@@ -531,6 +533,9 @@ if [[ -n "$LOADER" ]]; then
         leaks=$((leaks+1))
     fi
 fi
+
+XLINGS_GFX_CC="$CC" bash "$PATCHDIR/../check-glibc-root-cache.sh" "$PAYLOAD" \
+    || fail "logical-root cache / preload boundary"
 
 (( leaks == 0 )) || fail "$leaks problem(s) — payload not packaged"
 
