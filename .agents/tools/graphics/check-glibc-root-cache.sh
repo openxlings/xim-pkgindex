@@ -44,5 +44,5 @@ if "$PROBE/main" 2> "$PROBE/managed.log"; then
     echo "managed loader unexpectedly used the foreign root cache" >&2
     exit 1
 fi
-rg -q 'libxlings_cache_probe.so.1' "$PROBE/managed.log"
+grep -qF 'libxlings_cache_probe.so.1' "$PROBE/managed.log"
 echo "root cache/preload follow the logical interpreter; managed loader stays isolated"

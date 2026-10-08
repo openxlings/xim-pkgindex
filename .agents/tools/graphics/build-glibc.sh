@@ -108,7 +108,7 @@ rm -rf "$STAGE"; mkdir -p "$SRC" "$STAGE" "$DIST"
 # Consequences, all of them intended:
 #   * an unpatched binary fails LOUDLY at execve with ENOENT, rather than
 #     silently picking up the host's loader and mispairing GLIBC_PRIVATE
-#   * ld.so.cache never hits; we do not use ldconfig
+#   * a managed payload uses its own etc/cache; a logical root uses /etc
 #   * `--prefix` and DESTDIR are separate, so the install layout is unaffected
 #
 # PADDED TO 255 BYTES, SO THAT THE INSTALL CAN RELOCATE IT (openxlings/xlings#621)
@@ -347,14 +347,10 @@ if [[ -n "$LOADER" ]]; then
     # /etc/ld.so.preload -- rare on a dev box, common on the audited hosts
     # our users run the artifacts on.
     #
-    # Two assertions, because either one alone passes for the wrong reason:
-    # the literal must be GONE (the patch changed something) and the
-    # sysconfdir form must be PRESENT (it changed it to the right thing).
-    if grep -qx "/etc/ld.so.preload" "$ldump"; then
-        echo "    the loader still reads the host's /etc/ld.so.preload"
-        echo "    (glibc-$UPSTREAM-preload-follows-sysconfdir.patch did not take)"
-        leaks=$((leaks+1))
-    fi
+    # The compiled fallback must retain the private prefix. The logical-root
+    # suffix is also /etc/ld.so.preload; string pooling differs by architecture,
+    # so its presence alone cannot identify the path the loader will open.
+    # check-glibc-root-cache.sh proves both runtime choices below.
     if ! grep -qxF "$PREFIX/etc/ld.so.preload" "$ldump"; then
         echo "    the loader does not carry $PREFIX/etc/ld.so.preload"
         leaks=$((leaks+1))
