@@ -233,6 +233,27 @@ class TestBinaryRelocation:
 
     @needs_lua_relocate
     @pytest.mark.static
+    @pytest.mark.parametrize("arch,loader", [
+        ("x86_64", "ld-linux-x86-64.so.2"),
+        ("aarch64", "ld-linux-aarch64.so.1"),
+    ])
+    def test_config_registers_the_loader_present_in_the_architecture_payload(self, tmp_path, arch, loader):
+        payload = tmp_path / "xim-x-glibc" / "2.44.3"
+        (payload / "lib64").mkdir(parents=True)
+        (payload / "lib64" / loader).write_bytes(b"loader fixture")
+        (payload / "lib64/libc.so.6").write_bytes(b"libc fixture")
+        result = subprocess.run([
+            _lua(), str(REPO / "tests/lua/glibc_metadata_harness.lua"),
+            str(REPO / PKG_FILE), arch, "config", str(payload),
+        ], capture_output=True, text=True)
+        assert result.returncode == 0, result.stdout + result.stderr
+        registered = set(result.stdout.splitlines())
+        assert loader in registered
+        assert "libc.so.6" in registered
+        assert ({"ld-linux-x86-64.so.2", "ld-linux-aarch64.so.1"} - {loader}).isdisjoint(registered)
+
+    @needs_lua_relocate
+    @pytest.mark.static
     def test_every_occurrence_is_rewritten_and_no_length_changes(self, tmp_path):
         payload = tmp_path / "home" / "alice" / ".xlings" / "data" / "xpkgs" / "xim-x-glibc" / "2.44.3"
         (payload / "lib").mkdir(parents=True)

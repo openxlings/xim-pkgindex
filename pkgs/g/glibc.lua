@@ -308,6 +308,7 @@ local PADDED_PREFIX = PADDING_HEAD .. string.rep("_", 255 - #PADDING_HEAD)
 local glibc_libs = {
     "crt1.o", "crti.o", "crtn.o", -- crt
     "ld-linux-x86-64.so.2", -- dynamic linker/loader
+    "ld-linux-aarch64.so.1",
     "libc.a", "libc.so", "libc.so.6", "libc_nonshared.a", -- C library
     "libdl.a", "libdl.so.2", -- dynamic loading
     -- `libm-<version>.a` is version-named and is added in config() rather than
