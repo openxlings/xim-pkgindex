@@ -8,12 +8,25 @@ on:
       - '.agents/tools/graphics/patches/glibc-*.patch'
       - '.github/workflows/glibc-root-runtime.yml'
   workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: 'Publication only: reviewed successful two-architecture r3 source run (no rebuild)'
+        type: string
+        required: false
+        default: ''
+      publish_global:
+        description: 'Publish only immutable GLOBAL glibc r3 assets; package index stays inactive'
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   build:
+    if: github.event_name != 'workflow_dispatch' || inputs.source_run_id == ''
     strategy:
       fail-fast: false
       matrix:
@@ -72,3 +85,34 @@ jobs:
           name: glibc-build-logs-${{ matrix.arch }}
           path: ${{ runner.temp }}/glibc-work/*log
           if-no-files-found: ignore
+
+  publish-global-r3:
+    if: github.event_name == 'workflow_dispatch' && inputs.publish_global && inputs.source_run_id != ''
+    runs-on: ubuntu-24.04-arm
+    environment: xlings-res-publish
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate the reviewed successful native source and ledger
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+        run: python3 .agents/tools/publish-glibc-r3-assets.py "$SOURCE_RUN_ID" /tmp/glibc-r3-assets
+      - uses: actions/download-artifact@v4
+        with:
+          name: glibc-2.44.3-r3-linux-aarch64
+          run-id: ${{ inputs.source_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: /tmp/glibc-r3-assets/aarch64
+      - uses: actions/download-artifact@v4
+        with:
+          name: glibc-2.44.3-r3-linux-x86_64
+          run-id: ${{ inputs.source_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: /tmp/glibc-r3-assets/x86_64
+      - name: Verify and publish immutable GLOBAL glibc r3 only
+        env:
+          GH_TOKEN: ${{ secrets.XLINGS_RES_TOKEN }}
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+        run: python3 .agents/tools/publish-glibc-r3-assets.py "$SOURCE_RUN_ID" /tmp/glibc-r3-assets --publish

@@ -13,12 +13,12 @@ BUILDERS = ['.agents/tools/build-linux-aarch64-deps.sh', '.agents/tools/build-ll
             '.agents/tools/graphics/build-glibc.sh', '.agents/tools/graphics/patches']
 
 
-def validate(run, repository):
+def validate(run, repository, workflow='.github/workflows/llvm-linux-aarch64.yml'):
     if run.get('conclusion') != 'success' or run.get('status') != 'completed':
         raise ValueError('source native run has not completed successfully')
     if run.get('repository', {}).get('full_name') != repository or run.get('head_repository', {}).get('full_name') != repository:
         raise ValueError('source native run must belong to the same repository, including its head')
-    if run.get('path') != '.github/workflows/llvm-linux-aarch64.yml':
+    if run.get('path') != workflow:
         raise ValueError('source run does not use the native closure workflow')
     sha = run.get('head_sha', '')
     if not re.fullmatch('[0-9a-f]{40}', sha):
@@ -50,24 +50,36 @@ def replace_published_glibc(directory, source_run, source_sha):
     values = subprocess.check_output(['lua5.4', 'tests/lua/glibc_metadata_harness.lua',
         'pkgs/g/glibc.lua', 'aarch64'], text=True).strip().split('\t')
     loader, abi, revision, version, digest, global_url, cn_url, _ = values
-    name = 'glibc-2.44.3-r2-linux-aarch64.tar.gz'
+    if revision != '3':
+        raise ValueError('only the admitted published glibc revision 3 is supported')
+    name = f'glibc-2.44.3-r{revision}-linux-aarch64.tar.gz'
     if (loader, abi, revision, version) != ('lib64/ld-linux-aarch64.so.1',
-            'linux-aarch64-glibc', '2', '2.44.3'):
-        raise ValueError('published glibc replacement requires the exact r2 ARM64 contract')
-    expected_url = f'https://github.com/xlings-res/glibc/releases/download/2.44.3-r2/{name}'
+            'linux-aarch64-glibc', revision, '2.44.3'):
+        raise ValueError('published glibc replacement requires the exact ARM64 runtime contract')
+    tag = f'2.44.3-r{revision}'
+    expected_url = f'https://github.com/xlings-res/glibc/releases/download/{tag}/{name}'
     if global_url != expected_url or cn_url != expected_url.replace('github.com', 'gitcode.com'):
         raise ValueError('unexpected published glibc route')
     release = json.loads(subprocess.check_output(['gh', 'api',
-        'repos/xlings-res/glibc/releases/tags/2.44.3-r2'], text=True))
+        f'repos/xlings-res/glibc/releases/tags/{tag}'], text=True))
     asset = next(a for a in release['assets'] if a['name'] == name)
     if asset.get('digest') != 'sha256:' + digest:
         raise ValueError('published glibc recipe and release digest differ')
+    proof_path = '.agents/docs/2026-10-08-glibc-r3-resource-admission.json'
+    proof = json.loads(Path(proof_path).read_text())
+    origin_id, origin_sha = str(proof['source_run_id']), proof['source_commit']
+    if not re.fullmatch('[0-9]+', origin_id) or not re.fullmatch('[0-9a-f]{40}', origin_sha):
+        raise ValueError('invalid published glibc source identity')
     origin = json.loads(subprocess.check_output(['gh', 'api',
-        'repos/openxlings/xim-pkgindex/actions/runs/37707873566'], text=True))
-    if (origin.get('conclusion'), origin.get('status'), origin.get('path'), origin.get('head_sha')) != (
-            'success', 'completed', '.github/workflows/glibc-root-runtime.yml',
-            '02f81001447652161d482a15da50f2a720a60310'):
+        f'repos/openxlings/xim-pkgindex/actions/runs/{origin_id}'], text=True))
+    if (origin.get('conclusion'), origin.get('status'), origin.get('path'), origin.get('head_sha'),
+            origin.get('repository', {}).get('full_name'), origin.get('head_repository', {}).get('full_name')) != (
+            'success', 'completed', '.github/workflows/glibc-root-runtime.yml', origin_sha,
+            'openxlings/xim-pkgindex', 'openxlings/xim-pkgindex'):
         raise ValueError('published glibc source build evidence differs')
+    subprocess.run(['git', 'merge-base', '--is-ancestor', origin_sha, 'HEAD'], check=True)
+    subprocess.run(['git', 'diff', '--exit-code', origin_sha, 'HEAD', '--',
+                    '.agents/tools/graphics/build-glibc.sh', '.agents/tools/graphics/patches'], check=True)
     checks = []
     for mirror, url in [('GLOBAL', global_url), ('CN', cn_url)]:
         target = directory / (name + '.' + mirror + '.verified')
