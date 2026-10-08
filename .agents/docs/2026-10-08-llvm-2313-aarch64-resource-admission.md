@@ -99,3 +99,15 @@ dependencies now exercises that path in a regression test. Actual payload
 checks also reported 293 ELF/zero external sonames for glibc and seven ELF/three
 external sonames for gcc-runtime without the diagnostic. No package recipes,
 builder inputs, published archive bytes or resource hashes changed in this batch.
+
+## 2026-10-08: published glibc revision 2 integration and data admission
+
+The normal merge of upstream commit `ebf1fbb3417ec513b923279044433887b3af8850` preserves the logical interpreter root cache/preload correction published by PR #940. Both runtime exports use `lib64`; ARM64 retains its process ABI validation and older unsupported version exclusion. The recipes in this preparation retain the actual published revision 2 URLs and hashes. No unavailable revision 3 resource is advertised.
+
+Actual GLOBAL and CN GETs of both revision 2 archives matched their GitHub release digests and sizes. The upstream successful native build is run `37707873566`, source `02f81001447652161d482a15da50f2a720a60310`. The supplementary `2026-10-08-glibc-r2-data-inventory.json` records these identities separately from the immutable revision 1 admission record.
+
+The executable offline inventory gate rejects both revision 2 archives: `share/zoneinfo/Asia/Tokyo`, `share/zoneinfo/Etc/UTC`, `lib/locale/C.utf8/LC_CTYPE`, `LICENSE`, `TZDATA-LICENSE`, `PROVENANCE.txt`, and `ELF-MANIFEST.txt` are absent. GBK conversion modules and the `lib64 -> lib` alias are present. This archive inspection establishes a data/provenance gap; it does not claim native runtime failure or infer the cause of the upstream packaging omission.
+
+Revision 3 preparation combines the logical-root patch and runtime probe with the previously admitted pinned IANA 2026e data, native compiled C.utf8, managed conversion/NSS policy, licenses and provenance. The dedicated glibc workflow builds only glibc on both native architectures against hash-verified published kernel UAPI. All original runtime data and logical-root gates remain mandatory, followed by offline archive inventory. Existing LLVM and dependency archives are reused without rebuilding. Revision 3 recipe activation requires successful native evidence and real GLOBAL/CN byte identities.
+
+The default source reuse guard still requires all builders and isolation patches to be identical. The explicitly selected published-glibc-only mode checks the same successful source ancestry and exact eight unchanged archive identities, keeps LLVM/dependency builder equality, and replaces only glibc with the current published recipe resource after release API and both mirror GET verification. Fresh native process, data, header, CRT and module admission remains required. During this preparation the known revision 2 inventory rejection is expected; it cannot count as final ecosystem admission.

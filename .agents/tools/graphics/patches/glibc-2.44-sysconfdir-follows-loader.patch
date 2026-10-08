@@ -1,0 +1,137 @@
+Let cache and preload follow the literal loader invocation directory.
+
+Payload invocation selects the payload etc directory; /lib64 invocation
+selects /etc in the current root, even when lib64 is a symlink.
+Remove the final directory component lexically before opening the file;
+passing /lib64/../etc to the kernel follows the symlink before its .. and
+would incorrectly read /usr/etc when /lib64 points to /usr/lib64.
+Unknown or relative interpreter names preserve the configured fallback.
+No environment variable selects the cache, and the existing secure-mode
+preload environment rule is retained.
+
+--- a/elf/Makefile
++++ b/elf/Makefile
+@@ -1739,6 +1739,7 @@
+ 		    -D'SLIBDIR="$(slibdir)"'
+ libof-ldconfig = ldconfig
+ CFLAGS-dl-cache.c += $(SYSCONF-FLAGS)
++CFLAGS-dl-load.c += $(SYSCONF-FLAGS)
+ CFLAGS-cache.c += $(SYSCONF-FLAGS)
+ CFLAGS-rtld.c += $(SYSCONF-FLAGS)
+ CFLAGS-dl-usage.c += $(SYSCONF-FLAGS) \
+--- a/elf/dl-load.c
++++ b/elf/dl-load.c
+@@ -46,6 +46,7 @@
+ 
+ #include <dl-dst.h>
+ #include <dl-load.h>
++#include <dl-cache.h>
+ #include <dl-map-segments.h>
+ #include <dl-map-segment-align.h>
+ #include <dl-unmap-segments.h>
+@@ -68,6 +69,27 @@
+ 
+ /* This is the decomposed LD_LIBRARY_PATH search path.  */
+ struct r_search_path_struct __rtld_env_path_list attribute_relro;
++
++/* The spelling used to invoke the loader determines the filesystem root.
++   Remove the parent component lexically: resolving a /lib64 symlink would
++   select /usr/etc instead of this root's etc.  These strings are immutable
++   after _dl_init_paths, just like the default search directories.  */
++static const char *xlings_cache_file attribute_relro = LD_SO_CACHE;
++static const char *xlings_preload_file attribute_relro
++  = SYSCONFDIR "/ld.so.preload";
++
++const char *
++_dl_xlings_cache_file (void)
++{
++  return xlings_cache_file;
++}
++
++const char *
++_dl_xlings_preload_file (void)
++{
++  return xlings_preload_file;
++}
++
+ 
+ /* List of the hardware capabilities we might end up using.  */
+ #ifdef SHARED
+@@ -798,6 +820,23 @@
+ 
+     if (self_dir != NULL && self_len > 0)
+       {
++        size_t parent_len = self_len;
++        while (parent_len > 0 && self_dir[parent_len - 1] != '/')
++          --parent_len;
++        if (parent_len > 0)
++          --parent_len;
++        const char cache_suffix[] = "/etc/ld.so.cache";
++        const char preload_suffix[] = "/etc/ld.so.preload";
++        char *cache_path = malloc (parent_len + sizeof (cache_suffix));
++        char *preload_path = malloc (parent_len + sizeof (preload_suffix));
++        if (cache_path == NULL || preload_path == NULL)
++          _dl_fatal_printf ("cannot allocate loader configuration paths\n");
++        memcpy (cache_path, self_dir, parent_len);
++        memcpy (cache_path + parent_len, cache_suffix, sizeof (cache_suffix));
++        memcpy (preload_path, self_dir, parent_len);
++        memcpy (preload_path + parent_len, preload_suffix, sizeof (preload_suffix));
++        xlings_cache_file = cache_path;
++        xlings_preload_file = preload_path;
+ 	owned = malloc (self_len + 2);
+ 	if (owned != NULL)
+ 	  {
+--- a/elf/dl-cache.c
++++ b/elf/dl-cache.c
+@@ -418,7 +418,7 @@
+      to NULL in the interim so that would be detected.  */
+   if (copy_old_time)
+     cache_file_time = new_cache_file_time;
+-  rv = __fstatat64_time64 (AT_FDCWD, LD_SO_CACHE, &new_cache_file_stat, 0);
++  rv = __fstatat64_time64 (AT_FDCWD, _dl_xlings_cache_file (), &new_cache_file_stat, 0);
+   copy_old_time = (rv >= 0);
+ 
+   /* No file to load, but there used to be.  Assume user intentionally
+@@ -463,7 +463,7 @@
+   size_t tmp_cachesize = 0;
+ 
+   /* Read the contents of the file.  */
+-  void *file = _dl_sysdep_read_whole_file (LD_SO_CACHE, &tmp_cachesize,
++  void *file = _dl_sysdep_read_whole_file (_dl_xlings_cache_file (), &tmp_cachesize,
+ 					   PROT_READ);
+ 
+   /* We can handle three different cache file formats here:
+@@ -558,7 +558,7 @@
+ {
+   /* Print a message if the loading of libs is traced.  */
+   if (__glibc_unlikely (GLRO(dl_debug_mask) & DL_DEBUG_LIBS))
+-    _dl_debug_printf (" search cache=%s\n", LD_SO_CACHE);
++    _dl_debug_printf (" search cache=%s\n", _dl_xlings_cache_file ());
+ 
+   if (_dl_check_ldsocache_needs_loading ())
+     _dl_maybe_load_ldsocache ();
+--- a/elf/rtld.c
++++ b/elf/rtld.c
+@@ -1860,7 +1860,7 @@
+      __libc_enable_secure is set -- the same treatment LD_PRELOAD gets, and
+      for the same reason.  The test below states that property here too,
+      rather than leaving it to a file three directories away.  */
+-  const char *preload_file = SYSCONFDIR "/ld.so.preload";
++  const char *preload_file = _dl_xlings_preload_file ();
+   {
+     const char *xlings_preload_file = getenv ("XLINGS_LD_PRELOAD_FILE");
+     if (xlings_preload_file != NULL && !__libc_enable_secure)
+--- a/sysdeps/generic/ldsodefs.h
++++ b/sysdeps/generic/ldsodefs.h
+@@ -1116,6 +1116,11 @@
+ 			    const char *glibc_hwcaps_mask)
+   attribute_hidden;
+ 
++/* Configuration files follow the loader invocation directory without
++   resolving symlinks.  Unknown invocation names retain the build defaults.  */
++extern const char *_dl_xlings_cache_file (void) attribute_hidden;
++extern const char *_dl_xlings_preload_file (void) attribute_hidden;
++
+ /* Gather the information needed to install the profiling tables and start
+    the timers.  */
+ extern void _dl_start_profile (void) attribute_hidden;

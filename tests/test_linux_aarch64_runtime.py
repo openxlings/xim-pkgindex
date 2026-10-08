@@ -11,7 +11,7 @@ pytestmark = pytest.mark.static
 
 @pytest.mark.parametrize("arch,libdir,loader", [
     ("x86_64", "lib64", "ld-linux-x86-64.so.2"),
-    ("aarch64", "lib", "ld-linux-aarch64.so.1"),
+    ("aarch64", "lib64", "ld-linux-aarch64.so.1"),
 ])
 def test_glibc_payload_drives_registration_and_removal(arch, libdir, loader):
     lua = shutil.which("lua5.4") or shutil.which("lua")
@@ -19,7 +19,7 @@ def test_glibc_payload_drives_registration_and_removal(arch, libdir, loader):
     result = subprocess.run([
         lua, str(ROOT / "tests/lua/linux_runtime_layout_harness.lua"),
         str(ROOT / "pkgs/g/glibc.lua"),
-        f"glibc-2.44.3-r1-linux-{arch}.tar.gz", "/isolated/glibc",
+        f"glibc-2.44.3-r2-linux-{arch}.tar.gz", "/isolated/glibc",
     ], check=True, text=True, capture_output=True)
     lines = result.stdout.splitlines()
     assert f"{loader} /isolated/glibc/{libdir}" in lines
@@ -59,15 +59,15 @@ def test_carve_rejects_foreign_elf_before_publishing(tmp_path):
 
 @pytest.mark.parametrize("arch,loader,libdir", [
     ("x86_64", "lib64/ld-linux-x86-64.so.2", "lib64"),
-    ("aarch64", "lib/ld-linux-aarch64.so.1", "lib"),
-    ("arm64", "lib/ld-linux-aarch64.so.1", "lib"),
+    ("aarch64", "lib64/ld-linux-aarch64.so.1", "lib64"),
+    ("arm64", "lib64/ld-linux-aarch64.so.1", "lib64"),
 ])
 def test_glibc_catalog_metadata_uses_process_architecture(arch, loader, libdir):
     lua = shutil.which("lua5.4") or shutil.which("lua")
     assert lua
     result = subprocess.run([
         lua, str(ROOT / "tests/lua/linux_runtime_layout_harness.lua"),
-        str(ROOT / "pkgs/g/glibc.lua"), "glibc-2.44.3-r1-linux-aarch64.tar.gz",
+        str(ROOT / "pkgs/g/glibc.lua"), "glibc-2.44.3-r2-linux-aarch64.tar.gz",
         "/isolated/glibc", arch,
     ], check=True, capture_output=True, text=True)
     abi_arch = "aarch64" if arch == "arm64" else arch
@@ -78,9 +78,9 @@ def test_glibc_catalog_metadata_uses_process_architecture(arch, loader, libdir):
     ('nil', False),
     ('{abi="linux-x86_64-glibc", loader="/isolated/glibc/lib64/ld-linux-x86-64.so.2"}', False),
     ('{abi="linux-aarch64-glibc", loader="/isolated/glibc/lib64/ld-linux-x86-64.so.2"}', False),
-    ('{abi="linux-x86_64-glibc", loader="/isolated/glibc/lib/ld-linux-aarch64.so.1"}', False),
-    ('{abi="linux-aarch64-glibc", loader="/other/glibc/lib/ld-linux-aarch64.so.1"}', False),
-    ('{abi="linux-aarch64-glibc", loader="/isolated/glibc/lib/ld-linux-aarch64.so.1"}', True),
+    ('{abi="linux-x86_64-glibc", loader="/isolated/glibc/lib64/ld-linux-aarch64.so.1"}', False),
+    ('{abi="linux-aarch64-glibc", loader="/other/glibc/lib64/ld-linux-aarch64.so.1"}', False),
+    ('{abi="linux-aarch64-glibc", loader="/isolated/glibc/lib64/ld-linux-aarch64.so.1"}', True),
 ])
 def test_arm64_install_checks_resolved_catalog_exports_without_hook_arch(tmp_path, exports, allowed):
     """Real executors load first, then inject catalog exports for the hook."""
@@ -94,7 +94,7 @@ function import(name)
   local key = name:match("[^.]+$")
   if key == "pkginfo" then
     _G[key] = {
-      install_file=function() return "glibc-2.44.3-r1-linux-aarch64.tar.gz" end,
+      install_file=function() return "glibc-2.44.3-r2-linux-aarch64.tar.gz" end,
       install_dir=function() return "/isolated/glibc" end,
     }
   elseif key == "log" then _G[key] = {error=function(msg) print(msg) end}

@@ -2,12 +2,15 @@
 -- catalog loader exposes the process architecture; resolved runtime exports
 -- are carried into hooks through their execution context.
 -- Older x86_64 clients retain their existing layout.
-local recipe_arch = (os.arch and os.arch()) or "x86_64"
+local recipe_arch = (os.arch and os.arch())
+if recipe_arch ~= "aarch64" and recipe_arch ~= "arm64" and recipe_arch ~= "x86_64" then
+    recipe_arch = (type(is_arch) == "function" and is_arch("aarch64")) and "aarch64" or "x86_64"
+end
 local runtime_metadata = {
     x86_64 = { loader = "lib64/ld-linux-x86-64.so.2",
                abi = "linux-x86_64-glibc", libdirs = { "lib64" } },
-    aarch64 = { loader = "lib/ld-linux-aarch64.so.1",
-               abi = "linux-aarch64-glibc", libdirs = { "lib" } },
+    aarch64 = { loader = "lib64/ld-linux-aarch64.so.1",
+               abi = "linux-aarch64-glibc", libdirs = { "lib64" } },
 }
 local runtime_export = runtime_metadata[recipe_arch == "arm64" and "aarch64" or recipe_arch]
     or runtime_metadata.x86_64
@@ -275,26 +278,37 @@ package = {
             -- relocation itself; a machine that already holds 2.44.3 gets it
             -- only from a client that implements revision, which reinstalls
             -- the payload and says why.
+            -- Revision 2 also selects cache/preload from the logical loader
+            -- root. Each immutable resource is checked on its native architecture.
             ["2.44.3"] = {
-                revision = 1,
+                revision = 2,
                 x86_64 = {
                     url = {
-                        GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.3-r1/glibc-2.44.3-r1-linux-x86_64.tar.gz",
-                        CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.3-r1/glibc-2.44.3-r1-linux-x86_64.tar.gz",
+                        GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.3-r2/glibc-2.44.3-r2-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.3-r2/glibc-2.44.3-r2-linux-x86_64.tar.gz",
                     },
-                    sha256 = "5a02e37f735fdf6121babfd7616342b79b2440985d909bc42d711c48d0cb3623",
+                    sha256 = "6623ce68f9f82b49b9466fd8b13fbfe73303519f7a7549794befd2645f4d97f8",
                 },
                 aarch64 = {
                     url = {
-                        GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.3-r1/glibc-2.44.3-r1-linux-aarch64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.3-r1/glibc-2.44.3-r1-linux-aarch64.tar.gz",
+                        GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.3-r2/glibc-2.44.3-r2-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.3-r2/glibc-2.44.3-r2-linux-aarch64.tar.gz",
                     },
-                    sha256 = "25dbdec6bc40784f138028e2c7418f7522b2b96f4ef81be2e60d8b77f0944c66",
+                    sha256 = "17158a991a9e842c19b189845c850a438f4f2683ede38e6256c963aff2c87b96",
                 },
             },
         },
     },
 }
+
+
+-- Older resources were published only for x86_64. Preserve them for that
+-- architecture; an ARM reader must refuse them rather than install x86 bytes.
+if recipe_arch == "aarch64" or recipe_arch == "arm64" then
+    package.xpm.linux["2.39"] = nil
+    package.xpm.linux["2.44"] = nil
+    package.xpm.linux["2.44.2"] = nil
+end
 
 import("xim.libxpkg.log")
 import("xim.libxpkg.pkginfo")
@@ -318,7 +332,7 @@ local PADDED_PREFIX = PADDING_HEAD .. string.rep("_", 255 - #PADDING_HEAD)
 local function runtime_layout()
     local file = pkginfo.install_file()
     if file:find("linux-aarch64", 1, true) then
-        return "lib", "ld-linux-aarch64.so.1"
+        return "lib64", "ld-linux-aarch64.so.1"
     end
     return "lib64", "ld-linux-x86-64.so.2"
 end
@@ -368,7 +382,7 @@ function install()
     if pkginfo.install_file():find("linux-aarch64", 1, true) then
         local exports = _RUNTIME and _RUNTIME.self_exports
         local expected_loader = path.join(pkginfo.install_dir(),
-            "lib", "ld-linux-aarch64.so.1")
+            "lib64", "ld-linux-aarch64.so.1")
         if not exports or exports.abi ~= "linux-aarch64-glibc"
            or exports.loader ~= expected_loader then
             log.error("glibc aarch64 requires xlings >= 2026.10.8.1; "

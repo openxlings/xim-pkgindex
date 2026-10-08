@@ -60,6 +60,12 @@ if (( REVISION > 0 )); then
 else
     ASSET_VERSION="$VERSION"
 fi
+ARCH="${GLIBC_BUILD_ARCH:-${XLINGS_GFX_ARCH:-$(uname -m)}}"
+case "$ARCH" in
+    x86_64|aarch64) ;;
+    arm64) ARCH=aarch64 ;;
+    *) echo "[gfx-build:glibc] unsupported architecture: $ARCH" >&2; exit 2 ;;
+esac
 NAME=glibc
 SUBOS_NAME="${XLINGS_GFX_SUBOS:-gfxbuild}"
 XHOME="${XLINGS_HOME:-$HOME/.xlings}"
@@ -102,7 +108,7 @@ rm -rf "$STAGE"; mkdir -p "$SRC" "$STAGE" "$DIST"
 # Consequences, all of them intended:
 #   * an unpatched binary fails LOUDLY at execve with ENOENT, rather than
 #     silently picking up the host's loader and mispairing GLIBC_PRIVATE
-#   * ld.so.cache never hits; we do not use ldconfig
+#   * a managed payload uses its own etc/cache; a logical root uses /etc
 #   * `--prefix` and DESTDIR are separate, so the install layout is unaffected
 #
 # PADDED TO 255 BYTES, SO THAT THE INSTALL CAN RELOCATE IT (openxlings/xlings#621)
@@ -173,9 +179,9 @@ shopt -u nullglob
 
 # A native CI builder may bootstrap with its distribution compiler. The
 # resulting payload still uses the same isolation patches and reserved prefix.
-BUILD_ARCH="${GLIBC_BUILD_ARCH:-$(uname -m)}"
+BUILD_ARCH="$ARCH"
 case "$BUILD_ARCH" in
-    arm64|aarch64) BUILD_ARCH=aarch64; LIBDIR=lib; LOADER_NAME=ld-linux-aarch64.so.1 ;;
+    arm64|aarch64) BUILD_ARCH=aarch64; LIBDIR=lib64; LOADER_NAME=ld-linux-aarch64.so.1 ;;
     x86_64) LIBDIR=lib64; LOADER_NAME=ld-linux-x86-64.so.2 ;;
     *) fail "unsupported glibc build architecture: $BUILD_ARCH" ;;
 esac
@@ -186,7 +192,7 @@ if [[ -n "${GLIBC_BUILD_CC:-}" ]]; then
     KERNEL_HEADERS="${GLIBC_BUILD_HEADERS:?GLIBC_BUILD_HEADERS is required for standalone builds}"
 else
     export PATH="$SUBOS/bin:$SUBOS/usr/bin:$PATH"
-    export CC="$SUBOS/bin/gcc" CXX="$SUBOS/bin/g++"
+    export CC="${XLINGS_GFX_CC:-$SUBOS/bin/gcc}" CXX="${XLINGS_GFX_CXX:-$SUBOS/bin/g++}"
     KERNEL_HEADERS="$SUBOS/usr/include"
 fi
 command -v "$CC" >/dev/null || fail "compiler not found: $CC"
@@ -228,7 +234,7 @@ log "configuring $UPSTREAM (prefix=$PREFIX)"
     || { tail -30 "$WORK/$NAME-configure.log"; fail "configure"; }
 
 log "building (this takes a while)"
-make -j"$(nproc)" > "$WORK/$NAME-build.log" 2>&1 \
+make -j"${XLINGS_GFX_JOBS:-$(nproc)}" > "$WORK/$NAME-build.log" 2>&1 \
     || { tail -30 "$WORK/$NAME-build.log"; fail "make"; }
 
 log "staging"
@@ -397,14 +403,10 @@ if [[ -n "$LOADER" ]]; then
     # /etc/ld.so.preload -- rare on a dev box, common on the audited hosts
     # our users run the artifacts on.
     #
-    # Two assertions, because either one alone passes for the wrong reason:
-    # the literal must be GONE (the patch changed something) and the
-    # sysconfdir form must be PRESENT (it changed it to the right thing).
-    if grep -qx "/etc/ld.so.preload" "$ldump"; then
-        echo "    the loader still reads the host's /etc/ld.so.preload"
-        echo "    (glibc-$UPSTREAM-preload-follows-sysconfdir.patch did not take)"
-        leaks=$((leaks+1))
-    fi
+    # The compiled fallback must retain the private prefix. The logical-root
+    # suffix is also /etc/ld.so.preload; string pooling differs by architecture,
+    # so its presence alone cannot identify the path the loader will open.
+    # check-glibc-root-cache.sh proves both runtime choices below.
     if ! grep -qxF "$PREFIX/etc/ld.so.preload" "$ldump"; then
         echo "    the loader does not carry $PREFIX/etc/ld.so.preload"
         leaks=$((leaks+1))
@@ -681,6 +683,8 @@ env -u TZDIR -u LD_LIBRARY_PATH -u LD_PRELOAD -u LOCPATH -u GCONV_PATH \
     "$TPROBE/main" || fail "default managed runtime data / host NSS policy"
 log "  default managed data: Tokyo/UTC, C.UTF-8, GBK; NSS uses explicit host configuration policy"
 printf 'Runtime data policy: managed TZDIR, locale and gconv defaults; host NSS configuration/identity/network data, managed implementations only.\n' >> "$PAYLOAD/PROVENANCE.txt"
+XLINGS_GFX_CC="$CC" bash "$PATCHDIR/../check-glibc-root-cache.sh" "$PAYLOAD" \
+    || fail "logical-root cache / preload boundary"
 
 (( leaks == 0 )) || fail "$leaks problem(s) — payload not packaged"
 
