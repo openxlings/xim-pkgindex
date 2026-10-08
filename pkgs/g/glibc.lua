@@ -278,23 +278,25 @@ package = {
             -- relocation itself; a machine that already holds 2.44.3 gets it
             -- only from a client that implements revision, which reinstalls
             -- the payload and says why.
-            -- Revision 2 also selects cache/preload from the logical loader
-            -- root. Each immutable resource is checked on its native architecture.
+            -- Revision 2 selects cache/preload from the logical loader root.
+            -- Revision 3 retains that boundary and ships managed timezone,
+            -- C.utf8, conversion data, licenses and native build provenance.
+            -- Each immutable resource is checked on its native architecture.
             ["2.44.3"] = {
-                revision = 2,
+                revision = 3,
                 x86_64 = {
                     url = {
-                        GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.3-r2/glibc-2.44.3-r2-linux-x86_64.tar.gz",
-                        CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.3-r2/glibc-2.44.3-r2-linux-x86_64.tar.gz",
+                        GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.3-r3/glibc-2.44.3-r3-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.3-r3/glibc-2.44.3-r3-linux-x86_64.tar.gz",
                     },
-                    sha256 = "6623ce68f9f82b49b9466fd8b13fbfe73303519f7a7549794befd2645f4d97f8",
+                    sha256 = "2fe32c53a40885ec6d3322135df19dc4fe65835b093b03bfa41502c1eb7abffa",
                 },
                 aarch64 = {
                     url = {
-                        GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.3-r2/glibc-2.44.3-r2-linux-aarch64.tar.gz",
-                        CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.3-r2/glibc-2.44.3-r2-linux-aarch64.tar.gz",
+                        GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.3-r3/glibc-2.44.3-r3-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.3-r3/glibc-2.44.3-r3-linux-aarch64.tar.gz",
                     },
-                    sha256 = "17158a991a9e842c19b189845c850a438f4f2683ede38e6256c963aff2c87b96",
+                    sha256 = "33d015ddd07c84d82b8c7cfbe6cf920222d0754c7c777f3818c78c764de5461e",
                 },
             },
         },

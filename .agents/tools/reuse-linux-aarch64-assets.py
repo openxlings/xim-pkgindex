@@ -67,6 +67,13 @@ def replace_published_glibc(directory, source_run, source_sha):
         raise ValueError('published glibc recipe and release digest differ')
     proof_path = '.agents/docs/2026-10-08-glibc-r3-resource-admission.json'
     proof = json.loads(Path(proof_path).read_text())
+    ledger = json.loads(Path('.agents/docs/2026-10-08-glibc-r3-source-build.json').read_text())
+    if (proof.get('status') != 'native-build-and-mirrors-passed'
+            or proof.get('archives', {}).get(name) != digest
+            or ledger.get('archives', {}).get(name) != digest
+            or (proof.get('source_run_id'), proof.get('source_commit')) != (
+                ledger.get('source_run_id'), ledger.get('source_commit'))):
+        raise ValueError('published glibc identity differs from the native source ledger')
     origin_id, origin_sha = str(proof['source_run_id']), proof['source_commit']
     if not re.fullmatch('[0-9]+', origin_id) or not re.fullmatch('[0-9a-f]{40}', origin_sha):
         raise ValueError('invalid published glibc source identity')

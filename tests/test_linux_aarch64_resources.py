@@ -12,7 +12,7 @@ pytestmark = pytest.mark.static
 ROUTES = [
     ('l/llvm', '23.1.3', 'llvm-23.1.3'),
     ('l/llvm-tools', '23.1.3', 'llvm-tools-23.1.3'),
-    ('g/glibc', '2.44.3', 'glibc-2.44.3-r2'),
+    ('g/glibc', '2.44.3', 'glibc-2.44.3-r3'),
     ('g/gcc-runtime', '15.1.0', 'gcc-runtime-15.1.0'),
     ('l/linux-headers', '5.11.1', 'linux-headers-5.11.1'),
     ('z/zlib', '1.3.1', 'zlib-1.3.1'),
@@ -42,7 +42,7 @@ print(e.sha256)
     global_url, cn_url, digest = result.stdout.splitlines()
     report = REPORT
     if recipe == 'g/glibc':
-        report = json.loads((ROOT / '.agents/docs/2026-10-08-glibc-r2-data-inventory.json').read_text())
+        report = json.loads((ROOT / '.agents/docs/2026-10-08-glibc-r3-resource-admission.json').read_text())
     published = next(a for a in report['global_api_resources'] if a['archive'] == name)
     assert global_url == published['url']
     assert cn_url == global_url.replace('https://github.com/', 'https://gitcode.com/')
