@@ -24,7 +24,7 @@ from tests.lib.xpkg_parser import parse_xpkg
 
 PKG = "oh-my-pi"
 PKG_FILE = "pkgs/o/oh-my-pi.lua"
-RELEASE_VERSION = "18.6.1"
+RELEASE_VERSION = "18.8.4"
 
 
 @pytest.fixture(scope="module")
