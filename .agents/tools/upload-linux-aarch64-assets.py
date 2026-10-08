@@ -10,7 +10,7 @@ import subprocess
 ROUTES = {
     'llvm-23.1.3': ('llvm', '23.1.3'),
     'llvm-tools-23.1.3': ('llvm', '23.1.3'),
-    'glibc-2.44.3-r2': ('glibc', '2.44.3-r2'),
+    'glibc-2.44.3-r3': ('glibc', '2.44.3-r3'),
     'gcc-runtime-15.1.0': ('gcc-runtime', '15.1.0'),
     'linux-headers-5.11.1': ('linux-headers', '5.11.1'),
     'zlib-1.3.1': ('zlib', '1.3.1'),

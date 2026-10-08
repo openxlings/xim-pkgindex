@@ -7,12 +7,12 @@ OUT="${1:-/tmp/aarch64-assets}"
 WORK="${AARCH64_ADMISSION_WORK:-/tmp/aarch64-admission}"
 rm -rf "$WORK"; mkdir -p "$WORK"
 (cd "$OUT" && sha256sum -c SHA256SUMS)
-for stem in llvm-23.1.3 llvm-tools-23.1.3 glibc-2.44.3-r2 gcc-runtime-15.1.0 linux-headers-5.11.1 zlib-1.3.1 libxml2-2.13.5; do
+for stem in llvm-23.1.3 llvm-tools-23.1.3 glibc-2.44.3-r3 gcc-runtime-15.1.0 linux-headers-5.11.1 zlib-1.3.1 libxml2-2.13.5; do
     archive="$OUT/$stem-linux-aarch64.tar.gz"
     [[ -f "$archive" ]] || { echo "missing closure archive: $archive" >&2; exit 1; }
     tar -xf "$archive" -C "$WORK"
 done
-GLIBC="$WORK/glibc-2.44.3-r2-linux-aarch64"
+GLIBC="$WORK/glibc-2.44.3-r3-linux-aarch64"
 LOADER="$GLIBC/lib64/ld-linux-aarch64.so.1"
 # Relocate only this private admission copy, preserving reserved string sizes.
 python3 - "$GLIBC" <<'PY'

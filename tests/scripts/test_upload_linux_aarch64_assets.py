@@ -83,3 +83,26 @@ def test_reuse_rejects_untrusted_or_incomplete_source_run(change):
     elif change == 'other_workflow': run['path'] = '.github/workflows/other.yml'
     elif change == 'invalid_sha': run['head_sha'] = 'bad'
     with pytest.raises(ValueError): reuse.validate(run, 'openxlings/xim-pkgindex')
+
+
+@pytest.mark.parametrize('change', ['none', 'corrupt', 'additional', 'missing'])
+def test_published_glibc_reuse_preserves_exact_other_archive_identities(tmp_path, monkeypatch, change):
+    spec = importlib.util.spec_from_file_location('native_reuse_exact', ROOT / '.agents/tools/reuse-linux-aarch64-assets.py')
+    reuse = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(reuse)
+    # Fixture bytes replace only test expectations. Production SHA constants
+    # remain the identities of the admitted native source closure.
+    expected = {}
+    for name in reuse.UNCHANGED_ARCHIVES:
+        content = ('owned fixture ' + name).encode()
+        (tmp_path / name).write_bytes(content)
+        expected[name] = hashlib.sha256(content).hexdigest()
+    (tmp_path / 'glibc-2.44.3-r1-linux-aarch64.tar.gz').write_bytes(b'old glibc fixture')
+    monkeypatch.setattr(reuse, 'UNCHANGED_ARCHIVES', expected)
+    selected = next(iter(expected))
+    if change == 'corrupt': (tmp_path / selected).write_bytes(b'corrupt')
+    elif change == 'additional': (tmp_path / 'unexpected.tar.gz').write_bytes(b'foreign')
+    elif change == 'missing': (tmp_path / selected).unlink()
+    if change == 'none': reuse.verify_unchanged_archives(tmp_path)
+    else:
+        with pytest.raises(ValueError): reuse.verify_unchanged_archives(tmp_path)

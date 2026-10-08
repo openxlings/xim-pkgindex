@@ -46,6 +46,10 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+      - name: Install source-build prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential bison gawk texinfo patchelf libgmp-dev libmpfr-dev libmpc-dev rsync autoconf automake libtool lua5.4
       - name: Reuse an identical successful native source build
         if: github.event_name == 'pull_request' || inputs.source_run_id != ''
         env:
@@ -56,10 +60,6 @@ jobs:
           args=()
           if [[ "$PUBLISHED_GLIBC_ONLY" == true ]]; then args+=(--published-glibc-only); fi
           python3 .agents/tools/reuse-linux-aarch64-assets.py "$SOURCE_RUN_ID" /tmp/aarch64-assets "${args[@]}"
-      - name: Install source-build prerequisites
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y build-essential bison gawk texinfo patchelf libgmp-dev libmpfr-dev libmpc-dev rsync autoconf automake libtool
       - name: Build the native dependency closure
         if: github.event_name == 'workflow_dispatch' && inputs.source_run_id == ''
         env:
@@ -74,7 +74,7 @@ jobs:
           GLIBC_BUILD_HEADERS: /tmp/aarch64-deps/linux-headers-5.11.1-linux-aarch64/include
           XLINGS_GFX_WORK: /tmp/glibc-build
         run: |
-          bash .agents/tools/graphics/build-glibc.sh 2.44 2.44.3 2
+          bash .agents/tools/graphics/build-glibc.sh 2.44 2.44.3 3
           cp /tmp/glibc-build/dist/*.tar.gz /tmp/aarch64-assets/
       - name: Verify and carve the upstream LLVM release
         if: github.event_name == 'workflow_dispatch' && inputs.source_run_id == ''

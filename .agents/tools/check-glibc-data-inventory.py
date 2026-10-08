@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import posixpath
 from pathlib import Path
 import tarfile
 
@@ -15,10 +16,25 @@ def inspect(archive, architecture, revision):
     root = f'glibc-2.44.3-r{revision}-linux-{architecture}'
     with tarfile.open(archive) as stream:
         members = {m.name.rstrip('/'): m for m in stream.getmembers()}
-        missing = [name for name in REQUIRED
-                   if root + '/' + name not in members
-                   or not members[root + '/' + name].isfile()
-                   or members[root + '/' + name].size == 0]
+        def owned_nonempty_file(name):
+            seen = set()
+            while name not in seen:
+                seen.add(name)
+                if not name.startswith(root + '/'):
+                    return False
+                item = members.get(name)
+                if item is None:
+                    return False
+                if item.isfile():
+                    return item.size > 0
+                if item.islnk():
+                    name = posixpath.normpath(item.linkname)
+                elif item.issym() and not item.linkname.startswith('/'):
+                    name = posixpath.normpath(posixpath.join(posixpath.dirname(name), item.linkname))
+                else:
+                    return False
+            return False
+        missing = [name for name in REQUIRED if not owned_nonempty_file(root + '/' + name)]
         loader = 'ld-linux-aarch64.so.1' if architecture == 'aarch64' else 'ld-linux-x86-64.so.2'
         for name in ('lib/' + loader, 'lib/libc.so.6'):
             if root + '/' + name not in members:
