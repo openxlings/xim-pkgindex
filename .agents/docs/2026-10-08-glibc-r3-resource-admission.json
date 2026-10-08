@@ -1,0 +1,64 @@
+{
+  "scope": "Both native glibc builds and GLOBAL/CN complete GET byte identities passed; final index consumer admission remains required",
+  "source_run_id": "37734176881",
+  "source_commit": "e8f330d45b2b5ca57c608e7ec8d40d6170502cf1",
+  "revision": 3,
+  "archives": {
+    "glibc-2.44.3-r3-linux-aarch64.tar.gz": "33d015ddd07c84d82b8c7cfbe6cf920222d0754c7c777f3818c78c764de5461e",
+    "glibc-2.44.3-r3-linux-x86_64.tar.gz": "2fe32c53a40885ec6d3322135df19dc4fe65835b093b03bfa41502c1eb7abffa"
+  },
+  "native_jobs": {
+    "build (ubuntu-24.04-arm, aarch64)": 113169864177,
+    "build (ubuntu-24.04, x86_64)": 113169864494
+  },
+  "status": "native-build-and-mirrors-passed",
+  "publication_run_id": "37735409379",
+  "publication_commit": "aab7df8c9d7a9cf19ae7497327984eccad47776a",
+  "global_release_id": 406472919,
+  "global_api_resources": [
+    {
+      "archive": "glibc-2.44.3-r3-linux-aarch64.tar.gz",
+      "sha256": "33d015ddd07c84d82b8c7cfbe6cf920222d0754c7c777f3818c78c764de5461e",
+      "size": 35500275,
+      "api_digest": "sha256:33d015ddd07c84d82b8c7cfbe6cf920222d0754c7c777f3818c78c764de5461e",
+      "url": "https://github.com/xlings-res/glibc/releases/download/2.44.3-r3/glibc-2.44.3-r3-linux-aarch64.tar.gz"
+    },
+    {
+      "archive": "glibc-2.44.3-r3-linux-x86_64.tar.gz",
+      "sha256": "2fe32c53a40885ec6d3322135df19dc4fe65835b093b03bfa41502c1eb7abffa",
+      "size": 38371568,
+      "api_digest": "sha256:2fe32c53a40885ec6d3322135df19dc4fe65835b093b03bfa41502c1eb7abffa",
+      "url": "https://github.com/xlings-res/glibc/releases/download/2.44.3-r3/glibc-2.44.3-r3-linux-x86_64.tar.gz"
+    }
+  ],
+  "mirror_checks": [
+    {
+      "archive": "glibc-2.44.3-r3-linux-aarch64.tar.gz",
+      "mirror": "GLOBAL",
+      "sha256": "33d015ddd07c84d82b8c7cfbe6cf920222d0754c7c777f3818c78c764de5461e",
+      "size": 35500275,
+      "url": "https://github.com/xlings-res/glibc/releases/download/2.44.3-r3/glibc-2.44.3-r3-linux-aarch64.tar.gz"
+    },
+    {
+      "archive": "glibc-2.44.3-r3-linux-aarch64.tar.gz",
+      "mirror": "CN",
+      "sha256": "33d015ddd07c84d82b8c7cfbe6cf920222d0754c7c777f3818c78c764de5461e",
+      "size": 35500275,
+      "url": "https://gitcode.com/xlings-res/glibc/releases/download/2.44.3-r3/glibc-2.44.3-r3-linux-aarch64.tar.gz"
+    },
+    {
+      "archive": "glibc-2.44.3-r3-linux-x86_64.tar.gz",
+      "mirror": "GLOBAL",
+      "sha256": "2fe32c53a40885ec6d3322135df19dc4fe65835b093b03bfa41502c1eb7abffa",
+      "size": 38371568,
+      "url": "https://github.com/xlings-res/glibc/releases/download/2.44.3-r3/glibc-2.44.3-r3-linux-x86_64.tar.gz"
+    },
+    {
+      "archive": "glibc-2.44.3-r3-linux-x86_64.tar.gz",
+      "mirror": "CN",
+      "sha256": "2fe32c53a40885ec6d3322135df19dc4fe65835b093b03bfa41502c1eb7abffa",
+      "size": 38371568,
+      "url": "https://gitcode.com/xlings-res/glibc/releases/download/2.44.3-r3/glibc-2.44.3-r3-linux-x86_64.tar.gz"
+    }
+  ]
+}

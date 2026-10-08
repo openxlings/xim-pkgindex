@@ -10,9 +10,10 @@
 -- it is in the work tree (or on --head). For each version entry the base
 -- already has, in every `xpm` platform section:
 --
---   * its resource -- `url` (with its mirror table), `sha256` (single or
---     per-arch), `res`, `arch_alias`, a per-arch resource map, or the bare
---     string value (`"XLINGS_RES"`, a url) -- is compared with the head's;
+--   * its effective URL, mirrors and digest are compared for each previously
+--     supported architecture. Equivalent scalar/per-arch shapes, new
+--     architectures and adding a complete digest to an unchanged URL preserve
+--     existing payload identity;
 --   * if the resource differs, the head's revision must be HIGHER than the
 --     base's. A client that implements revision reinstalls a payload whose
 --     recorded revision differs from the recipe's; one whose revision did not
@@ -25,11 +26,10 @@
 -- itself (not inside a per-arch map, where no client reads it), and must not
 -- appear on a `ref` alias, which carries none.
 --
--- The resource is everything in the entry except `revision`, `ref` and
--- `deps`, so a field this check does not know by name counts as part of what
--- is downloaded rather than being ignored. A platform-level or root `source`
--- is not attributed to the entries that inherit it: bytes that change behind
--- an inherited url change the entry's own sha256, and that is compared.
+-- Unknown resource fields remain part of identity. Platform/root sources,
+-- proven Linux official coordinates and architecture aliases are normalized
+-- before comparison. Replacing or removing a published digest changes its
+-- identity; adding a valid digest to the same URL strengthens its integrity.
 --
 -- WHAT IS NOT CHECKED
 -- -------------------
@@ -131,13 +131,129 @@ local function is_alias(entry)
     return type(entry) == "table" and rawget(entry, "ref") ~= nil
 end
 
-local function resource_of(entry)
-    if type(entry) ~= "table" then return canon(entry) end
-    local r = {}
-    for k, v in pairs(entry) do
-        if not NON_RESOURCE[k] then r[k] = v end
+-- Compare the resource each existing architecture actually selects. Recipe
+-- shape and newly supported architectures do not change an installed payload.
+local ARCH_ALIASES = { arm64 = "aarch64", amd64 = "x86_64", x64 = "x86_64" }
+local ARCH_NAMES = { x86_64=true, aarch64=true, arm64=true, x86=true,
+    arm=true, armv7=true, riscv64=true, ppc64le=true, loongarch64=true }
+local function normalized_arch(arch) return ARCH_ALIASES[arch] or arch end
+
+local function arch_map(entry)
+    local out = {}
+    if type(entry) == "table" then
+        for key, value in pairs(entry) do
+            if ARCH_NAMES[key] and type(value) == "table" then
+                local selected = {}
+                for parent, item in pairs(entry) do
+                    if not ARCH_NAMES[parent] and not NON_RESOURCE[parent] then
+                        selected[parent] = item
+                    end
+                end
+                for child, item in pairs(value) do selected[child] = item end
+                out[normalized_arch(key)] = selected
+            end
+        end
     end
-    return canon(r)
+    return next(out) and out or nil
+end
+
+local function resource_archs(entry, pkg, platform)
+    local mapped = arch_map(entry)
+    if mapped then return mapped end
+    local out = {}
+    local url = type(entry) == "table" and entry.url or entry
+    if type(url) == "table" then url = url.GLOBAL or url.CN end
+    local named_arch = type(url) == "string" and url:match("%-" .. platform .. "%-([%w_]+)%.")
+    if named_arch and ARCH_NAMES[named_arch] then
+        out[normalized_arch(named_arch)] = entry
+        return out
+    end
+    for _, arch in ipairs(type(pkg.archs) == "table" and pkg.archs or {}) do
+        out[normalized_arch(arch)] = entry
+    end
+    if not next(out) then out.x86_64 = entry end
+    return out
+end
+
+local function effective_resource(entry, pkg, platform, version, arch)
+    local pdata = pkg.xpm[platform]
+    local value = type(entry) == "table" and entry or { url = entry }
+    local aliases = value.arch_alias or pdata.arch_alias or {}
+    local alias = type(aliases) == "table" and aliases[arch] or nil
+    local ext = platform == "windows" and "zip" or platform == "linux" and "tar.gz" or nil
+    local function expand(url)
+        local replacements = { name=pkg.name, version=version, os=platform,
+            arch=arch, arch_alias=alias or arch, ext=ext }
+        return (url:gsub("%${([%w_]+)}", function(key)
+            return replacements[key] or "${" .. key .. "}"
+        end))
+    end
+    local url = value.url
+    local source = pdata.source or pkg.xpm.source
+    if not url or url == "" then url = source end
+    if (value.res == true and not value.url) or url == "XLINGS_RES" or url == "xlings-res" then
+        -- The legacy Linux convention is fixed by the published resources.
+        -- Other platforms may choose formats at download time; retain their
+        -- official source token rather than assume an equivalent explicit URL.
+        if platform == "linux" then
+            local stem = pkg.name .. "-" .. version .. "-" .. platform .. "-" .. (alias or arch) .. ".tar.gz"
+            local relative = pkg.name .. "/releases/download/" .. version .. "/" .. stem
+            url = { GLOBAL = "https://github.com/xlings-res/" .. relative,
+                    CN = "https://gitcode.com/xlings-res/" .. relative }
+        else
+            url = { official=true, platform=platform, arch=alias or arch }
+        end
+    elseif type(url) == "string" then
+        url = expand(url)
+    elseif type(url) == "table" then
+        local urls = {}
+        for region, address in pairs(url) do
+            urls[region] = type(address) == "string" and expand(address) or address
+        end
+        url = urls
+    end
+    local hash = value.sha256 or value.sha256_by_arch
+    if type(hash) == "table" then hash = hash[arch] or hash[alias] end
+    local extra = {}
+    for key, item in pairs(value) do
+        if not NON_RESOURCE[key] and key ~= "url" and key ~= "sha256"
+           and key ~= "sha256_by_arch" and key ~= "res" and key ~= "arch_alias" then
+            extra[key] = item
+        end
+    end
+    return { url=canon(url), hash=hash, extra=canon(extra) }
+end
+
+local function resource_changed(old, new, base_pkg, head_pkg, platform, version)
+    local before = resource_archs(old, base_pkg, platform)
+    local after = resource_archs(new, head_pkg, platform)
+    local old_url = type(old) == "table" and old.url or old
+    local old_source = base_pkg.xpm[platform].source or base_pkg.xpm.source
+    local old_official = not arch_map(old) and
+        (old_url == "XLINGS_RES" or old_url == "xlings-res"
+         or (not old_url and (old_source == "xlings-res" or old_source == "XLINGS_RES"
+              or type(old) == "table" and old.res == true)))
+    for arch, resource in pairs(before) do
+        if after[arch] ~= nil then
+            local a = effective_resource(resource, base_pkg, platform, version, arch)
+            local b = effective_resource(after[arch], head_pkg, platform, version, arch)
+            if a.url ~= b.url or a.extra ~= b.extra then return true end
+            if a.hash ~= b.hash then
+                -- Adding a complete digest to an unchanged URL strengthens
+                -- identity. Replacing or removing an existing digest changes it.
+                if a.hash ~= nil or type(b.hash) ~= "string"
+                   or #b.hash ~= 64 or not b.hash:match("^[0-9a-fA-F]+$") then
+                    return true
+                end
+            end
+        elseif not old_official then
+            -- A finite published resource map loses a usable coordinate.
+            -- Legacy official source tokens are parametric (Open in xlings),
+            -- so narrowing those records does not prove a payload was removed.
+            return true
+        end
+    end
+    return false
 end
 
 -- The revision a client reads (non-negative integer, else 0), and the
@@ -287,7 +403,8 @@ for _, file in ipairs(changed) do
                             .. "increases; a client holding revision %d would take the "
                             .. "entry for a different payload and reinstall it.",
                             where, base_rev, head_rev, base_rev))
-                    elseif resource_of(old) ~= resource_of(entry) and head_rev <= base_rev then
+                    elseif resource_changed(old, entry, base_pkg, head_pkg, plat, ver)
+                       and head_rev <= base_rev then
                         err(file, string.format(
                             "%s: the resource of a published version changed while its "
                             .. "revision stayed %d. A published url and sha256 are "

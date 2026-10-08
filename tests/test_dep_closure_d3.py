@@ -96,3 +96,24 @@ def test_d3_never_fails_the_check(world):
     r = run(world)
     assert r.returncode == 0, r.stdout + r.stderr
     assert "[FAIL]" not in r.stderr
+
+
+@pytest.mark.static
+def test_zero_external_sonames_have_a_complete_report(world):
+    """A real managed ELF with no DT_NEEDED must report zero without nounset."""
+    compiler = shutil.which("cc")
+    if compiler is None:
+        pytest.skip("needs a C compiler to create an ELF with no external dependencies")
+    _, xpkgs, payload = world
+    (payload / "toolapp").unlink()
+    subprocess.run(
+        [compiler, "-nostdlib", "-shared",
+         f"-Wl,-rpath,{xpkgs / 'xim-x-fakelib/1.0/lib'}",
+         "-x", "c", "-o", str(payload / "libzero.so"), "-"],
+        input="void zero_external_dependencies(void) {}\n", text=True, check=True,
+        capture_output=True,
+    )
+    result = run(world)
+    assert result.returncode == 0, result.stdout + result.stderr
+    assert "dependency closure: 1 ELF, 0 external soname(s), all accounted for" in result.stdout
+    assert "unbound variable" not in result.stderr

@@ -1,4 +1,19 @@
-local metadata_aarch64 = type(is_arch) == "function" and is_arch("aarch64")
+-- Linux ARM64 metadata requires xlings 2026.10.8.1 or newer, whose
+-- catalog loader exposes the process architecture; resolved runtime exports
+-- are carried into hooks through their execution context.
+-- Older x86_64 clients retain their existing layout.
+local recipe_arch = (os.arch and os.arch())
+if recipe_arch ~= "aarch64" and recipe_arch ~= "arm64" and recipe_arch ~= "x86_64" then
+    recipe_arch = (type(is_arch) == "function" and is_arch("aarch64")) and "aarch64" or "x86_64"
+end
+local runtime_metadata = {
+    x86_64 = { loader = "lib64/ld-linux-x86-64.so.2",
+               abi = "linux-x86_64-glibc", libdirs = { "lib64" } },
+    aarch64 = { loader = "lib64/ld-linux-aarch64.so.1",
+               abi = "linux-aarch64-glibc", libdirs = { "lib64" } },
+}
+local runtime_export = runtime_metadata[recipe_arch == "arm64" and "aarch64" or recipe_arch]
+    or runtime_metadata.x86_64
 
 package = {
     spec = "1",
@@ -62,11 +77,7 @@ package = {
             -- jdk-temurin, where it is the difference between a working AWT and
             -- UnsatisfiedLinkError; see that recipe.
             exports = {
-                runtime = {
-                    loader = metadata_aarch64 and "lib64/ld-linux-aarch64.so.1" or "lib64/ld-linux-x86-64.so.2",
-                    abi    = metadata_aarch64 and "linux-aarch64-glibc" or "linux-x86_64-glibc",
-                    -- libdirs not declared → falls back to {lib64, lib} convention
-                },
+                runtime = runtime_export,
             },
             -- `latest` is 2.44 (as 2.44.2 — same upstream release, our
             -- revision 1; see that entry) — and from now on it TRACKS the
@@ -116,7 +127,15 @@ package = {
             -- reverse, so every 2.39-built payload in the index runs
             -- unchanged under 2.44.
             ["latest"] = { ref = "2.44.3" },
-            ["2.39"] = "XLINGS_RES",
+            ["2.39"] = {
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.39/glibc-2.39-linux-x86_64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/glibc/releases/download/2.39/glibc-2.39-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "d5d476e099bd048d0b0d74adce1d86da00dcc79d67325040ef92e52f8408557f",
+                },
+            },
             -- Built from source, not XLINGS_RES: the sha256 is checked, which
             -- an XLINGS_RES entry cannot do. Build recipe and the reason its
             -- prefix looks the way it does:
@@ -140,11 +159,13 @@ package = {
             -- entry at a NEW asset under the same version key (2.44.3 below)
             -- and leaves the old asset published for cached indexes.
             ["2.44"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44/glibc-2.44-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44/glibc-2.44-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44/glibc-2.44-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44/glibc-2.44-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "0105292fd6b49f74fbf51f93af973b78a9fc18225cb1c757c720e90de3120182",
                 },
-                sha256 = "0105292fd6b49f74fbf51f93af973b78a9fc18225cb1c757c720e90de3120182",
             },
             -- 2.44.2 IS BACK, AND IT IS `latest`.
             --
@@ -197,11 +218,13 @@ package = {
             -- keep resolving, and on 2026.8.27.5 the declaration outranks
             -- `latest`, so they are not dragged forward.
             ["2.44.2"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.2/glibc-2.44.2-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.2/glibc-2.44.2-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.2/glibc-2.44.2-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.2/glibc-2.44.2-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "ed4bf048b8ed2b65433e0dd655f93133da4a9bd458276cfa986b7cccde835d08",
                 },
-                sha256 = "ed4bf048b8ed2b65433e0dd655f93133da4a9bd458276cfa986b7cccde835d08",
             },
             -- 2.44.3: THE LOADER'S OWN DIRECTORY IS ITS DEFAULT DIRECTORY.
             --
@@ -255,23 +278,25 @@ package = {
             -- relocation itself; a machine that already holds 2.44.3 gets it
             -- only from a client that implements revision, which reinstalls
             -- the payload and says why.
-            -- Revision 2 also selects cache/preload from the logical loader
-            -- root. Each immutable resource is checked on its native architecture.
+            -- Revision 2 selects cache/preload from the logical loader root.
+            -- Revision 3 retains that boundary and ships managed timezone,
+            -- C.utf8, conversion data, licenses and native build provenance.
+            -- Each immutable resource is checked on its native architecture.
             ["2.44.3"] = {
-                revision = 2,
+                revision = 3,
                 x86_64 = {
                     url = {
-                        GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.3-r2/glibc-2.44.3-r2-linux-x86_64.tar.gz",
-                        CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.3-r2/glibc-2.44.3-r2-linux-x86_64.tar.gz",
+                        GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.3-r3/glibc-2.44.3-r3-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.3-r3/glibc-2.44.3-r3-linux-x86_64.tar.gz",
                     },
-                    sha256 = "6623ce68f9f82b49b9466fd8b13fbfe73303519f7a7549794befd2645f4d97f8",
+                    sha256 = "2fe32c53a40885ec6d3322135df19dc4fe65835b093b03bfa41502c1eb7abffa",
                 },
                 aarch64 = {
                     url = {
-                        GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.3-r2/glibc-2.44.3-r2-linux-aarch64.tar.gz",
-                        CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.3-r2/glibc-2.44.3-r2-linux-aarch64.tar.gz",
+                        GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.3-r3/glibc-2.44.3-r3-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.3-r3/glibc-2.44.3-r3-linux-aarch64.tar.gz",
                     },
-                    sha256 = "17158a991a9e842c19b189845c850a438f4f2683ede38e6256c963aff2c87b96",
+                    sha256 = "33d015ddd07c84d82b8c7cfbe6cf920222d0754c7c777f3818c78c764de5461e",
                 },
             },
         },
@@ -281,7 +306,7 @@ package = {
 
 -- Older resources were published only for x86_64. Preserve them for that
 -- architecture; an ARM reader must refuse them rather than install x86 bytes.
-if metadata_aarch64 then
+if recipe_arch == "aarch64" or recipe_arch == "arm64" then
     package.xpm.linux["2.39"] = nil
     package.xpm.linux["2.44"] = nil
     package.xpm.linux["2.44.2"] = nil
@@ -304,11 +329,20 @@ local RESERVED_PREFIX = "/nonexistent/xlings-use-rpath-not-default-search"
 local PADDING_HEAD = RESERVED_PREFIX .. "/padding-to-255-bytes-for-install-time-relocation"
 local PADDED_PREFIX = PADDING_HEAD .. string.rep("_", 255 - #PADDING_HEAD)
 
+-- Hook paths follow the downloaded payload; they do not depend on the
+-- client's optional architecture API.
+local function runtime_layout()
+    local file = pkginfo.install_file()
+    if file:find("linux-aarch64", 1, true) then
+        return "lib64", "ld-linux-aarch64.so.1"
+    end
+    return "lib64", "ld-linux-x86-64.so.2"
+end
+
 -- libnss modules
 local glibc_libs = {
     "crt1.o", "crti.o", "crtn.o", -- crt
-    "ld-linux-x86-64.so.2", -- dynamic linker/loader
-    "ld-linux-aarch64.so.1",
+    -- The architecture-specific loader is registered in config().
     "libc.a", "libc.so", "libc.so.6", "libc_nonshared.a", -- C library
     "libdl.a", "libdl.so.2", -- dynamic loading
     -- `libm-<version>.a` is version-named and is added in config() rather than
@@ -343,6 +377,21 @@ local glibc_libs = {
 }
 
 function install()
+    -- Hook executors reload recipes without the catalog LoaderContext.
+    -- Their top-level os.arch() is unbound even in a current client. Check
+    -- the catalog's resolved exports, passed into the hook at invocation,
+    -- rather than that executor's fallback metadata.
+    if pkginfo.install_file():find("linux-aarch64", 1, true) then
+        local exports = _RUNTIME and _RUNTIME.self_exports
+        local expected_loader = path.join(pkginfo.install_dir(),
+            "lib64", "ld-linux-aarch64.so.1")
+        if not exports or exports.abi ~= "linux-aarch64-glibc"
+           or exports.loader ~= expected_loader then
+            log.error("glibc aarch64 requires xlings >= 2026.10.8.1; "
+                .. "the catalog must resolve the aarch64 runtime loader and ABI")
+            return false
+        end
+    end
 
     -- The payload root, without assuming what the tarball called it.
     --
@@ -410,7 +459,13 @@ function config()
     local glibc_root_binding = "glibc@" .. pkginfo.version()
     local glibc_version = __version_key()
     local glibc_bindir = path.join(pkginfo.install_dir(), "bin")
-    local glibc_libdir = path.join(pkginfo.install_dir(), "lib64")
+    local libname, loader_name = runtime_layout()
+    local glibc_libdir = path.join(pkginfo.install_dir(), libname)
+
+    xvm.add(loader_name, {
+        type = "lib", version = glibc_version, bindir = glibc_libdir,
+        filename = loader_name, alias = loader_name, binding = glibc_root_binding,
+    })
 
     log.debug("1 - config glibc tool...")
     local bin_config = {
@@ -460,6 +515,8 @@ end
 
 function uninstall()
     local glibc_version = __version_key()
+    local _, loader_name = runtime_layout()
+    xvm.remove(loader_name, glibc_version)
     for _, lib in ipairs(glibc_libs) do
         xvm.remove(lib, glibc_version)
     end
@@ -506,7 +563,8 @@ function __check_nss_coverage()
         return
     end
 
-    local libdir = path.join(pkginfo.install_dir(), "lib64")
+    local libname = runtime_layout()
+    local libdir = path.join(pkginfo.install_dir(), libname)
     local seen, missing = {}, {}
     for line in content:gmatch("[^\r\n]+") do
         -- Comments off first, then the `db: mod [STATUS=action] mod` shape.
@@ -971,14 +1029,14 @@ end
 -- pass means the relocated paths were used.
 function __generate_c_utf8()
     local dir = pkginfo.install_dir()
-    local libdir = path.join(dir, "lib64")
+    local libname, loader_name = runtime_layout()
+    local libdir = path.join(dir, libname)
     local localedir = path.join(dir, "lib", "locale")
     local target = path.join(localedir, "C.utf8")
     -- A payload program on the payload's loader, with `env` assignments first.
     local function run(env, program, args)
         return __run("env -u LD_PRELOAD -u LOCPATH -u GCONV_PATH " .. env .. " "
-            .. __sh_quote(path.join(libdir, (_RUNTIME and _RUNTIME.arch == "aarch64")
-                and "ld-linux-aarch64.so.1" or "ld-linux-x86-64.so.2"))
+            .. __sh_quote(path.join(libdir, loader_name))
             .. " --library-path " .. __sh_quote(libdir) .. " "
             .. __sh_quote(path.join(dir, "bin", program)) .. " " .. args)
     end

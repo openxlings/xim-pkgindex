@@ -1,0 +1,191 @@
+{
+  "schema": 1,
+  "status": "passed",
+  "architecture": "aarch64",
+  "commit": "984d468bd205af1a41eed238157eed741de60fb9",
+  "run_id": "37695531148",
+  "source_commit": "6ebe21794d2fb6b1bc3934738527949a627de5f1",
+  "source_run_id": "37689904325",
+  "archives": {
+    "gcc-runtime-15.1.0-linux-aarch64.tar.gz": "86aed3a2f78f623c48fa0dffa0eb377d405343ee5c733ee96f38f598e87d8b6e",
+    "glibc-2.44.3-r1-linux-aarch64.tar.gz": "25dbdec6bc40784f138028e2c7418f7522b2b96f4ef81be2e60d8b77f0944c66",
+    "libxml2-2.13.5-linux-aarch64.tar.gz": "723f97d01c6a7618ace30842e1a03cfbd99965a340c1df263d31ba217cfd1cee",
+    "linux-headers-5.11.1-linux-aarch64.tar.gz": "ffb294cc183e9ddb87af3411364ba09c9724390494c2f271a81e98a3d6ccfbd7",
+    "llvm-23.1.3-linux-aarch64.tar.gz": "8a4697b6f22703c1fb8d808a0ef6022f3a9e9111a70e7a02009b7814bdbe46a9",
+    "llvm-tools-23.1.3-linux-aarch64.tar.gz": "e9c3675a170d6f1aaa21ee2fd9c8ba7c67813aab4721d87772f45a83c0c89ad2",
+    "zlib-1.3.1-linux-aarch64.tar.gz": "84605519e53f272c998a92bf806abace459b10937037f27e4b993d9d161546b5",
+    "llvm-23.1.3-linux-aarch64.tar.xz": "fb763a21041d27ea6058df64e42dfb26456517e51f943e7caff8bed5310aa4c3",
+    "llvm-tools-23.1.3-linux-aarch64.tar.xz": "39357154fcfaec5e8a12ab649814d1e05c167389311feff70c8c2a0bf30d0282"
+  },
+  "gates": [
+    "managed-process-libraries",
+    "default-timezone-locale-gconv-host-nss-policy",
+    "managed-uapi-crt",
+    "host-header-negative",
+    "std-and-std.compat",
+    "cxx-compile-link-run"
+  ],
+  "index_activation": "requires installed-client and mcpp consumer acceptance",
+  "global_api_resources": [
+    {
+      "archive": "gcc-runtime-15.1.0-linux-aarch64.tar.gz",
+      "sha256": "86aed3a2f78f623c48fa0dffa0eb377d405343ee5c733ee96f38f598e87d8b6e",
+      "size": 8518931,
+      "url": "https://github.com/xlings-res/gcc-runtime/releases/download/15.1.0/gcc-runtime-15.1.0-linux-aarch64.tar.gz",
+      "asset_id": 619971038
+    },
+    {
+      "archive": "glibc-2.44.3-r1-linux-aarch64.tar.gz",
+      "sha256": "25dbdec6bc40784f138028e2c7418f7522b2b96f4ef81be2e60d8b77f0944c66",
+      "size": 35489903,
+      "url": "https://github.com/xlings-res/glibc/releases/download/2.44.3-r1/glibc-2.44.3-r1-linux-aarch64.tar.gz",
+      "asset_id": 619970803
+    },
+    {
+      "archive": "libxml2-2.13.5-linux-aarch64.tar.gz",
+      "sha256": "723f97d01c6a7618ace30842e1a03cfbd99965a340c1df263d31ba217cfd1cee",
+      "size": 2711313,
+      "url": "https://github.com/xlings-res/libxml2/releases/download/2.13.5/libxml2-2.13.5-linux-aarch64.tar.gz",
+      "asset_id": 619971455
+    },
+    {
+      "archive": "linux-headers-5.11.1-linux-aarch64.tar.gz",
+      "sha256": "ffb294cc183e9ddb87af3411364ba09c9724390494c2f271a81e98a3d6ccfbd7",
+      "size": 1443058,
+      "url": "https://github.com/xlings-res/linux-headers/releases/download/5.11.1/linux-headers-5.11.1-linux-aarch64.tar.gz",
+      "asset_id": 619971221
+    },
+    {
+      "archive": "llvm-23.1.3-linux-aarch64.tar.gz",
+      "sha256": "8a4697b6f22703c1fb8d808a0ef6022f3a9e9111a70e7a02009b7814bdbe46a9",
+      "size": 279311767,
+      "url": "https://github.com/xlings-res/llvm/releases/download/23.1.3/llvm-23.1.3-linux-aarch64.tar.gz",
+      "asset_id": 619970242
+    },
+    {
+      "archive": "llvm-tools-23.1.3-linux-aarch64.tar.gz",
+      "sha256": "e9c3675a170d6f1aaa21ee2fd9c8ba7c67813aab4721d87772f45a83c0c89ad2",
+      "size": 78550793,
+      "url": "https://github.com/xlings-res/llvm/releases/download/23.1.3/llvm-tools-23.1.3-linux-aarch64.tar.gz",
+      "asset_id": 619970617
+    },
+    {
+      "archive": "zlib-1.3.1-linux-aarch64.tar.gz",
+      "sha256": "84605519e53f272c998a92bf806abace459b10937037f27e4b993d9d161546b5",
+      "size": 161801,
+      "url": "https://github.com/xlings-res/zlib/releases/download/1.3.1/zlib-1.3.1-linux-aarch64.tar.gz",
+      "asset_id": 619971341
+    },
+    {
+      "archive": "llvm-23.1.3-linux-aarch64.tar.xz",
+      "sha256": "fb763a21041d27ea6058df64e42dfb26456517e51f943e7caff8bed5310aa4c3",
+      "size": 167962376,
+      "url": "https://github.com/xlings-res/llvm/releases/download/23.1.3/llvm-23.1.3-linux-aarch64.tar.xz",
+      "asset_id": 619971564
+    },
+    {
+      "archive": "llvm-tools-23.1.3-linux-aarch64.tar.xz",
+      "sha256": "39357154fcfaec5e8a12ab649814d1e05c167389311feff70c8c2a0bf30d0282",
+      "size": 47747036,
+      "url": "https://github.com/xlings-res/llvm/releases/download/23.1.3/llvm-tools-23.1.3-linux-aarch64.tar.xz",
+      "asset_id": 619971894
+    }
+  ],
+  "delivery": {
+    "global": "API asset SHA256 and size verified",
+    "cn": "9/9 native artifact / GLOBAL GET / CN GET SHA256 and size identity verified",
+    "installed_mcpp": "pending candidate native consumer admission"
+  },
+  "mirror_verification": [
+    {
+      "name": "gcc-runtime-15.1.0-linux-aarch64.tar.gz",
+      "repo": "xlings-res/gcc-runtime",
+      "tag": "15.1.0",
+      "size": 8518931,
+      "sha256": "86aed3a2f78f623c48fa0dffa0eb377d405343ee5c733ee96f38f598e87d8b6e",
+      "GLOBAL": "verified GET",
+      "CN": "verified GET",
+      "admission_run": "37695531148"
+    },
+    {
+      "name": "glibc-2.44.3-r1-linux-aarch64.tar.gz",
+      "repo": "xlings-res/glibc",
+      "tag": "2.44.3-r1",
+      "size": 35489903,
+      "sha256": "25dbdec6bc40784f138028e2c7418f7522b2b96f4ef81be2e60d8b77f0944c66",
+      "GLOBAL": "verified GET",
+      "CN": "verified GET",
+      "admission_run": "37695531148"
+    },
+    {
+      "name": "libxml2-2.13.5-linux-aarch64.tar.gz",
+      "repo": "xlings-res/libxml2",
+      "tag": "2.13.5",
+      "size": 2711313,
+      "sha256": "723f97d01c6a7618ace30842e1a03cfbd99965a340c1df263d31ba217cfd1cee",
+      "GLOBAL": "verified GET",
+      "CN": "verified GET",
+      "admission_run": "37695531148"
+    },
+    {
+      "name": "linux-headers-5.11.1-linux-aarch64.tar.gz",
+      "repo": "xlings-res/linux-headers",
+      "tag": "5.11.1",
+      "size": 1443058,
+      "sha256": "ffb294cc183e9ddb87af3411364ba09c9724390494c2f271a81e98a3d6ccfbd7",
+      "GLOBAL": "verified GET",
+      "CN": "verified GET",
+      "admission_run": "37695531148"
+    },
+    {
+      "name": "zlib-1.3.1-linux-aarch64.tar.gz",
+      "repo": "xlings-res/zlib",
+      "tag": "1.3.1",
+      "size": 161801,
+      "sha256": "84605519e53f272c998a92bf806abace459b10937037f27e4b993d9d161546b5",
+      "GLOBAL": "verified GET",
+      "CN": "verified GET",
+      "admission_run": "37695531148"
+    },
+    {
+      "name": "llvm-tools-23.1.3-linux-aarch64.tar.gz",
+      "repo": "xlings-res/llvm",
+      "tag": "23.1.3",
+      "size": 78550793,
+      "sha256": "e9c3675a170d6f1aaa21ee2fd9c8ba7c67813aab4721d87772f45a83c0c89ad2",
+      "GLOBAL": "verified GET",
+      "CN": "verified GET",
+      "admission_run": "37695531148"
+    },
+    {
+      "name": "llvm-23.1.3-linux-aarch64.tar.gz",
+      "repo": "xlings-res/llvm",
+      "tag": "23.1.3",
+      "size": 279311767,
+      "sha256": "8a4697b6f22703c1fb8d808a0ef6022f3a9e9111a70e7a02009b7814bdbe46a9",
+      "GLOBAL": "verified GET",
+      "CN": "verified GET",
+      "admission_run": "37695531148"
+    },
+    {
+      "name": "llvm-23.1.3-linux-aarch64.tar.xz",
+      "repo": "xlings-res/llvm",
+      "tag": "23.1.3",
+      "size": 167962376,
+      "sha256": "fb763a21041d27ea6058df64e42dfb26456517e51f943e7caff8bed5310aa4c3",
+      "GLOBAL": "verified GET",
+      "CN": "verified GET",
+      "admission_run": "37695531148"
+    },
+    {
+      "name": "llvm-tools-23.1.3-linux-aarch64.tar.xz",
+      "repo": "xlings-res/llvm",
+      "tag": "23.1.3",
+      "size": 47747036,
+      "sha256": "39357154fcfaec5e8a12ab649814d1e05c167389311feff70c8c2a0bf30d0282",
+      "GLOBAL": "verified GET",
+      "CN": "verified GET",
+      "admission_run": "37695531148"
+    }
+  ]
+}

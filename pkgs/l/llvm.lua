@@ -10,7 +10,7 @@ package = {
     docs = "https://llvm.org/docs/",
 
     type = "package",
-    archs = {"x86_64", "arm64"},
+    archs = {"x86_64", "arm64", "aarch64"},
     status = "stable",
     categories = {"compiler", "toolchain", "llvm"},
     keywords = {"llvm", "clang", "lld", "compiler", "linker"},
@@ -38,15 +38,52 @@ package = {
                 -- runtime that arrives afterwards is invisible to the loader.
                 "xim:gcc-runtime@15.1.0",
             },
+            -- Revision 1 regenerates Linux compiler cfgs with strict managed
+            -- header search. The published archives and their digests remain
+            -- unchanged; resource-map restructuring alone needs no revision.
             ["latest"] = { ref = "22.1.8" },
-            ["20.1.7"] = "XLINGS_RES",
-            ["22.1.8"] = "XLINGS_RES",
+            ["20.1.7"] = {
+                revision = 1,
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/llvm/releases/download/20.1.7/llvm-20.1.7-linux-x86_64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/llvm/releases/download/20.1.7/llvm-20.1.7-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "85ca8484a423c786e0aa6d996a221771a9082beaa23922ccf488caf21df1e133",
+                },
+            },
+            ["22.1.8"] = {
+                revision = 1,
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/llvm/releases/download/22.1.8/llvm-22.1.8-linux-x86_64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/llvm/releases/download/22.1.8/llvm-22.1.8-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "d2cb36aec404155bcf423c786ef835c17fddd2b92389cee289177bd21a335376",
+                },
+            },
             -- 23.1.3: the first release carrying the macOS 27 arm64e.x1
             -- ld64.lld fix (llvm-project#222721 via ee66426); mcpp#669 moves
             -- its LLVM line to it. Its shared libraries ship with $ORIGIN
             -- RUNPATH (set by the carve), so the archive is self-contained
             -- without the install-time rpath rewrite.
-            ["23.1.3"] = "XLINGS_RES",
+            ["23.1.3"] = {
+                revision = 1,
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3/llvm-23.1.3-linux-x86_64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3/llvm-23.1.3-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "08dfe7d3b297e352117c2c9929fa223ede5970741f98dff09e5ad71494f57443",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3/llvm-23.1.3-linux-aarch64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3/llvm-23.1.3-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "8a4697b6f22703c1fb8d808a0ef6022f3a9e9111a70e7a02009b7814bdbe46a9",
+                },
+            },
         },
         -- macOS ships a slim, self-contained toolchain carved from the upstream
         -- full release (the 1.4GB upstream monolith is no longer mirrored):
@@ -188,19 +225,10 @@ local function collect_bin_apps(bindir)
 end
 
 function install()
-    -- The inner directory naming convention per platform:
-    --   linux:   llvm-<version>-linux-x86_64
-    --   macosx:  derived from filename
-    --   windows: llvm-<version>-windows-x86_64
-    local llvmdir = "llvm-" .. pkginfo.version() .. "-linux-x86_64"
-    if os.host() == "macosx" then
-        llvmdir = pkginfo.install_file()
-            :replace(".tar.xz", "")
-            :replace(".tar.gz", "")
-            :replace(".zip", "")
-    elseif os.host() == "windows" then
-        llvmdir = "llvm-" .. pkginfo.version() .. "-windows-x86_64"
-    end
+    local llvmdir = pkginfo.install_file()
+        :replace(".tar.xz", "")
+        :replace(".tar.gz", "")
+        :replace(".zip", "")
     os.tryrm(pkginfo.install_dir())
     os.mv(llvmdir, pkginfo.install_dir())
 
@@ -250,10 +278,8 @@ end
 -- Locate the linux-headers payload's include dir (this package's own dep).
 --
 -- The payload marker (include/linux/limits.h) is still required rather than
--- assumed, so a husk cannot pass for a payload. Returns nil when absent
--- (warn-level: the cfg then omits the kernel-header line; compiles that need
--- <linux/*.h> surface a clear missing-header error instead of a broken
--- install).
+-- assumed, so a husk cannot pass for a payload. Returns nil when absent;
+-- installation rejects that missing dependency before writing compiler cfgs.
 --
 -- The `scode:linux-headers` fallback that used to follow is gone. It rested
 -- on a premise that stopped being true in openxlings/xlings#366:
@@ -308,7 +334,8 @@ function __install_linux_cfg()
         return false
     end
 
-    local common_flags = "-B" .. glibc_lib .. "\n"
+    local common_flags = "-nostdlibinc\n"
+        .. "-B" .. glibc_lib .. "\n"
         .. "-L" .. glibc_lib .. "\n"
         .. "-Wl,--dynamic-linker=" .. loader .. "\n"
         .. "-Wl,--enable-new-dtags,-rpath," .. glibc_lib .. "\n"
@@ -330,8 +357,9 @@ function __install_linux_cfg()
     if linux_inc then
         c_hdr_flags = c_hdr_flags .. "-isystem " .. linux_inc .. "\n"
     else
-        log.warn("linux-headers payload not found; cfg omits kernel headers"
-            .. " (compiles needing <linux/*.h> will report missing headers)")
+        log.error("linux-headers payload not found (this package's deps declare xim:linux-headers);"
+            .. " refusing to write a host-dependent clang cfg")
+        return false
     end
 
     local clang_cfg = common_flags .. c_hdr_flags
@@ -525,14 +553,19 @@ function config()
 
     -- Register libc++ shared libraries for xvm
     if os.host() == "linux" then
-        __config_linux_libs()
+        if not __config_linux_libs() then return false end
     end
 
     return true
 end
 
 function __config_linux_libs()
-    local libcxx_dir = path.join(pkginfo.install_dir(), "lib", "x86_64-unknown-linux-gnu")
+    local triple = __detect_triple(pkginfo.install_dir())
+    if not triple then
+        log.error("llvm: libc++ target directory not found in the payload")
+        return false
+    end
+    local libcxx_dir = path.join(pkginfo.install_dir(), "lib", triple)
     local binding = package.name .. "@" .. pkginfo.version()
 
     local libs = {
@@ -554,6 +587,7 @@ function __config_linux_libs()
             })
         end
     end
+    return true
 end
 
 function uninstall()

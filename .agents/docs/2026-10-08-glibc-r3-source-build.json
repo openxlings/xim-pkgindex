@@ -1,0 +1,14 @@
+{
+  "scope": "Both native builds and runtime/data/inventory gates passed; publication identities remain pending",
+  "source_run_id": "37734176881",
+  "source_commit": "e8f330d45b2b5ca57c608e7ec8d40d6170502cf1",
+  "revision": 3,
+  "archives": {
+    "glibc-2.44.3-r3-linux-aarch64.tar.gz": "33d015ddd07c84d82b8c7cfbe6cf920222d0754c7c777f3818c78c764de5461e",
+    "glibc-2.44.3-r3-linux-x86_64.tar.gz": "2fe32c53a40885ec6d3322135df19dc4fe65835b093b03bfa41502c1eb7abffa"
+  },
+  "native_jobs": {
+    "build (ubuntu-24.04-arm, aarch64)": 113169864177,
+    "build (ubuntu-24.04, x86_64)": 113169864494
+  }
+}

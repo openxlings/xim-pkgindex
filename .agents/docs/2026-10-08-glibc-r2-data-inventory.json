@@ -1,0 +1,138 @@
+{
+  "scope": "Offline archive inventory only; no claim of native execution",
+  "revision": 2,
+  "results": [
+    {
+      "architecture": "aarch64",
+      "sha256": "17158a991a9e842c19b189845c850a438f4f2683ede38e6256c963aff2c87b96",
+      "status": "failed",
+      "required_files": [
+        {
+          "path": "share/zoneinfo/Asia/Tokyo",
+          "present": false,
+          "type": null
+        },
+        {
+          "path": "share/zoneinfo/Etc/UTC",
+          "present": false,
+          "type": null
+        },
+        {
+          "path": "lib/locale/C.utf8/LC_CTYPE",
+          "present": false,
+          "type": null
+        },
+        {
+          "path": "lib/gconv/GBK.so",
+          "present": true,
+          "type": "b'0'"
+        },
+        {
+          "path": "lib64",
+          "present": true,
+          "type": "b'2'"
+        },
+        {
+          "path": "LICENSE",
+          "present": false,
+          "type": null
+        },
+        {
+          "path": "TZDATA-LICENSE",
+          "present": false,
+          "type": null
+        },
+        {
+          "path": "PROVENANCE.txt",
+          "present": false,
+          "type": null
+        },
+        {
+          "path": "ELF-MANIFEST.txt",
+          "present": false,
+          "type": null
+        }
+      ]
+    },
+    {
+      "architecture": "x86_64",
+      "sha256": "6623ce68f9f82b49b9466fd8b13fbfe73303519f7a7549794befd2645f4d97f8",
+      "status": "failed",
+      "required_files": [
+        {
+          "path": "share/zoneinfo/Asia/Tokyo",
+          "present": false,
+          "type": null
+        },
+        {
+          "path": "share/zoneinfo/Etc/UTC",
+          "present": false,
+          "type": null
+        },
+        {
+          "path": "lib/locale/C.utf8/LC_CTYPE",
+          "present": false,
+          "type": null
+        },
+        {
+          "path": "lib/gconv/GBK.so",
+          "present": true,
+          "type": "b'0'"
+        },
+        {
+          "path": "lib64",
+          "present": true,
+          "type": "b'2'"
+        },
+        {
+          "path": "LICENSE",
+          "present": false,
+          "type": null
+        },
+        {
+          "path": "TZDATA-LICENSE",
+          "present": false,
+          "type": null
+        },
+        {
+          "path": "PROVENANCE.txt",
+          "present": false,
+          "type": null
+        },
+        {
+          "path": "ELF-MANIFEST.txt",
+          "present": false,
+          "type": null
+        }
+      ]
+    }
+  ],
+  "source_run_id": "37707873566",
+  "source_commit": "02f81001447652161d482a15da50f2a720a60310",
+  "global_api_resources": [
+    {
+      "archive": "glibc-2.44.3-r2-linux-aarch64.tar.gz",
+      "sha256": "17158a991a9e842c19b189845c850a438f4f2683ede38e6256c963aff2c87b96",
+      "size": 35312342,
+      "url": "https://github.com/xlings-res/glibc/releases/download/2.44.3-r2/glibc-2.44.3-r2-linux-aarch64.tar.gz",
+      "mirror_bytes_verified": [
+        "GLOBAL",
+        "CN"
+      ]
+    },
+    {
+      "archive": "glibc-2.44.3-r2-linux-x86_64.tar.gz",
+      "sha256": "6623ce68f9f82b49b9466fd8b13fbfe73303519f7a7549794befd2645f4d97f8",
+      "size": 38180019,
+      "url": "https://github.com/xlings-res/glibc/releases/download/2.44.3-r2/glibc-2.44.3-r2-linux-x86_64.tar.gz",
+      "mirror_bytes_verified": [
+        "GLOBAL",
+        "CN"
+      ]
+    }
+  ],
+  "archives": {
+    "glibc-2.44.3-r2-linux-aarch64.tar.gz": "17158a991a9e842c19b189845c850a438f4f2683ede38e6256c963aff2c87b96",
+    "glibc-2.44.3-r2-linux-x86_64.tar.gz": "6623ce68f9f82b49b9466fd8b13fbfe73303519f7a7549794befd2645f4d97f8"
+  }
+}

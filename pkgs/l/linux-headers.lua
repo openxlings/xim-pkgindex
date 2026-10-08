@@ -9,7 +9,7 @@ package = {
 
     -- xim pkg info
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable", -- dev, stable, deprecated
 
     -- xvm: xlings version management
@@ -31,11 +31,20 @@ package = {
             -- into the sysroot. No `make`, no sub-index dependency.
             -- (openxlings/xlings#366)
             ["5.11.1"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/scode-res/releases/download/linux-headers/linux-headers-5.11.1.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/scode-res/releases/download/linux-headers/linux-headers-5.11.1.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/scode-res/releases/download/linux-headers/linux-headers-5.11.1.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/scode-res/releases/download/linux-headers/linux-headers-5.11.1.tar.gz",
+                    },
+                    sha256 = "abb59208aee1bc585bcc9fba3fd7c481c570cdb1f29f56369229b1601917d497",
                 },
-                sha256 = "abb59208aee1bc585bcc9fba3fd7c481c570cdb1f29f56369229b1601917d497",
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/linux-headers/releases/download/5.11.1/linux-headers-5.11.1-linux-aarch64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/linux-headers/releases/download/5.11.1/linux-headers-5.11.1-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "ffb294cc183e9ddb87af3411364ba09c9724390494c2f271a81e98a3d6ccfbd7",
+                },
             },
         },
     },

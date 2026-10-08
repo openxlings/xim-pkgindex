@@ -61,8 +61,7 @@ class TestStatic:
         assert '["2.13.5-1"] = {' in code
         assert '["2.13.5"] = {' in code, "xim:llvm pins 2.13.5 exactly"
         assert code.count("libxml2-2.13.5-linux-x86_64.tar.gz") == 4
-        assert 'gsub("%-%d+$", "")' in code
-        assert 'sysroot.adopt_payload("libxml2-" .. upstream_version() .. "-linux-x86_64")' in code
+        assert 'sysroot.adopt_payload(pkginfo.install_file():replace(".tar.gz", ""):replace(".tar.xz", ""))' in code
 
 
 class TestIndex:

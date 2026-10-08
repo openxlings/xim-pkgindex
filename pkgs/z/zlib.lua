@@ -9,7 +9,7 @@ package = {
     repo = "https://github.com/madler/zlib",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"compression", "library"},
     keywords = {"zlib", "compression", "lib"},
@@ -21,11 +21,20 @@ package = {
             deps = { "xim:glibc" },
             ["latest"] = { ref = "1.3.1" },
             ["1.3.1"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/zlib/releases/download/1.3.1/zlib-1.3.1-linux-x86_64.tar.gz",
-                    CN = "https://gitcode.com/xlings-res/zlib/releases/download/1.3.1/zlib-1.3.1-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/zlib/releases/download/1.3.1/zlib-1.3.1-linux-x86_64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/zlib/releases/download/1.3.1/zlib-1.3.1-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "bd66d75485ca9d9a949ba5b99733c8ded759a464d1c6172ae26b8a2e176a0e75",
                 },
-                sha256 = "bd66d75485ca9d9a949ba5b99733c8ded759a464d1c6172ae26b8a2e176a0e75",
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/zlib/releases/download/1.3.1/zlib-1.3.1-linux-aarch64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/zlib/releases/download/1.3.1/zlib-1.3.1-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "84605519e53f272c998a92bf806abace459b10937037f27e4b993d9d161546b5",
+                },
             },
         },
     },
@@ -43,7 +52,7 @@ local libs = {
 }
 
 function install()
-    local srcdir = "zlib-" .. pkginfo.version() .. "-linux-x86_64"
+    local srcdir = pkginfo.install_file():replace(".tar.gz", ""):replace(".tar.xz", "")
     os.tryrm(pkginfo.install_dir())
     os.mv(srcdir, pkginfo.install_dir())
 

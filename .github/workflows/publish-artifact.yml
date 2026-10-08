@@ -85,6 +85,10 @@ jobs:
             bash tools/publish_xim_index.sh --version "$VER" --dir build/index --skip-gitcode
           fi
           # Combined rolling pointer (repo file, overwriteable) on both ends.
+          # Clients routed to a historical index must still discover the
+          # published client that can consume the current index floor.
+          export XLINGS_CLIENT_LATEST="$(gh api repos/openxlings/xlings/releases/latest --jq '.tag_name | ltrimstr("v")')"
+          test -n "$XLINGS_CLIENT_LATEST"
           bash tools/push_index_pointers.sh build/index
 
       - name: Skipped (no XLINGS_RES_TOKEN)
