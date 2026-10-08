@@ -70,3 +70,32 @@ This preserves rejection of absent, x86 or inconsistent catalog exports while
 accepting the current client whose hook architecture API is absent.
 No resource bytes, hashes, client floor or catalog metadata changed.
 Installed-client admission must be repeated against this correction.
+
+## 2026-10-08 CI tooling and closure report correction
+
+The original [Linux install job 113066636361](https://github.com/openxlings/xim-pkgindex/actions/runs/37701768143/job/113066636361)
+entered the APT tooling step at 23:21:24 UTC and emitted no further APT output
+before cancellation at 05:21:43 UTC. Its annotation states that the job exceeded
+the six-hour maximum. The subsequent package installation step did not start.
+These observations establish an unbounded tooling step; they do not identify
+a network cause or distinguish which APT command remained blocked.
+The step now bounds APT acquisition, lock waits and command duration while
+retaining nonzero failures and all required ELF/Lua tools.
+
+A separate exact x86_64 xlings 2026.8.10.1 installation accepted candidate
+recipes at `84c27c3014e676f2175868627b93494d6bd442e8` in a pristine private
+`XLINGS_HOME`, with the original HOME preserved and explicit global scope.
+It installed glibc 2.44.3, gcc-runtime 15.1.0, linux-headers 5.11.1, zlib 1.3.1,
+libxml2 2.13.5 and LLVM 23.1.3. The compiler ran with managed include paths,
+compiled and executed a C++23/kernel-header probe, and passed the actual
+dependency closure check: 31 ELF objects and six external sonames accounted for.
+This supplementary result does not replace the required PR checks.
+
+That investigation also exposed Bash 5.2's nounset diagnostic when taking the
+length of an empty associative array: the checker could print an error yet
+exit successfully without its closure summary. Counting the existing keys
+with a scalar preserves the D1/D2/D3 assertions. A real ELF with zero external
+dependencies now exercises that path in a regression test. Actual payload
+checks also reported 293 ELF/zero external sonames for glibc and seven ELF/three
+external sonames for gcc-runtime without the diagnostic. No package recipes,
+builder inputs, published archive bytes or resource hashes changed in this batch.

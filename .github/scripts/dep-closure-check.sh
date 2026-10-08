@@ -291,6 +291,10 @@ done <<<"$declared"
 d3_advisory
 
 if [[ $rc -eq 0 ]]; then
-    say "dependency closure: $scanned ELF, ${#NEEDED_BY[@]} external soname(s), all accounted for"
+    external_count=0
+    for external_name in "${!NEEDED_BY[@]}"; do
+        external_count=$((external_count + 1))
+    done
+    say "dependency closure: $scanned ELF, $external_count external soname(s), all accounted for"
 fi
 exit $rc

@@ -272,10 +272,21 @@ jobs:
       # goes green.
       - name: Install ELF + Lua tooling for the closure check
         if: steps.changed-files.outputs.any_changed == 'true'
+        timeout-minutes: 12
         run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends binutils patchelf lua5.4
+          set -euo pipefail
+          # The watchdog runs as root so it can terminate root-owned APT children.
+          sudo timeout --signal=TERM --kill-after=15s 240s \
+            apt-get -o Acquire::http::Timeout=30 \
+              -o Acquire::https::Timeout=30 -o Acquire::Retries=2 \
+              -o Dpkg::Lock::Timeout=60 update -qq
+          sudo timeout --signal=TERM --kill-after=15s 420s \
+            env DEBIAN_FRONTEND=noninteractive apt-get \
+              -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 \
+              -o Acquire::Retries=2 -o Dpkg::Lock::Timeout=60 \
+              install -y --no-install-recommends binutils patchelf lua5.4
           readelf --version | head -1
+          patchelf --version
           lua5.4 -v
 
       - name: Linux install/uninstall test (changed packages)
