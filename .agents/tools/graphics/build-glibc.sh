@@ -60,6 +60,12 @@ if (( REVISION > 0 )); then
 else
     ASSET_VERSION="$VERSION"
 fi
+ARCH="${XLINGS_GFX_ARCH:-$(uname -m)}"
+case "$ARCH" in
+    x86_64|aarch64) ;;
+    arm64) ARCH=aarch64 ;;
+    *) echo "[gfx-build:glibc] unsupported architecture: $ARCH" >&2; exit 2 ;;
+esac
 NAME=glibc
 SUBOS_NAME="${XLINGS_GFX_SUBOS:-gfxbuild}"
 XHOME="${XLINGS_HOME:-$HOME/.xlings}"
@@ -166,7 +172,7 @@ done
 shopt -u nullglob
 
 export PATH="$SUBOS/bin:$SUBOS/usr/bin:$PATH"
-export CC="$SUBOS/bin/gcc" CXX="$SUBOS/bin/g++"
+export CC="${XLINGS_GFX_CC:-$SUBOS/bin/gcc}" CXX="${XLINGS_GFX_CXX:-$SUBOS/bin/g++}"
 [[ -x "$CC" ]] || fail "no gcc in the subos"
 
 # NO CPPFLAGS/LDFLAGS pointing at the subos.
@@ -205,7 +211,7 @@ log "configuring $UPSTREAM (prefix=$PREFIX)"
     || { tail -30 "$WORK/$NAME-configure.log"; fail "configure"; }
 
 log "building (this takes a while)"
-make -j"$(nproc)" > "$WORK/$NAME-build.log" 2>&1 \
+make -j"${XLINGS_GFX_JOBS:-$(nproc)}" > "$WORK/$NAME-build.log" 2>&1 \
     || { tail -30 "$WORK/$NAME-build.log"; fail "make"; }
 
 log "staging"
@@ -218,7 +224,7 @@ make install DESTDIR="$STAGE" >> "$WORK/$NAME-build.log" 2>&1 \
 # assets up to 2.44.3 revision 0 hold `glibc-<version>/` and always take the
 # fallback, which picks the first directory holding a libc -- with a stale
 # `glibc-2.44.3/` beside `glibc-2.44.3-r1-.../`, the wrong one.
-STEM="$NAME-$ASSET_VERSION-linux-x86_64"
+STEM="$NAME-$ASSET_VERSION-linux-$ARCH"
 PAYLOAD="$WORK/payload/$STEM"
 rm -rf "$PAYLOAD"; mkdir -p "$PAYLOAD"
 cp -a "$STAGE$PREFIX/." "$PAYLOAD/" || fail "payload copy"
@@ -531,6 +537,9 @@ if [[ -n "$LOADER" ]]; then
         leaks=$((leaks+1))
     fi
 fi
+
+XLINGS_GFX_CC="$CC" bash "$PATCHDIR/../check-glibc-root-cache.sh" "$PAYLOAD" \
+    || fail "logical-root cache / preload boundary"
 
 (( leaks == 0 )) || fail "$leaks problem(s) — payload not packaged"
 
