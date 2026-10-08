@@ -32,7 +32,7 @@ def source(run_id):
     sha = reuse.validate(run, repository, '.github/workflows/glibc-root-runtime.yml')
     if sha != ledger['source_commit']:
         raise ValueError('source commit differs from the reviewed ledger')
-    subprocess.run(['git', 'merge-base', '--is-ancestor', sha, 'HEAD'], check=True)
+    reuse.validate_source_history(sha, repository)
     subprocess.run(['git', 'diff', '--exit-code', sha, 'HEAD', '--',
                     '.agents/tools/graphics/build-glibc.sh', '.agents/tools/graphics/patches'], check=True)
     jobs = json.loads(upload.gh('api', f'repos/{repository}/actions/runs/{run_id}/jobs'))['jobs']

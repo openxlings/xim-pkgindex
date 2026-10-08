@@ -9,7 +9,7 @@ on:
         required: false
         default: ''
       published_glibc_only:
-        description: 'Reuse eight identical source archives and verify current published glibc r2 from both mirrors'
+        description: 'Reuse eight identical source archives and verify current published glibc r3 from both mirrors'
         type: boolean
         required: false
         default: false
@@ -37,6 +37,7 @@ concurrency:
 permissions:
   contents: read
   actions: read
+  pull-requests: read
 
 jobs:
   native-assets:

@@ -26,6 +26,57 @@ def validate(run, repository, workflow='.github/workflows/llvm-linux-aarch64.yml
     return sha
 
 
+def ensure_commit(sha):
+    if not re.fullmatch('[0-9a-f]{40}', sha):
+        raise ValueError('invalid provenance commit')
+    if subprocess.run(['git', 'cat-file', '-e', sha + '^{commit}'],
+                      stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode:
+        # Exact objects only; no branch/tag ref is rewritten. A bounded
+        # history is sufficient for the reviewed source chain; otherwise
+        # ancestry cannot be established and admission fails closed.
+        subprocess.run(['git', 'fetch', '--no-tags', '--no-write-fetch-head',
+                        '--depth=256', 'origin', sha], check=True, timeout=120)
+
+
+def ancestor(source, target):
+    return subprocess.run(['git', 'merge-base', '--is-ancestor', source, target],
+                          stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0
+
+
+def validate_source_history(source_sha, repository):
+    ensure_commit(source_sha)
+    if ancestor(source_sha, 'HEAD'):
+        return
+    associated = json.loads(subprocess.check_output(['gh', 'api',
+        f'repos/{repository}/commits/{source_sha}/pulls'], text=True))
+    for summary in associated:
+        number = summary.get('number')
+        if not isinstance(number, int) or isinstance(number, bool) or number <= 0:
+            continue
+        pr = json.loads(subprocess.check_output(['gh', 'api',
+            f'repos/{repository}/pulls/{number}'], text=True))
+        if (pr.get('merged') is not True
+                or pr.get('base', {}).get('repo', {}).get('full_name') != repository
+                or pr.get('head', {}).get('repo', {}).get('full_name') != repository):
+            continue
+        head_sha = pr.get('head', {}).get('sha', '')
+        merge_sha = pr.get('merge_commit_sha', '')
+        if not all(re.fullmatch('[0-9a-f]{40}', value) for value in (head_sha, merge_sha)):
+            continue
+        ensure_commit(head_sha)
+        ensure_commit(merge_sha)
+        if not ancestor(source_sha, head_sha) or not ancestor(merge_sha, 'HEAD'):
+            continue
+        source_tree = subprocess.check_output(['git', 'rev-parse', head_sha + '^{tree}'], text=True).strip()
+        merged_tree = subprocess.check_output(['git', 'rev-parse', merge_sha + '^{tree}'], text=True).strip()
+        if source_tree != merged_tree:
+            continue
+        print(f'Validated source history through merged {repository}#{number}: '
+              f'head {head_sha}, equivalent merge tree {merge_sha}.', flush=True)
+        return
+    raise ValueError('source is neither a HEAD ancestor nor a tree-equivalent authenticated merged PR source')
+
+
 
 # Exact archived identities from the successful native source closure. This
 # exception permits replacement of glibc only, never a builder mismatch for
@@ -84,7 +135,7 @@ def replace_published_glibc(directory, source_run, source_sha):
             'success', 'completed', '.github/workflows/glibc-root-runtime.yml', origin_sha,
             'openxlings/xim-pkgindex', 'openxlings/xim-pkgindex'):
         raise ValueError('published glibc source build evidence differs')
-    subprocess.run(['git', 'merge-base', '--is-ancestor', origin_sha, 'HEAD'], check=True)
+    validate_source_history(origin_sha, 'openxlings/xim-pkgindex')
     subprocess.run(['git', 'diff', '--exit-code', origin_sha, 'HEAD', '--',
                     '.agents/tools/graphics/build-glibc.sh', '.agents/tools/graphics/patches'], check=True)
     checks = []
@@ -130,7 +181,7 @@ def main():
     repository = os.environ['GITHUB_REPOSITORY']
     run = json.loads(subprocess.check_output(['gh', 'api', f'repos/{repository}/actions/runs/{args.run_id}'], text=True))
     sha = validate(run, repository)
-    subprocess.run(['git', 'merge-base', '--is-ancestor', sha, 'HEAD'], check=True)
+    validate_source_history(sha, repository)
     builders = UNCHANGED_BUILDERS if args.published_glibc_only else BUILDERS
     subprocess.run(['git', 'diff', '--exit-code', sha, 'HEAD', '--', *builders], check=True)
     print(f'Reusing successful native run {args.run_id}, commit {sha}; mode='
