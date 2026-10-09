@@ -206,13 +206,51 @@ class TestBinaryRelocation:
         assert f'RESERVED_PREFIX .. "/{PADDING_TAG.decode()}"' in recipe
         assert 'string.rep("_", 255 - #PADDING_HEAD)' in recipe
 
+    @needs_lua_relocate
     @pytest.mark.static
-    def test_revision_1_entry(self):
-        recipe = (REPO / PKG_FILE).read_text(encoding="utf-8")
-        entry = recipe.split('["2.44.3"] = {', 1)[1].split("},\n        },", 1)[0]
-        assert "revision = 1," in entry
-        assert entry.count("/releases/download/2.44.3-r1/glibc-2.44.3-r1-linux-x86_64.tar.gz") == 2
-        assert re.search(r'sha256 = "[0-9a-f]{64}"', entry), "sha256 is not a digest"
+    @pytest.mark.parametrize("arch,loader", [
+        ("x86_64", "ld-linux-x86-64.so.2"),
+        ("aarch64", "ld-linux-aarch64.so.1"),
+    ])
+    def test_revision_selects_matching_runtime_and_immutable_resource(self, arch, loader):
+        result = subprocess.run([
+            _lua(), str(REPO / "tests/lua/glibc_metadata_harness.lua"),
+            str(REPO / PKG_FILE), arch,
+        ], capture_output=True, text=True)
+        assert result.returncode == 0, result.stdout + result.stderr
+        interp, abi, revision, version, digest, global_url, cn_url, keys = result.stdout.strip().split("\t")
+        assert interp == f"lib64/{loader}"
+        assert abi == f"linux-{arch}-glibc"
+        assert int(revision) >= 2
+        assert re.fullmatch(r"[0-9a-f]{64}", digest)
+        suffix = f"/releases/download/{version}-r{revision}/glibc-{version}-r{revision}-linux-{arch}.tar.gz"
+        assert global_url == "https://github.com/xlings-res/glibc" + suffix
+        assert cn_url == "https://gitcode.com/xlings-res/glibc" + suffix
+        if arch == "aarch64":
+            assert keys.split(",") == [version], "ARM must not select older x86-only archives"
+        else:
+            assert {"2.39", "2.44", "2.44.2", version} <= set(keys.split(","))
+
+    @needs_lua_relocate
+    @pytest.mark.static
+    @pytest.mark.parametrize("arch,loader", [
+        ("x86_64", "ld-linux-x86-64.so.2"),
+        ("aarch64", "ld-linux-aarch64.so.1"),
+    ])
+    def test_config_registers_the_loader_present_in_the_architecture_payload(self, tmp_path, arch, loader):
+        payload = tmp_path / "xim-x-glibc" / "2.44.3"
+        (payload / "lib64").mkdir(parents=True)
+        (payload / "lib64" / loader).write_bytes(b"loader fixture")
+        (payload / "lib64/libc.so.6").write_bytes(b"libc fixture")
+        result = subprocess.run([
+            _lua(), str(REPO / "tests/lua/glibc_metadata_harness.lua"),
+            str(REPO / PKG_FILE), arch, "config", str(payload),
+        ], capture_output=True, text=True)
+        assert result.returncode == 0, result.stdout + result.stderr
+        registered = set(result.stdout.splitlines())
+        assert loader in registered
+        assert "libc.so.6" in registered
+        assert ({"ld-linux-x86-64.so.2", "ld-linux-aarch64.so.1"} - {loader}).isdisjoint(registered)
 
     @needs_lua_relocate
     @pytest.mark.static

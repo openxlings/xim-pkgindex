@@ -9,7 +9,8 @@
 # usually does not exist on any other machine — xlings patches it at install
 # time; see T-f). Proves strip did not corrupt the compiler.
 #
-# Usage:  verify-toolchain.sh TARBALL [--loader LD]
+# Usage: verify-toolchain.sh TARBALL [--loader LD] [--linux-headers INCLUDE]
+#        [--runtime-library-path MANAGED_DIRS]
 # Default loader: the xim glibc loader on this machine.
 #
 # Exit codes follow .agents/tools/README.md: 0 proven, 1 broken, 2 inconclusive,
@@ -23,14 +24,24 @@ skip() { echo "SKIP: $*"; exit 3; }
 
 TARBALL="${1:-}"; shift || true
 LOADER="$HOME/.xlings/data/xpkgs/xim-x-glibc/2.39/lib64/ld-linux-x86-64.so.2"
-while [ $# -gt 0 ]; do case "$1" in --loader) LOADER="$2"; shift 2;; *) shift;; esac; done
+RUNTIME_LIBRARY_PATH=""
+LINUX_HEADERS="${VERIFY_LINUX_HEADERS:-${XLINGS_HOME:-$HOME/.xlings}/data/xpkgs/xim-x-linux-headers/5.11.1/include}"
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --loader) LOADER="$2"; shift 2;;
+    --runtime-library-path) RUNTIME_LIBRARY_PATH="$2"; shift 2;;
+    --linux-headers) LINUX_HEADERS="$2"; shift 2;;
+    *) echo "error: unknown option $1" >&2; exit 2;;
+  esac
+done
+unset CPATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH LD_LIBRARY_PATH LD_PRELOAD
 [ -f "$TARBALL" ] || { echo "error: tarball not found: $TARBALL" >&2; exit 2; }
 # 3, not 1: an absent patchelf says nothing about the tarball, and 1 here sends
 # the reader to look for a corrupt artifact.
 command -v patchelf >/dev/null || skip "patchelf required, not on PATH"
 
 T="$(mktemp -d)"; trap 'rm -rf "$T"' EXIT
-tar -xzf "$TARBALL" -C "$T" || { echo "FAIL: tarball does not extract" >&2; exit 1; }
+tar -xf "$TARBALL" -C "$T" || { echo "FAIL: tarball does not extract" >&2; exit 1; }
 ROOT="$T/$(ls "$T")"
 GLIBC_LIB="$(dirname "$LOADER")"
 
@@ -43,7 +54,7 @@ CXX="$(find "$ROOT" -maxdepth 2 -path '*/bin/g++' | head -1)"
 is_musl=0
 case "$CXX" in *musl*) is_musl=1;; esac
 # glibc headers live next to the loader: <glibc>/lib64/ld... -> <glibc>/include
-GINC="${LOADER%/lib64/*}/include"
+GINC="$(dirname "$GLIBC_LIB")/include"
 # for musl, prefer the toolchain's own musl libc as loader (musl libc.so == loader)
 if [ "$is_musl" = 1 ]; then
   ML="$(find "$ROOT" -path '*-linux-musl/lib/libc.so' -o -name 'ld-musl-x86_64.so.1' 2>/dev/null | head -1)"
@@ -61,9 +72,24 @@ while IFS= read -r -d '' f; do
   case "$f" in *.a|*.o|*.so|*.so.*) continue;; esac
   file -b "$f" 2>/dev/null | grep -q 'ELF.*executable' || continue
   interp="$(patchelf --print-interpreter "$f" 2>/dev/null || true)"
+  if [ -n "$RUNTIME_LIBRARY_PATH" ]; then
+    # LLVM's large driver is invoked through the selected loader instead of
+    # rewriting its ELF layout. Backend subprocesses must use the managed
+    # interpreter even when an upstream system interpreter exists.
+    [ "$(readlink -f "$f")" != "$(readlink -f "$CXX")" ] || continue
+    [ -n "$interp" ] || continue
+    patchelf --set-interpreter "$LOADER" --set-rpath "$RUNTIME_LIBRARY_PATH:$ROOT/lib64:$ROOT/lib:$GLIBC_LIB" "$f" \
+      || { echo "FAIL: backend process relocation: $f"; exit 1; }
+    continue
+  fi
   [ -n "$interp" ] && [ -e "$interp" ] && continue
   patchelf --set-interpreter "$LOADER" --set-rpath "$ROOT/lib64:$ROOT/lib:$GLIBC_LIB" "$f" 2>/dev/null || true
 done < <(find "$ROOT" \( -path '*/bin/*' -o -path '*/libexec/*' \) -type f -print0)
+
+CXX_COMMAND=("$CXX")
+if [ -n "$RUNTIME_LIBRARY_PATH" ]; then
+  CXX_COMMAND=("$LOADER" --library-path "$RUNTIME_LIBRARY_PATH:$ROOT/lib64:$ROOT/lib:$GLIBC_LIB" "$CXX")
+fi
 
 printf '#include <cstdio>\n#include <vector>\n#include <string>\nint main(){std::vector<int>v{2,3,4};int s=0;for(int x:v)s+=x;std::string m="ok";std::printf("%%s sum=%%d\\n",m.c_str(),s);return s==9?0:1;}\n' > "$T/t.cpp"
 
@@ -79,35 +105,63 @@ case "$CXX" in *clang++*)
   echo "llvm gate: asset completeness"
   [ -f "$ROOT/share/libc++/v1/std.cppm" ] \
       || { echo "FAIL: slim package missing share/libc++/v1/std.cppm (import std unusable)"; exit 1; }
+  [ -f "$ROOT/share/libc++/v1/std.compat.cppm" ] \
+      || { echo "FAIL: slim package missing share/libc++/v1/std.compat.cppm"; exit 1; }
   find "$ROOT/lib" -name 'libc++.so*'      | grep -q . \
       || { echo "FAIL: slim package missing libc++.so"; exit 1; }
   find "$ROOT/lib" -name 'libatomic.so.1'  | grep -q . \
       || { echo "FAIL: slim package missing libatomic.so.1 (libc++ NEEDs it; every binary would die at load)"; exit 1; }
 
   TRIPLE="$(ls "$ROOT/lib" | grep -- '-linux-' | head -1)"
-  CLANG_FLAGS="--no-default-config -nostdinc++ -stdlib=libc++ \
-    -isystem $ROOT/include/c++/v1 \
-    -fuse-ld=lld --rtlib=compiler-rt --unwindlib=libunwind \
-    -B$GLIBC_LIB -L$GLIBC_LIB -Wl,--dynamic-linker=$LOADER -Wl,-rpath,$GLIBC_LIB"
-  [ -d "$ROOT/include/$TRIPLE/c++/v1" ] && CLANG_FLAGS="$CLANG_FLAGS -isystem $ROOT/include/$TRIPLE/c++/v1"
-  [ -d "$GINC" ] && CLANG_FLAGS="$CLANG_FLAGS -isystem $GINC"
-  [ -d "$ROOT/lib/$TRIPLE" ] && CLANG_FLAGS="$CLANG_FLAGS -L$ROOT/lib/$TRIPLE -Wl,-rpath,$ROOT/lib/$TRIPLE"
+  [ -f "$GINC/stdlib.h" ] || { echo "FAIL: managed glibc headers absent: $GINC"; exit 1; }
+  [ -f "$LINUX_HEADERS/linux/limits.h" ] || { echo "FAIL: managed Linux UAPI headers absent: $LINUX_HEADERS"; exit 1; }
+  CLANG_FLAGS=(--no-default-config -nostdlibinc -nostdinc++ -stdlib=libc++
+    -resource-dir "$ROOT/lib/clang/$(ls "$ROOT/lib/clang" | head -1)"
+    -isystem "$ROOT/include/c++/v1"
+    -fuse-ld=lld --rtlib=compiler-rt --unwindlib=libunwind
+    "-B$GLIBC_LIB" "-L$GLIBC_LIB" "-Wl,--dynamic-linker=$LOADER" "-Wl,-rpath,$GLIBC_LIB")
+  [ -z "$RUNTIME_LIBRARY_PATH" ] || CLANG_FLAGS+=("--ld-path=$ROOT/bin/ld.lld")
+  [ ! -d "$ROOT/include/$TRIPLE/c++/v1" ] || CLANG_FLAGS+=(-isystem "$ROOT/include/$TRIPLE/c++/v1")
+  CLANG_FLAGS+=(-isystem "$GINC" -isystem "$LINUX_HEADERS")
+  [ ! -d "$ROOT/lib/$TRIPLE" ] || CLANG_FLAGS+=("-L$ROOT/lib/$TRIPLE" "-Wl,-rpath,$ROOT/lib/$TRIPLE")
+
+  echo "llvm gate: managed include search (-E -v)"
+  "${CXX_COMMAND[@]}" "${CLANG_FLAGS[@]}" -E -x c++ -v /dev/null >/dev/null 2>"$T/includes"
+  sed -n '/search starts here:/,/End of search list./p' "$T/includes"
+  if sed -n '/search starts here:/,/End of search list./p' "$T/includes" \
+      | grep -Eq '^ /usr/(local/)?include'; then
+    echo "FAIL: compiler searches host headers"; exit 1
+  fi
 
   echo "llvm gate: hermetic CRT resolution (-###)"
-  dry="$("$CXX" $CLANG_FLAGS -### -x c++ /dev/null -o /dev/null 2>&1)"
+  dry="$("${CXX_COMMAND[@]}" "${CLANG_FLAGS[@]}" -### -x c++ /dev/null -o /dev/null 2>&1)"
   bad="$(echo "$dry" | tr ' ' '\n' | tr -d '"' \
          | grep -E '(^|/)(S|g|r|M)?crt[1in]\.o$' | grep -v clang_rt \
          | grep -v "^$GLIBC_LIB/" || true)"
   [ -z "$bad" ] || { echo "FAIL: CRT resolves outside the glibc payload:"; echo "$bad" | sed 's/^/  /'; exit 1; }
 
-  echo "llvm gate: import std end-to-end"
-  printf 'import std;\nint main(){ std::println("ok import {}", 42); return 0; }\n' > "$T/m.cpp"
-  "$CXX" $CLANG_FLAGS -std=c++23 --precompile -x c++-module \
+  echo "llvm gate: import std and std.compat end-to-end"
+  printf 'import std;\nimport std.compat;\nint main(){ std::println("ok import {}", 42); return ::strlen("ok") == 2 ? 0 : 1; }\n' > "$T/m.cpp"
+  "${CXX_COMMAND[@]}" "${CLANG_FLAGS[@]}" -std=c++23 --precompile -x c++-module \
       "$ROOT/share/libc++/v1/std.cppm" -o "$T/std.pcm" 2>"$T/err" \
       || { echo "FAIL: std module precompile"; sed 's/^/  /' "$T/err"; exit 1; }
-  "$CXX" $CLANG_FLAGS -std=c++23 -fmodule-file=std="$T/std.pcm" \
-      "$T/m.cpp" "$T/std.pcm" -o "$T/m" 2>"$T/err" \
-      || { echo "FAIL: import std compile/link"; sed 's/^/  /' "$T/err"; exit 1; }
+  "${CXX_COMMAND[@]}" "${CLANG_FLAGS[@]}" -std=c++23 -fmodule-file=std="$T/std.pcm" \
+      --precompile -x c++-module "$ROOT/share/libc++/v1/std.compat.cppm" -o "$T/std.compat.pcm" 2>"$T/err" \
+      || { echo "FAIL: std.compat module precompile"; sed 's/^/  /' "$T/err"; exit 1; }
+  # Compile each frontend input separately. Direct managed-loader invocation
+  # makes /proc/self/exe name the loader; a multi-input driver invocation would
+  # respawn it as though it were clang. Single-input integrated frontend jobs
+  # plus an explicit relocated lld preserve the intended process closure.
+  for module in std std.compat; do
+    "${CXX_COMMAND[@]}" "${CLANG_FLAGS[@]}" -std=c++23 -fmodule-file=std="$T/std.pcm" \
+        -c "$T/$module.pcm" -o "$T/$module.o" 2>"$T/err" \
+        || { echo "FAIL: $module object compile"; sed 's/^/  /' "$T/err"; exit 1; }
+  done
+  "${CXX_COMMAND[@]}" "${CLANG_FLAGS[@]}" -std=c++23 -fmodule-file=std="$T/std.pcm" \
+      -fmodule-file=std.compat="$T/std.compat.pcm" -c "$T/m.cpp" -o "$T/m.o" 2>"$T/err" \
+      || { echo "FAIL: import std user compile"; sed 's/^/  /' "$T/err"; exit 1; }
+  "${CXX_COMMAND[@]}" "${CLANG_FLAGS[@]}" "$T/m.o" "$T/std.o" "$T/std.compat.o" -o "$T/m" 2>"$T/err" \
+      || { echo "FAIL: import std link"; sed 's/^/  /' "$T/err"; exit 1; }
   mout="$("$T/m" 2>&1)" || { echo "FAIL: import std binary run error: $mout"; exit 1; }
   [ "$mout" = "ok import 42" ] || { echo "FAIL: import std wrong output: $mout"; exit 1; }
   echo "llvm gate: PASS"
@@ -116,7 +170,13 @@ esac
 
 if [ "$is_musl" = 1 ]; then
   # static output: self-contained, exercises stripped backend + static libs
-  "$CXX" -O2 -std=c++17 -static "$T/t.cpp" -o "$T/t" 2>"$T/err" || { echo "FAIL: compile error"; sed 's/^/  /' "$T/err"; exit 1; }
+  "${CXX_COMMAND[@]}" -O2 -std=c++17 -static "$T/t.cpp" -o "$T/t" 2>"$T/err" || { echo "FAIL: compile error"; sed 's/^/  /' "$T/err"; exit 1; }
+  out="$("$T/t" 2>&1)" || { echo "FAIL: run error: $out"; exit 1; }
+elif [[ "$CXX" == *clang++* ]]; then
+  "${CXX_COMMAND[@]}" "${CLANG_FLAGS[@]}" -O2 -std=c++17 -c "$T/t.cpp" -o "$T/t.o" 2>"$T/err" \
+      || { echo "FAIL: compile error"; sed 's/^/  /' "$T/err"; exit 1; }
+  "${CXX_COMMAND[@]}" "${CLANG_FLAGS[@]}" "$T/t.o" -o "$T/t" 2>"$T/err" \
+      || { echo "FAIL: link error"; sed 's/^/  /' "$T/err"; exit 1; }
   out="$("$T/t" 2>&1)" || { echo "FAIL: run error: $out"; exit 1; }
 else
   # Prefer a real subos sysroot (how gcc actually runs); fall back to -isystem.
@@ -124,7 +184,7 @@ else
   if [ -f "$SYSROOT/usr/include/stdlib.h" ]; then sr="--sysroot=$SYSROOT"
   elif [ -d "$GINC" ]; then sr="-isystem $GINC"
   else sr=""; fi
-  "$CXX" -O2 -std=c++17 $sr "$T/t.cpp" -o "$T/t" \
+  "${CXX_COMMAND[@]}" -O2 -std=c++17 $sr "$T/t.cpp" -o "$T/t" \
       -Wl,--dynamic-linker="$LOADER" -Wl,-rpath,"$GLIBC_LIB" 2>"$T/err" \
       || { echo "FAIL: compile error"; sed 's/^/  /' "$T/err"; exit 1; }
   out="$(LD_LIBRARY_PATH="$ROOT/lib64:$GLIBC_LIB" "$T/t" 2>&1)" || { echo "FAIL: run error: $out"; exit 1; }

@@ -9,7 +9,7 @@ package = {
     repo = "https://gitlab.gnome.org/GNOME/libxml2",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"xml", "parsing", "library"},
     keywords = {"libxml2", "xml", "parser", "lib"},
@@ -34,18 +34,36 @@ package = {
             -- suffix orders below the same version without one.
             ["latest"] = { ref = "2.13.5-1" },
             ["2.13.5-1"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/libxml2/releases/download/2.13.5/libxml2-2.13.5-linux-x86_64.tar.gz",
-                    CN = "https://gitcode.com/xlings-res/libxml2/releases/download/2.13.5/libxml2-2.13.5-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libxml2/releases/download/2.13.5/libxml2-2.13.5-linux-x86_64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/libxml2/releases/download/2.13.5/libxml2-2.13.5-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "f963896ed90c4599d06786f86203620e937a746a6be246065d7a3b01af2a7ed1",
                 },
-                sha256 = "f963896ed90c4599d06786f86203620e937a746a6be246065d7a3b01af2a7ed1",
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libxml2/releases/download/2.13.5/libxml2-2.13.5-linux-aarch64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/libxml2/releases/download/2.13.5/libxml2-2.13.5-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "723f97d01c6a7618ace30842e1a03cfbd99965a340c1df263d31ba217cfd1cee",
+                },
             },
             ["2.13.5"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/libxml2/releases/download/2.13.5/libxml2-2.13.5-linux-x86_64.tar.gz",
-                    CN = "https://gitcode.com/xlings-res/libxml2/releases/download/2.13.5/libxml2-2.13.5-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libxml2/releases/download/2.13.5/libxml2-2.13.5-linux-x86_64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/libxml2/releases/download/2.13.5/libxml2-2.13.5-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "f963896ed90c4599d06786f86203620e937a746a6be246065d7a3b01af2a7ed1",
                 },
-                sha256 = "f963896ed90c4599d06786f86203620e937a746a6be246065d7a3b01af2a7ed1",
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libxml2/releases/download/2.13.5/libxml2-2.13.5-linux-aarch64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/libxml2/releases/download/2.13.5/libxml2-2.13.5-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "723f97d01c6a7618ace30842e1a03cfbd99965a340c1df263d31ba217cfd1cee",
+                },
             },
         },
     },
@@ -61,15 +79,10 @@ local libs = {
     "libxml2.so", "libxml2.so.2",
 }
 
--- The upstream release a version key names: a recipe revision ("2.13.5-1")
--- installs the archive of the release it revises ("2.13.5"), whose top-level
--- directory carries the release's version.
-local function upstream_version()
-    return (pkginfo.version():gsub("%-%d+$", ""))
-end
-
+-- The archive stem identifies the upstream release and host architecture.
+-- Recipe revision keys may differ from that identity.
 function install()
-    sysroot.adopt_payload("libxml2-" .. upstream_version() .. "-linux-x86_64")
+    sysroot.adopt_payload(pkginfo.install_file():replace(".tar.gz", ""):replace(".tar.xz", ""))
 
     -- Stamp this payload's own dependency closure onto its libraries, so
     -- they resolve from our payloads and not from the host's ld.so.cache.

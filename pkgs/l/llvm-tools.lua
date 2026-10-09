@@ -9,7 +9,7 @@ package = {
     repo = "https://github.com/llvm/llvm-project",
 
     type = "package",
-    archs = {"x86_64", "arm64"},
+    archs = {"x86_64", "arm64", "aarch64"},
     status = "stable",
     categories = {"toolchain", "llvm", "formatter", "linter"},
     keywords = {"clang-format", "clang-tidy", "clangd", "llvm", "lsp"},
@@ -40,25 +40,38 @@ package = {
             deps = { "xim:glibc", "xim:gcc-runtime", "xim:zlib" },
             ["latest"] = { ref = "22.1.8" },
             ["20.1.7"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/20.1.7/llvm-tools-20.1.7-linux-x86_64.tar.gz",
-                    CN = "https://gitcode.com/xlings-res/llvm/releases/download/20.1.7/llvm-tools-20.1.7-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/llvm/releases/download/20.1.7/llvm-tools-20.1.7-linux-x86_64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/llvm/releases/download/20.1.7/llvm-tools-20.1.7-linux-x86_64.tar.gz",
+                    },
+                    sha256 = nil,
                 },
-                sha256 = nil,
             },
             ["22.1.8"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/22.1.8/llvm-tools-22.1.8-linux-x86_64.tar.gz",
-                    CN = "https://gitcode.com/xlings-res/llvm/releases/download/22.1.8/llvm-tools-22.1.8-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/llvm/releases/download/22.1.8/llvm-tools-22.1.8-linux-x86_64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/llvm/releases/download/22.1.8/llvm-tools-22.1.8-linux-x86_64.tar.gz",
+                    },
+                    sha256 = nil,
                 },
-                sha256 = nil,
             },
             ["23.1.3"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3/llvm-tools-23.1.3-linux-x86_64.tar.gz",
-                    CN = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3/llvm-tools-23.1.3-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3/llvm-tools-23.1.3-linux-x86_64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3/llvm-tools-23.1.3-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "6c03abca4dff4e12368ed0ce17ec32efdefd92ca7083a3aaa12c113682cb6026",
                 },
-                sha256 = "6c03abca4dff4e12368ed0ce17ec32efdefd92ca7083a3aaa12c113682cb6026",
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3/llvm-tools-23.1.3-linux-aarch64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3/llvm-tools-23.1.3-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "e9c3675a170d6f1aaa21ee2fd9c8ba7c67813aab4721d87772f45a83c0c89ad2",
+                },
             },
         },
         windows = {

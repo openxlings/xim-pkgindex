@@ -203,6 +203,22 @@ Resolution and `archs` validation are **fail-closed**: if the host arch is not
 provided by the entry (and `archs` is non-empty and excludes it), the install
 aborts with a clear error instead of fetching a wrong binary.
 
+### Process architecture in catalog metadata
+
+From xlings 2026.10.8.1, `os.arch()` is available when a native Lua recipe
+loads, including catalog discovery, local validation and lifecycle hooks.
+It identifies the running client process ABI. Hardware capability does not
+change this value: an x86_64 client under emulation uses x86_64 payloads.
+The operating-system value follows the same process build identity.
+
+Architecture-dependent runtime exports are selected before resolver use.
+Changing `exports.runtime.loader`, `abi` or `libdirs` inside an installation
+hook cannot repair metadata the resolver already read. An index that uses
+architecture at recipe load declares `requires.xlings.min` of at least
+`2026.10.8.1` in `index-compat.json`. Compatible snapshot history retains an
+index that older clients can consume. A raw local recipe additionally gives
+a clear client-version refusal when it cannot express its selected runtime.
+
 ## The three new version-entry shapes
 
 A version entry value may now be, in addition to the V1 forms

@@ -82,6 +82,8 @@ jobs:
 
           # Merge ONLY the rebuilt sub-index keys into the combined pointer; the
           # sibling 'xim' key (and any non-rebuilt subs) are preserved.
+          export XLINGS_CLIENT_LATEST="$(gh api repos/openxlings/xlings/releases/latest --jq '.tag_name | ltrimstr("v")')"
+          test -n "$XLINGS_CLIENT_LATEST"
           bash tools/push_index_pointers.sh build/index
 
       - name: Skipped (no XLINGS_RES_TOKEN)
