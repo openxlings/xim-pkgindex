@@ -45,7 +45,10 @@ package = {
             -- elfpatch reads gcc-runtime's exports.runtime.libdirs and appends
             -- it to this payload's RPATH at install time, so nothing here
             -- hardcodes a path. No cycle: gcc-runtime depends only on glibc.
-            deps = { "xim:glibc@>=2.39", "xim:gcc-runtime@>=15" },
+            deps = {
+                runtime = { "xim:glibc@>=2.39", "xim:gcc-runtime@>=15" },
+                build = { "xim:patchelf@0.18.0" },
+            },
             ["latest"] = { ref = "2.42.1" },
             -- SAME ARTIFACT, NEW KEY. The bytes are identical to 2.42 -- the
             -- sha256 below is the 2.42 tarball's -- and the only thing that

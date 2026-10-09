@@ -55,6 +55,7 @@ package = {
 
             deps = {
                 runtime = { "xim:glibc@>=2.39" },
+                build = { "xim:patchelf@0.18.0" },
             },
             exports = {
                 runtime = {

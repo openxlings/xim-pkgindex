@@ -102,6 +102,8 @@ def main():
         x("self", "init")
         for recipe in ("pkgs/l/luban-tiny.lua", "pkgs/l/luban-core.lua", "pkgs/a/agent-private.lua", "pkgs/a/agent-workspace-private.lua"):
             x("config", "--add-xpkg", REPO / recipe)
+        for recipe in ("pkgs/g/gcc.lua", "pkgs/g/gcc-runtime.lua", "pkgs/b/binutils.lua", "pkgs/o/openssl.lua", "pkgs/x/xz.lua"):
+            shutil.copy2(REPO / recipe, home / "data/xim-pkgindex" / recipe)
         x("install", "subos:luban-tiny@0.2.0", "subos:luban-core@0.2.0", "local:agent-private@0.1.0", "config:agent-workspace-private@0.1.0", "xim:bwrap")
         if not (home / "subos/agent/rootfs/etc").is_dir():
             x("subos", "new", "agent", "--rootfs", "--from", "subos:luban-core@0.2.0")
