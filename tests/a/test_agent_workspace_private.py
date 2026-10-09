@@ -62,3 +62,20 @@ def test_sandbox_cannot_apply_policy(tmp_path):
 @pytest.mark.index
 def test_index():
     assert_xim_add_succeeds(PKG_FILE)
+
+@pytest.mark.static
+@pytest.mark.isolation
+@pytest.mark.parametrize("link", ["root", "root/.claude", "root/.local", "root/workspace", "root/.claude/settings.json"])
+def test_symlinks_cannot_redirect_owner_writes(tmp_path, link):
+    target = tmp_path / "payload"
+    root = target / "subos/agent/rootfs"
+    (root / "etc").mkdir(parents=True)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    dest = root / link
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.symlink_to(outside, target_is_directory=True)
+    result = run_recipe(PKG_FILE, target, env={"AGENT_PRIVATE_PROXY": "socks5h://localhost:1080", "XLINGS_SUBOS_MODE": ""})
+    assert result.returncode != 0
+    assert not (target / "commands.txt").exists()
+    assert list(outside.iterdir()) == []

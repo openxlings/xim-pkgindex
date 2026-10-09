@@ -53,12 +53,21 @@ function config()
     if not ref:match("^[%w_-]+:agent%-private@0%.1%.0$") then
         error("AGENT_PRIVATE_POLICY must name agent-private@0.1.0 in a trusted index")
     end
+    local home = root .. "/root"
+    local dirs = {home, home .. "/workspace", home .. "/.cache", home .. "/.local",
+        home .. "/.local/state", home .. "/.claude"}
+    -- Owner-side writes must not follow user-created links out of the instance.
+    for _, file in ipairs({root, home, home .. "/workspace", home .. "/workspace/PRIVACY.md",
+        home .. "/.cache", home .. "/.local", home .. "/.local/state",
+        home .. "/.claude", home .. "/.claude/settings.json"}) do
+        system.exec("test ! -L " .. quote(file))
+    end
+    local port = tonumber(proxy:match(":(%d+)$"))
+    if not port or port < 1 or port > 65535 then error("Invalid proxy port") end
     -- Resolve and lock the policy using the owner API, not a direct policy-file write.
     system.exec("xlings subos config " .. quote(name) .. " --sandbox " .. quote(ref)
         .. " --proxy " .. quote(proxy) .. " --no-degrade")
-    local home = root .. "/root"
-    for _, dir in ipairs({home, home .. "/workspace", home .. "/.cache",
-        home .. "/.local/state", home .. "/.claude"}) do
+    for _, dir in ipairs(dirs) do
         system.exec("mkdir -p " .. quote(dir) .. " && chmod 700 " .. quote(dir))
     end
     create_if_missing(home .. "/.claude/settings.json", "{}\n")
