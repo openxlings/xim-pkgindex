@@ -131,7 +131,10 @@ def main():
         x("subos", "export", "agent", "--rootfs", offline)
         bwrap = Path("/usr/bin/bwrap")
         if not bwrap.exists():
-            bwrap = next((home / "data/xpkgs/xim-x-bwrap").glob("*/bwrap"))
+            candidates = sorted((home / "data/xpkgs/xim-x-bwrap").glob("*/bin/bwrap"))
+            candidates += sorted((home / "data/xpkgs/xim-x-bwrap").glob("*/bwrap"))
+            assert candidates, "bwrap payload executable missing"
+            bwrap = candidates[-1]
         # Do not mask /tmp: the logical xlings prefix may live below it.
         run([bwrap, "--unshare-all", "--die-with-parent", "--ro-bind", offline, "/", "--dev", "/dev", "--proc", "/proc", "--tmpfs", "/root", "--setenv", "HOME", "/root", "--setenv", "TMPDIR", "/root", "--setenv", "PATH", "/usr/bin:/bin", "--", "/bin/sh", "-c",
              'set -eu; xlings --version; fish --version; nvim --version; git --version; mcpp --version; claude --version; printf "int main(){return 0;}\\n" > /root/offline.cpp; g++ /root/offline.cpp -o /root/offline; /root/offline'])
