@@ -1,21 +1,25 @@
--- Luban Tiny: minimal userland; rootfs sessions use the host kernel.
+-- Luban Tiny: the smallest Luban userland -- BusyBox, glibc, CA certificates,
+-- busybox init -- over luban-nano's xlings and luban (Luban design §A4, §6).
 --
--- Luban = kernel + xlings + (optional) LubanOS services. A Luban edition is a
--- SubOS that can be the host of a machine; this package is its declaration:
--- the packages its root is made of, its init, and the factory /etc its root
--- starts with. Nothing to download -- install() writes the template.
+-- An edition is a SubOS template: the packages its root is made of, its ABI,
+-- its init, the factory /etc it starts with, and the kernel a machine of it
+-- boots. Nothing to download -- install() writes the template.
 --
---   xlings subos new mybox --rootfs --from subos:luban-tiny
---   xlings subos use mybox                         # a shell in that root
---   xlings subos export mybox --tar mybox.tar      # docker import / wsl --import
--- Add a kernel package before exporting a bootable disk.
+--   luban new box tiny                   # (xlings subos new box --from subos:luban-tiny)
+--   luban enter box
+--   luban export box box.iso             # a live ISO; box.img: a drive
 --
--- Editions build on each other: luban-core is `from` this one, luban-desktop
--- from core; a package or file an upper edition carries wins.
+-- The kernel is the machine's, not the edition's (§A6): `boot.kernel` names the
+-- one an image of it boots, and is installed only when one is made
+-- (`xlings install linux-kernel --subos box`). 0.1.0 carried it in the root
+-- and stays as published.
+--
+-- Editions build on each other: luban-core is `from` this one; a package or a
+-- file an upper edition carries wins. Versions are dates (YYYY.M.D.N), as
+-- xlings and luban are; a published version's manifest never changes.
 package = {
     spec = "2",
     name = "luban-tiny",
-    revision = 1,
     namespace = "subos",
     description = "Luban Tiny: a minimal xlings-managed userland of BusyBox, glibc and CA certificates",
     homepage = "https://github.com/openxlings/xlings",
@@ -28,9 +32,9 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "0.2.0" },
+            ["latest"] = { ref = "2026.10.10.1" },
             ["0.1.0"] = {},
-            ["0.2.0"] = {},
+            ["2026.10.10.1"] = {},
         },
     },
 }
@@ -49,29 +53,45 @@ local function write(rel, content, mode)
     if mode then system.exec("chmod " .. mode .. " " .. "'" .. file:gsub("'", "'\\''") .. "'") end
 end
 
-local manifest = [[
+-- Each published version's manifest, as it was published.
+local manifests = {
+    ["0.1.0"] = [[
 {
   "subos_kind": "rootfs",
   "packages": [
     "xim:busybox@1.35.0",
     "xim:glibc@2.44.3",
     "xim:patchelf@0.18.0",
-    "xim:ca-certificates@2026.03.19"
+    "xim:ca-certificates@2026.03.19",
+    "xim:linux-kernel@6.8.0-71"
   ],
   "boot": { "init": "/sbin/init" },
   "workspace": {}
 }
-]]
+]],
+    ["2026.10.10.1"] = [[
+{
+  "subos_kind": "rootfs",
+  "abi": "x86_64-linux-gnu",
+  "packages": [
+    "xim:busybox@1.35.0",
+    "xim:glibc@2.44.3",
+    "xim:patchelf@0.18.0",
+    "xim:ca-certificates@2026.03.19"
+  ],
+  "boot": { "init": "/sbin/init", "kernel": "xim:linux-kernel@6.8.0-71", "kernel_min": "5.10" },
+  "workspace": {}
+}
+]],
+}
 
 local F = "usr/share/factory/etc/"
 
 function install()
     os.tryrm(pkginfo.install_dir())
     os.mkdir(pkginfo.install_dir())
-    local content = manifest
-    if pkginfo.version() == "0.1.0" then
-        content = content:gsub('"xim:ca%-certificates@2026%.03%.19"', '"xim:ca-certificates@2026.03.19",\n    "xim:linux-kernel@6.8.0-71"')
-    end
+    local content = manifests[pkginfo.version()]
+    if not content then error("luban-tiny: no manifest for " .. tostring(pkginfo.version())) end
     write(".xlings.json", content)
 
     -- busybox init. The console is whatever the kernel's console= names (a
@@ -107,15 +127,15 @@ xlings subos boot --mark-good >/dev/null 2>&1
 [ -x /etc/rc.local ] && /etc/rc.local
 exit 0
 ]], "755")
-    write(F .. "os-release", (([[
+    write(F .. "os-release", string.format([[
 NAME="Luban"
 ID=luban
 VARIANT="Tiny"
 VARIANT_ID=tiny
-VERSION_ID=0.2.0
-PRETTY_NAME="Luban Tiny 0.2.0"
+VERSION_ID=%s
+PRETTY_NAME="Luban Tiny %s"
 HOME_URL="https://github.com/openxlings/xlings"
-]]):gsub("0%.2%.0", pkginfo.version())))
+]], pkginfo.version(), pkginfo.version()))
     write(F .. "hostname", "luban\n")
     write(F .. "hosts", "127.0.0.1 localhost luban\n::1 localhost\n")
     write(F .. "profile", [[

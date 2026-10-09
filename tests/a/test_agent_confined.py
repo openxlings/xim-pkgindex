@@ -4,7 +4,7 @@ from tests.lib.luban_recipe import run_recipe
 from tests.lib.xpkg_parser import parse_xpkg
 from tests.lib.assertions import assert_required_fields, assert_valid_type, assert_valid_spec, assert_xim_add_succeeds
 
-PKG_FILE = "pkgs/a/agent-private.lua"
+PKG_FILE = "pkgs/a/agent-confined.lua"
 
 @pytest.mark.static
 def test_metadata():
@@ -22,11 +22,9 @@ def test_effective_policy(tmp_path):
     policy = json.loads((target / "policy.json").read_text())
     assert policy["extends"] == "private"
     iso = policy["isolation"]
-    assert iso["net"] == "proxy" and "proxy" not in iso, "the proxy is the instance's, never the package's"
-    assert iso["identity"] == {}, "a zone unchosen: the proxy's exit"
+    assert iso["net"] == "host" and iso["identity"] == "host", "confined keeps the host off, it does not hide it"
     assert iso["env_pass"] == iso["grants"] == iso["grants_allowed"] == []
-    assert iso["no_degrade"] and iso["disable_userns"]
-    assert all(iso["needs"][k] == "must" for k in ("fs", "pid", "net", "identity", "terminal"))
+    assert iso["disable_userns"]
     assert policy["permissions"] == {"fetch": "ask", "index_update": "ask"}
     assert policy["min_client"] == "2026.10.10.1"
 

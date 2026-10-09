@@ -1,3 +1,12 @@
+> **Superseded (2026-10-10).** This PR was reworked to the ecosystem design in
+> xlings `.agents/docs/2026-10-09-luban-os-and-agent-private-design.md` (§C9):
+> editions with date versions and fixed manifests (luban-nano, tiny without a
+> kernel in the root, core without claude, luban-agent-workspace), the policies
+> agent-private and agent-confined, and no owner-side script -- a template
+> declares its policy and `luban new <n> agent-workspace --proxy <url>` makes
+> the workspace private when it is made. What follows is the first iteration,
+> kept for the record.
+
 # Luban 与 Agent 私有环境 xpkg 设计方案
 
 状态：待 review；本文件记录 review 设计及实施时确认的接口调整；实际验证证据见实施文档与 PR。

@@ -1,0 +1,41 @@
+name: Luban agent workspace acceptance
+
+# The Luban editions and agent policies, used for real by the published
+# xlings and luban (Luban design §C8): a workspace made private by
+# `luban new <n> agent-workspace --proxy`, its persona, tools, C++23 build,
+# proxy-only network with no fallback, and offline export.
+on:
+  pull_request:
+    paths:
+      - 'pkgs/l/luban-*.lua'
+      - 'pkgs/a/agent-private.lua'
+      - 'pkgs/a/agent-confined.lua'
+      - 'scripts/test-luban-agent-workspace.py'
+      - 'tests/fixtures/luban_network_probe.cpp'
+      - '.github/workflows/luban-agent-workspace.yml'
+  workflow_dispatch:
+
+jobs:
+  workspace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install published xlings (and luban)
+        run: |
+          export XLINGS_NON_INTERACTIVE=1
+          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
+          echo "$HOME/.xlings/bin" >> "$GITHUB_PATH"
+      - name: This runner can make a root (the one-time isolation setup)
+        run: |
+          xlings self doctor --isolation || xlings self doctor --isolation --fix -y
+      - name: Private workspace, persona, tools, network and offline export
+        run: python3 scripts/test-luban-agent-workspace.py --home "$RUNNER_TEMP/luban-agent-acceptance"
+      - name: Preserve acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: luban-agent-acceptance
+          path: |
+            ${{ runner.temp }}/luban-agent-acceptance/acceptance.log
+            ${{ runner.temp }}/luban-agent-acceptance/logs/hooks/*.log

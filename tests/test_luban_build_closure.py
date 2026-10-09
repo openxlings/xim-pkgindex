@@ -22,7 +22,7 @@ for _, name in ipairs(package.xpm.linux.deps.build or {}) do print(name) end
 @pytest.mark.static
 def test_core_and_gcc_use_the_same_binutils_version(tmp_path):
     target = tmp_path / "core"
-    result = run_recipe("pkgs/l/luban-core.lua", target, "0.2.0")
+    result = run_recipe("pkgs/l/luban-core.lua", target, "2026.10.10.1")
     assert result.returncode == 0, result.stderr
     packages = json.loads((target / ".xlings.json").read_text())["packages"]
     lua = shutil.which("lua") or shutil.which("lua5.4")
