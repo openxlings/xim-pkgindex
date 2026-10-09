@@ -108,12 +108,14 @@ def main():
 
     proxy = ProxyFixture()
     try:
+        # This checkout IS the home's index: its recipes as they will be
+        # published (a copy dropped into a synced artifact index is not in its
+        # catalog).
+        config = home / ".xlings.json"
+        if not config.exists():
+            config.write_text(json.dumps({"mirror": "GLOBAL",
+                                          "index_repos": [{"name": "xim", "url": str(REPO)}]}) + "\n")
         x("self", "init")
-        # This checkout's recipes, as the index will publish them.
-        for recipe in ("pkgs/l/luban-tiny.lua", "pkgs/l/luban-core.lua", "pkgs/l/luban-agent-workspace.lua",
-                       "pkgs/a/agent-private.lua", "pkgs/a/agent-confined.lua", "pkgs/g/gcc.lua",
-                       "pkgs/g/gcc-runtime.lua", "pkgs/b/binutils.lua", "pkgs/o/openssl.lua", "pkgs/x/xz.lua"):
-            shutil.copy2(REPO / recipe, home / "data/xim-pkgindex" / recipe)
         x("install", "-y", "xim:bwrap")
         endpoint = f"socks5h://127.0.0.1:{proxy.port}"
         if not (home / "subos/agent").is_dir():
