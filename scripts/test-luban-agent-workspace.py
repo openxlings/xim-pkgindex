@@ -127,15 +127,17 @@ def main():
         assert policy["isolation"]["net"] == "proxy" and policy["isolation"]["no_degrade"]
         assert policy["resolved"]["from"] == "xim:agent-private@2026.10.10.1", policy
         assert len(policy["resolved"]["sha256"]) == 64
-        identity = status["identity"]
-        assert len(identity["hostname"]) == 12 and identity["exposed"], identity
-        persona = json.loads((home / "config/subos/agent/persona.json").read_text())
+        assert status["identity"]["exposed"], "what a shared kernel cannot hide is said"
 
-        # Inside: its tools, its persona, nothing of the host's environment.
+        # Inside: its tools, its persona (made on the first entry), nothing of
+        # the host's environment.
         out = inside('set -eu; echo HOST=$(hostname); echo MID=$(cat /etc/machine-id); echo TZ=$TZ; env; '
                      'test "$HOME" = /root; test -z "${SSH_AUTH_SOCK:-}"; test ! -e /usr/bin/apt-get; test ! -e /dev/video0; '
                      'bash --version; fish --version; vim --version; nvim --version; git --version; mcpp --version; '
                      'claude --version; g++ --version')
+        persona = json.loads((home / "config/subos/agent/persona.json").read_text())
+        identity = json.loads(luban("status", "agent", "--json"))["identity"]
+        assert identity["hostname"] == persona["hostname"] and len(persona["hostname"]) == 12, identity
         assert f"HOST={persona['hostname']}" in out and f"MID={persona['machine_id']}" in out, out[-2000:]
         assert "TZ=UTC" in out, "the fixture proxy cannot answer a zone lookup: UTC, never the host's"
         assert "SENTINEL" not in out and "sentinel-secret" not in out, "the host's environment crossed in"
