@@ -19,7 +19,7 @@ def test_glibc_payload_drives_registration_and_removal(arch, libdir, loader):
     result = subprocess.run([
         lua, str(ROOT / "tests/lua/linux_runtime_layout_harness.lua"),
         str(ROOT / "pkgs/g/glibc.lua"),
-        f"glibc-2.44.3-r3-linux-{arch}.tar.gz", "/isolated/glibc",
+        f"glibc-2.44.3-r4-linux-{arch}.tar.gz", "/isolated/glibc",
     ], check=True, text=True, capture_output=True)
     lines = result.stdout.splitlines()
     assert f"{loader} /isolated/glibc/{libdir}" in lines
@@ -67,7 +67,7 @@ def test_glibc_catalog_metadata_uses_process_architecture(arch, loader, libdir):
     assert lua
     result = subprocess.run([
         lua, str(ROOT / "tests/lua/linux_runtime_layout_harness.lua"),
-        str(ROOT / "pkgs/g/glibc.lua"), "glibc-2.44.3-r3-linux-aarch64.tar.gz",
+        str(ROOT / "pkgs/g/glibc.lua"), "glibc-2.44.3-r4-linux-aarch64.tar.gz",
         "/isolated/glibc", arch,
     ], check=True, capture_output=True, text=True)
     abi_arch = "aarch64" if arch == "arm64" else arch
@@ -94,7 +94,7 @@ function import(name)
   local key = name:match("[^.]+$")
   if key == "pkginfo" then
     _G[key] = {
-      install_file=function() return "glibc-2.44.3-r3-linux-aarch64.tar.gz" end,
+      install_file=function() return "glibc-2.44.3-r4-linux-aarch64.tar.gz" end,
       install_dir=function() return "/isolated/glibc" end,
     }
   elseif key == "log" then _G[key] = {error=function(msg) print(msg) end}
