@@ -32,6 +32,7 @@ function import(name)
     assert(bare, "unexpected import " .. name)
     if bare == "pkginfo" then pkginfo = {install_dir=function() return target end, version=function() return version end}
     elseif bare == "system" then system = {exec=exec, subos_sysrootdir=function() return target .. "/subos/agent" end}
+    elseif bare == "xvm" then xvm = {add=function() end, remove=function() end}
     elseif bare == "log" then log = {info=function() end}
     else error("unexpected module " .. bare) end
 end

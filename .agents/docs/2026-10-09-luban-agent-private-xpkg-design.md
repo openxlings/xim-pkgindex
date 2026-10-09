@@ -1,6 +1,6 @@
 # Luban 与 Agent 私有环境 xpkg 设计方案
 
-状态：待 review；本文件是设计提案，不代表包或客户端功能已完成验证。
+状态：待 review；本文件记录 review 设计及实施时确认的接口调整；实际验证证据见实施文档与 PR。
 日期：2026-10-09。
 范围：第一阶段 Linux x86_64、共享宿主内核的 rootfs；后续扩展其他架构与独立启动。
 文档位于 `.agents/docs`。
@@ -15,7 +15,7 @@ Luban 是由 xlings 生态组成、以 xlings 为默认包管理器的用户态�
 | --- | --- | --- |
 | luban-tiny | subos | 最小 rootfs 的包组成、factory 配置 |
 | luban-core | subos | 继承 tiny，提供日常开发工具默认组合 |
-| agent-workspace-private | config | 在当前实例应用 Agent 私有工作配置，并通过客户端配置入口应用安全策略 |
+| agent-workspace-private | config | 安装 owner 侧配置入口；由入口应用安全策略并在 rootfs 内配置用户数据 |
 | agent-private | subos-policy | 可锁定、可升级、由 xlings 强制执行的安全策略 |
 
 `agent-workspace-private` 不另造发行版，不重复安装 core 工具，不用 shell 代理变量替代网络隔离。
@@ -80,13 +80,11 @@ Luban 是由 xlings 生态组成、以 xlings 为默认包管理器的用户态�
 
 ### config 包
 
-安装轻量；配置阶段在明确的当前实例作用域生成私有 workspace、缓存、状态目录和 Agent 配置骨架。
-通过正式客户端/API 选择并锁定 agent-private 策略，记录来源、版本、digest 和最低客户端要求。
-不直接写客户端外部策略文件，不修改宿主 profile、PATH、代理或已有用户凭据。
+安装阶段只生成不含实例数据或秘密的固定入口脚本，config 阶段仅用 xvm 注册入口。
+owner 显式执行 `agent-workspace-private <instance> <socks5h endpoint> [policy ref]`：先通过正式客户端选择并锁定策略，再在实例内部初始化私有目录与配置。凭据留在实例，不写共享 payload。
 
-必须先确认 hook 是否具备可靠的当前 SubOS 路径和策略配置接口；接口缺失时作为客户端前置工作，不能猜路径或绕过 owner 权限。
-安全策略应用是 owner 操作；从已受限的 Agent 会话内尝试修改策略应明确拒绝，并给出 owner 侧入口。
-重复配置保留用户数据，配置变更 bump revision，敏感文件权限收紧且 token 不进入日志。
+实际验证发现声明 private 后 recipe hook 会隔离并过滤环境，不能可靠地执行 owner 策略变更；因此最终实现不从 hook 修改策略。重复应用也经 owner 入口，不放宽 hook 权限。
+新 mcpp 用户配置复用 Luban xlings home，通过已存在 GCC payload 的 path toolchain 构建；core 补 Ninja。已有 mcpp/Claude 配置保留。
 
 ### subos-policy 包
 
@@ -168,6 +166,6 @@ glibc 从 tiny 继承，必要工具和库由经验证的声明及依赖闭包�
 1. tiny = xlings + BusyBox + glibc + CA，第一阶段不包含内核；独立启动组合后续提供。
 2. core 至少 bash/fish/vim/nvim/git/mcpp/g++/glibc，延续默认 claude；工具都由 xlings 管理。
 3. 在线 xpkg 分发声明，离线 rootfs 分发相同锁定声明的完整闭包。
-4. agent-workspace-private 用 config 包统一应用私有设置，安全规则独立为 subos-policy 包。
+4. agent-workspace-private 用 config 包提供 owner 配置入口，安全规则独立为 subos-policy 包。
 5. private 使用强制代理网络和 fail closed，明确共享内核的指纹与安全边界。
 6. 第一阶段 Linux x86_64；默认 shell 建议 bash；不默认安装 Node/Python 或桌面服务。

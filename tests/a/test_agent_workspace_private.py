@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+import subprocess
 import pytest
 from tests.lib.luban_recipe import run_recipe
 from tests.lib.xpkg_parser import parse_xpkg
@@ -12,70 +15,66 @@ def test_metadata():
     assert_valid_type(meta)
     assert meta.pkg_type == "config"
 
-@pytest.mark.static
-@pytest.mark.isolation
-@pytest.mark.parametrize("proxy", ["", "http://127.0.0.1:7897", "socks5h://user:secret@localhost:1080", "socks5h://localhost:1080;touch /tmp/injected"])
-def test_invalid_proxy_never_changes_policy(tmp_path, proxy):
-    target = tmp_path / "payload"
-    (target / "subos/agent/rootfs/etc").mkdir(parents=True)
-    result = run_recipe(PKG_FILE, target, env={"AGENT_PRIVATE_PROXY": proxy, "XLINGS_SUBOS_MODE": ""})
-    assert result.returncode != 0
-    assert not (target / "commands.txt").exists()
+@pytest.fixture
+def owner_entry(tmp_path):
+    payload = tmp_path / "payload"
+    result = run_recipe(PKG_FILE, payload)
+    assert result.returncode == 0, result.stderr
+    launcher = payload / "agent-workspace-private"
+    syntax = subprocess.run(["sh", "-n", str(launcher)], capture_output=True, text=True)
+    assert syntax.returncode == 0, syntax.stderr
+    home = tmp_path / "home"
+    (home / "subos/agent/rootfs/etc").mkdir(parents=True)
+    bindir = tmp_path / "bin"
+    bindir.mkdir()
+    fake = bindir / "xlings"
+    fake.write_text('''#!/bin/sh
+printf '%s\\n' "$*" >> "$XLINGS_HOME/commands.txt"
+if [ "$2" = config ] && [ "${FAIL_POLICY:-}" = yes ]; then exit 125; fi
+''')
+    fake.chmod(0o755)
+    env = {**os.environ, "XLINGS_HOME": str(home), "XLINGS_SUBOS_MODE": "",
+           "PATH": str(bindir) + ":" + os.environ["PATH"]}
+    return launcher, home, env
 
 @pytest.mark.static
 @pytest.mark.isolation
-def test_idempotent_and_preserves_credentials(tmp_path):
-    target = tmp_path / "payload"
-    (target / "subos/agent/rootfs/etc").mkdir(parents=True)
-    home = target / "subos/agent/rootfs/root"
-    (home / ".claude").mkdir(parents=True)
-    settings = home / ".claude/settings.json"
-    settings.write_text('{"existing":true}')
-    secret = home / ".claude/credentials.json"
-    secret.write_text("private-secret")
+@pytest.mark.parametrize("proxy", ["", "http://localhost:7897", "socks5h://user:secret@localhost:1080", "socks5h://localhost:1080;touch /tmp/injected", "socks5h://localhost:0", "socks5h://localhost:65536"])
+def test_invalid_proxy_never_changes_policy(owner_entry, proxy):
+    launcher, home, env = owner_entry
+    result = subprocess.run([str(launcher), "agent", proxy], env=env, capture_output=True)
+    assert result.returncode != 0
+    assert not (home / "commands.txt").exists()
+
+@pytest.mark.static
+@pytest.mark.isolation
+def test_owner_locks_policy_before_initializing_inside_root(owner_entry):
+    launcher, home, env = owner_entry
     for _ in range(2):
-        result = run_recipe(PKG_FILE, target, env={"AGENT_PRIVATE_PROXY": "socks5h://127.0.0.1:1080", "XLINGS_SUBOS_MODE": ""})
+        result = subprocess.run([str(launcher), "agent", "socks5h://localhost:1080"], env=env, capture_output=True)
         assert result.returncode == 0, result.stderr
-    assert settings.read_text() == '{"existing":true}'
-    assert secret.read_text() == "private-secret"
-    assert (home / "workspace").stat().st_mode & 0o777 == 0o700
-    assert settings.stat().st_mode & 0o777 == 0o600
-    assert "--sandbox 'xim:agent-private@0.1.0'" in (target / "commands.txt").read_text()
+    calls = (home / "commands.txt").read_text()
+    assert calls.count("subos config agent --sandbox xim:agent-private@0.1.0 --proxy socks5h://localhost:1080 --no-degrade") == 2
+    assert "subos exec agent -- /bin/sh -c" in calls
+    assert "path:%s/data/xpkgs/xim-x-gcc/16.1.0" in calls
+    assert not (home / "subos/agent/rootfs/root").exists(), "owner must not write user data directly"
 
 @pytest.mark.static
 @pytest.mark.isolation
-def test_failed_policy_does_not_create_workspace(tmp_path):
-    target = tmp_path / "payload"
-    (target / "subos/agent/rootfs/etc").mkdir(parents=True)
-    result = run_recipe(PKG_FILE, target, env={"AGENT_PRIVATE_PROXY": "socks5h://localhost:1080", "XLINGS_SUBOS_MODE": ""}, fail_policy=True)
-    assert result.returncode != 0
-    assert not (target / "subos/agent/rootfs/root").exists()
+def test_failed_policy_never_enters_root(owner_entry):
+    launcher, home, env = owner_entry
+    result = subprocess.run([str(launcher), "agent", "socks5h://localhost:1080"], env={**env, "FAIL_POLICY": "yes"}, capture_output=True)
+    assert result.returncode == 125
+    assert "subos exec" not in (home / "commands.txt").read_text()
 
 @pytest.mark.static
 @pytest.mark.isolation
-def test_sandbox_cannot_apply_policy(tmp_path):
-    target = tmp_path / "payload"
-    result = run_recipe(PKG_FILE, target, env={"XLINGS_SUBOS_MODE": "sandbox"})
-    assert result.returncode != 0 and "owner side" in result.stderr
-    assert not (target / "commands.txt").exists()
+def test_sandbox_cannot_apply_policy(owner_entry):
+    launcher, home, env = owner_entry
+    result = subprocess.run([str(launcher), "agent", "socks5h://localhost:1080"], env={**env, "XLINGS_SUBOS_MODE": "sandbox"}, capture_output=True)
+    assert result.returncode != 0 and b"owner side" in result.stderr
+    assert not (home / "commands.txt").exists()
 
 @pytest.mark.index
 def test_index():
     assert_xim_add_succeeds(PKG_FILE)
-
-@pytest.mark.static
-@pytest.mark.isolation
-@pytest.mark.parametrize("link", ["root", "root/.claude", "root/.local", "root/workspace", "root/.claude/settings.json"])
-def test_symlinks_cannot_redirect_owner_writes(tmp_path, link):
-    target = tmp_path / "payload"
-    root = target / "subos/agent/rootfs"
-    (root / "etc").mkdir(parents=True)
-    outside = tmp_path / "outside"
-    outside.mkdir()
-    dest = root / link
-    dest.parent.mkdir(parents=True, exist_ok=True)
-    dest.symlink_to(outside, target_is_directory=True)
-    result = run_recipe(PKG_FILE, target, env={"AGENT_PRIVATE_PROXY": "socks5h://localhost:1080", "XLINGS_SUBOS_MODE": ""})
-    assert result.returncode != 0
-    assert not (target / "commands.txt").exists()
-    assert list(outside.iterdir()) == []

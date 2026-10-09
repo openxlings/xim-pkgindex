@@ -12,7 +12,7 @@ def test_default_development_tools(tmp_path, version):
     manifest = json.loads((target / ".xlings.json").read_text())
     names = {p.split(":")[1].split("@")[0] for p in manifest["packages"]}
     assert {"bash", "coreutils", "gcc", "binutils", "make"} <= names
-    extra = {"fish", "vim", "nvim", "git", "mcpp", "claude"}
+    extra = {"fish", "vim", "nvim", "git", "mcpp", "claude", "ninja"}
     assert (extra <= names) if version == "0.2.0" else not (extra & names)
     assert manifest["from"] == "subos:luban-tiny@" + version
 

@@ -1,4 +1,4 @@
--- Luban Core (xlings SubOS design part 2 §9): `from` subos:luban-tiny@0.1.0, so its root
+-- Luban Core: from luban-tiny, with a pinned daily development toolset.
 -- is that edition's plus what this one declares; a package or a file both
 -- carry is this one's. Nothing to download -- install() writes the template.
 --
@@ -49,6 +49,7 @@ local manifest = [[
     "xim:nvim@0.12.5",
     "xim:git@2.53.0",
     "xim:mcpp@2026.10.5.3",
+    "xim:ninja@1.12.1",
     "xim:claude@2.1.281",
     "xim:coreutils@9.5",
     "xim:gcc@16.1.0",
@@ -68,7 +69,7 @@ function install()
     local content = manifest
     if pkginfo.version() == "0.1.0" then
         content = content:gsub("luban%-tiny@0%.2%.0", "luban-tiny@0.1.0")
-        for _, name in ipairs({"fish", "vim", "nvim", "git", "mcpp", "claude"}) do
+        for _, name in ipairs({"fish", "vim", "nvim", "git", "mcpp", "claude", "ninja"}) do
             content = content:gsub('    "xim:' .. name .. '@[^"\n]+",\n', "")
         end
     end
@@ -82,7 +83,9 @@ VERSION_ID=0.2.0
 PRETTY_NAME="Luban Core 0.2.0"
 HOME_URL="https://github.com/openxlings/xlings"
 ]]):gsub("0%.2%.0", pkginfo.version())))
-    write("usr/share/factory/etc/shells", "/bin/sh\n/bin/bash\n/usr/bin/fish\n")
+    local shells = "/bin/sh\n/bin/bash\n"
+    if pkginfo.version() ~= "0.1.0" then shells = shells .. "/usr/bin/fish\n" end
+    write("usr/share/factory/etc/shells", shells)
     log.info("luban-core template at %s", pkginfo.install_dir())
     return true
 end
