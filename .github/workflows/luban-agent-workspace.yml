@@ -28,6 +28,8 @@ jobs:
           echo "$HOME/.xlings/bin" >> "$GITHUB_PATH"
       - name: This runner can make a root (the one-time isolation setup)
         run: |
+          # The setup copies a bwrap it can make root-owned: the payload's.
+          xlings install -y bwrap
           xlings self doctor --isolation || xlings self doctor --isolation --fix -y
       - name: Private workspace, persona, tools, network and offline export
         run: python3 scripts/test-luban-agent-workspace.py --home "$RUNNER_TEMP/luban-agent-acceptance"
