@@ -1,0 +1,29 @@
+name: payload hard links
+
+# A payload archive stores each file as itself: Android's app sandbox, FAT and
+# exFAT refuse link(2), and an xlings older than 2026.10.10.2 fails the whole
+# install on a hard-link entry. Every tar archive whose URL a pull request adds
+# under pkgs/ is read and refused if it holds one. See
+# .github/scripts/check-payload-hard-links.py for what is and is not checked.
+
+on:
+  pull_request:
+    paths:
+      - 'pkgs/**'
+
+concurrency:
+  group: payload-hard-links-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: New payload archives hold no hard links
+        run: |
+          python3 .github/scripts/check-payload-hard-links.py \
+            --base "${{ github.event.pull_request.base.sha }}" --head "${{ github.event.pull_request.head.sha }}"

@@ -282,21 +282,30 @@ package = {
             -- Revision 3 retains that boundary and ships managed timezone,
             -- C.utf8, conversion data, licenses and native build provenance.
             -- Each immutable resource is checked on its native architecture.
+            -- Revision 4 is revision 3 with every hard-link entry replaced by
+            -- the file it names (256 per architecture: zoneinfo aliases and
+            -- getconf), by .agents/tools/dereference-hard-links.py; no file
+            -- content changed but PROVENANCE.txt, which records the
+            -- derivation. Android's app sandbox refuses link(2), so xlings up
+            -- to 2026.10.10.1 failed on revision 3 there with
+            -- "write_header(.../getconf/POSIX_V6_LP64_OFF64): Can't create"
+            -- (mcpp-community/mcpp, Termux). The revision 3 assets stay
+            -- published unchanged.
             ["2.44.3"] = {
-                revision = 3,
+                revision = 4,
                 x86_64 = {
                     url = {
-                        GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.3-r3/glibc-2.44.3-r3-linux-x86_64.tar.gz",
-                        CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.3-r3/glibc-2.44.3-r3-linux-x86_64.tar.gz",
+                        GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.3-r4/glibc-2.44.3-r4-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.3-r4/glibc-2.44.3-r4-linux-x86_64.tar.gz",
                     },
-                    sha256 = "2fe32c53a40885ec6d3322135df19dc4fe65835b093b03bfa41502c1eb7abffa",
+                    sha256 = "7ada8e9c05addbbc67fae964eafa608eace82fc4f13a8900c7249ad0205fad86",
                 },
                 aarch64 = {
                     url = {
-                        GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.3-r3/glibc-2.44.3-r3-linux-aarch64.tar.gz",
-                        CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.3-r3/glibc-2.44.3-r3-linux-aarch64.tar.gz",
+                        GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.3-r4/glibc-2.44.3-r4-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.3-r4/glibc-2.44.3-r4-linux-aarch64.tar.gz",
                     },
-                    sha256 = "33d015ddd07c84d82b8c7cfbe6cf920222d0754c7c777f3818c78c764de5461e",
+                    sha256 = "bd480264223d887de03fefeda34d0ee75566cb4bf4042e481818251fb463bfce",
                 },
             },
         },

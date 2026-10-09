@@ -12,7 +12,7 @@ if mode == "config" then
         directory = function(p) return p:match("^(.*)/[^/]+$") end,
         filename = function(p) return p:match("([^/]+)$") end,
     }
-    pkginfo = { install_file = function() return "glibc-2.44.3-r3-linux-" .. arch .. ".tar.gz" end, install_dir = function() return payload end, version = function() return "2.44.3" end }
+    pkginfo = { install_file = function() return "glibc-2.44.3-r4-linux-" .. arch .. ".tar.gz" end, install_dir = function() return payload end, version = function() return "2.44.3" end }
     sysroot = { declare_headers = function() return true end }
     os.isfile = function(p)
         local file = io.open(p, "rb")

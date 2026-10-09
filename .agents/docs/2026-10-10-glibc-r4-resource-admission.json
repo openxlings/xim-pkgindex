@@ -1,0 +1,66 @@
+{
+  "scope": "Revision 3 archives with hard-link entries dereferenced; GLOBAL/CN complete GET byte identities passed",
+  "revision": 4,
+  "derived_from": {
+    "revision": 3,
+    "archives": {
+      "glibc-2.44.3-r3-linux-aarch64.tar.gz": "33d015ddd07c84d82b8c7cfbe6cf920222d0754c7c777f3818c78c764de5461e",
+      "glibc-2.44.3-r3-linux-x86_64.tar.gz": "2fe32c53a40885ec6d3322135df19dc4fe65835b093b03bfa41502c1eb7abffa"
+    },
+    "admission": "2026-10-08-glibc-r3-resource-admission.json",
+    "tool": ".agents/tools/dereference-hard-links.py",
+    "change": "every hard-link entry (256 per architecture) is a regular file with the bytes, mode, owner and time of the file it named; top-level directory renamed to revision 4; PROVENANCE.txt records the derivation; no other file content changed"
+  },
+  "archives": {
+    "glibc-2.44.3-r4-linux-aarch64.tar.gz": "bd480264223d887de03fefeda34d0ee75566cb4bf4042e481818251fb463bfce",
+    "glibc-2.44.3-r4-linux-x86_64.tar.gz": "7ada8e9c05addbbc67fae964eafa608eace82fc4f13a8900c7249ad0205fad86"
+  },
+  "status": "derived-and-mirrors-passed",
+  "global_release_id": 408315966,
+  "global_api_resources": [
+    {
+      "archive": "glibc-2.44.3-r4-linux-aarch64.tar.gz",
+      "sha256": "bd480264223d887de03fefeda34d0ee75566cb4bf4042e481818251fb463bfce",
+      "size": 35609639,
+      "api_digest": "sha256:bd480264223d887de03fefeda34d0ee75566cb4bf4042e481818251fb463bfce",
+      "url": "https://github.com/xlings-res/glibc/releases/download/2.44.3-r4/glibc-2.44.3-r4-linux-aarch64.tar.gz"
+    },
+    {
+      "archive": "glibc-2.44.3-r4-linux-x86_64.tar.gz",
+      "sha256": "7ada8e9c05addbbc67fae964eafa608eace82fc4f13a8900c7249ad0205fad86",
+      "size": 38440931,
+      "api_digest": "sha256:7ada8e9c05addbbc67fae964eafa608eace82fc4f13a8900c7249ad0205fad86",
+      "url": "https://github.com/xlings-res/glibc/releases/download/2.44.3-r4/glibc-2.44.3-r4-linux-x86_64.tar.gz"
+    }
+  ],
+  "mirror_checks": [
+    {
+      "archive": "glibc-2.44.3-r4-linux-aarch64.tar.gz",
+      "mirror": "GLOBAL",
+      "sha256": "bd480264223d887de03fefeda34d0ee75566cb4bf4042e481818251fb463bfce",
+      "size": 35609639,
+      "url": "https://github.com/xlings-res/glibc/releases/download/2.44.3-r4/glibc-2.44.3-r4-linux-aarch64.tar.gz"
+    },
+    {
+      "archive": "glibc-2.44.3-r4-linux-aarch64.tar.gz",
+      "mirror": "CN",
+      "sha256": "bd480264223d887de03fefeda34d0ee75566cb4bf4042e481818251fb463bfce",
+      "size": 35609639,
+      "url": "https://gitcode.com/xlings-res/glibc/releases/download/2.44.3-r4/glibc-2.44.3-r4-linux-aarch64.tar.gz"
+    },
+    {
+      "archive": "glibc-2.44.3-r4-linux-x86_64.tar.gz",
+      "mirror": "GLOBAL",
+      "sha256": "7ada8e9c05addbbc67fae964eafa608eace82fc4f13a8900c7249ad0205fad86",
+      "size": 38440931,
+      "url": "https://github.com/xlings-res/glibc/releases/download/2.44.3-r4/glibc-2.44.3-r4-linux-x86_64.tar.gz"
+    },
+    {
+      "archive": "glibc-2.44.3-r4-linux-x86_64.tar.gz",
+      "mirror": "CN",
+      "sha256": "7ada8e9c05addbbc67fae964eafa608eace82fc4f13a8900c7249ad0205fad86",
+      "size": 38440931,
+      "url": "https://gitcode.com/xlings-res/glibc/releases/download/2.44.3-r4/glibc-2.44.3-r4-linux-x86_64.tar.gz"
+    }
+  ]
+}
