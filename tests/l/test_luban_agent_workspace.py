@@ -13,7 +13,10 @@ def test_the_workspace_declares_its_policy_and_its_tools(tmp_path):
     manifest = json.loads((target / ".xlings.json").read_text())
     assert manifest["from"] == "subos:luban-core@2026.10.10.1"
     assert manifest["policy"] == "xim:agent-private@2026.10.10.1"
-    assert any(p.startswith("xim:claude@") for p in manifest["packages"])
+    # The agent is not pinned: the version current at `new`, recorded in the
+    # instance; an edition that uses that says which client records it.
+    assert "xim:claude" in manifest["packages"]
+    assert manifest["min_client"] == "2026.10.10.3"
     motd = (target / "usr/share/factory/etc/motd").read_text()
     assert "Not hidden on a shared kernel" in motd
 

@@ -26,12 +26,12 @@ package = {
     },
 }
 
-import("xim.libxpkg.pkginfo")
+import("xim.pkgindex.luban")
 
 local policy = [[
 {
   "extends": "private",
-  "min_client": "2026.10.10.1",
+  "min_client": "2026.10.10.3",
   "isolation": {
     "net": "proxy",
     "identity": {},
@@ -49,10 +49,5 @@ local policy = [[
 ]]
 
 function install()
-    local dir = pkginfo.install_dir()
-    os.mkdir(dir)
-    local f = assert(io.open(dir .. "/policy.json", "wb"))
-    assert(f:write(policy))
-    assert(f:close())
-    return os.isfile(dir .. "/policy.json")
+    return luban.policy(policy)
 end

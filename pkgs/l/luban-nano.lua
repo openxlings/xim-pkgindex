@@ -34,24 +34,12 @@ package = {
     },
 }
 
-import("xim.libxpkg.pkginfo")
-import("xim.libxpkg.log")
+import("xim.pkgindex.luban")
 
-local function write(rel, content)
-    local file = pkginfo.install_dir() .. "/" .. rel
-    os.mkdir(assert(file:match("^(.*)/[^/]+$")))
-    local f = io.open(file, "wb")
-    if not f then error("cannot write " .. file) end
-    assert(f:write(content))
-    f:close()
-end
-
-function install()
-    os.tryrm(pkginfo.install_dir())
-    os.mkdir(pkginfo.install_dir())
-    -- No packages: xlings and luban are in every root (its projection).
-    -- No libc: what they are needs none. No init: that is a choice.
-    write(".xlings.json", [[
+-- No packages: xlings and luban are in every root (its projection).
+-- No libc: what they are needs none. No init: that is a choice.
+local versions = {
+    ["2026.10.10.1"] = { manifest = [[
 {
   "subos_kind": "rootfs",
   "abi": { "kernel": "linux", "libc": "none" },
@@ -59,16 +47,9 @@ function install()
   "boot": { "kernel": "xim:linux-kernel@6.8.0-71", "kernel_min": "5.10" },
   "workspace": {}
 }
-]])
-    write("usr/share/factory/etc/os-release", string.format([[
-NAME="Luban"
-ID=luban
-VARIANT="Nano"
-VARIANT_ID=nano
-VERSION_ID=%s
-PRETTY_NAME="Luban Nano %s"
-HOME_URL="https://github.com/openxlings/xlings"
-]], pkginfo.version(), pkginfo.version()))
-    log.info("luban-nano template at %s", pkginfo.install_dir())
-    return true
+]] },
+}
+
+function install()
+    return luban.edition({ id = "nano", variant = "Nano", versions = versions })
 end

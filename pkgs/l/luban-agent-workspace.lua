@@ -4,7 +4,8 @@
 -- `subos new` before anything enters it.
 --
 --   luban new agent agent-workspace --proxy socks5h://127.0.0.1:7897
---   luban run agent -- claude
+--   luban run agent -- claude      # the claude current when it was made
+--   luban upgrade agent            # a newer one (and the edition's other updates)
 --   luban status agent            # its persona, its zone, what a shared kernel cannot hide
 --
 -- agent-private: the proxy is its only network (socks5h, failing closed), a
@@ -34,43 +35,25 @@ package = {
     },
 }
 
-import("xim.libxpkg.pkginfo")
-import("xim.libxpkg.log")
+import("xim.pkgindex.luban")
 
-local function write(rel, content)
-    local file = pkginfo.install_dir() .. "/" .. rel
-    os.mkdir(assert(file:match("^(.*)/[^/]+$")))
-    local f = io.open(file, "wb")
-    if not f then error("cannot write " .. file) end
-    assert(f:write(content))
-    f:close()
-end
-
-function install()
-    os.tryrm(pkginfo.install_dir())
-    os.mkdir(pkginfo.install_dir())
-    write(".xlings.json", [[
+-- The agent is the one package an edition does not pin: an agent changes
+-- weekly. `subos new` installs the version current then and records it in the
+-- instance (instance.json `edition.packages`); `luban upgrade` moves it.
+local versions = {
+    ["2026.10.10.1"] = { manifest = [[
 {
   "subos_kind": "rootfs",
+  "min_client": "2026.10.10.3",
   "from": "subos:luban-core@2026.10.10.1",
   "abi": "x86_64-linux-gnu",
   "packages": [
-    "xim:claude@2.1.281"
+    "xim:claude"
   ],
   "policy": "xim:agent-private@2026.10.10.1",
   "workspace": {}
 }
-]])
-    write("usr/share/factory/etc/os-release", string.format([[
-NAME="Luban"
-ID=luban
-VARIANT="Agent Workspace"
-VARIANT_ID=agent-workspace
-VERSION_ID=%s
-PRETTY_NAME="Luban Agent Workspace %s"
-HOME_URL="https://github.com/openxlings/xlings"
-]], pkginfo.version(), pkginfo.version()))
-    write("usr/share/factory/etc/motd", [[
+]], files = { { "usr/share/factory/etc/motd", [[
 Luban Agent Workspace -- private by its policy (agent-private):
   network     only the proxy it was given; nothing else, and no fallback
   identity    a persona of its own (`luban status <name>` on the host)
@@ -78,7 +61,9 @@ Luban Agent Workspace -- private by its policy (agent-private):
 Not hidden on a shared kernel: the kernel version, the CPU model, the host
 paths of what is bound in -- `luban try <name> --proxy ...` runs it on its own.
 Your accounts (an API key, a git identity) still say who you are.
-]])
-    log.info("luban-agent-workspace template at %s", pkginfo.install_dir())
-    return true
+]] } } },
+}
+
+function install()
+    return luban.edition({ id = "agent-workspace", variant = "Agent Workspace", versions = versions })
 end

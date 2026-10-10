@@ -4,8 +4,9 @@
 --   luban new dev                       # core is luban's default edition
 --   luban new dev core                  # (xlings subos new dev --from subos:luban-core)
 --
--- A published version's manifest never changes. 2026.10.10.1 and later are
--- from luban-tiny's date versions (no kernel in the root; see luban-tiny).
+-- A published version's output never changes (tests/fixtures/luban-published.json).
+-- 2026.10.10.1 and later are from luban-tiny's date versions (no kernel in
+-- the root; see luban-tiny).
 -- An agent's tools are not here: they are luban-agent-workspace's.
 package = {
     spec = "2",
@@ -29,19 +30,9 @@ package = {
     },
 }
 
-import("xim.libxpkg.pkginfo")
-import("xim.libxpkg.log")
+import("xim.pkgindex.luban")
 
-local function write(rel, content)
-    local file = pkginfo.install_dir() .. "/" .. rel
-    os.mkdir(assert(file:match("^(.*)/[^/]+$")))
-    local f = io.open(file, "wb")
-    if not f then error("cannot write " .. file) end
-    assert(f:write(content))
-    f:close()
-end
-
--- Each published version's manifest and shells, as published.
+-- Each version's manifest and shells, as published.
 local editions = {
     ["0.1.0"] = {
         manifest = [[
@@ -92,22 +83,11 @@ local editions = {
     },
 }
 
+local versions = {}
+for v, e in pairs(editions) do
+    versions[v] = { manifest = e.manifest, files = { { "usr/share/factory/etc/shells", e.shells } } }
+end
+
 function install()
-    local edition = editions[pkginfo.version()]
-    if not edition then error("luban-core: no manifest for " .. tostring(pkginfo.version())) end
-    os.tryrm(pkginfo.install_dir())
-    os.mkdir(pkginfo.install_dir())
-    write(".xlings.json", edition.manifest)
-    write("usr/share/factory/etc/os-release", string.format([[
-NAME="Luban"
-ID=luban
-VARIANT="Core"
-VARIANT_ID=core
-VERSION_ID=%s
-PRETTY_NAME="Luban Core %s"
-HOME_URL="https://github.com/openxlings/xlings"
-]], pkginfo.version(), pkginfo.version()))
-    write("usr/share/factory/etc/shells", edition.shells)
-    log.info("luban-core template at %s", pkginfo.install_dir())
-    return true
+    return luban.edition({ id = "core", variant = "Core", versions = versions })
 end

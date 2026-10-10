@@ -1,6 +1,8 @@
--- Luban Desktop (xlings SubOS design part 2 §9): `from` subos:luban-core@0.1.0, so its root
--- is that edition's plus what this one declares; a package or a file both
--- carry is this one's. Nothing to download -- install() writes the template.
+-- Luban Desktop -- PREVIEW (xlings SubOS design part 2 §9; Luban OS design part 2
+-- §2.3): not yet on the date versions, so `luban new` has no short name for it
+-- (`luban new box luban-desktop` still makes one). `from` subos:luban-core@0.1.0,
+-- so its root is that edition's plus what this one declares; a package or a
+-- file both carry is this one's. Nothing to download -- install() writes the template.
 --
 --   xlings subos new mybox --rootfs --from subos:luban-desktop
 package = {
@@ -12,7 +14,7 @@ package = {
     licenses = {"Apache-2.0"},
     type = "subos",
     archs = {"x86_64"},
-    status = "stable",
+    status = "preview",
     categories = {"subos", "distribution"},
     keywords = {"luban", "rootfs", "distribution", "desktop", "graphics", "mesa"},
 
@@ -24,18 +26,10 @@ package = {
     },
 }
 
-import("xim.libxpkg.pkginfo")
-import("xim.libxpkg.log")
+import("xim.pkgindex.luban")
 
-local function write(rel, content)
-    local file = path.join(pkginfo.install_dir(), rel)
-    os.mkdir(path.directory(file))
-    local f = io.open(file, "wb")
-    f:write(content)
-    f:close()
-end
-
-local manifest = [[
+local versions = {
+    ["0.1.0"] = { manifest = [[
 {
   "subos_kind": "rootfs",
   "from": "subos:luban-core@0.1.0",
@@ -49,21 +43,9 @@ local manifest = [[
   ],
   "workspace": {}
 }
-]]
+]] },
+}
 
 function install()
-    os.tryrm(pkginfo.install_dir())
-    os.mkdir(pkginfo.install_dir())
-    write(".xlings.json", manifest)
-    write("usr/share/factory/etc/os-release", [[
-NAME="Luban"
-ID=luban
-VARIANT="Desktop"
-VARIANT_ID=desktop
-VERSION_ID=0.1.0
-PRETTY_NAME="Luban Desktop 0.1.0"
-HOME_URL="https://github.com/openxlings/xlings"
-]])
-    log.info("luban-desktop template at %s", pkginfo.install_dir())
-    return true
+    return luban.edition({ id = "desktop", variant = "Desktop", versions = versions })
 end
