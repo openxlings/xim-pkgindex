@@ -16,6 +16,8 @@ end
 
 package = {
     spec = "2",
+    -- 官方按平台独立发布，Linux 与 macOS 的可访问版本和最新版本号不同
+    platform_versions_diverge = true,
     name = "chatgpt",
     description = "Official ChatGPT desktop app with xlings-managed versions",
     homepage = "https://learn.chatgpt.com/docs/app",
