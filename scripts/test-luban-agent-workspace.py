@@ -79,7 +79,7 @@ def main():
         entry = home / "bin" / tool
         if not entry.exists():
             found = shutil.which(tool)
-            assert found, f"{tool} must be on PATH (luban ships with xlings since 2026.10.10.1)"
+            assert found, f"{tool} must be on PATH (luban ships with xlings since 2026.10.11.1)"
             shutil.copy2(Path(found).resolve(), entry)
     env = {**os.environ, "XLINGS_HOME": str(home), "XLINGS_NON_INTERACTIVE": "1",
            "PATH": f"{home}/bin:/usr/bin:/bin", "LC_ALL": "C.UTF-8", "LC_TIME": "xx_SENTINEL.UTF-8",
@@ -125,7 +125,7 @@ def main():
         status = json.loads(luban("status", "agent", "--json"))
         policy = status["requested"]
         assert policy["isolation"]["net"] == "proxy" and policy["isolation"]["no_degrade"]
-        assert policy["resolved"]["from"] == "xim:agent-private@2026.10.10.1", policy
+        assert policy["resolved"]["from"] == "xim:agent-private@2026.10.11.1", policy
         assert len(policy["resolved"]["sha256"]) == 64
         assert status["identity"]["exposed"], "what a shared kernel cannot hide is said"
         # The edition layer, as it resolved: the agent is not pinned in the

@@ -32,9 +32,9 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "2026.10.10.1" },
+            ["latest"] = { ref = "2026.10.11.1" },
             ["0.1.0"] = {},
-            ["2026.10.10.1"] = {},
+            ["2026.10.11.1"] = {},
         },
     },
 }
@@ -57,11 +57,11 @@ local versions = {
   "workspace": {}
 }
 ]] },
-    ["2026.10.10.1"] = { files = luban.busybox_machine("luban-init"), manifest = [[
+    ["2026.10.11.1"] = { files = luban.busybox_machine("luban-init"), manifest = [[
 {
   "subos_kind": "rootfs",
-  "min_client": "2026.10.10.3",
-  "from": "subos:luban-nano@2026.10.10.1",
+  "min_client": "2026.10.11.1",
+  "from": "subos:luban-nano@2026.10.11.1",
   "abi": { "kernel": "linux", "libc": "gnu" },
   "packages": [
     "xim:busybox@1.35.0",
@@ -69,7 +69,7 @@ local versions = {
     "xim:patchelf@0.18.0",
     "xim:ca-certificates@2026.03.19"
   ],
-  "boot": { "init": "/sbin/init", "profile": "xim:luban-boot-generic@2026.10.10.1",
+  "boot": { "init": "/sbin/init", "profile": "xim:luban-boot-generic@2026.10.11.1",
             "kernel": "xim:linux-kernel@6.8.0-71", "kernel_min": "5.10" },
   "workspace": {}
 }

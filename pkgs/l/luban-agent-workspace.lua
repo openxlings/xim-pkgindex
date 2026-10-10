@@ -29,8 +29,8 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "2026.10.10.1" },
-            ["2026.10.10.1"] = {},
+            ["latest"] = { ref = "2026.10.11.1" },
+            ["2026.10.11.1"] = {},
         },
     },
 }
@@ -41,16 +41,16 @@ import("xim.pkgindex.luban")
 -- weekly. `subos new` installs the version current then and records it in the
 -- instance (instance.json `edition.packages`); `luban upgrade` moves it.
 local versions = {
-    ["2026.10.10.1"] = { manifest = [[
+    ["2026.10.11.1"] = { manifest = [[
 {
   "subos_kind": "rootfs",
-  "min_client": "2026.10.10.3",
-  "from": "subos:luban-core@2026.10.10.1",
+  "min_client": "2026.10.11.1",
+  "from": "subos:luban-core@2026.10.11.1",
   "abi": "x86_64-linux-gnu",
   "packages": [
     "xim:claude"
   ],
-  "policy": "xim:agent-private@2026.10.10.1",
+  "policy": "xim:agent-private@2026.10.11.1",
   "workspace": {}
 }
 ]], files = { { "usr/share/factory/etc/motd", [[

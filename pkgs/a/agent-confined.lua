@@ -14,9 +14,9 @@ package = {
     licenses = {"Apache-2.0"},
     categories = {"subos", "security", "agent"},
     xpm = {
-        linux = { ["latest"] = { ref = "2026.10.10.1" }, ["2026.10.10.1"] = {} },
-        macosx = { ["latest"] = { ref = "2026.10.10.1" }, ["2026.10.10.1"] = {} },
-        windows = { ["latest"] = { ref = "2026.10.10.1" }, ["2026.10.10.1"] = {} },
+        linux = { ["latest"] = { ref = "2026.10.11.1" }, ["2026.10.11.1"] = {} },
+        macosx = { ["latest"] = { ref = "2026.10.11.1" }, ["2026.10.11.1"] = {} },
+        windows = { ["latest"] = { ref = "2026.10.11.1" }, ["2026.10.11.1"] = {} },
     },
 }
 

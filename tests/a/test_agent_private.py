@@ -28,7 +28,7 @@ def test_effective_policy(tmp_path):
     assert iso["no_degrade"] and iso["disable_userns"]
     assert all(iso["needs"][k] == "must" for k in ("fs", "pid", "net", "identity", "terminal"))
     assert policy["permissions"] == {"fetch": "ask", "index_update": "ask"}
-    assert policy["min_client"] == "2026.10.10.3", "the client whose probe knows a setuid bwrap cannot forbid nested user namespaces"
+    assert policy["min_client"] == "2026.10.11.1", "the client whose probe knows a setuid bwrap cannot forbid nested user namespaces"
 
 @pytest.mark.index
 def test_index():

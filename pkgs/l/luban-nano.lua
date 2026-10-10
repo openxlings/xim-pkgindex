@@ -28,8 +28,8 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "2026.10.10.1" },
-            ["2026.10.10.1"] = {},
+            ["latest"] = { ref = "2026.10.11.1" },
+            ["2026.10.11.1"] = {},
         },
     },
 }
@@ -39,13 +39,13 @@ import("xim.pkgindex.luban")
 -- No packages: xlings and luban are in every root (its projection).
 -- No libc: what they are needs none. No init: that is a choice.
 local versions = {
-    ["2026.10.10.1"] = { manifest = [[
+    ["2026.10.11.1"] = { manifest = [[
 {
   "subos_kind": "rootfs",
-  "min_client": "2026.10.10.3",
+  "min_client": "2026.10.11.1",
   "abi": { "kernel": "linux", "libc": "none" },
   "packages": [],
-  "boot": { "profile": "xim:luban-boot-generic@2026.10.10.1", "kernel": "xim:linux-kernel@6.8.0-71", "kernel_min": "5.10" },
+  "boot": { "profile": "xim:luban-boot-generic@2026.10.11.1", "kernel": "xim:linux-kernel@6.8.0-71", "kernel_min": "5.10" },
   "workspace": {}
 }
 ]] },

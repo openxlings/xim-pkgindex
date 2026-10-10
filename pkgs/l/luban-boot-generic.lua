@@ -17,8 +17,8 @@ package = {
     xpm = {
         linux = {
             deps = { runtime = { "xim:linux-kernel@6.8.0-71", "xim:limine@12.9.3" } },
-            ["latest"] = { ref = "2026.10.10.1" },
-            ["2026.10.10.1"] = {},
+            ["latest"] = { ref = "2026.10.11.1" },
+            ["2026.10.11.1"] = {},
         },
     },
 }

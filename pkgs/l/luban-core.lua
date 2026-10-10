@@ -5,7 +5,7 @@
 --   luban new dev core                  # (xlings subos new dev --from subos:luban-core)
 --
 -- A published version's output never changes (tests/fixtures/luban-published.json).
--- 2026.10.10.1 and later are from luban-tiny's date versions (no kernel in
+-- 2026.10.11.1 and later are from luban-tiny's date versions (no kernel in
 -- the root; see luban-tiny).
 -- An agent's tools are not here: they are luban-agent-workspace's.
 package = {
@@ -23,9 +23,9 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "2026.10.10.1" },
+            ["latest"] = { ref = "2026.10.11.1" },
             ["0.1.0"] = {},
-            ["2026.10.10.1"] = {},
+            ["2026.10.11.1"] = {},
         },
     },
 }
@@ -54,11 +54,11 @@ local editions = {
 ]],
         shells = "/bin/sh\n/bin/bash\n",
     },
-    ["2026.10.10.1"] = {
+    ["2026.10.11.1"] = {
         manifest = [[
 {
   "subos_kind": "rootfs",
-  "from": "subos:luban-tiny@2026.10.10.1",
+  "from": "subos:luban-tiny@2026.10.11.1",
   "abi": "x86_64-linux-gnu",
   "packages": [
     "xim:bash@5.2.37",

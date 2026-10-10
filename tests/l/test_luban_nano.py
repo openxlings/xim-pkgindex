@@ -8,7 +8,7 @@ from tests.lib.assertions import assert_xim_add_succeeds
 @pytest.mark.static
 def test_nano_chooses_nothing(tmp_path):
     target = tmp_path / "nano"
-    result = run_recipe("pkgs/l/luban-nano.lua", target, "2026.10.10.1")
+    result = run_recipe("pkgs/l/luban-nano.lua", target, "2026.10.11.1")
     assert result.returncode == 0, result.stderr
     manifest = json.loads((target / ".xlings.json").read_text())
     assert manifest["subos_kind"] == "rootfs"

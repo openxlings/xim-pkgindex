@@ -6,7 +6,7 @@ from tests.lib.assertions import assert_xim_add_succeeds
 # 0.1.0 is as it was published (the kernel in the root); the date versions
 # leave the kernel to the machine and say which one it boots (Luban design §A6).
 @pytest.mark.static
-@pytest.mark.parametrize("version,kernel_in_root", [("0.1.0", True), ("2026.10.10.1", False)])
+@pytest.mark.parametrize("version,kernel_in_root", [("0.1.0", True), ("2026.10.11.1", False)])
 def test_tiny_userland_and_its_kernel(tmp_path, version, kernel_in_root):
     target = tmp_path / "tiny"
     result = run_recipe("pkgs/l/luban-tiny.lua", target, version)
@@ -22,7 +22,7 @@ def test_tiny_userland_and_its_kernel(tmp_path, version, kernel_in_root):
         assert manifest["boot"]["profile"].startswith("xim:luban-boot-generic@")
         assert manifest["boot"]["kernel"].startswith("xim:linux-kernel@"), "the hint an older client reads"
         assert manifest["boot"]["kernel_min"] == "5.10"
-        assert manifest["min_client"] == "2026.10.10.3"
+        assert manifest["min_client"] == "2026.10.11.1"
         inittab = (target / "usr/share/factory/etc/inittab").read_text()
         assert "::restart:/usr/bin/luban-init" in inittab and "xlings-init" not in inittab
     assert f"VERSION_ID={version}" in (target / "usr/share/factory/etc/os-release").read_text()

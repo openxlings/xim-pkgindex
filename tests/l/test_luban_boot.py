@@ -12,7 +12,7 @@ from tests.lib.assertions import assert_xim_add_succeeds
 ])
 def test_a_profile_says_how_an_image_boots(tmp_path, name, release, console):
     target = tmp_path / name
-    result = run_recipe(f"pkgs/l/{name}.lua", target, "2026.10.10.1")
+    result = run_recipe(f"pkgs/l/{name}.lua", target, "2026.10.11.1")
     assert result.returncode == 0, result.stderr
     boot = json.loads((target / "share/luban/boot.json").read_text())
     assert boot["release"] == release
