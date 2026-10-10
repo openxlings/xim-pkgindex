@@ -1,0 +1,52 @@
+name: res-build
+
+# Builds the xlings-res resources this index makes rather than mirrors
+# (tools/res/build.sh; xlings: Luban OS design part 2 §4.2), each on the
+# architecture it is for. The artifacts are what a maintainer publishes:
+#   python3 tools/xpkg_ci.py mirror <manifest> --execute
+# (GitHub release + GitCode through tools/gtc, both verified by content).
+on:
+  pull_request:
+    paths:
+      - "tools/res/**"
+      - ".github/workflows/res-build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.what }} ${{ matrix.version }} (${{ matrix.arch }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { what: limine,      version: "12.9.3",   arch: x86_64,  runner: ubuntu-24.04 }
+          - { what: limine,      version: "12.9.3",   arch: aarch64, runner: ubuntu-24.04-arm }
+          - { what: kernel-virt, version: "6.12.112", arch: x86_64,  runner: ubuntu-24.04 }
+          - { what: kernel-virt, version: "6.12.112", arch: aarch64, runner: ubuntu-24.04-arm }
+          - { what: busybox,     version: "1.35.0",   arch: aarch64, runner: ubuntu-24.04-arm }
+    steps:
+      - uses: actions/checkout@v4
+      - name: Kernel build dependencies
+        if: matrix.what == 'kernel-virt'
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq flex bison bc libelf-dev libssl-dev >/dev/null
+      - name: Build
+        run: bash tools/res/build.sh ${{ matrix.what }} ${{ matrix.version }} out
+      - name: The result runs here
+        run: |
+          set -eu
+          case "${{ matrix.what }}" in
+            limine)  tar -xzf out/*.tar.gz -C "$RUNNER_TEMP"; "$RUNNER_TEMP"/limine-*/bin/limine --version
+                     file "$RUNNER_TEMP"/limine-*/bin/limine | grep -q "statically linked" ;;
+            busybox) chmod +x out/busybox-*; out/busybox-* echo busybox-ok; file out/busybox-* | grep -q "statically linked" ;;
+            kernel-virt) tar -tzf out/*.tar.gz | grep -q "lib/modules/.*-virt/vmlinuz" ;;
+          esac
+      - uses: actions/upload-artifact@v4
+        with:
+          name: res-${{ matrix.what }}-${{ matrix.version }}-${{ matrix.arch }}
+          path: out/
+          if-no-files-found: error
