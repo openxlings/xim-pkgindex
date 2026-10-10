@@ -31,7 +31,8 @@ def output_of(recipe, version, tmp_path, libs=None):
         if f.is_file():
             files[str(f.relative_to(target))] = {
                 "sha256": hashlib.sha256(f.read_bytes()).hexdigest(),
-                "mode": oct(f.stat().st_mode & 0o777)[2:],
+                # Executable or not: the rest of a mode is the umask's.
+                "mode": "755" if f.stat().st_mode & 0o100 else "644",
             }
     return files
 
