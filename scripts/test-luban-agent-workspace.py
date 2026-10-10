@@ -156,7 +156,13 @@ def main():
         x("subos", "cp", REPO / "tests/fixtures/luban_network_probe.cpp", "agent:/root/workspace/network.cpp")
         inside(f"set -eu; mkdir -p /root/workspace; g++ -DHOST_SERVICE_PORT={proxy.port} /root/workspace/network.cpp -o /root/workspace/network; /root/workspace/network direct; /root/workspace/network proxy")
         assert "example.com" in proxy.domains, "a name must reach the proxy, resolved there"
-        inside('set -eu; mkdir -p /root/workspace; cd /root/workspace; if [ ! -d smoke-mcpp ]; then mcpp new smoke-mcpp; fi; cd smoke-mcpp; mcpp build --offline; mcpp run --offline')
+        # C++23 with the root's own toolchain. (`mcpp build` would first
+        # bootstrap mcpp's toolchain sandbox from the network; the fixture
+        # proxy reaches nothing, so that is not this test's to prove.)
+        cxx = inside('set -eu; cd /root/workspace; '
+                     'printf "#include <print>\\n#include <expected>\\nint main() { std::expected<int, int> e{23}; std::println(\\"c++{}\\", *e); }\\n" > cxx23.cpp; '
+                     'g++ -std=c++23 cxx23.cpp -o cxx23; ./cxx23; mcpp --version')
+        assert "c++23" in cxx, cxx
         luban("config", "agent", "proxy", "socks5h://127.0.0.1:1")
         inside('set -eu; /root/workspace/network direct; if /root/workspace/network proxy; then exit 1; fi; echo no-direct-fallback')
         luban("config", "agent", "proxy", endpoint)
@@ -174,7 +180,7 @@ def main():
              "--tmpfs", "/root", "--setenv", "HOME", "/root", "--setenv", "TMPDIR", "/root", "--setenv", "PATH",
              "/usr/bin:/bin", "--", "/bin/sh", "-c",
              'set -eu; xlings --version; luban --version; fish --version; nvim --version; git --version; mcpp --version; claude --version; printf "int main(){return 0;}\\n" > /root/offline.cpp; g++ /root/offline.cpp -o /root/offline; /root/offline'])
-        print(f"PASS: private at creation, persona, tools, C++23 mcpp build, proxy-only network, no fallback, offline export. Evidence: {log}")
+        print(f"PASS: private at creation, persona, tools, a C++23 build, proxy-only network, no fallback, offline export. Evidence: {log}")
     finally:
         proxy.running = False
         proxy.socket.close()
