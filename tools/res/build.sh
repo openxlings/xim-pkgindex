@@ -97,7 +97,7 @@ bwrap)
     fetch "https://github.com/containers/bubblewrap/releases/download/v$version/bubblewrap-$version.tar.xz" "$sha" "$work/bwrap.tar.xz"
     alpine "apk add -q build-base meson ninja-build pkgconf libcap-dev libcap-static linux-headers xz \
         && tar -xJf bwrap.tar.xz && cd bubblewrap-$version \
-        && LDFLAGS=-static meson setup -q build --prefix=/usr --default-library=static --prefer-static \
+        && LDFLAGS=-static meson setup build --prefix=/usr --default-library=static --prefer-static \
              -Dman=disabled -Dselinux=disabled -Dtests=false -Dbash_completion=disabled -Dzsh_completion=disabled >/dev/null \
         && ninja -C build bwrap >/dev/null && strip build/bwrap && cp build/bwrap /w/bwrap.out"
     file "$work/bwrap.out" | grep -q "statically linked" || { log "bwrap is not static"; exit 1; }
