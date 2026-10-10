@@ -24,8 +24,8 @@ fetch() {   # url, expected sha256, file
     echo "$2  $3" | sha256sum -c - >/dev/null || { log "sha256 mismatch: $1"; exit 1; }
 }
 
-alpine() {  # a command in an Alpine container, $work mounted at /w
-    docker run --rm -v "$work:/w" -w /w alpine:3.20 sh -euc "$1"
+alpine() {  # a command in an Alpine container, $work mounted at /w; what it makes is ours after
+    docker run --rm -v "$work:/w" -w /w alpine:3.20 sh -euc "$1; chown -R $(id -u):$(id -g) /w"
 }
 
 seal() {    # file -> file.sha256
