@@ -128,6 +128,14 @@ def main():
         assert policy["resolved"]["from"] == "xim:agent-private@2026.10.10.1", policy
         assert len(policy["resolved"]["sha256"]) == 64
         assert status["identity"]["exposed"], "what a shared kernel cannot hide is said"
+        # The edition layer, as it resolved: the agent is not pinned in the
+        # edition, so the version installed at `new` is the one recorded.
+        record = json.loads((home / "config/subos/agent/instance.json").read_text())["edition"]
+        assert record["ref"].startswith("subos:luban-agent-workspace@"), record
+        assert record["chain"][0].startswith("subos:luban-core@"), record
+        assert isinstance(record["packages"].get("xim:claude"), str), record
+        assert record["policy"].startswith("xim:agent-private@"), record
+        assert "up to date" in luban("upgrade", "agent", "--dry-run"), "a fresh workspace is the newest"
 
         # Inside: its tools, its persona (made on the first entry), nothing of
         # the host's environment.

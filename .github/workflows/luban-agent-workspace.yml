@@ -10,10 +10,18 @@ on:
       - 'pkgs/l/luban-*.lua'
       - 'pkgs/a/agent-private.lua'
       - 'pkgs/a/agent-confined.lua'
+      - 'pkgs/l/limine.lua'
+      - 'pkgs/l/linux-kernel-virt.lua'
+      - 'scripts/test-luban-editions.sh'
       - 'scripts/test-luban-agent-workspace.py'
       - 'tests/fixtures/luban_network_probe.cpp'
       - '.github/workflows/luban-agent-workspace.yml'
   workflow_dispatch:
+    inputs:
+      xlings_run:
+        description: "an openxlings/xlings CI run whose xlings-linux-x86_64 artifact is the build under test (default: the published release)"
+        required: false
+        default: ""
 
 jobs:
   workspace:
@@ -21,10 +29,19 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
-      - name: Install published xlings (and luban)
+      - name: Install xlings (and luban) -- a given build, or the published one
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN: ${{ inputs.xlings_run }}
         run: |
           export XLINGS_NON_INTERACTIVE=1
-          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
+          if [[ -n "${RUN:-}" ]]; then
+            gh run download "$RUN" -R openxlings/xlings -n xlings-linux-x86_64 -D "$RUNNER_TEMP/xb"
+            mkdir -p "$RUNNER_TEMP/xb/x" && tar -xzf "$RUNNER_TEMP/xb/release.tar.gz" -C "$RUNNER_TEMP/xb/x"
+            (cd "$RUNNER_TEMP"/xb/x/*/ && ./bin/xlings self install </dev/null)
+          else
+            curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
+          fi
           echo "$HOME/.xlings/bin" >> "$GITHUB_PATH"
       - name: This runner can make a root (the one-time isolation setup)
         run: |
@@ -41,3 +58,41 @@ jobs:
           path: |
             ${{ runner.temp }}/luban-agent-acceptance/acceptance.log
             ${{ runner.temp }}/luban-agent-acceptance/logs/hooks/*.log
+
+  editions:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install xlings (and luban) -- a given build, or the published one
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN: ${{ inputs.xlings_run }}
+        run: |
+          export XLINGS_NON_INTERACTIVE=1
+          if [[ -n "${RUN:-}" ]]; then
+            gh run download "$RUN" -R openxlings/xlings -n xlings-linux-x86_64 -D "$RUNNER_TEMP/xb"
+            mkdir -p "$RUNNER_TEMP/xb/x" && tar -xzf "$RUNNER_TEMP/xb/release.tar.gz" -C "$RUNNER_TEMP/xb/x"
+            (cd "$RUNNER_TEMP"/xb/x/*/ && ./bin/xlings self install </dev/null)
+          else
+            curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
+          fi
+          echo "$HOME/.xlings/bin" >> "$GITHUB_PATH"
+      - name: qemu
+        run: |
+          sudo apt-get -qq update && sudo apt-get -qq install -y qemu-system-x86 >/dev/null
+          sudo chmod 666 /dev/kvm || true
+      - name: This runner can make a root (the one-time isolation setup)
+        run: |
+          xlings install -y bwrap
+          xlings self doctor --isolation || xlings self doctor --isolation --fix -y
+      - name: nano, tiny, tiny-musl; tiny's ISO by the virt profile, booted
+        run: bash scripts/test-luban-editions.sh "$RUNNER_TEMP/luban-editions"
+      - name: Preserve evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: luban-editions
+          path: |
+            ${{ runner.temp }}/luban-editions/boot.log
+            ${{ runner.temp }}/luban-editions/logs/
