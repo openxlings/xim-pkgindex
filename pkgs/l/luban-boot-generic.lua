@@ -24,10 +24,22 @@ package = {
 }
 
 import("xim.pkgindex.luban")
+import("xim.libxpkg.xvm")
 
 function install()
     return luban.boot([[
 { "profile": "generic", "release": "6.8.0-71-generic",
   "cmdline": ["console=tty0", "console=ttyS0"] }
 ]])
+end
+
+-- Registered as installed (`xlings list`, `remove`); nothing to run.
+function config()
+    xvm.add(package.name)
+    return true
+end
+
+function uninstall()
+    xvm.remove(package.name)
+    return true
 end

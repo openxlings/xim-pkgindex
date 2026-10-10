@@ -24,6 +24,7 @@ package = {
 }
 
 import("xim.pkgindex.luban")
+import("xim.libxpkg.xvm")
 
 -- The console a VM has: the 16550 (ttyS0) on x86_64, the PL011 (ttyAMA0) on
 -- qemu's arm virt machine. Both are named; the kernel skips the one the
@@ -33,4 +34,15 @@ function install()
 { "profile": "virt", "release": "6.12.112-virt",
   "cmdline": ["console=ttyS0", "console=ttyAMA0", "panic=-1"] }
 ]])
+end
+
+-- Registered as installed (`xlings list`, `remove`); nothing to run.
+function config()
+    xvm.add(package.name)
+    return true
+end
+
+function uninstall()
+    xvm.remove(package.name)
+    return true
 end
