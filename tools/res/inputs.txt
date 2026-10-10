@@ -1,0 +1,4 @@
+# <input> <version> <sha256> -- upstream sources tools/res/build.sh builds from.
+# (The kernel's digest is read from kernel.org's sha256sums.asc.)
+limine-binary 12.9.3 9f42fe9ea2e84d71056529969b1d5c24ba9a2287ffcc01bcce58b0ef8aa98b1d
+busybox 1.35.0 faeeb244c35a348a334f4a59e44626ee870fb07b6884d68c10ae8bc19f83a694

@@ -11,6 +11,7 @@ package = {
 
     -- base info
     name = "gcc",
+    revision = 1,
     description = "GCC, the GNU Compiler Collection",
 
     authors = {"GNU"},
@@ -40,7 +41,9 @@ package = {
     xpm = {
         linux = {
             deps = {
-                "xim:glibc@>=2.39", "xim:binutils@2.42",
+                build = { "xim:patchelf@0.18.0" },
+                runtime = {
+                "xim:glibc@>=2.39", "xim:binutils@2.42.1",
                 -- fix xmake project --project=.  -k compile_commands
                 -- home/xlings/.xlings_data/subos/linux/usr/include/bits/errno.h:26:11: fatal error: linux/errno.h: No such file or directory
                 "xim:linux-headers@5.11.1",
@@ -52,6 +55,7 @@ package = {
                 -- RPATH empty, leaning on system glibc and breaking on
                 -- distroless / Alpine / different glibc version.
                 "xim:gcc-specs-config@0.0.1",
+                },
             },
             ["latest"] = { ref = "16.1.0" },
             ["16.1.0"] = "XLINGS_RES",

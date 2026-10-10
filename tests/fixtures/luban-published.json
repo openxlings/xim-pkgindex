@@ -1,0 +1,80 @@
+{
+ "pkgs/l/luban-core.lua@0.1.0": {
+  ".xlings.json": {
+   "mode": "644",
+   "sha256": "31d0dad51ba762ba1910ebe2f2b0e84836e84da6fc4fe5aaf420267b9908eb96"
+  },
+  "usr/share/factory/etc/os-release": {
+   "mode": "644",
+   "sha256": "1dde475b6bd23aab12544de6110ca88d258e6c0d23f18cff72a389f696f4527f"
+  },
+  "usr/share/factory/etc/shells": {
+   "mode": "644",
+   "sha256": "4cc26708349348ad3520dae0e1046ef3d1b6eb823c9e1361aa24062d785595d8"
+  }
+ },
+ "pkgs/l/luban-desktop.lua@0.1.0": {
+  ".xlings.json": {
+   "mode": "644",
+   "sha256": "069d0d00364ee141632239e7778aaed91ef3f52ffefd239343f95f55d01619fa"
+  },
+  "usr/share/factory/etc/os-release": {
+   "mode": "644",
+   "sha256": "9754977236a2681a0484426d8ee8448e98333da9a5336fc2945689dcfb89b744"
+  }
+ },
+ "pkgs/l/luban-tiny.lua@0.1.0": {
+  ".xlings.json": {
+   "mode": "644",
+   "sha256": "73091654c00f41f3bb9d51e5ec1b69702b8e141244df2ab5fbb7b43a2e198829"
+  },
+  "usr/lib/sysusers.d/luban.conf": {
+   "mode": "644",
+   "sha256": "bd7babe5fe67a6ad2dac9904b56480ccfaad68bae16a174506826c5cc5d73640"
+  },
+  "usr/share/factory/etc/fstab": {
+   "mode": "644",
+   "sha256": "6214abd98640dc4f1d02159cdab0a295722986ede276b0041cc90a0a7728072e"
+  },
+  "usr/share/factory/etc/hostname": {
+   "mode": "644",
+   "sha256": "a79e91cd616e051b2fb1a06aa60a891e68ffcf5aca82fbc19e76ea0d7a487891"
+  },
+  "usr/share/factory/etc/hosts": {
+   "mode": "644",
+   "sha256": "a5ae681305e1edafb6c6e0323432636546227401943517614cd85b2fdc2cc19d"
+  },
+  "usr/share/factory/etc/init.d/rcS": {
+   "mode": "755",
+   "sha256": "dea568ea3765e8cc5a08f7bb667ef1389319d8159d95ab4fe3acb0d1c9c460fd"
+  },
+  "usr/share/factory/etc/inittab": {
+   "mode": "644",
+   "sha256": "ab574fa7041b706827cfe446c3835c5be322e76aec48cb4606453b141f07905e"
+  },
+  "usr/share/factory/etc/ld.so.conf": {
+   "mode": "644",
+   "sha256": "e45b5bd3e52c5469ec57cd5919b38043a64e8aceaadc6b9afe124e9683cf86e9"
+  },
+  "usr/share/factory/etc/nsswitch.conf": {
+   "mode": "644",
+   "sha256": "3a5e37b3bee02d4ca90b9c6cfef0a2a2d75d296ed8de113d1204384950a1f51e"
+  },
+  "usr/share/factory/etc/os-release": {
+   "mode": "644",
+   "sha256": "16a5c4c46a302f056c2d78fc8486063d7edce0f39748ea22fe9698b9e7b0ef5b"
+  },
+  "usr/share/factory/etc/profile": {
+   "mode": "644",
+   "sha256": "a1c5c525f0ea4c17294daa955f990a1eda883f834a7010873152c720f80f485c"
+  },
+  "usr/share/factory/etc/shells": {
+   "mode": "644",
+   "sha256": "a769faefd4d6187be0b7f25439217860168d3c8cb5b6b9e09b5943bef9dca8ec"
+  },
+  "usr/share/udhcpc/default.script": {
+   "mode": "755",
+   "sha256": "9a1b4f18103e7bc8fd2060622eb8aef9683414833339534d22ea3532f068eb4a"
+  }
+ }
+}
