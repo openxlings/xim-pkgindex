@@ -15,12 +15,12 @@ package = {
     keywords = {"limine", "bootloader", "uefi", "bios", "iso", "luban"},
 
     -- What `xlings subos export --iso / --drive` (`luban export x.iso / x.img`)
-    -- boots with: upstream's prebuilt boot files (limine-bios-cd.bin,
-    -- limine-bios.sys, limine-uefi-cd.bin, BOOT*.EFI) into share/limine, where
-    -- xlings looks for them. The `limine` tool (bios-install: a drive or a
-    -- hybrid ISO that a BIOS boots) is one C file, built here when a C
-    -- compiler is; without it an export still boots on UEFI (and an ISO from
-    -- a CD), and says so.
+    -- boots with: upstream's boot files (limine-bios-cd.bin, limine-bios.sys,
+    -- limine-uefi-cd.bin, BOOT*.EFI) in share/limine, where xlings looks for
+    -- them, and the `limine` tool (bios-install: a drive or a hybrid ISO a BIOS
+    -- boots) built static from upstream's limine.c by this index
+    -- (tools/res/build.sh, res-build.yml) -- nothing is compiled on a user's
+    -- machine.
     programs = {"limine"},
     xvm_enable = true,
 
@@ -28,47 +28,32 @@ package = {
         linux = {
             ["latest"] = { ref = "12.9.3" },
             ["12.9.3"] = {
-                url = "https://github.com/limine-bootloader/limine/releases/download/v12.9.3/limine-binary.tar.gz",
-                sha256 = "9f42fe9ea2e84d71056529969b1d5c24ba9a2287ffcc01bcce58b0ef8aa98b1d",
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "718572a192b3d8f4da934f61c9f2ab7eeab96ad78db9d038c0f935278deee6b1",
+                    aarch64 = "e7b32ef2ee7c05feb181ca08b0f9d41b7d118b2408e6a923e6e419dc39fc050b",
+                },
             },
         },
     },
 }
 
 import("xim.libxpkg.pkginfo")
-import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
-import("xim.libxpkg.log")
-
-local function q(s) return "'" .. s:gsub("'", "'\\''") .. "'" end
 
 function install()
     local dir = pkginfo.install_dir()
-    local src = "limine-binary"
-    if not os.isdir(src) then error("limine: the release archive has no limine-binary/") end
-    os.tryrm(dir)
-    os.mkdir(path.join(dir, "share", "limine"))
-    os.mkdir(path.join(dir, "bin"))
-    for _, f in ipairs({"limine-bios-cd.bin", "limine-bios.sys", "limine-uefi-cd.bin", "limine-bios-pxe.bin",
-                        "BOOTX64.EFI", "BOOTAA64.EFI", "BOOTIA32.EFI", "BOOTRISCV64.EFI", "LICENSE"}) do
-        if os.isfile(path.join(src, f)) then os.cp(path.join(src, f), path.join(dir, "share", "limine", f)) end
-    end
-    -- The tool: static where the C library allows, else as it links here.
-    local tool = path.join(dir, "bin", "limine")
-    local c = path.join(src, "limine.c")
-    local built = pcall(system.exec, "cc -O2 -std=gnu11 -static -o " .. q(tool) .. " " .. q(c))
-        or pcall(system.exec, "cc -O2 -std=gnu11 -o " .. q(tool) .. " " .. q(c))
-    if not built then
-        log.warn("limine: no C compiler here -- the boot files are installed; `limine bios-install` is not "
-                 .. "(drives boot with UEFI, ISOs from a CD)")
+    local payload = "limine-" .. pkginfo.version()
+    if os.isdir(payload) then
+        os.tryrm(dir)
+        os.mv(payload, dir)
     end
     return os.isfile(path.join(dir, "share", "limine", "limine-bios-cd.bin"))
+        and os.isfile(path.join(dir, "bin", "limine"))
 end
 
 function config()
-    if os.isfile(path.join(pkginfo.install_dir(), "bin", "limine")) then
-        xvm.add("limine", { bindir = path.join(pkginfo.install_dir(), "bin") })
-    end
+    xvm.add("limine", { bindir = path.join(pkginfo.install_dir(), "bin") })
     return true
 end
 

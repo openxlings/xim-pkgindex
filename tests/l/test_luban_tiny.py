@@ -16,9 +16,15 @@ def test_tiny_userland_and_its_kernel(tmp_path, version, kernel_in_root):
     assert any(p.startswith("xim:linux-kernel@") for p in manifest["packages"]) == kernel_in_root
     assert any(p.startswith("xim:glibc@") for p in manifest["packages"])
     if not kernel_in_root:
-        assert manifest["abi"] == "x86_64-linux-gnu"
-        assert manifest["boot"]["kernel"].startswith("xim:linux-kernel@")
+        # No architecture: every package is published for x86_64 and aarch64.
+        assert manifest["abi"] == {"kernel": "linux", "libc": "gnu"}
+        assert manifest["from"].startswith("subos:luban-nano@")
+        assert manifest["boot"]["profile"].startswith("xim:luban-boot-generic@")
+        assert manifest["boot"]["kernel"].startswith("xim:linux-kernel@"), "the hint an older client reads"
         assert manifest["boot"]["kernel_min"] == "5.10"
+        assert manifest["min_client"] == "2026.10.10.3"
+        inittab = (target / "usr/share/factory/etc/inittab").read_text()
+        assert "::restart:/usr/bin/luban-init" in inittab and "xlings-init" not in inittab
     assert f"VERSION_ID={version}" in (target / "usr/share/factory/etc/os-release").read_text()
 
 @pytest.mark.static

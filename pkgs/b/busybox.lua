@@ -15,7 +15,7 @@ package = {
 
     -- xim pkg info
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"system", "shell", "cli", "utilities"},
     keywords = {"busybox", "shell", "ash", "coreutils", "embedded", "static"},
@@ -43,11 +43,23 @@ package = {
         linux = {
             ["latest"] = { ref = "1.35.0" },
             ["1.35.0"] = {
-                url = __busybox_url("1.35.0"),
-                sha256 = "6e123e7f3202a8c1e9b1f94d8941580a25135382b99e8d3e34fb858bba311348",
                 -- 1: the payload's bin/ carries a relative link per applet
                 -- (see install()).
                 revision = 1,
+                x86_64 = {
+                    url = __busybox_url("1.35.0"),
+                    sha256 = "6e123e7f3202a8c1e9b1f94d8941580a25135382b99e8d3e34fb858bba311348",
+                },
+                -- Upstream publishes no aarch64 build of 1.35.0: this index
+                -- builds it (defconfig, static, musl; tools/res/build.sh) from
+                -- busybox-1.35.0.tar.bz2 -- a bare ELF too.
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/busybox/releases/download/1.35.0/busybox-1.35.0-linux-aarch64",
+                        CN     = "https://gitcode.com/xlings-res/busybox/releases/download/1.35.0/busybox-1.35.0-linux-aarch64",
+                    },
+                    sha256 = "5e219079f7326bf8baa2e912b623f692223b52c85d9367383c76a438d74c007e",
+                },
             },
         },
     },

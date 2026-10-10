@@ -42,9 +42,10 @@ local versions = {
     ["2026.10.10.1"] = { manifest = [[
 {
   "subos_kind": "rootfs",
+  "min_client": "2026.10.10.3",
   "abi": { "kernel": "linux", "libc": "none" },
   "packages": [],
-  "boot": { "kernel": "xim:linux-kernel@6.8.0-71", "kernel_min": "5.10" },
+  "boot": { "profile": "xim:luban-boot-generic@2026.10.10.1", "kernel": "xim:linux-kernel@6.8.0-71", "kernel_min": "5.10" },
   "workspace": {}
 }
 ]] },
