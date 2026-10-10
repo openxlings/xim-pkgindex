@@ -29,6 +29,7 @@ jobs:
           - { what: kernel-virt, version: "6.12.112", arch: x86_64,  runner: ubuntu-24.04 }
           - { what: kernel-virt, version: "6.12.112", arch: aarch64, runner: ubuntu-24.04-arm }
           - { what: busybox,     version: "1.35.0",   arch: aarch64, runner: ubuntu-24.04-arm }
+          - { what: bwrap,       version: "0.11.2",   arch: aarch64, runner: ubuntu-24.04-arm }
     steps:
       - uses: actions/checkout@v4
       - name: Kernel build dependencies
@@ -44,6 +45,8 @@ jobs:
                      file "$RUNNER_TEMP"/limine-*/bin/limine | grep -q "statically linked" ;;
             busybox) chmod +x out/busybox-*; out/busybox-* echo busybox-ok; file out/busybox-* | grep -q "statically linked" ;;
             kernel-virt) tar -tzf out/*.tar.gz | grep -q "lib/modules/.*-virt/vmlinuz" ;;
+            bwrap)   tar -xzf out/*.tar.gz -C "$RUNNER_TEMP"; "$RUNNER_TEMP"/bwrap-*/bin/bwrap --version
+                     "$RUNNER_TEMP"/bwrap-*/bin/bwrap --unshare-user --ro-bind / / -- /bin/true || echo "(userns restricted on this runner: built, not run)" ;;
           esac
       - uses: actions/upload-artifact@v4
         with:

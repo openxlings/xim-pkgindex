@@ -5,6 +5,7 @@
 #   tools/res/build.sh limine      <version> <out>   # boot files + a static `limine` tool
 #   tools/res/build.sh kernel-virt <version> <out>   # a virt kernel: virtio, ext4, console built in
 #   tools/res/build.sh busybox     <version> <out>   # a static busybox (musl)
+#   tools/res/build.sh bwrap       <version> <out>   # a static bubblewrap (musl), as x86_64's is
 #
 # Runs on the machine of the target architecture (CI: ubuntu-24.04 and
 # ubuntu-24.04-arm); static builds run in an Alpine container (musl). Each
@@ -89,6 +90,22 @@ busybox)
         && make -s oldconfig </dev/null >/dev/null && make -s -j\$(nproc) busybox && strip busybox && cp busybox /w/busybox.out"
     file="$out/busybox-$version-linux-$arch"
     cp "$work/busybox.out" "$file"
+    seal "$file" ;;
+bwrap)
+    sha="$(grep "^bubblewrap $version " "$here/inputs.txt" | cut -d' ' -f3)"
+    [[ -n "$sha" ]] || { log "no input digest for bubblewrap $version"; exit 1; }
+    fetch "https://github.com/containers/bubblewrap/releases/download/v$version/bubblewrap-$version.tar.xz" "$sha" "$work/bwrap.tar.xz"
+    alpine "apk add -q build-base meson ninja-build pkgconf libcap-dev libcap-static linux-headers xz \
+        && tar -xJf bwrap.tar.xz && cd bubblewrap-$version \
+        && LDFLAGS=-static meson setup -q build --prefix=/usr --default-library=static --prefer-static \
+             -Dman=disabled -Dselinux=disabled -Dtests=false -Dbash_completion=disabled -Dzsh_completion=disabled >/dev/null \
+        && ninja -C build bwrap >/dev/null && strip build/bwrap && cp build/bwrap /w/bwrap.out"
+    file "$work/bwrap.out" | grep -q "statically linked" || { log "bwrap is not static"; exit 1; }
+    root="$work/bwrap-$version-linux-$arch"
+    mkdir -p "$root/bin"
+    cp "$work/bwrap.out" "$root/bin/bwrap"
+    file="$out/bwrap-$version-linux-$arch.tar.gz"
+    tar --owner=0 --group=0 --numeric-owner -czf "$file" -C "$work" "bwrap-$version-linux-$arch"
     seal "$file" ;;
 *)
     log "unknown resource: $what"; exit 2 ;;
