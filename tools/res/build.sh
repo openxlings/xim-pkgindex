@@ -366,7 +366,7 @@ qemu-system)
     d="qemu-system-$version-linux-$arch"
     alpine "apk add -q $APK_STATIC python3 py3-setuptools meson samurai pkgconf perl bash flex bison xz bzip2 \
             glib-dev glib-static pixman-dev pixman-static zlib-dev zlib-static libffi-dev pcre2-dev gettext-static \
-            gettext-dev dtc-dev \
+            gettext-dev dtc-dev util-linux-dev util-linux-static \
         && tar -xzf slirp.tar.gz && cd libslirp-v$sv \
         && meson setup build --prefix=/opt/slirp --default-library=static >/dev/null && ninja -C build install >/dev/null \
         && cd /w && tar -xJf qemu.tar.xz && mkdir qb && cd qb \
