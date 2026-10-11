@@ -353,6 +353,45 @@ xsel)
     "$work/$d/bin/xsel" --version 2>&1 | grep -q "$version" || die "xsel does not report $version"
     provenance "$d" "xsel $version (github.com/kfish/xsel, sha256 $(input xsel "$version")); static (libX11, xcb); Alpine 3.20 (musl)"
     pack "$d" ;;
+qemu-system)
+    # qemu's system emulators for x86_64 and aarch64 guests, static (musl),
+    # with user-mode networking (libslirp, built static here): what `luban
+    # try` boots a VM with and gives it a network -- or only a proxy -- with.
+    # Firmware (SeaBIOS, EDK II) in share/qemu, decompressed.
+    source_of qemu "$version" "https://download.qemu.org/qemu-$version.tar.xz" "$work/qemu.tar.xz"
+    sv="$(awk '$1 == "libslirp" { print $2 }' "$here/inputs.txt")"
+    source_of libslirp "$sv" "https://gitlab.freedesktop.org/slirp/libslirp/-/archive/v$sv/libslirp-v$sv.tar.gz" "$work/slirp.tar.gz"
+    d="qemu-system-$version-linux-$arch"
+    alpine "apk add -q $APK_STATIC python3 py3-setuptools meson samurai pkgconf perl bash flex bison xz bzip2 \
+            glib-dev glib-static pixman-dev pixman-static zlib-dev zlib-static libffi-dev pcre2-dev gettext-static \
+            gettext-dev dtc-dev \
+        && tar -xzf slirp.tar.gz && cd libslirp-v$sv \
+        && meson setup build --prefix=/opt/slirp --default-library=static >/dev/null && ninja -C build install >/dev/null \
+        && cd /w && tar -xJf qemu.tar.xz && mkdir qb && cd qb \
+        && PKG_CONFIG_PATH=/opt/slirp/lib/pkgconfig ../qemu-$version/configure --static --prefix=/ \
+             --target-list=x86_64-softmmu,aarch64-softmmu --enable-slirp \
+             --disable-docs --disable-tools --disable-guest-agent --disable-user --disable-linux-user --disable-bsd-user \
+             --disable-vnc --disable-sdl --disable-gtk --disable-curses --disable-spice --disable-opengl \
+             --disable-virglrenderer --disable-libssh --disable-curl --disable-gnutls --disable-nettle --disable-gcrypt \
+             --disable-libusb --disable-usb-redir --disable-smartcard --disable-xkbcommon --disable-dbus-display \
+             --disable-linux-io-uring --disable-libudev --disable-zstd --disable-pa --disable-alsa --disable-jack \
+             --disable-oss --disable-pipewire --disable-sndio --audio-drv-list= --disable-capstone --disable-libdaxctl \
+             --disable-blkio --disable-brlapi --disable-vde --disable-libnfs --disable-rbd --disable-glusterfs \
+             --disable-libiscsi --disable-seccomp --disable-cap-ng --disable-attr --disable-selinux > /w/configure.log 2>&1 \
+        && make -j\$(nproc) > /w/make.log 2>&1 && make install DESTDIR=/w/stage > /w/install.log 2>&1 \
+        && mkdir -p /w/$d/bin /w/$d/share && cp /w/stage/bin/qemu-system-x86_64 /w/stage/bin/qemu-system-aarch64 /w/$d/bin/ \
+        && strip /w/$d/bin/* && cp -a /w/stage/share/qemu /w/$d/share/ \
+        && for f in /w/$d/share/qemu/*.bz2; do [ -f \"\$f\" ] && bunzip2 -f \"\$f\"; done; true" \
+      || { for f in configure make install; do [[ -f "$work/$f.log" ]] && { log "--- $f.log"; tail -40 "$work/$f.log" >&2; }; done; die "qemu build failed"; }
+    static_only "$work/$d/bin/qemu-system-x86_64" "$work/$d/bin/qemu-system-aarch64"
+    for q in x86_64 aarch64; do
+        "$work/$d/bin/qemu-system-$q" --version | grep -q "version $version" || die "qemu-system-$q does not report $version"
+        "$work/$d/bin/qemu-system-$q" -netdev help | grep -qx user || die "qemu-system-$q has no user networking"
+    done
+    [[ -f "$work/$d/share/qemu/bios-256k.bin" && -f "$work/$d/share/qemu/edk2-aarch64-code.fd" && -f "$work/$d/share/qemu/edk2-x86_64-code.fd" ]] \
+        || die "the firmware is not in share/qemu"
+    provenance "$d" "qemu $version (download.qemu.org, sha256 $(input qemu "$version")) system emulators for x86_64 and aarch64, static (musl, Alpine 3.20), user networking from libslirp $sv built static; firmware decompressed in share/qemu"
+    pack "$d" ;;
 edk2-firmware)
     # What qemu ships in pc-bios/ at tag v<version>, decompressed: firmware
     # is the same file whichever machine runs the emulator.

@@ -28,3 +28,5 @@ gcc 16.1.0 50efb4d94c3397aff3b0d61a5abd748b4dd31d9d3f2ab7be05b171d36a510f79
 # the index's aarch64 glibc).
 gcc-sysroot-glibc 2.44.3
 gcc-sysroot-linux-headers 5.11.1
+qemu 9.2.4 f3cc1c4eabfdb288218ac3e33763dbe9e276d8bc890b867a2335d58de2ddd39a
+libslirp 4.8.0 2a98852e65666db313481943e7a1997abff0183bd9bea80caec1b5da89fda28c
