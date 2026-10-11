@@ -25,10 +25,11 @@ permissions:
 jobs:
   build:
     name: ${{ matrix.what }} ${{ matrix.version }} (${{ matrix.arch }})
-    if: github.event.inputs.only == '' || github.event.inputs.only == matrix.what
     runs-on: ${{ matrix.arch == 'aarch64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
     # gcc is the long one (an hour or two on four cores); the rest take minutes.
     timeout-minutes: ${{ matrix.what == 'gcc' && 330 || 120 }}
+    env:
+      WANTED: ${{ (github.event.inputs.only || '') == '' || github.event.inputs.only == matrix.what }}
     strategy:
       fail-fast: false
       matrix:
@@ -64,14 +65,17 @@ jobs:
           - { what: edk2-firmware, version: "9.2.4",              arch: x86_64 }
     steps:
       - uses: actions/checkout@v4
+        if: env.WANTED == 'true'
       - name: Room to build
-        if: matrix.what == 'gcc' || matrix.what == 'kernel-virt'
+        if: env.WANTED == 'true' && (matrix.what == 'gcc' || matrix.what == 'kernel-virt')
         run: |
           sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/share/boost /opt/hostedtoolcache || true
           df -h /
       - name: Build
+        if: env.WANTED == 'true'
         run: bash tools/res/build.sh ${{ matrix.what }} ${{ matrix.version }} out
       - uses: actions/upload-artifact@v4
+        if: env.WANTED == 'true'
         with:
           name: res-${{ matrix.what }}-${{ matrix.version }}-${{ matrix.arch }}
           path: out/
