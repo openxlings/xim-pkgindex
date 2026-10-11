@@ -129,7 +129,7 @@ jobs:
             git push origin "${branch}"
 
             printf '%s\n' \
-              "Automated version bump from the \`url_template\` auto-update contract (see [docs/spec/url-template.md](../blob/main/docs/spec/url-template.md)). Produced by \`.github/workflows/version-bump.yml\`." \
+              "Automated version bump from the \`url_template\` auto-update contract (see [docs/specs/url-template.md](../blob/main/docs/specs/url-template.md)). Produced by \`.github/workflows/version-bump.yml\`." \
               "" \
               "- **Package:** \`${pkg}\`" \
               "- **Current:** \`${current}\` → **Upstream:** \`${upstream}\`" \

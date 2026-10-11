@@ -11,7 +11,7 @@ package = {
     docs = "https://www.man7.org/linux/man-pages/man8/mke2fs.8.html",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"system", "filesystem", "utilities"},
     keywords = {"ext2", "ext3", "ext4", "fsck", "mke2fs", "resize2fs", "tune2fs"},
@@ -71,7 +71,25 @@ package = {
     xpm = {
         linux = {
             ["latest"] = { ref = "1.47.3" },
-            ["1.47.3"] = "XLINGS_RES",
+            -- 1: an aarch64 payload, 1.47.3-r1 (built without hard links:
+            -- Android refuses link(2)); the x86_64 one unchanged.
+            ["1.47.3"] = {
+                revision = 1,
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/e2fsprogs/releases/download/1.47.3/e2fsprogs-1.47.3-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/e2fsprogs/releases/download/1.47.3/e2fsprogs-1.47.3-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "fa3211e05885ba44fe412017c67e95a0d0cf10c690766ce85a5d77ad7010edf4",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/e2fsprogs/releases/download/1.47.3-r1/e2fsprogs-1.47.3-r1-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/e2fsprogs/releases/download/1.47.3-r1/e2fsprogs-1.47.3-r1-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "1dc55acf8bb26f2fd3055e84f7813be677b3baae1629fab031f0145b3a2f90db",
+                },
+            },
         },
     },
 }

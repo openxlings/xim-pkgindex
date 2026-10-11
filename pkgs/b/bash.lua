@@ -10,7 +10,7 @@ package = {
     repo = "https://git.savannah.gnu.org/cgit/bash.git",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"shell", "system"},
     keywords = {"bash", "shell", "sh", "gnu"},
@@ -29,7 +29,10 @@ package = {
             ["latest"] = { ref = "5.2.37" },
             ["5.2.37"] = {
                 url = "XLINGS_RES",
-                sha256 = { x86_64 = "4e2f4be7fd46b747d321310c655eb65ba5493ed442ab7df2c6af8801478940c9" },
+                sha256 = {
+                    x86_64 = "4e2f4be7fd46b747d321310c655eb65ba5493ed442ab7df2c6af8801478940c9",
+                    aarch64 = "05329d7866f3b7d8bfed907f237b495cdf704cea64e5e0670045bc3cc481bd9a",
+                },
             },
         },
     },

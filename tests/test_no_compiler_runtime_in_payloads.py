@@ -2,7 +2,7 @@
 
 The rule (decision D3 of the 2026-09-28 ecosystem design, mcpp-community/mcpp
 `.agents/docs/2026-09-28-ecosystem-design-and-optimisation-plan.md`; the
-recipe rule in docs/contributing.md §5.3): no recipe places a file of the MSVC C++
+recipe rule in docs/10-adding-a-package.md, Rules that keep packages correct): no recipe places a file of the MSVC C++
 runtime set (`vcruntime140*.dll`, `msvcp140*.dll`, `concrt140.dll`,
 `vccorlib140.dll`, the `Microsoft.VC*.CRT` redistributable directory) into its
 payload, with one exception: the toolset package itself, whose redistributable
@@ -75,7 +75,7 @@ def test_no_library_payload_places_the_msvc_runtime():
             bad.append(f"{rel}:{number}: {what}")
     assert not bad, (
         "a library payload places the MSVC C++ runtime; the program's build "
-        "places the toolset's (docs/contributing.md §5.3):\n  "
+        "places the toolset's (docs/10-adding-a-package.md, Rules that keep packages correct):\n  "
         + "\n  ".join(bad))
 
 

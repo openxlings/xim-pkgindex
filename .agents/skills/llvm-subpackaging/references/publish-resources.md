@@ -85,6 +85,6 @@ https://gitcode.com/xlings-res/llvm/releases/download/<tag>/<asset>
 ## 5. 与既有机制的关系
 
 - 资产路径与「索引仓库分发（Y-asset）」同一套资源服务，但属不同资产，互不混淆
-  （见 `xpkg-creater` §1.2.1 与 `docs/design/index-distribution.md`）。
+  （见 `xpkg-creater` §1.2.1 与 `docs/11-official-resources.md`）。
 - 同名替换上线方式与工具链 strip 重打包一致（见
   `.agents/docs/2026-06-22-toolchain-strip-plan.md` 的"上线方式"一节）。

@@ -12,7 +12,8 @@ Checked: every tar archive (.tar.gz, .tgz, .tar.xz, .txz, .tar.bz2, .tar)
 whose URL is a literal on a line this change adds under pkgs/. One URL per
 archive name is read, preferring a mirror other than gitcode.com. Not checked:
 zip (no hard-link entries exist in it), .tar.zst (no reader in Python's
-standard library), and URLs built from a template (XLINGS_RES) -- listed as
+standard library), and URLs built from a template (XLINGS_RES, ${version},
+${arch_alias}) -- listed as
 such, so an unchecked archive is never mistaken for a checked one.
 
 Usage: check-payload-hard-links.py --base <git-ref> [--head <git-ref>]
@@ -53,6 +54,9 @@ def main():
         if 'XLINGS_RES' in line:
             unchecked.append(f'template: {line.strip()}')
         for url in URL.findall(line):
+            if '${' in url or '{version}' in url:
+                unchecked.append(f'template: {url}')
+                continue
             name = url.rsplit('/', 1)[-1]
             if name.endswith('.tar.zst'):
                 unchecked.append(f'zstd: {url}')

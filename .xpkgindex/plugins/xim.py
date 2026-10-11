@@ -46,7 +46,7 @@ class XimPlugin(Plugin):
     def on_index(self, ctx) -> None:
         # Omitting the namespace means "this index's default namespace", which
         # xlings takes from the index name — `xim` for the official index
-        # (docs/design/index-distribution.md §1.1). So a descriptor without a
+        # (docs/00-what-this-index-is.md, "Namespaces"). So a descriptor without a
         # `namespace` field is not un-namespaced; it is in `xim`.
         ctx.meta.set("default_namespace",
                      os.path.basename(ctx.root).replace("-pkgindex", "") or "xim")

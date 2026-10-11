@@ -12,6 +12,11 @@ on:
       - 'pkgs/a/agent-confined.lua'
       - 'pkgs/l/limine.lua'
       - 'pkgs/l/linux-kernel-virt.lua'
+      - 'pkgs/g/gcc.lua'
+      - 'pkgs/b/binutils.lua'
+      - 'pkgs/m/musl.lua'
+      - 'pkgs/v/vim.lua'
+      - 'pkgs/g/git.lua'
       - 'scripts/test-luban-editions.sh'
       - 'scripts/test-luban-agent-workspace.py'
       - 'tests/fixtures/luban_network_probe.cpp'
@@ -60,8 +65,13 @@ jobs:
             ${{ runner.temp }}/luban-agent-acceptance/logs/hooks/*.log
 
   editions:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    name: editions (${{ matrix.runner }})
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm]
     steps:
       - uses: actions/checkout@v4
       - name: Install xlings (and luban) -- a given build, or the published one
@@ -70,7 +80,7 @@ jobs:
           RUN: ${{ inputs.xlings_run }}
         run: |
           export XLINGS_NON_INTERACTIVE=1
-          if [[ -n "${RUN:-}" ]]; then
+          if [[ -n "${RUN:-}" && "$(uname -m)" == x86_64 ]]; then
             gh run download "$RUN" -R openxlings/xlings -n xlings-linux-x86_64 -D "$RUNNER_TEMP/xb"
             mkdir -p "$RUNNER_TEMP/xb/x" && tar -xzf "$RUNNER_TEMP/xb/release.tar.gz" -C "$RUNNER_TEMP/xb/x"
             (cd "$RUNNER_TEMP"/xb/x/*/ && ./bin/xlings self install </dev/null)
@@ -78,21 +88,19 @@ jobs:
             curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
           fi
           echo "$HOME/.xlings/bin" >> "$GITHUB_PATH"
-      - name: qemu
-        run: |
-          sudo apt-get -qq update && sudo apt-get -qq install -y qemu-system-x86 >/dev/null
-          sudo chmod 666 /dev/kvm || true
+      - name: KVM for the boot (the machine's, T0)
+        run: sudo chmod 666 /dev/kvm || true
       - name: This runner can make a root (the one-time isolation setup)
         run: |
           xlings install -y bwrap
           xlings self doctor --isolation || xlings self doctor --isolation --fix -y
-      - name: nano, tiny, tiny-musl; tiny's ISO by the virt profile, booted
+      - name: nano, tiny, tiny-musl, core (C++23); on x86_64 tiny's ISO by the virt profile, booted
         run: bash scripts/test-luban-editions.sh "$RUNNER_TEMP/luban-editions"
       - name: Preserve evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: luban-editions
+          name: luban-editions-${{ matrix.runner }}
           path: |
             ${{ runner.temp }}/luban-editions/boot.log
             ${{ runner.temp }}/luban-editions/logs/

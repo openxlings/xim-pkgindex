@@ -116,7 +116,7 @@ jobs:
           .github/scripts/check-dep-namespace.sh
 
       # A published version entry changes what it installs only together with
-      # a higher `revision` (docs/V2/xpackage-spec.md). A client records the
+      # a higher `revision` (docs/specs/xpackage-v2.md). A client records the
       # revision it installed and reinstalls when the recipe's differs, so an
       # entry whose url or sha256 changed under an unchanged revision carries
       # bytes that no machine already holding the version ever receives, and

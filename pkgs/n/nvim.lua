@@ -12,7 +12,7 @@ package = {
 
     -- xim pkg info
     type = "package",
-    archs = {"x86_64", "aarch64"}, -- aarch64: macOS only (see xpm)
+    archs = {"x86_64", "aarch64"}, -- aarch64: macOS, and Linux from 0.12.5
     status = "stable", -- dev, stable, deprecated
     categories = {"vim", "editor"},
     keywords = {"vim", "editor"},
@@ -48,8 +48,24 @@ package = {
                 CN = "https://gitcode.com/xlings-res/nvim/releases/download/${version}/nvim-linux-x86_64.tar.gz",
             },
             ["latest"] = { ref = "0.12.5" },
+            -- Upstream names them nvim-linux-x86_64 and nvim-linux-arm64. Until
+            -- revision 1 the aarch64 coordinate named the x86_64 archive.
             ["0.12.5"] = {
-                sha256 = { x86_64 = "bce0f56eda1f1b1db6eee8f4133d7a38813ea07933837dd1777411ca384c6875" },
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/neovim/neovim/releases/download/v0.12.5/nvim-linux-x86_64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/nvim/releases/download/0.12.5/nvim-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "bce0f56eda1f1b1db6eee8f4133d7a38813ea07933837dd1777411ca384c6875",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/neovim/neovim/releases/download/v0.12.5/nvim-linux-arm64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/nvim/releases/download/0.12.5/nvim-linux-arm64.tar.gz",
+                    },
+                    sha256 = "1aa5ca085249580ae0f91eb14f27ec0919773ff2d99a163d03f3d6c21ac29725",
+                },
+                revision = 1,
             },
             ["0.12.4"] = {
                 sha256 = { x86_64 = "012bf3fcac5ade43914df3f174668bf64d05e049a4f032a388c027b1ebd78628" },
@@ -129,13 +145,22 @@ package = {
     },
 }
 
+-- Before 0.12.5 the Linux builds here are x86_64's: an aarch64 Linux reader
+-- refuses them rather than download a name upstream never published.
+local recipe_arch = (os.arch and os.arch())
+if (recipe_arch == "aarch64" or recipe_arch == "arm64") and package.xpm.linux then
+    for v, _ in pairs(package.xpm.linux) do
+        if v ~= "latest" and v ~= "0.12.5" and v ~= "deps" and v ~= "source" then package.xpm.linux[v] = nil end
+    end
+end
+
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 
 function install()
 
     -- The archive's own top directory: nvim-linux-x86_64, nvim-win64, nvim-macos-<arch>.
-    local nvim_dir = "nvim-linux-x86_64"
+    local nvim_dir = os.isdir("nvim-linux-arm64") and "nvim-linux-arm64" or "nvim-linux-x86_64"
     if os.host() == "windows" then
         nvim_dir = "nvim-win64"
     elseif os.host() == "macosx" then

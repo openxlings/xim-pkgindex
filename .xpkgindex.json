@@ -26,7 +26,7 @@
         "url": "https://github.com/openxlings/xpkgindex"
       }
     ],
-    "docs": "https://xlings.d2learn.org/documents/xim/intro.html"
+    "docs": "https://index.xlings.org/docs/docs-index/"
   },
   "about": {
     "project_name": "xlings",
@@ -67,8 +67,8 @@
   },
   "base_url": "https://openxlings.github.io/xim-pkgindex",
   "languages": [
-    "zh",
     "en",
+    "zh",
     "zh-Hant"
   ],
   "install_command_template": "xlings install {ref}@{version}",
@@ -99,52 +99,50 @@
       {
         "slug": "quick-start",
         "title": {
+          "en": "Getting Started",
           "zh": "快速开始",
-          "en": "Quick start",
           "zh-Hant": "快速開始"
         },
-        "path": "docs/quick-start.md",
+        "path": "docs/01-getting-started.md",
         "translations": {
-          "en": "docs/quick-start.en.md"
+          "zh": "docs/zh/01-getting-started.md"
         }
       },
       {
         "slug": "contributing",
         "title": {
-          "zh": "贡献指南",
-          "en": "Contributing guide",
-          "zh-Hant": "貢獻指南"
+          "en": "Adding a Package",
+          "zh": "添加一个包",
+          "zh-Hant": "新增一個套件"
         },
-        "path": "docs/contributing.md"
+        "path": "docs/10-adding-a-package.md",
+        "translations": {
+          "zh": "docs/zh/10-adding-a-package.md"
+        }
       },
       {
         "slug": "xpackage-spec",
         "title": {
+          "en": "XPackage V2",
           "zh": "XPackage V2 规范",
-          "en": "XPackage V2 spec",
           "zh-Hant": "XPackage V2 規範"
         },
-        "path": "docs/V2/xpackage-spec.md"
-      },
-      {
-        "slug": "add-xpackage",
-        "title": {
-          "zh": "新增一个包",
-          "en": "Adding a package",
-          "zh-Hant": "新增一個套件"
-        },
-        "path": "docs/V1/add-xpackage.md"
-      },
-      {
-        "slug": "docs-index",
-        "title": {
-          "zh": "文档索引",
-          "en": "Docs index",
-          "zh-Hant": "文件索引"
-        },
-        "path": "docs/README.md"
+        "path": "docs/specs/xpackage-v2.md"
       }
     ],
+    "tree": {
+      "root": "docs",
+      "translations": {
+        "zh": "docs/zh"
+      },
+      "exclude": [
+        "specs/legacy",
+        "migrations"
+      ],
+      "untranslated": [
+        "specs"
+      ]
+    },
     "landing": "quick-start",
     "cta": {
       "eyebrow": {

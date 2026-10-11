@@ -10,7 +10,7 @@ package = {
     repo = "https://git.savannah.gnu.org/cgit/coreutils.git",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"system", "cli", "utilities"},
     keywords = {"coreutils", "gnu", "ls", "cp", "mv", "cat"},
@@ -26,7 +26,10 @@ package = {
             ["latest"] = { ref = "9.5" },
             ["9.5"] = {
                 url = "XLINGS_RES",
-                sha256 = { x86_64 = "798ca99285e0853d8b1c6e4f68dc465841ad4e5bda6ff3705e0a4b097493ae37" },
+                sha256 = {
+                    x86_64 = "798ca99285e0853d8b1c6e4f68dc465841ad4e5bda6ff3705e0a4b097493ae37",
+                    aarch64 = "6d5ab96276450ad8873d7f3f35368e22172ce871763a2a2449ddf5acad62f055",
+                },
             },
         },
     },

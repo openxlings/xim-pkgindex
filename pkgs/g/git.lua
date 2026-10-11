@@ -1,7 +1,7 @@
 package = {
 
     -- Platform version sets differ ON PURPOSE:
-    -- the two platforms track different builds -- linux 2.53.0, windows 2.51.1 -- each its own `latest`.
+    -- the two platforms track different builds -- linux 2.53.0-1, windows 2.51.1 -- each its own `latest`.
     -- Declared so `tests/check_platform_version_parity.lua` can tell this
     -- apart from a bump that landed in one section and was forgotten in the
     -- others -- which reads as `<pkg>@<ver> not found` on the platforms that
@@ -21,7 +21,7 @@ package = {
 
     -- xim pkg info
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable", -- dev, stable, deprecated
     categories = {"git"},
     keywords = {"git"},
@@ -52,7 +52,18 @@ package = {
             -- community-source dependency. Same migration applies to
             -- xim:vim (currently dtschan/vim-static, 2019 stale) and
             -- any future T2 pkgs.
-            ["latest"] = { ref = "2.53.0" },
+            -- 2.53.0-1: this index's own static build (tools/res/build.sh git:
+            -- curl, OpenSSL, expat, zlib; RUNTIME_PREFIX, so it finds its
+            -- libexec/ wherever it is), for both architectures. 2.53.0 stays
+            -- what it was.
+            ["latest"] = { ref = "2.53.0-1" },
+            ["2.53.0-1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "cc6e80dddcd45918c5ae856004e19410a5901b78b6601db8ce2c574b778a3cd2",
+                    aarch64 = "a9dda60c711141a9b1dd4101acf44d4d1677f4583512ad9b7165103720a97061",
+                },
+            },
             ["2.53.0"] = {
                 url = "https://github.com/supriyo-biswas/static-builds/releases/download/git-2.53.0/git-2.53.0-linux-x86_64.tar.gz",
                 sha256 = "948a9bb92e74e9a5e5bdd6d8a19e49712f46d9709ddcda924bf17828a794d297",
@@ -60,6 +71,15 @@ package = {
         },
     },
 }
+
+-- 2.53.0 is a third party's x86_64 build: an aarch64 reader refuses it.
+local recipe_arch = (os.arch and os.arch())
+if recipe_arch ~= "aarch64" and recipe_arch ~= "arm64" and recipe_arch ~= "x86_64" then
+    recipe_arch = (type(is_arch) == "function" and is_arch("aarch64")) and "aarch64" or "x86_64"
+end
+if recipe_arch == "aarch64" or recipe_arch == "arm64" then
+    package.xpm.linux["2.53.0"] = nil
+end
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")

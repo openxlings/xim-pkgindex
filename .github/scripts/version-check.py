@@ -18,7 +18,7 @@ pinned consumers keep working). The companion workflow
 `version-bump.yml` then commits each modified file to its own branch
 and opens a PR.
 
-See docs/spec/url-template.md for the contract this script consumes.
+See docs/specs/url-template.md for the contract this script consumes.
 
 Usage
 -----

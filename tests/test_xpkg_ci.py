@@ -283,7 +283,7 @@ if __name__ == "__main__":
 def test_arch_alias_is_read_from_its_own_block_not_the_version_body():
     """`sha256` is a per-arch table of the same `<arch> = "<string>"` shape as
     `arch_alias`, so a scan over the whole version body collects both and the
-    later one wins. In the field order docs/V2/xpackage-spec.md documents --
+    later one wins. In the field order docs/specs/xpackage-v2.md documents --
     `arch_alias` first, then `sha256` -- every alias resolved to a checksum and
     the mirror built `...-linux-7cd69277....tar.gz`.
 

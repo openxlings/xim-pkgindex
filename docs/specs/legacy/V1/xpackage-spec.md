@@ -1,5 +1,7 @@
 # XPackage Spec V1
 
+> **Deprecated — kept for compatibility only.** Clients still read this format; new recipes use [XPackage V2](../../xpackage-v2.md). Not translated.
+
 > `spec = "1"`
 
 ## 运行时环境

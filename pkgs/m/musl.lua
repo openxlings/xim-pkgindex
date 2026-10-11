@@ -38,17 +38,25 @@
 -- moving the default is a decision to make on purpose rather than as a
 -- side effect of adding a version. Ask for the newer one explicitly.
 --
--- x86_64 only, matching glibc.lua. Cross-building the aarch64 payload is
--- easy (musl takes CROSS_COMPILE and the index ships
--- aarch64-linux-musl-gcc), but the build script's checks actually RUN
--- the loader and link a program against it, and none of that can run
--- here — an aarch64 payload would ship unverified.
+-- x86_64 and aarch64. The aarch64 payload is built natively on an arm
+-- runner by tools/res/build.sh musl (Alpine, relocatable: the loader link is
+-- relative and under the prefix), whose checks RUN the loader and a program
+-- linked against it -- the reason this was once x86_64 only.
 --
 -- Payload comes from .agents/tools/build-musl.sh, which exists because
 -- two musl defaults are wrong for a relocatable payload: `--syslibdir`
 -- puts the `ld-musl-*.so.1` loader symlink in /lib rather than under
 -- --prefix (so a default build ships no loader at all), and that symlink
 -- is absolute into the build prefix. See the script for the rest.
+
+-- Linux ARM64 metadata requires xlings 2026.10.8.1 or newer, whose catalog
+-- loader exposes the process architecture (as glibc.lua reads it).
+local recipe_arch = (os.arch and os.arch())
+if recipe_arch ~= "aarch64" and recipe_arch ~= "arm64" and recipe_arch ~= "x86_64" then
+    recipe_arch = (type(is_arch) == "function" and is_arch("aarch64")) and "aarch64" or "x86_64"
+end
+if recipe_arch == "arm64" then recipe_arch = "aarch64" end
+local MUSL_LOADER = "ld-musl-" .. recipe_arch .. ".so.1"
 
 package = {
     spec = "1",
@@ -65,7 +73,7 @@ package = {
 
     -- xim pkg info
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable", -- dev, stable, deprecated
     categories = {"libc"},
     keywords = {"libc", "musl", "static", "alpine"},
@@ -95,8 +103,8 @@ package = {
             -- to the {lib64, lib} convention and finds everything.
             exports = {
                 runtime = {
-                    loader = "lib/ld-musl-x86_64.so.1",
-                    abi    = "linux-x86_64-musl",
+                    loader = "lib/" .. MUSL_LOADER,
+                    abi    = "linux-" .. recipe_arch .. "-musl",
                 },
             },
             ["latest"] = { ref = "1.2.5" },
@@ -117,15 +125,30 @@ package = {
                 -- 1: libc.so (the loader) no longer names the build
                 -- machine's musl-gcc lib/ as its RPATH (install()).
                 revision = 1,
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/musl/releases/download/1.2.5/musl-1.2.5-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/musl/releases/download/1.2.5/musl-1.2.5-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/musl/releases/download/1.2.5/musl-1.2.5-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/musl/releases/download/1.2.5/musl-1.2.5-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "b48e958059906a4e5eef9b222d68e6e17a13c5640973d815bac6c2c66ba70d9a",
                 },
-                sha256 = "b48e958059906a4e5eef9b222d68e6e17a13c5640973d815bac6c2c66ba70d9a",
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/musl/releases/download/1.2.5/musl-1.2.5-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/musl/releases/download/1.2.5/musl-1.2.5-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "615c40618263604ceba1d239dd023d431237cecf0b918871630addc22dab23fd",
+                },
             },
         },
     },
 }
+
+-- 1.2.6 was published for x86_64 only: an aarch64 reader refuses it rather
+-- than install x86 bytes.
+if recipe_arch == "aarch64" then
+    package.xpm.linux["1.2.6"] = nil
+end
 
 import("xim.libxpkg.log")
 import("xim.libxpkg.pkginfo")
@@ -174,9 +197,15 @@ function install()
     -- Never report success without the one file the package exists for.
     -- A `return true` here gets stamped as installed and leaves every
     -- consumer elfpatched onto a loader that is not there.
-    local loader = path.join(pkginfo.install_dir(), "lib", "ld-musl-x86_64.so.1")
-    if not os.isfile(loader) then
-        raise("musl payload has no lib/ld-musl-x86_64.so.1 after install")
+    -- The loader this payload has (ld-musl-<arch>.so.1), read from it: a
+    -- hook does not always see the catalog's architecture.
+    local loader = nil
+    for _, name in ipairs({"ld-musl-x86_64.so.1", "ld-musl-aarch64.so.1"}) do
+        local p = path.join(pkginfo.install_dir(), "lib", name)
+        if os.isfile(p) then loader = p end
+    end
+    if not loader then
+        raise("musl payload has no lib/ld-musl-<arch>.so.1 after install")
     end
 
     -- The published libc.so carries an RPATH into the machine that built it
@@ -242,7 +271,7 @@ local SHARED_LIBS = {
 -- everything in libc and keeps these so a `-lm`/`-lpthread` on someone's
 -- link line resolves instead of erroring.
 local MUSL_ONLY_LIBS = {
-    "ld-musl-x86_64.so.1", "rcrt1.o",
+    "ld-musl-x86_64.so.1", "ld-musl-aarch64.so.1", "rcrt1.o",
     "libcrypt.a", "libresolv.a", "libxnet.a",
 }
 

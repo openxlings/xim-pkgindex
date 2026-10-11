@@ -1,5 +1,33 @@
-# <input> <version> <sha256> -- upstream sources tools/res/build.sh builds from.
-# (The kernel's digest is read from kernel.org's sha256sums.asc.)
+# <input> <version> <sha256 | commit> -- upstream sources tools/res/build.sh builds from.
+# A digest is upstream's own where upstream publishes one, otherwise the one
+# measured when the input was added. (The kernel's is read from kernel.org's
+# sha256sums.asc; passt's is the commit its tag names.)
 limine-binary 12.9.3 9f42fe9ea2e84d71056529969b1d5c24ba9a2287ffcc01bcce58b0ef8aa98b1d
 busybox 1.35.0 faeeb244c35a348a334f4a59e44626ee870fb07b6884d68c10ae8bc19f83a694
 bubblewrap 0.11.2 69abc30005d2186baf7737feacd8da35633b93cf5af38838ecff17c5f8e924f6
+passt 2026_10_02.cba3570 cba357068dc586e7540971eb40bb56c5e62c4de1
+e2fsprogs 1.47.3 857e6ef800feaa2bb4578fbc810214be5d3c88b072ea53c5384733a965737329
+curl 8.22.0 f7ef3ae8a22e521f289803fe93543eb64c329b58aa73a9e224dfd915a2a5f4f7
+proot 5.4.0 29248aac2a7ce10c3bd5ee5602742ec33b2532310ff9cf73b79f3c133e5a5f68
+musl 1.2.5 a9a118bbe84d8764da0ea0d28b3ab3fae8477fc7e4085d90102b8596fc7c75e4
+make 4.3 e05fdde47c5f7ca45cb697e973894ff4f5d79e13b750ed57d7b66d8defc78e19
+git 2.53.0 5818bd7d80b061bbbdfec8a433d609dc8818a05991f731ffc4a561e2ca18c653
+vim 9.2.1172 d4f7a793d2cf80ad6bb09085746515979d049e79e5839d8b68325688b47af297
+wl-clipboard 2.3.0 b4dc560973f0cd74e02f817ffa2fd44ba645a4f1ea94b7b9614dacc9f895f402
+wayland 1.23.1 864fb2a8399e2d0ec39d56e9d9b753c093775beadc6022ce81f441929a81e5ed
+xsel 1.2.1 18487761f5ca626a036d65ef2db8ad9923bf61685e06e7533676c56d7d60eb14
+edk2-x86_64-code.fd.bz2 9.2.4 f4d7c29fccb5e1d4d851eaddc41a5c4feec7de96ca7ad9bbf96f4d09838ef973
+edk2-aarch64-code.fd.bz2 9.2.4 c023444108b7a132fdebf70c4765cd2dd9af2a9ff7d001a743aaabe87c20a458
+edk2-licenses.txt 9.2.4 1ddeaed2e7d2e9ecb960bdfc1b8ee45387aff70d056d985d145949af3951657c
+bash 5.2.37 9599b22ecd1d5787ad7d3b7bf0c59f312b3396d1e281175dd1f8a4014da621ff
+coreutils 9.5 cd328edeac92f6a665de9f323c93b712af1858bc2e0d88f3f7100469470a1b8a
+openssl 3.1.5 6ae015467dabf0469b139ada93319327be24b98251ffaeceda0221848dc09262
+binutils 2.42 f6e4d41fd5fc778b06b7891457b3620da5ecea1006c6a4a41ae998109f85a800
+gcc 16.1.0 50efb4d94c3397aff3b0d61a5abd748b4dd31d9d3f2ab7be05b171d36a510f79
+# The sysroot gcc is configured against (what the x86_64 payload's was, at
+# the index's aarch64 glibc).
+gcc-sysroot-glibc 2.44.3
+gcc-sysroot-linux-headers 5.11.1
+qemu 9.2.4 f3cc1c4eabfdb288218ac3e33763dbe9e276d8bc890b867a2335d58de2ddd39a
+libslirp 4.8.0 2a98852e65666db313481943e7a1997abff0183bd9bea80caec1b5da89fda28c
+dtc 1.6.1 65cec529893659a49a89740bb362f507a3b94fc8cd791e76a8d6a2b6f3203473

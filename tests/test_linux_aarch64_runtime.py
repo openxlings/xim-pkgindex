@@ -29,6 +29,20 @@ def test_glibc_payload_drives_registration_and_removal(arch, libdir, loader):
     assert not any(other in line for line in lines if not line.startswith("EXPORT "))
 
 
+def test_an_installed_payload_is_read_by_its_content_not_a_download_name():
+    """A second scope configures a payload it did not download: the archive
+    name is not this payload's, so the loader is read from the payload."""
+    lua = shutil.which("lua5.4") or shutil.which("lua")
+    assert lua, "Lua is required for runtime layout tests"
+    result = subprocess.run([
+        lua, str(ROOT / "tests/lua/linux_runtime_layout_harness.lua"),
+        str(ROOT / "pkgs/g/glibc.lua"), "", "/isolated/glibc", "", "aarch64",
+    ], check=True, text=True, capture_output=True)
+    lines = result.stdout.splitlines()
+    assert "ld-linux-aarch64.so.1 /isolated/glibc/lib64" in lines
+    assert not any("ld-linux-x86-64.so.2" in line for line in lines if not line.startswith("EXPORT "))
+
+
 def test_carve_rejects_foreign_elf_before_publishing(tmp_path):
     """A foreign tools archive must fail before any artifact is emitted."""
     if not shutil.which("patchelf") or not shutil.which("readelf"):

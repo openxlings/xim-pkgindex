@@ -1,5 +1,7 @@
 # 如何添加一个 XPackage 到包索引仓库 (xim-pkgindex)?
 
+> **Deprecated — kept for compatibility only.** Clients still read this format; new recipes use [XPackage V2](../../xpackage-v2.md). Not translated.
+
 > 本文档基于 XPackage Spec V1 (`spec = "1"`)
 
 ## 第一步 - 创建 Issue

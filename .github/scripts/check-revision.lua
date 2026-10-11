@@ -1,7 +1,7 @@
 #!/usr/bin/env lua
 --
 -- A published version entry changes what it installs only together with a
--- higher `revision` (docs/V2/xpackage-spec.md, "`revision`").
+-- higher `revision` (docs/specs/xpackage-v2.md, "`revision`").
 --
 -- WHAT IS CHECKED
 -- ---------------
@@ -410,7 +410,7 @@ for _, file in ipairs(changed) do
                             .. "revision stayed %d. A published url and sha256 are "
                             .. "immutable; publish the new payload under a new asset name "
                             .. "and raise `revision` to %d, so that clients holding "
-                            .. "revision %d reinstall it (docs/V2/xpackage-spec.md).",
+                            .. "revision %d reinstall it (docs/specs/xpackage-v2.md).",
                             where, base_rev, base_rev + 1, base_rev))
                     end
                 end

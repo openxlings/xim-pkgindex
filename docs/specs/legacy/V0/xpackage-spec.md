@@ -2,6 +2,8 @@
 
 # [已废弃] XPackage Spec & Example
 
+> **Deprecated — kept for compatibility only.** Clients still read this format; new recipes use [XPackage V2](../../xpackage-v2.md). Not translated.
+
 ## XPackage Spec
 
 > format: `name-maintainer.lua`

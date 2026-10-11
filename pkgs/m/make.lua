@@ -12,7 +12,7 @@ package = {
 
     -- xim pkg info
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable", -- dev, stable, deprecated
     categories = {"make", "gnu", "build-system"},
     keywords = {"make", "gnu", "makefile", "build-system"},
@@ -25,7 +25,13 @@ package = {
     xpm = {
         linux = {
             ["latest"] = { ref = "4.3" },
-            ["4.3"] = "XLINGS_RES",
+            ["4.3"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "2c7aa65d8369a39b5ecc55d4521a4d8065532f270535fffb6f504272fac6d5f0",
+                    aarch64 = "c6bd4aba44e154f12bad3380e046b10f50fbdb174397a3710d65dcf6ae989b40",
+                },
+            },
         },
     },
 }

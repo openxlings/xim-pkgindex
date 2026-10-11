@@ -16,7 +16,9 @@ package = {
     categories = {"tools", "gcc", },
 
     xpm = {
-        linux = { ["0.0.1"] = { } },
+        -- revision 1: the interpreter in the specs is found per architecture
+        -- (aarch64's is a spec expression, not a plain path).
+        linux = { ["0.0.1"] = { revision = 1 } },
     },
 }
 
@@ -43,9 +45,14 @@ function xpkg_main(gcc_bin, ...)
         return false
     end
 
+    local default_specs_content = os.iorun(gcc_bin .. " -dumpspecs")
+    local aarch64 = default_specs_content:find("ld-linux-aarch64", 1, true)
+        or default_specs_content:find("ld-musl-aarch64", 1, true)
+
     local sysrootdir = system.subos_sysrootdir()
     local default_libdir = path.join(sysrootdir, "lib")
-    local default_linker = path.join(default_libdir, "ld-linux-x86-64.so.2")
+    local default_linker = path.join(default_libdir,
+        aarch64 and "ld-linux-aarch64.so.1" or "ld-linux-x86-64.so.2")
 
     cmds["--dynamic-linker"] = cmds["--dynamic-linker"] or default_linker
     cmds["--rpath"] = cmds["--rpath"] or default_libdir
@@ -61,7 +68,6 @@ function xpkg_main(gcc_bin, ...)
     cprint("---")
     cprint("")
 
-    local default_specs_content = os.iorun(gcc_bin .. " -dumpspecs")
     local default_specs_file = os.iorun(gcc_bin .. " -print-libgcc-file-name")
 
     default_specs_file = path.join(
@@ -71,15 +77,35 @@ function xpkg_main(gcc_bin, ...)
 
     log.info("Default specs path: " .. default_specs_file)
 
-    -- replace dynamic linker in specs
-    local old_dynamic_linker = {
-        musl = "/lib/ld-musl-x86_64.so.1",
-        gnu = "/lib64/ld-linux-x86-64.so.2",
+    -- replace dynamic linker in specs: what gcc's own target headers spell
+    -- for each machine. aarch64's is a spec expression (endianness, ilp32),
+    -- written out by -dumpspecs as is.
+    local candidates = {
+        musl = {
+            "/lib/ld-musl-x86_64.so.1",
+            "/lib/ld-musl-aarch64%{mbig-endian:_be}%{mabi=ilp32:_ilp32}.so.1",
+            "/lib/ld-musl-aarch64.so.1",
+        },
+        gnu = {
+            "/lib64/ld-linux-x86-64.so.2",
+            "/lib/ld-linux-aarch64%{mbig-endian:_be}%{mabi=ilp32:_ilp32}.so.1",
+            "/lib/ld-linux-aarch64.so.1",
+        },
     }
 
     local linker_type = cmds["--linker-type"] or "gnu"
 
-    old_dynamic_linker = old_dynamic_linker[linker_type]
+    local old_dynamic_linker = nil
+    for _, c in ipairs(candidates[linker_type] or {}) do
+        if default_specs_content:find(c, 1, true) then
+            old_dynamic_linker = c
+            break
+        end
+    end
+    if not old_dynamic_linker then
+        log.error("no %s dynamic linker this tool knows is named in %s's specs", linker_type, gcc_bin)
+        return false
+    end
     log.info("Detected old dynamic linker (%s) : %s", linker_type, old_dynamic_linker)
 
     default_specs_content = string.replace(

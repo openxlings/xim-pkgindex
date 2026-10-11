@@ -30,7 +30,12 @@ jobs:
           python-version: '3.12'
 
       - name: Install xpkgindex
-        run: pip install git+https://github.com/openxlings/xpkgindex.git
+        run: pip install git+https://github.com/openxlings/xpkgindex.git@v0.3.0   # pinned: a generator change is an explicit bump, checked by site-check
+
+      - name: The docs and their translations agree
+        run: |
+          pip install pytest
+          pytest -q tests/test_docs.py -m static
 
       - name: Build the site
         # --strict turns the growth reconciliation warning into an error: if
@@ -50,8 +55,9 @@ jobs:
         run: |
           set -e
           for f in index.html index.json stats/index.html contributors/index.html \
-                   about/index.html docs/quick-start/index.html \
-                   en/index.html zh-Hant/index.html; do
+                   about/index.html docs/quick-start/index.html docs/docs-index/index.html \
+                   zh/docs/quick-start/index.html zh/docs/docs-index/index.html \
+                   zh/index.html zh-Hant/index.html; do
             test -s "/tmp/site/$f" || { echo "::error::missing $f"; exit 1; }
           done
 

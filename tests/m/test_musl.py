@@ -81,8 +81,10 @@ class TestDesign:
         glibc 和 musl 时的区分标签 —— glibc.lua 的注释就是这么写的。
         """
         code = lua_code()
-        assert 'loader = "lib/ld-musl-x86_64.so.1"' in code
-        assert 'abi    = "linux-x86_64-musl"' in code
+        # Per architecture: the loader musl names for the machine it is on.
+        assert 'local MUSL_LOADER = "ld-musl-" .. recipe_arch .. ".so.1"' in code
+        assert 'loader = "lib/" .. MUSL_LOADER' in code
+        assert 'abi    = "linux-" .. recipe_arch .. "-musl"' in code
 
     @pytest.mark.static
     def test_every_version_has_sha256(self):
@@ -94,8 +96,11 @@ class TestDesign:
         assert "XLINGS_RES" not in code, "libc payload 必须带 sha256, 不能用 XLINGS_RES"
         versions = re.findall(r'\["(\d+\.\d+\.\d+)"\]\s*=\s*\{', code)
         assert versions, "没有解析到版本条目"
-        assert len(re.findall(r'sha256\s*=\s*"[0-9a-f]{64}"', code)) == len(versions), \
-            f"{len(versions)} 个版本, sha256 数量不匹配"
+        # A version is one url + sha256, or one per architecture.
+        per_arch = len(re.findall(r'\b(?:x86_64|aarch64)\s*=\s*\{', code))
+        shas = len(re.findall(r'sha256\s*=\s*"[0-9a-f]{64}"', code))
+        assert shas >= len(versions) and shas == len(re.findall(r'GLOBAL\s*=', code)), \
+            f"{len(versions)} 个版本 ({per_arch} 个按架构), sha256 数量不匹配"
 
     @pytest.mark.static
     def test_cn_mirror_for_every_version(self):
@@ -195,7 +200,7 @@ class TestDesign:
         consumer 都指向一个不存在的文件。
         """
         code = lua_code()
-        assert "ld-musl-x86_64.so.1" in code
+        assert 'ld-musl-x86_64.so.1' in code and 'ld-musl-aarch64.so.1' in code
         assert re.search(r'raise\(', code), "install() 必须在 payload 不完整时 raise"
 
     @pytest.mark.static

@@ -61,7 +61,7 @@ class TestStatic:
     @pytest.mark.static
     def test_declares_qt_and_7zip_dependency(self, meta):
         """每个模块都要链接 qtbase (runtime); 每个 archive 都是 .7z, 但 7-Zip 只在
-        install() 里用 (build, docs/contributing.md §5.5)。"""
+        install() 里用 (build, docs/10-adding-a-package.md, Dependencies)。"""
         deps = declared_deps(PKG_FILE)
         for plat in ("windows", "linux", "macosx"):
             assert "xim:qt@6.11.1" in deps[plat]["runtime"], f"{plat} 缺 xim:qt@6.11.1 依赖"

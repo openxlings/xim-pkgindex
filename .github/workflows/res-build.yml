@@ -1,55 +1,124 @@
 name: res-build
 
 # Builds the xlings-res resources this index makes rather than mirrors
-# (tools/res/build.sh; xlings: Luban OS design part 2 §4.2), each on the
-# architecture it is for. The artifacts are what a maintainer publishes:
-#   python3 tools/xpkg_ci.py mirror <manifest> --execute
-# (GitHub release + GitCode through tools/gtc, both verified by content).
+# (tools/res/build.sh), each on the architecture it is for, in a pinned
+# container: the runner needs docker and nothing else. Every build checks what
+# it made (it runs, it is static where it says so, it needs only glibc where
+# it links it) before it is an artifact. Building holds no secret and writes
+# nothing; publishing is a separate dispatch (`publish_runs`: the artifacts of
+# runs already made, added to xlings-res releases, never replacing an asset),
+# in the protected `xlings-res-publish` environment. GitCode is then filled
+# from a CN machine with gtc and verified by content.
+# Dispatched, not run on every pull request: a pull request's runs rebuild
+# all of it (gcc alone is most of an hour) on every push. A change to
+# tools/res is verified by dispatching it on its branch (`only` builds one).
 on:
-  pull_request:
-    paths:
-      - "tools/res/**"
-      - ".github/workflows/res-build.yml"
   workflow_dispatch:
+    inputs:
+      only:
+        description: "build only this resource (empty: all)"
+        required: false
+        default: ""
+      publish_runs:
+        description: "publish these runs' artifacts instead of building (space-separated run ids, oldest first)"
+        required: false
+        default: ""
+      execute:
+        description: "with publish_runs: publish (false: print what it would do)"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   build:
     name: ${{ matrix.what }} ${{ matrix.version }} (${{ matrix.arch }})
-    runs-on: ${{ matrix.runner }}
-    timeout-minutes: 90
+    runs-on: ${{ matrix.arch == 'aarch64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
+    # gcc is the long one (an hour or two on four cores); the rest take minutes.
+    timeout-minutes: ${{ matrix.what == 'gcc' && 330 || 120 }}
+    if: (github.event.inputs.publish_runs || '') == ''
+    env:
+      WANTED: ${{ (github.event.inputs.only || '') == '' || github.event.inputs.only == matrix.what }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - { what: limine,      version: "12.9.3",   arch: x86_64,  runner: ubuntu-24.04 }
-          - { what: limine,      version: "12.9.3",   arch: aarch64, runner: ubuntu-24.04-arm }
-          - { what: kernel-virt, version: "6.12.112", arch: x86_64,  runner: ubuntu-24.04 }
-          - { what: kernel-virt, version: "6.12.112", arch: aarch64, runner: ubuntu-24.04-arm }
-          - { what: busybox,     version: "1.35.0",   arch: aarch64, runner: ubuntu-24.04-arm }
-          - { what: bwrap,       version: "0.11.2",   arch: aarch64, runner: ubuntu-24.04-arm }
+          - { what: limine,        version: "12.9.3",             arch: x86_64 }
+          - { what: limine,        version: "12.9.3",             arch: aarch64 }
+          - { what: kernel-virt,   version: "6.12.112",           arch: x86_64 }
+          - { what: kernel-virt,   version: "6.12.112",           arch: aarch64 }
+          - { what: busybox,       version: "1.35.0",             arch: aarch64 }
+          - { what: bwrap,         version: "0.11.2",             arch: aarch64 }
+          # the aarch64 ecosystem (xlings: 2026-10-11-luban-aarch64-and-docs-i18n-design)
+          - { what: gcc,           version: "16.1.0",             arch: aarch64 }
+          - { what: binutils,      version: "2.42",               arch: aarch64 }
+          - { what: bash,          version: "5.2.37",             arch: aarch64 }
+          - { what: coreutils,     version: "9.5",                arch: aarch64 }
+          - { what: openssl,       version: "3.1.5",              arch: aarch64 }
+          - { what: make,          version: "4.3",                arch: aarch64 }
+          - { what: musl,          version: "1.2.5",              arch: aarch64 }
+          - { what: e2fsprogs,     version: "1.47.3",             arch: aarch64 }
+          - { what: proot,         version: "5.4.0",              arch: aarch64 }
+          - { what: passt,         version: "2026_10_02.cba3570", arch: x86_64 }
+          - { what: passt,         version: "2026_10_02.cba3570", arch: aarch64 }
+          - { what: curl,          version: "8.22.0",             arch: x86_64 }
+          - { what: curl,          version: "8.22.0",             arch: aarch64 }
+          - { what: git,           version: "2.53.0-1",           arch: x86_64 }
+          - { what: git,           version: "2.53.0-1",           arch: aarch64 }
+          - { what: vim,           version: "9.2.1172",           arch: x86_64 }
+          - { what: vim,           version: "9.2.1172",           arch: aarch64 }
+          - { what: wl-clipboard,  version: "2.3.0",              arch: x86_64 }
+          - { what: wl-clipboard,  version: "2.3.0",              arch: aarch64 }
+          - { what: xsel,          version: "1.2.1",              arch: x86_64 }
+          - { what: xsel,          version: "1.2.1",              arch: aarch64 }
+          - { what: edk2-firmware, version: "9.2.4",              arch: x86_64 }
+          - { what: qemu-system,   version: "9.2.4-r1",           arch: x86_64 }
+          - { what: qemu-system,   version: "9.2.4-r1",           arch: aarch64 }
     steps:
       - uses: actions/checkout@v4
-      - name: Kernel build dependencies
-        if: matrix.what == 'kernel-virt'
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq flex bison bc libelf-dev libssl-dev >/dev/null
-      - name: Build
-        run: bash tools/res/build.sh ${{ matrix.what }} ${{ matrix.version }} out
-      - name: The result runs here
+        if: env.WANTED == 'true'
+      - name: Room to build
+        if: env.WANTED == 'true' && (matrix.what == 'gcc' || matrix.what == 'kernel-virt')
         run: |
-          set -eu
-          case "${{ matrix.what }}" in
-            limine)  tar -xzf out/*.tar.gz -C "$RUNNER_TEMP"; "$RUNNER_TEMP"/limine-*/bin/limine --version
-                     file "$RUNNER_TEMP"/limine-*/bin/limine | grep -q "statically linked" ;;
-            busybox) chmod +x out/busybox-*; out/busybox-* echo busybox-ok; file out/busybox-* | grep -q "statically linked" ;;
-            kernel-virt) tar -tzf out/*.tar.gz | grep -q "lib/modules/.*-virt/vmlinuz" ;;
-            bwrap)   tar -xzf out/*.tar.gz -C "$RUNNER_TEMP"; "$RUNNER_TEMP"/bwrap-*/bin/bwrap --version
-                     "$RUNNER_TEMP"/bwrap-*/bin/bwrap --unshare-user --ro-bind / / -- /bin/true || echo "(userns restricted on this runner: built, not run)" ;;
-          esac
+          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/share/boost /opt/hostedtoolcache || true
+          df -h /
+      - name: Build
+        if: env.WANTED == 'true'
+        run: bash tools/res/build.sh ${{ matrix.what }} ${{ matrix.version }} out
       - uses: actions/upload-artifact@v4
+        if: env.WANTED == 'true'
         with:
           name: res-${{ matrix.what }}-${{ matrix.version }}-${{ matrix.arch }}
           path: out/
           if-no-files-found: error
+
+  # Publishing (tools/res/publish.py): an asset its xlings-res release lacks
+  # is added, nothing published is replaced. GitCode is filled from a CN
+  # machine with gtc and checked by content -- a runner stalls on its storage.
+  publish:
+    if: (github.event.inputs.publish_runs || '') != ''
+    runs-on: ubuntu-24.04
+    environment: xlings-res-publish
+    steps:
+      - uses: actions/checkout@v4
+      - name: The artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUNS: ${{ github.event.inputs.publish_runs }}
+        run: |
+          mkdir -p art merged
+          for r in $RUNS; do gh run download "$r" -R "$GITHUB_REPOSITORY" -D "art/$r" || echo "(run $r: no artifacts)"; done
+          # The newest run's build of a resource wins (runs listed oldest first).
+          for r in $RUNS; do for d in art/$r/res-*; do [ -d "$d" ] && rm -rf "merged/$(basename "$d")" && cp -r "$d" merged/; done; done
+          ls merged
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ secrets.XLINGS_RES_TOKEN }}
+          GITCODE_TOKEN: ${{ secrets.GITCODE_TOKEN }}
+        run: python3 tools/res/publish.py merged ${{ github.event.inputs.execute == 'true' && '--execute' || '' }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: published
+          path: merged/published.json

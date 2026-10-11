@@ -338,9 +338,16 @@ local RESERVED_PREFIX = "/nonexistent/xlings-use-rpath-not-default-search"
 local PADDING_HEAD = RESERVED_PREFIX .. "/padding-to-255-bytes-for-install-time-relocation"
 local PADDED_PREFIX = PADDING_HEAD .. string.rep("_", 255 - #PADDING_HEAD)
 
--- Hook paths follow the downloaded payload; they do not depend on the
--- client's optional architecture API.
+-- Hook paths follow the payload; they do not depend on the client's optional
+-- architecture API. Its content first: a scope configuring a payload that is
+-- already installed downloaded nothing, so the file name is not this
+-- payload's -- an aarch64 home's second root registered x86_64's loader and
+-- was refused ("same-owner registration omits an existing member").
 local function runtime_layout()
+    local dir = pkginfo.install_dir()
+    for _, loader in ipairs({"ld-linux-aarch64.so.1", "ld-linux-x86-64.so.2"}) do
+        if os.isfile(path.join(dir, "lib64", loader)) then return "lib64", loader end
+    end
     local file = pkginfo.install_file()
     if file:find("linux-aarch64", 1, true) then
         return "lib64", "ld-linux-aarch64.so.1"

@@ -227,7 +227,7 @@ def arch_aliases(body: str) -> dict[str, str]:
     Scoped to the `arch_alias = { ... }` block on purpose. `sha256` is a
     per-arch table of exactly the same `<arch> = "<string>"` shape, so a scan
     over the whole version body collects both and the later one wins. In the
-    field order docs/V2/xpackage-spec.md documents (`arch_alias` first, then
+    field order docs/specs/xpackage-v2.md documents (`arch_alias` first, then
     `sha256`) that made every alias resolve to a checksum, and the mirror
     built `...-linux-7cd69277....tar.gz`. Nothing in the index had both an
     `arch_alias` and `ci.mirror` until now, which is why it never fired.

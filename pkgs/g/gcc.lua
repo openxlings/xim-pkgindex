@@ -21,7 +21,7 @@ package = {
 
     -- xim pkg info
     type = "package",
-    archs = { "x86_64" },
+    archs = { "x86_64", "aarch64" },
     status = "stable", -- dev, stable, deprecated
     categories = { "compiler", "gnu", "language" },
     keywords = { "compiler", "gnu", "gcc", "language", "c", "c++" },
@@ -58,7 +58,29 @@ package = {
                 },
             },
             ["latest"] = { ref = "16.1.0" },
-            ["16.1.0"] = "XLINGS_RES",
+            -- aarch64: built natively on an arm runner as x86_64's was
+            -- (tools/res/build.sh gcc: fromsource:gcc's configure, against a
+            -- sysroot of xim:glibc + xim:linux-headers), C++23 `import std`
+            -- checked there.
+            -- 1: 16.1.0-r1 -- the same files without hard links (Android and
+            -- FAT refuse link(2)); aarch64 stripped as x86_64's is.
+            ["16.1.0"] = {
+                revision = 1,
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/gcc/releases/download/16.1.0-r1/gcc-16.1.0-r1-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/gcc/releases/download/16.1.0-r1/gcc-16.1.0-r1-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "5469a5fdf6a8bedc76e8049a7f2a0d1ecbe87d6ddf3cdf28bf1a3a9978460dd6",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/gcc/releases/download/16.1.0-r1/gcc-16.1.0-r1-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/gcc/releases/download/16.1.0-r1/gcc-16.1.0-r1-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "887f50f2d34e547cffa7c7ba42d77d37980de67d9033ddb114086a1dd833fc1c",
+                },
+            },
             ["15.1.0"] = "XLINGS_RES",
             ["13.3.0"] = "XLINGS_RES",
             ["11.5.0"] = "XLINGS_RES",
@@ -70,6 +92,17 @@ package = {
         },
     },
 }
+
+-- Older versions were published for x86_64 only: an aarch64 reader refuses
+-- them rather than install x86 bytes.
+local recipe_arch = (os.arch and os.arch())
+if recipe_arch ~= "aarch64" and recipe_arch ~= "arm64" and recipe_arch ~= "x86_64" then
+    recipe_arch = (type(is_arch) == "function" and is_arch("aarch64")) and "aarch64" or "x86_64"
+end
+if recipe_arch == "arm64" then recipe_arch = "aarch64" end
+if recipe_arch == "aarch64" then
+    for _, v in ipairs({"15.1.0", "13.3.0", "11.5.0", "9.4.0"}) do package.xpm.linux[v] = nil end
+end
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.log")
@@ -86,12 +119,29 @@ import("xim.libxpkg.pkgmanager")
 -- Kept separate from package.programs so that the cross-platform declared-
 -- program audit (which runs on windows where mingw-w64 only ships gcc/g++/c++)
 -- doesn't demand shims that only exist on linux.
-local linux_programs = {
+local linux_programs_common = {
     "gcc", "g++", "c++", "cpp",
     "gcc-ar", "gcc-nm", "gcc-ranlib",
     "gcov", "gcov-dump", "gcov-tool",
-    "x86_64-linux-gnu-gcc", "x86_64-linux-gnu-g++", "x86_64-linux-gnu-c++",
 }
+
+-- The target-prefixed driver names, as THIS payload has them (x86_64-linux-gnu-gcc,
+-- aarch64-linux-gnu-gcc): read from its bin/, not from the machine's name for
+-- itself -- a hook does not always see the catalog's architecture.
+function __triple()
+    for _, t in ipairs({"x86_64-linux-gnu", "aarch64-linux-gnu"}) do
+        if os.isfile(path.join(pkginfo.install_dir(), "bin", t .. "-gcc")) then return t end
+    end
+    return "x86_64-linux-gnu"
+end
+
+function __linux_programs()
+    local t = __triple()
+    local out = {}
+    for _, p in ipairs(linux_programs_common) do table.insert(out, p) end
+    for _, p in ipairs({ t .. "-gcc", t .. "-g++", t .. "-c++" }) do table.insert(out, p) end
+    return out
+end
 
 local gcc_tool = {
     ["gcc-ar"] = true, ["gcc-nm"] = true, ["gcc-ranlib"] = true,
@@ -118,6 +168,9 @@ local compiler_entry = {
     ["x86_64-linux-gnu-gcc"] = true,
     ["x86_64-linux-gnu-g++"] = true,
     ["x86_64-linux-gnu-c++"] = true,
+    ["aarch64-linux-gnu-gcc"] = true,
+    ["aarch64-linux-gnu-g++"] = true,
+    ["aarch64-linux-gnu-c++"] = true,
 }
 
 function install()
@@ -151,7 +204,7 @@ function uninstall()
     end
 
     local gcc_version = "gcc-" .. pkginfo.version()
-    for _, prog in ipairs(linux_programs) do
+    for _, prog in ipairs(__linux_programs()) do
         if gcc_tool[prog] then
             xvm.remove(prog, gcc_version)
         else
@@ -393,7 +446,7 @@ function __config_linux()
         }
     }
 
-    for _, prog in ipairs(linux_programs) do
+    for _, prog in ipairs(__linux_programs()) do
 
         config.alias = prog
 

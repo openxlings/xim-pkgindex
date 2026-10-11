@@ -375,7 +375,7 @@ class TestPinnedFacts:
 
     @pytest.mark.static
     def test_install_runs_a_real_precompile_selftest(self, source_text):
-        # The strongest check (R4, docs/V2/xpackage-spec.md): install()
+        # The strongest check (R4, docs/specs/xpackage-v2.md): install()
         # must actually invoke the compiler on the vendored std.cppm with
         # the bionic ctype workaround, not merely check that files exist.
         assert "--precompile" in source_text
