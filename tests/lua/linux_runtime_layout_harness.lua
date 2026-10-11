@@ -1,5 +1,8 @@
 -- Exercise payload paths using the recipe hooks with architecture API absent.
-local recipe, archive, root, metadata_arch = ...
+local recipe, archive, root, metadata_arch, payload_arch = ...
+-- The payload holds its own architecture's loader and no other's.
+payload_arch = payload_arch or (archive:find("aarch64", 1, true) and "aarch64" or "x86_64")
+local own_loader = payload_arch == "aarch64" and "ld-linux-aarch64.so.1" or "ld-linux-x86-64.so.2"
 if metadata_arch then os.arch = function() return metadata_arch end end
 local calls = {}
 path = {
@@ -7,7 +10,10 @@ path = {
     directory = function(p) return p:match("^(.*)/[^/]+$") end,
     filename = function(p) return p:match("[^/]+$") end,
 }
-os.isfile = function() return true end
+os.isfile = function(p)
+    if p:find("ld-linux-", 1, true) then return p:find(own_loader, 1, true) ~= nil end
+    return true
+end
 os.host = function() return "linux" end
 local proxy = setmetatable({}, {__index = function() return function() end end})
 function import(name)
