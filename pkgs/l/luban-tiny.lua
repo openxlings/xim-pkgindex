@@ -39,6 +39,12 @@ package = {
     },
 }
 
+-- 0.1.0 carried an x86_64 kernel in its root and was published for x86_64
+-- only: an aarch64 reader is not offered it (the catalog's process
+-- architecture, as glibc.lua does for its x86_64-only versions).
+local recipe_arch = os.arch and os.arch()
+if recipe_arch == "aarch64" or recipe_arch == "arm64" then package.xpm.linux["0.1.0"] = nil end
+
 import("xim.pkgindex.luban")
 
 
