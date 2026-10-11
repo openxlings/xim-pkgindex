@@ -26,6 +26,10 @@ package = {
         linux = {
             ["latest"] = { ref = "6.12.112" },
             ["6.12.112"] = {
+                -- 1: its scope link is lib/vmlinuz-virt -- linux-kernel's is
+                -- lib/vmlinuz, and two sources for one link refused the
+                -- scope's next sysroot update.
+                revision = 1,
                 url = "XLINGS_RES",
                 sha256 = {
                     x86_64 = "2bc2642c524ea758ac44bc8a6044c9a66b41e65921522cdf369e210679ffa8a9",
@@ -52,7 +56,11 @@ function install()
             os.mv(payload, dir)
         end
     end
-    return os.isfile(path.join(modules_dir(), "vmlinuz"))
+    -- Its own name for the scope's lib/ (linux-kernel's is vmlinuz): two
+    -- kernels in one scope are two names, not two sources for one.
+    local own = path.join(modules_dir(), "vmlinuz-virt")
+    if not os.isfile(own) then os.execute(string.format([[ln -sf vmlinuz "%s"]], own)) end
+    return os.isfile(path.join(modules_dir(), "vmlinuz")) and os.isfile(own)
 end
 
 function config()
@@ -61,8 +69,8 @@ function config()
     xvm.add("linux-kernel-virt", {
         type = "lib",
         bindir = modules_dir(),
-        filename = "vmlinuz",
-        alias = "vmlinuz",
+        filename = "vmlinuz-virt",
+        alias = "vmlinuz-virt",
     })
     return true
 end
