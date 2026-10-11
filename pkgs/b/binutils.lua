@@ -86,7 +86,8 @@ package = {
                     sha256 = "06e78b53860a78ac9f64e3af9b35b14e993a78327c5e189fe91f64252e2012f8",
                 },
                 -- 1: the ld wrapper needs no dirname (config()).
-                revision = 1,
+                -- 2: an aarch64 payload (the x86_64 one unchanged).
+                revision = 2,
             },
             ["2.42"] = "XLINGS_RES",
         },

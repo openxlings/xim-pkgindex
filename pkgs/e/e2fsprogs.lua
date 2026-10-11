@@ -71,9 +71,10 @@ package = {
     xpm = {
         linux = {
             ["latest"] = { ref = "1.47.3" },
-            -- aarch64: 1.47.3-r1, the build without hard links (Android
-            -- refuses link(2)).
+            -- 1: an aarch64 payload, 1.47.3-r1 (built without hard links:
+            -- Android refuses link(2)); the x86_64 one unchanged.
             ["1.47.3"] = {
+                revision = 1,
                 x86_64 = {
                     url = {
                         GLOBAL = "https://github.com/xlings-res/e2fsprogs/releases/download/1.47.3/e2fsprogs-1.47.3-linux-x86_64.tar.gz",

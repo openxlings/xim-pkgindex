@@ -202,7 +202,7 @@ function install()
     local loader = nil
     for _, name in ipairs({"ld-musl-x86_64.so.1", "ld-musl-aarch64.so.1"}) do
         local p = path.join(pkginfo.install_dir(), "lib", name)
-        if os.isfile(p) or os.islink(p) then loader = p end
+        if os.isfile(p) then loader = p end
     end
     if not loader then
         raise("musl payload has no lib/ld-musl-<arch>.so.1 after install")

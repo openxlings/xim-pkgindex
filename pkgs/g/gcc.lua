@@ -62,15 +62,16 @@ package = {
             -- (tools/res/build.sh gcc: fromsource:gcc's configure, against a
             -- sysroot of xim:glibc + xim:linux-headers), C++23 `import std`
             -- checked there.
-            -- (16.1.0-r1: the same build without hard links -- Android refuses
-            -- link(2) -- and stripped as x86_64's is.)
+            -- 1: 16.1.0-r1 -- the same files without hard links (Android and
+            -- FAT refuse link(2)); aarch64 stripped as x86_64's is.
             ["16.1.0"] = {
+                revision = 1,
                 x86_64 = {
                     url = {
-                        GLOBAL = "https://github.com/xlings-res/gcc/releases/download/16.1.0/gcc-16.1.0-linux-x86_64.tar.gz",
-                        CN     = "https://gitcode.com/xlings-res/gcc/releases/download/16.1.0/gcc-16.1.0-linux-x86_64.tar.gz",
+                        GLOBAL = "https://github.com/xlings-res/gcc/releases/download/16.1.0-r1/gcc-16.1.0-r1-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/gcc/releases/download/16.1.0-r1/gcc-16.1.0-r1-linux-x86_64.tar.gz",
                     },
-                    sha256 = "b64356a52553456d2445cdf6829136ff7c0ff6aa7dc39112ae32ff80b87ffa81",
+                    sha256 = "5469a5fdf6a8bedc76e8049a7f2a0d1ecbe87d6ddf3cdf28bf1a3a9978460dd6",
                 },
                 aarch64 = {
                     url = {
