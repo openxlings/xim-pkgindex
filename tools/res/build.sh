@@ -366,12 +366,12 @@ qemu-system)
     d="qemu-system-$version-linux-$arch"
     alpine "apk add -q $APK_STATIC python3 py3-setuptools meson samurai pkgconf perl bash flex bison xz bzip2 \
             glib-dev glib-static pixman-dev pixman-static zlib-dev zlib-static libffi-dev pcre2-dev gettext-static \
-            gettext-dev dtc-dev util-linux-dev util-linux-static \
+            gettext-dev util-linux-dev util-linux-static \
         && tar -xzf slirp.tar.gz && cd libslirp-v$sv \
         && meson setup build --prefix=/opt/slirp --default-library=static >/dev/null && ninja -C build install >/dev/null \
         && cd /w && tar -xJf qemu.tar.xz && mkdir qb && cd qb \
         && PKG_CONFIG_PATH=/opt/slirp/lib/pkgconfig ../qemu-$version/configure --static --prefix=/ \
-             --target-list=x86_64-softmmu,aarch64-softmmu --enable-slirp \
+             --target-list=x86_64-softmmu,aarch64-softmmu --enable-slirp --enable-fdt=internal \
              --disable-docs --disable-tools --disable-guest-agent --disable-user --disable-linux-user --disable-bsd-user \
              --disable-vnc --disable-sdl --disable-gtk --disable-curses --disable-spice --disable-opengl \
              --disable-virglrenderer --disable-libssh --disable-curl --disable-gnutls --disable-nettle --disable-gcrypt \
@@ -379,7 +379,9 @@ qemu-system)
              --disable-linux-io-uring --disable-libudev --disable-zstd --disable-pa --disable-alsa --disable-jack \
              --disable-oss --disable-pipewire --disable-sndio --audio-drv-list= --disable-capstone --disable-libdaxctl \
              --disable-blkio --disable-brlapi --disable-vde --disable-libnfs --disable-rbd --disable-glusterfs \
-             --disable-libiscsi --disable-seccomp --disable-cap-ng --disable-attr --disable-selinux > /w/configure.log 2>&1 \
+             --disable-libiscsi --disable-seccomp --disable-cap-ng --disable-attr --disable-selinux \
+             --disable-bzip2 --disable-lzo --disable-snappy --disable-numa --disable-linux-aio --disable-libpmem \
+             --disable-fuse --disable-lzfse --disable-libkeyutils > /w/configure.log 2>&1 \
         && make -j\$(nproc) > /w/make.log 2>&1 && make install DESTDIR=/w/stage > /w/install.log 2>&1 \
         && mkdir -p /w/$d/bin /w/$d/share && cp /w/stage/bin/qemu-system-x86_64 /w/stage/bin/qemu-system-aarch64 /w/$d/bin/ \
         && strip /w/$d/bin/* && cp -a /w/stage/share/qemu /w/$d/share/ \
