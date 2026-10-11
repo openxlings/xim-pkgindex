@@ -1,0 +1,47 @@
+name: res-publish
+
+# Publishes what res-build made to xlings-res GitHub releases
+# (tools/res/publish.py): an asset its release lacks is added, nothing
+# published is replaced. The GitCode mirror is filled from a CN machine with
+# gtc and checked by content -- a GitHub runner stalls on GitCode's storage.
+on:
+  workflow_dispatch:
+    inputs:
+      runs:
+        description: "res-build run ids, space-separated"
+        required: true
+      execute:
+        description: "publish (false: print what it would do)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    environment: xlings-res-publish
+    steps:
+      - uses: actions/checkout@v4
+      - name: The artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUNS: ${{ inputs.runs }}
+        run: |
+          mkdir -p art
+          for r in $RUNS; do gh run download "$r" -R "$GITHUB_REPOSITORY" -D "art/$r"; done
+          mkdir -p merged
+          # The newest run's build of a resource wins (runs listed oldest first).
+          for r in $RUNS; do for d in art/$r/res-*; do [ -d "$d" ] && rm -rf "merged/$(basename "$d")" && cp -r "$d" merged/; done; done
+          ls merged
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ secrets.XLINGS_RES_TOKEN }}
+          GITCODE_TOKEN: ${{ secrets.GITCODE_TOKEN }}
+        run: python3 tools/res/publish.py merged ${{ inputs.execute && '--execute' || '' }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: published
+          path: merged/published.json
