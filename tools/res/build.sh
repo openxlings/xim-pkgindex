@@ -361,7 +361,11 @@ qemu-system)
     # with user-mode networking (libslirp, built static here): what `luban
     # try` boots a VM with and gives it a network -- or only a proxy -- with.
     # Firmware (SeaBIOS, EDK II) in share/qemu, decompressed.
-    source_of qemu "$version" "https://download.qemu.org/qemu-$version.tar.xz" "$work/qemu.tar.xz"
+    # <upstream>-rN: this index's Nth build of it. r1: the prefix is /usr --
+    # qemu relocates its data directory only under a prefix it can strip
+    # (`/` is not one), and r0 looked for its ROMs in /share/qemu.
+    v="${version%%-r[0-9]*}"
+    source_of qemu "$v" "https://download.qemu.org/qemu-$v.tar.xz" "$work/qemu.tar.xz"
     sv="$(awk '$1 == "libslirp" { print $2 }' "$here/inputs.txt")"
     source_of libslirp "$sv" "https://gitlab.freedesktop.org/slirp/libslirp/-/archive/v$sv/libslirp-v$sv.tar.gz" "$work/slirp.tar.gz"
     # libfdt (the aarch64 virt machine's device tree), as qemu's own subproject:
@@ -375,9 +379,9 @@ qemu-system)
             gettext-dev util-linux-dev util-linux-static \
         && tar -xzf slirp.tar.gz && cd libslirp-v$sv \
         && meson setup build --prefix=/opt/slirp --default-library=static >/dev/null && ninja -C build install >/dev/null \
-        && cd /w && tar -xJf qemu.tar.xz && tar -xJf dtc.tar.xz && mv dtc-$dv qemu-$version/subprojects/dtc \
+        && cd /w && tar -xJf qemu.tar.xz && tar -xJf dtc.tar.xz && mv dtc-$dv qemu-$v/subprojects/dtc \
         && mkdir qb && cd qb \
-        && PKG_CONFIG_PATH=/opt/slirp/lib/pkgconfig ../qemu-$version/configure --static --prefix=/ \
+        && PKG_CONFIG_PATH=/opt/slirp/lib/pkgconfig ../qemu-$v/configure --static --prefix=/usr \
              --target-list=x86_64-softmmu,aarch64-softmmu --enable-slirp --enable-fdt=internal \
              --disable-docs --disable-tools --disable-guest-agent --disable-user --disable-linux-user --disable-bsd-user \
              --disable-vnc --disable-sdl --disable-gtk --disable-curses --disable-spice --disable-opengl \
@@ -390,18 +394,23 @@ qemu-system)
              --disable-bzip2 --disable-lzo --disable-snappy --disable-numa --disable-linux-aio --disable-libpmem \
              --disable-fuse --disable-lzfse --disable-libkeyutils > /w/configure.log 2>&1 \
         && make -j\$(nproc) > /w/make.log 2>&1 && make install DESTDIR=/w/stage > /w/install.log 2>&1 \
-        && mkdir -p /w/$d/bin /w/$d/share && cp /w/stage/bin/qemu-system-x86_64 /w/stage/bin/qemu-system-aarch64 /w/$d/bin/ \
-        && strip /w/$d/bin/* && cp -a /w/stage/share/qemu /w/$d/share/ \
+        && mkdir -p /w/$d/bin /w/$d/share && cp /w/stage/usr/bin/qemu-system-x86_64 /w/stage/usr/bin/qemu-system-aarch64 /w/$d/bin/ \
+        && strip /w/$d/bin/* && cp -a /w/stage/usr/share/qemu /w/$d/share/ \
         && find /w/$d/share/qemu -name '*.bz2' -exec bunzip2 -f {} +" \
       || { for f in configure make install; do [[ -f "$work/$f.log" ]] && { log "--- $f.log"; tail -40 "$work/$f.log" >&2; }; done; die "qemu build failed"; }
     static_only "$work/$d/bin/qemu-system-x86_64" "$work/$d/bin/qemu-system-aarch64"
     for q in x86_64 aarch64; do
-        "$work/$d/bin/qemu-system-$q" --version | grep -q "version $version" || die "qemu-system-$q does not report $version"
+        "$work/$d/bin/qemu-system-$q" --version | grep -q "version $v" || die "qemu-system-$q does not report $v"
         "$work/$d/bin/qemu-system-$q" -M none -netdev help | grep -qx user || die "qemu-system-$q has no user networking"
+        # Its data directory is found beside it, wherever the payload is: a
+        # ROM only share/qemu has, from a copy of the payload elsewhere.
+        "$work/$d/bin/qemu-system-$q" -M none -L help | while read -r p; do [[ -d "$p" ]] && realpath "$p"; done \
+            | grep -qx "$(realpath "$work/$d/share/qemu")" \
+            || die "qemu-system-$q does not find its data beside it: $("$work/$d/bin/qemu-system-$q" -M none -L help | tr '\n' ' ')"
     done
     [[ -f "$work/$d/share/qemu/bios-256k.bin" && -f "$work/$d/share/qemu/edk2-aarch64-code.fd" && -f "$work/$d/share/qemu/edk2-x86_64-code.fd" ]] \
         || die "the firmware is not in share/qemu"
-    provenance "$d" "qemu $version (download.qemu.org, sha256 $(input qemu "$version")) system emulators for x86_64 and aarch64, static (musl, Alpine 3.20), user networking from libslirp $sv and libfdt from dtc $dv, built static; firmware decompressed in share/qemu"
+    provenance "$d" "qemu $v (download.qemu.org, sha256 $(input qemu "$v")) system emulators for x86_64 and aarch64, static (musl, Alpine 3.20), user networking from libslirp $sv and libfdt from dtc $dv, built static; firmware decompressed in share/qemu"
     pack "$d" ;;
 edk2-firmware)
     # What qemu ships in pc-bios/ at tag v<version>, decompressed: firmware
