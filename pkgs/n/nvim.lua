@@ -43,32 +43,40 @@ package = {
             deps = {
                 runtime = { "xim:glibc@>=2.39", "xim:gcc-runtime@15.1.0" },
             },
-            -- Upstream names them nvim-linux-x86_64 and nvim-linux-arm64.
             source = {
-                GLOBAL = "https://github.com/neovim/neovim/releases/download/v${version}/nvim-linux-${arch_alias}.tar.gz",
-                CN = "https://gitcode.com/xlings-res/nvim/releases/download/${version}/nvim-linux-${arch_alias}.tar.gz",
+                GLOBAL = "https://github.com/neovim/neovim/releases/download/v${version}/nvim-linux-x86_64.tar.gz",
+                CN = "https://gitcode.com/xlings-res/nvim/releases/download/${version}/nvim-linux-x86_64.tar.gz",
             },
             ["latest"] = { ref = "0.12.5" },
+            -- Upstream names them nvim-linux-x86_64 and nvim-linux-arm64. Until
+            -- revision 1 the aarch64 coordinate named the x86_64 archive.
             ["0.12.5"] = {
-                arch_alias = { x86_64 = "x86_64", aarch64 = "arm64" },
-                sha256 = {
-                    x86_64 = "bce0f56eda1f1b1db6eee8f4133d7a38813ea07933837dd1777411ca384c6875",
-                    aarch64 = "1aa5ca085249580ae0f91eb14f27ec0919773ff2d99a163d03f3d6c21ac29725",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/neovim/neovim/releases/download/v0.12.5/nvim-linux-x86_64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/nvim/releases/download/0.12.5/nvim-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "bce0f56eda1f1b1db6eee8f4133d7a38813ea07933837dd1777411ca384c6875",
                 },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/neovim/neovim/releases/download/v0.12.5/nvim-linux-arm64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/nvim/releases/download/0.12.5/nvim-linux-arm64.tar.gz",
+                    },
+                    sha256 = "1aa5ca085249580ae0f91eb14f27ec0919773ff2d99a163d03f3d6c21ac29725",
+                },
+                revision = 1,
             },
             ["0.12.4"] = {
-                arch_alias = { x86_64 = "x86_64" },
                 sha256 = { x86_64 = "012bf3fcac5ade43914df3f174668bf64d05e049a4f032a388c027b1ebd78628" },
             },
             ["0.12.2"] = "XLINGS_RES",
             ["0.11.5"] = {
-                arch_alias = { x86_64 = "x86_64" },
                 sha256 = { x86_64 = "b2f91117be5b5ea39edd7297156dc2a4a8df4add6c95a90809a8df19e7ab6f52" },
             },
             -- The last 0.10: plugins that support it are tested against it (e.g. mcppls's
             -- editors/nvim).
             ["0.10.4"] = {
-                arch_alias = { x86_64 = "x86_64" },
                 sha256 = { x86_64 = "95aaa8e89473f5421114f2787c13ae0ec6e11ebbd1a13a1bd6fcf63420f8073f" },
             },
         },

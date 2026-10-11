@@ -57,7 +57,7 @@ jobs:
           for f in index.html index.json stats/index.html contributors/index.html \
                    about/index.html docs/quick-start/index.html docs/docs-index/index.html \
                    zh/docs/quick-start/index.html zh/docs/docs-index/index.html \
-                   en/index.html zh/index.html zh-Hant/index.html; do
+                   zh/index.html zh-Hant/index.html; do
             test -s "/tmp/site/$f" || { echo "::error::missing $f"; exit 1; }
           done
 

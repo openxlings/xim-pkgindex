@@ -64,10 +64,11 @@ jobs:
           # so a new qemu sibling is installable here too). 2.6MB unpacked; the
           # scoping note above is about the 365MB one.
           xlings config --add-xpkg pkgs/q/qemu-user-aarch64.lua
+          xlings config --add-xpkg pkgs/q/qemu-system.lua
           # xlings (2026.9.26.2) does not register a descriptor identical to the
           # published one ("identical to xim:<pkg>; nothing to add"), so an
           # unchanged package is installed under `xim:` instead of `local:`.
-          for p in qemu-riscv picolibc-riscv qemu-user-aarch64; do
+          for p in qemu-riscv picolibc-riscv qemu-user-aarch64 qemu-system; do
             xlings install "local:$p" -y || xlings install "xim:$p" -y
           done
           xlings install xim:llvm -y

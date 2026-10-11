@@ -47,7 +47,7 @@ for f in "${FILES[@]}"; do
     base="$(basename "$f")"                       # name-version-linux-<arch>.tar.gz
     stem="${base%.tar.gz}"; stem="${stem%-linux-*}"
     # A rebuild under an unchanged version key is `name-version-r<N>`
-    # (build-glibc.sh; `revision` in docs/specs/xpackage-v2.md), and its
+    # (build-glibc.sh; `revision` in docs/V2/xpackage-spec.md), and its
     # release tag is `version-r<N>`. Splitting at the last `-` alone would
     # publish it as package `name-version`, tag `r<N>`.
     if [[ "$stem" =~ ^(.+)-([^-]+-r[0-9]+)$ ]]; then

@@ -57,13 +57,11 @@ import("xim.libxpkg.xvm")
 
 function install()
     local dir = pkginfo.install_dir()
-    -- The archive's root is qemu-system-<version>-linux-<arch>/.
-    for _, d in ipairs(os.dirs(path.join(path.directory(pkginfo.install_file()), "qemu-system-*"))) do
-        if os.isfile(path.join(d, "bin", "qemu-system-x86_64")) then
-            os.tryrm(dir)
-            os.mv(d, dir)
-            break
-        end
+    -- The archive's root is its own name: qemu-system-<version>-linux-<arch>/.
+    local payload = pkginfo.install_file():replace(".tar.gz", "")
+    if os.isdir(payload) then
+        os.tryrm(dir)
+        os.mv(payload, dir)
     end
     -- Both emulators and the firmware they boot with, or it is not the payload:
     -- qemu finds share/qemu relative to itself, and an emulator without it
