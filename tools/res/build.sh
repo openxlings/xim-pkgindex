@@ -397,7 +397,7 @@ qemu-system)
     static_only "$work/$d/bin/qemu-system-x86_64" "$work/$d/bin/qemu-system-aarch64"
     for q in x86_64 aarch64; do
         "$work/$d/bin/qemu-system-$q" --version | grep -q "version $version" || die "qemu-system-$q does not report $version"
-        "$work/$d/bin/qemu-system-$q" -netdev help | grep -qx user || die "qemu-system-$q has no user networking"
+        "$work/$d/bin/qemu-system-$q" -M none -netdev help | grep -qx user || die "qemu-system-$q has no user networking"
     done
     [[ -f "$work/$d/share/qemu/bios-256k.bin" && -f "$work/$d/share/qemu/edk2-aarch64-code.fd" && -f "$work/$d/share/qemu/edk2-x86_64-code.fd" ]] \
         || die "the firmware is not in share/qemu"
