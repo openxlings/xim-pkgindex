@@ -365,7 +365,8 @@ qemu-system)
     sv="$(awk '$1 == "libslirp" { print $2 }' "$here/inputs.txt")"
     source_of libslirp "$sv" "https://gitlab.freedesktop.org/slirp/libslirp/-/archive/v$sv/libslirp-v$sv.tar.gz" "$work/slirp.tar.gz"
     # libfdt (the aarch64 virt machine's device tree), as qemu's own subproject:
-    # its release tarball leaves dtc to git, and no distro ships libfdt.a.
+    # its release tarball leaves dtc to git (dtc.wrap: v1.6.1), and no distro
+    # ships libfdt.a.
     dv="$(awk '$1 == "dtc" { print $2 }' "$here/inputs.txt")"
     source_of dtc "$dv" "https://mirrors.edge.kernel.org/pub/software/utils/dtc/dtc-$dv.tar.xz" "$work/dtc.tar.xz"
     d="qemu-system-$version-linux-$arch"
