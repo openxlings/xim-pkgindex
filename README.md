@@ -39,6 +39,23 @@ Browse every package, its versions and commands at
 The format is [XPackage V2](docs/specs/xpackage-v2.md); all documentation is in
 [docs/](docs/README.md).
 
+### With an AI agent
+
+An agent (Claude Code, Cursor, Copilot, ...) can do the whole path; the skills
+in `.agents/skills/` hold the rules it must follow. Give it:
+
+```
+Read the README and docs/10-adding-a-package.md of
+https://github.com/openxlings/xim-pkgindex, and follow
+.agents/skills/xpkg-creater/SKILL.md and .agents/skills/pr-workflow/SKILL.md:
+add the package <name> (upstream: <url>) for every platform and architecture
+it publishes, with its test, verify it in an isolated XLINGS_HOME, then open
+a pull request with what you ran.
+```
+
+Review its pull request as you would anyone's: the resources, the sha256s, and
+that the install ran.
+
 ## Other indexes
 
 | Repository | Namespace | For |

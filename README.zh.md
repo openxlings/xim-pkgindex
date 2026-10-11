@@ -36,6 +36,22 @@ xlings update
 
 格式见 [XPackage V2](docs/specs/xpackage-v2.md)；全部文档在 [docs/zh/](docs/zh/README.md)。
 
+### 用 AI agent 贡献
+
+agent（Claude Code、Cursor、Copilot 等）可以走完整个流程；`.agents/skills/` 中的 skill
+写明了它必须遵守的规则。把下面的提示词交给它：
+
+```
+Read the README and docs/10-adding-a-package.md of
+https://github.com/openxlings/xim-pkgindex, and follow
+.agents/skills/xpkg-creater/SKILL.md and .agents/skills/pr-workflow/SKILL.md:
+add the package <name> (upstream: <url>) for every platform and architecture
+it publishes, with its test, verify it in an isolated XLINGS_HOME, then open
+a pull request with what you ran.
+```
+
+像审阅其他人的 PR 一样审阅它的 PR：资源、sha256，以及安装确实运行过。
+
 ## 其他索引
 
 | 仓库 | 命名空间 | 用途 |
