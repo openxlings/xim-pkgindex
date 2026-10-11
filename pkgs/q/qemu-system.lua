@@ -35,18 +35,21 @@ package = {
             ["9.2.4"] = {
                 x86_64 = {
                     url = {
-                        GLOBAL = "https://github.com/xlings-res/qemu-system/releases/download/9.2.4/qemu-system-9.2.4-linux-x86_64.tar.gz",
-                        CN     = "https://gitcode.com/xlings-res/qemu-system/releases/download/9.2.4/qemu-system-9.2.4-linux-x86_64.tar.gz",
+                        GLOBAL = "https://github.com/xlings-res/qemu-system/releases/download/9.2.4-r1/qemu-system-9.2.4-r1-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/qemu-system/releases/download/9.2.4-r1/qemu-system-9.2.4-r1-linux-x86_64.tar.gz",
                     },
-                    sha256 = "533af8e0b7dfcafed915faeb32ff05ed6160a8ee008dac2d6026e329345b053b",
+                    sha256 = "e274e596559a75b158e320655c020ed5a001c6656161ab90163a183a9672a7cc",
                 },
                 aarch64 = {
                     url = {
-                        GLOBAL = "https://github.com/xlings-res/qemu-system/releases/download/9.2.4/qemu-system-9.2.4-linux-aarch64.tar.gz",
-                        CN     = "https://gitcode.com/xlings-res/qemu-system/releases/download/9.2.4/qemu-system-9.2.4-linux-aarch64.tar.gz",
+                        GLOBAL = "https://github.com/xlings-res/qemu-system/releases/download/9.2.4-r1/qemu-system-9.2.4-r1-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/qemu-system/releases/download/9.2.4-r1/qemu-system-9.2.4-r1-linux-aarch64.tar.gz",
                     },
-                    sha256 = "8c12020b0d2bceab1c759748ae4a2055f18f21f866b9d270c69f691df2b3bb66",
+                    sha256 = "bd089b44af0b1287f47e5345f7683b7a2fbcb8797520f685405e9475a001c2a5",
                 },
+                -- r1: built with prefix /usr, so qemu finds share/qemu beside
+                -- itself (r0's looked in /share/qemu and had no option ROMs).
+                revision = 1,
             },
         },
     },
