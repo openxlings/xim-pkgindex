@@ -72,10 +72,12 @@ source_of() {   # name version url file
 }
 
 # A command in a container, $work mounted at /w; what it makes is ours after.
-alpine() { docker run --rm -v "$work:/w" -w /w "$ALPINE" sh -euc "$1; chown -R $(id -u):$(id -g) /w"; }
+# The files go back to the runner's user however the build ends, and the
+# build's status is the container's: a failed `a && b` chain fails it.
+alpine() { docker run --rm -v "$work:/w" -w /w "$ALPINE" sh -euc "trap 'chown -R $(id -u):$(id -g) /w' EXIT; $1"; }
 debian() {
     docker run --rm -v "$work:/w" -w /w -e DEBIAN_FRONTEND=noninteractive "$DEBIAN" \
-        bash -euo pipefail -c "$1; chown -R $(id -u):$(id -g) /w"
+        bash -euo pipefail -c "trap 'chown -R $(id -u):$(id -g) /w' EXIT; $1"
 }
 
 seal() {    # file -> file.sha256
@@ -381,7 +383,7 @@ qemu-system)
         && make -j\$(nproc) > /w/make.log 2>&1 && make install DESTDIR=/w/stage > /w/install.log 2>&1 \
         && mkdir -p /w/$d/bin /w/$d/share && cp /w/stage/bin/qemu-system-x86_64 /w/stage/bin/qemu-system-aarch64 /w/$d/bin/ \
         && strip /w/$d/bin/* && cp -a /w/stage/share/qemu /w/$d/share/ \
-        && for f in /w/$d/share/qemu/*.bz2; do [ -f \"\$f\" ] && bunzip2 -f \"\$f\"; done; true" \
+        && find /w/$d/share/qemu -name '*.bz2' -exec bunzip2 -f {} +" \
       || { for f in configure make install; do [[ -f "$work/$f.log" ]] && { log "--- $f.log"; tail -40 "$work/$f.log" >&2; }; done; die "qemu build failed"; }
     static_only "$work/$d/bin/qemu-system-x86_64" "$work/$d/bin/qemu-system-aarch64"
     for q in x86_64 aarch64; do
