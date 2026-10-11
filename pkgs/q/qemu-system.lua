@@ -49,7 +49,8 @@ package = {
                 },
                 -- r1: built with prefix /usr, so qemu finds share/qemu beside
                 -- itself (r0's looked in /share/qemu and had no option ROMs).
-                revision = 1,
+                -- r2: the emulators bind to the package's release.
+                revision = 2,
             },
         },
     },
@@ -80,10 +81,13 @@ function install()
 end
 
 function config()
+    -- The package name anchors the release; both emulators bind to it, so
+    -- `xlings use qemu-system@<v>` moves them together.
     local bindir = path.join(pkginfo.install_dir(), "bin")
+    local release = package.name .. "@" .. pkginfo.version()
     xvm.add(package.name)
-    xvm.add("qemu-system-x86_64", { bindir = bindir })
-    xvm.add("qemu-system-aarch64", { bindir = bindir })
+    xvm.add("qemu-system-x86_64", { bindir = bindir, binding = release })
+    xvm.add("qemu-system-aarch64", { bindir = bindir, binding = release })
     return true
 end
 
