@@ -12,7 +12,7 @@ package = {
 
     -- xim pkg info
     type = "package",
-    archs = {"x86_64", "aarch64"}, -- aarch64: macOS only (see xpm)
+    archs = {"x86_64", "aarch64"}, -- aarch64: macOS, and Linux from 0.12.5
     status = "stable", -- dev, stable, deprecated
     categories = {"vim", "editor"},
     keywords = {"vim", "editor"},
@@ -43,24 +43,32 @@ package = {
             deps = {
                 runtime = { "xim:glibc@>=2.39", "xim:gcc-runtime@15.1.0" },
             },
+            -- Upstream names them nvim-linux-x86_64 and nvim-linux-arm64.
             source = {
-                GLOBAL = "https://github.com/neovim/neovim/releases/download/v${version}/nvim-linux-x86_64.tar.gz",
-                CN = "https://gitcode.com/xlings-res/nvim/releases/download/${version}/nvim-linux-x86_64.tar.gz",
+                GLOBAL = "https://github.com/neovim/neovim/releases/download/v${version}/nvim-linux-${arch_alias}.tar.gz",
+                CN = "https://gitcode.com/xlings-res/nvim/releases/download/${version}/nvim-linux-${arch_alias}.tar.gz",
             },
             ["latest"] = { ref = "0.12.5" },
             ["0.12.5"] = {
-                sha256 = { x86_64 = "bce0f56eda1f1b1db6eee8f4133d7a38813ea07933837dd1777411ca384c6875" },
+                arch_alias = { x86_64 = "x86_64", aarch64 = "arm64" },
+                sha256 = {
+                    x86_64 = "bce0f56eda1f1b1db6eee8f4133d7a38813ea07933837dd1777411ca384c6875",
+                    aarch64 = "1aa5ca085249580ae0f91eb14f27ec0919773ff2d99a163d03f3d6c21ac29725",
+                },
             },
             ["0.12.4"] = {
+                arch_alias = { x86_64 = "x86_64" },
                 sha256 = { x86_64 = "012bf3fcac5ade43914df3f174668bf64d05e049a4f032a388c027b1ebd78628" },
             },
             ["0.12.2"] = "XLINGS_RES",
             ["0.11.5"] = {
+                arch_alias = { x86_64 = "x86_64" },
                 sha256 = { x86_64 = "b2f91117be5b5ea39edd7297156dc2a4a8df4add6c95a90809a8df19e7ab6f52" },
             },
             -- The last 0.10: plugins that support it are tested against it (e.g. mcppls's
             -- editors/nvim).
             ["0.10.4"] = {
+                arch_alias = { x86_64 = "x86_64" },
                 sha256 = { x86_64 = "95aaa8e89473f5421114f2787c13ae0ec6e11ebbd1a13a1bd6fcf63420f8073f" },
             },
         },
@@ -129,13 +137,22 @@ package = {
     },
 }
 
+-- Before 0.12.5 the Linux builds here are x86_64's: an aarch64 Linux reader
+-- refuses them rather than download a name upstream never published.
+local recipe_arch = (os.arch and os.arch())
+if (recipe_arch == "aarch64" or recipe_arch == "arm64") and package.xpm.linux then
+    for v, _ in pairs(package.xpm.linux) do
+        if v ~= "latest" and v ~= "0.12.5" and v ~= "deps" and v ~= "source" then package.xpm.linux[v] = nil end
+    end
+end
+
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 
 function install()
 
     -- The archive's own top directory: nvim-linux-x86_64, nvim-win64, nvim-macos-<arch>.
-    local nvim_dir = "nvim-linux-x86_64"
+    local nvim_dir = os.isdir("nvim-linux-arm64") and "nvim-linux-arm64" or "nvim-linux-x86_64"
     if os.host() == "windows" then
         nvim_dir = "nvim-win64"
     elseif os.host() == "macosx" then

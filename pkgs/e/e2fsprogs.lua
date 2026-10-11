@@ -11,7 +11,7 @@ package = {
     docs = "https://www.man7.org/linux/man-pages/man8/mke2fs.8.html",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"system", "filesystem", "utilities"},
     keywords = {"ext2", "ext3", "ext4", "fsck", "mke2fs", "resize2fs", "tune2fs"},
@@ -71,7 +71,13 @@ package = {
     xpm = {
         linux = {
             ["latest"] = { ref = "1.47.3" },
-            ["1.47.3"] = "XLINGS_RES",
+            ["1.47.3"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "fa3211e05885ba44fe412017c67e95a0d0cf10c690766ce85a5d77ad7010edf4",
+                    aarch64 = "ff832fdce67dae09d562646e19bb443640b9c5b94a2230f95add923ae69a8099",
+                },
+            },
         },
     },
 }

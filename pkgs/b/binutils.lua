@@ -11,7 +11,7 @@ package = {
 
     -- xim pkg info
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable", -- dev, stable, deprecated
     categories = {"binutils", "gnu"},
     keywords = {"binutils", "gnu"},
@@ -69,11 +69,21 @@ package = {
             -- directory from the downloaded FILENAME, so it still finds
             -- `binutils-2.42-linux-x86_64/`.
             ["2.42.1"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/binutils/releases/download/2.42/binutils-2.42-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/binutils/releases/download/2.42/binutils-2.42-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/binutils/releases/download/2.42/binutils-2.42-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/binutils/releases/download/2.42/binutils-2.42-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "32ec131327cd10624f70741fc553ad369f8f53ee4b79276a44f572c6d8190fd7",
                 },
-                sha256 = "32ec131327cd10624f70741fc553ad369f8f53ee4b79276a44f572c6d8190fd7",
+                -- Built natively on an arm runner (tools/res/build.sh binutils).
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/binutils/releases/download/2.42/binutils-2.42-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/binutils/releases/download/2.42/binutils-2.42-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "6d74f5678595e42007ad959d1cf4fab881f47bea73d21e5c9fea0f63390d75b3",
+                },
                 -- 1: the ld wrapper needs no dirname (config()).
                 revision = 1,
             },

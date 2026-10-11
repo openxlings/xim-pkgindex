@@ -11,12 +11,14 @@ on:
     paths:
       - 'tools/**'
       - 'tests/scripts/**'
-      - '.github/workflows/ci-tools.yml'
+      - 'scripts/**'
+      - '.github/workflows/**'
   pull_request:
     paths:
       - 'tools/**'
       - 'tests/scripts/**'
-      - '.github/workflows/ci-tools.yml'
+      - 'scripts/**'
+      - '.github/workflows/**'
 
 jobs:
   tools:
@@ -28,6 +30,10 @@ jobs:
         run: |
           for f in tools/*.sh; do bash -n "$f" || exit 1; done
           echo "all tools/*.sh parse"
+
+      # What CI takes from a runner is the T0 list; the rest comes from xlings.
+      - name: Host dependencies (tools/lint_host_deps.sh)
+        run: bash tools/lint_host_deps.sh
 
       - name: Pointer history retention policy
         run: python3 tests/scripts/test_index_pointer_history.py

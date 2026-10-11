@@ -1,0 +1,13 @@
+# Workflows whose runner packages are not yet audited (xlings: the aarch64
+# design §10). The index's own test tooling: a file leaves this list when its
+# installs come from xlings or carry host-dep-ok.
+.github/workflows/ci-test.yml           lua5.4 for the recipe checks
+.github/workflows/ci-xpkg-test.yml      lua5.4, pytest
+.github/workflows/ci-sweep.yml          binutils, patchelf, lua5.4
+.github/workflows/node-native-modules.yml   patchelf, lua5.4, pytest
+.github/workflows/llvm-linux-aarch64.yml    the LLVM build's toolchain
+.github/workflows/glibc-root-runtime.yml    a glibc root's runtime check
+.github/workflows/chatgpt-runtime.yml   xvfb, strace
+.github/workflows/baremetal-riscv-smoke.yml pytest
+.github/workflows/site-check.yml        the site generator (pip)
+.github/workflows/pkgindex-deloy.yml    the site generator (pip)

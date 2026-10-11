@@ -11,10 +11,9 @@ package = {
     docs = "https://fishshell.com/docs/current/",
 
     type = "package",
-    -- xpm only carries the x86_64 url; mark x86_64 to keep arch metadata
-    -- honest. aarch64 is published upstream too — add it here once
-    -- xpm gains a per-arch url shape.
-    archs = {"x86_64"},
+    -- 4.8.1: upstream's static x86_64 and aarch64 builds; older versions
+    -- x86_64 only (an aarch64 reader refuses them, below).
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"shell", "cli"},
     keywords = {"fish", "shell", "interactive", "rust"},
@@ -32,8 +31,14 @@ package = {
             url_template = "https://github.com/fish-shell/fish-shell/releases/download/{version}/fish-{version}-linux-x86_64.tar.xz",
             ["latest"] = { ref = "4.8.1" },
             ["4.8.1"] = {
-                url = "https://github.com/fish-shell/fish-shell/releases/download/4.8.1/fish-4.8.1-linux-x86_64.tar.xz",
-                sha256 = "39cab35242ab77bfdbce73b473000c3b045aaf2fe0951b042199bb7fdba3df78",
+                x86_64 = {
+                    url = "https://github.com/fish-shell/fish-shell/releases/download/4.8.1/fish-4.8.1-linux-x86_64.tar.xz",
+                    sha256 = "39cab35242ab77bfdbce73b473000c3b045aaf2fe0951b042199bb7fdba3df78",
+                },
+                aarch64 = {
+                    url = "https://github.com/fish-shell/fish-shell/releases/download/4.8.1/fish-4.8.1-linux-aarch64.tar.xz",
+                    sha256 = "a03c8a445570a2a37e114cb13cebe41842cf17c4dd67a6530a57f742db04eee4",
+                },
             },
             ["4.8.0"] = {
                 url = "https://github.com/fish-shell/fish-shell/releases/download/4.8.0/fish-4.8.0-linux-x86_64.tar.xz",
@@ -46,6 +51,12 @@ package = {
         },
     },
 }
+
+local recipe_arch = (os.arch and os.arch())
+if recipe_arch == "aarch64" or recipe_arch == "arm64" then
+    package.xpm.linux["4.8.0"] = nil
+    package.xpm.linux["4.6.0"] = nil
+end
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")

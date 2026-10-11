@@ -16,16 +16,17 @@ package = {
     homepage = "https://github.com/openxlings/xlings",
     licenses = {"Apache-2.0"},
     type = "subos",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"subos", "distribution"},
     keywords = {"luban", "rootfs", "distribution", "core", "toolchain"},
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "2026.10.11.1" },
+            ["latest"] = { ref = "2026.10.11.2" },
             ["0.1.0"] = {},
             ["2026.10.11.1"] = {},
+            ["2026.10.11.2"] = {},
         },
     },
 }
@@ -81,7 +82,49 @@ local editions = {
 ]],
         shells = "/bin/sh\n/bin/bash\n/usr/bin/fish\n",
     },
+    -- x86_64 and aarch64: every package below is published for both (vim and
+    -- git are this index's own static builds now; gcc and binutils built on an
+    -- arm runner as x86_64's were). An environment made from 2026.10.11.1
+    -- moves here with `luban upgrade`.
+    ["2026.10.11.2"] = {
+        manifest = [[
+{
+  "subos_kind": "rootfs",
+  "min_client": "2026.10.11.1",
+  "from": "subos:luban-tiny@2026.10.11.1",
+  "abi": { "kernel": "linux", "libc": "gnu" },
+  "packages": [
+    "xim:bash@5.2.37",
+    "xim:fish@4.8.1",
+    "xim:vim@9.2.1172",
+    "xim:nvim@0.12.5",
+    "xim:git@2.53.0-1",
+    "xim:mcpp@2026.10.11.1",
+    "xim:ninja@1.12.1",
+    "xim:coreutils@9.5",
+    "xim:gcc@16.1.0",
+    "xim:binutils@2.42.1",
+    "xim:make@4.3",
+    "xim:openssl@3.1.5",
+    "xim:xz@5.8.3",
+    "xim:zlib@1.3.1"
+  ],
+  "workspace": {}
 }
+]],
+        shells = "/bin/sh\n/bin/bash\n/usr/bin/fish\n",
+    },
+}
+
+-- 0.1.0 and 2026.10.11.1 name x86_64-only packages: an aarch64 reader
+-- refuses them rather than make an environment half.
+local recipe_arch = (os.arch and os.arch())
+if recipe_arch == "aarch64" or recipe_arch == "arm64" then
+    package.xpm.linux["0.1.0"] = nil
+    package.xpm.linux["2026.10.11.1"] = nil
+    editions["0.1.0"] = nil
+    editions["2026.10.11.1"] = nil
+end
 
 local versions = {}
 for v, e in pairs(editions) do

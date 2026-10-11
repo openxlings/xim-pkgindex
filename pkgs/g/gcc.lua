@@ -21,7 +21,7 @@ package = {
 
     -- xim pkg info
     type = "package",
-    archs = { "x86_64" },
+    archs = { "x86_64", "aarch64" },
     status = "stable", -- dev, stable, deprecated
     categories = { "compiler", "gnu", "language" },
     keywords = { "compiler", "gnu", "gcc", "language", "c", "c++" },
@@ -58,7 +58,17 @@ package = {
                 },
             },
             ["latest"] = { ref = "16.1.0" },
-            ["16.1.0"] = "XLINGS_RES",
+            -- aarch64: built natively on an arm runner as x86_64's was
+            -- (tools/res/build.sh gcc: fromsource:gcc's configure, against a
+            -- sysroot of xim:glibc + xim:linux-headers), C++23 `import std`
+            -- checked there.
+            ["16.1.0"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "b64356a52553456d2445cdf6829136ff7c0ff6aa7dc39112ae32ff80b87ffa81",
+                    aarch64 = "3f06cd9725c59a88486d00cc1e9c3e73dbdda59ddccebefdbe9119f5095c170f",
+                },
+            },
             ["15.1.0"] = "XLINGS_RES",
             ["13.3.0"] = "XLINGS_RES",
             ["11.5.0"] = "XLINGS_RES",
@@ -70,6 +80,19 @@ package = {
         },
     },
 }
+
+-- Older versions were published for x86_64 only: an aarch64 reader refuses
+-- them rather than install x86 bytes.
+local recipe_arch = (os.arch and os.arch())
+if recipe_arch ~= "aarch64" and recipe_arch ~= "arm64" and recipe_arch ~= "x86_64" then
+    recipe_arch = (type(is_arch) == "function" and is_arch("aarch64")) and "aarch64" or "x86_64"
+end
+if recipe_arch == "arm64" then recipe_arch = "aarch64" end
+if recipe_arch == "aarch64" then
+    for _, v in ipairs({"15.1.0", "13.3.0", "11.5.0", "9.4.0"}) do package.xpm.linux[v] = nil end
+end
+-- The target-prefixed driver names, as this machine's gcc installs them.
+local TRIPLE = recipe_arch .. "-linux-gnu"
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.log")
@@ -90,7 +113,7 @@ local linux_programs = {
     "gcc", "g++", "c++", "cpp",
     "gcc-ar", "gcc-nm", "gcc-ranlib",
     "gcov", "gcov-dump", "gcov-tool",
-    "x86_64-linux-gnu-gcc", "x86_64-linux-gnu-g++", "x86_64-linux-gnu-c++",
+    TRIPLE .. "-gcc", TRIPLE .. "-g++", TRIPLE .. "-c++",
 }
 
 local gcc_tool = {
@@ -115,9 +138,9 @@ local compiler_entry = {
     ["gcc"] = true,
     ["g++"] = true,
     ["c++"] = true,
-    ["x86_64-linux-gnu-gcc"] = true,
-    ["x86_64-linux-gnu-g++"] = true,
-    ["x86_64-linux-gnu-c++"] = true,
+    [TRIPLE .. "-gcc"] = true,
+    [TRIPLE .. "-g++"] = true,
+    [TRIPLE .. "-c++"] = true,
 }
 
 function install()

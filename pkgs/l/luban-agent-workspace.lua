@@ -22,15 +22,16 @@ package = {
     homepage = "https://github.com/openxlings/xlings",
     licenses = {"Apache-2.0"},
     type = "subos",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"subos", "distribution", "agent", "security"},
     keywords = {"luban", "agent", "privacy", "workspace", "claude"},
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "2026.10.11.1" },
+            ["latest"] = { ref = "2026.10.11.2" },
             ["2026.10.11.1"] = {},
+            ["2026.10.11.2"] = {},
         },
     },
 }
@@ -40,6 +41,17 @@ import("xim.pkgindex.luban")
 -- The agent is the one package an edition does not pin: an agent changes
 -- weekly. `subos new` installs the version current then and records it in the
 -- instance (instance.json `edition.packages`); `luban upgrade` moves it.
+-- The motd every version shows.
+local MOTD = [[
+Luban Agent Workspace -- private by its policy (agent-private):
+  network     only the proxy it was given; nothing else, and no fallback
+  identity    a persona of its own (`luban status <name>` on the host)
+  host        none of its home, devices or sockets; credentials stay in here
+Not hidden on a shared kernel: the kernel version, the CPU model, the host
+paths of what is bound in -- `luban try <name> --proxy ...` runs it on its own.
+Your accounts (an API key, a git identity) still say who you are.
+]]
+
 local versions = {
     ["2026.10.11.1"] = { manifest = [[
 {
@@ -53,16 +65,29 @@ local versions = {
   "policy": "xim:agent-private@2026.10.11.1",
   "workspace": {}
 }
-]], files = { { "usr/share/factory/etc/motd", [[
-Luban Agent Workspace -- private by its policy (agent-private):
-  network     only the proxy it was given; nothing else, and no fallback
-  identity    a persona of its own (`luban status <name>` on the host)
-  host        none of its home, devices or sockets; credentials stay in here
-Not hidden on a shared kernel: the kernel version, the CPU model, the host
-paths of what is bound in -- `luban try <name> --proxy ...` runs it on its own.
-Your accounts (an API key, a git identity) still say who you are.
-]] } } },
+]], files = { { "usr/share/factory/etc/motd", MOTD } } },
+    -- x86_64 and aarch64, over core 2026.10.11.2.
+    ["2026.10.11.2"] = { manifest = [[
+{
+  "subos_kind": "rootfs",
+  "min_client": "2026.10.11.1",
+  "from": "subos:luban-core@2026.10.11.2",
+  "abi": { "kernel": "linux", "libc": "gnu" },
+  "packages": [
+    "xim:claude"
+  ],
+  "policy": "xim:agent-private@2026.10.11.1",
+  "workspace": {}
 }
+]], files = { { "usr/share/factory/etc/motd", MOTD } } },
+}
+
+-- 2026.10.11.1 is over an x86_64-only core: an aarch64 reader refuses it.
+local recipe_arch = (os.arch and os.arch())
+if recipe_arch == "aarch64" or recipe_arch == "arm64" then
+    package.xpm.linux["2026.10.11.1"] = nil
+    versions["2026.10.11.1"] = nil
+end
 
 function install()
     return luban.edition({ id = "agent-workspace", variant = "Agent Workspace", versions = versions })
