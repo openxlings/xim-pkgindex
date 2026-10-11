@@ -21,6 +21,7 @@
 #   wl-clipboard  static wl-copy / wl-paste (musl; libwayland built static)
 #   xsel          a static xsel (musl; libX11/xcb static)
 #   edk2-firmware the UEFI firmware qemu ships, decompressed (no build)
+#   qemu-system   static qemu-system-x86_64 and -aarch64 (musl; user networking)
 #   bash          bash on glibc (the shape x86_64's is)
 #   coreutils     coreutils on glibc
 #   openssl       openssl on glibc, lib64
@@ -363,13 +364,18 @@ qemu-system)
     source_of qemu "$version" "https://download.qemu.org/qemu-$version.tar.xz" "$work/qemu.tar.xz"
     sv="$(awk '$1 == "libslirp" { print $2 }' "$here/inputs.txt")"
     source_of libslirp "$sv" "https://gitlab.freedesktop.org/slirp/libslirp/-/archive/v$sv/libslirp-v$sv.tar.gz" "$work/slirp.tar.gz"
+    # libfdt (the aarch64 virt machine's device tree), as qemu's own subproject:
+    # its release tarball leaves dtc to git, and no distro ships libfdt.a.
+    dv="$(awk '$1 == "dtc" { print $2 }' "$here/inputs.txt")"
+    source_of dtc "$dv" "https://mirrors.edge.kernel.org/pub/software/utils/dtc/dtc-$dv.tar.xz" "$work/dtc.tar.xz"
     d="qemu-system-$version-linux-$arch"
     alpine "apk add -q $APK_STATIC python3 py3-setuptools meson samurai pkgconf perl bash flex bison xz bzip2 \
             glib-dev glib-static pixman-dev pixman-static zlib-dev zlib-static libffi-dev pcre2-dev gettext-static \
             gettext-dev util-linux-dev util-linux-static \
         && tar -xzf slirp.tar.gz && cd libslirp-v$sv \
         && meson setup build --prefix=/opt/slirp --default-library=static >/dev/null && ninja -C build install >/dev/null \
-        && cd /w && tar -xJf qemu.tar.xz && mkdir qb && cd qb \
+        && cd /w && tar -xJf qemu.tar.xz && tar -xJf dtc.tar.xz && mv dtc-$dv qemu-$version/subprojects/dtc \
+        && mkdir qb && cd qb \
         && PKG_CONFIG_PATH=/opt/slirp/lib/pkgconfig ../qemu-$version/configure --static --prefix=/ \
              --target-list=x86_64-softmmu,aarch64-softmmu --enable-slirp --enable-fdt=internal \
              --disable-docs --disable-tools --disable-guest-agent --disable-user --disable-linux-user --disable-bsd-user \
@@ -394,7 +400,7 @@ qemu-system)
     done
     [[ -f "$work/$d/share/qemu/bios-256k.bin" && -f "$work/$d/share/qemu/edk2-aarch64-code.fd" && -f "$work/$d/share/qemu/edk2-x86_64-code.fd" ]] \
         || die "the firmware is not in share/qemu"
-    provenance "$d" "qemu $version (download.qemu.org, sha256 $(input qemu "$version")) system emulators for x86_64 and aarch64, static (musl, Alpine 3.20), user networking from libslirp $sv built static; firmware decompressed in share/qemu"
+    provenance "$d" "qemu $version (download.qemu.org, sha256 $(input qemu "$version")) system emulators for x86_64 and aarch64, static (musl, Alpine 3.20), user networking from libslirp $sv and libfdt from dtc $dv, built static; firmware decompressed in share/qemu"
     pack "$d" ;;
 edk2-firmware)
     # What qemu ships in pc-bios/ at tag v<version>, decompressed: firmware
