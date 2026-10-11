@@ -21,7 +21,10 @@ package = {
 
     xpm = {
         linux = {
-            deps = { "xim:glibc@>=2.39" },
+            deps = {
+                runtime = { "xim:glibc@>=2.39" },
+                build = { "xim:patchelf@0.18.0" },
+            },
             ["latest"] = { ref = "3.1.5" },
             ["3.1.5"] = "XLINGS_RES",
         },

@@ -11,7 +11,9 @@ package = {
     docs = "https://github.com/containers/bubblewrap#readme",
 
     type = "package",
-    archs = {"x86_64"},
+    -- aarch64: a static build of the same source (tools/res/build.sh bwrap),
+    -- in the same xlings-res release.
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"sandbox", "container", "tool"},
     keywords = {"bwrap", "bubblewrap", "sandbox", "namespace", "rootless"},

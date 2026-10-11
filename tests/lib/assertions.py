@@ -44,7 +44,7 @@ def assert_valid_type(meta: XpkgMeta):
     """type 必须是已知值"""
     if meta.is_ref:
         return
-    valid = {"package", "script", "config", "template", "bugfix"}
+    valid = {"package", "script", "config", "template", "bugfix", "subos", "subos-policy"}
     assert meta.pkg_type in valid, f"未知 type: {meta.pkg_type}, 应为 {valid}"
 
 
@@ -130,7 +130,7 @@ def assert_config_registers_package_name(meta: XpkgMeta):
         return
     if meta.has_installed:
         return
-    if meta.pkg_type in ("script", "config", "bugfix", "template", "subos"):
+    if meta.pkg_type in ("script", "config", "bugfix", "template", "subos", "subos-policy"):
         return
     if not meta.has_config:
         pytest.fail(

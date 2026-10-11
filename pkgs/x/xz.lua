@@ -20,7 +20,10 @@ package = {
 
     xpm = {
         linux = {
-            deps = { "xim:glibc" },
+            deps = {
+                runtime = { "xim:glibc" },
+                build = { "xim:patchelf@0.18.0" },
+            },
             exports = {
                 runtime = { libdirs = { "lib" } },
             },

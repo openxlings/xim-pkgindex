@@ -53,7 +53,7 @@ its versions.
 xlings update
 ```
 
-Pulls the latest package index. This site's [stats page](../stats/) shows how
+Pulls the latest package index. This site's [stats page](https://openxlings.github.io/xim-pkgindex/stats/) shows how
 many packages the index holds and what was added recently.
 
 ## Where to go next

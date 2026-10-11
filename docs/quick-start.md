@@ -50,7 +50,7 @@ xlings remove gcc     # 卸载
 xlings update
 ```
 
-拉取最新的包索引。本站的[统计页](../stats/)能看到索引里有多少包、最近加了什么。
+拉取最新的包索引。本站的[统计页](https://openxlings.github.io/xim-pkgindex/stats/)能看到索引里有多少包、最近加了什么。
 
 ## 接下来
 

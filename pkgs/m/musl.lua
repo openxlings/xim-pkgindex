@@ -82,6 +82,8 @@ package = {
 
     xpm = {
         linux = {
+            -- patchelf removes the build machine's RPATH from libc.so (install()).
+            deps = { build = { "xim:patchelf@0.18.0" } },
             -- Declare the dynamic linker we ship so consumers don't have
             -- to hardcode a path into their own hooks. xlings
             -- predicate-driven elfpatch reads this and patches consumer
@@ -102,6 +104,9 @@ package = {
             -- carries no checksum, and a libc payload is the last thing
             -- that should install unverified. Same reasoning as glibc 2.44.
             ["1.2.6"] = {
+                -- 1: libc.so (the loader) no longer names the build
+                -- machine's musl-gcc lib/ as its RPATH (install()).
+                revision = 1,
                 url = {
                     GLOBAL = "https://github.com/xlings-res/musl/releases/download/1.2.6/musl-1.2.6-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/musl/releases/download/1.2.6/musl-1.2.6-linux-x86_64.tar.gz",
@@ -109,6 +114,9 @@ package = {
                 sha256 = "44f6b63ddd6fcb3e668d76fe336cf91e42d4aa1c538bd228b09a298065284c49",
             },
             ["1.2.5"] = {
+                -- 1: libc.so (the loader) no longer names the build
+                -- machine's musl-gcc lib/ as its RPATH (install()).
+                revision = 1,
                 url = {
                     GLOBAL = "https://github.com/xlings-res/musl/releases/download/1.2.5/musl-1.2.5-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/musl/releases/download/1.2.5/musl-1.2.5-linux-x86_64.tar.gz",
@@ -169,6 +177,25 @@ function install()
     local loader = path.join(pkginfo.install_dir(), "lib", "ld-musl-x86_64.so.1")
     if not os.isfile(loader) then
         raise("musl payload has no lib/ld-musl-x86_64.so.1 after install")
+    end
+
+    -- The published libc.so carries an RPATH into the machine that built it
+    -- (musl-gcc's lib/). It is the loader: nothing it could search for is
+    -- there, and a root's closure check rightly refuses a payload whose ELF
+    -- names a path outside it. Removed here; asserted, not assumed.
+    local pe = "patchelf"
+    local bd = nil
+    if pkginfo.build_dep then
+        bd = try { function() return pkginfo.build_dep("xim:patchelf") end }
+    end
+    if bd and bd.bin and os.isfile(path.join(bd.bin, "patchelf")) then
+        pe = path.join(bd.bin, "patchelf")
+    end
+    local libc = path.join(pkginfo.install_dir(), "lib", "libc.so")
+    os.exec(string.format([[%s --remove-rpath "%s"]], pe, libc))
+    local left = os.iorun(string.format([[%s --print-rpath "%s"]], pe, libc))
+    if left and left:gsub("%s+", "") ~= "" then
+        raise("libc.so still names an RPATH after patchelf: " .. left)
     end
 
     return true
