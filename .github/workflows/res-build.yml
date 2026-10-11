@@ -106,7 +106,7 @@ jobs:
           RUNS: ${{ github.event.inputs.publish_runs }}
         run: |
           mkdir -p art merged
-          for r in $RUNS; do gh run download "$r" -R "$GITHUB_REPOSITORY" -D "art/$r"; done
+          for r in $RUNS; do gh run download "$r" -R "$GITHUB_REPOSITORY" -D "art/$r" || echo "(run $r: no artifacts)"; done
           # The newest run's build of a resource wins (runs listed oldest first).
           for r in $RUNS; do for d in art/$r/res-*; do [ -d "$d" ] && rm -rf "merged/$(basename "$d")" && cp -r "$d" merged/; done; done
           ls merged
