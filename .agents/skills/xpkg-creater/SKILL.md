@@ -81,14 +81,14 @@ xpm = {
 },
 ```
 
-参考实现：`docs/V2/xpackage-spec.md` 与 `pkgs/g/github-gh.lua`
+参考实现：`docs/specs/xpackage-v2.md` 与 `pkgs/g/github-gh.lua`
 
 ### 1.2.1 XLINGS_RES 镜像发布要求
 
 > 这里的 `XLINGS_RES` / 镜像表解析的是**软件包二进制**，走资源服务器
 > `GLOBAL = github.com/xlings-res`、`CN = gitcode.com/xlings-res`。这与「索引仓库本身」
 > 的分发（索引即资源 / Y-asset）是同一套资源服务路径但不同资产，互不混淆。
-> 索引机制全貌见 `docs/design/index-distribution.md`（同步自 xlings v0.4.55 源码）。
+> 索引机制全貌见 xlings 的 `docs/specs/index-distribution.md`；本仓库的命名空间见 `docs/00-what-this-index-is.md`。
 
 当某个版本使用 `xpm.source = "xlings-res"`（历史写法为 `"XLINGS_RES"`）时，该版本已经进入 xlings 多镜像资源服务链路。发布前必须同时满足：
 

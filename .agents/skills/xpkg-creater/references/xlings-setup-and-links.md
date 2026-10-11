@@ -32,7 +32,7 @@ xlings --version
 - 社区论坛：<https://forum.d2learn.org>
 - 本仓库（包索引）：<https://github.com/openxlings/xim-pkgindex>
 - 包索引页面：<https://openxlings.github.io/xim-pkgindex>
-- 索引机制（本仓库内）：`docs/design/index-distribution.md` — 索引即资源(Y-asset)分发/镜像/解析/发版协同，同步自 xlings v0.4.55 源码
+- 索引机制：xlings 的 `docs/specs/index-distribution.md`（分发、镜像、区域链）与 `docs/specs/index-version-contract.md`；本仓库的命名空间与官方资源见 `docs/00-what-this-index-is.md`、`docs/11-official-resources.md`
 
 ## 3) 说明
 

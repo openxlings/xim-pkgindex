@@ -2,6 +2,8 @@
 
 # [已废弃] 如何添加一个XPackage到包索引仓库(xim-pkgindex)?
 
+> **Deprecated — kept for compatibility only.** Clients still read this format; new recipes use [XPackage V2](../../xpackage-v2.md). Not translated.
+
 ## 第一步 - 创建一个[Add XPackage](https://github.com/openxlings/xim-pkgindex/issues/new/choose)
 
 在`xim-pkgindex`的issues创建选择界面选择`Add XPackage`模板并先填写包的基础信息
@@ -14,7 +16,7 @@
 - 协议
 - ...
 
-## 第二步: 复制一份[包模板文件](docs/xpackage-template.lua)
+## 第二步: 复制一份[包模板文件](xpackage-template.lua)
 
 复制一份包模板文件。一个包文件有两大部分组成: package + hooks/actions, 并且包文件的语法对应的就是lua语言的基础语法(**并不需要特殊学习lua, 只要参考已有的包里的用法即可**)
 
@@ -110,7 +112,7 @@ install和uninstall主要是对应的安装和卸载, 可以使用lua代码对�
 
 ## 第三步: 修改文件名和包内容 - mdbook包文件示例
 
-把[包模板文件](docs/xpackage-template.lua)重命令为`mdbook.lua`并修改文件内容
+把[包模板文件](xpackage-template.lua)重命令为`mdbook.lua`并修改文件内容
 
 **mdbook安装的核心逻辑是, 把解压出来的执行文件复制到系统的bin目录或其他已经添加到path环境变量中的路径里**
 

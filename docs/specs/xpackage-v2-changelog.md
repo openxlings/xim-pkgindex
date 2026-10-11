@@ -10,7 +10,7 @@ introduced with **XPackage Spec V2 (multi-arch)**. Requires **xlings ≥ 0.4.61*
   dimension. New version-entry shapes: per-arch map (B), URL template +
   per-arch sha256 (C), and `res = true` + per-arch sha256. Arch names are
   normalized (`arm64↔aarch64`, `amd64↔x86_64`). `package.archs` is now
-  validated fail-closed. See [`xpackage-spec.md`](./xpackage-spec.md).
+  validated fail-closed. See [`xpackage-v2.md`](./xpackage-v2.md).
 - **`revision` on a version entry** (2026-09-26). A non-negative integer,
   default 0, that increases whenever what the recipe installs for a published
   version changes — a new asset, or a hook change that alters the installed
@@ -21,7 +21,7 @@ introduced with **XPackage Spec V2 (multi-arch)**. Requires **xlings ≥ 0.4.61*
   names a new asset. Read by libxpkg ≥ 0.0.58; enforced for changed entries by
   `.github/scripts/check-revision.lua`. First use: `glibc` 2.44.3 revision 1
   (openxlings/xlings#621). See
-  [`xpackage-spec.md`](./xpackage-spec.md#revision--a-packaging-change-under-an-unchanged-version).
+  [`xpackage-v2.md`](./xpackage-v2.md#revision--a-packaging-change-under-an-unchanged-version).
 
 ## Tooling fixes
 
@@ -30,7 +30,7 @@ introduced with **XPackage Spec V2 (multi-arch)**. Requires **xlings ≥ 0.4.61*
   over the whole version body, and `sha256` is a per-arch table of the same
   `<arch> = "<string>"` shape — so the later table won. In the order this spec
   documents (`arch_alias` first, then `sha256`, see
-  [`xpackage-spec.md`](./xpackage-spec.md) §"Shape C"), every alias resolved to
+  [`xpackage-v2.md`](./xpackage-v2.md) §"Shape C"), every alias resolved to
   a checksum and the mirror built `...-linux-7cd69277….tar.gz`. Alias
   extraction is now scoped to the `arch_alias = { … }` block, so field order no
   longer matters. Nothing in the index carried both an `arch_alias` and

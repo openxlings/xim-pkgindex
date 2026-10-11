@@ -31,7 +31,7 @@ def test_recipe():
 @pytest.mark.static
 def test_7zip_is_a_build_dependency():
     """7-Zip only unpacks the archives in install(); as a runtime dependency it
-    would put 7z and 7zz on the user's PATH (docs/contributing.md §5.5)."""
+    would put 7z and 7zz on the user's PATH (docs/10-adding-a-package.md, Dependencies)."""
     deps = declared_deps(str(RECIPE))["linux"]
     assert "xim:7zip" in deps["build"]
     assert "xim:7zip" not in deps["runtime"]

@@ -1,7 +1,10 @@
 # XPackage Spec V2
 
+> Status: in force; the current spec. Read by libxpkg (`mcpplibs/libxpkg`)
+> inside xlings. Changes: [changelog](xpackage-v2-changelog.md).
+
 > `spec = "2"` — adds **multi-architecture** package description.
-> V2 is a strict superset of [V1](../V1/xpackage-spec.md): every V1 recipe is a
+> V2 is a strict superset of [V1](legacy/V1/xpackage-spec.md): every V1 recipe is a
 > valid V2 recipe. Only the additions are documented here; for everything else
 > (base fields, hooks, libxpkg stdlib, `XLINGS_RES`, mirror tables) see V1.
 
@@ -416,6 +419,11 @@ decided in review.
 If a recipe unpacks an arch-named directory, derive it from `os.arch()` in the
 hook (don't hard-code one arch). `os.arch()` returns the canonical host arch.
 
+A recipe that must still install on clients before 2026.10.8.1, where hooks do
+not have `os.arch()`, decides from the payload's content instead — the file it
+ships for one architecture and not the other (`os.isfile`; hooks have no
+`os.islink`).
+
 ```lua
 function install()
     local dir = string.format("gh_%s_%s_%s", pkginfo.version(), os.host(), os.arch())
@@ -525,9 +533,8 @@ came from one payload and whose RUNPATH from another — a fault before `main`
 reporting `undefined symbol: __pointer_chk_guard, version GLIBC_PRIVATE`,
 which names neither package nor version.
 
-xlings now refuses to finish an install that produced one, and `xlings doctor`
-reports existing ones. Design and the invariant:
-`xlings/.agents/docs/2026-08-05-dependency-resolution-single-source.md`
+xlings now refuses to finish an install that produced one, and
+`xlings self doctor` reports existing ones.
 
 ### Ask with the coordinate you declared
 
@@ -566,7 +573,7 @@ and asked for with `pkginfo.build_dep("7zip")` -- the BARE name. xlings exports
 the payload as `XLINGS_BUILDDEP_<NAME>_PATH` with the namespace stripped, and
 libxpkg 0.0.59 and earlier build the key from the string they are given, so
 `build_dep("xim:7zip")` misses the variable and then misses `dep_install_dir`
-too: a build dep has no `resolved_deps` record. `docs/contributing.md` §5.5.
+too: a build dep has no `resolved_deps` record ([Adding a package](../10-adding-a-package.md#dependencies)).
 
 Measured (openxlings/xlings#524): six of the seven `dep_install_dir` call sites
 in this index passed a bare name while declaring a namespaced, ranged one. They

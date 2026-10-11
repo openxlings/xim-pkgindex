@@ -39,7 +39,7 @@
 # That scheme spent a version key per packaging fix and made the binding --
 # the payload directory name -- change with it (openxlings/xlings#620). A
 # rebuild for a reason of ours now keeps the version key and raises
-# `revision` on the version entry (docs/V2/xpackage-spec.md). The url and the
+# `revision` on the version entry (docs/specs/xpackage-v2.md). The url and the
 # sha256 stay immutable, so the rebuilt asset needs a name of its own:
 # <revision> adds `-r<N>` to the asset and to its release tag, and the recipe
 # entry keeps its key, takes the new url and sha256, and states the new

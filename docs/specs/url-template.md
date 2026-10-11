@@ -1,4 +1,4 @@
-# `url_template`: legacy opt-in package version auto-update
+# URL Templates: Legacy Version Auto-Update
 
 > Deprecated: new packages should use `xpm.source` (a string or a
 > `GLOBAL`/`CN` map). Existing `url_template` packages remain supported for

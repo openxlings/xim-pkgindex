@@ -81,7 +81,7 @@ class TestStatic:
 
     @pytest.mark.static
     def test_windows_x64_carries_no_compiler_runtime(self, meta):
-        """库载荷不携带编译器的 C++ 运行时(docs/contributing.md §5.3)。
+        """库载荷不携带编译器的 C++ 运行时(docs/10-adding-a-package.md, Rules that keep packages correct)。
 
         程序的构建放置工具集的运行时;bin/ 里的工具由 mcpp 放在每个 action PATH 最前面的
         工具集运行时启动。revision 1 使已安装的 revision 0 载荷在下次使用时被替换。"""
@@ -95,7 +95,7 @@ class TestStatic:
     def test_declares_7zip_dependency(self, meta):
         """每个 archive 都是 .7z, 没有 xim:7zip 依赖就没法解压 —— 但 7-Zip 只在
         install() 里用, 属于 build 依赖: 声明成 runtime 会把 7z/7zz 永久激活到
-        用户的 PATH 上 (docs/contributing.md §5.5)。"""
+        用户的 PATH 上 (docs/10-adding-a-package.md, Dependencies)。"""
         deps = declared_deps(PKG_FILE)
         for plat in ("windows", "linux", "macosx"):
             assert "xim:7zip" in deps[plat]["build"], f"{plat} 平台缺少 xim:7zip build 依赖"
