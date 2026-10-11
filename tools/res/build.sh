@@ -190,7 +190,7 @@ passt)
     git -C "$work/passt" checkout -q "$commit"
     [[ "$(git -C "$work/passt" rev-parse HEAD)" == "$commit" ]] || die "passt: $commit is not what was checked out"
     d="passt-$version-linux-$arch"
-    alpine "apk add -q build-base linux-headers && cd passt && make -s static VERSION=$version >/dev/null \
+    alpine "apk add -q build-base linux-headers coreutils && cd passt && make -s static VERSION=$version >/dev/null \
         && mkdir -p /w/$d/bin && cp pasta passt /w/$d/bin/ && strip /w/$d/bin/*"
     static_only "$work/$d/bin/pasta" "$work/$d/bin/passt"
     "$work/$d/bin/pasta" --version | head -1 | grep -q "$version" || die "pasta does not report $version"
@@ -203,7 +203,7 @@ e2fsprogs)
         && ../e2fsprogs-$version/configure -q --prefix=/usr --sysconfdir=/etc --with-root-prefix= \
              --enable-libuuid --enable-libblkid --disable-nls --disable-fuse2fs --disable-elf-shlibs \
              --disable-uuidd --disable-fsck LDFLAGS=-static >/dev/null \
-        && make -s -j\$(nproc) >/dev/null && make -s install-progs DESTDIR=/w/stage >/dev/null \
+        && make -s -j\$(nproc) >/dev/null && make -s install DESTDIR=/w/stage >/dev/null \
         && mkdir -p /w/$d/sbin /w/$d/usr/sbin /w/$d/etc \
         && cp -a /w/stage/sbin/. /w/$d/sbin/ && cp -a /w/stage/usr/sbin/. /w/$d/usr/sbin/ \
         && cp ../e2fsprogs-$version/misc/mke2fs.conf.in /w/$d/etc/mke2fs.conf \
@@ -232,7 +232,7 @@ curl)
 proot)
     source_of proot "$version" "https://github.com/proot-me/proot/archive/refs/tags/v$version.tar.gz" "$work/src.tar.gz"
     d="proot-$version-linux-$arch"
-    alpine "apk add -q $APK_STATIC talloc-dev talloc-static python3 bash && tar -xzf src.tar.gz && cd proot-$version/src \
+    alpine "apk add -q $APK_STATIC talloc-dev talloc-static bsd-compat-headers bash && tar -xzf src.tar.gz && cd proot-$version/src \
         && make -s loader.elf build.h >/dev/null && make -s -j\$(nproc) proot LDFLAGS='-static -ltalloc' >/dev/null \
         && mkdir -p /w/$d/bin && cp proot /w/$d/bin/ && strip /w/$d/bin/proot"
     static_only "$work/$d/bin/proot"
@@ -274,18 +274,24 @@ git)
     # <upstream>-<n>: n counts this index's own builds of that release.
     up="${version%-*}"
     source_of git "$up" "https://mirrors.edge.kernel.org/pub/software/scm/git/git-$up.tar.xz" "$work/src.tar.xz"
-    alpine "apk add -q $APK_STATIC xz curl-dev curl-static openssl-dev openssl-libs-static zlib-dev zlib-static nghttp2-dev nghttp2-static \
-            expat-dev expat-static c-ares-dev c-ares-static brotli-dev brotli-static zstd-dev zstd-static libpsl-dev libpsl-static \
-            libidn2-dev libidn2-static libunistring-dev libunistring-static pkgconf perl \
+    cv="$(awk '$1 == "curl" { print $2 }' "$here/inputs.txt")"
+    source_of curl "$cv" "https://curl.se/download/curl-$cv.tar.xz" "$work/curl.tar.xz"
+    flags="prefix=/ gitexecdir=libexec/git-core template_dir=share/git-core/templates sysconfdir=/etc \
+        RUNTIME_PREFIX=YesPlease NO_GETTEXT=YesPlease NO_TCLTK=YesPlease NO_PERL=YesPlease NO_PYTHON=YesPlease \
+        NO_REGEX=NeedsStartEnd NO_INSTALL_HARDLINKS=YesPlease USE_LIBPCRE= CURL_CONFIG=/opt/curl/bin/curl-config \
+        CURL_LDFLAGS='-L/opt/curl/lib -lcurl -lnghttp2 -lssl -lcrypto -lz' LDFLAGS=-static CFLAGS=-O2"
+    # libcurl as the curl package is built (no IDN, no PSL: libidn2's gnulib
+    # error() collides with git's), so git's https is that curl's.
+    alpine "apk add -q $APK_STATIC xz openssl-dev openssl-libs-static zlib-dev zlib-static nghttp2-dev nghttp2-static \
+            expat-dev expat-static pkgconf perl file \
+        && tar -xJf curl.tar.xz && cd curl-$cv \
+        && ./configure -q --prefix=/opt/curl --disable-shared --enable-static --with-openssl --with-nghttp2 --with-zlib \
+             --without-libpsl --without-libidn2 --without-brotli --without-zstd --disable-ldap --disable-manual \
+             --with-ca-bundle=/etc/ssl/certs/ca-certificates.crt --with-ca-fallback >/dev/null \
+        && make -s -j\$(nproc) >/dev/null && make -s install >/dev/null && cd /w \
         && tar -xJf src.tar.xz && cd git-$up \
-        && make -s -j\$(nproc) prefix=/ gitexecdir=libexec/git-core template_dir=share/git-core/templates sysconfdir=/etc \
-             RUNTIME_PREFIX=YesPlease NO_GETTEXT=YesPlease NO_TCLTK=YesPlease NO_PERL=YesPlease NO_PYTHON=YesPlease \
-             NO_REGEX=NeedsStartEnd NO_INSTALL_HARDLINKS=YesPlease USE_LIBPCRE= \
-             CURL_LDFLAGS=\"\$(pkg-config --static --libs libcurl)\" LDFLAGS=-static CFLAGS='-O2' all >/dev/null \
-        && make -s prefix=/ gitexecdir=libexec/git-core template_dir=share/git-core/templates sysconfdir=/etc \
-             RUNTIME_PREFIX=YesPlease NO_GETTEXT=YesPlease NO_TCLTK=YesPlease NO_PERL=YesPlease NO_PYTHON=YesPlease \
-             NO_REGEX=NeedsStartEnd NO_INSTALL_HARDLINKS=YesPlease USE_LIBPCRE= \
-             CURL_LDFLAGS=\"\$(pkg-config --static --libs libcurl)\" LDFLAGS=-static CFLAGS='-O2' DESTDIR=/w/git install >/dev/null \
+        && make -s -j\$(nproc) $flags all >/dev/null \
+        && make -s $flags DESTDIR=/w/git install >/dev/null \
         && rm -rf /w/git/share/man /w/git/share/perl5 /w/git/share/gitweb \
         && find /w/git/bin /w/git/libexec -type f -perm -u+x -exec sh -c 'file \"\$1\" | grep -q ELF && strip \"\$1\"' _ {} \\;"
     static_only "$work/git/bin/git" "$work/git/libexec/git-core/git-remote-https"
@@ -316,14 +322,14 @@ wl-clipboard)
     wv="$(awk '$1 == "wayland" { print $2 }' "$here/inputs.txt")"
     source_of wayland "$wv" "https://gitlab.freedesktop.org/wayland/wayland/-/releases/$wv/downloads/wayland-$wv.tar.xz" "$work/wayland.tar.xz"
     d="wl-clipboard-$version-linux-$arch"
-    alpine "apk add -q $APK_STATIC meson ninja-build pkgconf xz expat-dev expat-static libffi-dev wayland-protocols wayland-dev \
+    alpine "apk add -q $APK_STATIC meson samurai pkgconf xz expat-dev expat-static libffi-dev wayland-protocols wayland-dev \
         && tar -xJf wayland.tar.xz && cd wayland-$wv \
         && meson setup build --prefix=/opt/wl --default-library=static -Ddocumentation=false -Dtests=false \
-             -Ddtd_validation=false -Dscanner=false >/dev/null \
-        && ninja -C build install >/dev/null && cd /w \
+             -Ddtd_validation=false -Dscanner=false \
+        && ninja -C build install && cd /w \
         && tar -xzf src.tar.gz && cd wl-clipboard-$version \
-        && PKG_CONFIG_PATH=/opt/wl/lib/pkgconfig LDFLAGS=-static meson setup build --prefer-static --default-library=static >/dev/null \
-        && ninja -C build >/dev/null \
+        && PKG_CONFIG_PATH=/opt/wl/lib/pkgconfig LDFLAGS=-static meson setup build --prefer-static --default-library=static \
+        && ninja -C build \
         && mkdir -p /w/$d/bin && cp build/src/wl-copy build/src/wl-paste /w/$d/bin/ && strip /w/$d/bin/*"
     static_only "$work/$d/bin/wl-copy" "$work/$d/bin/wl-paste"
     "$work/$d/bin/wl-copy" --version | grep -q "$version" || die "wl-copy does not report $version"
@@ -380,7 +386,7 @@ bash|coreutils|openssl|binutils)
                 --enable-gold --enable-ld=default >/dev/null && make -s -j\$(nproc) >/dev/null && make -s install >/dev/null \
                 && strip /w/$d/bin/* 2>/dev/null || true" ;;
     esac
-    debian "apt-get -qq update && apt-get -qq install -y build-essential bison file xz-utils perl >/dev/null \
+    debian "apt-get -qq update && apt-get -qq install -y build-essential bison texinfo file xz-utils perl >/dev/null \
         && tar -xf $src && $steps"
     GLIBC_ELFS="$(find "$work/$d" -type f -exec sh -c 'file -b "$1" | grep -q "^ELF.*dynamically linked" && echo "$1"' _ {} \;)"
     [[ -n "$GLIBC_ELFS" ]] || die "$what: no dynamically linked ELF in the payload"
