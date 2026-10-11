@@ -71,11 +71,22 @@ package = {
     xpm = {
         linux = {
             ["latest"] = { ref = "1.47.3" },
+            -- aarch64: 1.47.3-r1, the build without hard links (Android
+            -- refuses link(2)).
             ["1.47.3"] = {
-                url = "XLINGS_RES",
-                sha256 = {
-                    x86_64 = "fa3211e05885ba44fe412017c67e95a0d0cf10c690766ce85a5d77ad7010edf4",
-                    aarch64 = "ff832fdce67dae09d562646e19bb443640b9c5b94a2230f95add923ae69a8099",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/e2fsprogs/releases/download/1.47.3/e2fsprogs-1.47.3-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/e2fsprogs/releases/download/1.47.3/e2fsprogs-1.47.3-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "fa3211e05885ba44fe412017c67e95a0d0cf10c690766ce85a5d77ad7010edf4",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/e2fsprogs/releases/download/1.47.3-r1/e2fsprogs-1.47.3-r1-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/e2fsprogs/releases/download/1.47.3-r1/e2fsprogs-1.47.3-r1-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "1dc55acf8bb26f2fd3055e84f7813be677b3baae1629fab031f0145b3a2f90db",
                 },
             },
         },

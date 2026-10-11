@@ -200,7 +200,7 @@ class TestDesign:
         consumer 都指向一个不存在的文件。
         """
         code = lua_code()
-        assert 'path.join(pkginfo.install_dir(), "lib", MUSL_LOADER)' in code
+        assert 'ld-musl-x86_64.so.1' in code and 'ld-musl-aarch64.so.1' in code
         assert re.search(r'raise\(', code), "install() 必须在 payload 不完整时 raise"
 
     @pytest.mark.static

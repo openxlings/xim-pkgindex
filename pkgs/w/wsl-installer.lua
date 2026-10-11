@@ -1,7 +1,7 @@
 package = {
     spec = "1",
 
-    name = "wsl",
+    name = "wsl-installer",
     description = "Windows Subsystem for Linux: Microsoft's WSL installer (MSI), for xlings' Linux SubOS on Windows",
 
     homepage = "https://learn.microsoft.com/windows/wsl/",
@@ -12,8 +12,9 @@ package = {
     archs = {"x86_64"},
     status = "stable",
     categories = {"windows", "subsystem", "virtualization"},
-    keywords = {"wsl", "wsl2", "linux", "subsystem", "subos", "luban"},
+    keywords = {"wsl", "wsl2", "msi", "linux", "subsystem", "subos", "luban"},
 
+    -- Not `wsl`: that name is the winget wrapper's (pmwrapper.lua, Microsoft.WSL).
     -- What a Windows machine's first Linux SubOS needs (the wsl2 carrier):
     -- `xlings self doctor --isolation --fix` -- or `subos new`, where it is
     -- asked -- installs this package and runs its MSI, and turns on the

@@ -83,14 +83,18 @@ seal() {    # file -> file.sha256
     log "$(cat "$1.sha256")"
 }
 
+# Never a hard link in a payload: xlings extracts one with link(2), which
+# Android's app sandbox and FAT refuse (.github/scripts/check-payload-hard-links.py).
 pack() {    # directory under $work [contents only] -> $out/<name>-<version>-linux-<arch>.tar.gz
     local file="$out/$what-$version-linux-$arch.tar.gz"
     if [[ "${2:-}" == contents ]]; then
-        tar --owner=0 --group=0 --numeric-owner -czf "$file" -C "$work/$1" .
+        tar --owner=0 --group=0 --numeric-owner --hard-dereference -czf "$file" -C "$work/$1" .
     else
-        tar --owner=0 --group=0 --numeric-owner -czf "$file" -C "$work" "$1"
+        tar --owner=0 --group=0 --numeric-owner --hard-dereference -czf "$file" -C "$work" "$1"
     fi
     seal "$file"
+    python3 -c 'import sys, tarfile; sys.exit(any(m.islnk() for m in tarfile.open(sys.argv[1])))' "$file" \
+        || die "$file holds a hard link"
 }
 
 provenance() {  # directory, text
@@ -131,7 +135,7 @@ limine)
     printf 'limine %s: upstream limine-binary.tar.gz (sha256 %s); bin/limine built static (musl, Alpine 3.20) from its limine.c\n' \
         "$version" "$sha" > "$root/README.provenance"
     file="$out/limine-$version-linux-$arch.tar.gz"
-    tar --owner=0 --group=0 --numeric-owner -czf "$file" -C "$work" "limine-$version"
+    tar --owner=0 --group=0 --numeric-owner --hard-dereference -czf "$file" -C "$work" "limine-$version"
     seal "$file" ;;
 kernel-virt)
     sums="$work/sha256sums.asc"
@@ -159,7 +163,7 @@ kernel-virt)
     printf 'linux %s (kernel.org, sha256 %s), %s defconfig + kvm_guest.config + kernel-virt.config; built in Debian 12; no modules: what a virtual machine needs is built in\n' \
         "$version" "$sha" "$karch" > "$root/README.provenance"
     file="$out/linux-kernel-virt-$version-linux-$arch.tar.gz"
-    tar --owner=0 --group=0 --numeric-owner -czf "$file" -C "$work" "linux-kernel-virt-$version"
+    tar --owner=0 --group=0 --numeric-owner --hard-dereference -czf "$file" -C "$work" "linux-kernel-virt-$version"
     seal "$file" ;;
 busybox)
     source_of busybox "$version" "https://busybox.net/downloads/busybox-$version.tar.bz2" "$work/busybox.tar.bz2"
@@ -181,7 +185,7 @@ bwrap)
     mkdir -p "$root/bin"
     cp "$work/bwrap.out" "$root/bin/bwrap"
     file="$out/bwrap-$version-linux-$arch.tar.gz"
-    tar --owner=0 --group=0 --numeric-owner -czf "$file" -C "$work" "bwrap-$version-linux-$arch"
+    tar --owner=0 --group=0 --numeric-owner --hard-dereference -czf "$file" -C "$work" "bwrap-$version-linux-$arch"
     seal "$file" ;;
 passt)
     # Upstream tags are <date>.<commit>; the commit is the input, checked.
@@ -365,25 +369,26 @@ edk2-firmware)
     provenance "$d" "UEFI firmware (EDK II) as qemu $version ships it in pc-bios/, decompressed; digests of the .bz2 inputs in tools/res/inputs.txt"
     pack "$d" ;;
 bash|coreutils|openssl|binutils)
+    v="${version%%-r[0-9]*}"   # <upstream>-rN: this index's Nth build of it; the payload keeps the name
     case "$what" in
-        bash)      url="https://ftpmirror.gnu.org/gnu/bash/bash-$version.tar.gz"; d="bash-$version" ;;
-        coreutils) url="https://ftpmirror.gnu.org/gnu/coreutils/coreutils-$version.tar.xz"; d="coreutils-$version" ;;
-        openssl)   url="https://github.com/openssl/openssl/releases/download/openssl-$version/openssl-$version.tar.gz"; d="openssl-$version-linux-$arch" ;;
-        binutils)  url="https://ftpmirror.gnu.org/gnu/binutils/binutils-$version.tar.xz"; d="binutils-$version-linux-$arch" ;;
+        bash)      url="https://ftpmirror.gnu.org/gnu/bash/bash-$v.tar.gz"; d="bash-$version" ;;
+        coreutils) url="https://ftpmirror.gnu.org/gnu/coreutils/coreutils-$v.tar.xz"; d="coreutils-$version" ;;
+        openssl)   url="https://github.com/openssl/openssl/releases/download/openssl-$v/openssl-$v.tar.gz"; d="openssl-$version-linux-$arch" ;;
+        binutils)  url="https://ftpmirror.gnu.org/gnu/binutils/binutils-$v.tar.xz"; d="binutils-$version-linux-$arch" ;;
     esac
     src="src.tar.${url##*.tar.}"
-    source_of "$what" "$version" "$url" "$work/$src"
+    source_of "$what" "$v" "$url" "$work/$src"
     case "$what" in
-        bash) steps="cd bash-$version && ./configure -q --prefix=/usr --without-bash-malloc >/dev/null \
+        bash) steps="cd bash-$v && ./configure -q --prefix=/usr --without-bash-malloc >/dev/null \
                 && make -s -j\$(nproc) >/dev/null && mkdir -p /w/$d/bin && cp bash bashbug /w/$d/bin/ && strip /w/$d/bin/bash" ;;
-        coreutils) steps="cd coreutils-$version && FORCE_UNSAFE_CONFIGURE=1 ./configure -q --prefix=/w/$d --disable-nls \
+        coreutils) steps="cd coreutils-$v && FORCE_UNSAFE_CONFIGURE=1 ./configure -q --prefix=/w/$d --disable-nls \
                 --without-selinux --without-openssl --without-libgmp --disable-acl --disable-xattr --disable-libcap >/dev/null \
                 && make -s -j\$(nproc) >/dev/null && make -s install >/dev/null && rm -rf /w/$d/share \
                 && strip /w/$d/bin/* /w/$d/libexec/coreutils/*.so" ;;
         openssl) target=linux-x86_64; [[ "$arch" == aarch64 ]] && target=linux-aarch64
-            steps="cd openssl-$version && ./Configure $target --prefix=/w/$d --openssldir=/w/$d/ssl --libdir=lib64 shared no-tests >/dev/null \
+            steps="cd openssl-$v && ./Configure $target --prefix=/w/$d --openssldir=/w/$d/ssl --libdir=lib64 shared no-tests >/dev/null \
                 && make -s -j\$(nproc) >/dev/null && make -s install_sw install_ssldirs >/dev/null" ;;
-        binutils) steps="mkdir build && cd build && ../binutils-$version/configure -q --with-pkgversion=xlings-fromsource \
+        binutils) steps="mkdir build && cd build && ../binutils-$v/configure -q --with-pkgversion=xlings-fromsource \
                 --prefix=/w/$d --enable-plugins --enable-new-dtags --disable-nls --disable-gprofng --disable-werror \
                 --enable-gold --enable-ld=default >/dev/null && make -s -j\$(nproc) >/dev/null && make -s install >/dev/null \
                 && strip /w/$d/bin/* 2>/dev/null || true" ;;
@@ -394,16 +399,16 @@ bash|coreutils|openssl|binutils)
     [[ -n "$GLIBC_ELFS" ]] || die "$what: no dynamically linked ELF in the payload"
     case "$what" in
         openssl)  glibc_only libssl.so.3 libcrypto.so.3 ;;
-        binutils) glibc_only libbfd-$version.so libopcodes-$version.so libctf.so.0 libctf-nobfd.so.0 libsframe.so.1 libz.so.1 libstdc++.so.6 libgcc_s.so.1 ;;
+        binutils) glibc_only libbfd-$v.so libopcodes-$v.so libctf.so.0 libctf-nobfd.so.0 libsframe.so.1 libz.so.1 libstdc++.so.6 libgcc_s.so.1 ;;
         *)        glibc_only ;;
     esac
     case "$what" in
-        bash)      "$work/$d/bin/bash" -c 'echo $BASH_VERSION' | grep -q "^$version" || die "bash does not report $version" ;;
-        coreutils) "$work/$d/bin/ls" --version | grep -q "$version" || die "ls does not report $version" ;;
-        openssl)   LD_LIBRARY_PATH="$work/$d/lib64" "$work/$d/bin/openssl" version | grep -q "OpenSSL $version" || die "openssl does not report $version" ;;
-        binutils)  "$work/$d/bin/ld" --version | grep -q "$version" || die "ld does not report $version" ;;
+        bash)      "$work/$d/bin/bash" -c 'echo $BASH_VERSION' | grep -q "^$v" || die "bash does not report $version" ;;
+        coreutils) "$work/$d/bin/ls" --version | grep -q "$v" || die "ls does not report $version" ;;
+        openssl)   LD_LIBRARY_PATH="$work/$d/lib64" "$work/$d/bin/openssl" version | grep -q "OpenSSL $v" || die "openssl does not report $version" ;;
+        binutils)  "$work/$d/bin/ld" --version | grep -q "$v" || die "ld does not report $version" ;;
     esac
-    provenance "$d" "$what $version (sha256 $(input "$what" "$version")); built in Debian 12 against its glibc (an xlings install patches it onto the index's glibc)"
+    provenance "$d" "$what $version (sha256 $(input "$what" "$v")); built in Debian 12 against its glibc (an xlings install patches it onto the index's glibc)"
     pack "$d" ;;
 gcc)
     # As x86_64's (fromsource:gcc): a prebuilt compiler builds the new one
@@ -436,7 +441,7 @@ gcc)
              --enable-languages=c,c++ --disable-multilib --disable-bootstrap \
              --disable-werror --disable-lto --enable-threads=posix \
              --build=$triple --host=$triple --target=$triple --enable-libsanitizer >/w/configure.log 2>&1 \
-        && make -j\$(nproc) >/w/make.log 2>&1 && make install >/w/install.log 2>&1 \
+        && make -j\$(nproc) >/w/make.log 2>&1 && make install-strip >/w/install.log 2>&1 \
         && cd /w && printf '#include <stdio.h>\nint main(void){puts(\"c ok\");return 0;}\n' > t.c \
         && printf 'import std;\nint main(){ std::println(\"c++23 ok {}\", std::ranges::fold_left(std::views::iota(1,5), 0, std::plus{})); }\n' > t.cpp \
         && L=\$(ls \$S/lib/ld-linux-*.so.* | head -1) \

@@ -62,11 +62,22 @@ package = {
             -- (tools/res/build.sh gcc: fromsource:gcc's configure, against a
             -- sysroot of xim:glibc + xim:linux-headers), C++23 `import std`
             -- checked there.
+            -- (16.1.0-r1: the same build without hard links -- Android refuses
+            -- link(2) -- and stripped as x86_64's is.)
             ["16.1.0"] = {
-                url = "XLINGS_RES",
-                sha256 = {
-                    x86_64 = "b64356a52553456d2445cdf6829136ff7c0ff6aa7dc39112ae32ff80b87ffa81",
-                    aarch64 = "3f06cd9725c59a88486d00cc1e9c3e73dbdda59ddccebefdbe9119f5095c170f",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/gcc/releases/download/16.1.0/gcc-16.1.0-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/gcc/releases/download/16.1.0/gcc-16.1.0-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "b64356a52553456d2445cdf6829136ff7c0ff6aa7dc39112ae32ff80b87ffa81",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/gcc/releases/download/16.1.0-r1/gcc-16.1.0-r1-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/gcc/releases/download/16.1.0-r1/gcc-16.1.0-r1-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "887f50f2d34e547cffa7c7ba42d77d37980de67d9033ddb114086a1dd833fc1c",
                 },
             },
             ["15.1.0"] = "XLINGS_RES",
@@ -91,8 +102,6 @@ if recipe_arch == "arm64" then recipe_arch = "aarch64" end
 if recipe_arch == "aarch64" then
     for _, v in ipairs({"15.1.0", "13.3.0", "11.5.0", "9.4.0"}) do package.xpm.linux[v] = nil end
 end
--- The target-prefixed driver names, as this machine's gcc installs them.
-local TRIPLE = recipe_arch .. "-linux-gnu"
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.log")
@@ -109,12 +118,29 @@ import("xim.libxpkg.pkgmanager")
 -- Kept separate from package.programs so that the cross-platform declared-
 -- program audit (which runs on windows where mingw-w64 only ships gcc/g++/c++)
 -- doesn't demand shims that only exist on linux.
-local linux_programs = {
+local linux_programs_common = {
     "gcc", "g++", "c++", "cpp",
     "gcc-ar", "gcc-nm", "gcc-ranlib",
     "gcov", "gcov-dump", "gcov-tool",
-    TRIPLE .. "-gcc", TRIPLE .. "-g++", TRIPLE .. "-c++",
 }
+
+-- The target-prefixed driver names, as THIS payload has them (x86_64-linux-gnu-gcc,
+-- aarch64-linux-gnu-gcc): read from its bin/, not from the machine's name for
+-- itself -- a hook does not always see the catalog's architecture.
+function __triple()
+    for _, t in ipairs({"x86_64-linux-gnu", "aarch64-linux-gnu"}) do
+        if os.isfile(path.join(pkginfo.install_dir(), "bin", t .. "-gcc")) then return t end
+    end
+    return "x86_64-linux-gnu"
+end
+
+function __linux_programs()
+    local t = __triple()
+    local out = {}
+    for _, p in ipairs(linux_programs_common) do table.insert(out, p) end
+    for _, p in ipairs({ t .. "-gcc", t .. "-g++", t .. "-c++" }) do table.insert(out, p) end
+    return out
+end
 
 local gcc_tool = {
     ["gcc-ar"] = true, ["gcc-nm"] = true, ["gcc-ranlib"] = true,
@@ -138,9 +164,12 @@ local compiler_entry = {
     ["gcc"] = true,
     ["g++"] = true,
     ["c++"] = true,
-    [TRIPLE .. "-gcc"] = true,
-    [TRIPLE .. "-g++"] = true,
-    [TRIPLE .. "-c++"] = true,
+    ["x86_64-linux-gnu-gcc"] = true,
+    ["x86_64-linux-gnu-g++"] = true,
+    ["x86_64-linux-gnu-c++"] = true,
+    ["aarch64-linux-gnu-gcc"] = true,
+    ["aarch64-linux-gnu-g++"] = true,
+    ["aarch64-linux-gnu-c++"] = true,
 }
 
 function install()
@@ -174,7 +203,7 @@ function uninstall()
     end
 
     local gcc_version = "gcc-" .. pkginfo.version()
-    for _, prog in ipairs(linux_programs) do
+    for _, prog in ipairs(__linux_programs()) do
         if gcc_tool[prog] then
             xvm.remove(prog, gcc_version)
         else
@@ -416,7 +445,7 @@ function __config_linux()
         }
     }
 
-    for _, prog in ipairs(linux_programs) do
+    for _, prog in ipairs(__linux_programs()) do
 
         config.alias = prog
 

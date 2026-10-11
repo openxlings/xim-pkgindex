@@ -197,9 +197,15 @@ function install()
     -- Never report success without the one file the package exists for.
     -- A `return true` here gets stamped as installed and leaves every
     -- consumer elfpatched onto a loader that is not there.
-    local loader = path.join(pkginfo.install_dir(), "lib", MUSL_LOADER)
-    if not os.isfile(loader) then
-        raise("musl payload has no lib/" .. MUSL_LOADER .. " after install")
+    -- The loader this payload has (ld-musl-<arch>.so.1), read from it: a
+    -- hook does not always see the catalog's architecture.
+    local loader = nil
+    for _, name in ipairs({"ld-musl-x86_64.so.1", "ld-musl-aarch64.so.1"}) do
+        local p = path.join(pkginfo.install_dir(), "lib", name)
+        if os.isfile(p) or os.islink(p) then loader = p end
+    end
+    if not loader then
+        raise("musl payload has no lib/ld-musl-<arch>.so.1 after install")
     end
 
     -- The published libc.so carries an RPATH into the machine that built it
@@ -265,7 +271,7 @@ local SHARED_LIBS = {
 -- everything in libc and keeps these so a `-lm`/`-lpthread` on someone's
 -- link line resolves instead of erroring.
 local MUSL_ONLY_LIBS = {
-    MUSL_LOADER, "rcrt1.o",
+    "ld-musl-x86_64.so.1", "ld-musl-aarch64.so.1", "rcrt1.o",
     "libcrypt.a", "libresolv.a", "libxnet.a",
 }
 

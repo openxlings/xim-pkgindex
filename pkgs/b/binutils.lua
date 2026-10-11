@@ -76,13 +76,14 @@ package = {
                     },
                     sha256 = "32ec131327cd10624f70741fc553ad369f8f53ee4b79276a44f572c6d8190fd7",
                 },
-                -- Built natively on an arm runner (tools/res/build.sh binutils).
+                -- Built natively on an arm runner (tools/res/build.sh binutils);
+                -- 2.42-r1: without hard links (Android refuses link(2)).
                 aarch64 = {
                     url = {
-                        GLOBAL = "https://github.com/xlings-res/binutils/releases/download/2.42/binutils-2.42-linux-aarch64.tar.gz",
-                        CN     = "https://gitcode.com/xlings-res/binutils/releases/download/2.42/binutils-2.42-linux-aarch64.tar.gz",
+                        GLOBAL = "https://github.com/xlings-res/binutils/releases/download/2.42-r1/binutils-2.42-r1-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/binutils/releases/download/2.42-r1/binutils-2.42-r1-linux-aarch64.tar.gz",
                     },
-                    sha256 = "6d74f5678595e42007ad959d1cf4fab881f47bea73d21e5c9fea0f63390d75b3",
+                    sha256 = "06e78b53860a78ac9f64e3af9b35b14e993a78327c5e189fe91f64252e2012f8",
                 },
                 -- 1: the ld wrapper needs no dirname (config()).
                 revision = 1,
@@ -91,6 +92,13 @@ package = {
         },
     },
 }
+
+-- 2.42 is x86_64's key (its aarch64 asset holds hard links): an aarch64
+-- reader takes 2.42.1.
+local recipe_arch = (os.arch and os.arch())
+if recipe_arch == "aarch64" or recipe_arch == "arm64" then
+    package.xpm.linux["2.42"] = nil
+end
 
 import("xim.libxpkg.log")
 import("xim.libxpkg.pkginfo")

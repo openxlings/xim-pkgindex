@@ -7,11 +7,10 @@ name: res-build
 # it links it) before it is an artifact. The artifacts are what a maintainer
 # publishes -- GitHub release, then GitCode through gtc, both verified by
 # content -- never this workflow: it holds no secret and writes nothing.
+# Dispatched, not run on every pull request: a pull request's runs rebuild
+# all of it (gcc alone is most of an hour) on every push. A change to
+# tools/res is verified by dispatching it on its branch (`only` builds one).
 on:
-  pull_request:
-    paths:
-      - "tools/res/**"
-      - ".github/workflows/res-build.yml"
   workflow_dispatch:
     inputs:
       only:
