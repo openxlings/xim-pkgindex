@@ -72,6 +72,8 @@ package = {
             },
             ["latest"] = { ref = "9.2.4-1" },
             ["9.2.4-1"] = {
+                -- r1: the emulators bind to the package's release.
+                revision = 1,
                 arch_alias = { x86_64 = "x64", aarch64 = "arm64" },
                 sha256 = {
                     x86_64  = "f4deefc7a010884855c2a8f79d7e972829ee973fdf73fdf1aa4e3cce08b621ae",
@@ -97,6 +99,8 @@ package = {
             },
             ["latest"] = { ref = "9.2.4-1" },
             ["9.2.4-1"] = {
+                -- r1: the emulators bind to the package's release.
+                revision = 1,
                 arch_alias = { x86_64 = "x64", aarch64 = "arm64" },
                 sha256 = {
                     x86_64  = "9c6335c6c2901b397302131cb02df8f729547d957010da12a26a5902ecf1c21e",
@@ -115,6 +119,8 @@ package = {
             },
             ["latest"] = { ref = "9.2.4-1" },
             ["9.2.4-1"] = {
+                -- r1: the emulators bind to the package's release.
+                revision = 1,
                 arch_alias = { x86_64 = "x64" },
                 sha256 = {
                     x86_64 = "8e5c32903908c1f8daaf9b0da88fb064d0b26a91438a8328bf2327892060ac01",
@@ -215,11 +221,15 @@ end
 
 function config()
     local bindir = path.join(pkginfo.install_dir(), "bin")
+    -- The package name anchors the release; the emulators bind to it, so
+    -- `xlings use qemu-x86@<v>` moves them together (and self doctor reads
+    -- the anchor as the release, not as a broken payload).
+    local release = package.name .. "@" .. pkginfo.version()
 
     -- Umbrella node for the package name itself, plus the one program. Nobody
     -- types `qemu-x86`, but `xlings use qemu-x86@<ver>` and Spec D1 key off it.
     xvm.add(package.name)
-    xvm.add("qemu-system-x86_64", { bindir = bindir })
+    xvm.add("qemu-system-x86_64", { bindir = bindir, binding = release })
     return true
 end
 
