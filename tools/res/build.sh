@@ -322,13 +322,15 @@ wl-clipboard)
     wv="$(awk '$1 == "wayland" { print $2 }' "$here/inputs.txt")"
     source_of wayland "$wv" "https://gitlab.freedesktop.org/wayland/wayland/-/releases/$wv/downloads/wayland-$wv.tar.xz" "$work/wayland.tar.xz"
     d="wl-clipboard-$version-linux-$arch"
-    alpine "apk add -q $APK_STATIC meson samurai pkgconf xz expat-dev expat-static libffi-dev wayland-protocols wayland-dev \
+    # libwayland-client built static, with its own scanner (the
+    # distribution's is another version).
+    alpine "apk add -q $APK_STATIC meson samurai pkgconf xz expat-dev expat-static libffi-dev wayland-protocols \
         && tar -xJf wayland.tar.xz && cd wayland-$wv \
         && meson setup build --prefix=/opt/wl --default-library=static -Ddocumentation=false -Dtests=false \
-             -Ddtd_validation=false -Dscanner=false \
-        && ninja -C build install && cd /w \
-        && tar -xzf src.tar.gz && cd wl-clipboard-$version \
-        && PKG_CONFIG_PATH=/opt/wl/lib/pkgconfig LDFLAGS=-static meson setup build --prefer-static --default-library=static \
+             -Ddtd_validation=false -Dscanner=true >/dev/null \
+        && ninja -C build install >/dev/null && cd /w \
+        && tar -xzf src.tar.gz && cd wl-clipboard-$version && export PATH=/opt/wl/bin:\$PATH \
+        && PKG_CONFIG_PATH=/opt/wl/lib/pkgconfig:/opt/wl/share/pkgconfig LDFLAGS=-static meson setup build --prefer-static --default-library=static \
         && ninja -C build \
         && mkdir -p /w/$d/bin && cp build/src/wl-copy build/src/wl-paste /w/$d/bin/ && strip /w/$d/bin/*"
     static_only "$work/$d/bin/wl-copy" "$work/$d/bin/wl-paste"
