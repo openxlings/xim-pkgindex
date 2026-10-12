@@ -32,7 +32,7 @@ package = {
             ["0.7.2-r1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
-                    x86_64 = "47b4464c6735ce1c7ad1de88599b4cbbedd900b14e2ff7f8c950f8718b70f1d1",
+                    x86_64 = "0ae6f23868a870d3406229f29cc8e59c15745fddb62cd853d2edd4c9e4d11a99",
                     aarch64 = "588d7aceb4f8bfae6c7995d7da3649661459bad5c195eeebba34c1c2b22e46df",
                 },
             },
