@@ -81,6 +81,8 @@ package = {
             },
             ["latest"] = { ref = "9.2.4-1" },
             ["9.2.4-1"] = {
+                -- r1: the emulators bind to the package's release.
+                revision = 1,
                 arch_alias = { x86_64 = "x64", aarch64 = "arm64" },
                 sha256 = {
                     x86_64  = "203dc2c71e25fcf97b95181328e9b888cc8092ff404bffd4d267b9defabcb698",
@@ -95,6 +97,8 @@ package = {
             },
             ["latest"] = { ref = "9.2.4-1" },
             ["9.2.4-1"] = {
+                -- r1: the emulators bind to the package's release.
+                revision = 1,
                 arch_alias = { x86_64 = "x64", aarch64 = "arm64" },
                 sha256 = {
                     x86_64  = "c8be02219b4328624f696942aff8d6d5b98dbf07c6f2eb61adca12b7a120a140",
@@ -113,6 +117,8 @@ package = {
             },
             ["latest"] = { ref = "9.2.4-1" },
             ["9.2.4-1"] = {
+                -- r1: the emulators bind to the package's release.
+                revision = 1,
                 arch_alias = { x86_64 = "x64" },
                 sha256 = {
                     x86_64 = "f029d6549fabe5b0ddce07921832bb97a20f56d54b63c8f4d3d5e82c3c8eae33",
@@ -206,14 +212,18 @@ end
 
 function config()
     local bindir = path.join(pkginfo.install_dir(), "bin")
+    -- The package name anchors the release; the emulators bind to it, so
+    -- `xlings use qemu-arm@<v>` moves them together (and self doctor reads
+    -- the anchor as the release, not as a broken payload).
+    local release = package.name .. "@" .. pkginfo.version()
 
     -- Umbrella node for the package name itself. Nobody types `qemu-arm` --
     -- the programs are the two emulators -- but `xlings use qemu-arm@<ver>`
     -- and Spec D1 both key off it.
     xvm.add(package.name)
 
-    xvm.add("qemu-system-aarch64", { bindir = bindir })
-    xvm.add("qemu-system-arm", { bindir = bindir })
+    xvm.add("qemu-system-aarch64", { bindir = bindir, binding = release })
+    xvm.add("qemu-system-arm", { bindir = bindir, binding = release })
     return true
 end
 
