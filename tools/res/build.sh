@@ -537,7 +537,8 @@ labwc-desktop)
     progs="labwc foot fuzzel yambar swaybg grim"
     loader="ld-musl-$arch.so.1"
     alpine "apk add -q labwc foot fuzzel yambar swaybg grim font-dejavu font-wqy-zenhei xkeyboard-config \
-        && apk info -v labwc foot fuzzel yambar swaybg grim font-dejavu font-wqy-zenhei xkeyboard-config 2>/dev/null | sort > /w/versions \
+        && apk info -v 2>/dev/null | sort > /w/installed \
+        && grep -E '^(labwc|foot|fuzzel|yambar|swaybg|grim|font-dejavu|font-wqy-zenhei|xkeyboard-config)-[0-9]' /w/installed > /w/versions \
         && mkdir -p /w/$d/bin /w/$d/libexec /w/$d/lib /w/$d/share/X11 \
         && for p in $progs; do cp /usr/bin/\$p /w/$d/libexec/; done \
         && for p in $progs; do ldd /usr/bin/\$p | awk '/=>/ { print \$3 }'; done | sort -u > /w/libs \
