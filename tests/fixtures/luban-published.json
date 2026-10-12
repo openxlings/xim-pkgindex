@@ -51,6 +51,20 @@
    "sha256": "9754977236a2681a0484426d8ee8448e98333da9a5336fc2945689dcfb89b744"
   }
  },
+ "pkgs/l/luban-desktop.lua@2026.10.13.1": {
+  ".xlings.json": {
+   "mode": "644",
+   "sha256": "e995777e9df1c9c0e487d08735846fcfe70dc9ecf2ac871b58a6c23412f937a4"
+  },
+  "usr/share/factory/etc/os-release": {
+   "mode": "644",
+   "sha256": "064c9e42bc34dd9c5db18b8eaa3e05a6aa6b1e36e0744d83de095a17709d307e"
+  },
+  "usr/share/luban/settings.json": {
+   "mode": "644",
+   "sha256": "fa252000a14c1af14520c66a6d4d55a88049627c43efd28f167affa7fb52e029"
+  }
+ },
  "pkgs/l/luban-tiny.lua@0.1.0": {
   ".xlings.json": {
    "mode": "644",
