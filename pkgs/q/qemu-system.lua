@@ -19,7 +19,7 @@ package = {
 
     xvm_enable = true,
 
-    -- What `luban try` boots an image with, on either machine (xlings: the
+    -- What a Luban machine (`luban enter <n> --mode machine`) and an image boot with, on either machine (xlings: the
     -- aarch64 design §12.3). Built by tools/res/build.sh qemu-system: static
     -- (musl), both system targets, user networking from libslirp built static
     -- -- `-nic user,restrict=on,guestfwd=...` is how a private machine reaches
@@ -35,22 +35,24 @@ package = {
             ["9.2.4"] = {
                 x86_64 = {
                     url = {
-                        GLOBAL = "https://github.com/xlings-res/qemu-system/releases/download/9.2.4-r1/qemu-system-9.2.4-r1-linux-x86_64.tar.gz",
-                        CN     = "https://gitcode.com/xlings-res/qemu-system/releases/download/9.2.4-r1/qemu-system-9.2.4-r1-linux-x86_64.tar.gz",
+                        GLOBAL = "https://github.com/xlings-res/qemu-system/releases/download/9.2.4-r2/qemu-system-9.2.4-r2-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/qemu-system/releases/download/9.2.4-r2/qemu-system-9.2.4-r2-linux-x86_64.tar.gz",
                     },
-                    sha256 = "e274e596559a75b158e320655c020ed5a001c6656161ab90163a183a9672a7cc",
+                    sha256 = "3674f156e578253856a039a054d81371b5d6406141adeb78387047ae924a10aa",
                 },
                 aarch64 = {
                     url = {
-                        GLOBAL = "https://github.com/xlings-res/qemu-system/releases/download/9.2.4-r1/qemu-system-9.2.4-r1-linux-aarch64.tar.gz",
-                        CN     = "https://gitcode.com/xlings-res/qemu-system/releases/download/9.2.4-r1/qemu-system-9.2.4-r1-linux-aarch64.tar.gz",
+                        GLOBAL = "https://github.com/xlings-res/qemu-system/releases/download/9.2.4-r2/qemu-system-9.2.4-r2-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/qemu-system/releases/download/9.2.4-r2/qemu-system-9.2.4-r2-linux-aarch64.tar.gz",
                     },
-                    sha256 = "bd089b44af0b1287f47e5345f7683b7a2fbcb8797520f685405e9475a001c2a5",
+                    sha256 = "c48b89c1d2bc446b6af60d43da0b10822003f42ede88d81a35a6a0c6fce22a36",
                 },
                 -- r1: built with prefix /usr, so qemu finds share/qemu beside
                 -- itself (r0's looked in /share/qemu and had no option ROMs).
                 -- r2: the emulators bind to the package's release.
-                revision = 2,
+                -- r3: built 9.2.4-r2 -- virtfs (9p), so a Luban machine boots
+                -- the environment itself (`luban enter <n> --mode machine`).
+                revision = 3,
             },
         },
     },
