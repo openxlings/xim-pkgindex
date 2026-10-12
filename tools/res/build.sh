@@ -333,7 +333,7 @@ tmux|htop)
     # share/terminfo, which the recipe names in TERMINFO_DIRS.
     if [[ "$what" == tmux ]]; then
         source_of tmux "$version" "https://github.com/tmux/tmux/releases/download/$version/tmux-$version.tar.gz" "$work/src.tar.gz"
-        unpack="tar -xzf src.tar.gz"; deps="libevent-dev libevent-static"
+        unpack="tar -xzf src.tar.gz"; deps="libevent-dev libevent-static bison"
         build="./configure -q --prefix=/usr --enable-static --disable-utf8proc >/dev/null"
     else
         source_of htop "$version" "https://github.com/htop-dev/htop/releases/download/$version/htop-$version.tar.xz" "$work/src.tar.xz"
