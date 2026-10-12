@@ -533,21 +533,26 @@ labwc-desktop)
     # glibc root, a musl one, or a root with neither. The configuration in
     # etc/xdg is the session's default (a user's ~/.config wins); the session
     # is declared in share/wayland-sessions/labwc-desktop.desktop.
+    # <upstream>-rN: this index's Nth build of it. r1: the libraries and the
+    # loader are private (libexec/lib) -- a root links a payload's lib/ into
+    # its /usr/lib, and these are musl's, not the root's.
+    v="${version%%-r[0-9]*}"
     d="labwc-desktop-$version-linux-$arch"
     progs="labwc foot fuzzel yambar swaybg grim Xwayland xkbcomp"
     loader="ld-musl-$arch.so.1"
     alpine "apk add -q labwc foot fuzzel yambar swaybg grim xwayland xkbcomp font-dejavu font-wqy-zenhei xkeyboard-config \
         && apk info -v 2>/dev/null | sort > /w/installed \
         && grep -E '^(labwc|foot|fuzzel|yambar|swaybg|grim|xwayland|xkbcomp|font-dejavu|font-wqy-zenhei|xkeyboard-config)-[0-9]' /w/installed > /w/versions \
-        && mkdir -p /w/$d/bin /w/$d/libexec /w/$d/lib /w/$d/share/X11 \
+        && mkdir -p /w/$d/bin /w/$d/libexec/lib /w/$d/share/X11 \
         && for p in $progs; do cp /usr/bin/\$p /w/$d/libexec/; done \
         && for p in $progs; do ldd /usr/bin/\$p | awk '/=>/ { print \$3 }'; done | sort -u > /w/libs \
-        && while read -r l; do cp -L \"\$l\" /w/$d/lib/; done < /w/libs \
-        && cp -L /lib/$loader /w/$d/lib/ \
+        && while read -r l; do cp -L \"\$l\" /w/$d/libexec/lib/; done < /w/libs \
+        && cp -L /lib/$loader /w/$d/libexec/lib/ \
         && cp -r /usr/share/X11/xkb /w/$d/share/X11/ && cp -r /usr/share/fonts /w/$d/share/ \
         && mkdir -p /w/$d/share/licenses && for p in labwc foot fuzzel yambar swaybg grim; do \
              [ -d /usr/share/licenses/\$p ] && cp -r /usr/share/licenses/\$p /w/$d/share/licenses/ || true; done"
-    grep -q "^labwc-$version-r" "$work/versions" || die "Alpine 3.20's labwc is not $version: $(grep '^labwc-' "$work/versions")"
+    grep -q "^labwc-$v-r" "$work/versions" || die "Alpine 3.20's labwc is not $v: $(grep '^labwc-' "$work/versions")"
+    [[ ! -e "$work/$d/lib" ]] || die "a lib/ in the tree: a root would link it into its /usr/lib"
     cp -r "$here/labwc-desktop/etc" "$here/labwc-desktop/share" "$work/$d/"
     for p in $progs; do
         # Xwayland's keymaps: the tree's data and its xkbcomp, not the system's paths.
@@ -574,7 +579,7 @@ labwc-desktop)
     [[ "$(px 600 710)" == "$(px 900 710)" && "$(px 600 710)" != "$(px 600 680)" ]] || shot_die "the panel is not drawn"
     grep -q "foot version" "$work/foot.version" || die "foot does not run"
     rm -f "$work/shot.ppm"
-    provenance "$d" "labwc-desktop $version: Alpine 3.20 packages $(tr '\n' ' ' < "$work/versions")-- repackaged with the musl loader and the libraries they link (lib/), run through bin/<program>; configuration and the session file from xim-pkgindex tools/res/labwc-desktop; a headless session in Debian 12 drew its background and panel"
+    provenance "$d" "labwc-desktop $version: Alpine 3.20 packages $(tr '\n' ' ' < "$work/versions")-- repackaged with the musl loader and the libraries they link (libexec/lib, private), run through bin/<program>; configuration and the session file from xim-pkgindex tools/res/labwc-desktop; a headless session in Debian 12 drew its background and panel"
     pack "$d" ;;
 *)
     die "unknown resource: $what" ;;

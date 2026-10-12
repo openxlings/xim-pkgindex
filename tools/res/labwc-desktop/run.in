@@ -10,4 +10,4 @@ case ":${XDG_CONFIG_DIRS:-}:" in *":$here/etc/xdg:"*) ;; *) export XDG_CONFIG_DI
 case ":${XDG_DATA_DIRS:-}:" in *":$here/share:"*) ;; *) export XDG_DATA_DIRS="$here/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}" ;; esac
 case ":$PATH:" in *":$here/bin:"*) ;; *) export PATH="$here/bin:$PATH" ;; esac
 set -- @ARGS@ "$@"
-exec "$here/lib/@LOADER@" --library-path "$here/lib" "$here/libexec/@PROG@" "$@"
+exec "$here/libexec/lib/@LOADER@" --library-path "$here/libexec/lib" "$here/libexec/@PROG@" "$@"
