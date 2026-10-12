@@ -1,0 +1,3 @@
+# Shared by deployment and site-check; bump only through a reviewed PR.
+# Includes the click-controlled phone navigation fix (xpkgindex PR #12).
+xpkgindex @ git+https://github.com/openxlings/xpkgindex.git@2d3dd90dde89383e457a1ad6d5d87d4c75d697e5
