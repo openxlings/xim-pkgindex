@@ -18,6 +18,8 @@
 #   make          a static GNU make (musl)
 #   git           a static git (musl; https through libcurl), runtime prefix
 #   vim           a static vim (musl) and its runtime files
+#   tmux          a static tmux (musl; libevent, ncurses) and the terminfo it needs
+#   htop          a static htop (musl; ncurses) and the terminfo it needs
 #   wl-clipboard  static wl-copy / wl-paste (musl; libwayland built static)
 #   xsel          a static xsel (musl; libX11/xcb static)
 #   edk2-firmware the UEFI firmware qemu ships, decompressed (no build)
@@ -324,6 +326,34 @@ vim)
     VIM="$work/$d/share/vim" "$work/$d/bin/vim" -es -N -u NONE -c 'if !filereadable($VIMRUNTIME . "/syntax/syntax.vim") | cquit | endif' -c 'qa!' \
         || die "vim does not find its runtime through \$VIM"
     provenance "$d" "vim $version (github.com/vim/vim tag v$version, sha256 $(input vim "$version")); static (ncurses), huge features, no X; runtime in share/vim; Alpine 3.20 (musl)"
+    pack "$d" ;;
+tmux|htop)
+    # A terminal program: static (ncursesw, and libevent for tmux), with the
+    # terminfo entries of the terminals it meets (a root may have none):
+    # share/terminfo, which the recipe names in TERMINFO_DIRS.
+    if [[ "$what" == tmux ]]; then
+        source_of tmux "$version" "https://github.com/tmux/tmux/releases/download/$version/tmux-$version.tar.gz" "$work/src.tar.gz"
+        unpack="tar -xzf src.tar.gz"; deps="libevent-dev libevent-static"
+        build="./configure -q --prefix=/usr --enable-static --disable-utf8proc >/dev/null"
+    else
+        source_of htop "$version" "https://github.com/htop-dev/htop/releases/download/$version/htop-$version.tar.xz" "$work/src.tar.xz"
+        unpack="tar -xJf src.tar.xz"; deps="xz"
+        build="./configure -q --prefix=/usr --enable-static --enable-unicode >/dev/null"
+    fi
+    d="$what-$version-linux-$arch"
+    terms="xterm xterm-256color screen screen-256color tmux tmux-256color foot foot-direct linux vt100 vt220 dumb"
+    alpine "apk add -q $APK_STATIC $deps ncurses-dev ncurses-static ncurses-terminfo-base ncurses-terminfo \
+        && $unpack && cd $what-$version \
+        && $build LDFLAGS=-static \
+        && make -s -j\$(nproc) >/dev/null \
+        && mkdir -p /w/$d/bin /w/$d/share/terminfo && cp $what /w/$d/bin/ && strip /w/$d/bin/$what \
+        && for t in $terms; do f=\$(find /usr/share/terminfo /etc/terminfo -name \"\$t\" 2>/dev/null | head -1); \
+             [ -n \"\$f\" ] || { echo \"no terminfo for \$t\" >&2; exit 1; }; \
+             mkdir -p /w/$d/share/terminfo/\$(basename \$(dirname \$f)); cp \"\$f\" /w/$d/share/terminfo/\$(basename \$(dirname \$f))/; done"
+    static_only "$work/$d/bin/$what"
+    "$work/$d/bin/$what" -V 2>&1 | grep -q "$version" || die "$what does not report $version"
+    [[ -f "$work/$d/share/terminfo/x/xterm-256color" ]] || die "no xterm-256color terminfo"
+    provenance "$d" "$what $version (github.com, sha256 $(input $what "$version")); static (ncursesw$([[ $what == tmux ]] && echo ', libevent')), terminfo for: $terms; Alpine 3.20 (musl)"
     pack "$d" ;;
 wl-clipboard)
     source_of wl-clipboard "$version" "https://github.com/bugaevc/wl-clipboard/archive/refs/tags/v$version.tar.gz" "$work/src.tar.gz"

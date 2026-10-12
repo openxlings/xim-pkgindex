@@ -17,7 +17,7 @@ package = {
     -- The session the `desktop` edition starts (xlings: Luban OS architecture
     -- design §9.3): labwc, a panel (yambar), a launcher (fuzzel), a terminal
     -- (foot), a background (swaybg), screenshots (grim), Xwayland, DejaVu and
-    -- WenQuanYi Zen Hei. One tree with its own musl loader and libraries
+    -- WenQuanYi Zen Hei (projected into share/fonts for every program). One tree with its own musl loader and libraries
     -- (tools/res/build.sh labwc-desktop), so it runs on any root and needs
     -- nothing of it but the kernel. The session is declared the freedesktop
     -- way, share/wayland-sessions/labwc-desktop.desktop, placed in the SubOS's
@@ -76,6 +76,9 @@ function config()
     -- The session, where a desktop's manager (and the Luban OS window) looks.
     if xvm.files then
         xvm.files{ src = "share/wayland-sessions", dst = "share/wayland-sessions", binding = binding }
+        -- Its fonts (DejaVu, WenQuanYi Zen Hei) where every program looks --
+        -- xdesk, which draws its own text, among them.
+        xvm.files{ src = "share/fonts", dst = "share/fonts", binding = binding }
     end
     return true
 end

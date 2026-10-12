@@ -26,6 +26,9 @@ local function exec(cmd)
     local ok = os.execute(cmd)
     if ok ~= true and ok ~= 0 then error("command failed: " .. cmd) end
 end
+-- The machine the recipe is read on (LUBAN_TEST_ARCH), as the catalog loader says it.
+local arch = os.getenv("LUBAN_TEST_ARCH")
+if arch and arch ~= "" then os.arch = function() return arch end end
 os.mkdir = function(p) exec("mkdir -p " .. q(p)) end
 os.tryrm = function(p) exec("rm -rf " .. q(p)) end
 os.isfile = function(p) local f = io.open(p, "rb"); if f then f:close(); return true end; return false end

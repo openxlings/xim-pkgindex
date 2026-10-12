@@ -78,6 +78,11 @@ jobs:
           - { what: qemu-system,   version: "9.2.4-r2",           arch: aarch64 }
           - { what: labwc-desktop, version: "0.7.2-r1",           arch: x86_64 }
           - { what: labwc-desktop, version: "0.7.2-r1",           arch: aarch64 }
+          # the desktop editions' terminal tools (xlings: Luban OS desktop part 2 §5)
+          - { what: tmux,          version: "3.8",                arch: x86_64 }
+          - { what: tmux,          version: "3.8",                arch: aarch64 }
+          - { what: htop,          version: "3.5.3",              arch: x86_64 }
+          - { what: htop,          version: "3.5.3",              arch: aarch64 }
     steps:
       - uses: actions/checkout@v4
         if: env.WANTED == 'true'

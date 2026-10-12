@@ -53,11 +53,5 @@ class TestStatic:
         assert 'dst = "share/wayland-sessions"' in text(PKG_FILE), "config() places the session in the SubOS's share"
 
     @pytest.mark.static
-    def test_the_edition_starts_the_session_as_a_machine(self):
-        source = text(EDITION_FILE)
-        manifest = json.loads(re.search(r'\["2026\.10\.13\.1"\] = \{\s*manifest = \[\[(.*?)\]\]', source, re.S).group(1))
-        assert "xim:labwc-desktop@0.7.2" in manifest["packages"]
-        assert manifest["min_client"] == "2026.10.13.1"
-        defaults = json.loads(re.search(r'"usr/share/luban/settings\.json", \'(.*?)\\n\'', source).group(1))
-        assert defaults == {"mode": "machine", "desktop": "labwc-desktop"}
-        assert os.path.basename(SESSION) == defaults["desktop"] + ".desktop"
+    def test_its_fonts_are_where_every_program_looks(self):
+        assert 'dst = "share/fonts"' in text(PKG_FILE), "config() places the fonts in the SubOS's share (xdesk draws with them)"

@@ -31,7 +31,8 @@ package = {
             -- dep declaring exports.runtime.loader the predicate never fires
             -- and the payload keeps python-build-standalone's INTERP, which is
             -- the HOST's /lib64/ld-linux-x86-64.so.2.
-            deps = { "xim:glibc@>=2.39" },
+            -- gcc-runtime: 3.15's builds need libgcc_s (3.13's did not).
+            deps = { "xim:glibc@>=2.39", "xim:gcc-runtime" },
             -- BOTH ARCHES, AND BOTH REGIONS.
             --
             -- The single-arch table was the reason `xim:emsdk` could not
@@ -58,6 +59,25 @@ package = {
                 CN     = "https://gitcode.com/xlings-res/mirror-cn/releases/download/python/cpython-${version}%2B20260310-${arch}-unknown-linux-gnu-install_only.tar.gz",
             },
             ["latest"] = { ref = "3.13.12" },
+            -- 3.15.0 is python-build-standalone's 20261009 release (not the
+            -- `source` template's 20260310): its URLs are its own. The
+            -- desktop editions pin it; `latest` stays where it was.
+            ["3.15.0"] = {
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/astral-sh/python-build-standalone/releases/download/20261009/cpython-3.15.0%2B20261009-x86_64-unknown-linux-gnu-install_only.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/mirror-cn/releases/download/python/cpython-3.15.0%2B20261009-x86_64-unknown-linux-gnu-install_only.tar.gz",
+                    },
+                    sha256 = "95ba085863806dacf0fd7119c590154bbcd3351099e55c0808a9c61603e320a8",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/astral-sh/python-build-standalone/releases/download/20261009/cpython-3.15.0%2B20261009-aarch64-unknown-linux-gnu-install_only.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/mirror-cn/releases/download/python/cpython-3.15.0%2B20261009-aarch64-unknown-linux-gnu-install_only.tar.gz",
+                    },
+                    sha256 = "f02953d2c56c7eaa2fa3a21f2680a823b8748959c571ac149cd76b0fd1a1c33c",
+                },
+            },
             ["3.13.12"] = {
                 sha256 = {
                     x86_64  = "a1d58266fede23e795b1b7d1dee3cc77470538fd14292a46cc96e735af030fec",

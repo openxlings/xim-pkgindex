@@ -1,8 +1,11 @@
--- Luban Desktop: luban-core plus the traditional desktop (xlings: Luban OS
--- architecture design §9.3) -- labwc with a panel, a launcher and a terminal
--- (xim:labwc-desktop, one relocatable tree), shown in the Luban OS window
--- through opensal-wlr. It runs as a machine (usr/share/luban/settings.json:
--- the edition's defaults behind `luban config`), and starts that session.
+-- Luban Desktop: luban-core plus a desktop that is ready to use (xlings:
+-- Luban OS desktop part 2) -- xdesk's classic profile (windows side by side,
+-- a panel, a launcher), the tools people reach for (node, python, uv, bun,
+-- ripgrep, fd, fzf, jq, tmux, htop; claude, codex, pi, opencode, dsh), and
+-- their defaults (git, registries near you). It runs as a machine
+-- (usr/share/luban/settings.json: the edition's defaults behind `luban
+-- config`) and starts xdesk-classic; labwc is there as another session. The
+-- canvas profile is luban-desktop-xdesk.
 --
 --   luban new box --edition desktop      # then: luban-os, or luban enter box
 --
@@ -13,14 +16,14 @@ package = {
     spec = "1",
     name = "luban-desktop",
     namespace = "subos",
-    description = "Luban Desktop: luban-core plus a desktop (labwc, a panel, a launcher, a terminal), shown in the Luban OS window",
+    description = "Luban Desktop: luban-core plus a ready desktop (xdesk classic) and the tools people reach for, shown in the Luban OS window",
     homepage = "https://github.com/openxlings/xlings",
     licenses = {"Apache-2.0"},
     type = "subos",
     archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"subos", "distribution"},
-    keywords = {"luban", "rootfs", "distribution", "desktop", "graphics", "mesa"},
+    keywords = {"luban", "rootfs", "distribution", "desktop", "xdesk", "wayland"},
 
     xpm = {
         linux = {
@@ -32,6 +35,10 @@ package = {
 }
 
 import("xim.pkgindex.luban")
+import("xim.pkgindex.luban_desktop")
+
+local recipe_arch = (os.arch and os.arch())
+local aarch64 = recipe_arch == "aarch64" or recipe_arch == "arm64"
 
 local versions = {
     ["0.1.0"] = { manifest = [[
@@ -49,29 +56,17 @@ local versions = {
   "workspace": {}
 }
 ]] },
-    -- The desktop session and what it runs as; the client that knows both
-    -- (a machine's display, the edition's defaults) is 2026.10.13.1.
+    -- The desktop that is ready to use: xdesk classic (aarch64: labwc, until
+    -- xdesk is released there), the environment, its defaults.
     ["2026.10.13.1"] = {
-        manifest = [[
-{
-  "subos_kind": "rootfs",
-  "min_client": "2026.10.13.1",
-  "from": "subos:luban-core@2026.10.11.2",
-  "abi": { "kernel": "linux", "libc": "gnu" },
-  "packages": [
-    "xim:labwc-desktop@0.7.2"
-  ],
-  "workspace": {}
-}
-]],
-        files = { { "usr/share/luban/settings.json", '{ "mode": "machine", "desktop": "labwc-desktop" }\n' } },
+        manifest = luban_desktop.manifest(aarch64 and "aarch64" or "x86_64", "subos:luban-core@2026.10.11.2"),
+        files = luban_desktop.files(aarch64 and "labwc-desktop" or "xdesk-classic"),
     },
 }
 
 -- 0.1.0 names x86_64-only packages: an aarch64 reader refuses it rather than
 -- make an environment half.
-local recipe_arch = (os.arch and os.arch())
-if recipe_arch == "aarch64" or recipe_arch == "arm64" then
+if aarch64 then
     package.xpm.linux["0.1.0"] = nil
     versions["0.1.0"] = nil
 end
