@@ -28,11 +28,11 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "0.7.2" },
-            ["0.7.2"] = {
+            ["latest"] = { ref = "0.7.2-r1" },
+            ["0.7.2-r1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
-                    x86_64 = "7eb6eddbf6d0f41e2afe7b1d7ce9a784cc096eb2c53fbfb32b59b31bdd840eea",
+                    x86_64 = "47b4464c6735ce1c7ad1de88599b4cbbedd900b14e2ff7f8c950f8718b70f1d1",
                     aarch64 = "588d7aceb4f8bfae6c7995d7da3649661459bad5c195eeebba34c1c2b22e46df",
                 },
             },
