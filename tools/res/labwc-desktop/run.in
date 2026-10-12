@@ -5,7 +5,9 @@ here=$(readlink -f "$0"); here=${here%/bin/*}
 export LABWC_DESKTOP="$here"
 export XKB_CONFIG_ROOT="$here/share/X11/xkb"
 export FONTCONFIG_FILE="$here/etc/fonts/fonts.conf"
+export WLR_XWAYLAND="$here/bin/Xwayland"
 case ":${XDG_CONFIG_DIRS:-}:" in *":$here/etc/xdg:"*) ;; *) export XDG_CONFIG_DIRS="$here/etc/xdg:${XDG_CONFIG_DIRS:-/etc/xdg}" ;; esac
 case ":${XDG_DATA_DIRS:-}:" in *":$here/share:"*) ;; *) export XDG_DATA_DIRS="$here/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}" ;; esac
 case ":$PATH:" in *":$here/bin:"*) ;; *) export PATH="$here/bin:$PATH" ;; esac
+set -- @ARGS@ "$@"
 exec "$here/lib/@LOADER@" --library-path "$here/lib" "$here/libexec/@PROG@" "$@"

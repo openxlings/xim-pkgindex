@@ -527,18 +527,18 @@ labwc-desktop)
     # The traditional Luban desktop (xlings: Luban OS architecture design
     # §9.3): labwc and the session around it -- a panel (yambar), a launcher
     # (fuzzel), a terminal (foot), a background (swaybg), a screenshot tool
-    # (grim), fonts with CJK -- as one relocatable tree. Alpine 3.20's builds
+    # (grim), Xwayland for X11 programs, fonts with CJK -- as one relocatable tree. Alpine 3.20's builds
     # of them, with the musl loader and every library they need in lib/; each
     # bin/<program> runs the loader with --library-path, so the tree runs on a
     # glibc root, a musl one, or a root with neither. The configuration in
     # etc/xdg is the session's default (a user's ~/.config wins); the session
     # is declared in share/wayland-sessions/labwc-desktop.desktop.
     d="labwc-desktop-$version-linux-$arch"
-    progs="labwc foot fuzzel yambar swaybg grim"
+    progs="labwc foot fuzzel yambar swaybg grim Xwayland xkbcomp"
     loader="ld-musl-$arch.so.1"
-    alpine "apk add -q labwc foot fuzzel yambar swaybg grim font-dejavu font-wqy-zenhei xkeyboard-config \
+    alpine "apk add -q labwc foot fuzzel yambar swaybg grim xwayland xkbcomp font-dejavu font-wqy-zenhei xkeyboard-config \
         && apk info -v 2>/dev/null | sort > /w/installed \
-        && grep -E '^(labwc|foot|fuzzel|yambar|swaybg|grim|font-dejavu|font-wqy-zenhei|xkeyboard-config)-[0-9]' /w/installed > /w/versions \
+        && grep -E '^(labwc|foot|fuzzel|yambar|swaybg|grim|xwayland|xkbcomp|font-dejavu|font-wqy-zenhei|xkeyboard-config)-[0-9]' /w/installed > /w/versions \
         && mkdir -p /w/$d/bin /w/$d/libexec /w/$d/lib /w/$d/share/X11 \
         && for p in $progs; do cp /usr/bin/\$p /w/$d/libexec/; done \
         && for p in $progs; do ldd /usr/bin/\$p | awk '/=>/ { print \$3 }'; done | sort -u > /w/libs \
@@ -550,7 +550,9 @@ labwc-desktop)
     grep -q "^labwc-$version-r" "$work/versions" || die "Alpine 3.20's labwc is not $version: $(grep '^labwc-' "$work/versions")"
     cp -r "$here/labwc-desktop/etc" "$here/labwc-desktop/share" "$work/$d/"
     for p in $progs; do
-        sed -e "s/@PROG@/$p/g" -e "s/@LOADER@/$loader/g" "$here/labwc-desktop/run.in" > "$work/$d/bin/$p"
+        # Xwayland's keymaps: the tree's data and its xkbcomp, not the system's paths.
+        args=""; [[ "$p" == Xwayland ]] && args='-xkbdir "$here/share/X11/xkb"'
+        sed -e "s/@PROG@/$p/g" -e "s/@LOADER@/$loader/g" -e "s|@ARGS@|$args|" "$here/labwc-desktop/run.in" > "$work/$d/bin/$p"
         chmod 755 "$work/$d/bin/$p"
     done
     # It runs on a root that is not Alpine's: a headless session in Debian,
