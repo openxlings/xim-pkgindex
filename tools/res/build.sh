@@ -535,7 +535,9 @@ labwc-desktop)
     # is declared in share/wayland-sessions/labwc-desktop.desktop.
     # <upstream>-rN: this index's Nth build of it. r1: the libraries and the
     # loader are private (libexec/lib) -- a root links a payload's lib/ into
-    # its /usr/lib, and these are musl's, not the root's.
+    # its /usr/lib, and these are musl's, not the root's -- and no ELF names
+    # a loader (PT_INTERP made PT_NULL): a root checks that every ELF's loader
+    # is in its closure, and these are only ever run by the tree's own.
     v="${version%%-r[0-9]*}"
     d="labwc-desktop-$version-linux-$arch"
     progs="labwc foot fuzzel yambar swaybg grim Xwayland xkbcomp"
@@ -554,6 +556,9 @@ labwc-desktop)
     grep -q "^labwc-$v-r" "$work/versions" || die "Alpine 3.20's labwc is not $v: $(grep '^labwc-' "$work/versions")"
     [[ ! -e "$work/$d/lib" ]] || die "a lib/ in the tree: a root would link it into its /usr/lib"
     cp -r "$here/labwc-desktop/etc" "$here/labwc-desktop/share" "$work/$d/"
+    # No ELF here names a loader outside the tree (the tree's own runs them).
+    n="$(python3 "$here/labwc-desktop/no-interp.py" "$work/$d/libexec")"
+    [[ "$n" -ge 8 ]] || die "PT_INTERP left in place ($n changed)"
     for p in $progs; do
         # Xwayland's keymaps: the tree's data and its xkbcomp, not the system's paths.
         args=""; [[ "$p" == Xwayland ]] && args='-xkbdir "$here/share/X11/xkb"'
