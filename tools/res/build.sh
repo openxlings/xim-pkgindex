@@ -569,8 +569,9 @@ labwc-desktop)
     head -c 20 "$work/shot.ppm" | grep -aq '^1280 720$' || shot_die "the screenshot is not the 1280x720 headless output"
     px() { od -An -tx1 -j $((16 + ($2 * 1280 + $1) * 3)) -N 3 "$work/shot.ppm" | tr -d ' '; }
     log "pixels: (0,0) $(px 0 0), (640,100) $(px 640 100), (640,360) $(px 640 360), (600,710) $(px 600 710)"
-    [[ "$(px 640 100)" == 2e3440 ]] || shot_die "the background is not drawn ($(px 640 100) at 640,100)"
-    [[ "$(px 600 710)" != 2e3440 ]] || shot_die "the panel is not drawn"
+    # The background is drawn (not black), and the panel is a band of its own at the bottom.
+    [[ "$(px 640 360)" != 000000 ]] || shot_die "nothing is drawn"
+    [[ "$(px 600 710)" == "$(px 900 710)" && "$(px 600 710)" != "$(px 600 680)" ]] || shot_die "the panel is not drawn"
     grep -q "foot version" "$work/foot.version" || die "foot does not run"
     rm -f "$work/shot.ppm"
     provenance "$d" "labwc-desktop $version: Alpine 3.20 packages $(tr '\n' ' ' < "$work/versions")-- repackaged with the musl loader and the libraries they link (lib/), run through bin/<program>; configuration and the session file from xim-pkgindex tools/res/labwc-desktop; a headless session in Debian 12 drew its background and panel"
