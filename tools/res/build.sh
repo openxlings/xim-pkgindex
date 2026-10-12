@@ -559,16 +559,18 @@ labwc-desktop)
     # with nothing of the tree's system, draws its background and its panel.
     debian "cd /w/$d && export XDG_RUNTIME_DIR=/tmp/rt WLR_BACKENDS=headless WLR_RENDERER=pixman WLR_LIBINPUT_NO_DEVICES=1 \
         && mkdir -p -m 700 /tmp/rt && { ./bin/labwc >/w/session.log 2>&1 & } \
-        && for i in \$(seq 1 50); do [ -S /tmp/rt/wayland-0 ] && break; sleep 0.2; done && sleep 4 \
+        && for i in \$(seq 1 50); do [ -S /tmp/rt/wayland-0 ] && break; sleep 0.2; done && sleep 6 \
         && WAYLAND_DISPLAY=wayland-0 ./bin/grim -t ppm /w/shot.ppm \
         && { cat /proc/[0-9]*/cmdline 2>/dev/null || true; } | tr \"\\\\000\" \" \" > /w/procs && grep -q libexec/[y]ambar /w/procs && grep -q libexec/[s]waybg /w/procs \
         && WAYLAND_DISPLAY=wayland-0 ./bin/foot --version > /w/foot.version" \
       || { log "--- session.log"; tail -40 "$work/session.log" >&2 || true; die "the session did not run"; }
-    head -c 20 "$work/shot.ppm" | grep -aq '^1280 720$' || die "the screenshot is not the 1280x720 headless output"
-    top="$(od -An -tx1 -j 16 -N 3 "$work/shot.ppm" | tr -d ' ')"
-    bottom="$(od -An -tx1 -j $((16 + 710 * 1280 * 3 + 600 * 3)) -N 3 "$work/shot.ppm" | tr -d ' ')"
-    [[ "$top" == 2e3440 ]] || die "the background is not drawn (top-left pixel $top)"
-    [[ "$bottom" != 2e3440 ]] || die "the panel is not drawn"
+    # A failed check keeps the picture and the log beside the build's output.
+    shot_die() { cp "$work/shot.ppm" "$out/failed-shot.ppm" 2>/dev/null; cp "$work/session.log" "$out/failed-session.log" 2>/dev/null; die "$1"; }
+    head -c 20 "$work/shot.ppm" | grep -aq '^1280 720$' || shot_die "the screenshot is not the 1280x720 headless output"
+    px() { od -An -tx1 -j $((16 + ($2 * 1280 + $1) * 3)) -N 3 "$work/shot.ppm" | tr -d ' '; }
+    log "pixels: (0,0) $(px 0 0), (640,100) $(px 640 100), (640,360) $(px 640 360), (600,710) $(px 600 710)"
+    [[ "$(px 640 100)" == 2e3440 ]] || shot_die "the background is not drawn ($(px 640 100) at 640,100)"
+    [[ "$(px 600 710)" != 2e3440 ]] || shot_die "the panel is not drawn"
     grep -q "foot version" "$work/foot.version" || die "foot does not run"
     rm -f "$work/shot.ppm"
     provenance "$d" "labwc-desktop $version: Alpine 3.20 packages $(tr '\n' ' ' < "$work/versions")-- repackaged with the musl loader and the libraries they link (lib/), run through bin/<program>; configuration and the session file from xim-pkgindex tools/res/labwc-desktop; a headless session in Debian 12 drew its background and panel"

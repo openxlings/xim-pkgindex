@@ -95,6 +95,13 @@ jobs:
           name: res-${{ matrix.what }}-${{ matrix.version }}-${{ matrix.arch }}
           path: out/
           if-no-files-found: error
+      # What a failed check kept (a screenshot, a log), to look at.
+      - uses: actions/upload-artifact@v4
+        if: failure() && env.WANTED == 'true'
+        with:
+          name: failed-${{ matrix.what }}-${{ matrix.version }}-${{ matrix.arch }}
+          path: out/failed-*
+          if-no-files-found: ignore
 
   # Publishing (tools/res/publish.py): an asset its xlings-res release lacks
   # is added, nothing published is replaced. GitCode is filled from a CN
