@@ -68,7 +68,7 @@ end
 
 function config()
     local dir = pkginfo.install_dir()
-    xvm.add("luban-os", { bindir = path.join(dir, "bin"), binding = package.name .. "@" .. pkginfo.version() })
+    xvm.add("luban-os", { bindir = path.join(dir, "bin") })
     -- The host's application menu: the window of this home.
     if os.getenv("HOME") then
         local home = os.getenv("XLINGS_HOME") or path.join(os.getenv("HOME"), ".xlings")
