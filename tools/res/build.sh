@@ -538,13 +538,12 @@ labwc-desktop)
     loader="ld-musl-$arch.so.1"
     alpine "apk add -q labwc foot fuzzel yambar swaybg grim font-dejavu font-wqy-zenhei xkeyboard-config \
         && apk info -v labwc foot fuzzel yambar swaybg grim font-dejavu font-wqy-zenhei xkeyboard-config 2>/dev/null | sort > /w/versions \
-        && mkdir -p /w/$d/bin /w/$d/libexec /w/$d/lib /w/$d/share/X11 /w/$d/share/applications \
+        && mkdir -p /w/$d/bin /w/$d/libexec /w/$d/lib /w/$d/share/X11 \
         && for p in $progs; do cp /usr/bin/\$p /w/$d/libexec/; done \
         && for p in $progs; do ldd /usr/bin/\$p | awk '/=>/ { print \$3 }'; done | sort -u > /w/libs \
         && while read -r l; do cp -L \"\$l\" /w/$d/lib/; done < /w/libs \
         && cp -L /lib/$loader /w/$d/lib/ \
         && cp -r /usr/share/X11/xkb /w/$d/share/X11/ && cp -r /usr/share/fonts /w/$d/share/ \
-        && cp /usr/share/applications/foot.desktop /w/$d/share/applications/ \
         && mkdir -p /w/$d/share/licenses && for p in labwc foot fuzzel yambar swaybg grim; do \
              [ -d /usr/share/licenses/\$p ] && cp -r /usr/share/licenses/\$p /w/$d/share/licenses/ || true; done"
     grep -q "^labwc-$version-r" "$work/versions" || die "Alpine 3.20's labwc is not $version: $(grep '^labwc-' "$work/versions")"
