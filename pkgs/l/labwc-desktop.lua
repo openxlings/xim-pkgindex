@@ -28,12 +28,24 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "0.7.2-r1" },
-            ["0.7.2-r1"] = {
-                url = "XLINGS_RES",
-                sha256 = {
-                    x86_64 = "2e20a3cf3b79e0440a1a67ef4252b1aa32104aa49e322f921482eceed21a5bcc",
-                    aarch64 = "9599005361ca1f90f93d6bcbd1dd1f7d92514ac4b69cd103d4c8be729319acb8",
+            ["latest"] = { ref = "0.7.2" },
+            ["0.7.2"] = {
+                -- The factory's build r1 (tools/res/build.sh labwc-desktop
+                -- 0.7.2-r1): its libraries private (libexec/lib), and no ELF
+                -- names a loader outside the tree.
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/labwc-desktop/releases/download/0.7.2-r1/labwc-desktop-0.7.2-r1-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/labwc-desktop/releases/download/0.7.2-r1/labwc-desktop-0.7.2-r1-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "2e20a3cf3b79e0440a1a67ef4252b1aa32104aa49e322f921482eceed21a5bcc",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/labwc-desktop/releases/download/0.7.2-r1/labwc-desktop-0.7.2-r1-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/labwc-desktop/releases/download/0.7.2-r1/labwc-desktop-0.7.2-r1-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "9599005361ca1f90f93d6bcbd1dd1f7d92514ac4b69cd103d4c8be729319acb8",
                 },
             },
         },
