@@ -1,0 +1,28 @@
+# The labwc desktop's panel: the launcher, the windows, the time.
+bar:
+  location: bottom
+  height: 28
+  spacing: 8
+  margin: 10
+  font: DejaVu Sans:pixelsize=13
+  foreground: d8dee9ff
+  background: 1d2027f0
+  left:
+    - label:
+        content:
+          string:
+            text: "Luban OS"
+            on-click: fuzzel
+            font: DejaVu Sans:pixelsize=13:weight=bold
+    - foreign-toplevel:
+        content:
+          map:
+            conditions:
+              activated: {string: {text: "{app-id}", max: 32, foreground: 88c0d0ff}}
+              ~activated: {string: {text: "{app-id}", max: 32}}
+  right:
+    - clock:
+        time-format: "%H:%M"
+        date-format: "%Y-%m-%d"
+        content:
+          - string: {text: "{date}  {time}"}

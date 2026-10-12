@@ -22,6 +22,7 @@
 #   xsel          a static xsel (musl; libX11/xcb static)
 #   edk2-firmware the UEFI firmware qemu ships, decompressed (no build)
 #   qemu-system   static qemu-system-x86_64 and -aarch64 (musl; user networking)
+#   labwc-desktop the labwc desktop session, relocatable (musl loader and libraries inside)
 #   bash          bash on glibc (the shape x86_64's is)
 #   coreutils     coreutils on glibc
 #   openssl       openssl on glibc, lib64
@@ -521,6 +522,54 @@ gcc)
     GLIBC_ELFS="$(find "$work/$d/bin" "$work/$d/libexec" -type f -exec sh -c 'file -b "$1" | grep -q "^ELF.*dynamically linked" && echo "$1"' _ {} \;)"
     glibc_only libstdc++.so.6 libgcc_s.so.1 libzstd.so.1 libz.so.1
     provenance "$d" "gcc $version (ftpmirror.gnu.org, sha256 $(input gcc "$version")) configured as fromsource:gcc (c,c++; no multilib, no bootstrap, no LTO; libsanitizer), $triple, against a sysroot of xim:glibc@$glibc_v + xim:linux-headers@$headers_v made by xlings $XLINGS_CLIENT; stage 0 is Debian 12's gcc; a C program and a C++23 program using import std built and ran"
+    pack "$d" ;;
+labwc-desktop)
+    # The traditional Luban desktop (xlings: Luban OS architecture design
+    # §9.3): labwc and the session around it -- a panel (yambar), a launcher
+    # (fuzzel), a terminal (foot), a background (swaybg), a screenshot tool
+    # (grim), fonts with CJK -- as one relocatable tree. Alpine 3.20's builds
+    # of them, with the musl loader and every library they need in lib/; each
+    # bin/<program> runs the loader with --library-path, so the tree runs on a
+    # glibc root, a musl one, or a root with neither. The configuration in
+    # etc/xdg is the session's default (a user's ~/.config wins); the session
+    # is declared in share/wayland-sessions/labwc-desktop.desktop.
+    d="labwc-desktop-$version-linux-$arch"
+    progs="labwc foot fuzzel yambar swaybg grim"
+    loader="ld-musl-$arch.so.1"
+    alpine "apk add -q labwc foot fuzzel yambar swaybg grim font-dejavu font-wqy-zenhei xkeyboard-config \
+        && apk info -v labwc foot fuzzel yambar swaybg grim font-dejavu font-wqy-zenhei xkeyboard-config 2>/dev/null | sort > /w/versions \
+        && mkdir -p /w/$d/bin /w/$d/libexec /w/$d/lib /w/$d/share/X11 /w/$d/share/applications \
+        && for p in $progs; do cp /usr/bin/\$p /w/$d/libexec/; done \
+        && for p in $progs; do ldd /usr/bin/\$p | awk '/=>/ { print \$3 }'; done | sort -u > /w/libs \
+        && while read -r l; do cp -L \"\$l\" /w/$d/lib/; done < /w/libs \
+        && cp -L /lib/$loader /w/$d/lib/ \
+        && cp -r /usr/share/X11/xkb /w/$d/share/X11/ && cp -r /usr/share/fonts /w/$d/share/ \
+        && cp /usr/share/applications/foot.desktop /w/$d/share/applications/ \
+        && mkdir -p /w/$d/share/licenses && for p in labwc foot fuzzel yambar swaybg grim; do \
+             [ -d /usr/share/licenses/\$p ] && cp -r /usr/share/licenses/\$p /w/$d/share/licenses/ || true; done"
+    grep -q "^labwc-$version-r" "$work/versions" || die "Alpine 3.20's labwc is not $version: $(grep '^labwc-' "$work/versions")"
+    cp -r "$here/labwc-desktop/etc" "$here/labwc-desktop/share" "$work/$d/"
+    for p in $progs; do
+        sed -e "s/@PROG@/$p/g" -e "s/@LOADER@/$loader/g" "$here/labwc-desktop/run.in" > "$work/$d/bin/$p"
+        chmod 755 "$work/$d/bin/$p"
+    done
+    # It runs on a root that is not Alpine's: a headless session in Debian,
+    # with nothing of the tree's system, draws its background and its panel.
+    debian "cd /w/$d && export XDG_RUNTIME_DIR=/tmp/rt WLR_BACKENDS=headless WLR_RENDERER=pixman WLR_LIBINPUT_NO_DEVICES=1 \
+        && mkdir -p -m 700 /tmp/rt && { ./bin/labwc >/w/session.log 2>&1 & } \
+        && for i in \$(seq 1 50); do [ -S /tmp/rt/wayland-0 ] && break; sleep 0.2; done && sleep 4 \
+        && WAYLAND_DISPLAY=wayland-0 ./bin/grim -t ppm /w/shot.ppm \
+        && { cat /proc/[0-9]*/cmdline 2>/dev/null || true; } | tr \"\\\\000\" \" \" > /w/procs && grep -q libexec/[y]ambar /w/procs && grep -q libexec/[s]waybg /w/procs \
+        && WAYLAND_DISPLAY=wayland-0 ./bin/foot --version > /w/foot.version" \
+      || { log "--- session.log"; tail -40 "$work/session.log" >&2 || true; die "the session did not run"; }
+    head -c 20 "$work/shot.ppm" | grep -aq '^1280 720$' || die "the screenshot is not the 1280x720 headless output"
+    top="$(od -An -tx1 -j 16 -N 3 "$work/shot.ppm" | tr -d ' ')"
+    bottom="$(od -An -tx1 -j $((16 + 710 * 1280 * 3 + 600 * 3)) -N 3 "$work/shot.ppm" | tr -d ' ')"
+    [[ "$top" == 2e3440 ]] || die "the background is not drawn (top-left pixel $top)"
+    [[ "$bottom" != 2e3440 ]] || die "the panel is not drawn"
+    grep -q "foot version" "$work/foot.version" || die "foot does not run"
+    rm -f "$work/shot.ppm"
+    provenance "$d" "labwc-desktop $version: Alpine 3.20 packages $(tr '\n' ' ' < "$work/versions")-- repackaged with the musl loader and the libraries they link (lib/), run through bin/<program>; configuration and the session file from xim-pkgindex tools/res/labwc-desktop; a headless session in Debian 12 drew its background and panel"
     pack "$d" ;;
 *)
     die "unknown resource: $what" ;;
