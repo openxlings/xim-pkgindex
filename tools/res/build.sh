@@ -363,7 +363,9 @@ qemu-system)
     # Firmware (SeaBIOS, EDK II) in share/qemu, decompressed.
     # <upstream>-rN: this index's Nth build of it. r1: the prefix is /usr --
     # qemu relocates its data directory only under a prefix it can strip
-    # (`/` is not one), and r0 looked for its ROMs in /share/qemu.
+    # (`/` is not one), and r0 looked for its ROMs in /share/qemu. r2: virtfs
+    # (9p, libattr static): what `luban enter <n> --mode machine` shares the
+    # environment's own tree and the home with.
     v="${version%%-r[0-9]*}"
     source_of qemu "$v" "https://download.qemu.org/qemu-$v.tar.xz" "$work/qemu.tar.xz"
     sv="$(awk '$1 == "libslirp" { print $2 }' "$here/inputs.txt")"
@@ -376,7 +378,7 @@ qemu-system)
     d="qemu-system-$version-linux-$arch"
     alpine "apk add -q $APK_STATIC python3 py3-setuptools meson samurai pkgconf perl bash flex bison xz bzip2 \
             glib-dev glib-static pixman-dev pixman-static zlib-dev zlib-static libffi-dev pcre2-dev gettext-static \
-            gettext-dev util-linux-dev util-linux-static \
+            gettext-dev util-linux-dev util-linux-static attr-dev attr-static \
         && tar -xzf slirp.tar.gz && cd libslirp-v$sv \
         && meson setup build --prefix=/opt/slirp --default-library=static >/dev/null && ninja -C build install >/dev/null \
         && cd /w && tar -xJf qemu.tar.xz && tar -xJf dtc.tar.xz && mv dtc-$dv qemu-$v/subprojects/dtc \
@@ -390,7 +392,7 @@ qemu-system)
              --disable-linux-io-uring --disable-libudev --disable-zstd --disable-pa --disable-alsa --disable-jack \
              --disable-oss --disable-pipewire --disable-sndio --audio-drv-list= --disable-capstone --disable-libdaxctl \
              --disable-blkio --disable-brlapi --disable-vde --disable-libnfs --disable-rbd --disable-glusterfs \
-             --disable-libiscsi --disable-seccomp --disable-cap-ng --disable-attr --disable-selinux \
+             --disable-libiscsi --disable-seccomp --disable-cap-ng --enable-attr --enable-virtfs --disable-selinux \
              --disable-bzip2 --disable-lzo --disable-snappy --disable-numa --disable-linux-aio --disable-libpmem \
              --disable-fuse --disable-lzfse --disable-libkeyutils > /w/configure.log 2>&1 \
         && make -j\$(nproc) > /w/make.log 2>&1 && make install DESTDIR=/w/stage > /w/install.log 2>&1 \
@@ -402,6 +404,9 @@ qemu-system)
     for q in x86_64 aarch64; do
         "$work/$d/bin/qemu-system-$q" --version | grep -q "version $v" || die "qemu-system-$q does not report $v"
         "$work/$d/bin/qemu-system-$q" -M none -netdev help | grep -qx user || die "qemu-system-$q has no user networking"
+        # r2: 9p, so a Luban machine boots the environment itself (its tree and
+        # the home shared with the guest) rather than a copy of it.
+        "$work/$d/bin/qemu-system-$q" -M none -device help | grep -q '"virtio-9p-pci"' || die "qemu-system-$q has no virtio-9p"
         # Its data directory is found beside it, wherever the payload is: a
         # ROM only share/qemu has, from a copy of the payload elsewhere.
         "$work/$d/bin/qemu-system-$q" -M none -L help | while read -r p; do [[ -d "$p" ]] && realpath "$p"; done \
@@ -410,7 +415,7 @@ qemu-system)
     done
     [[ -f "$work/$d/share/qemu/bios-256k.bin" && -f "$work/$d/share/qemu/edk2-aarch64-code.fd" && -f "$work/$d/share/qemu/edk2-x86_64-code.fd" ]] \
         || die "the firmware is not in share/qemu"
-    provenance "$d" "qemu $v (download.qemu.org, sha256 $(input qemu "$v")) system emulators for x86_64 and aarch64, static (musl, Alpine 3.20), user networking from libslirp $sv and libfdt from dtc $dv, built static; firmware decompressed in share/qemu"
+    provenance "$d" "qemu $v (download.qemu.org, sha256 $(input qemu "$v")) system emulators for x86_64 and aarch64, static (musl, Alpine 3.20), user networking from libslirp $sv, 9p (virtfs, libattr) and libfdt from dtc $dv, built static; firmware decompressed in share/qemu"
     pack "$d" ;;
 edk2-firmware)
     # What qemu ships in pc-bios/ at tag v<version>, decompressed: firmware

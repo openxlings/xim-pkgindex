@@ -74,8 +74,8 @@ jobs:
           - { what: xsel,          version: "1.2.1",              arch: x86_64 }
           - { what: xsel,          version: "1.2.1",              arch: aarch64 }
           - { what: edk2-firmware, version: "9.2.4",              arch: x86_64 }
-          - { what: qemu-system,   version: "9.2.4-r1",           arch: x86_64 }
-          - { what: qemu-system,   version: "9.2.4-r1",           arch: aarch64 }
+          - { what: qemu-system,   version: "9.2.4-r2",           arch: x86_64 }
+          - { what: qemu-system,   version: "9.2.4-r2",           arch: aarch64 }
     steps:
       - uses: actions/checkout@v4
         if: env.WANTED == 'true'
