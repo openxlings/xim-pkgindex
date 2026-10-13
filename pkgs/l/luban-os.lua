@@ -41,7 +41,7 @@ package = {
             ["2026.10.13.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
-                    x86_64 = "3b928c464bfd2170bf1def1841247f8e0c9f6990eac6c532ed540e0bcf5c7ac8",
+                    x86_64 = "1d493a67f52c09fb14eca43b37185b10a89e9f1ed0acd8ad7ef9224a88e07d2a",
                 },
             },
         },
