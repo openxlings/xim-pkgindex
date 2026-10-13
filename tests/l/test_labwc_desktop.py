@@ -53,5 +53,7 @@ class TestStatic:
         assert 'dst = "share/wayland-sessions"' in text(PKG_FILE), "config() places the session in the SubOS's share"
 
     @pytest.mark.static
-    def test_its_fonts_are_where_every_program_looks(self):
-        assert 'dst = "share/fonts"' in text(PKG_FILE), "config() places the fonts in the SubOS's share (xdesk draws with them)"
+    def test_its_fonts_stay_in_its_tree(self):
+        # Projected into a root's share/fonts they stopped its machine desktop
+        # from starting (bisected on aarch64); xdesk carries its own.
+        assert 'dst = "share/fonts"' not in text(PKG_FILE)
