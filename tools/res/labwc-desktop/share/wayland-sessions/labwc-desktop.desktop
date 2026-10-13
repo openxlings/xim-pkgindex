@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Luban Desktop (labwc)
+Comment=A stacking desktop: labwc, a panel, a launcher, a terminal
+Exec=labwc
+DesktopNames=labwc;wlroots
+X-Opensal-Interfaces=surface pointer keyboard mode

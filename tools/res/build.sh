@@ -18,10 +18,13 @@
 #   make          a static GNU make (musl)
 #   git           a static git (musl; https through libcurl), runtime prefix
 #   vim           a static vim (musl) and its runtime files
+#   tmux          a static tmux (musl; libevent, ncurses) and the terminfo it needs
+#   htop          a static htop (musl; ncurses) and the terminfo it needs
 #   wl-clipboard  static wl-copy / wl-paste (musl; libwayland built static)
 #   xsel          a static xsel (musl; libX11/xcb static)
 #   edk2-firmware the UEFI firmware qemu ships, decompressed (no build)
 #   qemu-system   static qemu-system-x86_64 and -aarch64 (musl; user networking)
+#   labwc-desktop the labwc desktop session, relocatable (musl loader and libraries inside)
 #   bash          bash on glibc (the shape x86_64's is)
 #   coreutils     coreutils on glibc
 #   openssl       openssl on glibc, lib64
@@ -324,6 +327,34 @@ vim)
         || die "vim does not find its runtime through \$VIM"
     provenance "$d" "vim $version (github.com/vim/vim tag v$version, sha256 $(input vim "$version")); static (ncurses), huge features, no X; runtime in share/vim; Alpine 3.20 (musl)"
     pack "$d" ;;
+tmux|htop)
+    # A terminal program: static (ncursesw, and libevent for tmux), with the
+    # terminfo entries of the terminals it meets (a root may have none):
+    # share/terminfo, which the recipe names in TERMINFO_DIRS.
+    if [[ "$what" == tmux ]]; then
+        source_of tmux "$version" "https://github.com/tmux/tmux/releases/download/$version/tmux-$version.tar.gz" "$work/src.tar.gz"
+        unpack="tar -xzf src.tar.gz"; deps="libevent-dev libevent-static bison"
+        build="./configure -q --prefix=/usr --enable-static --disable-utf8proc >/dev/null"
+    else
+        source_of htop "$version" "https://github.com/htop-dev/htop/releases/download/$version/htop-$version.tar.xz" "$work/src.tar.xz"
+        unpack="tar -xJf src.tar.xz"; deps="xz"
+        build="./configure -q --prefix=/usr --enable-static --enable-unicode >/dev/null"
+    fi
+    d="$what-$version-linux-$arch"
+    terms="xterm xterm-256color screen screen-256color tmux tmux-256color foot foot-direct linux vt100 vt220 dumb"
+    alpine "apk add -q $APK_STATIC $deps ncurses-dev ncurses-static ncurses-terminfo-base ncurses-terminfo \
+        && $unpack && cd $what-$version \
+        && $build LDFLAGS=-static \
+        && make -s -j\$(nproc) >/dev/null \
+        && mkdir -p /w/$d/bin /w/$d/share/terminfo && cp $what /w/$d/bin/ && strip /w/$d/bin/$what \
+        && for t in $terms; do f=\$(find /usr/share/terminfo /etc/terminfo -name \"\$t\" 2>/dev/null | head -1); \
+             [ -n \"\$f\" ] || { echo \"no terminfo for \$t\" >&2; exit 1; }; \
+             mkdir -p /w/$d/share/terminfo/\$(basename \$(dirname \$f)); cp \"\$f\" /w/$d/share/terminfo/\$(basename \$(dirname \$f))/; done"
+    static_only "$work/$d/bin/$what"
+    "$work/$d/bin/$what" -V 2>&1 | grep -q "$version" || die "$what does not report $version"
+    [[ -f "$work/$d/share/terminfo/x/xterm-256color" ]] || die "no xterm-256color terminfo"
+    provenance "$d" "$what $version (github.com, sha256 $(input $what "$version")); static (ncursesw$([[ $what == tmux ]] && echo ', libevent')), terminfo for: $terms; Alpine 3.20 (musl)"
+    pack "$d" ;;
 wl-clipboard)
     source_of wl-clipboard "$version" "https://github.com/bugaevc/wl-clipboard/archive/refs/tags/v$version.tar.gz" "$work/src.tar.gz"
     wv="$(awk '$1 == "wayland" { print $2 }' "$here/inputs.txt")"
@@ -363,7 +394,9 @@ qemu-system)
     # Firmware (SeaBIOS, EDK II) in share/qemu, decompressed.
     # <upstream>-rN: this index's Nth build of it. r1: the prefix is /usr --
     # qemu relocates its data directory only under a prefix it can strip
-    # (`/` is not one), and r0 looked for its ROMs in /share/qemu.
+    # (`/` is not one), and r0 looked for its ROMs in /share/qemu. r2: virtfs
+    # (9p, libattr static): what `luban enter <n> --mode machine` shares the
+    # environment's own tree and the home with.
     v="${version%%-r[0-9]*}"
     source_of qemu "$v" "https://download.qemu.org/qemu-$v.tar.xz" "$work/qemu.tar.xz"
     sv="$(awk '$1 == "libslirp" { print $2 }' "$here/inputs.txt")"
@@ -376,7 +409,7 @@ qemu-system)
     d="qemu-system-$version-linux-$arch"
     alpine "apk add -q $APK_STATIC python3 py3-setuptools meson samurai pkgconf perl bash flex bison xz bzip2 \
             glib-dev glib-static pixman-dev pixman-static zlib-dev zlib-static libffi-dev pcre2-dev gettext-static \
-            gettext-dev util-linux-dev util-linux-static \
+            gettext-dev util-linux-dev util-linux-static attr-dev attr-static \
         && tar -xzf slirp.tar.gz && cd libslirp-v$sv \
         && meson setup build --prefix=/opt/slirp --default-library=static >/dev/null && ninja -C build install >/dev/null \
         && cd /w && tar -xJf qemu.tar.xz && tar -xJf dtc.tar.xz && mv dtc-$dv qemu-$v/subprojects/dtc \
@@ -390,7 +423,7 @@ qemu-system)
              --disable-linux-io-uring --disable-libudev --disable-zstd --disable-pa --disable-alsa --disable-jack \
              --disable-oss --disable-pipewire --disable-sndio --audio-drv-list= --disable-capstone --disable-libdaxctl \
              --disable-blkio --disable-brlapi --disable-vde --disable-libnfs --disable-rbd --disable-glusterfs \
-             --disable-libiscsi --disable-seccomp --disable-cap-ng --disable-attr --disable-selinux \
+             --disable-libiscsi --disable-seccomp --disable-cap-ng --enable-attr --enable-virtfs --disable-selinux \
              --disable-bzip2 --disable-lzo --disable-snappy --disable-numa --disable-linux-aio --disable-libpmem \
              --disable-fuse --disable-lzfse --disable-libkeyutils > /w/configure.log 2>&1 \
         && make -j\$(nproc) > /w/make.log 2>&1 && make install DESTDIR=/w/stage > /w/install.log 2>&1 \
@@ -402,6 +435,9 @@ qemu-system)
     for q in x86_64 aarch64; do
         "$work/$d/bin/qemu-system-$q" --version | grep -q "version $v" || die "qemu-system-$q does not report $v"
         "$work/$d/bin/qemu-system-$q" -M none -netdev help | grep -qx user || die "qemu-system-$q has no user networking"
+        # r2: 9p, so a Luban machine boots the environment itself (its tree and
+        # the home shared with the guest) rather than a copy of it.
+        "$work/$d/bin/qemu-system-$q" -M none -device help | grep -q '"virtio-9p-pci"' || die "qemu-system-$q has no virtio-9p"
         # Its data directory is found beside it, wherever the payload is: a
         # ROM only share/qemu has, from a copy of the payload elsewhere.
         "$work/$d/bin/qemu-system-$q" -M none -L help | while read -r p; do [[ -d "$p" ]] && realpath "$p"; done \
@@ -410,7 +446,7 @@ qemu-system)
     done
     [[ -f "$work/$d/share/qemu/bios-256k.bin" && -f "$work/$d/share/qemu/edk2-aarch64-code.fd" && -f "$work/$d/share/qemu/edk2-x86_64-code.fd" ]] \
         || die "the firmware is not in share/qemu"
-    provenance "$d" "qemu $v (download.qemu.org, sha256 $(input qemu "$v")) system emulators for x86_64 and aarch64, static (musl, Alpine 3.20), user networking from libslirp $sv and libfdt from dtc $dv, built static; firmware decompressed in share/qemu"
+    provenance "$d" "qemu $v (download.qemu.org, sha256 $(input qemu "$v")) system emulators for x86_64 and aarch64, static (musl, Alpine 3.20), user networking from libslirp $sv, 9p (virtfs, libattr) and libfdt from dtc $dv, built static; firmware decompressed in share/qemu"
     pack "$d" ;;
 edk2-firmware)
     # What qemu ships in pc-bios/ at tag v<version>, decompressed: firmware
@@ -516,6 +552,69 @@ gcc)
     GLIBC_ELFS="$(find "$work/$d/bin" "$work/$d/libexec" -type f -exec sh -c 'file -b "$1" | grep -q "^ELF.*dynamically linked" && echo "$1"' _ {} \;)"
     glibc_only libstdc++.so.6 libgcc_s.so.1 libzstd.so.1 libz.so.1
     provenance "$d" "gcc $version (ftpmirror.gnu.org, sha256 $(input gcc "$version")) configured as fromsource:gcc (c,c++; no multilib, no bootstrap, no LTO; libsanitizer), $triple, against a sysroot of xim:glibc@$glibc_v + xim:linux-headers@$headers_v made by xlings $XLINGS_CLIENT; stage 0 is Debian 12's gcc; a C program and a C++23 program using import std built and ran"
+    pack "$d" ;;
+labwc-desktop)
+    # The traditional Luban desktop (xlings: Luban OS architecture design
+    # §9.3): labwc and the session around it -- a panel (yambar), a launcher
+    # (fuzzel), a terminal (foot), a background (swaybg), a screenshot tool
+    # (grim), Xwayland for X11 programs, fonts with CJK -- as one relocatable tree. Alpine 3.20's builds
+    # of them, with the musl loader and every library they need in lib/; each
+    # bin/<program> runs the loader with --library-path, so the tree runs on a
+    # glibc root, a musl one, or a root with neither. The configuration in
+    # etc/xdg is the session's default (a user's ~/.config wins); the session
+    # is declared in share/wayland-sessions/labwc-desktop.desktop.
+    # <upstream>-rN: this index's Nth build of it. r1: the libraries and the
+    # loader are private (libexec/lib) -- a root links a payload's lib/ into
+    # its /usr/lib, and these are musl's, not the root's -- and no ELF names
+    # a loader (PT_INTERP made PT_NULL): a root checks that every ELF's loader
+    # is in its closure, and these are only ever run by the tree's own.
+    v="${version%%-r[0-9]*}"
+    d="labwc-desktop-$version-linux-$arch"
+    progs="labwc foot fuzzel yambar swaybg grim Xwayland xkbcomp"
+    loader="ld-musl-$arch.so.1"
+    alpine "apk add -q labwc foot fuzzel yambar swaybg grim xwayland xkbcomp font-dejavu font-wqy-zenhei xkeyboard-config \
+        && apk info -v 2>/dev/null | sort > /w/installed \
+        && grep -E '^(labwc|foot|fuzzel|yambar|swaybg|grim|xwayland|xkbcomp|font-dejavu|font-wqy-zenhei|xkeyboard-config)-[0-9]' /w/installed > /w/versions \
+        && mkdir -p /w/$d/bin /w/$d/libexec/lib /w/$d/share/X11 \
+        && for p in $progs; do cp /usr/bin/\$p /w/$d/libexec/; done \
+        && for p in $progs; do ldd /usr/bin/\$p | awk '/=>/ { print \$3 }'; done | sort -u > /w/libs \
+        && while read -r l; do cp -L \"\$l\" /w/$d/libexec/lib/; done < /w/libs \
+        && cp -L /lib/$loader /w/$d/libexec/lib/ \
+        && cp -r /usr/share/X11/xkb /w/$d/share/X11/ && cp -r /usr/share/fonts /w/$d/share/ \
+        && mkdir -p /w/$d/share/licenses && for p in labwc foot fuzzel yambar swaybg grim; do \
+             [ -d /usr/share/licenses/\$p ] && cp -r /usr/share/licenses/\$p /w/$d/share/licenses/ || true; done"
+    grep -q "^labwc-$v-r" "$work/versions" || die "Alpine 3.20's labwc is not $v: $(grep '^labwc-' "$work/versions")"
+    [[ ! -e "$work/$d/lib" ]] || die "a lib/ in the tree: a root would link it into its /usr/lib"
+    cp -r "$here/labwc-desktop/etc" "$here/labwc-desktop/share" "$work/$d/"
+    # No ELF here names a loader outside the tree (the tree's own runs them).
+    n="$(python3 "$here/labwc-desktop/no-interp.py" "$work/$d/libexec")"
+    [[ "$n" -ge 8 ]] || die "PT_INTERP left in place ($n changed)"
+    for p in $progs; do
+        # Xwayland's keymaps: the tree's data and its xkbcomp, not the system's paths.
+        args=""; [[ "$p" == Xwayland ]] && args='-xkbdir "$here/share/X11/xkb"'
+        sed -e "s/@PROG@/$p/g" -e "s/@LOADER@/$loader/g" -e "s|@ARGS@|$args|" "$here/labwc-desktop/run.in" > "$work/$d/bin/$p"
+        chmod 755 "$work/$d/bin/$p"
+    done
+    # It runs on a root that is not Alpine's: a headless session in Debian,
+    # with nothing of the tree's system, draws its background and its panel.
+    debian "cd /w/$d && export XDG_RUNTIME_DIR=/tmp/rt WLR_BACKENDS=headless WLR_RENDERER=pixman WLR_LIBINPUT_NO_DEVICES=1 \
+        && mkdir -p -m 700 /tmp/rt && { ./bin/labwc >/w/session.log 2>&1 & } \
+        && for i in \$(seq 1 50); do [ -S /tmp/rt/wayland-0 ] && break; sleep 0.2; done && sleep 6 \
+        && WAYLAND_DISPLAY=wayland-0 ./bin/grim -t ppm /w/shot.ppm \
+        && { cat /proc/[0-9]*/cmdline 2>/dev/null || true; } | tr \"\\\\000\" \" \" > /w/procs && grep -q libexec/[y]ambar /w/procs && grep -q libexec/[s]waybg /w/procs \
+        && WAYLAND_DISPLAY=wayland-0 ./bin/foot --version > /w/foot.version" \
+      || { log "--- session.log"; tail -40 "$work/session.log" >&2 || true; die "the session did not run"; }
+    # A failed check keeps the picture and the log beside the build's output.
+    shot_die() { cp "$work/shot.ppm" "$out/failed-shot.ppm" 2>/dev/null; cp "$work/session.log" "$out/failed-session.log" 2>/dev/null; die "$1"; }
+    head -c 20 "$work/shot.ppm" | grep -aq '^1280 720$' || shot_die "the screenshot is not the 1280x720 headless output"
+    px() { od -An -tx1 -j $((16 + ($2 * 1280 + $1) * 3)) -N 3 "$work/shot.ppm" | tr -d ' '; }
+    log "pixels: (0,0) $(px 0 0), (640,100) $(px 640 100), (640,360) $(px 640 360), (600,710) $(px 600 710)"
+    # The background is drawn (not black), and the panel is a band of its own at the bottom.
+    [[ "$(px 640 360)" != 000000 ]] || shot_die "nothing is drawn"
+    [[ "$(px 600 710)" == "$(px 900 710)" && "$(px 600 710)" != "$(px 600 680)" ]] || shot_die "the panel is not drawn"
+    grep -q "foot version" "$work/foot.version" || die "foot does not run"
+    rm -f "$work/shot.ppm"
+    provenance "$d" "labwc-desktop $version: Alpine 3.20 packages $(tr '\n' ' ' < "$work/versions")-- repackaged with the musl loader and the libraries they link (libexec/lib, private), run through bin/<program>; configuration and the session file from xim-pkgindex tools/res/labwc-desktop; a headless session in Debian 12 drew its background and panel"
     pack "$d" ;;
 *)
     die "unknown resource: $what" ;;

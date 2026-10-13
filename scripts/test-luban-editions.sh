@@ -18,7 +18,10 @@ fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
 
 mkdir -p "$home/bin"
 cp "$(command -v xlings)" "$home/bin/xlings"
-cp "$(dirname "$(readlink -f "$(command -v xlings)")")/luban" "$home/bin/luban"
+# luban, and luban-init: an exported machine's stage-0 (boot/xlings-init hands to it).
+for tool in luban luban-init; do
+    cp "$(dirname "$(readlink -f "$(command -v xlings)")")/$tool" "$home/bin/$tool"
+done
 [[ -f "$home/.xlings.json" ]] || printf '{"mirror":"GLOBAL","index_repos":[{"name":"xim","url":"%s"}]}\n' "$repo" > "$home/.xlings.json"
 X() { "$home/bin/xlings" "$@"; }
 L() { "$home/bin/luban" "$@"; }
@@ -27,8 +30,8 @@ X install -y xim:bwrap >/dev/null
 
 arch="$(uname -m)"
 for e in nano tiny luban-tiny-musl core; do
-    log "luban new e-$e $e"
-    L new "e-$e" "$e" || fail "luban new $e"
+    log "luban new e-$e --edition $e"
+    L new "e-$e" --edition "$e" || fail "luban new $e"
     rec="$(cat "$home/config/subos/e-$e/instance.json")"
     grep -q '"edition"' <<<"$rec" || fail "$e: no edition record"
 done
@@ -37,7 +40,7 @@ L run e-tiny -- /bin/sh -c 'grep -q ID=luban /usr/share/factory/etc/os-release &
     || fail "tiny: os-release / luban-init"
 L run e-luban-tiny-musl -- /bin/sh -c 'ls /usr/lib/ld-musl-* /lib/ld-musl-* 2>/dev/null | grep -q musl' \
     || fail "tiny-musl: no musl loader"
-L upgrade e-tiny --dry-run | grep -q "up to date" || fail "a fresh tiny is the newest"
+X subos upgrade e-tiny --dry-run | grep -q "up to date" || fail "a fresh tiny is the newest"
 L run e-luban-tiny-musl -- /bin/sh -c 'ls /usr/lib/ld-musl-'"$arch"'.so.1 /lib/ld-musl-'"$arch"'.so.1 2>/dev/null | grep -q .' \
     || fail "tiny-musl: not this machine's musl loader"
 

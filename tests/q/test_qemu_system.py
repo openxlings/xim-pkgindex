@@ -52,7 +52,7 @@ class TestStatic:
     @pytest.mark.static
     def test_every_architecture_has_its_own_resource(self, source_text):
         for arch in ("x86_64", "aarch64"):
-            assert f"qemu-system-9.2.4-r1-linux-{arch}.tar.gz" in source_text
+            assert f"qemu-system-9.2.4-r2-linux-{arch}.tar.gz" in source_text
         assert "@X86_64@" not in source_text and "@AARCH64@" not in source_text, "a hash left unfilled"
 
     @pytest.mark.static

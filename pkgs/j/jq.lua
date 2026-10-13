@@ -29,21 +29,39 @@ package = {
     -- need to move it into install_dir and chmod +x it on Unix.
     xpm = {
         linux = {
-            ["latest"] = { ref = "1.8.1" },
+            ["latest"] = { ref = "1.8.2" },
+            ["1.8.2"] = {
+                x86_64 = {
+                    url = "https://github.com/jqlang/jq/releases/download/jq-1.8.2/jq-linux-amd64",
+                    sha256 = "b1c22172dd303f3be49e935aa56aa48a8b7a46e0bc838b4997d3bb451495870f",
+                },
+                aarch64 = {
+                    url = "https://github.com/jqlang/jq/releases/download/jq-1.8.2/jq-linux-arm64",
+                    sha256 = "8b85c817833814ddca00a144c33705546355afccf0cf39b188f3cdb48b852309",
+                },
+            },
             ["1.8.1"] = {
                 url = "https://github.com/jqlang/jq/releases/download/jq-1.8.1/jq-linux-amd64",
                 sha256 = "020468de7539ce70ef1bceaf7cde2e8c4f2ca6c3afb84642aabc5c97d9fc2a0d",
             },
         },
         macosx = {
-            ["latest"] = { ref = "1.8.1" },
+            ["latest"] = { ref = "1.8.2" },
+            ["1.8.2"] = {
+                url = "https://github.com/jqlang/jq/releases/download/jq-1.8.2/jq-macos-arm64",
+                sha256 = "2d75340ba57a4b4b4c8708a21c2dc8e958a48aaa8bba13b27f77f6e4c0eca07e",
+            },
             ["1.8.1"] = {
                 url = "https://github.com/jqlang/jq/releases/download/jq-1.8.1/jq-macos-arm64",
                 sha256 = "a9fe3ea2f86dfc72f6728417521ec9067b343277152b114f4e98d8cb0e263603",
             },
         },
         windows = {
-            ["latest"] = { ref = "1.8.1" },
+            ["latest"] = { ref = "1.8.2" },
+            ["1.8.2"] = {
+                url = "https://github.com/jqlang/jq/releases/download/jq-1.8.2/jq-windows-amd64.exe",
+                sha256 = "a6fc67fedaf9128a3309a1e2ebb8b986aeccf70122ee46d2cb4849e423f0c627",
+            },
             ["1.8.1"] = {
                 url = "https://github.com/jqlang/jq/releases/download/jq-1.8.1/jq-windows-amd64.exe",
                 sha256 = "23cb60a1354eed6bcc8d9b9735e8c7b388cd1fdcb75726b93bc299ef22dd9334",

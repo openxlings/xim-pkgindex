@@ -74,8 +74,15 @@ jobs:
           - { what: xsel,          version: "1.2.1",              arch: x86_64 }
           - { what: xsel,          version: "1.2.1",              arch: aarch64 }
           - { what: edk2-firmware, version: "9.2.4",              arch: x86_64 }
-          - { what: qemu-system,   version: "9.2.4-r1",           arch: x86_64 }
-          - { what: qemu-system,   version: "9.2.4-r1",           arch: aarch64 }
+          - { what: qemu-system,   version: "9.2.4-r2",           arch: x86_64 }
+          - { what: qemu-system,   version: "9.2.4-r2",           arch: aarch64 }
+          - { what: labwc-desktop, version: "0.7.2-r1",           arch: x86_64 }
+          - { what: labwc-desktop, version: "0.7.2-r1",           arch: aarch64 }
+          # the desktop editions' terminal tools (xlings: Luban OS desktop part 2 §5)
+          - { what: tmux,          version: "3.8",                arch: x86_64 }
+          - { what: tmux,          version: "3.8",                arch: aarch64 }
+          - { what: htop,          version: "3.5.3",              arch: x86_64 }
+          - { what: htop,          version: "3.5.3",              arch: aarch64 }
     steps:
       - uses: actions/checkout@v4
         if: env.WANTED == 'true'
@@ -93,6 +100,13 @@ jobs:
           name: res-${{ matrix.what }}-${{ matrix.version }}-${{ matrix.arch }}
           path: out/
           if-no-files-found: error
+      # What a failed check kept (a screenshot, a log), to look at.
+      - uses: actions/upload-artifact@v4
+        if: failure() && env.WANTED == 'true'
+        with:
+          name: failed-${{ matrix.what }}-${{ matrix.version }}-${{ matrix.arch }}
+          path: out/failed-*
+          if-no-files-found: ignore
 
   # Publishing (tools/res/publish.py): an asset its xlings-res release lacks
   # is added, nothing published is replaced. GitCode is filled from a CN

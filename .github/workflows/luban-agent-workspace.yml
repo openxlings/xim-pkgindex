@@ -2,7 +2,7 @@ name: Luban agent workspace acceptance
 
 # The Luban editions and agent policies, used for real by the published
 # xlings and luban (Luban design §C8): a workspace made private by
-# `luban new <n> agent-workspace --proxy`, its persona, tools, C++23 build,
+# `luban new <n> --edition agent-workspace --proxy`, its persona, tools, C++23 build,
 # proxy-only network with no fallback, and offline export.
 on:
   pull_request:

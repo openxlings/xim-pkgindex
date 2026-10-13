@@ -8,6 +8,22 @@
 -- Every version listed in `xpm` must appear here (windows-only keys are absent
 -- for versions no windows section lists; 18.20.8 has no win-arm64 build at all).
 local _sha256 = {
+    ["24.21.0"] = {
+        linux_x64     = "fd8e59d5a511510f6a298afb548f18c7d2b1be404d8b4a27d94fbe49f56cb2d6",
+        linux_arm64   = "6ad1325edbdb5649c379b75a237147a666c95d4f9ae8d340fef2d1575d289ad2",
+        darwin_x64    = "1462cb3b3046b815cf8ea436d3da450ec1a9f11dac7e5a46b0ada5305d7e8097",
+        darwin_arm64  = "bed7eea5325e1108f32ce5228ddd6a5f0f08a499ee42aa7442aea583702f6057",
+        win_x64       = "158f7685b44de51f6c0df1d153526cbcd3e1bc739a8dfc607721cef75de9e541",
+        win_arm64     = "8779b1bde1d39f8d420e3b57aa657b39891af434d3de44a919044cec06785921",
+    },
+    ["26.11.1"] = {
+        linux_x64     = "3883bfc73f9a680ca4eab04b196068aaaab1373ffa77d8fc1a4408222495b651",
+        linux_arm64   = "0945e2cde6aa0f54d980f03874dfe5cf3a549ce714c7fb9019e591ce0accf282",
+        darwin_x64    = "9a8129bd9ab08039793dd1143a7aedee6b5d60ac06592ad938d8bddf36142f3a",
+        darwin_arm64  = "d916511b55965e91be7a88e17f88d895b6793ceaba3e6c9b194aefe51c2c65ac",
+        win_x64       = "97f36a8a9684ff0d3e35758b4610fef5b628a5880e96f2ccc11240e5daf9934e",
+        win_arm64     = "8dd03add3ed431eb436306f9abe946434bce928d2bf967b04117dc3755051208",
+    },
     ["24.20.0"] = {
         linux_x64     = "2f2c0da162318f0de47665410c7c8c2ed3d36c8f3105de4bbc61176c70a7cbf2",
         linux_arm64   = "5f4ddab610c1ab2016b3c227cebdbf6d9495161487e4739c7b90090595f465f7",
@@ -195,6 +211,8 @@ package = {
         -- default. Same rule the 24.15.0 bump followed.
         windows = {
             ["latest"] = { ref = "24.20.0" },
+            ["26.11.1"] = _win_url("26.11.1"),
+            ["24.21.0"] = _win_url("24.21.0"),
             ["26.7.0"] = _win_url("26.7.0"),
             ["25.9.0"] = _win_url("25.9.0"),
             ["24.20.0"] = _win_url("24.20.0"),
@@ -223,6 +241,8 @@ package = {
                 runtime = { "xim:glibc@>=2.39", "xim:gcc-runtime@15.1.0" },
             },
             ["latest"] = { ref = "24.20.0" },
+            ["26.11.1"] = _linux_url("26.11.1"),
+            ["24.21.0"] = _linux_url("24.21.0"),
             ["26.7.0"] = _linux_url("26.7.0"),
             ["25.9.0"] = _linux_url("25.9.0"),
             ["24.20.0"] = _linux_url("24.20.0"),
@@ -240,6 +260,8 @@ package = {
         },
         macosx = {
             ["latest"] = { ref = "24.20.0" },
+            ["26.11.1"] = _mac_url("26.11.1"),
+            ["24.21.0"] = _mac_url("24.21.0"),
             ["26.7.0"] = _mac_url("26.7.0"),
             ["25.9.0"] = _mac_url("25.9.0"),
             ["24.20.0"] = _mac_url("24.20.0"),

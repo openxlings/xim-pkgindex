@@ -1,0 +1,3 @@
+# The labwc desktop's session: a background and the panel.
+swaybg -c '#2e3440' >/dev/null 2>&1 &
+yambar -c "$LABWC_DESKTOP/etc/xdg/yambar/config.yml" >/dev/null 2>&1 &

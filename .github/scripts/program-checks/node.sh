@@ -71,8 +71,18 @@ if [ "$(uname -s)" = "Linux" ]; then
         patchelf $remove "$W/node-control" || fail "could not build the control"
         got=$("$W/node-control" -e "$dl" "$W/libprobe.so" 2>&1)
         reading "dlopen through the control (compat sonames removed)" "$got"
-        contains "$got" "cannot open shared object file" \
-            || fail "the control loaded the probe too, so the probe does not reach the #605 path: $got"
+        if ! contains "$got" "cannot open shared object file"; then
+            # The control loaded it too. That proves nothing about node --
+            # unless the loader itself serves the compat sonames: the index's
+            # glibc searches its own libdir by default (default-dir-follows-
+            # loader), and then #605 cannot happen to any program on it.
+            served=""
+            for dir in $("$interp" --help 2>/dev/null | sed -n 's/^ *\(\/[^ ]*\) (system search path)$/\1/p'); do
+                [ -e "$dir/libresolv.so.2" ] && served="$dir"
+            done
+            [ -n "$served" ] || fail "the control loaded the probe too, so the probe does not reach the #605 path: $got"
+            reading "the loader's own search path" "$served serves libresolv.so.2: the #605 path is closed for every program on it"
+        fi
         ;;
     *)
         reading "loader" "host's ($interp is not on node's RPATH); ld.so.cache serves the compat sonames"

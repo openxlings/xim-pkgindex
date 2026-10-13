@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """The Luban agent workspace, for real (Luban design §C8): made private with
-`luban new <n> agent-workspace --proxy`, its persona and zone, its tools and a
+`luban new <n> --edition agent-workspace --proxy`, its persona and zone, its tools and a
 C++23 build, its network (the proxy only, no fallback when it is down), and
 its offline export -- against the xlings and luban on PATH."""
 import argparse
@@ -119,10 +119,11 @@ def main():
         x("install", "-y", "xim:bwrap")
         endpoint = f"socks5h://127.0.0.1:{proxy.port}"
         if not (home / "subos/agent").is_dir():
-            luban("new", "agent", "agent-workspace", "--proxy", endpoint)
+            luban("new", "agent", "--edition", "agent-workspace", "--proxy", endpoint)
 
         # Private when it was made: the edition's policy, selected and locked.
-        status = json.loads(luban("status", "agent", "--json"))
+        # The policy and identity are xlings' (`luban status` is the environment).
+        status = json.loads(x("subos", "status", "agent", "--json").strip().splitlines()[-1])
         policy = status["requested"]
         assert policy["isolation"]["net"] == "proxy" and policy["isolation"]["no_degrade"]
         assert policy["resolved"]["from"] == "xim:agent-private@2026.10.11.1", policy
@@ -135,7 +136,7 @@ def main():
         assert record["chain"][0].startswith("subos:luban-core@"), record
         assert isinstance(record["packages"].get("xim:claude"), str), record
         assert record["policy"].startswith("xim:agent-private@"), record
-        assert "up to date" in luban("upgrade", "agent", "--dry-run"), "a fresh workspace is the newest"
+        assert "up to date" in x("subos", "upgrade", "agent", "--dry-run"), "a fresh workspace is the newest"
 
         # Inside: its tools, its persona (made on the first entry), nothing of
         # the host's environment.
@@ -144,7 +145,7 @@ def main():
                      'bash --version; fish --version; vim --version; nvim --version; git --version; mcpp --version; '
                      'claude --version; g++ --version')
         persona = json.loads((home / "config/subos/agent/persona.json").read_text())
-        identity = json.loads(luban("status", "agent", "--json"))["identity"]
+        identity = json.loads(x("subos", "status", "agent", "--json").strip().splitlines()[-1])["identity"]
         assert identity["hostname"] == persona["hostname"] and len(persona["hostname"]) == 12, identity
         assert f"HOST={persona['hostname']}" in out and f"MID={persona['machine_id']}" in out, out[-2000:]
         assert "TZ=UTC" in out, "the fixture proxy cannot answer a zone lookup: UTC, never the host's"
@@ -163,9 +164,9 @@ def main():
                      'printf "#include <print>\\n#include <expected>\\nint main() { std::expected<int, int> e{23}; std::println(\\"c++{}\\", *e); }\\n" > cxx23.cpp; '
                      'g++ -std=c++23 cxx23.cpp -o cxx23; ./cxx23; mcpp --version')
         assert "c++23" in cxx, cxx
-        luban("config", "agent", "proxy", "socks5h://127.0.0.1:1")
+        luban("config", "agent", "--proxy", "socks5h://127.0.0.1:1")
         inside('set -eu; /root/workspace/network direct; if /root/workspace/network proxy; then exit 1; fi; echo no-direct-fallback')
-        luban("config", "agent", "proxy", endpoint)
+        luban("config", "agent", "--proxy", endpoint)
 
         # Offline: the exported root runs its tools with no network and no home.
         x("subos", "stop", "agent")
