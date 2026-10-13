@@ -2,7 +2,8 @@
 # Luban editions from this checkout, used for real (xlings: Luban OS design
 # part 2 §2; the aarch64 design §5): nano, tiny, tiny-musl and core are made
 # and entered on this machine's architecture -- core builds and runs a C++23
-# program with its own gcc -- and on x86_64 tiny is exported as a live ISO by
+# program with its own gcc -- and on x86_64 the desktop edition is made and
+# runs dsh in its root, and tiny is exported as a live ISO by
 # its boot profile (virt: the 6.12 LTS virt kernel and limine from xlings-res)
 # and boots under qemu (xim:qemu-x86, from the index) to its init. The
 # aarch64 image paths are xlings' own CI (they need its newest client).
@@ -56,6 +57,11 @@ if [[ "$arch" != x86_64 ]]; then
     exit 0
 fi
 
+log "luban new e-desktop --edition desktop: its tools run in its root (x86_64: xdesk, dsh)"
+L new e-desktop --edition desktop || fail "luban new desktop"
+L run e-desktop -- /bin/sh -c 'dsh --version && dsh --profile web --dump-config | grep -q dsh-base' \
+    || fail "desktop: dsh in its root"
+
 log "luban export e-tiny tiny.iso --boot virt"
 L export e-tiny "$home/tiny.iso" --boot virt || fail "export --boot virt"
 grep -aq "console=ttyS0" "$home/tiny.iso" || fail "the virt profile's command line is not in the image"
@@ -77,4 +83,4 @@ done
 kill -- "-$pid" 2>/dev/null || kill "$pid" 2>/dev/null || true
 tr -d '\r' < "$console" | grep -aq "Linux version 6.12.112-virt" || { tail -30 "$console"; fail "not the virt kernel"; }
 tr -d '\r' < "$console" | grep -aq "Please press Enter to activate this console" || { tail -30 "$console"; fail "did not reach its init"; }
-echo "PASS: nano, tiny, tiny-musl, core made and entered; core builds C++23; tiny's ISO boots the virt kernel to its init"
+echo "PASS: nano, tiny, tiny-musl, core made and entered; core builds C++23; desktop runs dsh in its root; tiny's ISO boots the virt kernel to its init"

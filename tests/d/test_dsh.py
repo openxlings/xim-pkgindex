@@ -72,6 +72,19 @@ class TestStatic:
         )
 
 
+    @pytest.mark.static
+    def test_shim_registered_in_own_payload(self):
+        """A SubOS with a root (every Luban edition) refuses a registration
+        whose bindir is another package's payload: "root registration
+        contradicts its physical package provider". r1 pointed it at
+        xim:node's and the desktop edition could not be made."""
+        code = [ln for ln in pathlib.Path(PKG_FILE).read_text(encoding="utf-8").splitlines()
+                if not ln.lstrip().startswith("--")]
+        body = "\n".join(code)
+        assert "bindir = pkginfo.install_dir()" in body
+        assert 'dep_install_dir("xim:node")' not in body
+
+
 class TestIndex:
     @pytest.mark.index
     def test_xim_add(self):
