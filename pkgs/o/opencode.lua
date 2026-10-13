@@ -7,19 +7,8 @@
 --
 -- GLOBAL = the upstream GitHub release (tag v<version>).
 -- CN     = gitcode.com/xlings-res/opencode, the same files under the same
---          names (tag without the `v`), copied by the index's mirror job.
-local _GH = "https://github.com/sst/opencode/releases/download"
-local _CN = "https://gitcode.com/xlings-res/opencode/releases/download"
-
-local function _asset(version, file, sha256)
-    return {
-        url = {
-            GLOBAL = string.format("%s/v%s/%s", _GH, version, file),
-            CN = string.format("%s/%s/%s", _CN, version, file),
-        },
-        sha256 = sha256,
-    }
-end
+--          names (tag without the `v`), copied by the index's mirror job --
+--          which reads these templates literally.
 
 package = {
     spec = "1",
@@ -43,28 +32,44 @@ package = {
     xpm = {
         linux = {
             deps = { "xim:glibc@>=2.39" },
+            source = {
+                GLOBAL = "https://github.com/sst/opencode/releases/download/v${version}/opencode-linux-${arch_alias}.tar.gz",
+                CN = "https://gitcode.com/xlings-res/opencode/releases/download/${version}/opencode-linux-${arch_alias}.tar.gz",
+            },
             ["latest"] = { ref = "1.19.0" },
             ["1.19.0"] = {
-                x86_64 = _asset("1.19.0", "opencode-linux-x64.tar.gz",
-                    "7bb9e61ad6feacf2e89c10a6a2c1840e3de4220bb50ba1fc7110f31806076aec"),
-                aarch64 = _asset("1.19.0", "opencode-linux-arm64.tar.gz",
-                    "e9841d43d3e1a8f36ed2691592d3b8b4fb097e606c8b559a277a1b845840e26b"),
+                arch_alias = { x86_64 = "x64", aarch64 = "arm64" },
+                sha256 = {
+                    x86_64 = "7bb9e61ad6feacf2e89c10a6a2c1840e3de4220bb50ba1fc7110f31806076aec",
+                    aarch64 = "e9841d43d3e1a8f36ed2691592d3b8b4fb097e606c8b559a277a1b845840e26b",
+                },
             },
         },
         macosx = {
+            source = {
+                GLOBAL = "https://github.com/sst/opencode/releases/download/v${version}/opencode-darwin-${arch_alias}.zip",
+                CN = "https://gitcode.com/xlings-res/opencode/releases/download/${version}/opencode-darwin-${arch_alias}.zip",
+            },
             ["latest"] = { ref = "1.19.0" },
             ["1.19.0"] = {
-                x86_64 = _asset("1.19.0", "opencode-darwin-x64.zip",
-                    "515380b03f3410f2178c8c1c7ba6d1e9556a3bdee2a01d114e7b1681952131a0"),
-                aarch64 = _asset("1.19.0", "opencode-darwin-arm64.zip",
-                    "0d5f511948d6fbfedf9bb16753c0ac42613dcc8de75d9deb7e8d0cf584c8fba6"),
+                arch_alias = { x86_64 = "x64", aarch64 = "arm64" },
+                sha256 = {
+                    x86_64 = "515380b03f3410f2178c8c1c7ba6d1e9556a3bdee2a01d114e7b1681952131a0",
+                    aarch64 = "0d5f511948d6fbfedf9bb16753c0ac42613dcc8de75d9deb7e8d0cf584c8fba6",
+                },
             },
         },
         windows = {
+            source = {
+                GLOBAL = "https://github.com/sst/opencode/releases/download/v${version}/opencode-windows-${arch_alias}.zip",
+                CN = "https://gitcode.com/xlings-res/opencode/releases/download/${version}/opencode-windows-${arch_alias}.zip",
+            },
             ["latest"] = { ref = "1.19.0" },
             ["1.19.0"] = {
-                x86_64 = _asset("1.19.0", "opencode-windows-x64.zip",
-                    "17108e9448c4fdad48eb8714c4ed6f5dfc9cf86c2eb8f2ce5d02043fef806eb5"),
+                arch_alias = { x86_64 = "x64" },
+                sha256 = {
+                    x86_64 = "17108e9448c4fdad48eb8714c4ed6f5dfc9cf86c2eb8f2ce5d02043fef806eb5",
+                },
             },
         },
     },
