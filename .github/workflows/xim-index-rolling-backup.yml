@@ -1,0 +1,43 @@
+name: xim-index rolling backup
+
+# Once, for a rolling `latest` release of xlings-res/xim-index that is full
+# (GitHub's 1000 assets): what is beyond the newest versions of each index is
+# packed into one tar with a manifest, uploaded to the `rolling-backup`
+# release and read back, and only then removed (tools/xim_index_rolling.py).
+# publish_xim_index.sh trims before each upload; this daily run catches what
+# that does not (an xlings release's sub-indexes), past WHEN_OVER assets. First run 2026-10-14 (798 assets;
+# rolling-backup/xim-index-rolling-backup-20261013T194115Z.tar).
+on:
+  # Daily: this repository keeps the release within bounds on its own (xlings
+  # releases add their indexes there too, the sub-indexes untrimmed).
+  schedule:
+    - cron: '30 19 * * *'
+  workflow_dispatch:
+    inputs:
+      keep:
+        description: 'versions of each index to keep in latest'
+        default: '50'
+      execute:
+        description: 'upload the backup and remove (false: say what it would do)'
+        type: boolean
+        default: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      GH_TOKEN: ${{ secrets.XLINGS_RES_TOKEN }}
+      KEEP: ${{ inputs.keep || '50' }}
+      # A scheduled run acts past this many assets (of GitHub's 1000).
+      WHEN_OVER: '900'
+      BACKUP_EXECUTE: ${{ github.event_name == 'schedule' || inputs.execute }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Back up and trim the rolling release
+        run: |
+          n="$(gh api repos/xlings-res/xim-index/releases/tags/latest --jq '.assets | length')"
+          if [ "${{ github.event_name }}" = schedule ] && [ "$n" -le "$WHEN_OVER" ]; then
+            echo "rolling release: $n assets (acts past $WHEN_OVER)"; exit 0
+          fi
+          python3 tools/xim_index_rolling.py backup --keep "$KEEP" $([ "$BACKUP_EXECUTE" = true ] && echo --execute)

@@ -37,7 +37,13 @@ package = {
                 "xim:libXi",
                 "xim:libXrandr",
             },
-            ["latest"] = { ref = "2026.10.13.2" },
+            ["latest"] = { ref = "2026.10.13.3" },
+            ["2026.10.13.3"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "fd3b3c5e562ab65dd53b963b22c1e71d85d037adecb7edeed528e5c9b3594f2e",
+                },
+            },
             ["2026.10.13.2"] = {
                 url = "XLINGS_RES",
                 sha256 = {
