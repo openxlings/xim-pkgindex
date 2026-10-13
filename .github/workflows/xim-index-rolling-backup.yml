@@ -8,6 +8,10 @@ name: xim-index rolling backup
 # filled up anyway. First run 2026-10-14 (798 assets;
 # rolling-backup/xim-index-rolling-backup-20261013T194115Z.tar).
 on:
+  # An xlings release that finds too little room asks for it (its release.yml,
+  # "Room in the rolling index release") and waits for this run.
+  repository_dispatch:
+    types: [xim-index-rolling-full]
   workflow_dispatch:
     inputs:
       keep:
@@ -25,7 +29,7 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.XLINGS_RES_TOKEN }}
       KEEP: ${{ inputs.keep || '50' }}
-      BACKUP_EXECUTE: ${{ inputs.execute }}
+      BACKUP_EXECUTE: ${{ github.event_name == 'repository_dispatch' || inputs.execute }}
     steps:
       - uses: actions/checkout@v4
       - name: Back up and trim the rolling release
