@@ -219,13 +219,19 @@ function install()
     for _, name in ipairs(builds) do
         allow = allow .. " --allow-build=" .. name
     end
-    os.exec(string.format(
+    local cmd = string.format(
         [["%s" add --dir "%s" --config.node-linker=hoisted%s "@deepseek-ai/dsh@%s"]],
         pnpm,
         pkginfo.install_dir(),
         allow,
         pkginfo.version()
-    ))
+    )
+    -- cmd /c drops the first and last quote of a line that starts with one;
+    -- an outer pair is what it drops, so the quoted path stays whole.
+    if is_host("windows") then
+        cmd = '"' .. cmd .. '"'
+    end
+    os.exec(cmd)
 
     -- Assert the artifact, not the intent: a bare `return true` here gets
     -- stamped as installed and leaves an xvm shim pointing at nothing.
