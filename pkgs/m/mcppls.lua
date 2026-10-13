@@ -17,7 +17,7 @@ package = {
     -- The `mcppls` server itself is a static binary on every platform; the
     -- bundled clangd is glibc-dynamic on Linux (no libstdc++/libgcc_s) and
     -- self-contained on Windows/macOS. macOS upstream builds are arm64-only;
-    -- linux and windows are x86_64-only.
+    -- Linux supports x86_64/aarch64; Windows is x86_64-only.
     archs = {"x86_64", "aarch64"},
     status = "dev", -- 0.0.x: upstream is pre-1.0, expect breaking changes
     categories = {"cpp", "language-server", "lsp"},
@@ -32,7 +32,7 @@ package = {
 
     xvm_enable = true,
 
-    -- Release assets, verbatim from upstream `SHA256SUMS` (v0.0.11):
+    -- Release assets, verbatim from upstream `SHA256SUMS` (per release):
     --   payload/bin/mcppls[.exe]   — the server; `mcppls serve` speaks LSP over stdio
     --   payload/clangd/bin/clangd[.exe] — the pinned clangd (23.1.0) it drives
     --   payload/kit/               — the semantic kit (libc++ headers/sysroot)
@@ -60,7 +60,14 @@ package = {
                 GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/releases/download/v${version}/payload-linux-${arch_alias}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v${version}/payload-linux-${arch_alias}.tar.gz",
             },
-            ["latest"] = { ref = "0.0.11" },
+            ["latest"] = { ref = "0.0.15" },
+            ["0.0.15"] = {
+                arch_alias = { x86_64 = "x64", aarch64 = "arm64" },
+                sha256 = {
+                    x86_64 = "a59587502ba8262902ae649d633103b55bf115c0ac182d6be604aa1a6f761688",
+                    aarch64 = "cdf50a4753342f786b28102631f500a1cb9071dde371da0ae2b36c189ef566ab",
+                },
+            },
             ["0.0.11"] = {
                 arch_alias = { x86_64 = "x64", aarch64 = "arm64" },
                 sha256 = {
@@ -74,7 +81,13 @@ package = {
                 GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/releases/download/v${version}/payload-darwin-${arch_alias}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v${version}/payload-darwin-${arch_alias}.tar.gz",
             },
-            ["latest"] = { ref = "0.0.11" },
+            ["latest"] = { ref = "0.0.15" },
+            ["0.0.15"] = {
+                arch_alias = { aarch64 = "arm64" },
+                sha256 = {
+                    aarch64 = "d09a69f967c3033e968e8e3c1ad47e916e4869ebaad84ad998251eaafaff154f",
+                },
+            },
             ["0.0.11"] = {
                 arch_alias = { aarch64 = "arm64" },
                 sha256 = {
@@ -87,7 +100,13 @@ package = {
                 GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/releases/download/v${version}/payload-win32-${arch_alias}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v${version}/payload-win32-${arch_alias}.tar.gz",
             },
-            ["latest"] = { ref = "0.0.11" },
+            ["latest"] = { ref = "0.0.15" },
+            ["0.0.15"] = {
+                arch_alias = { x86_64 = "x64" },
+                sha256 = {
+                    x86_64 = "0ac10a1fe117b99768c34c05d826fbb0a8aacd9f3daab56ec2745af810077dfd",
+                },
+            },
             ["0.0.11"] = {
                 arch_alias = { x86_64 = "x64" },
                 sha256 = {
