@@ -39,6 +39,12 @@ on:
       # one self-verifying: merging it produces an artifact or it does not.
       - '.github/workflows/publish-artifact.yml'
   workflow_dispatch:
+  # An xlings release asks for its index: the main index and the default
+  # sub-indexes, versioned as the release (client_payload.version). This
+  # repository is the one publisher of xlings-res/xim-index; the release only
+  # asks and then checks what is there.
+  repository_dispatch:
+    types: [xlings-release]
   schedule:
     - cron: '0 18 * * *'   # nightly catch-all / mirror re-sync
 
@@ -70,8 +76,34 @@ jobs:
           chmod +x tools/gtc
           echo "$PWD/tools" >> "$GITHUB_PATH"
 
+      - name: Build + publish the release's indexes (xlings-release)
+        if: ${{ env.XLINGS_RES_TOKEN != '' && github.event_name == 'repository_dispatch' }}
+        env:
+          RELEASE_VERSION: ${{ github.event.client_payload.version }}
+        run: |
+          set -euo pipefail
+          VER="$RELEASE_VERSION"
+          [[ "$VER" =~ ^[0-9][0-9A-Za-z.+-]*$ ]] || { echo "::error::not a release version: '$VER'"; exit 1; }
+          echo "publishing the indexes of xlings $VER"
+          gtc=(); [ -n "${GITCODE_TOKEN:-}" ] || gtc=(--skip-gitcode)
+          XLINGS_RELEASE_MIRROR=GLOBAL bash tools/build_xim_index_artifact.sh --src . --version "$VER" --out build/index
+          bash tools/publish_xim_index.sh --version "$VER" --dir build/index "${gtc[@]}"
+          # The default sub-indexes (their URLs as xim-indexrepos.lua names them).
+          declare -A URLS=(
+            [awesome]="https://github.com/openxlings/xim-pkgindex-awesome.git"
+            [scode]="https://github.com/openxlings/xim-pkgindex-scode.git"
+            [d2x]="https://github.com/d2learn/xim-pkgindex-d2x.git"
+          )
+          for n in awesome scode d2x; do
+            XLINGS_RELEASE_PKGINDEX_URL="${URLS[$n]}" \
+              bash tools/build_xim_index_artifact.sh --name "$n" --version "$VER" --out build/index
+            bash tools/publish_xim_index.sh --version "$VER" --name "$n" --dir build/index "${gtc[@]}"
+          done
+          export XLINGS_CLIENT_LATEST="$VER"
+          bash tools/push_index_pointers.sh build/index
+
       - name: Build + publish index artifact (content-hash version)
-        if: ${{ env.XLINGS_RES_TOKEN != '' }}
+        if: ${{ env.XLINGS_RES_TOKEN != '' && github.event_name != 'repository_dispatch' }}
         run: |
           set -euo pipefail
           # Content-hash naming: decouple the artifact from any xlings/mcpp version.
