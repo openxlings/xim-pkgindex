@@ -2,7 +2,7 @@ package = {
     spec = "1",
 
     name = "bwrap",
-    description = "Bubblewrap — namespace-based sandboxing tool (setuid mode for cross-distro compat)",
+    description = "Bubblewrap — namespace-based sandboxing tool",
 
     homepage = "https://github.com/containers/bubblewrap",
     contributors = "https://github.com/containers/bubblewrap/graphs/contributors",
@@ -32,12 +32,12 @@ package = {
     -- Upstream releases source only — no prebuilt artifact ships
     -- for bwrap, hence the mirror.
     --
-    -- Runtime: install() chmods the binary 4755 (setuid root). With
-    -- support_setuid=true compiled in, this is the cross-distro path
-    -- that works on Ubuntu 24+ / Fedora / Debian / Alpine / WSL2
-    -- without depending on the host's AppArmor profile or kernel
-    -- unprivileged_userns_clone toggle. Same chmod pattern as
-    -- code.lua's chrome-sandbox.
+    -- Runtime: an ordinary binary, never setuid. A setuid bwrap refuses
+    -- overlays (a session that keeps nothing) and cannot forbid nested user
+    -- namespaces (a private policy), and installing one asked for sudo on
+    -- every machine. Where AppArmor restricts user namespaces, xlings' one
+    -- door makes a root-owned copy with one narrow profile (`luban setup`,
+    -- `xlings self doctor --isolation --fix`); r1 dropped the chmod 4755.
     --
     -- XLINGS_RES sentinel resolves to:
     --   GLOBAL → github.com/xlings-res/bwrap/releases/download/<ver>/...
@@ -46,7 +46,15 @@ package = {
         linux = {
             url_template = "https://github.com/containers/bubblewrap/releases/download/v{version}/bubblewrap-{version}.tar.xz",
             ["latest"] = { ref = "0.11.2" },
-            ["0.11.2"] = "XLINGS_RES",
+            ["0.11.2"] = {
+                -- r1: installed as an ordinary binary (no setuid).
+                revision = 1,
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "bfde1f680ae057b2cbe44e22fa67f79b17e86668301e0c2b4ff725024fd65ff2",
+                    aarch64 = "37866fecfdeb3cceb4afebdc6342fe20d05a21f8de72f8cc95adbc0ba3c3ea21",
+                },
+            },
         },
     },
 }
@@ -61,16 +69,6 @@ function install()
         :replace(".zip", "")
         :replace(".tar.gz", "")
     os.mv(bwrapdir, pkginfo.install_dir())
-
-    -- setuid bwrap so it can create user namespaces on kernels that
-    -- disable unprivileged_userns_clone (same pattern as code.lua's
-    -- chrome-sandbox).
-    local bwrap = path.join(pkginfo.install_dir(), "bin", "bwrap")
-    if os.isfile(bwrap) then
-        log.info("Setting bwrap setuid root (sudo required)...")
-        os.exec("sudo chown root:root " .. bwrap)
-        os.exec("sudo chmod 4755 " .. bwrap)
-    end
 
     return true
 end
