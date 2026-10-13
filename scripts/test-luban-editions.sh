@@ -18,7 +18,10 @@ fail() { printf 'FAIL: %s\n' "$*" >&2; exit 1; }
 
 mkdir -p "$home/bin"
 cp "$(command -v xlings)" "$home/bin/xlings"
-cp "$(dirname "$(readlink -f "$(command -v xlings)")")/luban" "$home/bin/luban"
+# luban, and luban-init: an exported machine's stage-0 (boot/xlings-init hands to it).
+for tool in luban luban-init; do
+    cp "$(dirname "$(readlink -f "$(command -v xlings)")")/$tool" "$home/bin/$tool"
+done
 [[ -f "$home/.xlings.json" ]] || printf '{"mirror":"GLOBAL","index_repos":[{"name":"xim","url":"%s"}]}\n' "$repo" > "$home/.xlings.json"
 X() { "$home/bin/xlings" "$@"; }
 L() { "$home/bin/luban" "$@"; }
