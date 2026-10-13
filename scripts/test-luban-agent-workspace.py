@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """The Luban agent workspace, for real (Luban design §C8): made private with
-`luban new <n> agent-workspace --proxy`, its persona and zone, its tools and a
+`luban new <n> --edition agent-workspace --proxy`, its persona and zone, its tools and a
 C++23 build, its network (the proxy only, no fallback when it is down), and
 its offline export -- against the xlings and luban on PATH."""
 import argparse
@@ -119,7 +119,7 @@ def main():
         x("install", "-y", "xim:bwrap")
         endpoint = f"socks5h://127.0.0.1:{proxy.port}"
         if not (home / "subos/agent").is_dir():
-            luban("new", "agent", "agent-workspace", "--proxy", endpoint)
+            luban("new", "agent", "--edition", "agent-workspace", "--proxy", endpoint)
 
         # Private when it was made: the edition's policy, selected and locked.
         status = json.loads(luban("status", "agent", "--json"))
@@ -163,9 +163,9 @@ def main():
                      'printf "#include <print>\\n#include <expected>\\nint main() { std::expected<int, int> e{23}; std::println(\\"c++{}\\", *e); }\\n" > cxx23.cpp; '
                      'g++ -std=c++23 cxx23.cpp -o cxx23; ./cxx23; mcpp --version')
         assert "c++23" in cxx, cxx
-        luban("config", "agent", "proxy", "socks5h://127.0.0.1:1")
+        luban("config", "agent", "--proxy", "socks5h://127.0.0.1:1")
         inside('set -eu; /root/workspace/network direct; if /root/workspace/network proxy; then exit 1; fi; echo no-direct-fallback')
-        luban("config", "agent", "proxy", endpoint)
+        luban("config", "agent", "--proxy", endpoint)
 
         # Offline: the exported root runs its tools with no network and no home.
         x("subos", "stop", "agent")

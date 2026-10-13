@@ -27,8 +27,8 @@ X install -y xim:bwrap >/dev/null
 
 arch="$(uname -m)"
 for e in nano tiny luban-tiny-musl core; do
-    log "luban new e-$e $e"
-    L new "e-$e" "$e" || fail "luban new $e"
+    log "luban new e-$e --edition $e"
+    L new "e-$e" --edition "$e" || fail "luban new $e"
     rec="$(cat "$home/config/subos/e-$e/instance.json")"
     grep -q '"edition"' <<<"$rec" || fail "$e: no edition record"
 done
