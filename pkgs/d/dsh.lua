@@ -3,9 +3,9 @@
 -- Distribution: **npm only**. `deepseek-ai/deepseek-harness` publishes no
 -- GitHub release and carries no git tag; the one shipping channel is the
 -- npm package `@deepseek-ai/dsh`, and upstream's own instruction is
--- `npx @deepseek-ai/dsh web`. So this recipe goes through npm the same way
--- openclaw.lua does, rather than downloading a platform asset like
--- claude.lua / codex.lua — there is no asset to download.
+-- `npx @deepseek-ai/dsh web`. So this recipe installs from the npm registry
+-- (with pnpm, see install()) as openclaw.lua does, rather than downloading a
+-- platform asset like claude.lua / codex.lua — there is no asset to download.
 --
 -- No `package.ci`: version-check.py discovers versions from GitHub release
 -- tags (`github_releases()`), and this project has none. Bumps are read off
@@ -135,24 +135,24 @@ package = {
         linux = {
             deps = {"xim:node@>=24", "xim:pnpm"},
             ["latest"] = { ref = "0.1.0-rc.6" },
-            -- r1: lifecycle scripts allowed under npm 11.20's allowScripts;
-            -- pty.node checked where node-pty loads it (its prebuilds).
+            -- r1: installed with pnpm (npm 11 runs out of memory resolving
+            -- it); pty.node checked where node-pty loads it (its prebuilds).
             ["0.1.0-rc.6"] = { revision = 1 },
             ["0.1.0-rc.3"] = {},
         },
         macosx = {
             deps = {"xim:node@>=24", "xim:pnpm"},
             ["latest"] = { ref = "0.1.0-rc.6" },
-            -- r1: lifecycle scripts allowed under npm 11.20's allowScripts;
-            -- pty.node checked where node-pty loads it (its prebuilds).
+            -- r1: installed with pnpm (npm 11 runs out of memory resolving
+            -- it); pty.node checked where node-pty loads it (its prebuilds).
             ["0.1.0-rc.6"] = { revision = 1 },
             ["0.1.0-rc.3"] = {},
         },
         windows = {
             deps = {"xim:node@>=24", "xim:pnpm"},
             ["latest"] = { ref = "0.1.0-rc.6" },
-            -- r1: lifecycle scripts allowed under npm 11.20's allowScripts;
-            -- pty.node checked where node-pty loads it (its prebuilds).
+            -- r1: installed with pnpm (npm 11 runs out of memory resolving
+            -- it); pty.node checked where node-pty loads it (its prebuilds).
             ["0.1.0-rc.6"] = { revision = 1 },
             ["0.1.0-rc.3"] = {},
         },
@@ -167,8 +167,9 @@ local function _bindir()
     return path.join(pkginfo.install_dir(), "node_modules", ".bin")
 end
 
--- npm's own shim for `bin.dsh`. Used ONLY as install()'s artifact assertion;
--- the xvm shim deliberately does not go through it — see config().
+-- The package manager's shim for `bin.dsh`. Used ONLY as install()'s
+-- artifact assertion; the xvm shim deliberately does not go through it —
+-- see config().
 local function _shim()
     return path.join(_bindir(), is_host("windows") and "dsh.cmd" or "dsh")
 end
@@ -185,26 +186,44 @@ function install()
     os.mkdir(pkginfo.install_dir())
 
     -- Same proot warm-up as openclaw.lua, and for the same reason: the
-    -- first large fork+exec burst inside a fresh proot sandbox (npm
-    -- unpacking ~530 packages) trips `double free or corruption` in
+    -- first large fork+exec burst inside a fresh proot sandbox (pnpm
+    -- unpacking ~450 packages) trips `double free or corruption` in
     -- proot's talloc pool. One PATH-traversing command primes proot's
     -- path cache. Linux-only (proot is), harmless on native Linux.
     if os.host() == "linux" then
         os.execute("node --version > /dev/null 2>&1")
     end
 
-    -- npm writes straight to the terminal, and its first line lands flush
+    -- pnpm writes straight to the terminal, and its first line lands flush
     -- against whatever xlings printed last, so the two read as one message.
     -- One blank line separates them.
     print("")
 
-    -- Lifecycle scripts run on purpose (see the header). npm 11.20 runs a
-    -- package's scripts only once it is listed in allowScripts, and refuses
-    -- --allow-scripts in a --prefix install: --dangerously-allow-all-scripts
-    -- keeps what this recipe has always meant. An older npm warns and runs them.
+    -- pnpm, not npm: npm 11 spends ~8 minutes and ~4 GB resolving this
+    -- tree's peer dependencies (out of memory on a macOS runner, past the
+    -- timeout on Windows); pnpm resolves the same tree in seconds. A hoisted
+    -- node_modules is npm's layout, so the paths below stay what they were.
+    -- Lifecycle scripts run on purpose (see the header), named: pnpm runs a
+    -- dependency's scripts only once it is allowed, and stops when one it
+    -- was not told about has some, so a new one cannot go by unrun.
+    -- The dep's own payload, as config() binds node's: its shim is not on
+    -- a hook's PATH.
+    local pnpmdir = pkginfo.dep_install_dir("xim:pnpm")
+    if not pnpmdir then
+        raise("dsh: cannot locate the xim:pnpm payload to install with")
+    end
+    local pnpm = path.join(pnpmdir, is_host("windows") and "pnpm.exe" or "pnpm")
+    local builds = {"node-pty", "koffi", "protobufjs",
+                    "@deepseek-ai/dsh-subprocess-local", "@google/genai"}
+    local allow = ""
+    for _, name in ipairs(builds) do
+        allow = allow .. " --allow-build=" .. name
+    end
     os.exec(string.format(
-        [[npm install --prefix "%s" --no-fund --no-audit --dangerously-allow-all-scripts "@deepseek-ai/dsh@%s"]],
+        [["%s" add --dir "%s" --config.node-linker=hoisted%s "@deepseek-ai/dsh@%s"]],
+        pnpm,
         pkginfo.install_dir(),
+        allow,
         pkginfo.version()
     ))
 
@@ -214,7 +233,7 @@ function install()
         return false
     end
     if not os.isfile(_entry()) then
-        raise("dsh: npm tree has no @deepseek-ai/dsh/lib/bin.js after install")
+        raise("dsh: the installed tree has no @deepseek-ai/dsh/lib/bin.js")
     end
 
     -- The whole point of not passing --ignore-scripts. On Linux this file
