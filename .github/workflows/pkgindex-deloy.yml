@@ -45,7 +45,7 @@ jobs:
           python-version: '3.12'
 
       - name: Install xpkgindex
-        run: pip install git+https://github.com/openxlings/xpkgindex.git@v0.3.0   # pinned: a generator change is an explicit bump, checked by site-check
+        run: pip install -r .xpkgindex/requirements.txt
 
       - name: Generate static site
         # Hand build provenance to xpkgindex via the env-var contract added
