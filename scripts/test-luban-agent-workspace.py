@@ -122,7 +122,8 @@ def main():
             luban("new", "agent", "--edition", "agent-workspace", "--proxy", endpoint)
 
         # Private when it was made: the edition's policy, selected and locked.
-        status = json.loads(luban("status", "agent", "--json"))
+        # The policy and identity are xlings' (`luban status` is the environment).
+        status = json.loads(x("subos", "status", "agent", "--json").strip().splitlines()[-1])
         policy = status["requested"]
         assert policy["isolation"]["net"] == "proxy" and policy["isolation"]["no_degrade"]
         assert policy["resolved"]["from"] == "xim:agent-private@2026.10.11.1", policy
@@ -135,7 +136,7 @@ def main():
         assert record["chain"][0].startswith("subos:luban-core@"), record
         assert isinstance(record["packages"].get("xim:claude"), str), record
         assert record["policy"].startswith("xim:agent-private@"), record
-        assert "up to date" in luban("upgrade", "agent", "--dry-run"), "a fresh workspace is the newest"
+        assert "up to date" in x("subos", "upgrade", "agent", "--dry-run"), "a fresh workspace is the newest"
 
         # Inside: its tools, its persona (made on the first entry), nothing of
         # the host's environment.
@@ -144,7 +145,7 @@ def main():
                      'bash --version; fish --version; vim --version; nvim --version; git --version; mcpp --version; '
                      'claude --version; g++ --version')
         persona = json.loads((home / "config/subos/agent/persona.json").read_text())
-        identity = json.loads(luban("status", "agent", "--json"))["identity"]
+        identity = json.loads(x("subos", "status", "agent", "--json").strip().splitlines()[-1])["identity"]
         assert identity["hostname"] == persona["hostname"] and len(persona["hostname"]) == 12, identity
         assert f"HOST={persona['hostname']}" in out and f"MID={persona['machine_id']}" in out, out[-2000:]
         assert "TZ=UTC" in out, "the fixture proxy cannot answer a zone lookup: UTC, never the host's"

@@ -37,7 +37,7 @@ L run e-tiny -- /bin/sh -c 'grep -q ID=luban /usr/share/factory/etc/os-release &
     || fail "tiny: os-release / luban-init"
 L run e-luban-tiny-musl -- /bin/sh -c 'ls /usr/lib/ld-musl-* /lib/ld-musl-* 2>/dev/null | grep -q musl' \
     || fail "tiny-musl: no musl loader"
-L upgrade e-tiny --dry-run | grep -q "up to date" || fail "a fresh tiny is the newest"
+X subos upgrade e-tiny --dry-run | grep -q "up to date" || fail "a fresh tiny is the newest"
 L run e-luban-tiny-musl -- /bin/sh -c 'ls /usr/lib/ld-musl-'"$arch"'.so.1 /lib/ld-musl-'"$arch"'.so.1 2>/dev/null | grep -q .' \
     || fail "tiny-musl: not this machine's musl loader"
 
