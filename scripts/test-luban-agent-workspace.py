@@ -172,11 +172,13 @@ def main():
         x("subos", "stop", "agent")
         offline = Path(tempfile.mkdtemp(prefix="luban-offline-")) / "rootfs"
         luban("export", "agent", str(offline) + "/")
-        bwrap = Path("/usr/bin/bwrap")
-        if not bwrap.exists():
-            candidates = sorted((home / "data/xpkgs/xim-x-bwrap").glob("*/bin/bwrap"))
-            assert candidates, "bwrap payload executable missing"
-            bwrap = candidates[-1]
+        # The bwrap xlings itself would choose: the root-owned copy the
+        # one-time setup made (AppArmor lets it make namespaces), then the
+        # system's, then the home's payload (an ordinary binary, never setuid).
+        found = [b for b in (Path("/usr/lib/xlings/bwrap"), Path("/usr/bin/bwrap")) if b.exists()]
+        found += sorted((home / "data/xpkgs/xim-x-bwrap").glob("*/bin/bwrap"))
+        assert found, "no bwrap to run the exported root with"
+        bwrap = found[0]
         run([bwrap, "--unshare-all", "--die-with-parent", "--ro-bind", offline, "/", "--dev", "/dev", "--proc", "/proc",
              "--tmpfs", "/root", "--setenv", "HOME", "/root", "--setenv", "TMPDIR", "/root", "--setenv", "PATH",
              "/usr/bin:/bin", "--", "/bin/sh", "-c",
