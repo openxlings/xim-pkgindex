@@ -135,19 +135,25 @@ package = {
         linux = {
             deps = {"xim:node@>=24", "xim:pnpm"},
             ["latest"] = { ref = "0.1.0-rc.6" },
-            ["0.1.0-rc.6"] = {},
+            -- r1: lifecycle scripts allowed under npm 11.20's allowScripts;
+            -- pty.node checked where node-pty loads it (its prebuilds).
+            ["0.1.0-rc.6"] = { revision = 1 },
             ["0.1.0-rc.3"] = {},
         },
         macosx = {
             deps = {"xim:node@>=24", "xim:pnpm"},
             ["latest"] = { ref = "0.1.0-rc.6" },
-            ["0.1.0-rc.6"] = {},
+            -- r1: lifecycle scripts allowed under npm 11.20's allowScripts;
+            -- pty.node checked where node-pty loads it (its prebuilds).
+            ["0.1.0-rc.6"] = { revision = 1 },
             ["0.1.0-rc.3"] = {},
         },
         windows = {
             deps = {"xim:node@>=24", "xim:pnpm"},
             ["latest"] = { ref = "0.1.0-rc.6" },
-            ["0.1.0-rc.6"] = {},
+            -- r1: lifecycle scripts allowed under npm 11.20's allowScripts;
+            -- pty.node checked where node-pty loads it (its prebuilds).
+            ["0.1.0-rc.6"] = { revision = 1 },
             ["0.1.0-rc.3"] = {},
         },
     },
@@ -192,10 +198,12 @@ function install()
     -- One blank line separates them.
     print("")
 
-    -- Lifecycle scripts run on purpose. See the header: node-pty's install
-    -- script is the only thing that produces pty.node on Linux.
+    -- Lifecycle scripts run on purpose (see the header). npm 11.20 runs a
+    -- package's scripts only once it is listed in allowScripts, and refuses
+    -- --allow-scripts in a --prefix install: --dangerously-allow-all-scripts
+    -- keeps what this recipe has always meant. An older npm warns and runs them.
     os.exec(string.format(
-        [[npm install --prefix "%s" --no-fund --no-audit "@deepseek-ai/dsh@%s"]],
+        [[npm install --prefix "%s" --no-fund --no-audit --dangerously-allow-all-scripts "@deepseek-ai/dsh@%s"]],
         pkginfo.install_dir(),
         pkginfo.version()
     ))
@@ -213,11 +221,17 @@ function install()
     -- only exists if node-pty's install script actually ran; without it
     -- every profile boot dies and only `--version` keeps working, which is
     -- exactly the failure this recipe shipped once already.
+    -- Where node-pty loads it from: its own build, or (1.2+) the prebuild it
+    -- ships for this platform, which its install script only checks for.
     if os.host() == "linux" then
-        local pty = path.join(pkginfo.install_dir(), "node_modules", "node-pty",
-                              "build", "Release", "pty.node")
-        if not os.isfile(pty) then
-            raise("dsh: node-pty was not built (no build/Release/pty.node); "
+        -- (os.arch() is not bound in hooks: either Linux prebuild will do.)
+        local ptydir = path.join(pkginfo.install_dir(), "node_modules", "node-pty")
+        local found = os.isfile(path.join(ptydir, "build", "Release", "pty.node"))
+        for _, arch in ipairs({"x64", "arm64"}) do
+            found = found or os.isfile(path.join(ptydir, "prebuilds", "linux-" .. arch, "pty.node"))
+        end
+        if not found then
+            raise("dsh: node-pty has no pty.node (neither build/Release nor prebuilds/linux-*); "
                   .. "profile boot would fail. node-gyp needs python3, make "
                   .. "and a C++ toolchain on this host.")
         end
