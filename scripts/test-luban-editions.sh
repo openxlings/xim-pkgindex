@@ -33,8 +33,10 @@ arch="$(uname -m)"
 for e in nano tiny luban-tiny-musl core; do
     log "luban new e-$e --edition $e"
     L new "e-$e" --edition "$e" || fail "luban new $e"
-    rec="$(cat "$home/config/subos/e-$e/instance.json")"
-    grep -q '"edition"' <<<"$rec" || fail "$e: no edition record"
+    # luban says what it was made from, wherever the system lives (its own
+    # prefix domain or the home's).
+    rec="$(L status "e-$e" --json)"
+    grep -q '"edition": *"subos:' <<<"$rec" || fail "$e: no edition record: $rec"
 done
 X subos exec e-nano -- /usr/bin/xlings --version >/dev/null || fail "nano: its xlings"
 L run e-tiny -- /bin/sh -c 'grep -q ID=luban /usr/share/factory/etc/os-release && grep -q luban-init /etc/inittab' \
@@ -65,7 +67,8 @@ L run e-desktop -- /bin/sh -c 'gh --version && dsh --version && dsh --profile we
 log "luban export e-tiny tiny.iso --boot virt"
 L export e-tiny "$home/tiny.iso" --boot virt || fail "export --boot virt"
 grep -aq "console=ttyS0" "$home/tiny.iso" || fail "the virt profile's command line is not in the image"
-ls "$home"/subos/e-tiny/root/usr/lib/modules/6.12.112-virt/vmlinuz >/dev/null || fail "the virt kernel is not in the root"
+tiny_dir="$home/domains/xlings/private/subos/e-tiny"; [ -d "$tiny_dir" ] || tiny_dir="$home/subos/e-tiny"
+ls "$tiny_dir"/root/usr/lib/modules/6.12.112-virt/vmlinuz >/dev/null || fail "the virt kernel is not in the root"
 
 log "boot it (qemu, xim:qemu-x86)"
 X install -y xim:qemu-x86 >/dev/null || fail "xim:qemu-x86"
