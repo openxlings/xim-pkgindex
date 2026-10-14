@@ -49,7 +49,7 @@ log "core: its own gcc builds C++23 ($arch)"
 L run e-core -- /bin/sh -c 'cd /tmp && printf "import std;\nint main(){ std::println(\"core {}\", __cplusplus >= 202302L); }\n" > t.cpp \
     && g++ -std=c++23 -fmodules -fsearch-include-path -c bits/std.cc -o std.o && g++ -std=c++23 -fmodules t.cpp std.o -o t && ./t' \
     | tee "$home/core.out" | grep -q "core true" || fail "core: C++23 with import std"
-L run e-core -- /bin/sh -c 'git --version && vim --version | head -1 && fish --version && make --version | head -1' \
+L run e-core -- /bin/sh -c 'git --version && gh --version && vim --version | head -1 && fish --version && make --version | head -1' \
     || fail "core: its tools"
 
 if [[ "$arch" != x86_64 ]]; then
@@ -59,7 +59,7 @@ fi
 
 log "luban new e-desktop --edition desktop: its tools run in its root (x86_64: xdesk, dsh)"
 L new e-desktop --edition desktop || fail "luban new desktop"
-L run e-desktop -- /bin/sh -c 'dsh --version && dsh --profile web --dump-config | grep -q dsh-base' \
+L run e-desktop -- /bin/sh -c 'gh --version && dsh --version && dsh --profile web --dump-config | grep -q dsh-base' \
     || fail "desktop: dsh in its root"
 
 log "luban export e-tiny tiny.iso --boot virt"

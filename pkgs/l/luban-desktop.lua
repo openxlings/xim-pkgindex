@@ -27,9 +27,10 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "2026.10.13.1" },
+            ["latest"] = { ref = "2026.10.15.1" },
             ["0.1.0"] = {},
             ["2026.10.13.1"] = {},
+            ["2026.10.15.1"] = {},
         },
     },
 }
@@ -60,6 +61,11 @@ local versions = {
     -- xdesk is released there), the environment, its defaults.
     ["2026.10.13.1"] = {
         manifest = luban_desktop.manifest(aarch64 and "aarch64" or "x86_64", "subos:luban-core@2026.10.11.2"),
+        files = luban_desktop.files(aarch64 and "labwc-desktop" or "xdesk-classic"),
+    },
+    -- On Luban Core 2026.10.15.1: gh beside git.
+    ["2026.10.15.1"] = {
+        manifest = luban_desktop.manifest(aarch64 and "aarch64" or "x86_64", "subos:luban-core@2026.10.15.1"),
         files = luban_desktop.files(aarch64 and "labwc-desktop" or "xdesk-classic"),
     },
 }
