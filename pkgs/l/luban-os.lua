@@ -70,14 +70,20 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
 
+-- bin/luban-os (bin/luban-os.exe on Windows): the payload extracts into
+-- luban-os-<version>-<os>-<arch>/, a .tar.gz on Linux and macOS, a .zip on Windows.
+local function exe()
+    return is_host("windows") and "luban-os.exe" or "luban-os"
+end
+
 function install()
     local dir = pkginfo.install_dir()
-    local payload = pkginfo.install_file():replace(".tar.gz", "")
+    local payload = pkginfo.install_file():replace(".tar.gz", ""):replace(".zip", "")
     if os.isdir(payload) then
         os.tryrm(dir)
         os.mv(payload, dir)
     end
-    return os.isfile(path.join(dir, "bin", "luban-os"))
+    return os.isfile(path.join(dir, "bin", exe()))
 end
 
 local function entry_file()
@@ -87,8 +93,8 @@ end
 function config()
     local dir = pkginfo.install_dir()
     xvm.add("luban-os", { bindir = path.join(dir, "bin") })
-    -- The host's application menu: the window of this home.
-    if os.getenv("HOME") then
+    -- The host's application menu (a freedesktop one: Linux): the window of this home.
+    if is_host("linux") and os.getenv("HOME") then
         local home = os.getenv("XLINGS_HOME") or path.join(os.getenv("HOME"), ".xlings")
         local entry = string.format([[
 [Desktop Entry]

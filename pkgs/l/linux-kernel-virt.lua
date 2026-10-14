@@ -24,7 +24,17 @@ package = {
     -- machine need; a real machine's hardware is linux-kernel's (generic).
     xpm = {
         linux = {
-            ["latest"] = { ref = "6.12.112" },
+            ["latest"] = { ref = "6.12.112-r1" },
+            -- r1: kernel-virt.config adds FUSE_FS and VIRTIO_FS -- a Mac's Luban
+            -- host machine and its machines share by virtio-fs (xlings: Luban
+            -- OS part 4 §6.6). The same 6.12.112 source; its release is 6.12.112-virt.
+            ["6.12.112-r1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "e5cc9036e22f41be9fbd44e9764bcab08af2ea4fbd8b3e152e0b8558df28b2c7",
+                    aarch64 = "c071d6eebf8c9f140019a201612481bbb83b035fbdd587684a3ae2fc617c852d",
+                },
+            },
             ["6.12.112"] = {
                 -- 1: its scope link is lib/vmlinuz-virt -- linux-kernel's is
                 -- lib/vmlinuz, and two sources for one link refused the
