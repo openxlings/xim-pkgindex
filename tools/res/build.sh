@@ -144,30 +144,33 @@ limine)
     tar --owner=0 --group=0 --numeric-owner --hard-dereference -czf "$file" -C "$work" "limine-$version"
     seal "$file" ;;
 kernel-virt)
+    # <kernel.org version>[-r<N>]: a revision is the same source with a changed
+    # kernel-virt.config.
+    kv="${version%%-r*}"
     sums="$work/sha256sums.asc"
-    curl -fsSL --retry 3 -o "$sums" "https://cdn.kernel.org/pub/linux/kernel/v${version%%.*}.x/sha256sums.asc"
-    sha="$(grep " linux-$version.tar.xz\$" "$sums" | cut -d' ' -f1)"
-    [[ -n "$sha" ]] || die "kernel.org lists no linux-$version.tar.xz"
-    fetch "https://cdn.kernel.org/pub/linux/kernel/v${version%%.*}.x/linux-$version.tar.xz" "$sha" "$work/linux.tar.xz"
+    curl -fsSL --retry 3 -o "$sums" "https://cdn.kernel.org/pub/linux/kernel/v${kv%%.*}.x/sha256sums.asc"
+    sha="$(grep " linux-$kv.tar.xz\$" "$sums" | cut -d' ' -f1)"
+    [[ -n "$sha" ]] || die "kernel.org lists no linux-$kv.tar.xz"
+    fetch "https://cdn.kernel.org/pub/linux/kernel/v${kv%%.*}.x/linux-$kv.tar.xz" "$sha" "$work/linux.tar.xz"
     cp "$here/kernel-virt.config" "$work/"
     karch=x86; image=arch/x86/boot/bzImage
     [[ "$arch" == aarch64 ]] && { karch=arm64; image=arch/arm64/boot/Image; }
     debian "apt-get -qq update && apt-get -qq install -y build-essential flex bison bc libelf-dev libssl-dev xz-utils kmod cpio >/dev/null \
-        && tar -xJf linux.tar.xz && cd linux-$version \
+        && tar -xJf linux.tar.xz && cd linux-$kv \
         && make -s ARCH=$karch defconfig && make -s ARCH=$karch kvm_guest.config \
         && scripts/kconfig/merge_config.sh -m -O . .config /w/kernel-virt.config >/dev/null \
         && make -s ARCH=$karch olddefconfig \
-        && for opt in VIRTIO_BLK VIRTIO_NET VIRTIO_PCI VIRTIO_CONSOLE EXT4_FS BLK_DEV_INITRD RD_GZIP DEVTMPFS DEVTMPFS_MOUNT EFI_STUB; do \
+        && for opt in VIRTIO_BLK VIRTIO_NET VIRTIO_PCI VIRTIO_CONSOLE EXT4_FS BLK_DEV_INITRD RD_GZIP DEVTMPFS DEVTMPFS_MOUNT EFI_STUB VIRTIO_FS; do \
              grep -q \"^CONFIG_\$opt=y\" .config || { echo \"CONFIG_\$opt is not built in\"; exit 1; }; done \
         && make -s ARCH=$karch -j\$(nproc) LOCALVERSION=-virt $(basename "$image") \
         && make -s ARCH=$karch LOCALVERSION=-virt kernelrelease > /w/release"
-    src="$work/linux-$version"; release="$(cat "$work/release")"
+    src="$work/linux-$kv"; release="$(cat "$work/release")"
     root="$work/linux-kernel-virt-$version"
     mkdir -p "$root/lib/modules/$release"
     cp "$src/$image" "$root/lib/modules/$release/vmlinuz"
     cp "$src/.config" "$root/lib/modules/$release/config"
-    printf 'linux %s (kernel.org, sha256 %s), %s defconfig + kvm_guest.config + kernel-virt.config; built in Debian 12; no modules: what a virtual machine needs is built in\n' \
-        "$version" "$sha" "$karch" > "$root/README.provenance"
+    printf 'linux %s (kernel.org, sha256 %s), %s defconfig + kvm_guest.config + kernel-virt.config (%s); built in Debian 12; no modules: what a virtual machine needs is built in\n' \
+        "$kv" "$sha" "$karch" "$version" > "$root/README.provenance"
     file="$out/linux-kernel-virt-$version-linux-$arch.tar.gz"
     tar --owner=0 --group=0 --numeric-owner --hard-dereference -czf "$file" -C "$work" "linux-kernel-virt-$version"
     seal "$file" ;;

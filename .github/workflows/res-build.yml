@@ -47,8 +47,8 @@ jobs:
         include:
           - { what: limine,        version: "12.9.3",             arch: x86_64 }
           - { what: limine,        version: "12.9.3",             arch: aarch64 }
-          - { what: kernel-virt,   version: "6.12.112",           arch: x86_64 }
-          - { what: kernel-virt,   version: "6.12.112",           arch: aarch64 }
+          - { what: kernel-virt,   version: "6.12.112-r1",        arch: x86_64 }
+          - { what: kernel-virt,   version: "6.12.112-r1",        arch: aarch64 }
           - { what: busybox,       version: "1.35.0",             arch: aarch64 }
           - { what: bwrap,         version: "0.11.2",             arch: aarch64 }
           # the aarch64 ecosystem (xlings: 2026-10-11-luban-aarch64-and-docs-i18n-design)

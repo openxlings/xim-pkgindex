@@ -3,7 +3,7 @@ package = {
 
     homepage = "https://www.kernel.org",
     name = "linux-kernel-virt",
-    description = "A Linux 6.12 LTS kernel for virtual machines (Luban's virt boot profile): virtio, ext4, initramfs and the serial console built in, no modules",
+    description = "A Linux 6.12 LTS kernel for virtual machines (Luban's virt boot profile): virtio, virtio-fs, ext4, initramfs and the serial console built in, no modules",
 
     authors = {"Linus Torvalds and the kernel community"},
     licenses = {"GPL-2.0-only"},
@@ -43,8 +43,12 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 
+-- lib/modules/<release>: the kernel's own release name (6.12.112-virt for
+-- 6.12.112 and its config revisions, 6.12.112-r1, alike).
 local function modules_dir()
-    return path.join(pkginfo.install_dir(), "lib", "modules", pkginfo.version() .. "-virt")
+    local base = path.join(pkginfo.install_dir(), "lib", "modules")
+    for _, d in ipairs(os.dirs(path.join(base, "*")) or {}) do return d end
+    return path.join(base, pkginfo.version() .. "-virt")
 end
 
 function install()
