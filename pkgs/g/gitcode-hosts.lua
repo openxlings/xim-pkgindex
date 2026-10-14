@@ -132,8 +132,8 @@ function update_hosts(new_hosts_content)
                   .. target .. "; refusing to open it up for writing, because "
                   .. "the mode could not then be restored")
         end
-        system.exec("sudo chmod 666 " .. target)
+        system.exec("sudo chmod 666 " .. target)  -- elevation-ok: the hosts file is changed when a person asks for it, at their terminal
         io.writefile(target, new_hosts_content)
-        system.exec("sudo chmod " .. permission .. " " .. target)
+        system.exec("sudo chmod " .. permission .. " " .. target)  -- elevation-ok: the hosts file is changed when a person asks for it, at their terminal
     end
 end

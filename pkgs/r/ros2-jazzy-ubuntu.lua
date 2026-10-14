@@ -50,34 +50,34 @@ function install()
 
     -- 1. locale
     log.debug("Setting up locale...")
-    system.exec([[sudo apt update]])
-    system.exec([[sudo apt install -y locales]])
-    system.exec([[sudo locale-gen en_US en_US.UTF-8]])
-    system.exec([[sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8]])
+    system.exec([[sudo apt update]])  -- elevation-ok: this package is the host's apt installing ROS 2
+    system.exec([[sudo apt install -y locales]])  -- elevation-ok: this package is the host's apt installing ROS 2
+    system.exec([[sudo locale-gen en_US en_US.UTF-8]])  -- elevation-ok: this package is the host's apt installing ROS 2
+    system.exec([[sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8]])  -- elevation-ok: this package is the host's apt installing ROS 2
 
     -- 2. enable universe repo
     log.debug("Enabling Ubuntu Universe repository...")
-    system.exec([[sudo apt install -y software-properties-common]])
-    system.exec([[sudo add-apt-repository -y universe]])
+    system.exec([[sudo apt install -y software-properties-common]])  -- elevation-ok: this package is the host's apt installing ROS 2
+    system.exec([[sudo add-apt-repository -y universe]])  -- elevation-ok: this package is the host's apt installing ROS 2
 
     -- 3. add ROS 2 apt source
     log.debug("Adding ROS 2 apt repository...")
-    system.exec([[sudo apt install -y curl]])
+    system.exec([[sudo apt install -y curl]])  -- elevation-ok: this package is the host's apt installing ROS 2
     local deb_url = string.format(
         "https://github.com/ros-infrastructure/ros-apt-source/releases/download/%s/ros2-apt-source_%s.%s_all.deb",
         ROS_APT_SOURCE_VERSION, ROS_APT_SOURCE_VERSION, codename
     )
     system.exec(string.format([[curl -L -o /tmp/ros2-apt-source.deb "%s"]], deb_url))
-    system.exec([[sudo dpkg -i /tmp/ros2-apt-source.deb]])
+    system.exec([[sudo dpkg -i /tmp/ros2-apt-source.deb]])  -- elevation-ok: this package is the host's apt installing ROS 2
 
     -- 4. install ROS 2 desktop (full)
     log.debug("Installing ros-jazzy-desktop (this may take a while)...")
-    system.exec([[sudo apt update]])
-    system.exec(string.format([[sudo apt install -y ros-%s-desktop]], ROS_DISTRO))
+    system.exec([[sudo apt update]])  -- elevation-ok: this package is the host's apt installing ROS 2
+    system.exec(string.format([[sudo apt install -y ros-%s-desktop]], ROS_DISTRO))  -- elevation-ok: this package is the host's apt installing ROS 2
 
     -- 5. install dev tools
     log.debug("Installing ros-dev-tools...")
-    system.exec([[sudo apt install -y ros-dev-tools]])
+    system.exec([[sudo apt install -y ros-dev-tools]])  -- elevation-ok: this package is the host's apt installing ROS 2
 
     return true
 end
@@ -96,15 +96,15 @@ end
 
 function uninstall()
     log.debug("Removing all ros-jazzy packages...")
-    system.exec(string.format([[sudo apt remove -y '~nros-%s-*']], ROS_DISTRO))
+    system.exec(string.format([[sudo apt remove -y '~nros-%s-*']], ROS_DISTRO))  -- elevation-ok: this package is the host's apt installing ROS 2
     log.debug("Removing ros2-apt-source...")
-    system.exec([[sudo apt remove -y ros2-apt-source]])
+    system.exec([[sudo apt remove -y ros2-apt-source]])  -- elevation-ok: this package is the host's apt installing ROS 2
     log.debug("Refreshing package index...")
-    system.exec([[sudo apt update]])
+    system.exec([[sudo apt update]])  -- elevation-ok: this package is the host's apt installing ROS 2
     log.debug("Auto-removing unused packages...")
-    system.exec([[sudo apt autoremove -y]])
+    system.exec([[sudo apt autoremove -y]])  -- elevation-ok: this package is the host's apt installing ROS 2
     log.debug("Upgrading packages that may have been shadowed...")
-    system.exec([[sudo apt upgrade -y]])
+    system.exec([[sudo apt upgrade -y]])  -- elevation-ok: this package is the host's apt installing ROS 2
     log.debug("Cleaning ROS setup lines from shell profiles...")
     cleanup_ros_setup_profiles()
     return true

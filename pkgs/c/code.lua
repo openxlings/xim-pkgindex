@@ -161,12 +161,19 @@ function install()
             os.mv("VSCode-linux-x64", pkginfo.install_dir())
         end
         -- https://github.com/flathub/com.visualstudio.code/issues/223
-        -- set the correct permissions for chrome-sandbox, and as root
+        -- chrome-sandbox has to be root's and setuid. A recipe never runs sudo
+        -- itself (an unattended install has no terminal to ask on, and waited
+        -- there forever): it declares the steps; xlings asks once after the
+        -- install, or keeps them for `xlings self doctor --fix`.
         local sandbox = path.join(pkginfo.install_dir(), "chrome-sandbox")
         if os.isfile(sandbox) then
-            log.debug("setting permissions for chrome-sandbox...")
-            os.exec("sudo chown root:root " .. sandbox)
-            os.exec("sudo chmod 4755 " .. sandbox)
+            if system.admin_step then
+                system.admin_step({"chown", "root:root", sandbox}, "VS Code's sandbox helper must be root's")
+                system.admin_step({"chmod", "4755", sandbox}, "and setuid, for Chromium's sandbox")
+            else
+                log.warn("VS Code's sandbox helper needs root: sudo chown root:root %s && sudo chmod 4755 %s"
+                         .. " (or run code --no-sandbox)", sandbox, sandbox)
+            end
         end
     end
     return true
