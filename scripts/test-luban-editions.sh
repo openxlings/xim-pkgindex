@@ -62,7 +62,8 @@ if [[ "$arch" != x86_64 ]]; then
 fi
 
 log "luban new e-desktop --edition desktop: its tools run in its root (x86_64: xdesk, dsh)"
-L new e-desktop --edition desktop || fail "luban new desktop"
+# A desktop logs a user in: the default one (lubanoser), as -y takes it.
+L new e-desktop --edition desktop -y || fail "luban new desktop"
 L run e-desktop -- /bin/sh -c 'gh --version && dsh --version && dsh --profile web --dump-config | grep -q dsh-base' \
     || fail "desktop: dsh in its root"
 

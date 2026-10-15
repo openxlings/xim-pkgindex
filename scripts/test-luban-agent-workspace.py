@@ -103,6 +103,13 @@ def main():
     def luban(*argv, **kwargs):
         return run([home / "bin/luban", *argv], **kwargs)
 
+    def config_of(name):
+        # A system's own files: the domain's (/xlings) when it lives in one.
+        for candidate in [*home.glob("domains/*/*/config/subos/agent/" + name), home / "config/subos/agent" / name]:
+            if candidate.exists() and (name != "instance.json" or "edition" in json.loads(candidate.read_text())):
+                return candidate
+        raise AssertionError(f"no {name} for agent")
+
     def inside(script, **kwargs):
         return luban("run", "agent", "--", "/bin/sh", "-c", script, **kwargs)
 
@@ -132,8 +139,7 @@ def main():
         # The edition layer, as it resolved: the agent is not pinned in the
         # edition, so the version installed at `new` is the one recorded.
         # The record is the domain's when the system lives in one (/xlings).
-        records = [home / "config/subos/agent/instance.json", *home.glob("domains/*/*/config/subos/agent/instance.json")]
-        record = next(r for r in (json.loads(p.read_text()) for p in records if p.exists()) if "edition" in r)["edition"]
+        record = json.loads(config_of("instance.json").read_text())["edition"]
         assert record["ref"].startswith("subos:luban-agent-workspace@"), record
         assert record["chain"][0].startswith("subos:luban-core@"), record
         assert isinstance(record["packages"].get("xim:claude"), str), record
@@ -146,7 +152,7 @@ def main():
                      'test "$HOME" = /root; test -z "${SSH_AUTH_SOCK:-}"; test ! -e /usr/bin/apt-get; test ! -e /dev/video0; '
                      'bash --version; fish --version; vim --version; nvim --version; git --version; mcpp --version; '
                      'claude --version; g++ --version')
-        persona = json.loads((home / "config/subos/agent/persona.json").read_text())
+        persona = json.loads(config_of("persona.json").read_text())
         identity = json.loads(x("subos", "status", "agent", "--json").strip().splitlines()[-1])["identity"]
         assert identity["hostname"] == persona["hostname"] and len(persona["hostname"]) == 12, identity
         assert f"HOST={persona['hostname']}" in out and f"MID={persona['machine_id']}" in out, out[-2000:]
