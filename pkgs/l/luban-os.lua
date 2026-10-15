@@ -1,4 +1,7 @@
 package = {
+    -- Platform version sets differ ON PURPOSE: macOS and Windows builds of the
+    -- window start at 2026.10.15.1; Linux carries the releases before it.
+    platform_versions_diverge = true,
     spec = "1",
 
     name = "luban-os",
