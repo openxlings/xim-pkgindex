@@ -35,7 +35,13 @@ package = {
                 "xim:glibc@>=2.44",
                 "xim:gcc-runtime",
             },
-            ["latest"] = { ref = "2026.10.15.3" },
+            ["latest"] = { ref = "2026.10.15.4" },
+            ["2026.10.15.4"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "68d3a5114dd2345b0c8cc9ef8872767409fe2244bb6bf909b01471b4a8a09d9d",
+                },
+            },
             ["2026.10.15.3"] = {
                 url = "XLINGS_RES",
                 sha256 = {
