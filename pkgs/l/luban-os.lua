@@ -9,7 +9,7 @@ package = {
     licenses = {"Apache-2.0"},
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"desktop", "luban", "gui"},
     keywords = {"luban", "luban-os", "desktop", "window", "machine", "subos"},
@@ -37,7 +37,13 @@ package = {
                 "xim:libXi",
                 "xim:libXrandr",
             },
-            ["latest"] = { ref = "2026.10.13.4" },
+            ["latest"] = { ref = "2026.10.15.1" },
+            ["2026.10.15.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "67040e3a2d0b8417c17856d682b55448319a7cec4f91df34f6eb0153980ff761",
+                },
+            },
             ["2026.10.13.4"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -60,6 +66,24 @@ package = {
                 url = "XLINGS_RES",
                 sha256 = {
                     x86_64 = "1d493a67f52c09fb14eca43b37185b10a89e9f1ed0acd8ad7ef9224a88e07d2a",
+                },
+            },
+        },
+        macosx = {
+            ["latest"] = { ref = "2026.10.15.1" },
+            ["2026.10.15.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "31dd65de8156e09eb1a388a99c9abc2d410b72c4c227f984bcd628ef487b8fad",
+                },
+            },
+        },
+        windows = {
+            ["latest"] = { ref = "2026.10.15.1" },
+            ["2026.10.15.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "7534dca161db18f4589998ac1f3ab57d87096feae177705c289d3955aa5aeee6",
                 },
             },
         },
