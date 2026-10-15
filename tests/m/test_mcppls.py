@@ -89,7 +89,7 @@ class TestVerify:
     @skip_if_not('linux')
     def test_mcppls_version(self):
         assert_command_output(
-            f'PATH="{SUBOS_BIN}:$PATH" mcppls --version', contains="0.0.15"
+            f'PATH="{SUBOS_BIN}:$PATH" mcppls --version', contains="0.0.16"
         )
 
     @pytest.mark.verify
