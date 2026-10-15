@@ -33,15 +33,19 @@ arch="$(uname -m)"
 for e in nano tiny luban-tiny-musl core; do
     log "luban new e-$e --edition $e"
     L new "e-$e" --edition "$e" || fail "luban new $e"
-    rec="$(cat "$home/config/subos/e-$e/instance.json")"
-    grep -q '"edition"' <<<"$rec" || fail "$e: no edition record"
+    # luban says what it was made from, wherever the system lives (its own
+    # prefix domain or the home's).
+    rec="$(L status "e-$e" --json)"
+    grep -q '"edition": *"subos:' <<<"$rec" || fail "$e: no edition record: $rec"
 done
 X subos exec e-nano -- /usr/bin/xlings --version >/dev/null || fail "nano: its xlings"
 L run e-tiny -- /bin/sh -c 'grep -q ID=luban /usr/share/factory/etc/os-release && grep -q luban-init /etc/inittab' \
     || fail "tiny: os-release / luban-init"
 L run e-luban-tiny-musl -- /bin/sh -c 'ls /usr/lib/ld-musl-* /lib/ld-musl-* 2>/dev/null | grep -q musl' \
     || fail "tiny-musl: no musl loader"
-X subos upgrade e-tiny --dry-run | grep -q "up to date" || fail "a fresh tiny is the newest"
+# A Luban system is luban's: its upgrade is luban's (a system in the /xlings
+# domain answers xlings' own upgrade through a relay).
+L upgrade e-tiny --dry-run | grep -q "up to date" || fail "a fresh tiny is the newest"
 L run e-luban-tiny-musl -- /bin/sh -c 'ls /usr/lib/ld-musl-'"$arch"'.so.1 /lib/ld-musl-'"$arch"'.so.1 2>/dev/null | grep -q .' \
     || fail "tiny-musl: not this machine's musl loader"
 
@@ -49,7 +53,7 @@ log "core: its own gcc builds C++23 ($arch)"
 L run e-core -- /bin/sh -c 'cd /tmp && printf "import std;\nint main(){ std::println(\"core {}\", __cplusplus >= 202302L); }\n" > t.cpp \
     && g++ -std=c++23 -fmodules -fsearch-include-path -c bits/std.cc -o std.o && g++ -std=c++23 -fmodules t.cpp std.o -o t && ./t' \
     | tee "$home/core.out" | grep -q "core true" || fail "core: C++23 with import std"
-L run e-core -- /bin/sh -c 'git --version && vim --version | head -1 && fish --version && make --version | head -1' \
+L run e-core -- /bin/sh -c 'git --version && gh --version && vim --version | head -1 && fish --version && make --version | head -1' \
     || fail "core: its tools"
 
 if [[ "$arch" != x86_64 ]]; then
@@ -58,14 +62,17 @@ if [[ "$arch" != x86_64 ]]; then
 fi
 
 log "luban new e-desktop --edition desktop: its tools run in its root (x86_64: xdesk, dsh)"
-L new e-desktop --edition desktop || fail "luban new desktop"
-L run e-desktop -- /bin/sh -c 'dsh --version && dsh --profile web --dump-config | grep -q dsh-base' \
+# A desktop logs a user in: the default one (lubanoser), as -y takes it.
+L new e-desktop --edition desktop -y || fail "luban new desktop"
+L run e-desktop -- /bin/sh -c 'gh --version && dsh --version && dsh --profile web --dump-config | grep -q dsh-base' \
     || fail "desktop: dsh in its root"
 
 log "luban export e-tiny tiny.iso --boot virt"
 L export e-tiny "$home/tiny.iso" --boot virt || fail "export --boot virt"
 grep -aq "console=ttyS0" "$home/tiny.iso" || fail "the virt profile's command line is not in the image"
-ls "$home"/subos/e-tiny/root/usr/lib/modules/6.12.112-virt/vmlinuz >/dev/null || fail "the virt kernel is not in the root"
+# Looked for from inside: a system in the /xlings domain links its files by
+# their paths there, which the host does not have.
+L run e-tiny -- /bin/sh -c 'ls /usr/lib/modules/*-virt/vmlinuz' >/dev/null || fail "the virt kernel is not in the root"
 
 log "boot it (qemu, xim:qemu-x86)"
 X install -y xim:qemu-x86 >/dev/null || fail "xim:qemu-x86"

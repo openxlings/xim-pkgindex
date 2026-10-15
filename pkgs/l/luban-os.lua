@@ -1,4 +1,7 @@
 package = {
+    -- Platform version sets differ ON PURPOSE: macOS and Windows builds of the
+    -- window start at 2026.10.15.1; Linux carries the releases before it.
+    platform_versions_diverge = true,
     spec = "1",
 
     name = "luban-os",
@@ -9,7 +12,7 @@ package = {
     licenses = {"Apache-2.0"},
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"desktop", "luban", "gui"},
     keywords = {"luban", "luban-os", "desktop", "window", "machine", "subos"},
@@ -37,7 +40,19 @@ package = {
                 "xim:libXi",
                 "xim:libXrandr",
             },
-            ["latest"] = { ref = "2026.10.13.4" },
+            ["latest"] = { ref = "2026.10.15.2" },
+            ["2026.10.15.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "fb4aacac1c1bcdab2ed35cfa299fd162e2b58178e355660f4a5658f7564e2712",
+                },
+            },
+            ["2026.10.15.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "67040e3a2d0b8417c17856d682b55448319a7cec4f91df34f6eb0153980ff761",
+                },
+            },
             ["2026.10.13.4"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -63,6 +78,36 @@ package = {
                 },
             },
         },
+        macosx = {
+            ["latest"] = { ref = "2026.10.15.2" },
+            ["2026.10.15.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "9be453ef4279f00b9799e329ed0376edb81788f13587da5c99997fd371a95a0a",
+                },
+            },
+            ["2026.10.15.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "31dd65de8156e09eb1a388a99c9abc2d410b72c4c227f984bcd628ef487b8fad",
+                },
+            },
+        },
+        windows = {
+            ["latest"] = { ref = "2026.10.15.2" },
+            ["2026.10.15.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "15011fa3b54f500dcc09ddd1ceccf1678b3f501c99fb378c0291b689d202e642",
+                },
+            },
+            ["2026.10.15.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "7534dca161db18f4589998ac1f3ab57d87096feae177705c289d3955aa5aeee6",
+                },
+            },
+        },
     },
 }
 
@@ -70,14 +115,20 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
 
+-- bin/luban-os (bin/luban-os.exe on Windows): the payload extracts into
+-- luban-os-<version>-<os>-<arch>/, a .tar.gz on Linux and macOS, a .zip on Windows.
+local function exe()
+    return is_host("windows") and "luban-os.exe" or "luban-os"
+end
+
 function install()
     local dir = pkginfo.install_dir()
-    local payload = pkginfo.install_file():replace(".tar.gz", "")
+    local payload = pkginfo.install_file():replace(".tar.gz", ""):replace(".zip", "")
     if os.isdir(payload) then
         os.tryrm(dir)
         os.mv(payload, dir)
     end
-    return os.isfile(path.join(dir, "bin", "luban-os"))
+    return os.isfile(path.join(dir, "bin", exe()))
 end
 
 local function entry_file()
@@ -87,8 +138,8 @@ end
 function config()
     local dir = pkginfo.install_dir()
     xvm.add("luban-os", { bindir = path.join(dir, "bin") })
-    -- The host's application menu: the window of this home.
-    if os.getenv("HOME") then
+    -- The host's application menu (a freedesktop one: Linux): the window of this home.
+    if is_host("linux") and os.getenv("HOME") then
         local home = os.getenv("XLINGS_HOME") or path.join(os.getenv("HOME"), ".xlings")
         local entry = string.format([[
 [Desktop Entry]

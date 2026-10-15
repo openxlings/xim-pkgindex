@@ -396,8 +396,8 @@ function start_config(config_name)
     end
 
     local ok, err = pcall(function()
-        os.exec("sudo systemctl restart " .. SYSTEMD_SERVICE)
-        os.exec("sudo systemctl enable " .. SYSTEMD_SERVICE)
+        os.exec("sudo systemctl restart " .. SYSTEMD_SERVICE)  -- elevation-ok: the service is started and stopped when a person asks, at their terminal
+        os.exec("sudo systemctl enable " .. SYSTEMD_SERVICE)  -- elevation-ok: the service is started and stopped when a person asks, at their terminal
         local cfg = parse_config_file(config_file)
         if cfg and cfg.port then
             cprint("checking port - [ sudo ss -lunp | grep :%s ]", tostring(cfg.port))
@@ -413,14 +413,14 @@ end
 
 function stop_service()
     log.info("Stopping sing-box service...")
-    os.exec("sudo systemctl stop " .. SYSTEMD_SERVICE)
+    os.exec("sudo systemctl stop " .. SYSTEMD_SERVICE)  -- elevation-ok: the service is started and stopped when a person asks, at their terminal
     cprint("${green}✓${clear} Sing-box service stopped")
     return true
 end
 
 function show_status()
     pcall(function()
-        os.exec("sudo systemctl status " .. SYSTEMD_SERVICE)
+        os.exec("sudo systemctl status " .. SYSTEMD_SERVICE)  -- elevation-ok: the service is started and stopped when a person asks, at their terminal
     end)
 end
 

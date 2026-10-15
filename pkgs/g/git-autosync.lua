@@ -29,8 +29,8 @@ import("xim.libxpkg.utils")
 function uninstall()
     log.info("Uninstalling git-autosync...")
     -- remove from /etc/cron.d
-    system.exec("sudo rm -f /etc/cron.d/git-autosync-crontab")
-    system.exec("sudo systemctl restart cron")
+    system.exec("sudo rm -f /etc/cron.d/git-autosync-crontab")  -- elevation-ok: the system crontab is changed when a person asks for it, at their terminal
+    system.exec("sudo systemctl restart cron")  -- elevation-ok: the system crontab is changed when a person asks for it, at their terminal
     xvm.remove("git-autosync")
     log.info("git-autosync uninstalled.")
     return true
@@ -160,9 +160,9 @@ end
 function sync_to_system()
     -- sync to /etc/cron.d
     log.warn("Updating system crontab, you may be asked for your password...")
-    system.exec(string.format("sudo cp -f %s /etc/cron.d/git-autosync-crontab", get_crontab_file()))
-    system.exec("sudo chmod 644 /etc/cron.d/git-autosync-crontab")
-    system.exec("sudo systemctl restart cron")
+    system.exec(string.format("sudo cp -f %s /etc/cron.d/git-autosync-crontab", get_crontab_file()))  -- elevation-ok: the system crontab is changed when a person asks for it, at their terminal
+    system.exec("sudo chmod 644 /etc/cron.d/git-autosync-crontab")  -- elevation-ok: the system crontab is changed when a person asks for it, at their terminal
+    system.exec("sudo systemctl restart cron")  -- elevation-ok: the system crontab is changed when a person asks for it, at their terminal
 end
 
 function action_add(cmds, task_list)

@@ -130,7 +130,7 @@ function xpkg_main(installdir, ...)
     local make_install_cmd = "make install"
 
     if cmds["--install-by-sudo"] then
-        make_install_cmd = string.format("sudo %s/%s",
+        make_install_cmd = string.format("sudo %s/%s",  -- elevation-ok: --install-by-sudo is the person's own request
             system.bindir(),
             make_install_cmd
         )

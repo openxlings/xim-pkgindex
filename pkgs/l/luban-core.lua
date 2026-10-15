@@ -1,5 +1,5 @@
 -- Luban Core: daily command-line development -- luban-tiny plus GNU tools,
--- a C/C++ toolchain, mcpp, git, editors and shells (Luban design §6).
+-- a C/C++ toolchain, mcpp, git and gh, editors and shells (Luban design §6).
 --
 --   luban new dev                       # core is luban's default edition
 --   luban new dev core                  # (xlings subos new dev --from subos:luban-core)
@@ -12,7 +12,7 @@ package = {
     spec = "2",
     name = "luban-core",
     namespace = "subos",
-    description = "Luban Core: luban-tiny plus bash, fish, vim, nvim, git, mcpp and a C/C++ toolchain",
+    description = "Luban Core: luban-tiny plus bash, fish, vim, nvim, git, gh, mcpp and a C/C++ toolchain",
     homepage = "https://github.com/openxlings/xlings",
     licenses = {"Apache-2.0"},
     type = "subos",
@@ -23,10 +23,11 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "2026.10.11.2" },
+            ["latest"] = { ref = "2026.10.15.1" },
             ["0.1.0"] = {},
             ["2026.10.11.1"] = {},
             ["2026.10.11.2"] = {},
+            ["2026.10.15.1"] = {},
         },
     },
 }
@@ -99,6 +100,36 @@ local editions = {
     "xim:vim@9.2.1172",
     "xim:nvim@0.12.5",
     "xim:git@2.53.0-1",
+    "xim:mcpp@2026.10.11.1",
+    "xim:ninja@1.12.1",
+    "xim:coreutils@9.5",
+    "xim:gcc@16.1.0",
+    "xim:binutils@2.42.1",
+    "xim:make@4.3",
+    "xim:openssl@3.1.5",
+    "xim:xz@5.8.3",
+    "xim:zlib@1.3.1"
+  ],
+  "workspace": {}
+}
+]],
+        shells = "/bin/sh\n/bin/bash\n/usr/bin/fish\n",
+    },
+    -- gh, GitHub's command line, is a base tool beside git.
+    ["2026.10.15.1"] = {
+        manifest = [[
+{
+  "subos_kind": "rootfs",
+  "min_client": "2026.10.11.1",
+  "from": "subos:luban-tiny@2026.10.11.1",
+  "abi": { "kernel": "linux", "libc": "gnu" },
+  "packages": [
+    "xim:bash@5.2.37",
+    "xim:fish@4.8.1",
+    "xim:vim@9.2.1172",
+    "xim:nvim@0.12.5",
+    "xim:git@2.53.0-1",
+    "xim:gh@2.102.0",
     "xim:mcpp@2026.10.11.1",
     "xim:ninja@1.12.1",
     "xim:coreutils@9.5",
