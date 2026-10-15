@@ -40,7 +40,13 @@ package = {
                 "xim:libXi",
                 "xim:libXrandr",
             },
-            ["latest"] = { ref = "2026.10.15.1" },
+            ["latest"] = { ref = "2026.10.15.2" },
+            ["2026.10.15.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "fb4aacac1c1bcdab2ed35cfa299fd162e2b58178e355660f4a5658f7564e2712",
+                },
+            },
             ["2026.10.15.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -73,7 +79,13 @@ package = {
             },
         },
         macosx = {
-            ["latest"] = { ref = "2026.10.15.1" },
+            ["latest"] = { ref = "2026.10.15.2" },
+            ["2026.10.15.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "9be453ef4279f00b9799e329ed0376edb81788f13587da5c99997fd371a95a0a",
+                },
+            },
             ["2026.10.15.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -82,7 +94,13 @@ package = {
             },
         },
         windows = {
-            ["latest"] = { ref = "2026.10.15.1" },
+            ["latest"] = { ref = "2026.10.15.2" },
+            ["2026.10.15.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "15011fa3b54f500dcc09ddd1ceccf1678b3f501c99fb378c0291b689d202e642",
+                },
+            },
             ["2026.10.15.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
