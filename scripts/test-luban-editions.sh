@@ -70,8 +70,9 @@ L run e-desktop -- /bin/sh -c 'gh --version && dsh --version && dsh --profile we
 log "luban export e-tiny tiny.iso --boot virt"
 L export e-tiny "$home/tiny.iso" --boot virt || fail "export --boot virt"
 grep -aq "console=ttyS0" "$home/tiny.iso" || fail "the virt profile's command line is not in the image"
-tiny_dir="$home/domains/xlings/private/subos/e-tiny"; [ -d "$tiny_dir" ] || tiny_dir="$home/subos/e-tiny"
-ls "$tiny_dir"/root/usr/lib/modules/6.12.112-virt/vmlinuz >/dev/null || fail "the virt kernel is not in the root"
+# Looked for from inside: a system in the /xlings domain links its files by
+# their paths there, which the host does not have.
+L run e-tiny -- /bin/sh -c 'ls /usr/lib/modules/*-virt/vmlinuz' >/dev/null || fail "the virt kernel is not in the root"
 
 log "boot it (qemu, xim:qemu-x86)"
 X install -y xim:qemu-x86 >/dev/null || fail "xim:qemu-x86"
