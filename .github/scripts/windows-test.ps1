@@ -216,7 +216,7 @@ foreach ($relFile in $files) {
     }
     # Luban's own packages are made, booted and checked by
     # luban-agent-workspace.yml, with the xlings they are written for.
-    if ($relFile -like "pkgs/luban/*") {
+    if (($relFile -replace '\\', '/') -like "pkgs/luban/*") {
         Log-Info "skip (a Luban package: luban-agent-workspace.yml tests it): $relFile"
         $skipped++
         continue
