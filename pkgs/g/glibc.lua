@@ -907,13 +907,18 @@ end
 
 -- Replace `file` with `content` through a temporary file in the same
 -- directory and a rename: a process running the old file keeps its inode,
--- and an interrupted write leaves the original in place. `cp -p` gives the
--- temporary file the original's mode, and opening it for writing truncates
--- it without changing that mode.
+-- and an interrupted write leaves the original in place. The temporary file
+-- is a copy given the original's mode -- executable or not, the payload's
+-- only two -- and opening it for writing truncates it without changing that
+-- mode. Not `cp -p`: preserving more than the mode (its ACL, its owner)
+-- fails with EINVAL in a user namespace that does not map them, as a
+-- system's store in a prefix domain is.
 function __replace_file(file, content)
     local tmp = file .. ".xlings-relocate"
     os.remove(tmp)
-    local ok = os.execute("cp -p " .. __sh_quote(file) .. " " .. __sh_quote(tmp))
+    local q, qt = __sh_quote(file), __sh_quote(tmp)
+    local ok = os.execute("cp " .. q .. " " .. qt .. " && { if [ -x " .. q .. " ]; then chmod 755 " .. qt
+        .. "; else chmod 644 " .. qt .. "; fi; }")
     if ok ~= true and ok ~= 0 then
         os.remove(tmp)
         raise("cannot copy " .. file .. " for relocation")
