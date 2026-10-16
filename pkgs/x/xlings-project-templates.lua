@@ -1,3 +1,15 @@
+-- One version table, which each platform names (a platform-level `ref` is
+-- not read by xlings before 2026.10.16.2).
+local versions = {
+    ["latest"] = {
+        url = {
+            ["GLOBAL"] = "https://github.com/d2learn/xlings-project-templates.git",
+            ["CN"] = "https://gitee.com/xlings-res/xlings-project-templates.git",
+        },
+        sha256 = nil,
+    },
+}
+
 package = {
     spec = "1",
     -- base info
@@ -18,16 +30,8 @@ package = {
     xvm_enable = true,
 
     xpm = {
-        linux = {
-            ["latest"] = {
-                url = {
-                    ["GLOBAL"] = "https://github.com/d2learn/xlings-project-templates.git",
-                    ["CN"] = "https://gitee.com/xlings-res/xlings-project-templates.git",
-                },
-                sha256 = nil,
-            },
-        },
-        windows = { ref = "linux" },
-        macosx = { ref = "linux" },
+        linux = versions,
+        windows = versions,
+        macosx = versions,
     }
 }

@@ -1,3 +1,16 @@
+-- The same files on every system: one version table, which each platform
+-- names (a platform-level `ref` is not read by xlings before 2026.10.16.2).
+local versions = {
+    ["latest"] = { ref = "2026.10.16" },
+    ["2026.10.16"] = {
+        url = {
+            GLOBAL = "https://github.com/xlings-res/luban-fonts/releases/download/2026.10.16/luban-fonts-2026.10.16.tar.gz",
+            CN     = "https://gitcode.com/xlings-res/luban-fonts/releases/download/2026.10.16/luban-fonts-2026.10.16.tar.gz",
+        },
+        sha256 = "f12eb7c0e69926583e092862b35c47ce2c91e639c73b2ed063971e99ac222d3f",
+    },
+}
+
 package = {
     spec = "1",
 
@@ -23,18 +36,9 @@ package = {
     -- The version is the date the set was chosen; tools/res/inputs.txt names
     -- each font's release and digest (tools/res/build.sh luban-fonts).
     xpm = {
-        linux = {
-            ["latest"] = { ref = "2026.10.16" },
-            ["2026.10.16"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/luban-fonts/releases/download/2026.10.16/luban-fonts-2026.10.16.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/luban-fonts/releases/download/2026.10.16/luban-fonts-2026.10.16.tar.gz",
-                },
-                sha256 = "f12eb7c0e69926583e092862b35c47ce2c91e639c73b2ed063971e99ac222d3f",
-            },
-        },
-        macosx = { ref = "linux" },
-        windows = { ref = "linux" },
+        linux = versions,
+        macosx = versions,
+        windows = versions,
     },
 }
 

@@ -34,7 +34,10 @@ class TestStatic:
     @pytest.mark.static
     def test_every_system_has_it(self):
         source = read(PKG_FILE)
-        assert 'macosx = { ref = "linux" }' in source and 'windows = { ref = "linux" }' in source
+        # One version table, which each platform names (a platform-level
+        # `ref` is read as a version named "ref" before xlings 2026.10.16.2).
+        for platform in ("linux", "macosx", "windows"):
+            assert f"{platform} = versions," in source, platform
         assert re.search(r'sha256 = "[0-9a-f]{64}"', source)
 
     @pytest.mark.static

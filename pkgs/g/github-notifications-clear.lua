@@ -1,5 +1,12 @@
 -- https://github.com/orgs/community/discussions/174283#discussioncomment-14533335
 
+-- One version table, which each platform names (a platform-level `ref` is
+-- not read by xlings before 2026.10.16.2).
+local versions = {
+    ["latest"] = { ref = "0.0.1" },
+    ["0.0.1"] = {},
+}
+
 package = {
     spec = "1",
 
@@ -18,12 +25,9 @@ package = {
     categories = { "tools", "github", "notifications" },
 
     xpm = {
-        linux = {
-            ["latest"] = { ref = "0.0.1" },
-            ["0.0.1"] = {},
-        },
-        windows = { ref = "linux" },
-        macosx = { ref = "linux" },
+        linux = versions,
+        windows = versions,
+        macosx = versions,
     },
 }
 
