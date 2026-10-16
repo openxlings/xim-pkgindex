@@ -183,6 +183,11 @@ class TestRevisionCheck:
         code, out = check(edit("revision = 2,", "revision = 3,"))
         assert code == 0, out
 
+    def test_min_client_is_not_part_of_the_resource(self):
+        # Which clients may use a version does not change what it downloads.
+        code, out = check(edit('sha256 = "aaaa",', 'sha256 = "aaaa",\n                min_client = "2026.10.16.1",'))
+        assert code == 0, out
+
     def test_revision_on_an_alias_fails(self):
         code, out = check(edit('["latest"] = { ref = "1.1.0" }',
                                '["latest"] = { ref = "1.1.0", revision = 1 }'))
