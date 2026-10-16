@@ -344,6 +344,21 @@ as inheritance from xlings 2026.10.16.2; earlier clients read its `ref` as a
 version named `ref`. The index therefore does not use either form for the
 three looked-up platforms (`tests/test_platform_table_reuse.py`).
 
+### `min_client` — the oldest client that can use a version
+
+A version entry may state the oldest xlings that can use it:
+
+```lua
+["2026.10.16.1"] = { min_client = "2026.10.16.1" },
+```
+
+A client from 2026.10.16.2 on, resolving a package with no version named,
+passes over the versions it cannot use and takes the newest one it can, saying
+so; a version named explicitly is still that version. A Luban edition states
+the same value as its manifest's `min_client`
+(`tests/l/test_luban_edition_min_client.py`); earlier clients read the
+manifest only, after fetching.
+
 ## Resolution order (install time, on the host)
 
 1. follow version `ref` (e.g. `latest → 4.0.2`) — unchanged;
