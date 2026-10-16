@@ -75,7 +75,7 @@ jobs:
         shell: pwsh
         run: |
           $env:XLINGS_NON_INTERACTIVE = "1"
-          $env:XLINGS_VERSION = "v2026.8.10.1"
+          $env:XLINGS_VERSION = "v2026.10.15.4"
           iex (Invoke-WebRequest `
             -Uri "https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.ps1" `
             -UseBasicParsing).Content

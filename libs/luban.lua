@@ -209,6 +209,9 @@ end
 -- home is its upstream, so the gcc and glibc the system has are borrowed and
 -- a first build downloads no toolchain. An mcpp before 2026.10.16.1 does not
 -- read /etc/mcpp.
+-- The default toolchain names its target: the system's gcc is the glibc
+-- one, which a bare gcc@16.1.0 does not name on aarch64 (mcpp's default
+-- there is musl).
 luban.MCPP_CONFIG = [[
 # mcpp in this Luban system: what the system has (its gcc, its glibc, in
 # /xlings) is used, not downloaded again; ~/.mcpp/config.toml wins.
@@ -217,10 +220,14 @@ upstream = ["/xlings"]
 
 [toolchain]
 default = "gcc@16.1.0"
+default_target = "%s-linux-gnu"
 ]]
 
 function luban.mcpp_config()
-    return { F .. "mcpp/config.toml", luban.MCPP_CONFIG }
+    local arch = (os.arch and os.arch()) or "x86_64"
+    if arch == "arm64" then arch = "aarch64" end
+    if arch == "x64" then arch = "x86_64" end
+    return { F .. "mcpp/config.toml", string.format(luban.MCPP_CONFIG, arch) }
 end
 
 -- A list of files, then more (a version's files are a recipe's plus its own).

@@ -80,7 +80,7 @@
   },
   "usr/share/factory/etc/mcpp/config.toml": {
    "mode": "644",
-   "sha256": "41b28957774c5857430313a1f7f2feac2babb541a909d5c2bf902963e83f24fe"
+   "sha256": "b7b4c493c7c4a4599d7c36733680ef34b8613b2c4a7fb0970f487d675b174a55"
   },
   "usr/share/factory/etc/os-release": {
    "mode": "644",
