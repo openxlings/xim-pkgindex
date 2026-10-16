@@ -120,7 +120,7 @@
  "pkgs/luban/luban-core.lua@2026.10.16.2": {
   ".xlings.json": {
    "mode": "644",
-   "sha256": "deb3a4d2911210620e11212944793eadec0751582663fc2cf389a9ba9f7a0d2d"
+   "sha256": "ea48aa64e6c53698f27769a3375c11965204edc7808c32a16542d5fcab99e2bd"
   },
   "usr/libexec/luban/command-not-found": {
    "mode": "755",

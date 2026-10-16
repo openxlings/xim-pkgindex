@@ -97,7 +97,7 @@ local versions = {
   "workspace": {}
 }
 ]], files = { { "usr/share/factory/etc/motd", MOTD } } },
-    -- On luban-core 2026.10.16.2 (mcpp 2026.10.16.2).
+    -- On luban-core 2026.10.16.2 (mcpp 2026.10.16.3).
     ["2026.10.16.2"] = { manifest = [[
 {
   "subos_kind": "rootfs",

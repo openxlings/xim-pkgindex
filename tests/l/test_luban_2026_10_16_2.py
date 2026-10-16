@@ -1,4 +1,4 @@
-"""The Luban editions of 2026.10.16.2: 2026.10.16.1 with mcpp 2026.10.16.2,
+"""The Luban editions of 2026.10.16.2: 2026.10.16.1 with mcpp 2026.10.16.3,
 which reads the system configuration's upstream (/xlings) and whose xlings
 builds its catalog inside a system, so that mcpp in a system borrows the
 system's gcc instead of downloading it (mcpp design 2026-10-16 §9.5)."""
@@ -20,7 +20,7 @@ def made(tmp_path, edition):
 @pytest.mark.static
 def test_core_carries_the_mcpp_that_reads_the_upstream(tmp_path):
     target, manifest = made(tmp_path, "core")
-    assert "xim:mcpp@2026.10.16.2" in manifest["packages"]
+    assert "xim:mcpp@2026.10.16.3" in manifest["packages"]
     assert manifest["from"] == "subos:luban-tiny@2026.10.16.1"
     config = (target / "usr/share/factory/etc/mcpp/config.toml").read_text()
     assert 'upstream = ["/xlings"]' in config
