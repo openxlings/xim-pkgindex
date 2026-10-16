@@ -27,7 +27,8 @@ local linux = package.xpm.linux
 local entry = assert(linux[linux.latest.ref], "latest names no version")
 for _, dep in ipairs(linux.deps) do
     local name = assert(dep:match("^xim:([^@]+)"), "dependency without the xim namespace: " .. dep)
-    local f = assert(io.open("pkgs/" .. name:sub(1, 1) .. "/" .. name .. ".lua"), "no recipe for " .. dep)
+    local f = io.open("pkgs/" .. name:sub(1, 1) .. "/" .. name .. ".lua") or io.open("pkgs/luban/" .. name .. ".lua")
+    assert(f, "no recipe for " .. dep)
     f:close()
 end
 for _, arch in ipairs({"x86_64", "aarch64"}) do

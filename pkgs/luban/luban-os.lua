@@ -23,7 +23,8 @@ package = {
     -- window, so unlike xlings and luban it is not static: it links glibc and
     -- X11 (through SDL), which these dependencies are, and an install patches
     -- it onto them. It drives the xlings and luban of the home it is installed
-    -- in. config() adds its desktop entry (~/.local/share/applications).
+    -- in. config() adds its desktop entry (~/.local/share/applications). Its
+    -- fonts are luban-fonts' (share/fonts/luban), on every system.
     programs = {"luban-os"},
     xvm_enable = true,
 
@@ -39,8 +40,15 @@ package = {
                 "xim:libXfixes",
                 "xim:libXi",
                 "xim:libXrandr",
+                "xim:luban-fonts",
             },
-            ["latest"] = { ref = "2026.10.15.4" },
+            ["latest"] = { ref = "2026.10.16.1" },
+            ["2026.10.16.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "4e40066176c879c8db819d6014918e18073612f56b4b8f603db190c15ec76ec2",
+                },
+            },
             ["2026.10.15.4"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -91,7 +99,14 @@ package = {
             },
         },
         macosx = {
-            ["latest"] = { ref = "2026.10.15.4" },
+            deps = { "xim:luban-fonts" },
+            ["latest"] = { ref = "2026.10.16.1" },
+            ["2026.10.16.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "05aeab5f02b2c91783cd2dc065245b81d7039266d0d3f90db0eb87414e42a4ec",
+                },
+            },
             ["2026.10.15.4"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -118,7 +133,14 @@ package = {
             },
         },
         windows = {
-            ["latest"] = { ref = "2026.10.15.4" },
+            deps = { "xim:luban-fonts" },
+            ["latest"] = { ref = "2026.10.16.1" },
+            ["2026.10.16.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "bce9b7e10735e44270e39bc1792b51308f493f4714a7506dc9612099eca4fb47",
+                },
+            },
             ["2026.10.15.4"] = {
                 url = "XLINGS_RES",
                 sha256 = {

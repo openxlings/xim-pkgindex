@@ -289,6 +289,24 @@ class TestBinaryRelocation:
 
     @needs_lua_relocate
     @pytest.mark.static
+    def test_a_relocated_file_keeps_its_mode_and_nothing_else_is_preserved(self, tmp_path):
+        """The copy takes the original's mode only: `cp -p` also preserved
+        its ACL and owner, which fail with EINVAL in a user namespace that
+        does not map them (a system's store in a prefix domain)."""
+        payload = tmp_path / "p"
+        (payload / "lib").mkdir(parents=True)
+        content = ELF_HEAD + PADDED + b"/lib/locale\0"
+        for name, mode in (("libc.so.6", 0o755), ("data.bin", 0o644)):
+            (payload / "lib" / name).write_bytes(content)
+            (payload / "lib" / name).chmod(mode)
+        result = _run("relocate", payload)
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert stat.S_IMODE((payload / "lib" / "libc.so.6").stat().st_mode) == 0o755
+        assert stat.S_IMODE((payload / "lib" / "data.bin").stat().st_mode) == 0o644
+        assert 'execute("cp -p' not in (REPO / PKG_FILE).read_text(encoding="utf-8")
+
+    @needs_lua_relocate
+    @pytest.mark.static
     def test_hard_links_are_each_relocated(self, tmp_path):
         payload = tmp_path / "p"
         (payload / "bin").mkdir(parents=True)

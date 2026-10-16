@@ -571,6 +571,35 @@ function __specs_interp_exists(gcc_bin, dynamic_linker)
     return true, nil
 end
 
+-- The specs file this gcc reads, or nil when it cannot say.
+function __specs_file(gcc_bin)
+    local libgcc = os.iorun(gcc_bin .. " -print-libgcc-file-name")
+    if not libgcc or libgcc:trim() == "" then return nil end
+    local specs = path.join(path.directory(libgcc:trim()), "specs")
+    return os.isfile(specs) and specs or nil
+end
+
+-- Can this process write the file? Opened for appending and closed: nothing
+-- is written, and its time does not change.
+function __writable(file)
+    local f = io.open(file, "a")
+    if not f then return false end
+    f:close()
+    return true
+end
+
+-- Compile a program in a private directory and run it. Returns ok, reason.
+function __builds_a_program_that_runs(gcc_bin)
+    local dir = path.join(os.getenv("TMPDIR") or "/tmp", "xlings-gcc-probe-" .. tostring(os.time()))
+    os.mkdir(dir)
+    local src, exe = path.join(dir, "probe.c"), path.join(dir, "probe")
+    io.writefile(src, "int main(void) { return 0; }\n")
+    local out = os.iorun(string.format("%s %s -o %s && %s && echo ran", __shq(gcc_bin), __shq(src), __shq(exe), __shq(exe)))
+    os.tryrm(dir)
+    if out and out:find("ran", 1, true) then return true, nil end
+    return false, "a program compiled with " .. gcc_bin .. " did not run"
+end
+
 function __rewrite_specs_linux(rpath, dynamic_linker)
     -- The "-payload" suffix versions the specs SCHEMA: pre-existing installs
     -- carry the old subos-form stamp, which no longer matches, so the next
@@ -580,6 +609,24 @@ function __rewrite_specs_linux(rpath, dynamic_linker)
         ".specs-rewritten-" .. pkginfo.version() .. "-payload.stamp"
     )
     local gcc_bin = path.join(pkginfo.install_dir(), "bin/gcc")
+
+    -- A payload this home borrows -- an upstream's, read-only here (xlings:
+    -- link entries, configured in the borrowing home) -- is its owner's. Its
+    -- specs stay as the owner wrote them (inside a Luban system they name the
+    -- system's /lib64 loader), and it is judged by what it builds here: a
+    -- program that runs. Writing them was refused, and was not this home's
+    -- to do.
+    local specs_file = __specs_file(gcc_bin)
+    if specs_file and not __writable(specs_file) then
+        local ok, why = __builds_a_program_that_runs(gcc_bin)
+        if ok then
+            log.info("gcc: a borrowed payload; its specs are its owner's, and a program it builds runs here")
+            return true
+        end
+        log.error("gcc: this borrowed payload does not build a program that runs here: %s", why)
+        log.error("  its owner repairs it (xlings install --reconfig gcc in %s's home)", pkginfo.install_dir())
+        return false
+    end
 
     -- The stamp is a cache, NOT the decision.
     --

@@ -12,8 +12,8 @@ from tests.lib.assertions import (
 )
 from tests.lib.platform_utils import project_root
 
-PKG_FILE = "pkgs/l/labwc-desktop.lua"
-EDITION_FILE = "pkgs/l/luban-desktop.lua"
+PKG_FILE = "pkgs/luban/labwc-desktop.lua"
+EDITION_FILE = "pkgs/luban/luban-desktop.lua"
 SESSION = "tools/res/labwc-desktop/share/wayland-sessions/labwc-desktop.desktop"
 
 

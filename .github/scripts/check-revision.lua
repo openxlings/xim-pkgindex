@@ -72,8 +72,9 @@ local PLATFORM_FIELDS = {
 }
 -- Fields of `xpm` that are not platform sections.
 local XPM_FIELDS = { source = true }
--- Fields of a version entry that are not part of what it downloads.
-local NON_RESOURCE = { revision = true, ref = true, deps = true }
+-- Fields of a version entry that are not part of what it downloads
+-- (`min_client`: which clients may use it, docs/specs/xpackage-v2.md).
+local NON_RESOURCE = { revision = true, ref = true, deps = true, min_client = true }
 
 -- ── git ────────────────────────────────────────────────────────────────
 local function sh_quote(s)

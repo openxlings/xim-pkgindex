@@ -32,6 +32,11 @@
 #   gcc           gcc on glibc, configured as x86_64's (fromsource:gcc),
 #                 against a sysroot xlings makes (glibc + linux-headers)
 #
+# Data, the same on every architecture (built once, <name>-<version>.tar.gz):
+#   terminfo        the terminal descriptions (ncurses' terminfo.src, compiled)
+#   adwaita-cursors GNOME's Adwaita cursor theme, and the default theme naming it
+#   luban-fonts     the fonts the Luban OS window ships with
+#
 # Runs on the machine of the target architecture (CI: ubuntu-24.04 and
 # ubuntu-24.04-arm). What it needs runs in a pinned container: the runner
 # needs docker and nothing else. Static builds use Alpine (musl); what is
@@ -98,6 +103,16 @@ pack() {    # directory under $work [contents only] -> $out/<name>-<version>-lin
     else
         tar --owner=0 --group=0 --numeric-owner --hard-dereference -czf "$file" -C "$work" "$1"
     fi
+    seal "$file"
+    python3 -c 'import sys, tarfile; sys.exit(any(m.islnk() for m in tarfile.open(sys.argv[1])))' "$file" \
+        || die "$file holds a hard link"
+}
+
+# A data resource: the same bytes for every architecture, so one archive
+# without an architecture in its name, its one directory <name>-<version>.
+pack_data() {   # directory under $work -> $out/<name>-<version>.tar.gz
+    local file="$out/$what-$version.tar.gz"
+    tar --owner=0 --group=0 --numeric-owner --hard-dereference --sort=name --mtime=@0 -czf "$file" -C "$work" "$1"
     seal "$file"
     python3 -c 'import sys, tarfile; sys.exit(any(m.islnk() for m in tarfile.open(sys.argv[1])))' "$file" \
         || die "$file holds a hard link"
@@ -619,6 +634,132 @@ labwc-desktop)
     rm -f "$work/shot.ppm"
     provenance "$d" "labwc-desktop $version: Alpine 3.20 packages $(tr '\n' ' ' < "$work/versions")-- repackaged with the musl loader and the libraries they link (libexec/lib, private), run through bin/<program>; configuration and the session file from xim-pkgindex tools/res/labwc-desktop; a headless session in Debian 12 drew its background and panel"
     pack "$d" ;;
+terminfo)
+    # The terminal descriptions a root has (xlings design 2026-10-16 L §10):
+    # ncurses' terminfo.src at a snapshot, compiled whole with tic, plus the
+    # names kitty and Ghostty set in $TERM (xterm-kitty, xterm-ghostty) for
+    # the entries ncurses calls kitty and ghostty. share/terminfo/<letter>/.
+    tag="v${version%.*}_${version##*.}"; tag="${tag//./_}"
+    source_of ncurses-terminfo.src "$version" \
+        "https://raw.githubusercontent.com/ThomasDickey/ncurses-snapshots/$tag/misc/terminfo.src" "$work/terminfo.src"
+    printf '%s\n' "xterm-kitty|the name kitty sets in TERM," "	use=kitty," \
+                  "xterm-ghostty|the name Ghostty sets in TERM," "	use=ghostty," > "$work/names.src"
+    d="terminfo-$version"
+    alpine "apk add -q ncurses && mkdir -p /w/$d/share/terminfo \
+        && cat terminfo.src names.src > all.src && tic -x -o /w/$d/share/terminfo all.src"
+    for t in x/xterm x/xterm-256color s/screen-256color t/tmux-256color l/linux v/vt100 d/dumb \
+             a/alacritty k/kitty x/xterm-kitty f/foot w/wezterm g/ghostty x/xterm-ghostty; do
+        [[ -f "$work/$d/share/terminfo/$t" ]] || die "no terminfo for ${t#*/}"
+    done
+    mkdir -p "$work/$d/share/licenses/terminfo"
+    # Its terms are the file's own header (the MIT-style ncurses license).
+    head -60 "$work/terminfo.src" > "$work/$d/share/licenses/terminfo/COPYING"
+    provenance "$d" "terminfo $version: ncurses-snapshots $tag misc/terminfo.src (sha256 $(input ncurses-terminfo.src "$version")) and xterm-kitty, xterm-ghostty naming kitty and ghostty; compiled with tic -x (Alpine 3.20's ncurses)"
+    pack_data "$d" ;;
+adwaita-cursors)
+    # The cursor theme a desktop root has (L §10): the Xcursor files of GNOME's
+    # Adwaita icon theme (24 to 96 pixels), the X11 names an X client asks for
+    # as links to the CSS names it ships, and the `default` theme inheriting
+    # it -- what a client that names no theme gets. Windows' .cur and .ani
+    # are left out.
+    source_of adwaita-icon-theme "$version" \
+        "https://download.gnome.org/sources/adwaita-icon-theme/${version%%.*}/adwaita-icon-theme-$version.tar.xz" "$work/src.tar.xz"
+    d="adwaita-cursors-$version"; c="$work/$d/share/icons/Adwaita/cursors"
+    mkdir -p "$c" "$work/$d/share/icons/default" "$work/$d/share/licenses/adwaita-cursors"
+    tar -xJf "$work/src.tar.xz" -C "$work"
+    src="$work/adwaita-icon-theme-$version"
+    find "$src/Adwaita/cursors" -maxdepth 1 -type f ! -name '*.cur' ! -name '*.ani' -exec cp {} "$c/" \;
+    while read -r legacy css; do
+        [[ -e "$c/$css" ]] || die "no $css cursor for $legacy"
+        [[ -e "$c/$legacy" ]] || ln -s "$css" "$c/$legacy"
+    done <<'NAMES'
+left_ptr default
+arrow default
+top_left_arrow default
+xterm text
+ibeam text
+hand1 pointer
+hand2 pointer
+pointing_hand pointer
+watch wait
+left_ptr_watch progress
+half-busy progress
+question_arrow help
+whats_this help
+crossed_circle not-allowed
+circle not-allowed
+forbidden not-allowed
+fleur all-scroll
+move grabbing
+size_all all-scroll
+openhand grab
+closedhand grabbing
+dnd-move grabbing
+dnd-copy copy
+dnd-link alias
+dnd-none no-drop
+cross crosshair
+tcross crosshair
+plus cell
+sb_h_double_arrow ew-resize
+sb_v_double_arrow ns-resize
+h_double_arrow ew-resize
+v_double_arrow ns-resize
+size_hor ew-resize
+size_ver ns-resize
+size_fdiag nwse-resize
+size_bdiag nesw-resize
+fd_double_arrow nwse-resize
+bd_double_arrow nesw-resize
+split_h col-resize
+split_v row-resize
+top_left_corner nw-resize
+top_right_corner ne-resize
+bottom_left_corner sw-resize
+bottom_right_corner se-resize
+top_side n-resize
+bottom_side s-resize
+left_side w-resize
+right_side e-resize
+NAMES
+    printf '%s\n' "[Icon Theme]" "Name=Adwaita" "Comment=The Adwaita cursors" > "$work/$d/share/icons/Adwaita/cursor.theme"
+    printf '%s\n' "[Icon Theme]" "Name=Default" "Comment=The cursor theme of a client that names none" "Inherits=Adwaita" \
+        > "$work/$d/share/icons/default/index.theme"
+    cp "$src/COPYING" "$src/COPYING_LGPL" "$src/COPYING_CCBYSA3" "$work/$d/share/licenses/adwaita-cursors/"
+    for n in default text pointer wait progress; do
+        file -L "$c/$n" | grep -q "X11 cursor" || die "$n is not an Xcursor file"
+    done
+    provenance "$d" "Adwaita cursors $version: download.gnome.org adwaita-icon-theme-$version.tar.xz (sha256 $(input adwaita-icon-theme "$version")), Adwaita/cursors without .cur/.ani; X11 names linked to the CSS names; icons/default inherits Adwaita"
+    pack_data "$d" ;;
+luban-fonts)
+    # The fonts the Luban OS window ships with (L §13): the console's
+    # monospace (JetBrains Mono; Sarasa Mono SC for CJK, two cells wide), the
+    # text's sans (Inter; Noto Sans SC for CJK) and the titles' pixel font
+    # (Fusion Pixel 12px, Simplified Chinese). share/fonts/luban, every one
+    # under the SIL Open Font License 1.1.
+    d="luban-fonts-$version"; f="$work/$d/share/fonts/luban"; l="$work/$d/share/licenses/luban-fonts"
+    mkdir -p "$f" "$l"
+    source_of jetbrains-mono 2.304 "https://github.com/JetBrains/JetBrainsMono/releases/download/v2.304/JetBrainsMono-2.304.zip" "$work/jb.zip"
+    source_of inter 4.1 "https://github.com/rsms/inter/releases/download/v4.1/Inter-4.1.zip" "$work/inter.zip"
+    source_of sarasa-mono-sc 1.0.42 "https://github.com/be5invis/Sarasa-Gothic/releases/download/v1.0.42/SarasaMonoSC-TTF-1.0.42.7z" "$work/sarasa.7z"
+    source_of sarasa-license 1.0.42 "https://raw.githubusercontent.com/be5invis/Sarasa-Gothic/v1.0.42/LICENSE" "$work/sarasa.LICENSE"
+    source_of noto-sans-sc 2.004 "https://raw.githubusercontent.com/notofonts/noto-cjk/Sans2.004/Sans/SubsetOTF/SC/NotoSansSC-Regular.otf" "$work/NotoSansSC-Regular.otf"
+    source_of noto-license 2.004 "https://raw.githubusercontent.com/notofonts/noto-cjk/Sans2.004/LICENSE" "$work/noto.LICENSE"
+    source_of fusion-pixel-font 2026.09.25 "https://github.com/TakWolf/fusion-pixel-font/releases/download/2026.09.25/fusion-pixel-font-12px-proportional-ttf-v2026.09.25.zip" "$work/fusion.zip"
+    alpine "apk add -q 7zip unzip \
+        && unzip -q -j jb.zip fonts/ttf/JetBrainsMono-Regular.ttf fonts/ttf/JetBrainsMono-Bold.ttf OFL.txt -d jb \
+        && unzip -q -j inter.zip extras/ttf/Inter-Regular.ttf LICENSE.txt -d inter \
+        && unzip -q -j fusion.zip fusion-pixel-12px-proportional-zh_hans.ttf OFL.txt -d fusion \
+        && 7z e -bd -y -osarasa sarasa.7z SarasaMonoSC-Regular.ttf SarasaMonoSC-Bold.ttf >/dev/null"
+    cp "$work/jb/JetBrainsMono-Regular.ttf" "$work/jb/JetBrainsMono-Bold.ttf" "$work/inter/Inter-Regular.ttf" \
+       "$work/fusion/fusion-pixel-12px-proportional-zh_hans.ttf" "$work/sarasa/SarasaMonoSC-Regular.ttf" \
+       "$work/sarasa/SarasaMonoSC-Bold.ttf" "$work/NotoSansSC-Regular.otf" "$f/"
+    cp "$work/jb/OFL.txt" "$l/JetBrainsMono-OFL.txt"; cp "$work/inter/LICENSE.txt" "$l/Inter-OFL.txt"
+    cp "$work/fusion/OFL.txt" "$l/FusionPixel-OFL.txt"; cp "$work/sarasa.LICENSE" "$l/SarasaGothic-OFL.txt"
+    cp "$work/noto.LICENSE" "$l/NotoSansCJK-OFL.txt"
+    for x in "$f"/*; do file -b "$x" | grep -Eq "TrueType|OpenType" || die "$(basename "$x") is not a font: $(file -b "$x")"; done
+    provenance "$d" "luban-fonts $version: JetBrains Mono 2.304 (Regular, Bold), Inter 4.1 (Regular), Sarasa Mono SC 1.0.42 (Regular, Bold), Noto Sans SC 2.004 (Regular, subset OTF), Fusion Pixel 12px proportional zh_hans 2026.09.25 -- from their GitHub releases, digests in tools/res/inputs.txt; licenses in share/licenses/luban-fonts"
+    pack_data "$d" ;;
 *)
     die "unknown resource: $what" ;;
 esac

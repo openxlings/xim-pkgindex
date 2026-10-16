@@ -27,10 +27,11 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "2026.10.15.1" },
+            ["latest"] = { ref = "2026.10.16.1" },
             ["0.1.0"] = {},
             ["2026.10.13.1"] = {},
             ["2026.10.15.1"] = {},
+            ["2026.10.16.1"] = {},
         },
     },
 }
@@ -67,6 +68,12 @@ local versions = {
     ["2026.10.15.1"] = {
         manifest = luban_desktop.manifest(aarch64 and "aarch64" or "x86_64", "subos:luban-core@2026.10.15.1"),
         files = luban_desktop.files(aarch64 and "labwc-desktop" or "xdesk-classic"),
+    },
+    -- On Luban Core 2026.10.16.1 (terminfo, the not-found hint, mcpp's
+    -- system configuration): a default cursor theme, and its checks.
+    ["2026.10.16.1"] = {
+        manifest = luban_desktop.manifest(aarch64 and "aarch64" or "x86_64", "subos:luban-core@2026.10.16.1", luban_desktop.since_2026_10_16),
+        files = luban_desktop.files(aarch64 and "labwc-desktop" or "xdesk-classic", { luban.checks("desktop", luban_desktop.CHECKS) }),
     },
 }
 

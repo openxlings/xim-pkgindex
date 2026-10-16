@@ -11,8 +11,8 @@ import pytest
 from tests.lib.luban_recipe import run_recipe
 
 ROOT = Path(__file__).resolve().parents[2]
-CLASSIC = ROOT / "pkgs/l/luban-desktop.lua"
-CANVAS = ROOT / "pkgs/l/luban-desktop-xdesk.lua"
+CLASSIC = ROOT / "pkgs/luban/luban-desktop.lua"
+CANVAS = ROOT / "pkgs/luban/luban-desktop-xdesk.lua"
 VERSION = "2026.10.13.1"
 
 # What a desktop is ready with: the tools people reach for.

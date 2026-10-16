@@ -134,6 +134,118 @@ exit 0
     }
 end
 
+-- What an edition declares about itself, checked when a system is made,
+-- upgraded, booted and entered and on `luban status --check` (xlings design
+-- 2026-10-16 L §11): usr/share/luban/checks.d/<id>.json. Each check is a
+-- /bin/sh command inside the system; a critical one that fails stops what
+-- was under way. `checks` is the JSON text, as published.
+function luban.checks(id, checks)
+    return { "usr/share/luban/checks.d/" .. id .. ".json", checks }
+end
+
+-- A command that is not there (L §10): the shells' not-found hooks ask one
+-- helper, which says whether a package of that name is in the index and
+-- which command here is a typo or two away (xlnigs -> xlings).
+luban.COMMAND_NOT_FOUND = [==[
+#!/bin/sh
+# A command that is not here (Luban): say so, then what it may be -- a
+# package of that name in the index (xlings install), or a command here a
+# typo or two away. Called by the shells' not-found hooks; exits 127.
+cmd="$1"
+printf '%s: command not found\n' "$cmd" >&2
+[ -n "$cmd" ] || exit 127
+case "$cmd" in */*) exit 127 ;; esac
+if command -v xlings >/dev/null 2>&1 && xlings info "$cmd" >/dev/null 2>&1; then
+    printf '  a package has it: xlings install %s\n' "$cmd" >&2
+fi
+near="$(
+    IFS=:
+    for d in $PATH; do [ -d "$d" ] && ls "$d" 2>/dev/null; done | sort -u | awk -v w="$cmd" '
+    function dist(a, b,    la, lb, i, j, c, d, x, y, z, prev, cur, k) {
+        la = length(a); lb = length(b)
+        for (j = 0; j <= lb; j++) prev[j] = j
+        for (i = 1; i <= la; i++) {
+            cur[0] = i
+            for (j = 1; j <= lb; j++) {
+                c = (substr(a, i, 1) == substr(b, j, 1)) ? 0 : 1
+                x = prev[j] + 1; y = cur[j - 1] + 1; z = prev[j - 1] + c
+                d = x < y ? x : y; cur[j] = d < z ? d : z
+                # A swap of two neighbours counts once (xlnigs -> xlings).
+                if (i > 1 && j > 1 && substr(a, i, 1) == substr(b, j - 1, 1) && substr(a, i - 1, 1) == substr(b, j, 1) && pp[j - 2] + 1 < cur[j]) cur[j] = pp[j - 2] + 1
+            }
+            for (k = 0; k <= lb; k++) { pp[k] = prev[k]; prev[k] = cur[k] }
+        }
+        return prev[lb]
+    }
+    { gap = length($0) - length(w) }
+    length($0) > 1 && $0 != w && gap >= -2 && gap <= 2 {
+        n = dist(w, $0); if (n <= 2) print n " " $0
+    }' | sort -n | head -3 | awk '{ printf "%s%s", (NR > 1 ? ", " : ""), $2 }'
+)"
+[ -n "$near" ] && printf '  did you mean: %s\n' "$near" >&2
+exit 127
+]==]
+
+function luban.command_not_found()
+    return {
+        { "usr/libexec/luban/command-not-found", luban.COMMAND_NOT_FOUND, "755" },
+        { "usr/share/fish/vendor_functions.d/fish_command_not_found.fish", [[
+# Luban: what a command that is not here may be (/usr/libexec/luban/command-not-found).
+function fish_command_not_found
+    /usr/libexec/luban/command-not-found $argv[1]
+end
+]] },
+        { F .. "profile.d/luban-command-not-found.sh", [[
+# Luban: what a command that is not here may be, in bash (fish has its own
+# hook; /usr/libexec/luban/command-not-found answers both).
+if [ -n "$BASH_VERSION" ]; then
+    command_not_found_handle() { /usr/libexec/luban/command-not-found "$1"; }
+fi
+]] },
+    }
+end
+
+-- mcpp in a Luban system (mcpp design 2026-10-16 §9.5): the system's own
+-- home is its upstream, so the gcc and glibc the system has are borrowed and
+-- a first build downloads no toolchain. An mcpp before 2026.10.16.1 does not
+-- read /etc/mcpp.
+-- The default toolchain names its target: the system's gcc is the glibc
+-- one, which a bare gcc@16.1.0 does not name on aarch64 (mcpp's default
+-- there is musl).
+luban.MCPP_CONFIG = [[
+# mcpp in this Luban system: what the system has (its gcc, its glibc, in
+# /xlings) is used, not downloaded again; ~/.mcpp/config.toml wins.
+[xlings]
+upstream = ["/xlings"]
+
+[toolchain]
+default = "gcc@16.1.0"
+default_target = "%s-linux-gnu"
+]]
+
+function luban.mcpp_config()
+    local arch = (os.arch and os.arch()) or "x86_64"
+    if arch == "arm64" then arch = "aarch64" end
+    if arch == "x64" then arch = "x86_64" end
+    return { F .. "mcpp/config.toml", string.format(luban.MCPP_CONFIG, arch) }
+end
+
+-- A list of files, then more (a version's files are a recipe's plus its own).
+function luban.with(files, ...)
+    local out = {}
+    for _, f in ipairs(files) do table.insert(out, f) end
+    for _, more in ipairs({ ... }) do
+        if #more == 0 then
+            -- nothing more
+        elseif type(more[1]) == "table" then
+            for _, f in ipairs(more) do table.insert(out, f) end
+        else
+            table.insert(out, more)
+        end
+    end
+    return out
+end
+
 function luban.edition(spec)
     local version = pkginfo.version()
     local this = spec.versions[version]

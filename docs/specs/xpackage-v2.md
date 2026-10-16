@@ -321,6 +321,44 @@ single hashes and per-arch resource maps remain valid. `res = true` is a
 legacy input for the same official resource URL and should not be added to new
 recipes.
 
+### Platforms that share their versions
+
+The client looks up the section of its own platform (`linux`, `macosx`,
+`windows`). When several platforms carry the same versions, the recipe defines
+one version table before `package` and each section names it:
+
+```lua
+local versions = {
+    ["latest"] = { ref = "1.0.0" },
+    ["1.0.0"] = { url = "https://...", sha256 = "<hash>" },
+}
+
+package = {
+    ...
+    xpm = { linux = versions, macosx = versions, windows = versions },
+}
+```
+
+A section written as `{ ref = "linux" }` or `{ inherits = "linux" }` is read
+as inheritance from xlings 2026.10.16.2; earlier clients read its `ref` as a
+version named `ref`. The index therefore does not use either form for the
+three looked-up platforms (`tests/test_platform_table_reuse.py`).
+
+### `min_client` — the oldest client that can use a version
+
+A version entry may state the oldest xlings that can use it:
+
+```lua
+["2026.10.16.1"] = { min_client = "2026.10.16.1" },
+```
+
+A client from 2026.10.16.2 on, resolving a package with no version named,
+passes over the versions it cannot use and takes the newest one it can, saying
+so; a version named explicitly is still that version. A Luban edition states
+the same value as its manifest's `min_client`
+(`tests/l/test_luban_edition_min_client.py`); earlier clients read the
+manifest only, after fetching.
+
 ## Resolution order (install time, on the host)
 
 1. follow version `ref` (e.g. `latest → 4.0.2`) — unchanged;

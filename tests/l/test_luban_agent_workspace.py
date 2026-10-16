@@ -8,7 +8,7 @@ from tests.lib.assertions import assert_xim_add_succeeds
 @pytest.mark.static
 def test_the_workspace_declares_its_policy_and_its_tools(tmp_path):
     target = tmp_path / "ws"
-    result = run_recipe("pkgs/l/luban-agent-workspace.lua", target, "2026.10.11.1")
+    result = run_recipe("pkgs/luban/luban-agent-workspace.lua", target, "2026.10.11.1")
     assert result.returncode == 0, result.stderr
     manifest = json.loads((target / ".xlings.json").read_text())
     assert manifest["from"] == "subos:luban-core@2026.10.11.1"
@@ -22,4 +22,4 @@ def test_the_workspace_declares_its_policy_and_its_tools(tmp_path):
 
 @pytest.mark.index
 def test_index():
-    assert_xim_add_succeeds("pkgs/l/luban-agent-workspace.lua")
+    assert_xim_add_succeeds("pkgs/luban/luban-agent-workspace.lua")

@@ -214,6 +214,13 @@ foreach ($relFile in $files) {
         $skipped++
         continue
     }
+    # Luban's own packages are made, booted and checked by
+    # luban-agent-workspace.yml, with the xlings they are written for.
+    if (($relFile -replace '\\', '/') -like "pkgs/luban/*") {
+        Log-Info "skip (a Luban package: luban-agent-workspace.yml tests it): $relFile"
+        $skipped++
+        continue
+    }
 
     Log-Step "Parsing meta: $relFile"
     $metaJson = python "$WorkspaceRoot\.github\scripts\parse-xpkg-meta.py" $luaFile

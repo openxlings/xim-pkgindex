@@ -267,3 +267,21 @@ class TestVerify:
     def test_gcc(self):
         assert_command_output("gcc --version | head -1", contains="gcc")
 
+
+
+class TestBorrowedPayload:
+    """借来的 payload（上游 home 的、在本 home 只读）由其所有者配置。
+
+    2026-10-16 实测：Luban 系统内 mcpp 的 registry 以 `/xlings` 为上游，链接系统的
+    gcc；配置 hook 要求 specs 写明 registry 视角的 glibc 加载器，于是改写上游的
+    specs，写入被拒绝，安装失败。只读的 payload 不改写 specs，以它在本 home
+    编译出的程序能否运行来判断。
+    """
+
+    @pytest.mark.static
+    def test_a_read_only_payload_is_judged_by_what_it_builds(self):
+        src = open(PKG_FILE, encoding='utf-8').read()
+        rewrite = src.split('function __rewrite_specs_linux')[1]
+        guard = rewrite.index('not __writable(specs_file)')
+        assert guard < rewrite.index('gcc-specs-config'), "只读判断必须在改写之前"
+        assert '__builds_a_program_that_runs(gcc_bin)' in rewrite

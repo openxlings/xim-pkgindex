@@ -123,7 +123,9 @@ jobs:
             # Stage only the package file we just bumped — any other
             # workspace artifact (e.g. CI byproducts) stays out of the
             # commit on principle.
-            pkg_file="pkgs/${pkg:0:1}/${pkg}.lua"
+            # A package is pkgs/<first letter>/<name>.lua, or under a
+            # directory of its own kind (pkgs/luban/).
+            pkg_file="$(git ls-files "pkgs/*/${pkg}.lua" | head -1)"
             git add "$pkg_file"
             git commit -m "auto: bump ${pkg} ${current} -> ${upstream}"
             git push origin "${branch}"
