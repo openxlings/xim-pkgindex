@@ -2,7 +2,7 @@
 # Luban editions from this checkout, used for real (xlings: Luban OS design
 # part 2 §2; the aarch64 design §5): nano, tiny, tiny-musl and core are made
 # and entered on this machine's architecture -- core builds and runs a C++23
-# program with its own gcc -- and on x86_64 the desktop edition is made and
+# program with its own gcc, and mcpp builds one with that gcc -- and on x86_64 the desktop edition is made and
 # runs dsh in its root, and tiny is exported as a live ISO by
 # its boot profile (virt: the 6.12 LTS virt kernel and limine from xlings-res)
 # and boots under qemu (xim:qemu-x86, from the index) to its init. The
@@ -56,8 +56,18 @@ L run e-core -- /bin/sh -c 'cd /tmp && printf "import std;\nint main(){ std::pri
 L run e-core -- /bin/sh -c 'git --version && gh --version && vim --version | head -1 && fish --version && make --version | head -1' \
     || fail "core: its tools"
 
+# mcpp in the system builds with the system's gcc: /etc/mcpp/config.toml names
+# /xlings as its upstream, so the toolchain is linked, not downloaded (mcpp
+# design 2026-10-16 §9.5).
+log "core: mcpp builds and runs a project with the system's gcc ($arch)"
+L run e-core -- /bin/sh -c 'cd /tmp && rm -rf hm && mcpp new hm >/dev/null && cd hm && mcpp build > build.log 2>&1; r=$?; cat build.log; [ $r -eq 0 ] || exit $r
+    mcpp run | grep -q "Hello from hm" || exit 1
+    if grep -q "Downloading xim:gcc" build.log; then echo "the system gcc was downloaded again"; exit 1; fi
+    gcc=$(ls -d "$HOME"/.mcpp/registry/data/xpkgs/xim-x-gcc/16.1.0) && [ -L "$gcc" ] && readlink "$gcc" | grep -q "^/xlings/"' \
+    | tee "$home/core-mcpp.out" || fail "core: mcpp with the system's gcc"
+
 if [[ "$arch" != x86_64 ]]; then
-    echo "PASS ($arch): nano, tiny, tiny-musl, core made and entered; core builds C++23"
+    echo "PASS ($arch): nano, tiny, tiny-musl, core made and entered; core builds C++23, and mcpp builds with its gcc"
     exit 0
 fi
 
@@ -90,4 +100,4 @@ done
 kill -- "-$pid" 2>/dev/null || kill "$pid" 2>/dev/null || true
 tr -d '\r' < "$console" | grep -aq "Linux version 6.12.112-virt" || { tail -30 "$console"; fail "not the virt kernel"; }
 tr -d '\r' < "$console" | grep -aq "Please press Enter to activate this console" || { tail -30 "$console"; fail "did not reach its init"; }
-echo "PASS: nano, tiny, tiny-musl, core made and entered; core builds C++23; desktop runs dsh in its root; tiny's ISO boots the virt kernel to its init"
+echo "PASS: nano, tiny, tiny-musl, core made and entered; core builds C++23, and mcpp builds with its gcc; desktop runs dsh in its root; tiny's ISO boots the virt kernel to its init"
