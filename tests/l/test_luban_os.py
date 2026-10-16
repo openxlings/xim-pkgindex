@@ -11,7 +11,7 @@ from tests.lib.assertions import (
 )
 from tests.lib.platform_utils import project_root
 
-PKG_FILE = "pkgs/l/luban-os.lua"
+PKG_FILE = "pkgs/luban/luban-os.lua"
 
 
 @pytest.fixture(scope="module")

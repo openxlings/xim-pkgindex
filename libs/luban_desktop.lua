@@ -44,12 +44,16 @@ function M.packages(arch)
     return out
 end
 
-function M.manifest(arch, from)
+-- `more`: what a version adds (its packages, its min_client); a published
+-- version's manifest is written as it was.
+function M.manifest(arch, from, more)
+    more = more or {}
     local lines = {}
     for _, p in ipairs(M.packages(arch)) do table.insert(lines, '    "' .. p .. '"') end
+    for _, p in ipairs(more.packages or {}) do table.insert(lines, '    "' .. p .. '"') end
     return '{\n'
         .. '  "subos_kind": "rootfs",\n'
-        .. '  "min_client": "2026.10.13.1",\n'
+        .. '  "min_client": "' .. (more.min_client or "2026.10.13.1") .. '",\n'
         .. '  "from": "' .. from .. '",\n'
         .. '  "abi": { "kernel": "linux", "libc": "gnu" },\n'
         .. '  "packages": [\n' .. table.concat(lines, ",\n") .. '\n  ],\n'
@@ -85,13 +89,28 @@ local gitconfig = [[
 	rebase = false
 ]]
 
-function M.files(session)
-    return {
+function M.files(session, more)
+    local out = {
         -- Runs as a machine and starts this session (luban config <n> --desktop changes it).
         { "usr/share/luban/settings.json", '{ "mode": "machine", "desktop": "' .. session .. '" }\n' },
         { "usr/share/factory/etc/profile.d/luban-registries.sh", registries },
         { "usr/share/factory/etc/gitconfig", gitconfig },
     }
+    for _, f in ipairs(more or {}) do table.insert(out, f) end
+    return out
 end
+
+-- What a desktop version from 2026.10.16.1 adds (xlings design 2026-10-16
+-- L §10, §11): a default cursor theme, and its checks.
+M.since_2026_10_16 = {
+    packages = { "xim:adwaita-cursors@49.0" },
+    min_client = "2026.10.16.1",
+}
+M.CHECKS = [[
+{"checks": [
+  {"id": "desktop-applications", "what": "its launcher lists foot and nvim", "run": "ls /usr/share/applications | grep -q '^foot' && ls /usr/share/applications | grep -qi nvim", "timeout": 10},
+  {"id": "desktop-cursors", "what": "a cursor theme is the default", "run": "grep -q '^Inherits=' /usr/share/icons/default/index.theme && test -e /usr/share/icons/Adwaita/cursors/left_ptr", "timeout": 10}
+]}
+]]
 
 return M

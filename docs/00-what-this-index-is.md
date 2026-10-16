@@ -11,6 +11,7 @@ keep them installable. Browse it at [index.xlings.org](https://index.xlings.org)
 | Path | What |
 |---|---|
 | `pkgs/<letter>/<name>.lua` | one recipe per package (an xpkg: metadata, a platform–version resource matrix, hooks) |
+| `pkgs/luban/<name>.lua` | the packages that exist only for Luban: its editions, boot profiles, `luban-os`, `xdesk`, `labwc-desktop`, `luban-fonts` |
 | `libs/` | Lua modules recipes share (`sysroot`, `relocate`, `graphics`, `luban`, ...) |
 | `tests/` | pytest suites mirroring `pkgs/`, plus repository-wide checks |
 | `tools/res/` | the build factory for resources this index builds itself |

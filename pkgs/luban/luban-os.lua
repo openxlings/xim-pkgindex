@@ -23,7 +23,8 @@ package = {
     -- window, so unlike xlings and luban it is not static: it links glibc and
     -- X11 (through SDL), which these dependencies are, and an install patches
     -- it onto them. It drives the xlings and luban of the home it is installed
-    -- in. config() adds its desktop entry (~/.local/share/applications).
+    -- in. config() adds its desktop entry (~/.local/share/applications). Its
+    -- fonts are luban-fonts' (share/fonts/luban), on every system.
     programs = {"luban-os"},
     xvm_enable = true,
 
@@ -39,6 +40,7 @@ package = {
                 "xim:libXfixes",
                 "xim:libXi",
                 "xim:libXrandr",
+                "xim:luban-fonts",
             },
             ["latest"] = { ref = "2026.10.15.4" },
             ["2026.10.15.4"] = {
@@ -91,6 +93,7 @@ package = {
             },
         },
         macosx = {
+            deps = { "xim:luban-fonts" },
             ["latest"] = { ref = "2026.10.15.4" },
             ["2026.10.15.4"] = {
                 url = "XLINGS_RES",
@@ -118,6 +121,7 @@ package = {
             },
         },
         windows = {
+            deps = { "xim:luban-fonts" },
             ["latest"] = { ref = "2026.10.15.4" },
             ["2026.10.15.4"] = {
                 url = "XLINGS_RES",

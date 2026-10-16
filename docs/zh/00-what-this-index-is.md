@@ -11,6 +11,7 @@ xim-pkgindex 是 [xlings](https://github.com/openxlings/xlings) 的官方包索�
 | 路径 | 内容 |
 |---|---|
 | `pkgs/<首字母>/<name>.lua` | 每个包一个配方（xpkg：元数据、平台—版本资源矩阵、钩子） |
+| `pkgs/luban/<name>.lua` | 只为 Luban 存在的包：各 edition、启动配置、`luban-os`、`xdesk`、`labwc-desktop`、`luban-fonts` |
 | `libs/` | 配方共用的 Lua 模块（`sysroot`、`relocate`、`graphics`、`luban` 等） |
 | `tests/` | 与 `pkgs/` 一一对应的 pytest 测试，以及全仓库的检查 |
 | `tools/res/` | 本索引自己构建的资源所用的构建工厂 |

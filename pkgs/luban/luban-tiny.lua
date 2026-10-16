@@ -32,9 +32,10 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "2026.10.11.1" },
+            ["latest"] = { ref = "2026.10.16.1" },
             ["0.1.0"] = {},
             ["2026.10.11.1"] = {},
+            ["2026.10.16.1"] = {},
         },
     },
 }
@@ -74,6 +75,31 @@ local versions = {
     "xim:glibc@2.44.3",
     "xim:patchelf@0.18.0",
     "xim:ca-certificates@2026.03.19"
+  ],
+  "boot": { "init": "/sbin/init", "profile": "xim:luban-boot-generic@2026.10.11.1",
+            "kernel": "xim:linux-kernel@6.8.0-71", "kernel_min": "5.10" },
+  "workspace": {}
+}
+]] },
+    -- The terminals a person enters from are described (terminfo), and the
+    -- system checks itself (usr/share/luban/checks.d; xlings 2026.10.16.1).
+    ["2026.10.16.1"] = { files = luban.with(luban.busybox_machine("luban-init"), luban.checks("tiny", [[
+{"checks": [
+  {"id": "tiny-shell", "what": "its shell runs a pipeline", "run": "echo luban | grep -q luban", "critical": true, "timeout": 10},
+  {"id": "tiny-terminfo", "what": "the usual terminals are described", "run": "for t in x/xterm-256color l/linux s/screen-256color t/tmux-256color; do test -f /usr/share/terminfo/$t || exit 1; done", "timeout": 10}
+]}
+]])), manifest = [[
+{
+  "subos_kind": "rootfs",
+  "min_client": "2026.10.16.1",
+  "from": "subos:luban-nano@2026.10.11.1",
+  "abi": { "kernel": "linux", "libc": "gnu" },
+  "packages": [
+    "xim:busybox@1.35.0",
+    "xim:glibc@2.44.3",
+    "xim:patchelf@0.18.0",
+    "xim:ca-certificates@2026.03.19",
+    "xim:terminfo@6.6.20261010"
   ],
   "boot": { "init": "/sbin/init", "profile": "xim:luban-boot-generic@2026.10.11.1",
             "kernel": "xim:linux-kernel@6.8.0-71", "kernel_min": "5.10" },

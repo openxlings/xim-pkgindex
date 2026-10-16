@@ -8,7 +8,7 @@ from tests.lib.assertions import assert_xim_add_succeeds
 @pytest.mark.static
 def test_tiny_on_musl(tmp_path):
     target = tmp_path / "tiny-musl"
-    result = run_recipe("pkgs/l/luban-tiny-musl.lua", target, "2026.10.11.1")
+    result = run_recipe("pkgs/luban/luban-tiny-musl.lua", target, "2026.10.11.1")
     assert result.returncode == 0, result.stderr
     manifest = json.loads((target / ".xlings.json").read_text())
     assert manifest["abi"] == {"kernel": "linux", "libc": "musl"}
@@ -21,4 +21,4 @@ def test_tiny_on_musl(tmp_path):
 
 @pytest.mark.index
 def test_index():
-    assert_xim_add_succeeds("pkgs/l/luban-tiny-musl.lua")
+    assert_xim_add_succeeds("pkgs/luban/luban-tiny-musl.lua")

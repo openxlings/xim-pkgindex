@@ -7,7 +7,7 @@ name: Luban agent workspace acceptance
 on:
   pull_request:
     paths:
-      - 'pkgs/l/luban-*.lua'
+      - 'pkgs/luban/*.lua'
       - 'pkgs/a/agent-private.lua'
       - 'pkgs/a/agent-confined.lua'
       - 'pkgs/l/limine.lua'
@@ -18,7 +18,6 @@ on:
       - 'pkgs/v/vim.lua'
       - 'pkgs/g/git.lua'
       - 'pkgs/d/dsh.lua'
-      - 'pkgs/x/xdesk.lua'
       - 'libs/luban*.lua'
       - 'scripts/test-luban-editions.sh'
       - 'scripts/test-luban-agent-workspace.py'

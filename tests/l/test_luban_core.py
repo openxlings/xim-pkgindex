@@ -7,7 +7,7 @@ from tests.lib.assertions import assert_xim_add_succeeds
 @pytest.mark.parametrize("version", ["0.1.0", "2026.10.11.1"])
 def test_default_development_tools(tmp_path, version):
     target = tmp_path / "core"
-    result = run_recipe("pkgs/l/luban-core.lua", target, version)
+    result = run_recipe("pkgs/luban/luban-core.lua", target, version)
     assert result.returncode == 0, result.stderr
     manifest = json.loads((target / ".xlings.json").read_text())
     names = {p.split(":")[1].split("@")[0] for p in manifest["packages"]}
@@ -19,4 +19,4 @@ def test_default_development_tools(tmp_path, version):
 
 @pytest.mark.index
 def test_index():
-    assert_xim_add_succeeds("pkgs/l/luban-core.lua")
+    assert_xim_add_succeeds("pkgs/luban/luban-core.lua")

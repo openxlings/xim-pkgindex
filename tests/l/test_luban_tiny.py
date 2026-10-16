@@ -9,7 +9,7 @@ from tests.lib.assertions import assert_xim_add_succeeds
 @pytest.mark.parametrize("version,kernel_in_root", [("0.1.0", True), ("2026.10.11.1", False)])
 def test_tiny_userland_and_its_kernel(tmp_path, version, kernel_in_root):
     target = tmp_path / "tiny"
-    result = run_recipe("pkgs/l/luban-tiny.lua", target, version)
+    result = run_recipe("pkgs/luban/luban-tiny.lua", target, version)
     assert result.returncode == 0, result.stderr
     manifest = json.loads((target / ".xlings.json").read_text())
     assert manifest["subos_kind"] == "rootfs"
@@ -29,8 +29,8 @@ def test_tiny_userland_and_its_kernel(tmp_path, version, kernel_in_root):
 
 @pytest.mark.static
 def test_an_unpublished_version_has_no_manifest(tmp_path):
-    assert run_recipe("pkgs/l/luban-tiny.lua", tmp_path / "x", "0.2.0").returncode != 0
+    assert run_recipe("pkgs/luban/luban-tiny.lua", tmp_path / "x", "0.2.0").returncode != 0
 
 @pytest.mark.index
 def test_index():
-    assert_xim_add_succeeds("pkgs/l/luban-tiny.lua")
+    assert_xim_add_succeeds("pkgs/luban/luban-tiny.lua")
