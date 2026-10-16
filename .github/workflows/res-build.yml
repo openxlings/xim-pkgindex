@@ -83,6 +83,10 @@ jobs:
           - { what: tmux,          version: "3.8",                arch: aarch64 }
           - { what: htop,          version: "3.5.3",              arch: x86_64 }
           - { what: htop,          version: "3.5.3",              arch: aarch64 }
+          # data, the same on every architecture: built once (xlings: 2026-10-16 L §10, §13)
+          - { what: terminfo,        version: "6.6.20261010",     arch: x86_64 }
+          - { what: adwaita-cursors, version: "49.0",             arch: x86_64 }
+          - { what: luban-fonts,     version: "2026.10.16",       arch: x86_64 }
     steps:
       - uses: actions/checkout@v4
         if: env.WANTED == 'true'
