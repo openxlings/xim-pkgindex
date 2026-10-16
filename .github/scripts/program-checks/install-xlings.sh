@@ -4,7 +4,7 @@
 # frozen at build time.
 set -euo pipefail
 export XLINGS_NON_INTERACTIVE=1
-export XLINGS_VERSION="${XLINGS_VERSION:-v2026.10.15.4}"
+export XLINGS_VERSION="${XLINGS_VERSION:-v2026.8.10.1}"
 curl -fsSL --retry 3 --retry-all-errors \
     https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
 echo "XLINGS_HOME=$HOME/.xlings" >> "$GITHUB_ENV"

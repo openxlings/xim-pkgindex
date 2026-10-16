@@ -363,6 +363,14 @@ for rel_file in "${files[@]}"; do
         skipped=$((skipped+1))
         continue
     fi
+    # Luban's own packages (editions, boot profiles, its applications) are
+    # made, booted and checked by luban-agent-workspace.yml, with the xlings
+    # they are written for; this client is older than they require.
+    if [[ "$rel_file" == pkgs/luban/* ]]; then
+        info "skip (a Luban package: luban-agent-workspace.yml tests it): $rel_file"
+        skipped=$((skipped+1))
+        continue
+    fi
 
     step "Parsing meta: $rel_file"
     if ! meta_json=$(python3 "$WORKSPACE_ROOT/.github/scripts/parse-xpkg-meta.py" "$lua_file"); then
