@@ -109,10 +109,10 @@ pack() {    # directory under $work [contents only] -> $out/<name>-<version>-lin
 }
 
 # A data resource: the same bytes for every architecture, so one archive
-# without an architecture in its name.
-pack_data() {   # directory under $work -> $out/<name>-<version>.tar.gz (its contents)
+# without an architecture in its name, its one directory <name>-<version>.
+pack_data() {   # directory under $work -> $out/<name>-<version>.tar.gz
     local file="$out/$what-$version.tar.gz"
-    tar --owner=0 --group=0 --numeric-owner --hard-dereference --sort=name --mtime=@0 -czf "$file" -C "$work/$1" .
+    tar --owner=0 --group=0 --numeric-owner --hard-dereference --sort=name --mtime=@0 -czf "$file" -C "$work" "$1"
     seal "$file"
     python3 -c 'import sys, tarfile; sys.exit(any(m.islnk() for m in tarfile.open(sys.argv[1])))' "$file" \
         || die "$file holds a hard link"
