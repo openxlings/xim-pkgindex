@@ -186,8 +186,9 @@ local editions = {
 ]}
 ]])),
     },
-    -- 2026.10.16.1 with mcpp 2026.10.16.1, the first that reads the system
-    -- configuration's upstream (/xlings) and so borrows the system's gcc.
+    -- 2026.10.16.1 with mcpp 2026.10.16.2: it reads the system
+    -- configuration's upstream (/xlings) and borrows the system's gcc, and its
+    -- xlings (2026.10.16.2) builds the registry's catalog inside a system.
     ["2026.10.16.2"] = {
         manifest = [[
 {
@@ -202,7 +203,7 @@ local editions = {
     "xim:nvim@0.12.5",
     "xim:git@2.53.0-1",
     "xim:gh@2.102.0",
-    "xim:mcpp@2026.10.16.1",
+    "xim:mcpp@2026.10.16.2",
     "xim:ninja@1.12.1",
     "xim:coreutils@9.5",
     "xim:gcc@16.1.0",
