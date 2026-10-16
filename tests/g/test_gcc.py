@@ -284,4 +284,4 @@ class TestBorrowedPayload:
         rewrite = src.split('function __rewrite_specs_linux')[1]
         guard = rewrite.index('not __writable(specs_file)')
         assert guard < rewrite.index('gcc-specs-config'), "只读判断必须在改写之前"
-        assert '__builds_a_program_that_runs(gcc_bin)' in rewrite
+        assert '__builds_a_program_that_runs(gcc_bin, ' in rewrite

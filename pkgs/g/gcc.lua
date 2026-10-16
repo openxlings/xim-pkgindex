@@ -588,13 +588,18 @@ function __writable(file)
     return true
 end
 
--- Compile a program in a private directory and run it. Returns ok, reason.
-function __builds_a_program_that_runs(gcc_bin)
+-- Compile a program in a private directory and run it. The C runtime is this
+-- package's glibc dep, named directly (-B for the crt objects, -L for libc):
+-- the payload's built-in sysroot is the build machine's, and this home's
+-- sysroot is filled only after the whole install. Returns ok, reason.
+function __builds_a_program_that_runs(gcc_bin, glibc_lib)
     local dir = path.join(os.getenv("TMPDIR") or "/tmp", "xlings-gcc-probe-" .. tostring(os.time()))
     os.mkdir(dir)
     local src, exe = path.join(dir, "probe.c"), path.join(dir, "probe")
     io.writefile(src, "int main(void) { return 0; }\n")
-    local out = os.iorun(string.format("%s %s -o %s && %s && echo ran", __shq(gcc_bin), __shq(src), __shq(exe), __shq(exe)))
+    local runtime = glibc_lib and string.format("-B%s -L%s ", __shq(glibc_lib), __shq(glibc_lib)) or ""
+    local out = os.iorun(string.format("%s %s%s -o %s && %s && echo ran", __shq(gcc_bin), runtime,
+        __shq(src), __shq(exe), __shq(exe)))
     os.tryrm(dir)
     if out and out:find("ran", 1, true) then return true, nil end
     return false, "a program compiled with " .. gcc_bin .. " did not run"
@@ -618,7 +623,7 @@ function __rewrite_specs_linux(rpath, dynamic_linker)
     -- to do.
     local specs_file = __specs_file(gcc_bin)
     if specs_file and not __writable(specs_file) then
-        local ok, why = __builds_a_program_that_runs(gcc_bin)
+        local ok, why = __builds_a_program_that_runs(gcc_bin, dynamic_linker and path.directory(dynamic_linker) or nil)
         if ok then
             log.info("gcc: a borrowed payload; its specs are its owner's, and a program it builds runs here")
             return true
