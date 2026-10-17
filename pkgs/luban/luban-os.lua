@@ -42,7 +42,13 @@ package = {
                 "xim:libXrandr",
                 "xim:luban-fonts",
             },
-            ["latest"] = { ref = "2026.10.16.1" },
+            ["latest"] = { ref = "2026.10.16.2" },
+            ["2026.10.16.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "b8226b4686683fa308bbdf1f5f2b92fe5dc0e66c7424626c60a3489e3a3712fb",
+                },
+            },
             ["2026.10.16.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -100,7 +106,13 @@ package = {
         },
         macosx = {
             deps = { "xim:luban-fonts" },
-            ["latest"] = { ref = "2026.10.16.1" },
+            ["latest"] = { ref = "2026.10.16.2" },
+            ["2026.10.16.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "99582cada89d6cf9c3f67821ace299e4147ab6bec82719b2d1b531d4ed496cbf",
+                },
+            },
             ["2026.10.16.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -134,7 +146,13 @@ package = {
         },
         windows = {
             deps = { "xim:luban-fonts" },
-            ["latest"] = { ref = "2026.10.16.1" },
+            ["latest"] = { ref = "2026.10.16.2" },
+            ["2026.10.16.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "5356a037cd2c026f4a5d6f12c2570d40d04e4aa554183d44ab58feaccdb6dab7",
+                },
+            },
             ["2026.10.16.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {

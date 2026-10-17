@@ -35,10 +35,11 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "2026.10.16.1" },
+            ["latest"] = { ref = "2026.10.16.2" },
             ["2026.10.13.1"] = {},
             ["2026.10.15.1"] = {},
             ["2026.10.16.1"] = {},
+            ["2026.10.16.2"] = {},
         },
     },
 }
@@ -61,6 +62,11 @@ local versions = {
     -- system configuration): a default cursor theme, and its checks.
     ["2026.10.16.1"] = {
         manifest = luban_desktop.manifest("x86_64", "subos:luban-core@2026.10.16.1", luban_desktop.since_2026_10_16),
+        files = luban_desktop.files("xdesk-canvas", { luban.checks("desktop-xdesk", luban_desktop.CHECKS) }),
+    },
+    -- On Luban Core 2026.10.16.2 (mcpp 2026.10.16.3).
+    ["2026.10.16.2"] = {
+        manifest = luban_desktop.manifest("x86_64", "subos:luban-core@2026.10.16.2", luban_desktop.since_2026_10_16),
         files = luban_desktop.files("xdesk-canvas", { luban.checks("desktop-xdesk", luban_desktop.CHECKS) }),
     },
 }

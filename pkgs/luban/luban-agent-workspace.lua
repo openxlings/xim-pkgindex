@@ -33,6 +33,7 @@ package = {
             ["2026.10.11.1"] = { min_client = "2026.10.11.1" },
             ["2026.10.11.2"] = { min_client = "2026.10.11.1" },
             ["2026.10.16.1"] = { min_client = "2026.10.16.1" },
+            ["2026.10.16.2"] = { min_client = "2026.10.16.1" },
         },
     },
 }
@@ -88,6 +89,20 @@ local versions = {
   "subos_kind": "rootfs",
   "min_client": "2026.10.16.1",
   "from": "subos:luban-core@2026.10.16.1",
+  "abi": { "kernel": "linux", "libc": "gnu" },
+  "packages": [
+    "xim:claude"
+  ],
+  "policy": "xim:agent-private@2026.10.11.1",
+  "workspace": {}
+}
+]], files = { { "usr/share/factory/etc/motd", MOTD } } },
+    -- On luban-core 2026.10.16.2 (mcpp 2026.10.16.3).
+    ["2026.10.16.2"] = { manifest = [[
+{
+  "subos_kind": "rootfs",
+  "min_client": "2026.10.16.1",
+  "from": "subos:luban-core@2026.10.16.2",
   "abi": { "kernel": "linux", "libc": "gnu" },
   "packages": [
     "xim:claude"

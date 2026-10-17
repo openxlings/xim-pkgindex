@@ -223,10 +223,23 @@ default = "gcc@16.1.0"
 default_target = "%s-linux-gnu"
 ]]
 
+-- The machine's: the catalog loader names it (os.arch, is_arch), an install
+-- hook's runtime does (_RUNTIME.arch), and uname answers anywhere a command
+-- runs. Falling back to x86_64 alone named an x86_64 target on aarch64, which
+-- mcpp refused there ("target 'x86_64-linux-gnu' cannot be built on this
+-- host").
 function luban.mcpp_config()
-    local arch = (os.arch and os.arch()) or "x86_64"
-    if arch == "arm64" then arch = "aarch64" end
-    if arch == "x64" then arch = "x86_64" end
+    local function canonical(a)
+        a = a and tostring(a):gsub("%s+", "") or ""
+        if a == "arm64" then return "aarch64" end
+        if a == "x64" or a == "amd64" then return "x86_64" end
+        return (a == "aarch64" or a == "x86_64") and a or nil
+    end
+    local arch = canonical(os.arch and os.arch())
+        or canonical(type(_RUNTIME) == "table" and _RUNTIME.arch)
+        or (type(is_arch) == "function" and (is_arch("aarch64") or is_arch("arm64")) and "aarch64")
+        or canonical(os.iorun and os.iorun("uname -m"))
+        or "x86_64"
     return { F .. "mcpp/config.toml", string.format(luban.MCPP_CONFIG, arch) }
 end
 

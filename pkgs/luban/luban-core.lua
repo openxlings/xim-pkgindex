@@ -23,12 +23,13 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "2026.10.16.1" },
+            ["latest"] = { ref = "2026.10.16.2" },
             ["0.1.0"] = {},
             ["2026.10.11.1"] = {},
             ["2026.10.11.2"] = { min_client = "2026.10.11.1" },
             ["2026.10.15.1"] = { min_client = "2026.10.11.1" },
             ["2026.10.16.1"] = { min_client = "2026.10.16.1" },
+            ["2026.10.16.2"] = { min_client = "2026.10.16.1" },
         },
     },
 }
@@ -164,6 +165,45 @@ local editions = {
     "xim:git@2.53.0-1",
     "xim:gh@2.102.0",
     "xim:mcpp@2026.10.11.1",
+    "xim:ninja@1.12.1",
+    "xim:coreutils@9.5",
+    "xim:gcc@16.1.0",
+    "xim:binutils@2.42.1",
+    "xim:make@4.3",
+    "xim:openssl@3.1.5",
+    "xim:xz@5.8.3",
+    "xim:zlib@1.3.1"
+  ],
+  "workspace": {}
+}
+]],
+        shells = "/bin/sh\n/bin/bash\n/usr/bin/fish\n",
+        more = luban.with(luban.command_not_found(), luban.mcpp_config(), luban.checks("core", [[
+{"checks": [
+  {"id": "core-c++", "what": "g++ builds and runs a C++ program", "run": "d=$(mktemp -d) && printf '#include <vector>\\nint main() { std::vector<int> v{1}; return int(v.size()) - 1; }\\n' > $d/a.cpp && g++ -std=c++23 -o $d/a $d/a.cpp && $d/a; r=$?; rm -rf $d; exit $r", "timeout": 120},
+  {"id": "core-tools", "what": "git, fish, nvim and mcpp start", "run": "git --version && fish --version && nvim --version && mcpp --version", "timeout": 60},
+  {"id": "core-command-not-found", "what": "a command not found says what it may be", "run": "/usr/libexec/luban/command-not-found xlnigs 2>&1 | grep -q xlings", "timeout": 30}
+]}
+]])),
+    },
+    -- 2026.10.16.1 with mcpp 2026.10.16.3: it reads the system
+    -- configuration's upstream (/xlings) and borrows the system's gcc, and its
+    -- xlings (2026.10.16.2) builds the registry's catalog inside a system.
+    ["2026.10.16.2"] = {
+        manifest = [[
+{
+  "subos_kind": "rootfs",
+  "min_client": "2026.10.16.1",
+  "from": "subos:luban-tiny@2026.10.16.1",
+  "abi": { "kernel": "linux", "libc": "gnu" },
+  "packages": [
+    "xim:bash@5.2.37",
+    "xim:fish@4.8.1",
+    "xim:vim@9.2.1172",
+    "xim:nvim@0.12.5",
+    "xim:git@2.53.0-1",
+    "xim:gh@2.102.0",
+    "xim:mcpp@2026.10.16.3",
     "xim:ninja@1.12.1",
     "xim:coreutils@9.5",
     "xim:gcc@16.1.0",
