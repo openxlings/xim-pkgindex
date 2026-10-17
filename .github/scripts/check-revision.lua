@@ -24,7 +24,8 @@
 -- For every version entry in a changed recipe, new ones included, `revision`
 -- must be a non-negative integer when present, must sit on the version entry
 -- itself (not inside a per-arch map, where no client reads it), and must not
--- appear on a `ref` alias, which carries none.
+-- appear on a `ref` alias, which carries none. `floor` obeys the same three
+-- rules and must not exceed the entry's `revision`.
 --
 -- Unknown resource fields remain part of identity. Platform/root sources,
 -- proven Linux official coordinates and architecture aliases are normalized
@@ -74,7 +75,7 @@ local PLATFORM_FIELDS = {
 local XPM_FIELDS = { source = true }
 -- Fields of a version entry that are not part of what it downloads
 -- (`min_client`: which clients may use it, docs/specs/xpackage-v2.md).
-local NON_RESOURCE = { revision = true, ref = true, deps = true, min_client = true }
+local NON_RESOURCE = { revision = true, floor = true, ref = true, deps = true, min_client = true }
 
 -- ── git ────────────────────────────────────────────────────────────────
 local function sh_quote(s)
@@ -287,6 +288,38 @@ local function revision_of(entry)
     return value, problems
 end
 
+-- The problems with how an entry states `floor` (the oldest installed
+-- revision still usable): a non-negative integer, at most the entry's
+-- revision, on the version entry itself and not on an alias.
+local function floor_problems(entry, revision)
+    if type(entry) ~= "table" then return {} end
+    local problems = {}
+    local f = rawget(entry, "floor")
+    if f ~= nil then
+        if math.type(f) ~= "integer" or f < 0 then
+            problems[#problems + 1] = string.format(
+                "`floor = %s` is not a non-negative integer; a client reads it as 0",
+                show(f))
+        elseif f > revision then
+            problems[#problems + 1] = string.format(
+                "`floor = %d` is above the entry's revision %d; no installed payload "
+                .. "could reach it, and a client reads it as %d", f, revision, revision)
+        end
+        if is_alias(entry) then
+            problems[#problems + 1] =
+                "a `ref` alias carries no floor; state it on the entry the alias names"
+        end
+    end
+    for k, v in pairs(entry) do
+        if type(v) == "table" and v ~= sandbox.stub and rawget(v, "floor") ~= nil then
+            problems[#problems + 1] = string.format(
+                "`floor` inside `%s` is read by no client; it belongs on the version entry",
+                tostring(k))
+        end
+    end
+    return problems
+end
+
 -- platform -> version -> entry, for every version entry of a loaded package.
 local function entries_of(pkg)
     local out = {}
@@ -393,6 +426,9 @@ for _, file in ipairs(changed) do
                 validated = validated + 1
                 local head_rev, problems = revision_of(entry)
                 for _, p in ipairs(problems) do err(file, where .. ": " .. p) end
+                for _, p in ipairs(floor_problems(entry, head_rev)) do
+                    err(file, where .. ": " .. p)
+                end
 
                 local old = base_entries[plat] and base_entries[plat][ver]
                 if old ~= nil and not is_alias(old) and not is_alias(entry) then

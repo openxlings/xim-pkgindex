@@ -79,7 +79,10 @@ A resource is named by a recipe only after all of these hold:
    `<version>-r<N>`, and the version entry's `revision` becomes N. The old asset
    stays as it is: a client with a cached index still holds its hash.
    `.github/scripts/check-revision.lua` refuses a changed resource without a
-   higher revision.
+   higher revision. A rebuild that fixes a defect every installed payload has
+   also raises the entry's `floor` to N; one that does not (a hard link
+   removed, a layout change for one platform) leaves it, and installed payloads
+   keep working ([`floor`](specs/xpackage-v2.md#floor--the-oldest-installed-revision-still-usable)).
 
 ## The xlings release
 
