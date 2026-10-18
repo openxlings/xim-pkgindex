@@ -90,7 +90,6 @@ jobs:
           - { what: lxqt,          version: "2.4.0-r3",           arch: x86_64 }
           - { what: lxqt,          version: "2.4.0-r3",           arch: aarch64 }
           - { what: kde,           version: "6.6.6-r1",           arch: x86_64 }
-          - { what: kde,           version: "6.6.6-r1",           arch: aarch64 }
           # the desktop editions' terminal tools (xlings: Luban OS desktop part 2 §5)
           - { what: tmux,          version: "3.8",                arch: x86_64 }
           - { what: tmux,          version: "3.8",                arch: aarch64 }

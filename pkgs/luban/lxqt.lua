@@ -44,12 +44,12 @@ package = {
         linux = {
             deps = { "luban:qt-runtime@6.11.1-r2", "luban:labwc", "luban:foot", "xim:luban-fonts", "xim:xkeyboard-config",
                      "xim:patchelf" },
-            ["latest"] = { ref = "2.4.0-r2" },
-            ["2.4.0-r2"] = {
+            ["latest"] = { ref = "2.4.0-r3" },
+            ["2.4.0-r3"] = {
                 url = "XLINGS_RES",
                 sha256 = {
-                    x86_64 = "268d45ae84ee80ad4e4fab3551e3e4a14730e66042551f2740adafc5d1c4abab",
-                    aarch64 = "f14bc05b44fc95a1f9662cec5a9addeeef07300e49a6ef6f9521910a1eae84bb",
+                    x86_64 = "9eb90133861ecbf1e1fadfd259f7747a56970dca4c68770c9c553e864d9cee70",
+                    aarch64 = "0a6bc69cd1e0a0702c4c544814fbac324f01b41e350267009f4e65039db63c0d",
                 },
             },
         },

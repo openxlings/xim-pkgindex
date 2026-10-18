@@ -10,7 +10,9 @@ package = {
     licenses = {"GPL-2.0-or-later", "LGPL-2.1-or-later"},
 
     type = "package",
-    archs = {"x86_64", "aarch64"},
+    -- x86_64: on aarch64 Plasma's shell crashes on llvmpipe in the factory's
+    -- headless session (a later build).
+    archs = {"x86_64"},
     status = "preview",
     -- luban-desktop: offered where a desktop is chosen (xlings: 2026-10-18
     -- Luban OS distribution design §6.4).
@@ -45,8 +47,7 @@ package = {
             ["6.6.6-r1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
-                    x86_64 = "@KDE_X86_64@",
-                    aarch64 = "@KDE_AARCH64@",
+                    x86_64 = "4abfc384b87a20b3200273271ea56a8cbc21ab1a9c1921a251adef3490ee8c5e",
                 },
             },
         },
