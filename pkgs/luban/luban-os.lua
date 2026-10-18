@@ -66,7 +66,13 @@ package = {
                 "xim:nvidia-gl-host-link@>=0.1.2",
                 "xim:wsl-gl-host-link@>=0.1",
             },
-            ["latest"] = { ref = "2026.10.17.1" },
+            ["latest"] = { ref = "2026.10.18.1" },
+            ["2026.10.18.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "ce613194b79fe5b4eb19bb0af2d2ea38081badd79e09c708bd1054b81868fb73",
+                },
+            },
             -- Revision 1: the graphics stack (deps above, config()). xlings
             -- replaces a payload of revision 0 on its next install.
             ["2026.10.17.1"] = {
@@ -139,7 +145,13 @@ package = {
         },
         macosx = {
             deps = { "xim:luban-fonts" },
-            ["latest"] = { ref = "2026.10.17.1" },
+            ["latest"] = { ref = "2026.10.18.1" },
+            ["2026.10.18.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "a72b6a2e5c1f70d1475631a996f5da9bee06f98e555597c7f752ff9fcbd5654b",
+                },
+            },
             ["2026.10.17.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -185,7 +197,13 @@ package = {
         },
         windows = {
             deps = { "xim:luban-fonts" },
-            ["latest"] = { ref = "2026.10.17.1" },
+            ["latest"] = { ref = "2026.10.18.1" },
+            ["2026.10.18.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "42ea88619f4580efee67086726a4d7c8f4213f5700d7a53157fdbee198df85da",
+                },
+            },
             ["2026.10.17.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
