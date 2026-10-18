@@ -16,8 +16,9 @@ package = {
 
     -- The T1 desktop (xlings: 2026-10-18 Luban OS distribution design §7):
     -- several windows, no panel and no background program -- the Luban OS
-    -- window starts programs and lists windows (X-Luban-Shell=none). A
-    -- composite (design §4.6): luban:labwc's programs, this session and its
+    -- window starts programs and lists windows (X-Luban-Shell=none). It
+    -- also runs one program alone, ending with it (X-Luban-App-Exec, labwc
+    -- -S): `luban run --display window` (T0). A composite (design §4.6): luban:labwc's programs, this session and its
     -- configuration, written here; nothing to download.
     programs = {"luban-compositor"},
     xvm_enable = true,
@@ -81,6 +82,7 @@ Exec=luban-compositor
 DesktopNames=labwc;wlroots
 X-Opensal-Interfaces=surface pointer keyboard mode
 X-Luban-Shell=none
+X-Luban-App-Exec=luban-compositor -S
 ]] },
 }
 

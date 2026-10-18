@@ -124,6 +124,8 @@ metadata_only_owner_migration() {
         if [[ "$content" =~ ^[[:space:]]*(repo|homepage|contributors)[[:space:]]*= ]]; then
             continue
         fi
+        # A comment changes nothing a recipe does (a graphics-ok note, a TODO).
+        [[ "$content" =~ ^[[:space:]]*-- ]] && continue
         return 1
     done <<< "$changed"
 
@@ -359,7 +361,7 @@ for rel_file in "${files[@]}"; do
         continue
     fi
     if metadata_only_owner_migration "$rel_file"; then
-        info "skip (metadata-only owner/link migration): $rel_file"
+        info "skip (metadata or comments only): $rel_file"
         skipped=$((skipped+1))
         continue
     fi

@@ -73,6 +73,9 @@ local ROOT = "."
 -- to be empty most of the time.
 local EXEMPT = {
     -- ["pkgs/g/godot.lua"] = { ["graphics"] = "#540, remove once published" },
+    -- The Luban desktop components, new together (#999): namespaced once published.
+    ["pkgs/luban/labwc.lua"] = { ["foot"] = "#999, remove once published", ["xwayland"] = "#999, remove once published" },
+    ["pkgs/luban/compositor.lua"] = { ["labwc"] = "#999, remove once published" },
 }
 
 local function is_exempt(file, name)
