@@ -43,3 +43,7 @@ for p in $carried; do [ ! -d "/usr/share/licenses/$p" ] || cp -r "/usr/share/lic
 while read -r f; do ldd "$f" 2>/dev/null | awk '/=>/ { print $3 }'; done < /tmp/elfs | sort -u > /tmp/libs
 while read -r l; do grep -qx "$(basename "$l")" /tmp/rt-names || cp -L "$l" "$x/lib/"; done < /tmp/libs
 cp -L "/lib/ld-musl-$(uname -m).so.1" "$x/lib/"
+# musl's loader is its libc too: the name a program links it by.
+ln -sf "ld-musl-$(uname -m).so.1" "$x/lib/libc.musl-$(uname -m).so.1"
+# The MIME database its file types are read from (a system may have none).
+[ ! -d /usr/share/mime ] || { mkdir -p "$tree/share/mime"; cp -a /usr/share/mime/. "$tree/share/mime/"; }
