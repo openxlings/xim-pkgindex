@@ -469,7 +469,7 @@ procps-ng)
         && ./configure -q --prefix=/usr --disable-shared --enable-static --disable-nls --without-systemd \
              --without-elogind --disable-kill --disable-w --enable-watch8bit >/dev/null \
         && make -s -j\$(nproc) LDFLAGS=-all-static >/dev/null \
-        && make -s install DESTDIR=/w/stage >/dev/null \
+        && make -s install DESTDIR=/w/stage LDFLAGS=-all-static >/dev/null \
         && mkdir -p /w/$d/bin /w/$d/share/terminfo \
         && for p in $progs; do f=\$(ls /w/stage/usr/bin/\$p /w/stage/usr/sbin/\$p /w/stage/bin/\$p /w/stage/sbin/\$p 2>/dev/null | head -1); \
              [ -n \"\$f\" ] || { echo \"no \$p installed\" >&2; exit 1; }; cp \"\$f\" /w/$d/bin/; strip /w/$d/bin/\$p; done \
