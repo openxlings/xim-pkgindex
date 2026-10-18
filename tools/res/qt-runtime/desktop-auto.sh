@@ -68,7 +68,7 @@ while read -r p; do [ ! -d "/usr/share/licenses/$p" ] || cp -r "/usr/share/licen
 [ ! -d /usr/share/mime ] || { mkdir -p "$tree/share/mime"; cp -a /usr/share/mime/. "$tree/share/mime/"; }
 say "files placed; now the libraries"
 # Every library anything here links, but the runtime's.
-find "$tree" -type f | while read -r f; do is_elf "$f" && echo "$f"; done > /tmp/elfs
+find "$tree" -type f | while read -r f; do if is_elf "$f"; then echo "$f"; fi; done > /tmp/elfs
 while read -r f; do ldd "$f" 2>/dev/null | awk '/=>/ { print $3 }'; done < /tmp/elfs | sort -u > /tmp/libs
 while read -r l; do
     b="$(basename "$l")"
