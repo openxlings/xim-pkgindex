@@ -942,7 +942,8 @@ lxqt)
     v="${version%%-r[0-9]*}"; d="lxqt-$version-linux-$arch"
     progs="/usr/bin/lxqt-session /usr/bin/lxqt-panel /usr/bin/lxqt-runner /usr/bin/lxqt-config /usr/bin/lxqt-config-appearance \
         /usr/bin/lxqt-config-session /usr/bin/lxqt-config-input /usr/bin/lxqt-config-monitor /usr/bin/lxqt-notificationd \
-        /usr/bin/lxqt-about /usr/bin/lxqt-leave /usr/bin/pcmanfm-qt /usr/bin/dbus-daemon /usr/bin/dbus-run-session /usr/bin/xdg-user-dirs-update"
+        /usr/bin/lxqt-about /usr/bin/lxqt-leave /usr/bin/pcmanfm-qt /usr/bin/dbus-daemon /usr/bin/dbus-run-session \
+        /usr/bin/dbus-update-activation-environment /usr/bin/xdg-user-dirs-update"
     cp "$here/qt-runtime/tree.sh" "$here/qt-runtime/desktop.sh" "$work/"
     carried="lxqt-session lxqt-panel lxqt-runner lxqt-config lxqt-notificationd lxqt-about lxqt-qtplugin lxqt-themes lxqt-menu-data \
         liblxqt libqtxdg libfm-qt pcmanfm-qt breeze-icons hicolor-icon-theme dbus xdg-user-dirs"
