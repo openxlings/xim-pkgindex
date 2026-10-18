@@ -20,10 +20,10 @@ say() { printf '[desktop-auto] %s\n' "$*" >&2; }
 # A trigger that fails (a cache a container has no use for) is not the
 # packages: what was asked for is checked to be there instead.
 # shellcheck disable=SC2086
-apk add -q $runtime || say "apk add (runtime) returned $?"
+apk add -q $runtime || say "apk add (runtime) returned $?" # host-dep-ok: the factory's Alpine container (tools/res/build.sh)
 apk info -q | sort > /tmp/before
 # shellcheck disable=SC2086
-apk add -q $desktop || say "apk add (desktop) returned $?"
+apk add -q $desktop || say "apk add (desktop) returned $?" # host-dep-ok: the factory's Alpine container
 for p in $runtime $desktop; do apk info -e "$p" >/dev/null || { say "$p is not installed"; exit 1; }; done
 apk info -q | sort > /tmp/after
 say "$(comm -13 /tmp/before /tmp/after | wc -l) packages beyond the runtime's"
