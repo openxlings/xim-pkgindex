@@ -1017,8 +1017,7 @@ kde)
     cp "$here/qt-runtime/tree.sh" "$here/qt-runtime/desktop-auto.sh" "$here/bundle/strip-rpath.sh" "$work/"
     ALPINE_IMAGE="$ALPINE_DESKTOP" alpine "sh /w/desktop-auto.sh /w/$d kde \"$QT_RUNTIME_APKS\" \"$apks\" \
         && apk info -v 2>/dev/null | sort > /w/installed \
-        && apk add -q patchelf && sh /w/strip-rpath.sh /w/$d/libexec/kde /w/$d/lib /w/rt-root/libexec/qt-runtime \
-        && kwin_wayland --version > /w/kwin.version 2>&1 || true"
+        && apk add -q patchelf && sh /w/strip-rpath.sh /w/$d/libexec/kde /w/$d/lib /w/rt-root/libexec/qt-runtime"
     bundle_upstream plasma-workspace "$v"
     bundle_upstream qt6-qtbase "${QT_RUNTIME%%-r[0-9]*}"
     # Plasma's own sessions start KWin as a compositor of its own, which the

@@ -16,16 +16,22 @@ set -eu
 tree="$1"; name="$2"; runtime="$3"; desktop="$4"
 x="$tree/libexec/$name"
 mkdir -p "$tree/bin" "$x/bin" "$x/lib" "$x/plugins" "$x/qml" "$tree/share/licenses" "$tree/etc/xdg"
+say() { printf '[desktop-auto] %s\n' "$*" >&2; }
+# A trigger that fails (a cache a container has no use for) is not the
+# packages: what was asked for is checked to be there instead.
 # shellcheck disable=SC2086
-apk add -q $runtime
+apk add -q $runtime || say "apk add (runtime) returned $?"
 apk info -q | sort > /tmp/before
 # shellcheck disable=SC2086
-apk add -q $desktop
+apk add -q $desktop || say "apk add (desktop) returned $?"
+for p in $runtime $desktop; do apk info -e "$p" >/dev/null || { say "$p is not installed"; exit 1; }; done
 apk info -q | sort > /tmp/after
+say "$(comm -13 /tmp/before /tmp/after | wc -l) packages beyond the runtime's"
 comm -13 /tmp/before /tmp/after > /tmp/carried
 # shellcheck disable=SC2086
 sh /w/tree.sh /w/rt-root/libexec/qt-runtime $runtime
 ls /w/rt-root/libexec/qt-runtime/lib > /tmp/rt-names
+say "the runtime: $(wc -l < /tmp/rt-names) libraries"
 is_elf() { [ "$(head -c 4 "$1" 2>/dev/null | od -An -c | tr -d ' \n')" = '177ELF' ]; }
 # shellcheck disable=SC2046
 apk info -qL $(cat /tmp/carried) 2>/dev/null | grep -Ev '^usr/share/(man|doc|info|gtk-doc|help)/|^usr/include/|\.a$|/pkgconfig/|/cmake/' \
@@ -60,6 +66,7 @@ done < /tmp/files
 while read -r p; do [ ! -d "/usr/share/licenses/$p" ] || cp -r "/usr/share/licenses/$p" "$tree/share/licenses/"; done < /tmp/carried
 # The MIME database its file types are read from (a system may have none).
 [ ! -d /usr/share/mime ] || { mkdir -p "$tree/share/mime"; cp -a /usr/share/mime/. "$tree/share/mime/"; }
+say "files placed; now the libraries"
 # Every library anything here links, but the runtime's.
 find "$tree" -type f | while read -r f; do is_elf "$f" && echo "$f"; done > /tmp/elfs
 while read -r f; do ldd "$f" 2>/dev/null | awk '/=>/ { print $3 }'; done < /tmp/elfs | sort -u > /tmp/libs
