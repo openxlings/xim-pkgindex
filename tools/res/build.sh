@@ -73,7 +73,7 @@ ALPINE_DESKTOP="alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda91
 # The Qt runtime the Qt desktops are built on (luban:qt-runtime): Alpine
 # 3.24's Qt at this index's build of it. A Qt desktop names it exactly, and
 # its build checks the Qt it links is this one.
-QT_RUNTIME="6.11.1-r1"
+QT_RUNTIME="6.11.1-r2"
 QT_RUNTIME_APKS="qt6-qtbase qt6-qtbase-x11 qt6-qtbase-wayland qt6-qtwayland qt6-qtsvg qt6-qtdeclarative mesa-dri-gallium"
 # The Qt runtime's tree (tools/res/qt-runtime/tree.sh <dir>, in the Alpine
 # container): the Qt libraries, their plugins and QML modules, every library
@@ -161,13 +161,15 @@ provenance() {  # directory, text
 #   bundle <name> <dir> "<programs, absolute in the container>" "<shell run first>" ["<more libraries' files>"]
 bundle() {
     local name="$1" d="$2" progs="$3" prep="$4" more="${5:-}" p loader="ld-musl-$arch.so.1"
+    cp "$here/bundle/strip-rpath.sh" "$work/"
     ALPINE_IMAGE="$ALPINE_DESKTOP" alpine "$prep \
         && apk info -v 2>/dev/null | sort > /w/installed \
         && mkdir -p /w/$d/bin /w/$d/libexec/$name/bin /w/$d/libexec/$name/lib \
         && for p in $progs; do cp -L \$p /w/$d/libexec/$name/bin/; done \
         && for f in $progs $more; do ldd \$f | awk '/=>/ { print \$3 }'; done | sort -u > /w/libs \
         && while read -r l; do cp -L \"\$l\" /w/$d/libexec/$name/lib/; done < /w/libs \
-        && cp -L /lib/$loader /w/$d/libexec/$name/lib/"
+        && cp -L /lib/$loader /w/$d/libexec/$name/lib/ \
+        && apk add -q patchelf && sh /w/strip-rpath.sh /w/$d/libexec/$name"
     [[ ! -e "$work/$d/lib" ]] || die "a lib/ in the tree: a root would link it into its /usr/lib"
     cp -r "$here/$name/." "$work/$d/"
     mv "$work/$d/env" "$work/$d/libexec/$name/env"
@@ -921,9 +923,10 @@ qt-runtime)
     # desktop's wrapper runs its programs with this lib/ after its own.
     v="${version%%-r[0-9]*}"; d="qt-runtime-$version-linux-$arch"
     [[ "$version" == "$QT_RUNTIME" ]] || die "build.sh names the Qt runtime $QT_RUNTIME, not $version"
-    cp "$here/qt-runtime/tree.sh" "$work/tree.sh"
+    cp "$here/qt-runtime/tree.sh" "$here/bundle/strip-rpath.sh" "$work/"
     ALPINE_IMAGE="$ALPINE_DESKTOP" alpine "apk add -q $QT_RUNTIME_APKS qt6-qtbase-dev && apk info -v 2>/dev/null | sort > /w/installed \
         && sh /w/tree.sh /w/$d/libexec/qt-runtime $QT_RUNTIME_APKS && mkdir -p /w/$d/share/licenses \
+        && apk add -q patchelf && sh /w/strip-rpath.sh /w/$d/libexec/qt-runtime \
         && for p in qt6-qtbase mesa; do [ -d /usr/share/licenses/\$p ] && cp -r /usr/share/licenses/\$p /w/$d/share/licenses/ || true; done \
         && cp -L /usr/lib/qt6/bin/qtpaths6 /w/qtpaths6"
     bundle_upstream qt6-qtbase "$v"
@@ -948,13 +951,14 @@ lxqt)
         /usr/bin/lxqt-config-session /usr/bin/lxqt-config-input /usr/bin/lxqt-config-monitor /usr/bin/lxqt-notificationd \
         /usr/bin/lxqt-about /usr/bin/lxqt-leave /usr/bin/pcmanfm-qt /usr/bin/dbus-daemon /usr/bin/dbus-run-session \
         /usr/bin/dbus-update-activation-environment /usr/bin/xdg-user-dirs-update"
-    cp "$here/qt-runtime/tree.sh" "$here/qt-runtime/desktop.sh" "$work/"
+    cp "$here/qt-runtime/tree.sh" "$here/qt-runtime/desktop.sh" "$here/bundle/strip-rpath.sh" "$work/"
     carried="lxqt-session lxqt-panel lxqt-runner lxqt-config lxqt-notificationd lxqt-about lxqt-qtplugin lxqt-themes lxqt-menu-data \
         liblxqt libqtxdg libfm-qt pcmanfm-qt breeze-icons hicolor-icon-theme dbus xdg-user-dirs"
     ALPINE_IMAGE="$ALPINE_DESKTOP" alpine "apk add -q $QT_RUNTIME_APKS $carried layer-shell-qt \
         && apk info -v 2>/dev/null | sort > /w/installed \
         && mkdir -p /w/$d/lib && cp -a /usr/lib/lxqt-panel /w/$d/lib/ \
         && sh /w/desktop.sh /w/$d lxqt \"$QT_RUNTIME_APKS\" \"$progs\" \"$carried\" \
+        && apk add -q patchelf && sh /w/strip-rpath.sh /w/$d/libexec/lxqt /w/$d/lib /w/rt-root/libexec/qt-runtime \
         && cd /w/$d/etc/xdg/autostart && for a in at-spi-dbus-bus lxqt-xscreensaver-autostart lxqt-globalkeyshortcuts; do \
              [ ! -e \$a.desktop ] || mv \$a.desktop /w/dropped-\$a.desktop; done"
     bundle_upstream lxqt-session "$v"
