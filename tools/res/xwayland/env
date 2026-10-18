@@ -1,0 +1,6 @@
+# luban:xwayland -- X11 programs on a Wayland desktop. Its keymaps are the
+# root's (/usr/share/X11/xkb: xim:xkeyboard-config) or wherever
+# XKB_CONFIG_ROOT says, compiled by the tree's xkbcomp.
+lib="$here/libexec/xwayland/lib"
+[ "$prog" = Xwayland ] && [ -n "${XKB_CONFIG_ROOT:-}" ] && set -- -xkbdir "$XKB_CONFIG_ROOT" "$@"
+case ":$PATH:" in *":$here/bin:"*) ;; *) export PATH="$here/bin:$PATH" ;; esac

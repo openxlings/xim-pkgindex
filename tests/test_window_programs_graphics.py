@@ -8,10 +8,12 @@ where the stack takes 2% (xlings: 2026-10-18 Luban OS distribution design,
 E13).
 
 What says "this opens a window" here is a menu entry: a Linux recipe that
-writes a freedesktop `[Desktop Entry]` depends on `xim:graphics`, or says why
-not with a `graphics-ok: <why>` comment -- a program on the host's loader, for
-one, uses the host's stack. Libraries categorised `gui` (gtk3, qt-base) open
-nothing themselves; their consumers do.
+writes a freedesktop `[Desktop Entry]` into an applications directory depends
+on `xim:graphics`, or says why not with a `graphics-ok: <why>` comment -- a
+program on the host's loader, for one, uses the host's stack. A desktop
+session's entry (share/wayland-sessions) is not one: the session draws inside
+a Luban system. Libraries categorised `gui` (gtk3, qt-base) open nothing
+themselves; their consumers do.
 """
 import re
 from pathlib import Path
@@ -27,7 +29,7 @@ def _recipes():
 
 
 def _opens_a_window_on_linux(text):
-    return "[Desktop Entry]" in text and "linux" in text
+    return "[Desktop Entry]" in text and "applications" in text and "linux" in text
 
 
 @pytest.mark.static

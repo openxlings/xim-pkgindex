@@ -140,6 +140,11 @@ def assert_config_registers_package_name(meta: XpkgMeta):
 
     content = meta.raw_content
 
+    # 策略 0: config 交给 libs/luban_component.lua，它注册 package.name
+    # (pkginfo.name()) 及其程序与文件
+    if re.search(r'\bluban_component\.config\s*\(', content):
+        return
+
     # 无任何 xvm.add 调用 — 必定未注册
     if not _has_xvm_add_calls(content):
         pytest.fail(

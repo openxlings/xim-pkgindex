@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<!-- The labwc desktop's defaults; ~/.config/labwc/rc.xml replaces them. -->
+<labwc_config>
+  <core>
+    <decoration>server</decoration>
+  </core>
+  <theme>
+    <cornerRadius>6</cornerRadius>
+    <font place="">
+      <name>sans-serif</name>
+      <size>10</size>
+    </font>
+  </theme>
+  <keyboard>
+    <default />
+    <keybind key="W-Return"><action name="Execute" command="xdg-terminal-exec" /></keybind>
+    <keybind key="A-Return"><action name="Execute" command="xdg-terminal-exec" /></keybind>
+    <keybind key="W-d"><action name="Execute" command="fuzzel" /></keybind>
+    <keybind key="A-F2"><action name="Execute" command="fuzzel" /></keybind>
+    <keybind key="W-q"><action name="Close" /></keybind>
+  </keyboard>
+  <mouse>
+    <default />
+  </mouse>
+</labwc_config>

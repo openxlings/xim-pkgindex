@@ -1,0 +1,9 @@
+#!/bin/sh
+# @NAME@: @PROG@, run by this tree's own loader with its own libraries, so the
+# tree needs nothing of the system it is on but the kernel (xim-pkgindex
+# tools/res/build.sh). libexec/@NAME@/env sets what the program reads and
+# `lib`, where its libraries are.
+here=$(readlink -f "$0"); here=${here%/bin/*}
+prog=@PROG@
+. "$here/libexec/@NAME@/env"
+exec "$here/libexec/@NAME@/lib/@LOADER@" --library-path "$lib" "$here/libexec/@NAME@/bin/@PROG@" "$@"

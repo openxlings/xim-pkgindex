@@ -25,6 +25,9 @@
 #   edk2-firmware the UEFI firmware qemu ships, decompressed (no build)
 #   qemu-system   static qemu-system-x86_64 and -aarch64 (musl; user networking)
 #   labwc-desktop the labwc desktop session, relocatable (musl loader and libraries inside)
+#   foot          luban:foot, a terminal, as a component tree (Alpine 3.24; bundle below)
+#   xwayland      luban:xwayland, X11 programs on Wayland, built without glamor and GLX
+#   labwc         luban:labwc, the labwc desktop, on a wlroots built with pixman alone
 #   bash          bash on glibc (the shape x86_64's is)
 #   coreutils     coreutils on glibc
 #   openssl       openssl on glibc, lib64
@@ -62,6 +65,9 @@ die() { log "$*"; exit 1; }
 # The factory: pinned by digest (a tag moves; a digest does not).
 ALPINE="alpine:3.20@sha256:d9e853e87e55526f6b2917df91a2115c36dd7c696a35be12163d44e6e2a4b6bc"
 DEBIAN="debian:12@sha256:2c037a04925515fdd6ea85ea14a682d0e79931f5e9f5d07b6dbfc6ba12f9e858"
+# The desktop components' (bundle below): one Alpine for all of them, so their
+# trees agree with each other and with the Qt runtime.
+ALPINE_DESKTOP="alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6"
 # The xlings that makes a sysroot for what links glibc.
 XLINGS_CLIENT="${XLINGS_CLIENT:-2026.10.11.2}"
 
@@ -76,6 +82,12 @@ input() {   # name version -> the recorded digest
     printf '%s' "$sha"
 }
 
+input_version() {   # name -> the one version of it inputs.txt records
+    local v; v="$(awk -v n="$1" '$1 == n { print $2 }' "$here/inputs.txt")"
+    [[ -n "$v" && "$(wc -l <<< "$v")" -eq 1 ]] || die "tools/res/inputs.txt needs exactly one $1 (has: ${v:-none})"
+    printf '%s' "$v"
+}
+
 source_of() {   # name version url file
     fetch "$3" "$(input "$1" "$2")" "$4"
 }
@@ -83,7 +95,7 @@ source_of() {   # name version url file
 # A command in a container, $work mounted at /w; what it makes is ours after.
 # The files go back to the runner's user however the build ends, and the
 # build's status is the container's: a failed `a && b` chain fails it.
-alpine() { docker run --rm -v "$work:/w" -w /w "$ALPINE" sh -euc "trap 'chown -R $(id -u):$(id -g) /w' EXIT; $1"; }
+alpine() { docker run --rm -v "$work:/w" -w /w "${ALPINE_IMAGE:-$ALPINE}" sh -euc "trap 'chown -R $(id -u):$(id -g) /w' EXIT; $1"; }
 debian() {
     docker run --rm -v "$work:/w" -w /w -e DEBIAN_FRONTEND=noninteractive "$DEBIAN" \
         bash -euo pipefail -c "trap 'chown -R $(id -u):$(id -g) /w' EXIT; $1"
@@ -120,6 +132,56 @@ pack_data() {   # directory under $work -> $out/<name>-<version>.tar.gz
 
 provenance() {  # directory, text
     printf '%s\n' "$2" > "$work/$1/README.provenance"
+}
+
+# A Luban desktop component as one relocatable tree (xlings: 2026-10-18 Luban
+# OS distribution design §4.6, §13.5): Alpine's builds of its programs, with
+# the musl loader and every library they link, private to it:
+#
+#   bin/<program>                 runs the loader on the program (bundle/run.in)
+#   libexec/<name>/bin/<program>  the program; no ELF names a loader (no-interp.py)
+#   libexec/<name>/lib/           its libraries and the loader
+#   libexec/<name>/env            what the programs read, sourced by bin/<program>
+#   etc/, share/                  tools/res/<name>: defaults, sessions, checks
+#
+# The tree is the package's own -- a root projects libexec/<name>/ whole and
+# never merges it with another package's -- so it runs on a glibc root, a musl
+# one, or a host. Its own directory: libexec/<name>, never libexec/lib.
+#
+#   bundle <name> <dir> "<programs, absolute in the container>" "<shell run first>" ["<more libraries' files>"]
+bundle() {
+    local name="$1" d="$2" progs="$3" prep="$4" more="${5:-}" p loader="ld-musl-$arch.so.1"
+    ALPINE_IMAGE="$ALPINE_DESKTOP" alpine "$prep \
+        && apk info -v 2>/dev/null | sort > /w/installed \
+        && mkdir -p /w/$d/bin /w/$d/libexec/$name/bin /w/$d/libexec/$name/lib \
+        && for p in $progs; do cp -L \$p /w/$d/libexec/$name/bin/; done \
+        && for f in $progs $more; do ldd \$f | awk '/=>/ { print \$3 }'; done | sort -u > /w/libs \
+        && while read -r l; do cp -L \"\$l\" /w/$d/libexec/$name/lib/; done < /w/libs \
+        && cp -L /lib/$loader /w/$d/libexec/$name/lib/"
+    [[ ! -e "$work/$d/lib" ]] || die "a lib/ in the tree: a root would link it into its /usr/lib"
+    cp -r "$here/$name/." "$work/$d/"
+    mv "$work/$d/env" "$work/$d/libexec/$name/env"
+    n="$(python3 "$here/bundle/no-interp.py" "$work/$d/libexec/$name/bin")"
+    [[ "$n" -ge 1 ]] || die "PT_INTERP left in place ($n changed)"
+    for p in $progs; do
+        p="$(basename "$p")"
+        sed -e "s/@NAME@/$name/g" -e "s/@PROG@/$p/g" -e "s/@LOADER@/$loader/g" "$here/bundle/run.in" > "$work/$d/bin/$p"
+        chmod 755 "$work/$d/bin/$p"
+    done
+    mkdir -p "$work/$d/share/licenses"
+}
+
+# The Alpine package a bundle's version is the build of, checked.
+bundle_upstream() {  # alpine package, version
+    grep -q "^$1-$2-r" "$work/installed" || die "Alpine 3.24's $1 is not $2: $(grep "^$1-[0-9]" "$work/installed")"
+}
+
+# A headless session of a component in Debian -- a root that is not Alpine's,
+# with nothing of the tree's system: its compositor runs and a client draws.
+headless() {  # dir, shell (in /w/<dir>, with XDG_RUNTIME_DIR and WAYLAND_DISPLAY)
+    debian "cd /w/$1 && export HOME=/tmp/home XDG_RUNTIME_DIR=/tmp/rt WLR_BACKENDS=headless WLR_RENDERER=pixman WLR_LIBINPUT_NO_DEVICES=1 WAYLAND_DISPLAY=wayland-0 \
+        && mkdir -p -m 700 /tmp/rt /tmp/home && $2" \
+      || { log "--- session.log"; tail -40 "$work/session.log" >&2 || true; die "the session did not run"; }
 }
 
 static_only() {   # every ELF given is statically linked
@@ -175,7 +237,7 @@ kernel-virt)
         && make -s ARCH=$karch defconfig && make -s ARCH=$karch kvm_guest.config \
         && scripts/kconfig/merge_config.sh -m -O . .config /w/kernel-virt.config >/dev/null \
         && make -s ARCH=$karch olddefconfig \
-        && for opt in VIRTIO_BLK VIRTIO_NET VIRTIO_PCI VIRTIO_CONSOLE EXT4_FS BLK_DEV_INITRD RD_GZIP DEVTMPFS DEVTMPFS_MOUNT EFI_STUB VIRTIO_FS; do \
+        && for opt in VIRTIO_BLK VIRTIO_NET VIRTIO_PCI VIRTIO_CONSOLE EXT4_FS BLK_DEV_INITRD RD_GZIP DEVTMPFS DEVTMPFS_MOUNT EFI_STUB VIRTIO_FS UDMABUF; do \
              grep -q \"^CONFIG_\$opt=y\" .config || { echo \"CONFIG_\$opt is not built in\"; exit 1; }; done \
         && make -s ARCH=$karch -j\$(nproc) LOCALVERSION=-virt $(basename "$image") \
         && make -s ARCH=$karch LOCALVERSION=-virt kernelrelease > /w/release"
@@ -605,7 +667,7 @@ labwc-desktop)
     [[ ! -e "$work/$d/lib" ]] || die "a lib/ in the tree: a root would link it into its /usr/lib"
     cp -r "$here/labwc-desktop/etc" "$here/labwc-desktop/share" "$work/$d/"
     # No ELF here names a loader outside the tree (the tree's own runs them).
-    n="$(python3 "$here/labwc-desktop/no-interp.py" "$work/$d/libexec")"
+    n="$(python3 "$here/bundle/no-interp.py" "$work/$d/libexec")"
     [[ "$n" -ge 8 ]] || die "PT_INTERP left in place ($n changed)"
     for p in $progs; do
         # Xwayland's keymaps: the tree's data and its xkbcomp, not the system's paths.
@@ -633,6 +695,83 @@ labwc-desktop)
     grep -q "foot version" "$work/foot.version" || die "foot does not run"
     rm -f "$work/shot.ppm"
     provenance "$d" "labwc-desktop $version: Alpine 3.20 packages $(tr '\n' ' ' < "$work/versions")-- repackaged with the musl loader and the libraries they link (libexec/lib, private), run through bin/<program>; configuration and the session file from xim-pkgindex tools/res/labwc-desktop; a headless session in Debian 12 drew its background and panel"
+    pack "$d" ;;
+foot)
+    # luban:foot: the terminal the desktops start through the default-terminal
+    # convention (share/xdg-terminals; xdg-terminal-exec). It links no EGL,
+    # so its tree is small. <upstream>-rN: this index's Nth build of it.
+    v="${version%%-r[0-9]*}"; d="foot-$version-linux-$arch"
+    bundle foot "$d" "/usr/bin/foot /usr/bin/footclient" "apk add -q foot foot-extra-terminfo"
+    bundle_upstream foot "$v"
+    mkdir -p "$work/$d/share/terminfo/f"
+    ALPINE_IMAGE="$ALPINE_DESKTOP" alpine "apk add -q foot-extra-terminfo && cp /usr/share/terminfo/f/foot* /w/$d/share/terminfo/f/ \
+        && cp -r /usr/share/licenses/foot /w/$d/share/licenses/ 2>/dev/null || true"
+    headless "$d" "./bin/foot --version > /w/foot.version"
+    grep -q "foot version: $v" "$work/foot.version" || die "foot does not run: $(cat "$work/foot.version")"
+    provenance "$d" "luban:foot $version: Alpine 3.24 $(grep -E '^foot-[0-9]' "$work/installed" | tr '\n' ' ')-- with the musl loader and the libraries it links (libexec/foot, private), run through bin/<program>; defaults and the default-terminal entry from xim-pkgindex tools/res/foot; it ran in Debian 12. Sources: https://codeberg.org/dnkl/foot and Alpine's aports (community/foot), unmodified"
+    pack "$d" ;;
+xwayland)
+    # luban:xwayland: X11 programs on a Wayland desktop. Alpine's Xwayland
+    # links glamor and GLX, and through them mesa and LLVM (248 MB); a Luban
+    # machine has no GPU, so this one is built from the same source with
+    # neither (Alpine's APKBUILD, -Dglamor=false -Ddri3=false -Dglx=false):
+    # 16 libraries.
+    v="${version%%-r[0-9]*}"; d="xwayland-$version-linux-$arch"
+    source_of xwayland "$v" "https://xorg.freedesktop.org/archive/individual/xserver/xwayland-$v.tar.xz" "$work/xwayland.tar.xz"
+    source_of xwayland-libtirpc-patch "$v" "https://raw.githubusercontent.com/alpinelinux/aports/3.24-stable/community/xwayland/use-libtirpc-nokrb.patch" "$work/libtirpc.patch"
+    bundle xwayland "$d" "/w/build/xwayland-$v/output/hw/xwayland/Xwayland /usr/bin/xkbcomp" \
+        "apk add -q build-base meson ninja dbus-dev font-util-dev libdrm-dev libtirpc-dev libmd-dev libxcvt-dev libxfont2-dev \
+             libxkbfile-dev libxshmfence-dev pixman-dev wayland-dev wayland-protocols xorgproto xtrans xkbcomp xkeyboard-config xwayland \
+         && mkdir -p /w/build && tar -xJf /w/xwayland.tar.xz -C /w/build && cd /w/build/xwayland-$v && patch -p1 < /w/libtirpc.patch \
+         && meson setup output --prefix=/usr --buildtype=release -Dipv6=true -Dxvfb=false -Dxdmcp=false -Dxcsecurity=true \
+              -Ddri3=false -Dglamor=false -Dglx=false -Dsha1=libmd -Dxkb_dir=/usr/share/X11/xkb -Dxkb_output_dir=/var/lib/xkb >/dev/null \
+         && ninja -C output >/dev/null && cd /w"
+    bundle_upstream xwayland "$v"
+    ! grep -Eq 'libEGL|libGL|libgallium|libLLVM' "$work/libs" || die "Xwayland links GL: $(grep -E 'libEGL|libGL|libgallium|libLLVM' "$work/libs" | tr '\n' ' ')"
+    rm -rf "$work/build"
+    headless "$d" "./bin/Xwayland -version > /w/x.version 2>&1"
+    grep -q "Xwayland Version $v" "$work/x.version" || die "Xwayland does not run: $(cat "$work/x.version")"
+    provenance "$d" "luban:xwayland $version: Xwayland $v (xorg.freedesktop.org, sha256 $(input xwayland "$v")) with Alpine 3.24's use-libtirpc-nokrb.patch, configured as Alpine's APKBUILD but -Ddri3=false -Dglamor=false -Dglx=false; xkbcomp from Alpine 3.24 ($(grep -E '^xkbcomp-[0-9]' "$work/installed" | tr '\n' ' ')); the keymaps are xim:xkeyboard-config's; the musl loader and its libraries private (libexec/xwayland); it ran in Debian 12"
+    pack "$d" ;;
+labwc)
+    # luban:labwc: labwc with a panel (yambar), a launcher (fuzzel), a
+    # background (swaybg) and screenshots (grim); the terminal is
+    # luban:foot's and X11 is luban:xwayland's, both found the way any
+    # desktop finds them. Alpine's wlroots links EGL and gbm, and through mesa
+    # LLVM (235 MB); a Luban machine renders with pixman, so wlroots is built
+    # from the same source without GPU renderers or allocators (Alpine's
+    # APKBUILD, -Drenderers= -Dallocators=), installed over Alpine's, and
+    # labwc links it.
+    v="${version%%-r[0-9]*}"; d="labwc-$version-linux-$arch"; wv="$(input_version wlroots)"
+    source_of wlroots "$wv" "https://gitlab.freedesktop.org/wlroots/wlroots/-/archive/$wv/wlroots-$wv.tar.gz" "$work/wlroots.tar.gz"
+    bundle labwc "$d" "/usr/bin/labwc /usr/bin/yambar /usr/bin/fuzzel /usr/bin/swaybg /usr/bin/grim" \
+        "apk add -q labwc yambar fuzzel swaybg grim build-base meson ninja eudev-dev hwdata-dev libcap-dev libdisplay-info-dev libinput-dev \
+             libseat-dev libliftoff-dev libxcb-dev libxkbcommon-dev lcms2-dev pixman-dev wayland-dev wayland-protocols \
+             xcb-util-image-dev xcb-util-renderutil-dev xcb-util-wm-dev xkeyboard-config-dev xwayland-dev libdrm-dev \
+         && mkdir -p /w/build && tar -xzf /w/wlroots.tar.gz -C /w/build && cd /w/build/wlroots-$wv \
+         && meson setup build --prefix=/usr --buildtype=release -Dexamples=false -Drenderers= -Dallocators= \
+              -Dcolor-management=enabled -Dxwayland=enabled >/dev/null && ninja -C build >/dev/null && ninja -C build install >/dev/null && cd /w \
+         && mkdir -p /w/$d/share/licenses && for p in labwc yambar fuzzel swaybg grim; do \
+              [ -d /usr/share/licenses/\$p ] && cp -r /usr/share/licenses/\$p /w/$d/share/licenses/ || true; done"
+    bundle_upstream labwc "$v"
+    ! grep -Eq 'libEGL|libgbm|libgallium|libLLVM' "$work/libs" || die "labwc links GL: $(grep -E 'libEGL|libgbm|libgallium|libLLVM' "$work/libs" | tr '\n' ' ')"
+    rm -rf "$work/build"
+    install -m 755 "$here/bundle/xdg-terminal-exec" "$work/$d/bin/xdg-terminal-exec"
+    # A root has fonts and keymaps (the recipe depends on xim:luban-fonts and
+    # xim:xkeyboard-config); labwc does not start without either.
+    headless "$d" "apt-get -qq update && apt-get -qq install -y fonts-dejavu-core xkb-data >/dev/null \
+        && { ./bin/labwc >/w/session.log 2>&1 & } \
+        && for i in \$(seq 1 50); do [ -S /tmp/rt/wayland-0 ] && break; sleep 0.2; done && sleep 6 \
+        && ./bin/grim -t ppm /w/shot.ppm \
+        && { cat /proc/[0-9]*/cmdline 2>/dev/null || true; } | tr \"\\\\000\" \" \" > /w/procs && grep -q labwc/bin/[y]ambar /w/procs && grep -q labwc/bin/[s]waybg /w/procs"
+    shot_die() { cp "$work/shot.ppm" "$out/failed-shot.ppm" 2>/dev/null; cp "$work/session.log" "$out/failed-session.log" 2>/dev/null; die "$1"; }
+    head -c 20 "$work/shot.ppm" | grep -aq '^1280 720$' || shot_die "the screenshot is not the 1280x720 headless output"
+    px() { od -An -tx1 -j $((16 + ($2 * 1280 + $1) * 3)) -N 3 "$work/shot.ppm" | tr -d ' '; }
+    log "pixels: (640,360) $(px 640 360), (600,710) $(px 600 710), (600,680) $(px 600 680)"
+    [[ "$(px 640 360)" == 2e3440 ]] || shot_die "the background is not drawn"
+    [[ "$(px 600 710)" == "$(px 900 710)" && "$(px 600 710)" != "$(px 600 680)" ]] || shot_die "the panel is not drawn"
+    rm -f "$work/shot.ppm"
+    provenance "$d" "luban:labwc $version: Alpine 3.24 $(grep -E '^(labwc|yambar|fuzzel|swaybg|grim)-[0-9]' "$work/installed" | tr '\n' ' ')-- with wlroots $wv (gitlab.freedesktop.org, sha256 $(input wlroots "$wv")) configured as Alpine's APKBUILD but -Drenderers= -Dallocators= (pixman only); the musl loader and the libraries they link private (libexec/labwc), run through bin/<program>; configuration, the session and xdg-terminal-exec from xim-pkgindex tools/res/labwc and tools/res/bundle; a headless session in Debian 12 drew its background and panel"
     pack "$d" ;;
 terminfo)
     # The terminal descriptions a root has (xlings design 2026-10-16 L §10):

@@ -1,0 +1,4 @@
+{"checks": [
+  {"id": "foot-runs", "what": "the terminal starts", "run": "foot --version | grep -q 'foot version'", "timeout": 10},
+  {"id": "foot-default-terminal", "what": "it is a default terminal", "run": "test -f /usr/share/xdg-terminals/foot.desktop", "timeout": 10}
+]}

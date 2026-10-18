@@ -1,0 +1,4 @@
+{"checks": [
+  {"id": "labwc-runs", "what": "the compositor starts", "run": "labwc --version | grep -q labwc", "timeout": 10},
+  {"id": "labwc-terminal", "what": "its terminal is the default one", "run": "command -v xdg-terminal-exec >/dev/null && ls /usr/share/xdg-terminals/*.desktop >/dev/null 2>&1", "timeout": 10}
+]}
