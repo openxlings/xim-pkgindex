@@ -41,12 +41,12 @@ package = {
             -- changed recipe under `local`, where a `luban:` prefix would
             -- not resolve (graphics.lua says more). Namespaced once published.
             deps = { "foot", "xwayland", "xim:luban-fonts", "xim:xkeyboard-config" },
-            ["latest"] = { ref = "0.20.0-r1" },
-            ["0.20.0-r1"] = {
+            ["latest"] = { ref = "0.20.0-r2" },
+            ["0.20.0-r2"] = {
                 url = "XLINGS_RES",
                 sha256 = {
-                    x86_64 = "576a0d7d256a39c672af86ca501b82b14e6a6779065b8abee842cc072a0fed61",
-                    aarch64 = "e23f15ca7e913f23f4b226003de950b3639157a9151c9ca0dc3fcc880c86f292",
+                    x86_64 = "0e71ecb3c89c134da99aac6c54f61cf6b65e6994c1d8412d3834ab6d7eeddfcf",
+                    aarch64 = "f1e93ab50956b2b58563f09fdf56585295ac96fb1735b5f4118130f41d1d0660",
                 },
             },
         },

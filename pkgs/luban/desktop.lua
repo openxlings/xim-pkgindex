@@ -35,7 +35,7 @@ local aarch64 = recipe_arch == "aarch64" or recipe_arch == "arm64"
 
 -- Its composition (design §6.1): core + a desktop + luban:foot + luban:xwayland
 -- + the tool sets. A desktop is chosen at `luban new --desktop`, not by edition.
-local desktop = aarch64 and { package = "luban:labwc@0.20.0-r1", session = "labwc" }
+local desktop = aarch64 and { package = "luban:labwc@0.20.0-r2", session = "labwc" }
                          or { package = "luban:xdesk@2026.10.18.1", session = "xdesk-classic" }
 
 local CHECKS = [[

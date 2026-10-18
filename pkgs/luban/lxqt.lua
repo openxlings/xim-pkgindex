@@ -42,14 +42,14 @@ package = {
 
     xpm = {
         linux = {
-            deps = { "luban:qt-runtime@6.11.1-r1", "luban:labwc", "luban:foot", "xim:luban-fonts", "xim:xkeyboard-config",
+            deps = { "luban:qt-runtime@6.11.1-r2", "luban:labwc", "luban:foot", "xim:luban-fonts", "xim:xkeyboard-config",
                      "xim:patchelf" },
-            ["latest"] = { ref = "2.4.0-r1" },
-            ["2.4.0-r1"] = {
+            ["latest"] = { ref = "2.4.0-r2" },
+            ["2.4.0-r2"] = {
                 url = "XLINGS_RES",
                 sha256 = {
-                    x86_64 = "eb41ac0e4cf1f9f9c8cf968febfc05ed2e13b25588f539705a4cfa95468f9724",
-                    aarch64 = "f3d9f5d9fbe9ca515bef5f149756c974877dfabb757bbb19afcbbcd950fc468d",
+                    x86_64 = "268d45ae84ee80ad4e4fab3551e3e4a14730e66042551f2740adafc5d1c4abab",
+                    aarch64 = "f14bc05b44fc95a1f9662cec5a9addeeef07300e49a6ef6f9521910a1eae84bb",
                 },
             },
         },
@@ -62,7 +62,7 @@ import("xim.libxpkg.log")
 import("xim.libxpkg.fs")
 import("xim.pkgindex.luban_component")
 
-local RUNTIME = "6.11.1-r1"
+local RUNTIME = "6.11.1-r2"
 
 function install()
     return luban_component.install({ "bin/luban-lxqt", "libexec/lxqt/bin/lxqt-session", "share/wayland-sessions/lxqt.desktop" })

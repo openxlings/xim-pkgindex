@@ -30,12 +30,12 @@ package = {
     -- not their names.
     xpm = {
         linux = {
-            ["latest"] = { ref = "6.11.1-r1" },
-            ["6.11.1-r1"] = {
+            ["latest"] = { ref = "6.11.1-r2" },
+            ["6.11.1-r2"] = {
                 url = "XLINGS_RES",
                 sha256 = {
-                    x86_64 = "570aab753059172b128a1796a66463f5093da8025a5ef0aeeee03d4243c50d24",
-                    aarch64 = "024cb416b53f235f8c975d234a5801df7b96afe21c8d5428ebb3a82504246e93",
+                    x86_64 = "7e8b9924547fd23f02f8a91a9cf2d622c3c4d1d8a3700c1ab4b086c71bcf5e78",
+                    aarch64 = "e54aecb32fff12365eda846a77975f95ffde7264eb8d3109510d726c8dda283a",
                 },
             },
         },
