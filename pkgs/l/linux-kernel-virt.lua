@@ -24,7 +24,17 @@ package = {
     -- machine need; a real machine's hardware is linux-kernel's (generic).
     xpm = {
         linux = {
-            ["latest"] = { ref = "6.12.112-r1" },
+            ["latest"] = { ref = "6.12.112-r2" },
+            -- r2: kernel-virt.config adds UDMABUF -- KWin 6.8's software
+            -- rendering allocates from /dev/udmabuf (xlings: 2026-10-18 Luban
+            -- OS distribution design §13.3). The same 6.12.112 source.
+            ["6.12.112-r2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "b0bfd6d1ba96e42780c3d51664481eb2736bd3cf4c5b83c71b81a986a3ff2dcf",
+                    aarch64 = "ac3d504752e81033b0aa8a67a2bbd7bb28003ea9e8d095b6ef3f19ec100d831a",
+                },
+            },
             -- r1: kernel-virt.config adds FUSE_FS and VIRTIO_FS -- a Mac's Luban
             -- host machine and its machines share by virtio-fs (xlings: Luban
             -- OS part 4 §6.6). The same 6.12.112 source; its release is 6.12.112-virt.

@@ -45,8 +45,8 @@ package = {
             ["0.20.0-r1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
-                    x86_64 = "@SHA_LABWC_X86_64@",
-                    aarch64 = "@SHA_LABWC_AARCH64@",
+                    x86_64 = "576a0d7d256a39c672af86ca501b82b14e6a6779065b8abee842cc072a0fed61",
+                    aarch64 = "e23f15ca7e913f23f4b226003de950b3639157a9151c9ca0dc3fcc880c86f292",
                 },
             },
         },

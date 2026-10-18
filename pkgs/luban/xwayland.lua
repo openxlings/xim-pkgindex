@@ -31,8 +31,8 @@ package = {
             ["24.1.14-r1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
-                    x86_64 = "@SHA_XWAYLAND_X86_64@",
-                    aarch64 = "@SHA_XWAYLAND_AARCH64@",
+                    x86_64 = "47c4a3c47eae89049d31a917606daec1e2b359b1e5099652c855312e2e9cfed2",
+                    aarch64 = "6e4c1cc3f7f671f9a9ea01e7c70645bb8e4dd1677e8fa62147ebff8c0a4a5e5e",
                 },
             },
         },
