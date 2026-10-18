@@ -143,6 +143,7 @@ class TestVerify:
 | 库载荷中没有编译器运行时 | `tests/test_no_compiler_runtime_in_payloads.py` |
 | 已发布的 Luban 版本输出不变 | `tests/test_luban_published.py` |
 | 资源变化时提高 `revision` | `.github/scripts/check-revision.lua` |
+| `floor` 是 `0 ≤ floor ≤ revision` 的整数，写在版本项上 | `.github/scripts/check-revision.lua` |
 | 载荷中没有硬链接 | `.github/scripts/check-payload-hard-links.py` |
 | 依赖的命名空间在本索引中可解析 | `.github/scripts/check-dep-namespace.sh` |
 | workflow 和脚本中不调用宿主包管理器 | `tools/lint_host_deps.sh` |

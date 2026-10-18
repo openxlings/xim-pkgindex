@@ -9,6 +9,7 @@ The rule under test: an entry that exists on the base may change its resource
 (url, mirror urls, sha256, per-arch map, res) only together with a higher
 `revision`; a revision never decreases, is a non-negative integer when
 present, sits on the version entry, and is absent from `ref` aliases.
+`floor` follows the same placement rules and never exceeds the revision.
 """
 from pathlib import Path
 import shutil
@@ -187,6 +188,34 @@ class TestRevisionCheck:
         # Which clients may use a version does not change what it downloads.
         code, out = check(edit('sha256 = "aaaa",', 'sha256 = "aaaa",\n                min_client = "2026.10.16.1",'))
         assert code == 0, out
+
+    def test_floor_raised_up_to_the_revision_passes(self):
+        # The author learns a revision fixes what every installed payload
+        # has: the floor rises, the resource stays, no new revision.
+        code, out = check(edit("revision = 2,", "revision = 2,\n                floor = 2,"))
+        assert code == 0, out
+
+    def test_floor_with_a_new_revision_passes(self):
+        code, out = check(edit("revision = 2,", "revision = 3,\n                floor = 3,"))
+        assert code == 0, out
+
+    def test_floor_above_the_revision_fails(self):
+        code, out = check(edit("revision = 2,", "revision = 2,\n                floor = 3,"))
+        assert code == 1 and "is above the entry's revision 2" in out, out
+
+    @pytest.mark.parametrize("value", ['"1"', "-1", "1.0"])
+    def test_malformed_floor_fails(self, value):
+        code, out = check(edit("revision = 2,", f"revision = 2,\n                floor = {value},"))
+        assert code == 1 and "`floor = " in out and "not a non-negative integer" in out, out
+
+    def test_floor_on_an_alias_fails(self):
+        code, out = check(edit('["latest"] = { ref = "1.1.0" }',
+                               '["latest"] = { ref = "1.1.0", floor = 0 }'))
+        assert code == 1 and "carries no floor" in out, out
+
+    def test_floor_inside_a_per_arch_map_fails(self):
+        code, out = check(edit('sha256 = "cccc" }', 'sha256 = "cccc", floor = 0 }'))
+        assert code == 1 and "`floor` inside" in out, out
 
     def test_revision_on_an_alias_fails(self):
         code, out = check(edit('["latest"] = { ref = "1.1.0" }',

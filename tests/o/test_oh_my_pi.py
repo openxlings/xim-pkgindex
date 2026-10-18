@@ -22,9 +22,9 @@ from tests.lib.assertions import (
 from tests.lib.platform_utils import skip_if_not
 from tests.lib.xpkg_parser import parse_xpkg
 
-PKG = "oh-my-pi"
 PKG_FILE = "pkgs/o/oh-my-pi.lua"
-RELEASE_VERSION = "18.8.4"
+INSTALL_PKG = "local:oh-my-pi@18.11.3"
+RELEASE_VERSION = "18.11.3"
 
 
 @pytest.fixture(scope="module")
@@ -141,14 +141,14 @@ class TestLifecycle:
     @pytest.mark.lifecycle
     @skip_if_not("linux")
     def test_install(self):
-        assert_install_succeeds(PKG, timeout=600)
+        assert_install_succeeds(INSTALL_PKG, timeout=600)
 
 
 class TestVerify:
     @pytest.mark.verify
     @skip_if_not("linux")
     def test_version(self):
-        assert_command_output("omp --version", contains=RELEASE_VERSION)
+        assert_command_output("xlings use oh-my-pi local:18.11.3 >/dev/null && omp --version", contains=RELEASE_VERSION)
 
     @pytest.mark.verify
     @skip_if_not("linux")

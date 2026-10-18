@@ -66,7 +66,9 @@ artifact。
 5. **已发布的资源永不改变。** 重新构建（补丁、前缀、布局修正、去掉硬链接）以新的 tag 和
    资产名 `<version>-r<N>` 发布，版本项的 `revision` 改为 N。旧资产原样保留：缓存了索引的
    客户端仍持有它的 hash。`.github/scripts/check-revision.lua` 拒绝资源变化而 revision 未提高
-   的改动。
+   的改动。重新构建修复的是所有已装载荷都有的缺陷时，同时把版本项的 `floor` 提到 N；不是这种
+   情况（去掉硬链接、只为某个平台调整布局）时不动它，已装的载荷继续可用
+   （[`floor`](../specs/xpackage-v2.md#floor--the-oldest-installed-revision-still-usable)）。
 
 ## xlings 的发布
 

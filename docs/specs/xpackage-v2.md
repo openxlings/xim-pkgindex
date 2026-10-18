@@ -427,14 +427,55 @@ name with `-r<N>` appended to the version — and the old asset stays published
 as it is. An entry that inherits its url from `source` states an explicit `url`
 for the new asset, since the template would name the old one.
 
+### `floor` — the oldest installed revision still usable
+
+A version entry may state `floor` beside `revision`: the oldest packaging
+revision of that version an installed payload may have and still be used.
+
+| field | type | default | on |
+|---|---|---|---|
+| `floor` | integer, `0 ≤ floor ≤ revision` | `0` | the version entry table, like `revision`; never on an alias or inside a per-arch map |
+
+```lua
+["23.1.3"] = {
+    url = "...", sha256 = "...",
+    revision = 2,
+    floor = 2,   -- revision 2 fixes what every installed payload has
+},
+```
+
+A raised `revision` says what a new install gets. Whether a payload installed
+at an older revision must be replaced is a separate fact, and only the
+recipe's author knows it: a revision that removes hard links for Android, or
+regenerates a cfg after a dependency's layout changed, leaves every installed
+payload correct; a revision that fixes a defect every installed payload has
+does not. The entry states the second case with `floor`. An entry that states
+none has floor 0, so every installed revision stays usable.
+
+`floor` may rise without a new revision (the author learns later that an
+existing revision fixed a defect every older payload has). A value above the
+revision reads as the revision in the reference implementation (libxpkg ≥
+0.0.65); a value that is not a non-negative integer reads as 0. The index CI
+rejects both.
+
 ### The client contract
 
 - **Record** the revision that was installed, with the payload. A record that
   predates the field reads as revision 0.
-- **Compare** it with the recipe entry's revision. A payload whose recorded
-  revision differs is not installed.
-- **Reinstall** it, and state the reason (`revision 0 -> 1`). A failed
-  reinstall leaves the previous payload in place.
+- **Classify** the payload against the recipe entry. It is *current* when its
+  recorded revision equals the entry's `revision`, and *usable* when it is
+  complete and its recorded revision is at least the entry's `floor`.
+- **Use** a usable payload. A command that only uses packages (a build, a run)
+  does not replace it; a payload that is not usable is replaced before use.
+- **Replace** a payload that is not current when the user asks for the package
+  explicitly (an install), and state the reason (`revision 0 -> 1`). The
+  dependencies an install plans are replaced the same way: the new payload was
+  written against the index's current closure. A failed replacement leaves the
+  previous payload in place.
+
+A client that predates `floor` ignores the key and treats a payload that is not
+current as it did before (xlings before 2026.10.17.1 reports it as not
+complete, and mcpp before 2026.10.17.1 replaces it on use).
 
 ### Compatibility
 
@@ -448,9 +489,10 @@ client ever pairs new bytes with an old hash.
 `.github/scripts/check-revision.lua` enforces the rule for every version entry
 a pull request changes: a changed resource (url, mirror urls, sha256, per-arch
 map, `res`) without a higher revision fails, as does a revision that decreases,
-is not a non-negative integer, sits inside a per-arch map or on an alias. A
-hook change is not visible to it; whether one alters the installed files is
-decided in review.
+is not a non-negative integer, sits inside a per-arch map or on an alias, and a
+`floor` that is malformed, misplaced or above the entry's revision. A hook
+change is not visible to it; whether one alters the installed files is decided
+in review, and so is the floor.
 
 ## Install hooks must be arch-aware too
 
