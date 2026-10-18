@@ -43,6 +43,8 @@ package = {
             },
             ["1.93.1"] = _win_url("1.93.1"),
         },
+        -- graphics-ok: on the host's loader, with the host's desktop stack (below).
+        --
         -- INTENTIONALLY ON THE HOST LOADER. This is a decision, not an
         -- unfinished migration, and it is recorded here so the next sweep for
         -- payloads still using the host's ld-linux does not "fix" it.

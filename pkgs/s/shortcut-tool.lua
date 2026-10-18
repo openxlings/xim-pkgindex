@@ -1,3 +1,5 @@
+-- graphics-ok: writes menu entries for other programs; it opens no window itself.
+
 package = {
     spec = "1",
     -- base info
