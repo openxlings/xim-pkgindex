@@ -30,6 +30,7 @@
 #   labwc         luban:labwc, the labwc desktop, on a wlroots built with pixman alone
 #   qt-runtime    luban:qt-runtime, the Qt the Qt desktops share (Qt 6, mesa, their libraries; no programs)
 #   lxqt          luban:lxqt, LXQt on luban:labwc, its libraries beyond the Qt runtime's
+#   kde           luban:kde, KDE Plasma nested in luban:labwc, all it brings beyond the Qt runtime (preview)
 #   bash          bash on glibc (the shape x86_64's is)
 #   coreutils     coreutils on glibc
 #   openssl       openssl on glibc, lib64
@@ -1002,6 +1003,66 @@ lxqt)
     log "pixels: (640,360) $(px 640 360), (600,710) $(px 600 710), (600,680) $(px 600 680)"
     [[ "$(px 600 710)" != "$(px 600 680)" ]] || shot_die "the panel is not drawn"
     provenance "$d" "luban:lxqt $version: Alpine 3.24 $(grep -E '^(lxqt-session|lxqt-panel|pcmanfm-qt|liblxqt|layer-shell-qt|breeze-icons|dbus)-[0-9]' "$work/installed" | tr '\n' ' ')-- on luban:qt-runtime $QT_RUNTIME (the same Qt, checked); the libraries beyond the runtime's and the musl loader private (libexec/lxqt), lxqt-panel's plugins in lib/lxqt-panel; the session, defaults and checks from xim-pkgindex tools/res/lxqt; a headless session on luban:labwc in Debian 12 drew its panel. Sources: https://github.com/lxqt and Alpine's aports, unmodified"
+    pack "$d" ;;
+kde)
+    # luban:kde (preview): KDE Plasma 6 -- KWin, Plasma's shell, Dolphin,
+    # Konsole, System Settings -- on luban:qt-runtime ($QT_RUNTIME), KWin a
+    # window of luban:labwc filling its output (design 2026-10-18 §13.3 (a):
+    # the bridge shows labwc; a KDE-native adapter is the next form). Every
+    # package Plasma brings beyond the runtime's, laid out as Alpine lays it
+    # out under /usr (qt-runtime/desktop-auto.sh): a Luban system's /usr has
+    # its helpers where they were built to be.
+    v="${version%%-r[0-9]*}"; d="kde-$version-linux-$arch"
+    apks="kwin plasma-workspace plasma-desktop breeze breeze-icons konsole dolphin systemsettings kde-cli-tools"
+    cp "$here/qt-runtime/tree.sh" "$here/qt-runtime/desktop-auto.sh" "$here/bundle/strip-rpath.sh" "$work/"
+    ALPINE_IMAGE="$ALPINE_DESKTOP" alpine "sh /w/desktop-auto.sh /w/$d kde \"$QT_RUNTIME_APKS\" \"$apks\" \
+        && apk info -v 2>/dev/null | sort > /w/installed \
+        && apk add -q patchelf && sh /w/strip-rpath.sh /w/$d/libexec/kde /w/$d/lib /w/rt-root/libexec/qt-runtime \
+        && kwin_wayland --version > /w/kwin.version 2>&1 || true"
+    bundle_upstream plasma-workspace "$v"
+    bundle_upstream qt6-qtbase "${QT_RUNTIME%%-r[0-9]*}"
+    # Plasma's own sessions start KWin as a compositor of its own, which the
+    # bridge cannot show; this package's session is the one.
+    mkdir -p "$work/dropped"
+    for f in "$work/$d"/share/wayland-sessions/* "$work/$d"/share/xsessions/*; do [[ -e "$f" ]] && mv "$f" "$work/dropped/"; done
+    cp -r "$here/kde/." "$work/$d/"
+    mv "$work/$d/env" "$work/$d/libexec/kde/env"
+    # Its programs keep their interpreter (config() names its loader in
+    # them); its libraries and plugins name none.
+    python3 "$here/bundle/no-interp.py" "$work/$d/libexec/kde/lib" "$work/$d/libexec/kde/plugins" "$work/$d/libexec/kde/qml" >/dev/null
+    while read -r p; do
+        sed -e "s/@NAME@/kde/g" -e "s/@PROG@/$p/g" "$here/bundle/run-direct.in" > "$work/$d/bin/$p"
+        chmod 755 "$work/$d/bin/$p"
+    done < "$work/programs"
+    # What config() points at this tree's loader: every ELF naming one.
+    python3 "$here/bundle/programs.py" "$work/$d" > "$work/$d/libexec/kde/programs"
+    log "kde: $(wc -l < "$work/programs") programs ($(wc -l < "$work/$d/libexec/kde/programs") ELF with a loader), $(ls "$work/$d/libexec/kde/lib" | wc -l) libraries of its own, $(du -sh "$work/$d" | cut -f1)"
+    # A headless session in Debian: luban:labwc (published) as the host
+    # compositor, the runtime this build made; Plasma's panel draws.
+    lv="$(input_version luban-labwc-$arch)"
+    source_of "luban-labwc-$arch" "$lv" "https://github.com/xlings-res/labwc/releases/download/$lv/labwc-$lv-linux-$arch.tar.gz" "$work/labwc.tar.gz"
+    mkdir -p "$work/test" && tar -xzf "$work/labwc.tar.gz" -C "$work/test"
+    python3 "$here/bundle/no-interp.py" "$work/rt-root" >/dev/null
+    cp -a "$work/$d" "$work/test/$d"
+    echo "/w/rt-root" > "$work/test/$d/libexec/kde/qt-runtime"
+    headless "test/$d" "apt-get -qq update && apt-get -qq install -y fonts-dejavu-core xkb-data patchelf >/dev/null \
+        && find . -type f ! -name '*.so*' -perm -u+x | while read -r p; do patchelf --print-interpreter \$p 2>/dev/null | grep -q '^/lib/ld-musl' || continue; \
+             patchelf --set-interpreter \$PWD/libexec/kde/lib/ld-musl-$arch.so.1 --set-rpath \$PWD/libexec/kde/lib:/w/rt-root/libexec/qt-runtime/lib \$p; done \
+        && for s in share/*; do [ -e /usr/\$s ] || ln -s \$PWD/\$s /usr/\$s; done \
+        && mkdir -p /usr/lib && for l in lib/*; do [ -e /usr/\$l ] || ln -s \$PWD/\$l /usr/\$l; done \
+        && for b in bin/*; do [ -e /usr/\$b ] || ln -s \$PWD/\$b /usr/\$b; done \
+        && for l in libexec/*; do [ \$l = libexec/kde ] || [ -e /usr/\$l ] || ln -s \$PWD/\$l /usr/\$l; done \
+        && export PATH=/w/test/labwc-$lv-linux-$arch/bin:\$PWD/bin:\$PATH \
+        && { ./bin/luban-kde >/w/session.log 2>&1 & } \
+        && for i in \$(seq 1 50); do [ -S /tmp/rt/wayland-0 ] && break; sleep 0.2; done && sleep 60 \
+        && grim -t ppm /w/shot.ppm \
+        && { cat /proc/[0-9]*/cmdline 2>/dev/null || true; } | tr \"\\\\000\" \" \" > /w/procs && grep -q kde/bin/[k]win_wayland /w/procs && grep -q kde/bin/[p]lasmashell /w/procs"
+    shot_die() { cp "$work/shot.ppm" "$out/failed-shot.ppm" 2>/dev/null; cp "$work/session.log" "$out/failed-session.log" 2>/dev/null; die "$1"; }
+    head -c 20 "$work/shot.ppm" | grep -aq '^1280 720$' || shot_die "the screenshot is not the 1280x720 headless output"
+    px() { od -An -tx1 -j $((16 + ($2 * 1280 + $1) * 3)) -N 3 "$work/shot.ppm" | tr -d ' '; }
+    log "pixels: (640,360) $(px 640 360), (600,700) $(px 600 700), (600,640) $(px 600 640)"
+    [[ "$(px 640 360)" != 000000 && "$(px 600 700)" != "$(px 600 640)" ]] || shot_die "Plasma's desktop and panel are not drawn"
+    provenance "$d" "luban:kde $version: Alpine 3.24 $(grep -E '^(plasma-workspace|kwin|plasma-desktop|konsole|dolphin|systemsettings|breeze)-[0-9]' "$work/installed" | tr '\n' ' ')-- on luban:qt-runtime $QT_RUNTIME (the same Qt, checked); every package Plasma brings beyond the runtime's as Alpine lays it out under /usr, the libraries private (libexec/kde) with the musl loader; the session from xim-pkgindex tools/res/kde; a headless session nested in luban:labwc in Debian 12 drew Plasma's desktop and panel. Sources: https://invent.kde.org and Alpine's aports, unmodified"
     pack "$d" ;;
 *)
     die "unknown resource: $what" ;;

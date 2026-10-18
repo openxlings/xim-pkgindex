@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<!-- KDE's host compositor (luban:kde): labwc showing KWin's window alone, filling its output. -->
+<labwc_config>
+  <core><decoration>server</decoration></core>
+  <windowRules>
+    <windowRule identifier="*" serverDecoration="no"><action name="ToggleFullscreen" /></windowRule>
+  </windowRules>
+  <keyboard><default /></keyboard>
+  <mouse><default /></mouse>
+</labwc_config>

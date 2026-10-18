@@ -1,0 +1,14 @@
+#!/bin/sh
+# luban:kde's session (share/wayland-sessions/kde.desktop): KDE Plasma 6 --
+# KWin and its shell -- nested in labwc (luban:labwc), the compositor the
+# Luban OS window shows, KWin's window filling its output (design 2026-10-18
+# §13.3, (a)); on a D-Bus session bus of its own. Without a GPU, mesa's
+# llvmpipe draws (the runtime's).
+here=$(readlink -f "$0"); here=${here%/bin/*}
+. "$here/libexec/kde/env"
+export XDG_CURRENT_DESKTOP=KDE XDG_SESSION_DESKTOP=KDE KDE_FULL_SESSION=true KDE_SESSION_VERSION=6 XDG_SESSION_TYPE=wayland
+export XDG_CONFIG_DIRS="${XDG_CONFIG_DIRS:-/etc/xdg}:$here/etc/xdg"
+export XDG_DATA_DIRS="${XDG_DATA_DIRS:-/usr/local/share:/usr/share}:$here/share"
+compositor="$here/etc/xdg/kde/wayland/labwc"
+exec "$here/libexec/kde/bin/dbus-run-session" --config-file="$here/share/dbus-1/session.conf" \
+    --dbus-daemon="$here/libexec/kde/bin/dbus-daemon" -- labwc -C "$compositor" -S startplasma-wayland
