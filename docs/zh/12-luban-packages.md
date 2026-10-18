@@ -6,6 +6,24 @@ Luban 的 edition、策略和启动层都是本索引中的普通配方：xpkg �
 只有 `libs/luban.lua` 写盘。Luban 是什么、edition 怎样使用，见
 [xlings 的 Luban 文档](https://github.com/openxlings/xlings/tree/main/docs/zh/luban)。
 
+## `luban:` 命名空间
+
+官方的、为 Luban 做的包发布在 `luban` 命名空间：edition（`luban:core`、`luban:desktop`）、
+桌面组件（`luban:labwc`、`luban:lxqt`、`luban:kde`、`luban:xdesk`）、Qt 运行时、工具集，以及为它们
+构建的整包。通用软件留在 `xim`（fish、mesa、内核），用户在宿主上运行的程序也是（`xim:luban`、
+`xim:luban-os`）。任何人都可以依赖 `luban:` 的包——任何 SubOS、任何系统：命名空间说明谁发布，
+不限制谁使用。
+
+luban 中的短名就是这个命名空间里的名字：`--edition desktop` 即 `luban:desktop`，`--desktop kde`
+即 `luban:kde`。新增官方桌面就是在这里新增它的配方；luban 与 Luban OS 应用里没有名单。
+
+`xim`、`luban`、`subos`、`config` 是**保留的**：`index-compat.json` 声明它们（`namespaces.reserved`），
+认识这个字段的客户端只从本索引接受这些命名空间的包——别处写 `namespace = "luban"` 的配方被拒绝，
+并指出它的索引与文件。规则在客户端、是通用的：任何索引都可以这样保留自己的命名空间。
+
+已发布的 `subos:luban-*` edition 与 `xim:labwc-desktop` 冻结：保留、照常解析（实例与旧 edition 引用它们），
+不再更新。接替者声明 `replaces = "<旧名字>"`，客户端只认同一索引内的声明。
+
 ## 类别
 
 | 类别 | `type` | 命名空间 | 版本 | 写盘 |
