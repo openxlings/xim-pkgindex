@@ -36,7 +36,8 @@ for e in nano tiny luban-tiny-musl core; do
     # luban says what it was made from, wherever the system lives (its own
     # prefix domain or the home's).
     rec="$(L status "e-$e" --json)"
-    grep -q '"edition": *"subos:' <<<"$rec" || fail "$e: no edition record: $rec"
+    # subos:luban-<e> for a client before 2026.10.18.1, luban:<e> since.
+    grep -Eq '"edition": *"(subos|luban):' <<<"$rec" || fail "$e: no edition record: $rec"
 done
 X subos exec e-nano -- /usr/bin/xlings --version >/dev/null || fail "nano: its xlings"
 L run e-tiny -- /bin/sh -c 'grep -q ID=luban /usr/share/factory/etc/os-release && grep -q luban-init /etc/inittab' \
