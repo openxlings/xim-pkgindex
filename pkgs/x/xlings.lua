@@ -38,7 +38,14 @@ package = {
             -- res_versioned: version-bump bot tracks openxlings/xlings releases and
             -- appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "2026.10.17.1" },
+            ["latest"] = { ref = "2026.10.18.1" },
+            ["2026.10.18.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "261777a4c8edbbd7b50857ced6c7183aa0dcca3fc378b636d9847872c6437a7e",
+                    x86_64 = "1ac974cff47ca91ae2561ad65fc12cf9bf5737ff3d0be8f21650b757714f3c7f",
+                },
+            },
             ["2026.10.17.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -905,7 +912,13 @@ package = {
             -- res_versioned: version-bump bot tracks openxlings/xlings releases and
             -- appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "2026.10.17.1" },
+            ["latest"] = { ref = "2026.10.18.1" },
+            ["2026.10.18.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "33f484cd385963fe9c990935c01b3d8cbd466ff12e2534711e93a8469c67f824",
+                },
+            },
             ["2026.10.17.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -1670,7 +1683,13 @@ package = {
             -- res_versioned: version-bump bot tracks openxlings/xlings releases and
             -- appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
             res_versioned = true,
-            ["latest"] = { ref = "2026.10.17.1" },
+            ["latest"] = { ref = "2026.10.18.1" },
+            ["2026.10.18.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "43c053d05244e85e920f9a0add8a8813730740216404763b3605bcf5cdf6621a",
+                },
+            },
             ["2026.10.17.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
