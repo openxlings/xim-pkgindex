@@ -83,8 +83,8 @@ jobs:
           - { what: foot,          version: "1.27.0-r1",          arch: aarch64 }
           - { what: xwayland,      version: "24.1.14-r1",         arch: x86_64 }
           - { what: xwayland,      version: "24.1.14-r1",         arch: aarch64 }
-          - { what: labwc,         version: "0.20.0-r1",          arch: x86_64 }
-          - { what: labwc,         version: "0.20.0-r1",          arch: aarch64 }
+          - { what: labwc,         version: "0.20.0-r2",          arch: x86_64 }
+          - { what: labwc,         version: "0.20.0-r2",          arch: aarch64 }
           - { what: qt-runtime,    version: "6.11.1-r1",          arch: x86_64 }
           - { what: qt-runtime,    version: "6.11.1-r1",          arch: aarch64 }
           - { what: lxqt,          version: "2.4.0-r1",           arch: x86_64 }

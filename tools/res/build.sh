@@ -173,6 +173,10 @@ bundle() {
     mv "$work/$d/env" "$work/$d/libexec/$name/env"
     n="$(python3 "$here/bundle/no-interp.py" "$work/$d/libexec/$name/bin")"
     [[ "$n" -ge 1 ]] || die "PT_INTERP left in place ($n changed)"
+    # A library may be a program too (libcap.so.2 prints its version): it
+    # names no loader either -- a Luban system refuses an ELF whose loader is
+    # outside its checked closure.
+    python3 "$here/bundle/no-interp.py" "$work/$d/libexec/$name/lib" >/dev/null
     for p in $progs; do
         p="$(basename "$p")"
         sed -e "s/@NAME@/$name/g" -e "s/@PROG@/$p/g" -e "s/@LOADER@/$loader/g" "$here/bundle/run.in" > "$work/$d/bin/$p"
