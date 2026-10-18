@@ -36,10 +36,40 @@ honours from the same index only.
 
 | Kind | `type` | Namespace | Version | Written by |
 |---|---|---|---|---|
-| an edition | `subos` | `subos` | the release date, `YYYY.M.D.N` | `luban.edition({id, variant, versions, files})` |
+| an edition | `subos` | `luban` (frozen ones: `subos`) | the release date, `YYYY.M.D.N` | `luban.edition({id, variant, versions, files})` |
+| a desktop component (`luban:labwc`, `luban:foot`) | `package` | `luban` | upstream's, `-rN` for this index's build | the recipe; `luban_component` places it |
+| a composite (`luban:compositor`, `luban:xdesk`) or a tool set (`luban:tools-dev`) | `package` | `luban` | the release date, or what it composes | its deps, its session and configuration |
 | a policy | `subos-policy` | `xim` | the release date | `luban.policy(json)` |
 | a boot profile | `package` | `xim` | the release date | `luban.boot(json)` |
 | upstream software (kernels, limine, busybox, ...) | `package` | `xim` | upstream's, `-rN` when rebuilt | the recipe |
+
+Each component says, in a comment, the form it takes and why (a bundle, a
+runtime, a composite of atomic packages): the name and its conventions (a
+session file, `X-Luban-Shell`, its checks, the default terminal) stay when the
+form changes.
+
+## An edition's manifest
+
+A `luban:` edition writes its manifest from a table (`luban.manifest`): its
+keys in a fixed order, `replaces` the frozen edition it succeeds, and a `luban`
+object -- what a reader that knows Luban is told about it:
+
+| Key | Meaning |
+|---|---|
+| `luban.settings` | what it presets (`mode`, `enter`, `desktop`, `login_shell`): below what the person sets; also written to the root's `usr/share/luban/settings.json`, which an older luban reads |
+| `luban.os` | how it names itself (`name`, `version`): a distribution based on Luban says its own name |
+| `luban.requires` | what it needs of whoever reads or runs it (opencaps names, `root-layout>=2`); a reader that lacks one says so before making it |
+
+```lua
+manifest = {
+    subos_kind = "rootfs", min_client = "2026.10.18.1",
+    from = "luban:core@2026.10.18.1", replaces = "subos:luban-desktop",
+    abi = { kernel = "linux", libc = "gnu" },
+    packages = { "luban:xdesk@2026.10.18.1", "luban:foot@1.27.0-r1" },
+    luban = { settings = { mode = "machine", enter = "desktop", desktop = "xdesk-classic" } },
+    workspace = {},
+}
+```
 
 ## The rules
 
@@ -60,6 +90,8 @@ honours from the same index only.
    the newest and records it in the instance, and `luban upgrade` moves it. Every
    other package is pinned exactly.
 6. **A preview edition** (`status = "preview"`) has no short name in luban.
+   A desktop is not an edition: an edition presets one, and `luban new --desktop`
+   chooses another (`luban-desktop` in a package's `categories` offers it).
 7. **An edition is built for the architectures it declares.** `archs` lists only
    what was booted and tested; each package it pins exists for each of them, and
    `scripts/test-luban-editions.sh` runs on x86_64 and aarch64.

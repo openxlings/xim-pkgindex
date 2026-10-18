@@ -76,6 +76,7 @@ local EXEMPT = {
     -- The Luban desktop components, new together (#999): namespaced once published.
     ["pkgs/luban/labwc.lua"] = { ["foot"] = "#999, remove once published", ["xwayland"] = "#999, remove once published" },
     ["pkgs/luban/compositor.lua"] = { ["labwc"] = "#999, remove once published" },
+    ["pkgs/luban/xdesk.lua"] = { ["foot"] = "#999, remove once published" },
 }
 
 local function is_exempt(file, name)
