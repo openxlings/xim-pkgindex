@@ -28,6 +28,8 @@
 #   foot          luban:foot, a terminal, as a component tree (Alpine 3.24; bundle below)
 #   xwayland      luban:xwayland, X11 programs on Wayland, built without glamor and GLX
 #   labwc         luban:labwc, the labwc desktop, on a wlroots built with pixman alone
+#   qt-runtime    luban:qt-runtime, the Qt the Qt desktops share (Qt 6, mesa, their libraries; no programs)
+#   lxqt          luban:lxqt, LXQt on luban:labwc, its libraries beyond the Qt runtime's
 #   bash          bash on glibc (the shape x86_64's is)
 #   coreutils     coreutils on glibc
 #   openssl       openssl on glibc, lib64
@@ -68,6 +70,14 @@ DEBIAN="debian:12@sha256:2c037a04925515fdd6ea85ea14a682d0e79931f5e9f5d07b6dbfc6b
 # The desktop components' (bundle below): one Alpine for all of them, so their
 # trees agree with each other and with the Qt runtime.
 ALPINE_DESKTOP="alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6"
+# The Qt runtime the Qt desktops are built on (luban:qt-runtime): Alpine
+# 3.24's Qt at this index's build of it. A Qt desktop names it exactly, and
+# its build checks the Qt it links is this one.
+QT_RUNTIME="6.11.1-r1"
+QT_RUNTIME_APKS="qt6-qtbase qt6-qtbase-x11 qt6-qtbase-wayland qt6-qtwayland qt6-qtsvg qt6-qtdeclarative mesa-dri-gallium"
+# The Qt runtime's tree (tools/res/qt-runtime/tree.sh <dir>, in the Alpine
+# container): the Qt libraries, their plugins and QML modules, every library
+# they link and the musl loader.
 # The xlings that makes a sysroot for what links glibc.
 XLINGS_CLIENT="${XLINGS_CLIENT:-2026.10.11.2}"
 
@@ -899,6 +909,91 @@ luban-fonts)
     for x in "$f"/*; do file -b "$x" | grep -Eq "TrueType|OpenType" || die "$(basename "$x") is not a font: $(file -b "$x")"; done
     provenance "$d" "luban-fonts $version: JetBrains Mono 2.304 (Regular, Bold), Inter 4.1 (Regular), Sarasa Mono SC 1.0.42 (Regular, Bold), Noto Sans SC 2.004 (Regular, subset OTF), Fusion Pixel 12px proportional zh_hans 2026.09.25 -- from their GitHub releases, digests in tools/res/inputs.txt; licenses in share/licenses/luban-fonts"
     pack_data "$d" ;;
+qt-runtime)
+    # luban:qt-runtime: what LXQt and KDE share (design 2026-10-18 §13.5) --
+    # Qt 6 (base, wayland, svg, declarative), the mesa its GUI links (EGL and
+    # GL; llvmpipe where there is no GPU) and every library they need, the
+    # musl loader; libexec/qt-runtime/{lib,plugins,qml}. No programs: a
+    # desktop's wrapper runs its programs with this lib/ after its own.
+    v="${version%%-r[0-9]*}"; d="qt-runtime-$version-linux-$arch"
+    [[ "$version" == "$QT_RUNTIME" ]] || die "build.sh names the Qt runtime $QT_RUNTIME, not $version"
+    cp "$here/qt-runtime/tree.sh" "$work/tree.sh"
+    ALPINE_IMAGE="$ALPINE_DESKTOP" alpine "apk add -q $QT_RUNTIME_APKS qt6-qtbase-dev && apk info -v 2>/dev/null | sort > /w/installed \
+        && sh /w/tree.sh /w/$d/libexec/qt-runtime $QT_RUNTIME_APKS && mkdir -p /w/$d/share/licenses \
+        && for p in qt6-qtbase mesa; do [ -d /usr/share/licenses/\$p ] && cp -r /usr/share/licenses/\$p /w/$d/share/licenses/ || true; done \
+        && cp -L /usr/lib/qt6/bin/qtpaths6 /w/qtpaths6"
+    bundle_upstream qt6-qtbase "$v"
+    [[ ! -e "$work/$d/lib" ]] || die "a lib/ in the tree"
+    n="$(python3 "$here/bundle/no-interp.py" "$work/$d/libexec/qt-runtime" "$work/qtpaths6")"
+    log "qt-runtime: $(ls "$work/$d/libexec/qt-runtime/lib" | wc -l) libraries, $(du -sh "$work/$d" | cut -f1); PT_INTERP cleared in $n"
+    # It loads: a Qt program runs against it in Debian, by its loader.
+    debian "cd /w/$d && ./libexec/qt-runtime/lib/ld-musl-$arch.so.1 --library-path ./libexec/qt-runtime/lib /w/qtpaths6 --qt-version > /w/qt.version"
+    grep -q "^$v" "$work/qt.version" || die "the runtime does not run Qt $v: $(cat "$work/qt.version")"
+    provenance "$d" "luban:qt-runtime $version: Alpine 3.24 $(grep -E '^(qt6-qtbase|qt6-qtwayland|qt6-qtsvg|qt6-qtdeclarative|mesa)-[0-9]' "$work/installed" | tr '\n' ' ')-- their libraries, plugins and QML modules and every library they link, with the musl loader (libexec/qt-runtime); a Qt program ran against it in Debian 12. Sources: https://download.qt.io and Alpine's aports, unmodified"
+    pack "$d" ;;
+lxqt)
+    # luban:lxqt: LXQt 2 on Wayland -- its session on luban:labwc (the
+    # compositor; `labwc -S lxqt-session`, as upstream's lxqt-wayland-session
+    # starts it), its panel, desktop and file manager (pcmanfm-qt), runner,
+    # notifications and settings, D-Bus for its session, the breeze icons.
+    # Its libraries are those beyond luban:qt-runtime's ($QT_RUNTIME, checked
+    # the same Qt); lxqt-panel's plugins in lib/lxqt-panel, where a Luban
+    # system's /usr/lib has them (its compiled-in path).
+    v="${version%%-r[0-9]*}"; d="lxqt-$version-linux-$arch"
+    progs="/usr/bin/lxqt-session /usr/bin/lxqt-panel /usr/bin/lxqt-runner /usr/bin/lxqt-config /usr/bin/lxqt-config-appearance \
+        /usr/bin/lxqt-config-session /usr/bin/lxqt-config-input /usr/bin/lxqt-config-monitor /usr/bin/lxqt-notificationd \
+        /usr/bin/lxqt-about /usr/bin/lxqt-leave /usr/bin/pcmanfm-qt /usr/bin/dbus-daemon /usr/bin/dbus-run-session /usr/bin/xdg-user-dirs-update"
+    cp "$here/qt-runtime/tree.sh" "$here/qt-runtime/desktop.sh" "$work/"
+    carried="lxqt-session lxqt-panel lxqt-runner lxqt-config lxqt-notificationd lxqt-about lxqt-qtplugin lxqt-themes lxqt-menu-data \
+        liblxqt libqtxdg libfm-qt pcmanfm-qt breeze-icons hicolor-icon-theme dbus xdg-user-dirs"
+    ALPINE_IMAGE="$ALPINE_DESKTOP" alpine "apk add -q $QT_RUNTIME_APKS $carried layer-shell-qt \
+        && apk info -v 2>/dev/null | sort > /w/installed \
+        && mkdir -p /w/$d/lib && cp -a /usr/lib/lxqt-panel /w/$d/lib/ \
+        && sh /w/desktop.sh /w/$d lxqt \"$QT_RUNTIME_APKS\" \"$progs\" \"$carried\" \
+        && cd /w/$d/etc/xdg/autostart && for a in at-spi-dbus-bus lxqt-xscreensaver-autostart lxqt-globalkeyshortcuts; do \
+             [ ! -e \$a.desktop ] || mv \$a.desktop /w/dropped-\$a.desktop; done"
+    bundle_upstream lxqt-session "$v"
+    bundle_upstream qt6-qtbase "${QT_RUNTIME%%-r[0-9]*}"
+    cp -r "$here/lxqt/." "$work/$d/"
+    mv "$work/$d/env" "$work/$d/libexec/lxqt/env"
+    # Its programs keep their interpreter: the recipe's config() names this
+    # tree's loader and library directories in them where it is installed (a
+    # Qt program reads /proc/self/exe; LXQt's panel takes no theme run by a
+    # loader). Its libraries and plugins name none.
+    n="$(python3 "$here/bundle/no-interp.py" "$work/$d/libexec/lxqt/lib" "$work/$d/libexec/lxqt/plugins" "$work/$d/lib")"
+    for p in $progs; do
+        p="$(basename "$p")"
+        sed -e "s/@NAME@/lxqt/g" -e "s/@PROG@/$p/g" "$here/bundle/run-direct.in" > "$work/$d/bin/$p"
+        chmod 755 "$work/$d/bin/$p"
+    done
+    log "lxqt: $(ls "$work/$d/libexec/lxqt/lib" | wc -l) libraries of its own, $(du -sh "$work/$d" | cut -f1)"
+    # A headless session in Debian: luban:labwc (published) as its compositor,
+    # the runtime this build made where the recipe's config() names it; the
+    # panel and the desktop draw.
+    lv="$(input_version luban-labwc-$arch)"
+    source_of "luban-labwc-$arch" "$lv" "https://github.com/xlings-res/labwc/releases/download/$lv/labwc-$lv-linux-$arch.tar.gz" "$work/labwc.tar.gz"
+    mkdir -p "$work/test" && tar -xzf "$work/labwc.tar.gz" -C "$work/test"
+    python3 "$here/bundle/no-interp.py" "$work/rt-root" >/dev/null
+    # Installed as the recipe's config() installs it, in a copy.
+    cp -a "$work/$d" "$work/test/$d"
+    echo "/w/rt-root" > "$work/test/$d/libexec/lxqt/qt-runtime"
+    headless "test/$d" "apt-get -qq update && apt-get -qq install -y fonts-dejavu-core xkb-data patchelf >/dev/null \
+        && for p in libexec/lxqt/bin/*; do patchelf --set-interpreter \$PWD/libexec/lxqt/lib/ld-musl-$arch.so.1 \
+             --set-rpath \$PWD/libexec/lxqt/lib:/w/rt-root/libexec/qt-runtime/lib \$p; done \
+        && mkdir -p /usr/lib /usr/share && ln -s \$PWD/lib/lxqt-panel /usr/lib/lxqt-panel \
+        && for s in share/*; do [ -e /usr/\$s ] || ln -s \$PWD/\$s /usr/\$s; done \
+        && export PATH=/w/test/labwc-$lv-linux-$arch/bin:\$PWD/bin:\$PATH \
+        && { ./bin/luban-lxqt >/w/session.log 2>&1 & } \
+        && for i in \$(seq 1 50); do [ -S /tmp/rt/wayland-0 ] && break; sleep 0.2; done && sleep 15 \
+        && grim -t ppm /w/shot.ppm \
+        && { cat /proc/[0-9]*/cmdline 2>/dev/null || true; } | tr \"\\\\000\" \" \" > /w/procs && grep -q lxqt/bin/[l]xqt-panel /w/procs && grep -q lxqt/bin/[p]cmanfm-qt /w/procs"
+    shot_die() { cp "$work/shot.ppm" "$out/failed-shot.ppm" 2>/dev/null; cp "$work/session.log" "$out/failed-session.log" 2>/dev/null; die "$1"; }
+    head -c 20 "$work/shot.ppm" | grep -aq '^1280 720$' || shot_die "the screenshot is not the 1280x720 headless output"
+    px() { od -An -tx1 -j $((16 + ($2 * 1280 + $1) * 3)) -N 3 "$work/shot.ppm" | tr -d ' '; }
+    log "pixels: (640,360) $(px 640 360), (600,710) $(px 600 710), (600,680) $(px 600 680)"
+    [[ "$(px 600 710)" != "$(px 600 680)" ]] || shot_die "the panel is not drawn"
+    provenance "$d" "luban:lxqt $version: Alpine 3.24 $(grep -E '^(lxqt-session|lxqt-panel|pcmanfm-qt|liblxqt|layer-shell-qt|breeze-icons|dbus)-[0-9]' "$work/installed" | tr '\n' ' ')-- on luban:qt-runtime $QT_RUNTIME (the same Qt, checked); the libraries beyond the runtime's and the musl loader private (libexec/lxqt), lxqt-panel's plugins in lib/lxqt-panel; the session, defaults and checks from xim-pkgindex tools/res/lxqt; a headless session on luban:labwc in Debian 12 drew its panel. Sources: https://github.com/lxqt and Alpine's aports, unmodified"
+    pack "$d" ;;
 *)
     die "unknown resource: $what" ;;
 esac

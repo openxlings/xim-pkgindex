@@ -1,0 +1,20 @@
+#!/bin/sh
+# luban:lxqt's session (share/wayland-sessions/lxqt.desktop): LXQt on labwc
+# (luban:labwc), as upstream's startlxqtwayland starts it -- `labwc -S
+# lxqt-session` -- on a D-Bus session bus of its own. Its defaults (etc/xdg)
+# are read after the system's and the user's, then LXQt's own in share/ (as
+# upstream's session adds the data directories to the configuration ones).
+here=$(readlink -f "$0"); here=${here%/bin/*}
+export XDG_CURRENT_DESKTOP="LXQt:labwc:wlroots" XDG_SESSION_DESKTOP=lxqt XDG_SESSION_TYPE=wayland
+export XDG_MENU_PREFIX="lxqt-" QT_QPA_PLATFORMTHEME=lxqt QT_QPA_PLATFORM=wayland QT_AUTO_SCREEN_SCALE_FACTOR=0
+export XDG_CONFIG_DIRS="${XDG_CONFIG_DIRS:-/etc/xdg}:$here/etc/xdg:/usr/share:$here/share"
+export XDG_DATA_DIRS="${XDG_DATA_DIRS:-/usr/local/share:/usr/share}:$here/share"
+cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
+mkdir -p "$cfg" 2>/dev/null
+# The desktop shows a folder: it is there, as upstream's session makes it.
+if [ -r "$cfg/user-dirs.dirs" ]; then . "$cfg/user-dirs.dirs"; fi
+mkdir -p "${XDG_DESKTOP_DIR:-$HOME/Desktop}" 2>/dev/null
+compositor="$here/etc/xdg/lxqt/wayland/labwc"
+[ -d "$cfg/lxqt/wayland/labwc" ] && compositor="$cfg/lxqt/wayland/labwc"
+exec "$here/bin/dbus-run-session" --config-file="$here/share/dbus-1/session.conf" --dbus-daemon="$here/bin/dbus-daemon" \
+    -- labwc -C "$compositor" -S lxqt-session

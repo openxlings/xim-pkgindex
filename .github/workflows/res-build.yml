@@ -85,6 +85,10 @@ jobs:
           - { what: xwayland,      version: "24.1.14-r1",         arch: aarch64 }
           - { what: labwc,         version: "0.20.0-r1",          arch: x86_64 }
           - { what: labwc,         version: "0.20.0-r1",          arch: aarch64 }
+          - { what: qt-runtime,    version: "6.11.1-r1",          arch: x86_64 }
+          - { what: qt-runtime,    version: "6.11.1-r1",          arch: aarch64 }
+          - { what: lxqt,          version: "2.4.0-r1",           arch: x86_64 }
+          - { what: lxqt,          version: "2.4.0-r1",           arch: aarch64 }
           # the desktop editions' terminal tools (xlings: Luban OS desktop part 2 §5)
           - { what: tmux,          version: "3.8",                arch: x86_64 }
           - { what: tmux,          version: "3.8",                arch: aarch64 }
