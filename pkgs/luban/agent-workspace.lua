@@ -47,7 +47,10 @@ local versions = {
             from = "luban:core@2026.10.18.1",
             replaces = "subos:luban-agent-workspace",
             abi = { kernel = "linux", libc = "gnu" },
-            packages = { "luban:tools-dev@2026.10.18.1", "luban:tools-agent@2026.10.18.1" },
+            -- The agents unpinned beside their set: each is recorded as it
+            -- resolved at `new`, and `luban upgrade` moves it (they change weekly).
+            packages = { "luban:tools-dev@2026.10.18.1", "luban:tools-agent@2026.10.18.1",
+                         "xim:claude", "xim:codex", "xim:pi", "xim:opencode" },
             policy = "xim:agent-private@2026.10.11.1",
             luban = { settings = { enter = "console", login_shell = "/usr/bin/fish" } },
             workspace = {},

@@ -22,7 +22,7 @@ package = {
     -- Form: a composite (design §4.6): its deps, nothing of its own.
     xpm = {
         linux = {
-            deps = { "xim:xdesk@2026.10.18.1", "foot" },
+            deps = { "xim:xdesk@2026.10.18.1", "luban:foot" },
             ["latest"] = { ref = "2026.10.18.1" },
             ["2026.10.18.1"] = {},
         },

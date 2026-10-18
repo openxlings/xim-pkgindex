@@ -26,7 +26,7 @@ package = {
     xpm = {
         linux = {
             -- New with this package: bare (labwc.lua says why).
-            deps = { "labwc" },
+            deps = { "luban:labwc" },
             ["latest"] = { ref = "2026.10.18.1" },
             ["2026.10.18.1"] = {},
         },

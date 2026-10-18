@@ -140,8 +140,9 @@ def main():
         # edition, so the version installed at `new` is the one recorded.
         # The record is the domain's when the system lives in one (/xlings).
         record = json.loads(config_of("instance.json").read_text())["edition"]
-        assert record["ref"].startswith("subos:luban-agent-workspace@"), record
-        assert record["chain"][0].startswith("subos:luban-core@"), record
+        # luban:agent-workspace from a 2026.10.18.1 client, subos:luban-agent-workspace before.
+        assert record["ref"].startswith(("luban:agent-workspace@", "subos:luban-agent-workspace@")), record
+        assert record["chain"][0].startswith(("luban:core@", "subos:luban-core@")), record
         assert isinstance(record["packages"].get("xim:claude"), str), record
         assert record["policy"].startswith("xim:agent-private@"), record
         assert "up to date" in luban("upgrade", "agent", "--dry-run"), "a fresh workspace is the newest"

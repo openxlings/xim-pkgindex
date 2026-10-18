@@ -56,7 +56,9 @@ local versions = {
             replaces = { "subos:luban-desktop", "subos:luban-desktop-xdesk" },
             abi = { kernel = "linux", libc = "gnu" },
             packages = { desktop.package, "luban:foot@1.27.0-r1", "luban:xwayland@24.1.14-r1", "luban:tools-dev@2026.10.18.1",
-                         "luban:tools-agent@2026.10.18.1", "luban:tools-cli@2026.10.18.1", "xim:adwaita-cursors@49.0" },
+                         "luban:tools-agent@2026.10.18.1", "luban:tools-cli@2026.10.18.1", "xim:adwaita-cursors@49.0",
+                         -- The agents unpinned: recorded at `new`, moved by `luban upgrade`.
+                         "xim:claude", "xim:codex", "xim:pi", "xim:opencode" },
             luban = { settings = { mode = "machine", enter = "desktop", desktop = desktop.session, login_shell = "/usr/bin/fish" } },
             workspace = {},
         },

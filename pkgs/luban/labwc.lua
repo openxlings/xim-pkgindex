@@ -40,7 +40,7 @@ package = {
             -- New in this index with this package, so bare: CI registers a
             -- changed recipe under `local`, where a `luban:` prefix would
             -- not resolve (graphics.lua says more). Namespaced once published.
-            deps = { "foot", "xwayland", "xim:luban-fonts", "xim:xkeyboard-config" },
+            deps = { "luban:foot", "luban:xwayland", "xim:luban-fonts", "xim:xkeyboard-config" },
             ["latest"] = { ref = "0.20.0-r2" },
             ["0.20.0-r2"] = {
                 url = "XLINGS_RES",

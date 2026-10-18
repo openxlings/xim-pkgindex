@@ -2,7 +2,7 @@
  "pkgs/luban/agent-workspace.lua@2026.10.18.1": {
   ".xlings.json": {
    "mode": "644",
-   "sha256": "b643fb9f572e66d29836ad08f6c738074a879464bbdf58719eb636aba4464f43"
+   "sha256": "cf19fdcc3f0e45863c20f4b6db1f8f28be5e89385fbb8c70c87f46a1e552d61a"
   },
   "usr/share/factory/etc/motd": {
    "mode": "644",
@@ -58,7 +58,7 @@
  "pkgs/luban/desktop.lua@2026.10.18.1": {
   ".xlings.json": {
    "mode": "644",
-   "sha256": "e923b2ef361d9b6926c8c4752fb1e11c89e4a1d0fc21604e1028029cb20add7a"
+   "sha256": "94cd14e605239fd35eede6a17c37e91d60d8f0af5720c8f06ac379520ac631bd"
   },
   "usr/share/factory/etc/gitconfig": {
    "mode": "644",
