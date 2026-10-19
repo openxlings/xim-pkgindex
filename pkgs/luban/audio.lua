@@ -40,8 +40,8 @@ package = {
             ["1.6.8-r1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
-                    x86_64 = "@X86_64@",
-                    aarch64 = "@AARCH64@",
+                    x86_64 = "7971327ca9646c3fcc9d27957ab36c524e6e91555d5c8f9bb575f27b2b2530ad",
+                    aarch64 = "51fc1526bb6c9e4d69250606fc7c0b815f2302fc7260924988fa9590487ef618",
                 },
             },
         },
