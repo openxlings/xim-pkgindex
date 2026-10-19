@@ -21,6 +21,7 @@
 #   tmux          a static tmux (musl; libevent, ncurses) and the terminfo it needs
 #   htop          a static htop (musl; ncurses) and the terminfo it needs
 #   procps-ng     static ps, top, free, pgrep, pkill, pidof, uptime, vmstat, watch (musl; ncurses) and terminfo
+#   sudo          a static sudo and visudo (musl; no PAM, sudoers built in)
 #   wl-clipboard  static wl-copy / wl-paste (musl; libwayland built static)
 #   xsel          a static xsel (musl; libX11/xcb static)
 #   edk2-firmware the UEFI firmware qemu ships, decompressed (no build)
@@ -483,6 +484,30 @@ procps-ng)
     TERMINFO_DIRS="$work/$d/share/terminfo" TERM=xterm-256color "$work/$d/bin/top" -b -n 1 >/dev/null || die "top -b does not run"
     [[ -f "$work/$d/share/terminfo/x/xterm-256color" ]] || die "no xterm-256color terminfo"
     provenance "$d" "procps-ng $version (sourceforge.net/projects/procps-ng, sha256 $(input procps-ng "$version")): $progs; static (ncursesw), terminfo for: $terms; Alpine 3.20 (musl)"
+    pack "$d" ;;
+sudo)
+    # sudo for a Luban system (xlings design 2026-10-20 §4.5): static (musl),
+    # no PAM -- it reads the system's /etc/shadow -- its sudoers policy built
+    # in (no plugin to load), no mail, no log server, no noexec library.
+    # The recipe makes bin/sudo setuid; a machine makes it root's at boot.
+    source_of sudo "$version" "https://www.sudo.ws/dist/sudo-$version.tar.gz" "$work/src.tar.gz"
+    d="sudo-$version-linux-$arch"
+    alpine "apk add -q $APK_STATIC \
+        && tar -xzf src.tar.gz && cd sudo-$version \
+        && ./configure -q --prefix=/usr --sysconfdir=/etc --localstatedir=/var --runstatedir=/run \
+             --without-pam --disable-shared --enable-static-sudoers --disable-nls --without-sendmail \
+             --disable-root-mailer --with-rundir=/run/sudo --with-vardir=/var/db/sudo --with-env-editor \
+             --disable-log-server --disable-log-client --without-ldap --without-noexec --disable-intercept \
+             --with-timeout=15 --without-lecture --enable-tmpfiles.d=no LDFLAGS=-static >/dev/null \
+        && make -s -j\$(nproc) >/dev/null && make -s install DESTDIR=/w/stage >/dev/null \
+        && mkdir -p /w/$d/bin /w/$d/sbin \
+        && cp /w/stage/usr/bin/sudo /w/$d/bin/sudo && strip /w/$d/bin/sudo && ln -s sudo /w/$d/bin/sudoedit \
+        && cp /w/stage/usr/sbin/visudo /w/$d/sbin/visudo && strip /w/$d/sbin/visudo"
+    static_only "$work/$d/bin/sudo" "$work/$d/sbin/visudo"
+    grep -aq "$version" "$work/$d/bin/sudo" || die "bin/sudo does not carry $version"
+    printf 'root ALL=(ALL:ALL) ALL\n%%wheel ALL=(ALL:ALL) ALL\n' > "$work/sudoers.check"
+    "$work/$d/sbin/visudo" -c -q -f "$work/sudoers.check" || die "visudo does not accept a plain sudoers"
+    provenance "$d" "sudo $version (www.sudo.ws, sha256 $(input sudo "$version")): static (musl), no PAM (shadow), sudoers built in; Alpine 3.20"
     pack "$d" ;;
 wl-clipboard)
     source_of wl-clipboard "$version" "https://github.com/bugaevc/wl-clipboard/archive/refs/tags/v$version.tar.gz" "$work/src.tar.gz"

@@ -71,6 +71,8 @@ jobs:
           - { what: vim,           version: "9.2.1172",           arch: aarch64 }
           - { what: procps-ng,     version: "4.0.5",              arch: x86_64 }
           - { what: procps-ng,     version: "4.0.5",              arch: aarch64 }
+          - { what: sudo,          version: "1.9.17p2",           arch: x86_64 }
+          - { what: sudo,          version: "1.9.17p2",           arch: aarch64 }
           - { what: wl-clipboard,  version: "2.3.0",              arch: x86_64 }
           - { what: wl-clipboard,  version: "2.3.0",              arch: aarch64 }
           - { what: xsel,          version: "1.2.1",              arch: x86_64 }
