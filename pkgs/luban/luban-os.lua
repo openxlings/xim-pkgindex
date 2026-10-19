@@ -65,8 +65,19 @@ package = {
                 "xim:libglvnd@>=1.7.0.1",
                 "xim:nvidia-gl-host-link@>=0.1.2",
                 "xim:wsl-gl-host-link@>=0.1",
+                -- The pointer a desktop names, drawn by the window from the
+                -- Luban theme (xlings design 2026-10-19 §15.2; read from
+                -- 2026.10.19.2, before which nothing uses it). NEW with this
+                -- change, so bare until published.
+                "cursors",
             },
-            ["latest"] = { ref = "2026.10.19.1" },
+            ["latest"] = { ref = "2026.10.19.2" },
+            ["2026.10.19.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "e38128cf95da94b4dce71d258c77c76d0869e876f88c4e64f851385a8eb643e2",
+                },
+            },
             ["2026.10.19.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -150,8 +161,14 @@ package = {
             },
         },
         macosx = {
-            deps = { "xim:luban-fonts" },
-            ["latest"] = { ref = "2026.10.19.1" },
+            deps = { "xim:luban-fonts", "cursors" },
+            ["latest"] = { ref = "2026.10.19.2" },
+            ["2026.10.19.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "5d39824b7dadd1a5005197ebceec30ae92f3af02e397469f2b28d5dfb2ca032f",
+                },
+            },
             ["2026.10.19.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -208,8 +225,14 @@ package = {
             },
         },
         windows = {
-            deps = { "xim:luban-fonts" },
-            ["latest"] = { ref = "2026.10.19.1" },
+            deps = { "xim:luban-fonts", "cursors" },
+            ["latest"] = { ref = "2026.10.19.2" },
+            ["2026.10.19.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "eac94892d422881d141ff38f43ed822df19c4436b8c80561b186e55aabf939c6",
+                },
+            },
             ["2026.10.19.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
