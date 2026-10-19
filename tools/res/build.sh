@@ -1137,7 +1137,7 @@ falkon)
         && for p in libexec/falkon/bin/*; do patchelf --set-interpreter \$PWD/libexec/falkon/lib/ld-musl-$arch.so.1 \
              --set-rpath \$PWD/libexec/falkon/lib:/w/rt-root/libexec/qt-runtime/lib \$p; done \
         && QT_QPA_PLATFORM=offscreen ./bin/falkon --version > /w/falkon.version 2>&1"
-    grep -q "Falkon" "$work/falkon.version" || die "falkon does not start: $(cat "$work/falkon.version")"
+    grep -qi "^falkon [0-9]" "$work/falkon.version" || die "falkon does not start: $(cat "$work/falkon.version")"
     provenance "$d" "luban:falkon $version: Alpine 3.24 $(grep -E '^(falkon|qt6-qtwebengine)-[0-9]' "$work/installed" | tr '\n' ' ')-- on luban:qt-runtime $QT_RUNTIME (the same Qt); the libraries beyond the runtime's and the musl loader private (libexec/falkon); the defaults from xim-pkgindex tools/res/falkon. Sources: https://invent.kde.org/network/falkon, https://code.qt.io/qt/qtwebengine and Alpine's aports, unmodified"
     pack "$d" ;;
 kde)
