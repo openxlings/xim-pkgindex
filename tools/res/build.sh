@@ -886,8 +886,11 @@ audio)
     cp -a "$work/extra/share/." "$work/$d/share/"
     cp -a "$work/extra/licenses/." "$work/$d/share/licenses/"
     rm -rf "$work/extra"
-    # The modules name no loader of their own (a root checks every ELF it holds).
+    # The modules name no loader and no search path of their own (a root
+    # checks every ELF it holds: Alpine's say /usr/lib/pipewire-0.3); they
+    # find their libraries through the program's.
     python3 "$here/bundle/no-interp.py" "$work/$d/lib" >/dev/null
+    ALPINE_IMAGE="$ALPINE_DESKTOP" alpine "apk add -q patchelf && sh /w/strip-rpath.sh /w/$d/lib"
     # It plays into the `luban` sink, the default: what is played comes out of the pipe.
     headless "$d" "head -c 192000 /dev/urandom > /w/noise.raw \
         && { ./bin/luban-audio >/w/session.log 2>&1 & } \
@@ -899,6 +902,8 @@ audio)
         && sleep 1 && wc -c < /w/got.pcm > /w/got-size"
     grep -qx luban "$work/default-sink" || die "the default output is not the luban sink: $(cat "$work/default-sink")"
     [[ "$(cat "$work/got-size")" -ge 96000 ]] || die "the luban sink's pipe had $(cat "$work/got-size") bytes of 192000 played"
+    ! find "$work/$d/lib" -name '*.so' -exec sh -c 'readelf -d "$1" | grep -Eq "R(UN)?PATH"' _ {} \; -print | grep -q . \
+        || die "a module still names a search path"
     ! grep -Eq 'libLLVM|libgallium|libvulkan' "$work/libs" || die "luban:audio links GL or Vulkan: $(grep -E 'libLLVM|libgallium|libvulkan' "$work/libs" | tr '\n' ' ')"
     rm -f "$work/noise.raw" "$work/got.pcm"
     provenance "$d" "luban:audio $version: Alpine 3.24 $(grep -E '^(pipewire|pipewire-pulse|wireplumber|pipewire-tools|pulseaudio-utils)-[0-9]' "$work/installed" | tr '\n' ' ')-- the musl loader and the libraries they link private (libexec/audio), run through bin/<program>; lib/pipewire-0.3, lib/spa-0.2, lib/wireplumber-0.5 and share/ as Alpine has them; the luban sink and luban-audio from xim-pkgindex tools/res/audio; in Debian 12 noise played into the default sink came out of its pipe"
