@@ -27,17 +27,21 @@ package = {
     },
 
     -- The desktop edition's (design §6.1): xim:xdesk -- the program,
-    -- released with xlings, its sessions xdesk-classic and xdesk-canvas --
+    -- released with xlings, its sessions xdesk (from 2026.10.19.2: tile,
+    -- stack or canvas per workspace), xdesk-classic and xdesk-canvas --
     -- with the terminal it starts (luban:foot, the default terminal).
     -- Form: a composite (design §4.6): its deps, nothing of its own.
     xpm = {
         linux = {
             -- luban:cursors: the pointer theme (xlings design 2026-10-19
             -- §13). NEW with this change, so bare until published.
-            deps = { "xim:xdesk@2026.10.18.1", "luban:foot", "cursors" },
-            ["latest"] = { ref = "2026.10.18.1" },
-            -- 1: luban:cursors became a dependency.
-            ["2026.10.18.1"] = { revision = 1 },
+            -- A platform's deps are every version's: 2026.10.18.1 brings
+            -- xdesk 2026.10.19.2 too (the one whose pointer is drawn).
+            deps = { "xim:xdesk@2026.10.19.2", "luban:foot", "cursors" },
+            ["latest"] = { ref = "2026.10.19.2" },
+            -- 1: luban:cursors became a dependency. 2: xdesk 2026.10.19.2.
+            ["2026.10.18.1"] = { revision = 2 },
+            ["2026.10.19.2"] = {},
         },
     },
 }
