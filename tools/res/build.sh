@@ -33,6 +33,7 @@
 #   qt-runtime    luban:qt-runtime, the Qt the Qt desktops share (Qt 6, mesa, their libraries; no programs)
 #   lxqt          luban:lxqt, LXQt on luban:labwc, its libraries beyond the Qt runtime's
 #   kde           luban:kde, KDE Plasma nested in luban:labwc, all it brings beyond the Qt runtime (preview)
+#   falkon        luban:falkon, the browser of every Luban desktop (Falkon on QtWebEngine), on the Qt runtime
 #   bash          bash on glibc (the shape x86_64's is)
 #   coreutils     coreutils on glibc
 #   openssl       openssl on glibc, lib64
@@ -1028,10 +1029,10 @@ lxqt)
     progs="/usr/bin/lxqt-session /usr/bin/lxqt-panel /usr/bin/lxqt-runner /usr/bin/lxqt-config /usr/bin/lxqt-config-appearance \
         /usr/bin/lxqt-config-session /usr/bin/lxqt-config-input /usr/bin/lxqt-config-monitor /usr/bin/lxqt-notificationd \
         /usr/bin/lxqt-about /usr/bin/lxqt-leave /usr/bin/pcmanfm-qt /usr/bin/dbus-daemon /usr/bin/dbus-run-session \
-        /usr/bin/dbus-update-activation-environment /usr/bin/xdg-user-dirs-update"
+        /usr/bin/dbus-update-activation-environment /usr/bin/xdg-user-dirs-update /usr/bin/qterminal"
     cp "$here/qt-runtime/tree.sh" "$here/qt-runtime/desktop.sh" "$here/bundle/strip-rpath.sh" "$work/"
     carried="lxqt-session lxqt-panel lxqt-runner lxqt-config lxqt-notificationd lxqt-about lxqt-qtplugin lxqt-themes lxqt-menu-data \
-        liblxqt libqtxdg libfm-qt pcmanfm-qt breeze-icons hicolor-icon-theme dbus xdg-user-dirs"
+        liblxqt libqtxdg libfm-qt pcmanfm-qt breeze-icons hicolor-icon-theme dbus xdg-user-dirs qterminal qtermwidget"
     ALPINE_IMAGE="$ALPINE_DESKTOP" alpine "apk add -q $QT_RUNTIME_APKS $carried layer-shell-qt \
         && apk info -v 2>/dev/null | sort > /w/installed \
         && mkdir -p /w/$d/lib && cp -a /usr/lib/lxqt-panel /w/$d/lib/ \
@@ -1043,6 +1044,29 @@ lxqt)
     bundle_upstream qt6-qtbase "${QT_RUNTIME%%-r[0-9]*}"
     cp -r "$here/lxqt/." "$work/$d/"
     mv "$work/$d/env" "$work/$d/libexec/lxqt/env"
+    # Its defaults for a Luban system (xlings design 2026-10-20 G24-G26): the
+    # desktop shows Home and Trash (Computer and Network need gvfs, which a
+    # system has not); the panel's quick launch holds the terminal, the file
+    # manager and the browser instead of "Drop application icons here"; the
+    # terminal everything opens is qterminal, carried (the desktop's menu
+    # named it, and it was not there).
+    python3 - "$work/$d" <<'PY'
+import re, sys
+from pathlib import Path
+tree = Path(sys.argv[1])
+fm = tree / "share/pcmanfm-qt/lxqt/settings.conf"
+text = fm.read_text()
+text = re.sub(r"(?m)^DesktopShortcuts=.*$", "DesktopShortcuts=Home, Trash", text)
+assert "DesktopShortcuts=Home, Trash" in text and "Terminal=qterminal" in text, "pcmanfm-qt's settings changed shape"
+fm.write_text(text)
+panel = tree / "etc/xdg/lxqt/panel.conf"
+text = panel.read_text()
+apps = ["qterminal.desktop", "pcmanfm-qt.desktop", "org.kde.falkon.desktop"]
+entries = "".join(f"apps\\{k}\\desktop=/usr/share/applications/{a}\n" for k, a in enumerate(apps, 1)) + f"apps\\size={len(apps)}\n"
+assert text.count("[quicklaunch]\n") == 1, "lxqt-panel's panel.conf has no [quicklaunch]"
+text = text.replace("[quicklaunch]\n", "[quicklaunch]\n" + entries)
+panel.write_text(text)
+PY
     # Its programs keep their interpreter: the recipe's config() names this
     # tree's loader and library directories in them where it is installed (a
     # Qt program reads /proc/self/exe; LXQt's panel takes no theme run by a
@@ -1081,6 +1105,41 @@ lxqt)
     [[ "$(px 600 710)" != "$(px 600 680)" ]] || shot_die "the panel is not drawn"
     provenance "$d" "luban:lxqt $version: Alpine 3.24 $(grep -E '^(lxqt-session|lxqt-panel|pcmanfm-qt|liblxqt|layer-shell-qt|breeze-icons|dbus)-[0-9]' "$work/installed" | tr '\n' ' ')-- on luban:qt-runtime $QT_RUNTIME (the same Qt, checked); the libraries beyond the runtime's and the musl loader private (libexec/lxqt), lxqt-panel's plugins in lib/lxqt-panel; the session, defaults and checks from xim-pkgindex tools/res/lxqt; a headless session on luban:labwc in Debian 12 drew its panel. Sources: https://github.com/lxqt and Alpine's aports, unmodified"
     pack "$d" ;;
+falkon)
+    # luban:falkon: the browser every Luban desktop carries (xlings design
+    # 2026-10-20 §20.2): KDE's Falkon on QtWebEngine, on luban:qt-runtime
+    # ($QT_RUNTIME) as the Qt desktops are, the libraries beyond the
+    # runtime's (QtWebEngine's Chromium, nss) private in libexec/falkon.
+    # QtWebEngineProcess beside the program; its resources and locales in
+    # share/qt6, which libexec/falkon/env names (QTWEBENGINE_*).
+    v="${version%%-r[0-9]*}"; d="falkon-$version-linux-$arch"
+    progs="/usr/bin/falkon /usr/lib/qt6/libexec/QtWebEngineProcess"
+    carried="falkon qt6-qtwebengine"
+    cp "$here/qt-runtime/tree.sh" "$here/qt-runtime/desktop.sh" "$here/bundle/strip-rpath.sh" "$work/"
+    ALPINE_IMAGE="$ALPINE_DESKTOP" alpine "apk add -q $QT_RUNTIME_APKS $carried \
+        && apk info -v 2>/dev/null | sort > /w/installed \
+        && sh /w/desktop.sh /w/$d falkon \"$QT_RUNTIME_APKS\" \"$progs\" \"$carried\" \
+        && apk add -q patchelf && sh /w/strip-rpath.sh /w/$d/libexec/falkon /w/$d/lib /w/rt-root/libexec/qt-runtime"
+    bundle_upstream falkon "$v"
+    bundle_upstream qt6-qtbase "${QT_RUNTIME%%-r[0-9]*}"
+    cp -r "$here/falkon/." "$work/$d/"
+    mv "$work/$d/env" "$work/$d/libexec/falkon/env"
+    [[ -d "$work/$d/share/qt6/resources" ]] || die "falkon: no QtWebEngine resources in share/qt6/resources"
+    python3 "$here/bundle/no-interp.py" "$work/$d/libexec/falkon/lib" "$work/$d/libexec/falkon/plugins" >/dev/null
+    sed -e "s/@NAME@/falkon/g" -e "s/@PROG@/falkon/g" "$here/bundle/run-direct.in" > "$work/$d/bin/falkon"
+    chmod 755 "$work/$d/bin/falkon"
+    log "falkon: $(ls "$work/$d/libexec/falkon/lib" | wc -l) libraries of its own, $(du -sh "$work/$d" | cut -f1)"
+    # It starts and says its version, on the runtime this build made.
+    python3 "$here/bundle/no-interp.py" "$work/rt-root" >/dev/null
+    mkdir -p "$work/test" && cp -a "$work/$d" "$work/test/$d"
+    echo "/w/rt-root" > "$work/test/$d/libexec/falkon/qt-runtime"
+    headless "test/$d" "apt-get -qq update && apt-get -qq install -y patchelf >/dev/null \
+        && for p in libexec/falkon/bin/*; do patchelf --set-interpreter \$PWD/libexec/falkon/lib/ld-musl-$arch.so.1 \
+             --set-rpath \$PWD/libexec/falkon/lib:/w/rt-root/libexec/qt-runtime/lib \$p; done \
+        && QT_QPA_PLATFORM=offscreen ./bin/falkon --version > /w/falkon.version 2>&1"
+    grep -q "Falkon" "$work/falkon.version" || die "falkon does not start: $(cat "$work/falkon.version")"
+    provenance "$d" "luban:falkon $version: Alpine 3.24 $(grep -E '^(falkon|qt6-qtwebengine)-[0-9]' "$work/installed" | tr '\n' ' ')-- on luban:qt-runtime $QT_RUNTIME (the same Qt); the libraries beyond the runtime's and the musl loader private (libexec/falkon); the defaults from xim-pkgindex tools/res/falkon. Sources: https://invent.kde.org/network/falkon, https://code.qt.io/qt/qtwebengine and Alpine's aports, unmodified"
+    pack "$d" ;;
 kde)
     # luban:kde (preview): KDE Plasma 6 -- KWin, Plasma's shell, Dolphin,
     # Konsole, System Settings -- on luban:qt-runtime ($QT_RUNTIME), KWin a
@@ -1103,6 +1162,9 @@ kde)
     for f in "$work/$d"/share/wayland-sessions/* "$work/$d"/share/xsessions/*; do [[ -e "$f" ]] && mv "$f" "$work/dropped/"; done
     cp -r "$here/kde/." "$work/$d/"
     mv "$work/$d/env" "$work/$d/libexec/kde/env"
+    # The camera indicator needs kpipewire's QML module, and a system has no
+    # camera to show (xlings design 2026-10-20 G30): not in its tray.
+    rm -rf "$work/$d/share/plasma/plasmoids/org.kde.plasma.cameraindicator"
     # Its programs keep their interpreter (config() names its loader in
     # them); its libraries and plugins name none.
     python3 "$here/bundle/no-interp.py" "$work/$d/libexec/kde/lib" "$work/$d/libexec/kde/plugins" "$work/$d/libexec/kde/qml" >/dev/null
