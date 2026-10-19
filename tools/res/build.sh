@@ -859,7 +859,7 @@ audio)
     # pipewire.conf.d/luban.conf: a pipe-tunnel into /tmp/luban-audio.pcm,
     # 48 kHz stereo, the default output), which `luban __audio` reads and the
     # Luban OS window plays; bin/luban-audio, which starts the three for a
-    # session (etc/xdg/autostart).
+    # session (a Luban desktop's session runs it: opensal-wlr's run_session).
     v="${version%%-r[0-9]*}"; d="audio-$version-linux-$arch"
     progs="/usr/bin/pipewire /usr/bin/pipewire-pulse /usr/bin/wireplumber /usr/bin/pw-cat /usr/bin/pw-cli /usr/bin/wpctl /usr/bin/pactl"
     bundle audio "$d" "$progs" \
@@ -890,7 +890,7 @@ audio)
     grep -qx luban "$work/default-sink" || die "the default output is not the luban sink: $(cat "$work/default-sink")"
     [[ "$(cat "$work/got-size")" -ge 96000 ]] || die "the luban sink's pipe had $(cat "$work/got-size") bytes of 192000 played"
     rm -f "$work/noise.raw" "$work/got.pcm"
-    provenance "$d" "luban:audio $version: Alpine 3.24 $(grep -E '^(pipewire|pipewire-pulse|wireplumber|pipewire-tools|pulseaudio-utils)-[0-9]' "$work/installed" | tr '\n' ' ')-- the musl loader and the libraries they link private (libexec/audio), run through bin/<program>; lib/pipewire-0.3, lib/spa-0.2, lib/wireplumber-0.5 and share/ as Alpine has them; the luban sink, luban-audio and its autostart from xim-pkgindex tools/res/audio; in Debian 12 noise played into the default sink came out of its pipe"
+    provenance "$d" "luban:audio $version: Alpine 3.24 $(grep -E '^(pipewire|pipewire-pulse|wireplumber|pipewire-tools|pulseaudio-utils)-[0-9]' "$work/installed" | tr '\n' ' ')-- the musl loader and the libraries they link private (libexec/audio), run through bin/<program>; lib/pipewire-0.3, lib/spa-0.2, lib/wireplumber-0.5 and share/ as Alpine has them; the luban sink and luban-audio from xim-pkgindex tools/res/audio; in Debian 12 noise played into the default sink came out of its pipe"
     pack "$d" ;;
 terminfo)
     # The terminal descriptions a root has (xlings design 2026-10-16 L §10):
