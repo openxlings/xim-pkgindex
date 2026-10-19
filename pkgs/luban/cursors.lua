@@ -1,7 +1,15 @@
 -- The same files on every system: one version table, which each platform
 -- names (a platform-level `ref` is not read by xlings before 2026.10.16.2).
 local versions = {
-    ["latest"] = { ref = "2026.10.19" },
+    ["latest"] = { ref = "2026.10.20" },
+    -- The arrow's tail one column over every two rows (xlings design 2026-10-20 §14.2).
+    ["2026.10.20"] = {
+        url = {
+            GLOBAL = "https://github.com/xlings-res/luban-cursors/releases/download/2026.10.20/luban-cursors-2026.10.20.tar.gz",
+            CN     = "https://gitcode.com/xlings-res/luban-cursors/releases/download/2026.10.20/luban-cursors-2026.10.20.tar.gz",
+        },
+        sha256 = "f38a49b58cd4531ed7574c7b6127db64f8d4388d97d0dbfa649955dddcbbfaa2",
+    },
     ["2026.10.19"] = {
         url = {
             GLOBAL = "https://github.com/xlings-res/luban-cursors/releases/download/2026.10.19/luban-cursors-2026.10.19.tar.gz",
