@@ -1116,9 +1116,9 @@ falkon)
     progs="/usr/bin/falkon /usr/lib/qt6/libexec/QtWebEngineProcess"
     carried="falkon qt6-qtwebengine"
     cp "$here/qt-runtime/tree.sh" "$here/qt-runtime/desktop.sh" "$here/bundle/strip-rpath.sh" "$work/"
-    ALPINE_IMAGE="$ALPINE_DESKTOP" alpine "set -x; apk add -q $QT_RUNTIME_APKS $carried \
+    ALPINE_IMAGE="$ALPINE_DESKTOP" alpine "apk add -q $QT_RUNTIME_APKS $carried \
         && apk info -v 2>/dev/null | sort > /w/installed \
-        && sh -x /w/desktop.sh /w/$d falkon \"$QT_RUNTIME_APKS\" \"$progs\" \"$carried\" \
+        && sh /w/desktop.sh /w/$d falkon \"$QT_RUNTIME_APKS\" \"$progs\" \"$carried\" \
         && apk add -q patchelf && sh /w/strip-rpath.sh /w/$d/libexec/falkon /w/$d/lib /w/rt-root/libexec/qt-runtime"
     bundle_upstream falkon "$v"
     bundle_upstream qt6-qtbase "${QT_RUNTIME%%-r[0-9]*}"

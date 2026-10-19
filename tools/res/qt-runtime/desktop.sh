@@ -38,8 +38,8 @@ while read -r f; do
     cp -a "/$f" "$tree/$rel"
 done < /tmp/carried
 for p in $carried; do [ ! -d "/usr/share/licenses/$p" ] || cp -r "/usr/share/licenses/$p" "$tree/share/licenses/"; done
-# Every library its programs, plugins and lib/ link, but the runtime's.
-{ for p in $progs; do echo "$p"; done; find "$x/plugins" "$x/qml" "$tree/lib" -name '*.so*' -type f 2>/dev/null; } > /tmp/elfs
+# Every library its programs, plugins and lib/ (a browser has none) link, but the runtime's.
+{ for p in $progs; do echo "$p"; done; find "$x/plugins" "$x/qml" "$tree/lib" -name '*.so*' -type f 2>/dev/null || true; } > /tmp/elfs
 while read -r f; do ldd "$f" 2>/dev/null | awk '/=>/ { print $3 }'; done < /tmp/elfs | sort -u > /tmp/libs
 while read -r l; do grep -qx "$(basename "$l")" /tmp/rt-names || cp -L "$l" "$x/lib/"; done < /tmp/libs
 cp -L "/lib/ld-musl-$(uname -m).so.1" "$x/lib/"
