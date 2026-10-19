@@ -5,10 +5,12 @@
 -- made from it here (`replaces`). What it presets is in its manifest's
 -- `luban.settings` and the root's usr/share/luban/settings.json.
 -- A published version's output never changes (tests/fixtures/luban-published.json).
--- The arch as gcc.lua reads it: os.arch where the loader binds it, else is_arch.
+-- The machine's arch: the catalog loader binds os.arch; the runtime that runs
+-- install() does not (nor is_arch), so there luban.arch() asks _RUNTIME and uname.
+import("xim.pkgindex.luban")
 local recipe_arch = (os.arch and os.arch())
 if recipe_arch ~= "aarch64" and recipe_arch ~= "arm64" and recipe_arch ~= "x86_64" then
-    recipe_arch = (type(is_arch) == "function" and is_arch("aarch64")) and "aarch64" or "x86_64"
+    recipe_arch = luban.arch()
 end
 local aarch64 = recipe_arch == "aarch64" or recipe_arch == "arm64"
 
@@ -39,8 +41,6 @@ package = {
         },
     },
 }
-
-import("xim.pkgindex.luban")
 
 
 -- 2026.10.19.1's tools beyond 2026.10.18.1 (xlings design 2026-10-19 §20).

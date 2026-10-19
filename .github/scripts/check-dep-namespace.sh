@@ -56,10 +56,14 @@ resolve_base_ref() {
   # default). On a full clone it would truncate the history to that depth.
   local shallow=()
   [[ "$(git rev-parse --is-shallow-repository)" == "true" ]] && shallow=(--depth=2)
-  if [[ -n "${GITHUB_BASE_REF:-}" ]]; then
+  # A push to a branch other than main is measured as its PR is: against
+  # main (its own parent may already carry the package it adds).
+  local base="${GITHUB_BASE_REF:-}"
+  [[ -z "$base" && "${GITHUB_REF_NAME:-main}" != "main" ]] && base=main
+  if [[ -n "$base" ]]; then
     git fetch --no-tags --quiet "${shallow[@]}" origin \
-      "+refs/heads/${GITHUB_BASE_REF}:refs/remotes/origin/${GITHUB_BASE_REF}" >&2
-    echo "origin/${GITHUB_BASE_REF}"
+      "+refs/heads/${base}:refs/remotes/origin/${base}" >&2
+    echo "origin/${base}"
   else
     # push: the base is the commit this one landed on.
     git fetch --no-tags --quiet "${shallow[@]}" origin "${GITHUB_SHA}" >&2

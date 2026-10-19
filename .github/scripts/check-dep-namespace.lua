@@ -90,8 +90,9 @@ end
 --
 -- "Published" is decidable: the exempted package's recipe exists on the
 -- branch this change is measured against. The wrapper passes that ref in
--- DEP_NS_BASE_REF -- the PR's base on pull_request, HEAD~1 on push, which
--- is main-before-this-merge for a squash. On the PR that ADDS the package
+-- DEP_NS_BASE_REF -- the PR's base on pull_request (main on a push to any
+-- other branch), HEAD~1 on a push to main, which is main-before-this-merge
+-- for a squash. On the PR that ADDS the package
 -- the recipe is absent from the base, so the exemption holds; on any later
 -- change it is present, and the exemption fails with the fix spelled out.
 --

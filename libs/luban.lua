@@ -227,20 +227,23 @@ default_target = "%s-linux-gnu"
 -- hook's runtime does (_RUNTIME.arch), and uname answers anywhere a command
 -- runs. Falling back to x86_64 alone named an x86_64 target on aarch64, which
 -- mcpp refused there ("target 'x86_64-linux-gnu' cannot be built on this
--- host").
-function luban.mcpp_config()
+-- host"); an edition's packages chosen by it asked for x86_64-only ones.
+function luban.arch()
     local function canonical(a)
         a = a and tostring(a):gsub("%s+", "") or ""
         if a == "arm64" then return "aarch64" end
         if a == "x64" or a == "amd64" then return "x86_64" end
         return (a == "aarch64" or a == "x86_64") and a or nil
     end
-    local arch = canonical(os.arch and os.arch())
+    return canonical(os.arch and os.arch())
         or canonical(type(_RUNTIME) == "table" and _RUNTIME.arch)
         or (type(is_arch) == "function" and (is_arch("aarch64") or is_arch("arm64")) and "aarch64")
         or canonical(os.iorun and os.iorun("uname -m"))
         or "x86_64"
-    return { F .. "mcpp/config.toml", string.format(luban.MCPP_CONFIG, arch) }
+end
+
+function luban.mcpp_config()
+    return { F .. "mcpp/config.toml", string.format(luban.MCPP_CONFIG, luban.arch()) }
 end
 
 -- A list of files, then more (a version's files are a recipe's plus its own).
