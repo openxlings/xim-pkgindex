@@ -37,7 +37,15 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "1.6.8-r1" },
+            ["latest"] = { ref = "1.6.8-r2" },
+            -- r2: its modules name no search path (a root refuses one outside its closure).
+            ["1.6.8-r2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "a2f1f153e0521853fe4c33bb2220a4c605413f95513865b70c946465d210cc7c",
+                    aarch64 = "e1fe6626323dfbf6fa69a765212fccdb773cfd1189eab808dfd0c5b6f2486552",
+                },
+            },
             -- r1: without what a machine never plays through (video, Bluetooth, JACK, network streams).
             ["1.6.8-r1"] = {
                 url = "XLINGS_RES",
