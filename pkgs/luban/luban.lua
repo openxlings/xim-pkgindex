@@ -27,7 +27,14 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "2026.10.18.1" },
+            ["latest"] = { ref = "2026.10.19.1" },
+            ["2026.10.19.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "137ef2643afa17392a31a5695037fa876591fb9d2cace00af296c2fad3c9f972",
+                    x86_64 = "ec21c97dea76c9413436a4646f494159e1ac3dc4326706e22aec5db1d1530631",
+                },
+            },
             ["2026.10.18.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -44,7 +51,13 @@ package = {
             },
         },
         macosx = {
-            ["latest"] = { ref = "2026.10.18.1" },
+            ["latest"] = { ref = "2026.10.19.1" },
+            ["2026.10.19.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "59ba1ef830abc1ad9536746264f5ca42aba1034a4de2748b3cb79c9957a91094",
+                },
+            },
             ["2026.10.18.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -59,7 +72,13 @@ package = {
             },
         },
         windows = {
-            ["latest"] = { ref = "2026.10.18.1" },
+            ["latest"] = { ref = "2026.10.19.1" },
+            ["2026.10.19.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "af1784366a7b7e38a35c7b6e835cf04186a5cbdd2da8171cfa1e70045b818d51",
+                },
+            },
             ["2026.10.18.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
