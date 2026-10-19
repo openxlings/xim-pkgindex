@@ -1,0 +1,15 @@
+# luban:labwc -- the desktop's programs read the tree's defaults when the user
+# has none of their own (labwc -C, yambar -c, fuzzel --config): nothing of
+# them is exported to the programs a user starts.
+lib="$here/libexec/labwc/lib"
+export FONTCONFIG_FILE="${FONTCONFIG_FILE:-$here/etc/fonts/fonts.conf}"
+export LUBAN_LABWC="$here"
+cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
+case "$prog" in
+    # A session that names its own (luban:compositor) keeps it.
+    labwc)  case " $* " in *" -C "*|*" --config-dir "*) ;; *) [ -d "$cfg/labwc" ] || set -- -C "$here/etc/xdg/labwc" "$@" ;; esac ;;
+    yambar) [ -e "$cfg/yambar/config.yml" ] || set -- -c "$here/etc/xdg/yambar/config.yml" "$@" ;;
+    fuzzel) [ -e "$cfg/fuzzel/fuzzel.ini" ] || set -- --config="$here/etc/xdg/fuzzel/fuzzel.ini" "$@" ;;
+esac
+unset cfg
+case ":$PATH:" in *":$here/bin:"*) ;; *) export PATH="$here/bin:$PATH" ;; esac

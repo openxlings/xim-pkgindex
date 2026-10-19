@@ -6,14 +6,59 @@ Luban 的 edition、策略和启动层都是本索引中的普通配方：xpkg �
 只有 `libs/luban.lua` 写盘。Luban 是什么、edition 怎样使用，见
 [xlings 的 Luban 文档](https://github.com/openxlings/xlings/tree/main/docs/zh/luban)。
 
+## `luban:` 命名空间
+
+官方的、为 Luban 做的包发布在 `luban` 命名空间：edition（`luban:core`、`luban:desktop`）、
+桌面组件（`luban:labwc`、`luban:lxqt`、`luban:kde`、`luban:xdesk`）、Qt 运行时、工具集，以及为它们
+构建的整包。通用软件留在 `xim`（fish、mesa、内核），用户在宿主上运行的程序也是（`xim:luban`、
+`xim:luban-os`）。任何人都可以依赖 `luban:` 的包——任何 SubOS、任何系统：命名空间说明谁发布，
+不限制谁使用。
+
+luban 中的短名就是这个命名空间里的名字：`--edition desktop` 即 `luban:desktop`，`--desktop kde`
+即 `luban:kde`。新增官方桌面就是在这里新增它的配方；luban 与 Luban OS 应用里没有名单。
+
+`xim`、`luban`、`subos`、`config` 是**保留的**：`index-compat.json` 声明它们（`namespaces.reserved`），
+认识这个字段的客户端只从本索引接受这些命名空间的包——别处写 `namespace = "luban"` 的配方被拒绝，
+并指出它的索引与文件。规则在客户端、是通用的：任何索引都可以这样保留自己的命名空间。
+
+已发布的 `subos:luban-*` edition 与 `xim:labwc-desktop` 冻结：保留、照常解析（实例与旧 edition 引用它们），
+不再更新。接替者声明 `replaces = "<旧名字>"`，客户端只认同一索引内的声明。
+
 ## 类别
 
 | 类别 | `type` | 命名空间 | 版本 | 写盘 |
 |---|---|---|---|---|
-| edition | `subos` | `subos` | 发布日期 `YYYY.M.D.N` | `luban.edition({id, variant, versions, files})` |
+| edition | `subos` | `luban`（冻结的：`subos`） | 发布日期 `YYYY.M.D.N` | `luban.edition({id, variant, versions, files})` |
+| 桌面组件（`luban:labwc`、`luban:foot`） | `package` | `luban` | 上游版本，本索引的构建加 `-rN` | 配方自己；`luban_component` 放置 |
+| 组合包（`luban:compositor`、`luban:xdesk`）或工具集（`luban:tools-dev`） | `package` | `luban` | 发布日期，或所组合的版本 | 它的依赖、会话与配置 |
 | 策略 | `subos-policy` | `xim` | 发布日期 | `luban.policy(json)` |
 | 启动层 | `package` | `xim` | 发布日期 | `luban.boot(json)` |
 | 上游软件（内核、limine、busybox 等） | `package` | `xim` | 上游版本，重建时加 `-rN` | 配方自己 |
+
+每个组件在注释里写明它的形态与理由（整包、运行时、由原子包组成的组合包）：形态改变时，名字与约定
+（会话文件、`X-Luban-Shell`、自检、默认终端）不变。
+
+## edition 的清单
+
+`luban:` 的 edition 由表写出清单（`luban.manifest`）：键的顺序固定，`replaces` 写它接替的冻结 edition，
+`luban` 对象写给认识 Luban 的读者：
+
+| 键 | 含义 |
+|---|---|
+| `luban.settings` | 它预设的设置（`mode`、`enter`、`desktop`、`login_shell`）：低于用户自己的设置；同时写进根的 `usr/share/luban/settings.json`，旧的 luban 读这个文件 |
+| `luban.os` | 它怎样称呼自己（`name`、`version`）：基于 Luban 的发行版说自己的名字 |
+| `luban.requires` | 它对读取或运行它的一方的要求（opencaps 名字，如 `root-layout>=2`）；缺少时在创建前说明 |
+
+```lua
+manifest = {
+    subos_kind = "rootfs", min_client = "2026.10.18.1",
+    from = "luban:core@2026.10.18.1", replaces = "subos:luban-desktop",
+    abi = { kernel = "linux", libc = "gnu" },
+    packages = { "luban:xdesk@2026.10.18.1", "luban:foot@1.27.0-r1" },
+    luban = { settings = { mode = "machine", enter = "desktop", desktop = "xdesk-classic" } },
+    workspace = {},
+}
+```
 
 ## 规则
 
@@ -29,5 +74,6 @@ Luban 的 edition、策略和启动层都是本索引中的普通配方：xpkg �
 5. **更新频繁的工具不锁版本**（agent 的 CLI）：`subos new` 安装当时的最新版并记录在实例
    中，`luban upgrade` 再移动它。其余的包精确锁定。
 6. **preview 的 edition**（`status = "preview"`）在 luban 中没有短名。
+   桌面不是 edition：edition 预设一个，`luban new --desktop` 选另一个（包的 `categories` 含 `luban-desktop` 即被提供）。
 7. **edition 只为它声明的架构构建。** `archs` 只列出启动并测试过的架构；它锁定的每个包在
    这些架构上都存在，`scripts/test-luban-editions.sh` 在 x86_64 和 aarch64 上运行。

@@ -47,6 +47,8 @@ package = {
                     },
                     sha256 = "9599005361ca1f90f93d6bcbd1dd1f7d92514ac4b69cd103d4c8be729319acb8",
                 },
+                -- Revision 1: install() mends the payload (see there).
+                revision = 1,
             },
         },
     },
@@ -55,6 +57,46 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 
+-- labwc 0.7.2 looks for menu.xml in the first configuration directory it can
+-- open and stops there when the file is not in it (src/menu/menu.c, fixed
+-- upstream since): with an empty ~/.config the desktop's own menu is never
+-- read, and the background menu is labwc's two built-in items. Until the
+-- session moves to a newer labwc, the wrapper names this tree's configuration
+-- when the user has none of their own; a user's ~/.config/labwc still wins.
+local CONFIG_DIR = [[[ -d "${XDG_CONFIG_HOME:-$HOME/.config}/labwc" ] || set -- -C "$here/etc/xdg/labwc" "$@"
+]]
+
+-- The background menu: the build's, plus closing the desktop and powering
+-- the machine off (tools/res/labwc-desktop/etc/xdg/labwc/menu.xml, which the
+-- next build carries itself).
+local MENU = [[<?xml version="1.0"?>
+<!-- The desktop's menu (a click on the background). "Shut down" powers the
+     machine off; in a sandbox there is nothing to power off and it does nothing. -->
+<openbox_menu>
+  <menu id="root-menu" label="">
+    <item label="Terminal"><action name="Execute" command="foot" /></item>
+    <item label="Applications"><action name="Execute" command="fuzzel" /></item>
+    <separator />
+    <item label="Reconfigure"><action name="Reconfigure" /></item>
+    <separator />
+    <item label="Close desktop"><action name="Exit" /></item>
+    <item label="Shut down"><action name="Execute" command="poweroff" /></item>
+  </menu>
+</openbox_menu>
+]]
+
+local function mend(dir)
+    local wrapper = path.join(dir, "bin", "labwc")
+    local text = io.readfile(wrapper)
+    if not text:find('-C "$here/etc/xdg/labwc"', 1, true) then
+        local at = text:find("\nexec ", 1, true)
+        if not at then return false end
+        io.writefile(wrapper, text:sub(1, at) .. CONFIG_DIR .. text:sub(at + 1))
+    end
+    io.writefile(path.join(dir, "etc", "xdg", "labwc", "menu.xml"), MENU)
+    return true
+end
+
 function install()
     local dir = pkginfo.install_dir()
     local payload = pkginfo.install_file():replace(".tar.gz", "")
@@ -62,7 +104,7 @@ function install()
         os.tryrm(dir)
         os.mv(payload, dir)
     end
-    return os.isfile(path.join(dir, "bin", "labwc"))
+    return mend(dir) and os.isfile(path.join(dir, "bin", "labwc"))
        and os.isfile(path.join(dir, "share", "wayland-sessions", "labwc-desktop.desktop"))
 end
 

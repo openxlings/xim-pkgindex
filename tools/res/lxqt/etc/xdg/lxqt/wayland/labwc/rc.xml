@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<!-- LXQt's compositor (luban:lxqt): labwc, its windows decorated, LXQt's keys;
+     ~/.config/lxqt/wayland/labwc replaces this directory. -->
+<labwc_config>
+  <core>
+    <decoration>server</decoration>
+  </core>
+  <theme>
+    <cornerRadius>6</cornerRadius>
+    <font place="">
+      <name>sans-serif</name>
+      <size>10</size>
+    </font>
+  </theme>
+  <keyboard>
+    <default />
+    <keybind key="W-Return"><action name="Execute" command="xdg-terminal-exec" /></keybind>
+    <keybind key="C-A-t"><action name="Execute" command="xdg-terminal-exec" /></keybind>
+    <keybind key="A-F2"><action name="Execute" command="lxqt-runner" /></keybind>
+    <keybind key="W-q"><action name="Close" /></keybind>
+  </keyboard>
+  <mouse>
+    <default />
+  </mouse>
+</labwc_config>

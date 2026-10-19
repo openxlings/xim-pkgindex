@@ -66,6 +66,8 @@ function Test-MetadataOnlyOwnerMigration([string]$relFile) {
         $content = $line.Substring(1)
         if ($content -match '^\s*$') { continue }
         if ($content -match '^\s*(repo|homepage|contributors)\s*=') { continue }
+        # A comment changes nothing a recipe does (a graphics-ok note, a TODO).
+        if ($content -match '^\s*--') { continue }
         return $false
     }
     return $true
@@ -210,7 +212,7 @@ foreach ($relFile in $files) {
         continue
     }
     if (Test-MetadataOnlyOwnerMigration -relFile $relFile) {
-        Log-Info "skip (metadata-only owner/link migration): $relFile"
+        Log-Info "skip (metadata or comments only): $relFile"
         $skipped++
         continue
     }

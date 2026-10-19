@@ -1,0 +1,14 @@
+[Desktop Entry]
+Type=Application
+Name=Terminal
+GenericName=Terminal
+Comment=A terminal (foot)
+Exec=foot
+Icon=utilities-terminal
+Terminal=false
+Categories=System;TerminalEmulator;
+Keywords=shell;prompt;command;commandline;
+X-TerminalArgExec=
+X-TerminalArgTitle=--title=
+X-TerminalArgAppId=--app-id=
+X-TerminalArgDir=--working-directory=

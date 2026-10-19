@@ -1,0 +1,5 @@
+{"checks": [
+  {"id": "lxqt-runs", "what": "its session and panel start on the Qt runtime", "run": "QT_QPA_PLATFORM=offscreen lxqt-session --version | grep -qi lxqt && QT_QPA_PLATFORM=offscreen lxqt-panel --version | grep -qi lxqt", "timeout": 20},
+  {"id": "lxqt-panel-plugins", "what": "the panel's plugins are where it looks", "run": "ls /usr/lib/lxqt-panel/*.so >/dev/null", "timeout": 10},
+  {"id": "lxqt-terminal", "what": "its terminal is the default one", "run": "command -v xdg-terminal-exec >/dev/null && ls /usr/share/xdg-terminals/*.desktop >/dev/null 2>&1", "timeout": 10}
+]}

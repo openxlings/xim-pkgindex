@@ -25,6 +25,16 @@ package = {
     -- it onto them. It drives the xlings and luban of the home it is installed
     -- in. config() adds its desktop entry (~/.local/share/applications). Its
     -- fonts are luban-fonts' (share/fonts/luban), on every system.
+    --
+    -- It draws on the GPU through the graphics stack, as every package that
+    -- opens a window on Linux does: SDL dlopens libEGL/libGL, and on the
+    -- loader of this home it finds neither the host's nor any other. Without
+    -- the stack SDL falls back to its software renderer without a word -- a
+    -- desktop view took 47% of a core for a moving pointer (RTX 4080; 2% on
+    -- the stack). Three things together, any one missing is that fallback
+    -- again: the stack's libraries on the RPATH (the deps below), the stack's
+    -- discovery variables on the shim (graphics.consumer_envs()), and the
+    -- desktop entry starting the shim, not the payload.
     programs = {"luban-os"},
     xvm_enable = true,
 
@@ -41,13 +51,36 @@ package = {
                 "xim:libXi",
                 "xim:libXrandr",
                 "xim:luban-fonts",
+                -- The stack, and what it declares for its consumers. Lower
+                -- bounds: the stack moves on its own.
+                "xim:graphics@>=0.1",
+                -- What the program loads itself, declared here because elfpatch
+                -- puts a package's OWN dependencies' libraries on its RPATH,
+                -- not theirs: SDL dlopens libGL/libEGL (glvnd's dispatch), and
+                -- the vendor libraries glvnd then opens -- the host's NVIDIA
+                -- ones through the bridge, D3D12 on WSL -- find their own
+                -- dependencies on this program's RPATH. mesa is also asked for
+                -- by config() (godot.lua says why).
+                "xim:mesa@>=25",
+                "xim:libglvnd@>=1.7.0.1",
+                "xim:nvidia-gl-host-link@>=0.1.2",
+                "xim:wsl-gl-host-link@>=0.1",
             },
-            ["latest"] = { ref = "2026.10.17.1" },
+            ["latest"] = { ref = "2026.10.18.1" },
+            ["2026.10.18.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "ce613194b79fe5b4eb19bb0af2d2ea38081badd79e09c708bd1054b81868fb73",
+                },
+            },
+            -- Revision 1: the graphics stack (deps above, config()). xlings
+            -- replaces a payload of revision 0 on its next install.
             ["2026.10.17.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
                     x86_64 = "ff0cfefd91f8bcdfebf9f4b30ec364f5323a2d7e7a783a005f911128205e755c",
                 },
+                revision = 1,
             },
             ["2026.10.16.2"] = {
                 url = "XLINGS_RES",
@@ -112,7 +145,13 @@ package = {
         },
         macosx = {
             deps = { "xim:luban-fonts" },
-            ["latest"] = { ref = "2026.10.17.1" },
+            ["latest"] = { ref = "2026.10.18.1" },
+            ["2026.10.18.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "a72b6a2e5c1f70d1475631a996f5da9bee06f98e555597c7f752ff9fcbd5654b",
+                },
+            },
             ["2026.10.17.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -158,7 +197,13 @@ package = {
         },
         windows = {
             deps = { "xim:luban-fonts" },
-            ["latest"] = { ref = "2026.10.17.1" },
+            ["latest"] = { ref = "2026.10.18.1" },
+            ["2026.10.18.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "42ea88619f4580efee67086726a4d7c8f4213f5700d7a53157fdbee198df85da",
+                },
+            },
             ["2026.10.17.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -208,6 +253,8 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
+import("xim.libxpkg.system")
+import("xim.pkgindex.graphics")
 
 -- bin/luban-os (bin/luban-os.exe on Windows): the payload extracts into
 -- luban-os-<version>-<os>-<arch>/, a .tar.gz on Linux and macOS, a .zip on Windows.
@@ -229,12 +276,28 @@ local function entry_file()
     return path.join(os.getenv("HOME") or "", ".local/share/applications", "luban-os.xvm.desktop")
 end
 
+-- The stack is in this home when mesa's payload is: then its discovery
+-- variables name directories something fills. Pointed at an empty subos
+-- directory, mesa would fall back to software without a word.
+local function have_stack()
+    local mesa = pkginfo.dep_install_dir and pkginfo.dep_install_dir("xim:mesa") or nil
+    return mesa and mesa ~= "" and os.isdir(path.join(mesa, "lib"))
+end
+
 function config()
     local dir = pkginfo.install_dir()
-    xvm.add("luban-os", { bindir = path.join(dir, "bin") })
+    local node = { bindir = path.join(dir, "bin") }
+    if is_host("linux") and have_stack() then
+        node.envs = graphics.consumer_envs()
+    end
+    xvm.add("luban-os", node)
     -- The host's application menu (a freedesktop one: Linux): the window of this home.
     if is_host("linux") and os.getenv("HOME") then
         local home = os.getenv("XLINGS_HOME") or path.join(os.getenv("HOME"), ".xlings")
+        -- The shim, which carries the stack's variables; the payload where
+        -- this client does not say where the shims are.
+        local shim = system.bindir() and path.join(system.bindir(), "luban-os")
+        local exec = shim or path.join(dir, "bin", "luban-os")
         local entry = string.format([[
 [Desktop Entry]
 Type=Application
@@ -245,7 +308,7 @@ Icon=%s
 Terminal=false
 Categories=System;Emulator;
 StartupWMClass=luban-os
-]], home, path.join(dir, "bin", "luban-os"), path.join(dir, "share/icons/hicolor/scalable/apps/luban-os.svg"))
+]], home, exec, path.join(dir, "share/icons/hicolor/scalable/apps/luban-os.svg"))
         os.mkdir(path.join(os.getenv("HOME"), ".local/share/applications"))
         io.writefile(entry_file(), entry)
         log.debug("desktop entry %s", entry_file())

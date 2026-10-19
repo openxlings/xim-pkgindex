@@ -61,7 +61,13 @@ class XimPlugin(Plugin):
         name = str(raw.get("name") or "")
         if not name:
             name = os.path.basename(path)[: -len(".lua")]
-        return Identity.plain(str(raw.get("namespace") or ""), name)
+        namespace = str(raw.get("namespace") or "")
+        if namespace in ("", "xim"):
+            return Identity.plain(namespace, name)
+        # Another namespace is part of what is installed (`luban:xdesk` and
+        # `xim:xdesk` are two packages): the page and the command name it.
+        return Identity(namespace=namespace, name=name, display=f"{namespace}:{name}",
+                        slug=f"{namespace}-{name}", install_ref=f"{namespace}:{name}")
 
     def on_package(self, pkg, raw: Dict[str, Any]) -> None:
         ext = {

@@ -36,7 +36,8 @@ for e in nano tiny luban-tiny-musl core; do
     # luban says what it was made from, wherever the system lives (its own
     # prefix domain or the home's).
     rec="$(L status "e-$e" --json)"
-    grep -q '"edition": *"subos:' <<<"$rec" || fail "$e: no edition record: $rec"
+    # subos:luban-<e> for a client before 2026.10.18.1, luban:<e> since.
+    grep -Eq '"edition": *"(subos|luban):' <<<"$rec" || fail "$e: no edition record: $rec"
 done
 X subos exec e-nano -- /usr/bin/xlings --version >/dev/null || fail "nano: its xlings"
 L run e-tiny -- /bin/sh -c 'grep -q ID=luban /usr/share/factory/etc/os-release && grep -q luban-init /etc/inittab' \
@@ -76,6 +77,23 @@ log "luban new e-desktop --edition desktop: its tools run in its root (x86_64: x
 L new e-desktop --edition desktop -y || fail "luban new desktop"
 L run e-desktop -- /bin/sh -c 'gh --version && dsh --version && dsh --profile web --dump-config | grep -q dsh-base' \
     || fail "desktop: dsh in its root"
+
+# The desktops (a client from 2026.10.18.1: --desktop at new, luban: desktops):
+# each drawn in a system, as the Luban OS window receives it (opensal.wire
+# from `luban __desktop <session>`): a picture, and a panel along its bottom.
+if [[ "$(printf '%s\n' "2026.10.18.1" "$(L --version | awk '{print $2}')" | sort -V | head -1)" == 2026.10.18.1 ]]; then
+    log "desktops: labwc, LXQt and KDE in one system, each drawn"
+    L new e-desk --edition tiny --desktop labwc --xpkg luban:lxqt --xpkg luban:kde -y \
+        || fail "luban new --desktop labwc --xpkg luban:lxqt --xpkg luban:kde"
+    L status e-desk --check | tee "$home/desk-check.out" | tail -3
+    for s in labwc lxqt kde; do
+        python3 "$repo/scripts/luban-desktop-probe.py" --panel --settle 20 --timeout 180 -- \
+            "$home/bin/xlings" subos use e-desk --cmd "exec luban __desktop $s --size 1280x720" \
+            >"$home/desktop-$s.out" 2>"$home/desktop-$s.log" || true
+        echo "$s: $(cat "$home/desktop-$s.out")"
+        grep -q '^PASS' "$home/desktop-$s.out" || { tail -30 "$home/desktop-$s.log"; fail "desktop $s did not draw"; }
+    done
+fi
 
 log "luban export e-tiny tiny.iso --boot virt"
 L export e-tiny "$home/tiny.iso" --boot virt || fail "export --boot virt"

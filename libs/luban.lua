@@ -259,12 +259,70 @@ function luban.with(files, ...)
     return out
 end
 
+-- A manifest written from a table (the luban: editions; xlings design
+-- 2026-10-18 §4.3): its keys in the order a person reads them, a nested
+-- object on one line with its keys sorted, an array one item a line.
+local ORDER = { "subos_kind", "min_client", "from", "replaces", "abi", "packages", "boot", "policy", "luban", "workspace" }
+
+local function json_string(v)
+    return '"' .. tostring(v):gsub('\\', '\\\\'):gsub('"', '\\"') .. '"'
+end
+
+local function json_inline(v)
+    if type(v) == "string" then return json_string(v) end
+    if type(v) == "boolean" or type(v) == "number" then return tostring(v) end
+    if type(v) ~= "table" then error("luban.manifest: a " .. type(v)) end
+    if #v > 0 then
+        local items = {}
+        for _, x in ipairs(v) do table.insert(items, json_inline(x)) end
+        return "[" .. table.concat(items, ", ") .. "]"
+    end
+    local keys = {}
+    for k in pairs(v) do table.insert(keys, k) end
+    table.sort(keys)
+    if #keys == 0 then return "{}" end
+    local items = {}
+    for _, k in ipairs(keys) do table.insert(items, json_string(k) .. ": " .. json_inline(v[k])) end
+    return "{ " .. table.concat(items, ", ") .. " }"
+end
+
+function luban.manifest(m)
+    local lines = {}
+    for _, k in ipairs(ORDER) do
+        local v = m[k]
+        if v ~= nil then
+            if k == "packages" then
+                local items = {}
+                for _, p in ipairs(v) do table.insert(items, "    " .. json_string(p)) end
+                table.insert(lines, '  "packages": [' .. (#items > 0 and ("\n" .. table.concat(items, ",\n") .. "\n  ]") or "]"))
+            else
+                table.insert(lines, "  " .. json_string(k) .. ": " .. json_inline(v))
+            end
+        end
+    end
+    for k in pairs(m) do
+        local known = false
+        for _, o in ipairs(ORDER) do known = known or o == k end
+        if not known then error("luban.manifest: an unknown key " .. k) end
+    end
+    return "{\n" .. table.concat(lines, ",\n") .. "\n}\n"
+end
+
 function luban.edition(spec)
     local version = pkginfo.version()
     local this = spec.versions[version]
     if not this then error(string.format("luban-%s: no manifest for %s", spec.id, tostring(version))) end
     fresh()
-    write(".xlings.json", this.manifest)
+    if type(this.manifest) == "table" then
+        -- What it presets (luban.settings) is also the root's
+        -- usr/share/luban/settings.json, which a luban before the manifest's
+        -- `luban` object reads.
+        local settings = this.manifest.luban and this.manifest.luban.settings
+        if settings then write("usr/share/luban/settings.json", json_inline(settings) .. "\n") end
+        write(".xlings.json", luban.manifest(this.manifest))
+    else
+        write(".xlings.json", this.manifest)
+    end
     for _, f in ipairs(this.files or spec.files or {}) do write(f[1], f[2], f[3]) end
     write("usr/share/factory/etc/os-release", luban.os_release(spec.id, spec.variant, version))
     log.info("luban-%s template at %s", spec.id, pkginfo.install_dir())

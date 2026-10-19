@@ -1,0 +1,9 @@
+# luban:lxqt -- its programs run on luban:qt-runtime: their loader and
+# library path name it (the recipe's config()); Qt finds the runtime's plugins
+# and QML, and this tree's (the LXQt platform theme, layer-shell).
+rt="$(cat "$here/libexec/lxqt/qt-runtime" 2>/dev/null)/libexec/qt-runtime"
+export QT_PLUGIN_PATH="$here/libexec/lxqt/plugins:$rt/plugins"
+export QML_IMPORT_PATH="$rt/qml" QML2_IMPORT_PATH="$rt/qml"
+export FONTCONFIG_FILE="${FONTCONFIG_FILE:-$here/etc/fonts/fonts.conf}"
+unset rt
+case ":$PATH:" in *":$here/bin:"*) ;; *) export PATH="$here/bin:$PATH" ;; esac

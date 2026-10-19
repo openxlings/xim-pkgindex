@@ -1,6 +1,8 @@
 -- TODO: Linux 运行时缺 libwebkit2gtk-4.1.so.0，pmwrapper 中 webkit2gtk 映射的是 4.0 版本(libwebkit2gtk-4.0-37)
 --       需要更新 pmwrapper.lua 或 deps 中的系统依赖为 libwebkit2gtk-4.1-dev
 
+-- graphics-ok: a .deb on the host's loader, drawing with the host's webkit2gtk and GL.
+
 function _linux_donwload_url(version) return string.format("https://github.com/LiRenTech/project-graph/releases/download/v%s/Project.Graph_%s_amd64.deb", version, version) end
 
 package = {

@@ -67,8 +67,11 @@ def test_every_pinned_member_is_in_the_index_at_that_version(recipe, tmp_path):
     for arch in ("x86_64", "aarch64") if recipe == CLASSIC else ("x86_64",):
         _, manifest, _ = made(recipe, tmp_path, arch=arch)
         for ref in manifest["packages"]:
-            name, _, version = ref.split(":", 1)[1].partition("@")
-            files = list(ROOT.glob(f"pkgs/*/{name}.lua"))
+            ns, _, rest = ref.partition(":")
+            name, _, version = rest.partition("@")
+            # The recipe of its namespace (luban:xdesk and xim:xdesk are two).
+            files = [f for f in ROOT.glob(f"pkgs/*/{name}.lua")
+                     if (re.search(r'^\s*namespace\s*=\s*"([^"]+)"', f.read_text(), re.M) or [None, "xim"])[1] == ns]
             assert files, f"{ref}: no recipe"
             if version:
                 assert f'["{version}"]' in files[0].read_text(), f"{ref}: {files[0].name} has no {version}"

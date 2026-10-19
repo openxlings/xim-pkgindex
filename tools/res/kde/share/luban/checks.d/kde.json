@@ -1,0 +1,4 @@
+{"checks": [
+  {"id": "kde-runs", "what": "KWin and Plasma's shell start on the Qt runtime", "run": "QT_QPA_PLATFORM=offscreen kwin_wayland --version | grep -q kwin && QT_QPA_PLATFORM=offscreen plasmashell --version | grep -q plasmashell", "timeout": 30},
+  {"id": "kde-terminal", "what": "its terminal is found", "run": "command -v konsole >/dev/null", "timeout": 10}
+]}

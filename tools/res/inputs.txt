@@ -43,3 +43,11 @@ sarasa-license 1.0.42 32c932e0dbae4f6e6386964bbc2d04178707665a05ca65cf636241af13
 noto-sans-sc 2.004 faa6c9df652116dde789d351359f3d7e5d2285a2b2a1f04a2d7244df706d5ea9
 noto-license 2.004 6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2
 fusion-pixel-font 2026.09.25 47585b9c4b6d8d57380e9dec75bc7e8043fdbfa77d1843c3aaa19a1e7bd15d50
+# The desktop components (luban:xwayland, luban:labwc): what they rebuild of
+# Alpine 3.24 -- its source and its patch, unchanged.
+xwayland 24.1.14 4eb6b98d678299a4b96138d886345b294130695760345ef84596225a8224078a
+xwayland-libtirpc-patch 24.1.14 ab7f064e7b6208fe8b34738e7a9d999aed17a618c85f1eb6190f14c1a45cdb3b
+wlroots 0.20.2 972c7ac44b17828f4702bfae7cd8347346a3fb5b2c1076cfa2c3fcedac5ec343
+# luban:labwc as published: the compositor a Qt desktop's factory session runs on.
+luban-labwc-x86_64 0.20.0-r1 576a0d7d256a39c672af86ca501b82b14e6a6779065b8abee842cc072a0fed61
+luban-labwc-aarch64 0.20.0-r1 e23f15ca7e913f23f4b226003de950b3639157a9151c9ca0dc3fcc880c86f292

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=LXQt
+Comment=A traditional desktop: a panel, a desktop and file manager, settings
+Exec=luban-lxqt
+DesktopNames=LXQt;labwc;wlroots
+X-Opensal-Interfaces=surface pointer keyboard mode
+X-Luban-Shell=own

@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=KDE Plasma
+Comment=The complete desktop: Plasma, KWin, Dolphin, Konsole, System Settings (preview)
+Exec=luban-kde
+DesktopNames=KDE
+X-Opensal-Interfaces=surface pointer keyboard mode
+X-Luban-Shell=own

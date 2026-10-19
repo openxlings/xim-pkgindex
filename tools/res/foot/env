@@ -1,0 +1,8 @@
+# luban:foot -- what foot reads: its own fonts.conf (the system's fonts and the
+# user's) and, when the user has none, its default foot.ini.
+lib="$here/libexec/foot/lib"
+export FONTCONFIG_FILE="${FONTCONFIG_FILE:-$here/etc/fonts/fonts.conf}"
+case ":${TERMINFO_DIRS:-}:" in *":$here/share/terminfo:"*) ;; *) export TERMINFO_DIRS="${TERMINFO_DIRS:+$TERMINFO_DIRS:}$here/share/terminfo" ;; esac
+if [ "$prog" = foot ] && [ ! -e "${XDG_CONFIG_HOME:-$HOME/.config}/foot/foot.ini" ]; then
+    set -- --config="$here/etc/xdg/foot/foot.ini" "$@"
+fi

@@ -47,8 +47,8 @@ jobs:
         include:
           - { what: limine,        version: "12.9.3",             arch: x86_64 }
           - { what: limine,        version: "12.9.3",             arch: aarch64 }
-          - { what: kernel-virt,   version: "6.12.112-r1",        arch: x86_64 }
-          - { what: kernel-virt,   version: "6.12.112-r1",        arch: aarch64 }
+          - { what: kernel-virt,   version: "6.12.112-r2",        arch: x86_64 }
+          - { what: kernel-virt,   version: "6.12.112-r2",        arch: aarch64 }
           - { what: busybox,       version: "1.35.0",             arch: aarch64 }
           - { what: bwrap,         version: "0.11.2",             arch: aarch64 }
           # the aarch64 ecosystem (xlings: 2026-10-11-luban-aarch64-and-docs-i18n-design)
@@ -78,6 +78,18 @@ jobs:
           - { what: qemu-system,   version: "9.2.4-r2",           arch: aarch64 }
           - { what: labwc-desktop, version: "0.7.2-r1",           arch: x86_64 }
           - { what: labwc-desktop, version: "0.7.2-r1",           arch: aarch64 }
+          # the desktop components (xlings: 2026-10-18 Luban OS distribution design §4.6, §13.5)
+          - { what: foot,          version: "1.27.0-r1",          arch: x86_64 }
+          - { what: foot,          version: "1.27.0-r1",          arch: aarch64 }
+          - { what: xwayland,      version: "24.1.14-r1",         arch: x86_64 }
+          - { what: xwayland,      version: "24.1.14-r1",         arch: aarch64 }
+          - { what: labwc,         version: "0.20.0-r2",          arch: x86_64 }
+          - { what: labwc,         version: "0.20.0-r2",          arch: aarch64 }
+          - { what: qt-runtime,    version: "6.11.1-r2",          arch: x86_64 }
+          - { what: qt-runtime,    version: "6.11.1-r2",          arch: aarch64 }
+          - { what: lxqt,          version: "2.4.0-r3",           arch: x86_64 }
+          - { what: lxqt,          version: "2.4.0-r3",           arch: aarch64 }
+          - { what: kde,           version: "6.6.6-r1",           arch: x86_64 }
           # the desktop editions' terminal tools (xlings: Luban OS desktop part 2 §5)
           - { what: tmux,          version: "3.8",                arch: x86_64 }
           - { what: tmux,          version: "3.8",                arch: aarch64 }

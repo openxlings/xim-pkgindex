@@ -89,6 +89,16 @@ local gitconfig = [[
 	rebase = false
 ]]
 
+-- The environment a ready-to-use system has (the luban:desktop edition's
+-- too, whose settings its manifest says): registries near the person, git's
+-- defaults.
+function M.environment()
+    return {
+        { "usr/share/factory/etc/profile.d/luban-registries.sh", registries },
+        { "usr/share/factory/etc/gitconfig", gitconfig },
+    }
+end
+
 function M.files(session, more)
     local out = {
         -- Runs as a machine and starts this session (luban config <n> --desktop changes it).

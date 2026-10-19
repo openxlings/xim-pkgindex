@@ -1,0 +1,69 @@
+#!/bin/sh
+# xdg-terminal-exec: run a command in the default terminal (the proposed
+# freedesktop "default terminal" convention, the subset a desktop needs).
+#
+#   xdg-terminal-exec [--title=T] [--app-id=ID] [--dir=D] [--] [command [arg...]]
+#
+# The terminal is the first entry named in xdg-terminals.list (config dirs,
+# then XDG_CURRENT_DESKTOP-specific ones) that exists in a data dir's
+# xdg-terminals/, else the first entry found there. Its X-TerminalArg* keys
+# say how it takes a title, an application ID, a directory and a command;
+# a terminal that cannot take one is given the command without it.
+set -u
+title= appid= dir=
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --title=*) title=${1#--title=} ;;
+        --app-id=*) appid=${1#--app-id=} ;;
+        --dir=*) dir=${1#--dir=} ;;
+        --) shift; break ;;
+        -e) shift; break ;;
+        *) break ;;
+    esac
+    shift
+done
+config_dirs="${XDG_CONFIG_HOME:-$HOME/.config}:${XDG_CONFIG_DIRS:-/etc/xdg}"
+data_dirs="${XDG_DATA_HOME:-$HOME/.local/share}:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+find_entry() {  # an entry ID -> its file
+    IFS=:; for d in $data_dirs; do
+        [ -f "$d/xdg-terminals/$1" ] && { unset IFS; printf '%s\n' "$d/xdg-terminals/$1"; return 0; }
+    done; unset IFS; return 1
+}
+entry=
+lists=
+IFS=:; for c in $config_dirs; do
+    for desk in $(printf '%s' "${XDG_CURRENT_DESKTOP:-}" | tr 'A-Z:' 'a-z '); do lists="$lists:$c/$desk-xdg-terminals.list"; done
+    lists="$lists:$c/xdg-terminals.list"
+done; unset IFS
+IFS=:; for l in $lists; do
+    [ -n "$l" ] && [ -f "$l" ] || continue
+    while read -r id; do
+        case "$id" in ''|'#'*|-*) continue ;; esac
+        unset IFS; entry=$(find_entry "$id") && break 2; IFS=:
+    done < "$l"
+done; unset IFS
+if [ -z "$entry" ]; then
+    IFS=:; for d in $data_dirs; do
+        for f in "$d"/xdg-terminals/*.desktop; do [ -f "$f" ] && { entry=$f; break 2; }; done
+    done; unset IFS
+fi
+[ -n "$entry" ] || { echo "xdg-terminal-exec: no terminal (share/xdg-terminals/*.desktop)" >&2; exit 1; }
+key() { sed -n "/^\[Desktop Entry\]/,/^\[/{s/^$1=//p}" "$entry" | head -n 1; }
+exec_line=$(key Exec)
+[ -n "$exec_line" ] || { echo "xdg-terminal-exec: $entry has no Exec" >&2; exit 1; }
+has() { sed -n "/^\[Desktop Entry\]/,/^\[/p" "$entry" | grep -q "^$1="; }
+q() { printf "'%s' " "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"; }
+words="$exec_line "
+[ -n "$title" ] && has X-TerminalArgTitle && words="$words$(q "$(key X-TerminalArgTitle)$title")"
+[ -n "$appid" ] && has X-TerminalArgAppId && words="$words$(q "$(key X-TerminalArgAppId)$appid")"
+[ -n "$dir" ] && has X-TerminalArgDir && words="$words$(q "$(key X-TerminalArgDir)$dir")"
+# A command after the terminal's own option for it (-e when it names none).
+if [ $# -gt 0 ]; then
+    if has X-TerminalArgExec; then
+        a=$(key X-TerminalArgExec); [ -n "$a" ] && words="$words$(q "$a")"
+    else
+        words="$words-e "
+    fi
+fi
+eval "set -- $words"' "$@"'
+exec "$@"

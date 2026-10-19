@@ -1,0 +1,10 @@
+#!/bin/sh
+# @NAME@: @PROG@, run as itself: its loader and its libraries' directories are
+# named in the program by the recipe's config(), where it is installed -- a
+# Qt program reads its own path (/proc/self/exe), which a loader run on it
+# would take (xim-pkgindex tools/res/build.sh). libexec/@NAME@/env sets what
+# the program reads.
+here=$(readlink -f "$0"); here=${here%/bin/*}
+prog=@PROG@
+. "$here/libexec/@NAME@/env"
+exec "$here/libexec/@NAME@/bin/@PROG@" "$@"
