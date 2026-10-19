@@ -30,7 +30,9 @@ package = {
     -- bin/<program>; the modules and plugins in lib/pipewire-0.3, lib/spa-0.2
     -- and lib/wireplumber-0.5 and the configuration in share/, as Alpine lays
     -- them out under /usr -- a Luban system has them where the programs look.
-    programs = {"luban-audio", "pipewire", "pipewire-pulse", "wireplumber", "pw-cat", "pw-cli", "wpctl", "pactl"},
+    -- `audio` is luban-audio by the package's own name (what a desktop's
+    -- packages register first; install() writes it).
+    programs = {"audio", "luban-audio", "pipewire", "pipewire-pulse", "wireplumber", "pw-cat", "pw-cli", "wpctl", "pactl"},
     xvm_enable = true,
 
     xpm = {
@@ -48,10 +50,17 @@ package = {
     },
 }
 
+import("xim.libxpkg.pkginfo")
 import("xim.pkgindex.luban_component")
 
 function install()
-    return luban_component.install({ "bin/luban-audio", "bin/pipewire", "share/pipewire/pipewire.conf.d/luban.conf" })
+    if not luban_component.install({ "bin/luban-audio", "bin/pipewire", "share/pipewire/pipewire.conf.d/luban.conf" }) then
+        return false
+    end
+    local audio = path.join(pkginfo.install_dir(), "bin", "audio")
+    io.writefile(audio, '#!/bin/sh\n# luban:audio: the session\'s sound, started (luban-audio).\nexec "$(dirname "$(readlink -f "$0")")/luban-audio" "$@"\n')
+    os.exec("chmod 755 " .. audio)
+    return true
 end
 
 function config()
