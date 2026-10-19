@@ -48,14 +48,25 @@ package = {
     -- desktop of a Luban system.
     programs = {"luban-lxqt", "lxqt-session", "lxqt-panel", "lxqt-runner", "lxqt-config", "lxqt-config-appearance",
                 "lxqt-config-session", "lxqt-config-input", "lxqt-config-monitor", "lxqt-notificationd", "lxqt-about",
-                "lxqt-leave", "pcmanfm-qt"},
+                "lxqt-leave", "pcmanfm-qt", "qterminal"},
     xvm_enable = true,
 
     xpm = {
         linux = {
-            deps = { "luban:qt-runtime@6.11.1-r2", "luban:labwc", "luban:foot", "xim:luban-fonts", "xim:xkeyboard-config",
-                     "xim:patchelf" },
-            ["latest"] = { ref = "2.4.0-r3" },
+            -- luban:falkon: the browser every Luban desktop carries (xlings design 2026-10-20 §20.2).
+            deps = { "luban:qt-runtime@6.11.1-r2", "luban:labwc", "luban:foot", "luban:falkon", "xim:luban-fonts",
+                     "xim:xkeyboard-config", "xim:patchelf" },
+            ["latest"] = { ref = "2.4.0-r4" },
+            -- r4: qterminal (the desktop's own terminal, which its menus name),
+            -- Home and Trash on the desktop, a quick launch (xlings design
+            -- 2026-10-20 §20, G24-G26).
+            ["2.4.0-r4"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "3a3c509ff9ff26ed624b5eba0b4d3d48da6d5fcc29bb7843a893c8c52ed7be29",
+                    aarch64 = "9219782ff54798932943f290f11c339c09eb638749fb9533decc8c15f1222d56",
+                },
+            },
             ["2.4.0-r3"] = {
                 url = "XLINGS_RES",
                 sha256 = {
