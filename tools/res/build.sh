@@ -498,8 +498,8 @@ sudo)
              --without-pam --disable-shared --enable-static-sudoers --disable-nls --without-sendmail \
              --disable-root-mailer --with-rundir=/run/sudo --with-vardir=/var/db/sudo --with-env-editor \
              --disable-log-server --disable-log-client --without-ldap --without-noexec --disable-intercept \
-             --with-timeout=15 --without-lecture --enable-tmpfiles.d=no LDFLAGS=-static >/dev/null \
-        && make -s -j\$(nproc) >/dev/null && make -s install DESTDIR=/w/stage >/dev/null \
+             --with-timeout=15 --without-lecture --enable-tmpfiles.d=no --disable-pie >/dev/null \
+        && make -s -j\$(nproc) LDFLAGS=-all-static >/dev/null && make -s install DESTDIR=/w/stage LDFLAGS=-all-static >/dev/null \
         && mkdir -p /w/$d/bin /w/$d/sbin \
         && cp /w/stage/usr/bin/sudo /w/$d/bin/sudo && strip /w/$d/bin/sudo && ln -s sudo /w/$d/bin/sudoedit \
         && cp /w/stage/usr/sbin/visudo /w/$d/sbin/visudo && strip /w/$d/sbin/visudo"
