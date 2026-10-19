@@ -66,7 +66,13 @@ package = {
                 "xim:nvidia-gl-host-link@>=0.1.2",
                 "xim:wsl-gl-host-link@>=0.1",
             },
-            ["latest"] = { ref = "2026.10.18.1" },
+            ["latest"] = { ref = "2026.10.19.1" },
+            ["2026.10.19.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "bfce62ec656df55f3fa0d004b4e12c802fee59ba469b87c95595a81e9d96d1bf",
+                },
+            },
             ["2026.10.18.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -145,7 +151,13 @@ package = {
         },
         macosx = {
             deps = { "xim:luban-fonts" },
-            ["latest"] = { ref = "2026.10.18.1" },
+            ["latest"] = { ref = "2026.10.19.1" },
+            ["2026.10.19.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "da5f39e345530de088901f2bdfecebc2c4dd5d7fa69f54d598bfde07c967b974",
+                },
+            },
             ["2026.10.18.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -197,7 +209,13 @@ package = {
         },
         windows = {
             deps = { "xim:luban-fonts" },
-            ["latest"] = { ref = "2026.10.18.1" },
+            ["latest"] = { ref = "2026.10.19.1" },
+            ["2026.10.19.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "220786743d7cf3fbc276e464b626244624d8ddb251c654aa4715fe3d7fc96492",
+                },
+            },
             ["2026.10.18.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
