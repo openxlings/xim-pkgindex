@@ -1,0 +1,13 @@
+#!/bin/sh
+# luban:audio: a session's sound (xlings design 2026-10-20 §20.1) --
+# PipeWire, its session manager and its Pulse server, once for the session
+# (its XDG_RUNTIME_DIR), ended with it.
+here=$(readlink -f "$0"); here=${here%/bin/*}
+[ -n "$XDG_RUNTIME_DIR" ] || exit 0
+[ -S "$XDG_RUNTIME_DIR/pipewire-0" ] && exit 0
+"$here/bin/pipewire" &
+i=0
+while [ $i -lt 25 ] && [ ! -S "$XDG_RUNTIME_DIR/pipewire-0" ]; do sleep 0.2; i=$((i + 1)); done
+"$here/bin/wireplumber" &
+"$here/bin/pipewire-pulse" &
+wait

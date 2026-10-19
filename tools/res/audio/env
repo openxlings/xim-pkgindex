@@ -1,0 +1,13 @@
+# luban:audio -- PipeWire, WirePlumber and the Pulse server read their
+# modules, plugins and configuration from this tree, wherever it is (a
+# Luban root also has them at /usr/lib/... and /usr/share/...).
+lib="$here/libexec/audio/lib"
+export PIPEWIRE_MODULE_DIR="$here/lib/pipewire-0.3" SPA_PLUGIN_DIR="$here/lib/spa-0.2" SPA_DATA_DIR="$here/share/spa-0.2"
+export PIPEWIRE_CONFIG_DIR="$here/share/pipewire"
+export WIREPLUMBER_MODULE_DIR="$here/lib/wireplumber-0.5" WIREPLUMBER_DATA_DIR="$here/share/wireplumber"
+# Each daemon its own configuration, whatever its name reads as through the loader.
+case "$prog" in
+    pipewire) export PIPEWIRE_CONFIG_NAME=pipewire.conf ;;
+    pipewire-pulse) export PIPEWIRE_CONFIG_NAME=pipewire-pulse.conf ;;
+esac
+case ":$PATH:" in *":$here/bin:"*) ;; *) export PATH="$here/bin:$PATH" ;; esac

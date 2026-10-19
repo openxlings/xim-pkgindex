@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=Sound
+Comment=PipeWire for this session: its sound out to the computer Luban OS runs on
+Exec=luban-audio
+NoDisplay=true
+X-GNOME-Autostart-Phase=Initialization
+X-KDE-autostart-phase=1

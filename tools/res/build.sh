@@ -30,6 +30,7 @@
 #   foot          luban:foot, a terminal, as a component tree (Alpine 3.24; bundle below)
 #   xwayland      luban:xwayland, X11 programs on Wayland, built without glamor and GLX
 #   labwc         luban:labwc, the labwc desktop, on a wlroots built with pixman alone
+#   audio         luban:audio: PipeWire, WirePlumber, pipewire-pulse and the luban sink
 #   qt-runtime    luban:qt-runtime, the Qt the Qt desktops share (Qt 6, mesa, their libraries; no programs)
 #   lxqt          luban:lxqt, LXQt on luban:labwc, its libraries beyond the Qt runtime's
 #   kde           luban:kde, KDE Plasma nested in luban:labwc, all it brings beyond the Qt runtime (preview)
@@ -847,6 +848,49 @@ labwc)
     [[ "$(px 600 710)" == "$(px 900 710)" && "$(px 600 710)" != "$(px 600 680)" ]] || shot_die "the panel is not drawn"
     rm -f "$work/shot.ppm"
     provenance "$d" "luban:labwc $version: Alpine 3.24 $(grep -E '^(labwc|yambar|fuzzel|swaybg|grim)-[0-9]' "$work/installed" | tr '\n' ' ')-- with wlroots $wv (gitlab.freedesktop.org, sha256 $(input wlroots "$wv")) configured as Alpine's APKBUILD but -Drenderers= -Dallocators= (pixman only); the musl loader and the libraries they link private (libexec/labwc), run through bin/<program>; configuration, the session and xdg-terminal-exec from xim-pkgindex tools/res/labwc and tools/res/bundle; a headless session in Debian 12 drew its background and panel"
+    pack "$d" ;;
+audio)
+    # luban:audio: a Luban desktop's sound (xlings design 2026-10-20 §20.1)
+    # -- PipeWire, WirePlumber and pipewire-pulse, as Alpine lays them out
+    # under /usr (lib/pipewire-0.3, lib/spa-0.2, lib/wireplumber-0.5,
+    # share/pipewire, share/wireplumber: a root projects lib/<dir> and share
+    # where the programs look), the programs' libraries and the musl loader
+    # private (libexec/audio). Its own: the `luban` sink (share/pipewire/
+    # pipewire.conf.d/luban.conf: a pipe-tunnel into /tmp/luban-audio.pcm,
+    # 48 kHz stereo, the default output), which `luban __audio` reads and the
+    # Luban OS window plays; bin/luban-audio, which starts the three for a
+    # session (etc/xdg/autostart).
+    v="${version%%-r[0-9]*}"; d="audio-$version-linux-$arch"
+    progs="/usr/bin/pipewire /usr/bin/pipewire-pulse /usr/bin/wireplumber /usr/bin/pw-cat /usr/bin/pw-cli /usr/bin/wpctl /usr/bin/pactl"
+    bundle audio "$d" "$progs" \
+        "apk add -q pipewire pipewire-pulse wireplumber pipewire-tools pulseaudio-utils \
+         && mkdir -p /w/extra/lib /w/extra/share /w/extra/licenses \
+         && cp -a /usr/lib/pipewire-0.3 /usr/lib/spa-0.2 /usr/lib/wireplumber-0.5 /w/extra/lib/ \
+         && cp -a /usr/share/pipewire /usr/share/wireplumber /w/extra/share/ \
+         && { [ ! -d /usr/share/spa-0.2 ] || cp -a /usr/share/spa-0.2 /w/extra/share/; } \
+         && for p in pipewire wireplumber pulseaudio-utils; do [ -d /usr/share/licenses/\$p ] && cp -r /usr/share/licenses/\$p /w/extra/licenses/ || true; done" \
+        "\$(find /usr/lib/pipewire-0.3 /usr/lib/spa-0.2 /usr/lib/wireplumber-0.5 -name '*.so')"
+    bundle_upstream pipewire "$v"
+    mkdir -p "$work/$d/lib" "$work/$d/share"
+    cp -a "$work/extra/lib/." "$work/$d/lib/"
+    cp -a "$work/extra/share/." "$work/$d/share/"
+    cp -a "$work/extra/licenses/." "$work/$d/share/licenses/"
+    rm -rf "$work/extra"
+    # The modules name no loader of their own (a root checks every ELF it holds).
+    python3 "$here/bundle/no-interp.py" "$work/$d/lib" >/dev/null
+    # It plays into the `luban` sink, the default: what is played comes out of the pipe.
+    headless "$d" "head -c 192000 /dev/urandom > /w/noise.raw \
+        && { ./bin/luban-audio >/w/session.log 2>&1 & } \
+        && for i in \$(seq 1 50); do [ -S /tmp/rt/pulse/native ] && break; sleep 0.2; done \
+        && for i in \$(seq 1 25); do [ -p /tmp/luban-audio.pcm ] && break; sleep 0.2; done \
+        && { cat /tmp/luban-audio.pcm > /w/got.pcm & } && sleep 1 \
+        && ./bin/pactl get-default-sink > /w/default-sink 2>&1 \
+        && timeout 10 ./bin/pw-cat -p --raw --format s16 --rate 48000 --channels 2 /w/noise.raw \
+        && sleep 1 && wc -c < /w/got.pcm > /w/got-size"
+    grep -qx luban "$work/default-sink" || die "the default output is not the luban sink: $(cat "$work/default-sink")"
+    [[ "$(cat "$work/got-size")" -ge 96000 ]] || die "the luban sink's pipe had $(cat "$work/got-size") bytes of 192000 played"
+    rm -f "$work/noise.raw" "$work/got.pcm"
+    provenance "$d" "luban:audio $version: Alpine 3.24 $(grep -E '^(pipewire|pipewire-pulse|wireplumber|pipewire-tools|pulseaudio-utils)-[0-9]' "$work/installed" | tr '\n' ' ')-- the musl loader and the libraries they link private (libexec/audio), run through bin/<program>; lib/pipewire-0.3, lib/spa-0.2, lib/wireplumber-0.5 and share/ as Alpine has them; the luban sink, luban-audio and its autostart from xim-pkgindex tools/res/audio; in Debian 12 noise played into the default sink came out of its pipe"
     pack "$d" ;;
 terminfo)
     # The terminal descriptions a root has (xlings design 2026-10-16 L §10):
