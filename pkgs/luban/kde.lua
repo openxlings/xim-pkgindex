@@ -19,6 +19,18 @@ package = {
     categories = {"desktop", "wayland", "luban", "luban-desktop", "qt", "kde"},
     keywords = {"kde", "plasma", "kwin", "qt", "wayland", "desktop", "luban", "dolphin", "konsole"},
 
+    -- What Luban shows of it (xlings design 2026-10-19 §5.4; xpkg spec
+    -- "extensions"): T4, better with the host's GPU.
+    extensions = {
+        luban = {
+            tier = 4,
+            gpu = "better",
+            title = { en = "KDE Plasma", zh = "KDE Plasma" },
+            summary = { en = "The complete desktop: Plasma, Dolphin, Konsole, System Settings",
+                        zh = "完整桌面：Plasma、Dolphin、Konsole、系统设置" },
+        },
+    },
+
     -- The T4 desktop (design §7, §13.3): KDE Plasma 6.6 -- KWin, Plasma's
     -- shell, Dolphin, Konsole, System Settings -- with KWin a window of
     -- luban:labwc filling its output, the compositor the Luban OS window

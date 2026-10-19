@@ -14,6 +14,17 @@ package = {
     categories = {"desktop", "wayland", "luban", "luban-desktop"},
     keywords = {"compositor", "labwc", "wayland", "luban", "minimal"},
 
+    -- What Luban shows of it (xlings design 2026-10-19 §5.4; xpkg spec
+    -- "extensions"): T1, the lightest traditional desktop.
+    extensions = {
+        luban = {
+            tier = 1,
+            title = { en = "Compositor", zh = "Compositor" },
+            summary = { en = "Windows only, no desktop: the Luban OS window is the shell",
+                        zh = "只有窗口、没有桌面：Luban OS 窗口就是外壳" },
+        },
+    },
+
     -- The T1 desktop (xlings: 2026-10-18 Luban OS distribution design §7):
     -- several windows, no panel and no background program -- the Luban OS
     -- window starts programs and lists windows (X-Luban-Shell=none). It

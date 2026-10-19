@@ -18,6 +18,12 @@ package = {
     categories = {"subos", "distribution"},
     keywords = {"luban", "rootfs", "distribution", "core", "toolchain"},
 
+    -- What a Luban OS card shows of it (xlings design 2026-10-19 §20; xpkg
+    -- spec "extensions"): a few of its programs; cmake and xmake where they
+    -- are offered (x86_64).
+    extensions = { luban = { highlights = ((os.arch and (os.arch() == "aarch64" or os.arch() == "arm64"))
+        and { "gcc", "git", "nvim", "fish", "yazi" } or { "gcc", "cmake", "xmake", "git", "nvim", "yazi" }) } },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "2026.10.19.1" },
