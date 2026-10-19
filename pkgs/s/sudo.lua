@@ -29,8 +29,8 @@ package = {
             ["1.9.17p2"] = {
                 url = "XLINGS_RES",
                 sha256 = {
-                    x86_64 = "SHA256_X86_64",
-                    aarch64 = "SHA256_AARCH64",
+                    x86_64 = "4bcc91ed3a29c470791695a6f4e7c7d575f2395492af00949f31acef66d84535",
+                    aarch64 = "4a57d751ed87c4992de395de6284193fe400ea5ba5fe761d6a8d767bcd827168",
                 },
             },
         },
