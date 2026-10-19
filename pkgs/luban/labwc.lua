@@ -52,10 +52,7 @@ package = {
             -- not resolve (graphics.lua says more). Namespaced once published.
             -- The pointer theme every official desktop has (xlings design
             -- 2026-10-19 §13): lxqt, kde and compositor get it through this.
-            -- `cursors` is NEW in this index with this change, so bare (CI
-            -- registers a changed recipe under `local`); namespaced
-            -- (`luban:cursors`) once published.
-            deps = { "luban:foot", "luban:xwayland", "xim:luban-fonts", "xim:xkeyboard-config", "cursors" },
+            deps = { "luban:foot", "luban:xwayland", "xim:luban-fonts", "xim:xkeyboard-config", "luban:cursors" },
             ["latest"] = { ref = "0.20.0-r2" },
             ["0.20.0-r2"] = {
                 -- 1: luban:cursors became a dependency (a new install gets the

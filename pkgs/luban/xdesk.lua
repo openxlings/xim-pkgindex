@@ -33,11 +33,10 @@ package = {
     -- Form: a composite (design §4.6): its deps, nothing of its own.
     xpm = {
         linux = {
-            -- luban:cursors: the pointer theme (xlings design 2026-10-19
-            -- §13). NEW with this change, so bare until published.
+            -- luban:cursors: the pointer theme (xlings design 2026-10-19 §13).
             -- A platform's deps are every version's: 2026.10.18.1 brings
             -- xdesk 2026.10.19.2 too (the one whose pointer is drawn).
-            deps = { "xim:xdesk@2026.10.19.2", "luban:foot", "cursors" },
+            deps = { "xim:xdesk@2026.10.19.2", "luban:foot", "luban:cursors" },
             ["latest"] = { ref = "2026.10.19.2" },
             -- 1: luban:cursors became a dependency. 2: xdesk 2026.10.19.2.
             ["2026.10.18.1"] = { revision = 2 },

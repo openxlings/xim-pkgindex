@@ -67,9 +67,8 @@ package = {
                 "xim:wsl-gl-host-link@>=0.1",
                 -- The pointer a desktop names, drawn by the window from the
                 -- Luban theme (xlings design 2026-10-19 §15.2; read from
-                -- 2026.10.19.2, before which nothing uses it). NEW with this
-                -- change, so bare until published.
-                "cursors",
+                -- 2026.10.19.2, before which nothing uses it).
+                "luban:cursors",
             },
             ["latest"] = { ref = "2026.10.19.2" },
             ["2026.10.19.2"] = {
@@ -161,7 +160,7 @@ package = {
             },
         },
         macosx = {
-            deps = { "xim:luban-fonts", "cursors" },
+            deps = { "xim:luban-fonts", "luban:cursors" },
             ["latest"] = { ref = "2026.10.19.2" },
             ["2026.10.19.2"] = {
                 url = "XLINGS_RES",
@@ -225,7 +224,7 @@ package = {
             },
         },
         windows = {
-            deps = { "xim:luban-fonts", "cursors" },
+            deps = { "xim:luban-fonts", "luban:cursors" },
             ["latest"] = { ref = "2026.10.19.2" },
             ["2026.10.19.2"] = {
                 url = "XLINGS_RES",
