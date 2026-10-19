@@ -494,6 +494,29 @@ is not a non-negative integer, sits inside a per-arch map or on an alias, and a
 change is not visible to it; whether one alters the installed files is decided
 in review, and so is the floor.
 
+## `extensions` — data for other programs
+
+A package-level table keyed by namespace: each first-level key names the
+program that reads it, and its value is that program's. libxpkg (0.0.66) and
+xlings (2026.10.19.1) keep it and hand it on unchanged (`package_info`,
+`search_packages`); they never read it. A client before them ignores it.
+
+```lua
+extensions = {
+    luban = { tier = 2, title = { en = "labwc", zh = "labwc" } },
+},
+```
+
+- **Namespaces are registered**: `luban` (the Luban OS app and `luban`; its
+  keys: [`../12-luban-packages.md`](../12-luban-packages.md)). This index's
+  static checks accept only registered namespaces.
+- **Values** are strings, numbers, booleans, arrays and tables; anything else
+  is dropped when loaded, with a warning. At most 4 KiB as JSON, or the whole
+  table is dropped.
+- **No revision**: it is metadata like `description`; it changes nothing
+  installed.
+- **Not for xlings**: a field xlings must understand belongs in this spec.
+
 ## Install hooks must be arch-aware too
 
 If a recipe unpacks an arch-named directory, derive it from `os.arch()` in the

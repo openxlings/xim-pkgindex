@@ -23,6 +23,15 @@ introduced with **XPackage Spec V2 (multi-arch)**. Requires **xlings ≥ 0.4.61*
   (openxlings/xlings#621). See
   [`xpackage-v2.md`](./xpackage-v2.md#revision--a-packaging-change-under-an-unchanged-version).
 
+- **`extensions` at the package level** (2026-10-19). A table keyed by a
+  registered namespace (first: `luban`), data for the program that namespace
+  names, kept and handed on unchanged by libxpkg ≥ 0.0.66 and xlings ≥
+  2026.10.19.1 (`package_info`, `search_packages`); an older client ignores
+  it. At most 4 KiB; changing it raises no `revision`. First use: the
+  official desktops' and editions' `extensions.luban` (tier, gpu, title,
+  summary, highlights). See
+  [`xpackage-v2.md`](./xpackage-v2.md#extensions--data-for-other-programs).
+
 ## Tooling fixes
 
 - **`arch_alias` + `ci.mirror` was unusable in the documented field order**

@@ -15,6 +15,10 @@ package = {
     programs = {"program1"},
     xvm_enable = true,
 
+    -- data for another program, keyed by its registered namespace; xlings
+    -- hands it on and never reads it (docs/specs/xpackage-v2.md "extensions")
+    -- extensions = { luban = { title = { en = "Package Name" } } },
+
     xpm = {
         -- the default source: "xlings-res" for official resources, or a template
         -- with ${name} ${version} ${os} ${arch} ${arch_alias} ${ext}
