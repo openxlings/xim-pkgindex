@@ -19,7 +19,8 @@ import struct
 import sys
 import zlib
 
-GRID = 12
+GRID = 12                     # the width; a shape may be taller (to TALL): its tail
+TALL = 16
 SCALES = (2, 4, 6)            # density 1, 2, 3 -> 24, 48, 72 px
 PALETTE = {                   # ARGB, straight alpha
     "K": 0xFF1A1C2C,
@@ -52,14 +53,17 @@ def parse(path):
             aliases.append((word[1], word[2]))
         elif word[0] == "cursor" and len(word) == 4:
             name, hx, hy = word[1], int(word[2]), int(word[3])
-            rows = [r.rstrip("\n") for r in lines[i:i + GRID]]
-            i += GRID
-            if len(rows) != GRID or any(len(r) != GRID for r in rows):
-                die(f"{name}: needs {GRID} rows of {GRID} characters")
+            # Its rows: to a blank line, the next directive or the end.
+            rows = []
+            while i < len(lines) and lines[i].strip() and not lines[i].startswith(("cursor ", "alias ", "#")):
+                rows.append(lines[i].rstrip("\n"))
+                i += 1
+            if not GRID <= len(rows) <= TALL or any(len(r) != GRID for r in rows):
+                die(f"{name}: needs {GRID} to {TALL} rows of {GRID} characters")
             bad = {c for r in rows for c in r} - set(PALETTE) - {"."}
             if bad:
                 die(f"{name}: unknown pixels {sorted(bad)}")
-            if not (0 <= hx < GRID and 0 <= hy < GRID):
+            if not (0 <= hx < GRID and 0 <= hy < len(rows)):
                 die(f"{name}: hotspot outside the grid")
             if name in cursors:
                 die(f"{name}: twice")
@@ -102,8 +106,8 @@ def xcursor(hx, hy, rows):
     images = []
     for s in SCALES:
         px = pixels(rows, s)
-        size = GRID * s
-        body = struct.pack("<9I", 36, 0xFFFD0002, size, 1, size, size, hx * s, hy * s, 0)
+        size = GRID * s           # the nominal size; a taller shape is as wide
+        body = struct.pack("<9I", 36, 0xFFFD0002, size, 1, size, len(rows) * s, hx * s, hy * s, 0)
         body += b"".join(struct.pack("<I", premultiply(v)) for line in px for v in line)
         images.append((size, body))
     header = struct.pack("<4sIII", b"Xcur", 16, 0x10000, len(images))
@@ -132,7 +136,7 @@ def write(path, data, mode="wb"):
 
 def preview(cursors, order, path, scale=4):
     """Every shape on a checkered sheet, hotspot marked: the visual baseline."""
-    cell = GRID * scale + 8
+    cell = TALL * scale + 8
     cols = 5
     rows_n = (len(order) + cols - 1) // cols
     sheet = [[0xFFC8C8C8 if ((x // 8) + (y // 8)) % 2 else 0xFFE8E8E8 for x in range(cols * cell)]
