@@ -5,6 +5,7 @@ lib="$here/libexec/audio/lib"
 export PIPEWIRE_MODULE_DIR="$here/lib/pipewire-0.3" SPA_PLUGIN_DIR="$here/lib/spa-0.2" SPA_DATA_DIR="$here/share/spa-0.2"
 export PIPEWIRE_CONFIG_DIR="$here/share/pipewire"
 export WIREPLUMBER_MODULE_DIR="$here/lib/wireplumber-0.5" WIREPLUMBER_DATA_DIR="$here/share/wireplumber"
+export WIREPLUMBER_CONFIG_DIR="$here/share/wireplumber"
 # Each daemon its own configuration, whatever its name reads as through the loader.
 case "$prog" in
     pipewire) export PIPEWIRE_CONFIG_NAME=pipewire.conf ;;
