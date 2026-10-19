@@ -34,7 +34,13 @@ import("xim.pkgindex.luban")
 
 import("xim.pkgindex.luban_desktop")
 
+-- The machine's arch (core.lua): os.arch where the catalog loader binds it,
+-- else luban.arch() -- install() runs where os.arch is not bound, and read
+-- alone it gave aarch64 the x86_64-only xdesk.
 local recipe_arch = (os.arch and os.arch())
+if recipe_arch ~= "aarch64" and recipe_arch ~= "arm64" and recipe_arch ~= "x86_64" then
+    recipe_arch = luban.arch()
+end
 local aarch64 = recipe_arch == "aarch64" or recipe_arch == "arm64"
 
 -- Its composition (design §6.1): core + a desktop + luban:foot + luban:xwayland
