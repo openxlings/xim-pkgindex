@@ -95,8 +95,8 @@ jobs:
           - { what: lxqt,          version: "2.4.0-r4",           arch: aarch64 }
           - { what: falkon,        version: "26.04.2",            arch: x86_64 }
           - { what: falkon,        version: "26.04.2",            arch: aarch64 }
-          - { what: audio,         version: "1.6.8",            arch: x86_64 }
-          - { what: audio,         version: "1.6.8",            arch: aarch64 }
+          - { what: audio,         version: "1.6.8-r1",         arch: x86_64 }
+          - { what: audio,         version: "1.6.8-r1",         arch: aarch64 }
           - { what: kde,           version: "6.6.6-r2",           arch: x86_64 }
           # the desktop editions' terminal tools (xlings: Luban OS desktop part 2 §5)
           - { what: tmux,          version: "3.8",                arch: x86_64 }

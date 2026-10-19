@@ -52,12 +52,15 @@ package = {
             -- not resolve (graphics.lua says more). Namespaced once published.
             -- The pointer theme every official desktop has (xlings design
             -- 2026-10-19 §13): lxqt, kde and compositor get it through this.
-            deps = { "luban:foot", "luban:xwayland", "xim:luban-fonts", "xim:xkeyboard-config", "luban:cursors" },
+            -- luban:audio and luban:falkon: a desktop's sound and its browser (xlings design 2026-10-20 §20).
+            deps = { "luban:foot", "luban:xwayland", "xim:luban-fonts", "xim:xkeyboard-config", "luban:cursors", "luban:audio",
+                     "luban:falkon" },
             ["latest"] = { ref = "0.20.0-r2" },
             ["0.20.0-r2"] = {
                 -- 1: luban:cursors became a dependency (a new install gets the
-                -- theme; one made before stays usable).
-                revision = 1,
+                -- theme; one made before stays usable). 2: luban:audio and
+                -- luban:falkon became dependencies.
+                revision = 2,
                 url = "XLINGS_RES",
                 sha256 = {
                     x86_64 = "0e71ecb3c89c134da99aac6c54f61cf6b65e6994c1d8412d3834ab6d7eeddfcf",

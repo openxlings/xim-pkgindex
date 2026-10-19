@@ -860,10 +860,20 @@ audio)
     # 48 kHz stereo, the default output), which `luban __audio` reads and the
     # Luban OS window plays; bin/luban-audio, which starts the three for a
     # session (a Luban desktop's session runs it: opensal-wlr's run_session).
+    # What a machine's sound never uses is left out: video (Vulkan, cameras,
+    # V4L2), Bluetooth, JACK and the network streams -- Vulkan alone brought
+    # Mesa and LLVM (235 MB).
     v="${version%%-r[0-9]*}"; d="audio-$version-linux-$arch"
     progs="/usr/bin/pipewire /usr/bin/pipewire-pulse /usr/bin/wireplumber /usr/bin/pw-cat /usr/bin/pw-cli /usr/bin/wpctl /usr/bin/pactl"
     bundle audio "$d" "$progs" \
         "apk add -q pipewire pipewire-pulse wireplumber pipewire-tools pulseaudio-utils \
+         && rm -rf /usr/lib/spa-0.2/vulkan /usr/lib/spa-0.2/libcamera /usr/lib/spa-0.2/v4l2 /usr/lib/spa-0.2/bluez5 \
+                   /usr/lib/spa-0.2/jack /usr/lib/spa-0.2/avb /usr/lib/spa-0.2/videoconvert /usr/lib/spa-0.2/videotestsrc \
+                   /usr/lib/spa-0.2/ffmpeg /usr/lib/spa-0.2/aec \
+         && cd /usr/lib/pipewire-0.3 && rm -f libpipewire-module-roc-* libpipewire-module-x11-bell.so libpipewire-module-jack* \
+                   libpipewire-module-raop-* libpipewire-module-zeroconf-* libpipewire-module-avb.so libpipewire-module-rtp-* \
+                   libpipewire-module-vban-* libpipewire-module-echo-cancel.so libpipewire-module-snapcast-* \
+                   libpipewire-module-netjack2-* libpipewire-module-ffado-* && cd / \
          && mkdir -p /w/extra/lib /w/extra/share /w/extra/licenses \
          && cp -a /usr/lib/pipewire-0.3 /usr/lib/spa-0.2 /usr/lib/wireplumber-0.5 /w/extra/lib/ \
          && cp -a /usr/share/pipewire /usr/share/wireplumber /w/extra/share/ \
@@ -889,6 +899,7 @@ audio)
         && sleep 1 && wc -c < /w/got.pcm > /w/got-size"
     grep -qx luban "$work/default-sink" || die "the default output is not the luban sink: $(cat "$work/default-sink")"
     [[ "$(cat "$work/got-size")" -ge 96000 ]] || die "the luban sink's pipe had $(cat "$work/got-size") bytes of 192000 played"
+    ! grep -Eq 'libLLVM|libgallium|libvulkan' "$work/libs" || die "luban:audio links GL or Vulkan: $(grep -E 'libLLVM|libgallium|libvulkan' "$work/libs" | tr '\n' ' ')"
     rm -f "$work/noise.raw" "$work/got.pcm"
     provenance "$d" "luban:audio $version: Alpine 3.24 $(grep -E '^(pipewire|pipewire-pulse|wireplumber|pipewire-tools|pulseaudio-utils)-[0-9]' "$work/installed" | tr '\n' ' ')-- the musl loader and the libraries they link private (libexec/audio), run through bin/<program>; lib/pipewire-0.3, lib/spa-0.2, lib/wireplumber-0.5 and share/ as Alpine has them; the luban sink and luban-audio from xim-pkgindex tools/res/audio; in Debian 12 noise played into the default sink came out of its pipe"
     pack "$d" ;;

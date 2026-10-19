@@ -36,11 +36,13 @@ package = {
             -- luban:cursors: the pointer theme (xlings design 2026-10-19 §13).
             -- A platform's deps are every version's: 2026.10.18.1 brings
             -- xdesk 2026.10.19.2 too (the one whose pointer is drawn).
-            deps = { "xim:xdesk@2026.10.19.2", "luban:foot", "luban:cursors" },
+            -- luban:audio and luban:falkon: a desktop's sound and its browser (xlings design 2026-10-20 §20).
+            deps = { "xim:xdesk@2026.10.19.2", "luban:foot", "luban:cursors", "luban:audio", "luban:falkon" },
             ["latest"] = { ref = "2026.10.19.2" },
             -- 1: luban:cursors became a dependency. 2: xdesk 2026.10.19.2.
-            ["2026.10.18.1"] = { revision = 2 },
-            ["2026.10.19.2"] = {},
+            -- 3 (and 2026.10.19.2's 1): luban:audio and luban:falkon.
+            ["2026.10.18.1"] = { revision = 3 },
+            ["2026.10.19.2"] = { revision = 1 },
         },
     },
 }
