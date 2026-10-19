@@ -73,6 +73,8 @@ local ROOT = "."
 -- to be empty most of the time.
 local EXEMPT = {
     -- ["pkgs/g/godot.lua"] = { ["graphics"] = "#540, remove once published" },
+    ["pkgs/luban/labwc.lua"] = { ["cursors"] = "#1001, luban:cursors is new here; remove once published" },
+    ["pkgs/luban/xdesk.lua"] = { ["cursors"] = "#1001, luban:cursors is new here; remove once published" },
 }
 
 local function is_exempt(file, name)

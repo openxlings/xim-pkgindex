@@ -5,6 +5,13 @@
 -- made from it here (`replaces`). What it presets is in its manifest's
 -- `luban.settings` and the root's usr/share/luban/settings.json.
 -- A published version's output never changes (tests/fixtures/luban-published.json).
+-- The arch as gcc.lua reads it: os.arch where the loader binds it, else is_arch.
+local recipe_arch = (os.arch and os.arch())
+if recipe_arch ~= "aarch64" and recipe_arch ~= "arm64" and recipe_arch ~= "x86_64" then
+    recipe_arch = (type(is_arch) == "function" and is_arch("aarch64")) and "aarch64" or "x86_64"
+end
+local aarch64 = recipe_arch == "aarch64" or recipe_arch == "arm64"
+
 package = {
     spec = "2",
     name = "core",
@@ -21,8 +28,8 @@ package = {
     -- What a Luban OS card shows of it (xlings design 2026-10-19 §20; xpkg
     -- spec "extensions"): a few of its programs; cmake and xmake where they
     -- are offered (x86_64).
-    extensions = { luban = { highlights = ((os.arch and (os.arch() == "aarch64" or os.arch() == "arm64"))
-        and { "gcc", "git", "nvim", "fish", "yazi" } or { "gcc", "cmake", "xmake", "git", "nvim", "yazi" }) } },
+    extensions = { luban = { highlights = aarch64 and { "gcc", "git", "nvim", "fish", "yazi" }
+        or { "gcc", "cmake", "xmake", "git", "nvim", "yazi" } } },
 
     xpm = {
         linux = {
@@ -35,8 +42,6 @@ package = {
 
 import("xim.pkgindex.luban")
 
-local recipe_arch = (os.arch and os.arch())
-local aarch64 = recipe_arch == "aarch64" or recipe_arch == "arm64"
 
 -- 2026.10.19.1's tools beyond 2026.10.18.1 (xlings design 2026-10-19 §20).
 -- On aarch64 cmake and xmake are not offered yet: upstream ships no linux
