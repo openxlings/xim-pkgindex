@@ -18,10 +18,15 @@ package = {
     categories = {"subos", "distribution"},
     keywords = {"luban", "rootfs", "agent", "workspace", "private"},
 
+    -- What a Luban OS card shows of it (xlings design 2026-10-19 §20; xpkg
+    -- spec "extensions"): a few of its programs, names in every language.
+    extensions = { luban = { highlights = { "claude", "codex", "gcc", "git", "nvim" } } },
+
     xpm = {
         linux = {
-            ["latest"] = { ref = "2026.10.18.1" },
+            ["latest"] = { ref = "2026.10.19.1" },
             ["2026.10.18.1"] = { min_client = "2026.10.18.1" },
+            ["2026.10.19.1"] = { min_client = "2026.10.18.1" },
         },
     },
 }
@@ -55,6 +60,24 @@ local versions = {
             luban = { settings = { enter = "console", login_shell = "/usr/bin/fish" } },
             workspace = {},
         },
+    },
+}
+
+-- 2026.10.19.1: on core 2026.10.19.1 (cmake, xmake, yazi, procps-ng), the
+-- rest as it was.
+versions["2026.10.19.1"] = {
+    files = { { "usr/share/factory/etc/motd", MOTD } },
+    manifest = {
+        subos_kind = "rootfs",
+        min_client = "2026.10.18.1",
+        from = "luban:core@2026.10.19.1",
+        replaces = "subos:luban-agent-workspace",
+        abi = { kernel = "linux", libc = "gnu" },
+        packages = { "luban:tools-dev@2026.10.18.1", "luban:tools-agent@2026.10.18.1",
+                     "xim:claude", "xim:codex", "xim:pi", "xim:opencode" },
+        policy = "xim:agent-private@2026.10.11.1",
+        luban = { settings = { enter = "console", login_shell = "/usr/bin/fish" } },
+        workspace = {},
     },
 }
 

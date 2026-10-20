@@ -18,6 +18,10 @@ package = {
     categories = {"subos", "distribution"},
     keywords = {"luban", "rootfs", "tiny", "busybox", "musl"},
 
+    -- What a Luban OS card shows of it (xlings design 2026-10-19 §20; xpkg
+    -- spec "extensions"): a few of its programs, names in every language.
+    extensions = { luban = { highlights = { "busybox", "musl" } } },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "2026.10.18.1" },

@@ -18,10 +18,15 @@ package = {
     categories = {"subos", "distribution"},
     keywords = {"luban", "rootfs", "desktop", "xdesk", "wayland"},
 
+    -- What a Luban OS card shows of it (xlings design 2026-10-19 §20; xpkg
+    -- spec "extensions"): a few of its programs, names in every language.
+    extensions = { luban = { highlights = { "xdesk", "foot", "nvim", "gcc", "git" } } },
+
     xpm = {
         linux = {
-            ["latest"] = { ref = "2026.10.18.1" },
+            ["latest"] = { ref = "2026.10.19.1" },
             ["2026.10.18.1"] = { min_client = "2026.10.18.1" },
+            ["2026.10.19.1"] = { min_client = "2026.10.18.1" },
         },
     },
 }
@@ -30,7 +35,13 @@ import("xim.pkgindex.luban")
 
 import("xim.pkgindex.luban_desktop")
 
+-- The machine's arch (core.lua): os.arch where the catalog loader binds it,
+-- else luban.arch() -- install() runs where os.arch is not bound, and read
+-- alone it gave aarch64 the x86_64-only xdesk.
 local recipe_arch = (os.arch and os.arch())
+if recipe_arch ~= "aarch64" and recipe_arch ~= "arm64" and recipe_arch ~= "x86_64" then
+    recipe_arch = luban.arch()
+end
 local aarch64 = recipe_arch == "aarch64" or recipe_arch == "arm64"
 
 -- Its composition (design §6.1): core + a desktop + luban:foot + luban:xwayland
@@ -62,6 +73,39 @@ local versions = {
             luban = { settings = { mode = "machine", enter = "desktop", desktop = desktop.session, login_shell = "/usr/bin/fish" } },
             workspace = {},
         },
+    },
+}
+
+-- 2026.10.19.1 (xlings design 2026-10-19 §13, §17, §20): on core
+-- 2026.10.19.1; xdesk 2026.10.19.2, whose pointer the Luban OS window draws,
+-- in its `xdesk` session (tile, stack or canvas per workspace, Super+m); the
+-- Luban pointer theme (luban:cursors, a dependency of luban:xdesk and
+-- luban:labwc) in place of Adwaita's.
+local desktop_2026_10_19 = aarch64 and { package = "luban:labwc@0.20.0-r2", session = "labwc" }
+                                    or { package = "luban:xdesk@2026.10.19.2", session = "xdesk" }
+
+local CHECKS_2026_10_19 = [[
+{"checks": [
+  {"id": "desktop-applications", "what": "its launcher lists foot and nvim", "run": "ls /usr/share/applications | grep -q '^foot' && ls /usr/share/applications | grep -qi nvim", "timeout": 10},
+  {"id": "desktop-cursors", "what": "the Luban pointer theme is the default", "run": "grep -q '^Inherits=Luban' /usr/share/icons/default/index.theme && test -e /usr/share/icons/Luban/cursors/default", "timeout": 10},
+  {"id": "desktop-terminal", "what": "the default terminal is found", "run": "command -v xdg-terminal-exec >/dev/null || ls /usr/share/xdg-terminals | grep -q foot", "timeout": 10}
+]}
+]]
+
+versions["2026.10.19.1"] = {
+    files = luban.with(luban_desktop.environment(), luban.checks("desktop", CHECKS_2026_10_19)),
+    manifest = {
+        subos_kind = "rootfs",
+        min_client = "2026.10.18.1",
+        from = "luban:core@2026.10.19.1",
+        replaces = { "subos:luban-desktop", "subos:luban-desktop-xdesk" },
+        abi = { kernel = "linux", libc = "gnu" },
+        packages = { desktop_2026_10_19.package, "luban:foot@1.27.0-r1", "luban:xwayland@24.1.14-r1", "luban:tools-dev@2026.10.18.1",
+                     "luban:tools-agent@2026.10.18.1", "luban:tools-cli@2026.10.18.1",
+                     -- The agents unpinned: recorded at `new`, moved by `luban upgrade`.
+                     "xim:claude", "xim:codex", "xim:pi", "xim:opencode" },
+        luban = { settings = { mode = "machine", enter = "desktop", desktop = desktop_2026_10_19.session, login_shell = "/usr/bin/fish" } },
+        workspace = {},
     },
 }
 

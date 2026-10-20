@@ -60,6 +60,33 @@ manifest = {
 }
 ```
 
+## Luban 怎样呈现一个包：`extensions.luban`
+
+配方在包级的 `extensions`（xpackage 字段，见 [`specs/xpackage-v2.md`](../specs/xpackage-v2.md)）里告诉 Luban 怎样呈现它：
+xlings 原样带出，Luban OS 的新建页与 `luban search` 读它（xlings 设计 2026-10-19 §5.4、§20）。每个键都可以不写，不写时 Luban 用自己的默认。
+
+| 键 | 类型 | 含义 | 不写时 |
+|---|---|---|---|
+| `tier` | 整数 1–4 | 桌面的轻重：T1 Compositor（只有窗口）、T2 labwc、T3 LXQt、T4 KDE Plasma；xdesk 不在这条轴上 | "未分级"，排在最后 |
+| `gpu` | `"better"` / `"needed"` | 对宿主 GPU 的期望 | 不提示 |
+| `title` | `{ en = "...", zh = "..." }` | 卡片上的名字；技术名词在各语言里都写英文 | 包名 |
+| `summary` | `{ en = "...", zh = "..." }` | 卡片上的一行描述 | `description` |
+| `size` | 整数（字节） | 创建它要下载的大小 | 不显示 |
+| `highlights` | 程序名的列表 | 卡片上列出的几个程序 | 应用自带的文字 |
+
+范围外的值按"没写"处理（`luban search --desktops -v` 说明忽略了什么）。`extensions` 不改变安装的内容，不提升 `revision`。
+
+```lua
+extensions = {
+    luban = {
+        tier = 3,
+        title = { en = "LXQt", zh = "LXQt" },
+        summary = { en = "Traditional: a panel, a desktop, a file manager and settings",
+                    zh = "传统桌面：面板、桌面、文件管理器和设置" },
+    },
+},
+```
+
 ## 规则
 
 1. **已发布版本的输出永不改变。**
@@ -77,3 +104,10 @@ manifest = {
    桌面不是 edition：edition 预设一个，`luban new --desktop` 选另一个（包的 `categories` 含 `luban-desktop` 即被提供）。
 7. **edition 只为它声明的架构构建。** `archs` 只列出启动并测试过的架构；它锁定的每个包在
    这些架构上都存在，`scripts/test-luban-editions.sh` 在 x86_64 和 aarch64 上运行。
+8. **上层系统的包覆盖下层的同名程序。** edition 的包替换它所基于的 edition 里同名的程序：core 的 procps-ng 的 `ps`
+   就是系统的 `ps`，而不是 tiny 的 BusyBox applet。它的自检确认这一点（只有 procps 支持 `ps -C`）。
+9. **某个架构上拿不到的，edition 在那个架构上不带，并写明。** core 2026.10.19.1 是 tiny 加 bash、fish、vim、nvim、git、gh、
+   mcpp、ninja、coreutils、gcc、binutils、make、openssl、xz、zlib、yazi 和 procps-ng，x86_64 上另有 cmake 和 xmake：
+   上游不发布 linux aarch64 的 xmake，cmake 的图形库在本索引里只有 x86_64。
+10. **每个官方桌面都带指针主题**（`luban:cursors`，经 `luban:labwc` 或 `luban:xdesk`）：任何底座加任何官方桌面都有默认光标主题
+    （`tests/l/test_luban_desktop_extensions.py`）。

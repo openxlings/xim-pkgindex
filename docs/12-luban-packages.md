@@ -71,6 +71,37 @@ manifest = {
 }
 ```
 
+## What Luban shows of a package: `extensions.luban`
+
+A recipe tells Luban how to present it in its package-level `extensions`
+(the xpackage field, [`specs/xpackage-v2.md`](specs/xpackage-v2.md)): xlings
+hands it on untouched; the Luban OS quick start and `luban search` read it
+(xlings design 2026-10-19 §5.4, §20). Every key is optional; without one
+Luban uses its own default.
+
+| Key | Type | Meaning | Without it |
+|---|---|---|---|
+| `tier` | integer 1-4 | a desktop's weight: T1 Compositor (windows only), T2 labwc, T3 LXQt, T4 KDE Plasma; xdesk is off the axis | "not rated", listed last |
+| `gpu` | `"better"` / `"needed"` | what it expects of the host's GPU | no note |
+| `title` | `{ en = "...", zh = "..." }` | the card's name; technical names stay English in every language | the package name |
+| `summary` | `{ en = "...", zh = "..." }` | the card's one line | `description` |
+| `size` | integer (bytes) | what making it downloads | not shown |
+| `highlights` | list of program names | a few programs the card names | the app's own text |
+
+Values out of range read as absent (`luban search --desktops -v` says what was
+ignored). `extensions` changes nothing installed: no `revision` is raised.
+
+```lua
+extensions = {
+    luban = {
+        tier = 3,
+        title = { en = "LXQt", zh = "LXQt" },
+        summary = { en = "Traditional: a panel, a desktop, a file manager and settings",
+                    zh = "传统桌面：面板、桌面、文件管理器和设置" },
+    },
+},
+```
+
 ## The rules
 
 1. **A published version's output never changes.**
@@ -95,3 +126,15 @@ manifest = {
 7. **An edition is built for the architectures it declares.** `archs` lists only
    what was booted and tested; each package it pins exists for each of them, and
    `scripts/test-luban-editions.sh` runs on x86_64 and aarch64.
+8. **A layer above wins a program's name.** A package of an edition replaces a
+   program of the same name from the edition it builds on: core's procps-ng `ps`
+   is the system's `ps`, not tiny's BusyBox applet. Its self-check says so
+   (`ps -C` works only with procps).
+9. **What an architecture cannot have, its edition leaves out, and says so.**
+   Core 2026.10.19.1 is tiny plus bash, fish, vim, nvim, git, gh, mcpp, ninja,
+   coreutils, gcc, binutils, make, openssl, xz, zlib, yazi and procps-ng, and on
+   x86_64 also cmake and xmake: upstream ships no linux aarch64 xmake, and
+   cmake's GUI libraries are x86_64 only here.
+10. **Every official desktop brings the pointer theme** (`luban:cursors`,
+    through `luban:labwc` or `luban:xdesk`): any base with any official desktop
+    has a default cursor theme (`tests/l/test_luban_desktop_extensions.py`).

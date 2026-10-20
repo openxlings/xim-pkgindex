@@ -22,12 +22,25 @@ package = {
         linux = {
             url_template = "https://github.com/sxyazi/yazi/releases/download/v{version}/yazi-x86_64-unknown-linux-musl.zip",
             ["latest"] = { ref = "26.5.6" },
+            -- upstream's static (musl) builds; aarch64 added for Luban core's
+            -- aarch64 systems (xlings design 2026-10-19 §20).
+            -- 1: aarch64 had been given the x86_64 build.
             ["26.5.6"] = {
-                url = {
-                    GLOBAL = "https://github.com/sxyazi/yazi/releases/download/v26.5.6/yazi-x86_64-unknown-linux-musl.zip",
-                    CN = "https://gitcode.com/xlings-res/yazi/releases/download/26.5.6/yazi-x86_64-unknown-linux-musl.zip",
+                revision = 1,
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/sxyazi/yazi/releases/download/v26.5.6/yazi-x86_64-unknown-linux-musl.zip",
+                        CN = "https://gitcode.com/xlings-res/yazi/releases/download/26.5.6/yazi-x86_64-unknown-linux-musl.zip",
+                    },
+                    sha256 = "1031a02560d053301537195a6661d227c15cb4ce5c30481050b31e2b88681bff",
                 },
-                sha256 = "1031a02560d053301537195a6661d227c15cb4ce5c30481050b31e2b88681bff",
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/sxyazi/yazi/releases/download/v26.5.6/yazi-aarch64-unknown-linux-musl.zip",
+                        CN = "https://gitcode.com/xlings-res/yazi/releases/download/26.5.6/yazi-aarch64-unknown-linux-musl.zip",
+                    },
+                    sha256 = "dff4a6774069bdde616c3cd145275b462a5887229cd9bf6341e78063da37e84f",
+                },
             },
         },
         macosx = {

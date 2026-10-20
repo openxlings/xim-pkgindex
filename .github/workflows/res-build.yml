@@ -69,6 +69,8 @@ jobs:
           - { what: git,           version: "2.53.0-1",           arch: aarch64 }
           - { what: vim,           version: "9.2.1172",           arch: x86_64 }
           - { what: vim,           version: "9.2.1172",           arch: aarch64 }
+          - { what: procps-ng,     version: "4.0.5",              arch: x86_64 }
+          - { what: procps-ng,     version: "4.0.5",              arch: aarch64 }
           - { what: wl-clipboard,  version: "2.3.0",              arch: x86_64 }
           - { what: wl-clipboard,  version: "2.3.0",              arch: aarch64 }
           - { what: xsel,          version: "1.2.1",              arch: x86_64 }
@@ -99,6 +101,7 @@ jobs:
           - { what: terminfo,        version: "6.6.20261010",     arch: x86_64 }
           - { what: adwaita-cursors, version: "49.0",             arch: x86_64 }
           - { what: luban-fonts,     version: "2026.10.16",       arch: x86_64 }
+          - { what: luban-cursors,   version: "2026.10.19",       arch: x86_64 }
     steps:
       - uses: actions/checkout@v4
         if: env.WANTED == 'true'

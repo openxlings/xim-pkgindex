@@ -20,6 +20,7 @@
 #   vim           a static vim (musl) and its runtime files
 #   tmux          a static tmux (musl; libevent, ncurses) and the terminfo it needs
 #   htop          a static htop (musl; ncurses) and the terminfo it needs
+#   procps-ng     static ps, top, free, pgrep, pkill, pidof, uptime, vmstat, watch (musl; ncurses) and terminfo
 #   wl-clipboard  static wl-copy / wl-paste (musl; libwayland built static)
 #   xsel          a static xsel (musl; libX11/xcb static)
 #   edk2-firmware the UEFI firmware qemu ships, decompressed (no build)
@@ -42,6 +43,7 @@
 #   terminfo        the terminal descriptions (ncurses' terminfo.src, compiled)
 #   adwaita-cursors GNOME's Adwaita cursor theme, and the default theme naming it
 #   luban-fonts     the fonts the Luban OS window ships with
+#   luban-cursors   the Luban pointer theme, pixel art (tools/res/cursors: the one source)
 #
 # Runs on the machine of the target architecture (CI: ubuntu-24.04 and
 # ubuntu-24.04-arm). What it needs runs in a pinned container: the runner
@@ -451,6 +453,36 @@ tmux|htop)
     "$work/$d/bin/$what" -V 2>&1 | grep -q "$version" || die "$what does not report $version"
     [[ -f "$work/$d/share/terminfo/x/xterm-256color" ]] || die "no xterm-256color terminfo"
     provenance "$d" "$what $version (github.com, sha256 $(input $what "$version")); static (ncursesw$([[ $what == tmux ]] && echo ', libevent')), terminfo for: $terms; Alpine 3.20 (musl)"
+    pack "$d" ;;
+procps-ng)
+    # The process tools a system's userland expects in full (xlings design
+    # 2026-10-19 §20): BusyBox's ps has no -C, -o of most fields, no top
+    # sort keys. Static like htop and tmux (musl; ncursesw for top and watch)
+    # so it needs nothing of the glibc a root has; the terminfo of the
+    # terminals it meets in share/terminfo, which the recipe names.
+    source_of procps-ng "$version" "https://sourceforge.net/projects/procps-ng/files/Production/procps-ng-$version.tar.xz/download" "$work/src.tar.xz"
+    d="procps-ng-$version-linux-$arch"
+    progs="ps top free pgrep pkill pidof uptime vmstat watch"
+    terms="xterm xterm-256color screen screen-256color tmux tmux-256color foot foot-direct linux vt100 vt220 dumb"
+    alpine "apk add -q $APK_STATIC xz ncurses-dev ncurses-static ncurses-terminfo-base ncurses-terminfo \
+        && tar -xJf src.tar.xz && cd procps-ng-$version \
+        && ./configure -q --prefix=/usr --disable-shared --enable-static --disable-nls --without-systemd \
+             --without-elogind --disable-kill --disable-w --enable-watch8bit >/dev/null \
+        && make -s -j\$(nproc) LDFLAGS=-all-static >/dev/null \
+        && make -s install DESTDIR=/w/stage LDFLAGS=-all-static >/dev/null \
+        && mkdir -p /w/$d/bin /w/$d/share/terminfo \
+        && for p in $progs; do f=\$(ls /w/stage/usr/bin/\$p /w/stage/usr/sbin/\$p /w/stage/bin/\$p /w/stage/sbin/\$p 2>/dev/null | head -1); \
+             [ -n \"\$f\" ] || { echo \"no \$p installed\" >&2; exit 1; }; cp \"\$f\" /w/$d/bin/; strip /w/$d/bin/\$p; done \
+        && for t in $terms; do f=\$(find /usr/share/terminfo /etc/terminfo -name \"\$t\" 2>/dev/null | head -1); \
+             [ -n \"\$f\" ] || { echo \"no terminfo for \$t\" >&2; exit 1; }; \
+             mkdir -p /w/$d/share/terminfo/\$(basename \$(dirname \$f)); cp \"\$f\" /w/$d/share/terminfo/\$(basename \$(dirname \$f))/; done"
+    for p in $progs; do static_only "$work/$d/bin/$p"; done
+    "$work/$d/bin/ps" -V 2>&1 | grep -q "procps-ng $version" || die "ps does not report $version"
+    "$work/$d/bin/ps" -C ps -o pid= >/dev/null 2>&1 || "$work/$d/bin/ps" -o pid= -p 1 >/dev/null || die "ps cannot list a process"
+    "$work/$d/bin/free" -h >/dev/null || die "free does not run"
+    TERMINFO_DIRS="$work/$d/share/terminfo" TERM=xterm-256color "$work/$d/bin/top" -b -n 1 >/dev/null || die "top -b does not run"
+    [[ -f "$work/$d/share/terminfo/x/xterm-256color" ]] || die "no xterm-256color terminfo"
+    provenance "$d" "procps-ng $version (sourceforge.net/projects/procps-ng, sha256 $(input procps-ng "$version")): $progs; static (ncursesw), terminfo for: $terms; Alpine 3.20 (musl)"
     pack "$d" ;;
 wl-clipboard)
     source_of wl-clipboard "$version" "https://github.com/bugaevc/wl-clipboard/archive/refs/tags/v$version.tar.gz" "$work/src.tar.gz"
@@ -915,6 +947,26 @@ luban-fonts)
     cp "$work/noto.LICENSE" "$l/NotoSansCJK-OFL.txt"
     for x in "$f"/*; do file -b "$x" | grep -Eq "TrueType|OpenType" || die "$(basename "$x") is not a font: $(file -b "$x")"; done
     provenance "$d" "luban-fonts $version: JetBrains Mono 2.304 (Regular, Bold), Inter 4.1 (Regular), Sarasa Mono SC 1.0.42 (Regular, Bold), Noto Sans SC 2.004 (Regular, subset OTF), Fusion Pixel 12px proportional zh_hans 2026.09.25 -- from their GitHub releases, digests in tools/res/inputs.txt; licenses in share/licenses/luban-fonts"
+    pack_data "$d" ;;
+luban-cursors)
+    # The Luban pointer theme (xlings design 2026-10-19 §15.2): pixel art on a
+    # 12x12 grid in tools/res/cursors/luban.cursors, the one source for the
+    # host's pointer (share/luban/cursors: PNGs and cursors.json) and the
+    # theme a Luban system installs (share/icons/Luban: Xcursor 24/48/72 px,
+    # the X11 names as links; share/icons/default inheriting it). Our own
+    # work under Apache-2.0. Made by tools/res/cursors/make.py: the standard
+    # library of the runner's python3, no input to fetch.
+    d="luban-cursors-$version"
+    python3 "$here/cursors/make.py" "$work/$d" --preview "$work/$d/share/luban/cursors/preview.png"
+    mkdir -p "$work/$d/share/licenses/luban-cursors"
+    printf 'The Luban pointer theme. Licensed under the Apache License, Version 2.0.\n' > "$work/$d/share/licenses/luban-cursors/LICENSE"
+    for n in default text pointer grab grabbing move ew-resize ns-resize nwse-resize nesw-resize crosshair wait progress not-allowed help; do
+        head -c 4 "$work/$d/share/icons/Luban/cursors/$n" | grep -q Xcur || die "$n is not an Xcursor file"
+        [[ -f "$work/$d/share/luban/cursors/$n-24.png" ]] || die "no $n-24.png"
+    done
+    [[ -L "$work/$d/share/icons/Luban/cursors/left_ptr" ]] || die "no left_ptr link"
+    grep -q '^Inherits=Luban' "$work/$d/share/icons/default/index.theme" || die "the default theme does not inherit Luban"
+    provenance "$d" "luban-cursors $version: the Luban pointer theme, made from tools/res/cursors/luban.cursors (xim-pkgindex) by make.py; Apache-2.0"
     pack_data "$d" ;;
 qt-runtime)
     # luban:qt-runtime: what LXQt and KDE share (design 2026-10-18 §13.5) --

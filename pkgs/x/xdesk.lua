@@ -21,11 +21,11 @@ package = {
     -- libexec/lib -- not lib/, which an environment's projection would put
     -- beside its own Mesa -- and an install patches it onto the index's glibc
     -- and gcc-runtime with that directory on its RPATH. It is a session the
-    -- freedesktop way (share/wayland-sessions: xdesk-classic, xdesk-canvas,
-    -- which speak opensal themselves); its profiles' defaults are data
-    -- (share/xdesk/<profile>.ini), under a system's /etc/xdg/xdesk and a
-    -- person's ~/.config/xdesk. Its terminal is foot (xim:labwc-desktop
-    -- carries one, with fonts).
+    -- freedesktop way (share/wayland-sessions: xdesk from 2026.10.19.2,
+    -- xdesk-classic, xdesk-canvas, which speak opensal themselves); its
+    -- profiles' defaults are data (share/xdesk/<profile>.ini), under a
+    -- system's /etc/xdg/xdesk and a person's ~/.config/xdesk. Its terminal
+    -- is foot (xim:labwc-desktop carries one, with fonts).
     programs = {"xdesk"},
     xvm_enable = true,
 
@@ -35,7 +35,13 @@ package = {
                 "xim:glibc@>=2.44",
                 "xim:gcc-runtime",
             },
-            ["latest"] = { ref = "2026.10.19.1" },
+            ["latest"] = { ref = "2026.10.19.2" },
+            ["2026.10.19.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "9fad63b96aa33f9d7d99d1850a5c2a83b9f63746351256f4f0801c2d8686d740",
+                },
+            },
             ["2026.10.19.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {

@@ -17,6 +17,17 @@ package = {
     categories = {"desktop", "wayland", "luban", "luban-desktop", "qt"},
     keywords = {"lxqt", "qt", "wayland", "desktop", "luban", "labwc", "pcmanfm-qt"},
 
+    -- What Luban shows of it (xlings design 2026-10-19 §5.4; xpkg spec
+    -- "extensions"): T3.
+    extensions = {
+        luban = {
+            tier = 3,
+            title = { en = "LXQt", zh = "LXQt" },
+            summary = { en = "Traditional: a panel, a desktop, a file manager and settings",
+                        zh = "传统桌面：面板、桌面、文件管理器和设置" },
+        },
+    },
+
     -- The T3 desktop (design §7): LXQt 2.4 on Wayland -- its session on
     -- luban:labwc as upstream's lxqt-wayland-session starts it (`labwc -S
     -- lxqt-session`, on a D-Bus session bus of its own), its panel, desktop

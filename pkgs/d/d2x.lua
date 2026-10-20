@@ -20,7 +20,7 @@ package = {
     -- xim pkg info
     type = "package",
 
-    archs = {"x86_64"},
+    archs = {"x86_64", "arm64"},
     status = "stable", -- dev, stable, deprecated
     categories = {"d2x", "tool", "mcpp" },
     keywords = {"d2x", "tool", "mcpp" },
@@ -32,7 +32,11 @@ package = {
 
     xpm = {
         windows = {
-            ["latest"] = { ref = "2026.08.02.2" },
+            ["latest"] = { ref = "2026.10.20.1" },
+            ["2026.10.20.1"] = {
+                url = "XLINGS_RES",
+                sha256 = { x86_64 = "399f689065d5be0f2c1a27ef451b996ae77dc67f70e050c051bb20a2067e8c96" },
+            },
             ["2026.08.02.2"] = "XLINGS_RES",
             ["2026.08.02.1"] = "XLINGS_RES",
             ["2026.07.24.1"] = "XLINGS_RES",
@@ -44,7 +48,11 @@ package = {
         },
         linux = {
             deps = { "xim:glibc@>=2.39", "xim:openssl@3.1.5" },
-            ["latest"] = { ref = "2026.08.02.2" },
+            ["latest"] = { ref = "2026.10.20.1" },
+            ["2026.10.20.1"] = {
+                url = "XLINGS_RES",
+                sha256 = { x86_64 = "e94c66002653a4bb390c1e0f88dcfa4f83631de695e49e91f818a76c772dc2e9" },
+            },
             ["2026.08.02.2"] = "XLINGS_RES",
             ["2026.08.02.1"] = "XLINGS_RES",
             ["2026.07.24.1"] = "XLINGS_RES",
@@ -56,7 +64,11 @@ package = {
             ["0.1.0"] = "XLINGS_RES",
         },
         macosx = {
-            ["latest"] = { ref = "2026.08.02.2" },
+            ["latest"] = { ref = "2026.10.20.1" },
+            ["2026.10.20.1"] = {
+                url = "XLINGS_RES",
+                sha256 = { arm64 = "fdd5828093dc4cede97798856c21aac667f7eac149405f5c542de7d745828564" },
+            },
             ["2026.08.02.2"] = "XLINGS_RES",
             ["2026.08.02.1"] = "XLINGS_RES",
             ["2026.07.24.1"] = "XLINGS_RES",
