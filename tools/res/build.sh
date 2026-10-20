@@ -259,7 +259,7 @@ kernel-virt)
         && make -s ARCH=$karch defconfig && make -s ARCH=$karch kvm_guest.config \
         && scripts/kconfig/merge_config.sh -m -O . .config /w/kernel-virt.config >/dev/null \
         && make -s ARCH=$karch olddefconfig \
-        && for opt in VIRTIO_BLK VIRTIO_NET VIRTIO_PCI VIRTIO_CONSOLE EXT4_FS BLK_DEV_INITRD RD_GZIP DEVTMPFS DEVTMPFS_MOUNT EFI_STUB VIRTIO_FS UDMABUF; do \
+        && for opt in VIRTIO_BLK VIRTIO_NET VIRTIO_PCI VIRTIO_CONSOLE EXT4_FS BLK_DEV_INITRD RD_GZIP DEVTMPFS DEVTMPFS_MOUNT EFI_STUB VIRTIO_FS UDMABUF DRM DRM_VIRTIO_GPU; do \
              grep -q \"^CONFIG_\$opt=y\" .config || { echo \"CONFIG_\$opt is not built in\"; exit 1; }; done \
         && make -s ARCH=$karch -j\$(nproc) LOCALVERSION=-virt $(basename "$image") \
         && make -s ARCH=$karch LOCALVERSION=-virt kernelrelease > /w/release"
