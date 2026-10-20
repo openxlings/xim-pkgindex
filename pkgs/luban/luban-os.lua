@@ -70,7 +70,13 @@ package = {
                 -- 2026.10.19.2, before which nothing uses it).
                 "luban:cursors",
             },
-            ["latest"] = { ref = "2026.10.20.1" },
+            ["latest"] = { ref = "2026.10.20.2" },
+            ["2026.10.20.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "c791c222f62a6692f462721ca3e75d508b7cece42cd1a597a5cc418d00d00860",
+                },
+            },
             ["2026.10.20.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -167,7 +173,13 @@ package = {
         },
         macosx = {
             deps = { "xim:luban-fonts", "luban:cursors" },
-            ["latest"] = { ref = "2026.10.20.1" },
+            ["latest"] = { ref = "2026.10.20.2" },
+            ["2026.10.20.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "a19f97aafa37eedb5a376ecf7fc1f3c5ba550f748165242a7d3a1ee35b756226",
+                },
+            },
             ["2026.10.20.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -237,7 +249,13 @@ package = {
         },
         windows = {
             deps = { "xim:luban-fonts", "luban:cursors" },
-            ["latest"] = { ref = "2026.10.20.1" },
+            ["latest"] = { ref = "2026.10.20.2" },
+            ["2026.10.20.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "e06b1bc4ca3119a8a0576f1a64b7f2cb487358a1f41f8a27d0a1950abff4cd92",
+                },
+            },
             ["2026.10.20.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {

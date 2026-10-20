@@ -42,6 +42,10 @@ luac.out
 .xlings
 .worktrees/
 
+# The parsed index xlings writes beside a checkout it reads: absolute paths
+# of this machine; shipped, it names a home nobody else has.
+.xlings-index-cache.json
+
 # Python bytecode from running the test suite locally.
 __pycache__/
 *.pyc
