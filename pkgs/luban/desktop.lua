@@ -24,9 +24,10 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "2026.10.19.1" },
+            ["latest"] = { ref = "2026.10.20.1" },
             ["2026.10.18.1"] = { min_client = "2026.10.18.1" },
             ["2026.10.19.1"] = { min_client = "2026.10.18.1" },
+            ["2026.10.20.1"] = { min_client = "2026.10.20.1" },
         },
     },
 }
@@ -105,6 +106,40 @@ versions["2026.10.19.1"] = {
                      -- The agents unpinned: recorded at `new`, moved by `luban upgrade`.
                      "xim:claude", "xim:codex", "xim:pi", "xim:opencode" },
         luban = { settings = { mode = "machine", enter = "desktop", desktop = desktop_2026_10_19.session, login_shell = "/usr/bin/fish" } },
+        workspace = {},
+    },
+}
+
+-- 2026.10.20.1 (xlings design 2026-10-20): on core 2026.10.20.1 (sudo);
+-- xdesk 2026.10.20.1 -- its switchers, settings, keys, displays -- which,
+-- like luban:labwc, brings a browser (luban:falkon) and sound
+-- (luban:audio, played on the computer Luban OS runs on); the system's user
+-- is lubanoser (the client: any desktop has one).
+local desktop_2026_10_20 = aarch64 and { package = "luban:labwc@0.20.0-r2", session = "labwc" }
+                                    or { package = "luban:xdesk@2026.10.20.1", session = "xdesk" }
+
+local CHECKS_2026_10_20 = [[
+{"checks": [
+  {"id": "desktop-applications", "what": "its launcher lists foot, nvim and the browser", "run": "ls /usr/share/applications | grep -q '^foot' && ls /usr/share/applications | grep -qi nvim && ls /usr/share/applications | grep -qi falkon", "timeout": 10},
+  {"id": "desktop-cursors", "what": "the Luban pointer theme is the default", "run": "grep -q '^Inherits=Luban' /usr/share/icons/default/index.theme && test -e /usr/share/icons/Luban/cursors/default", "timeout": 10},
+  {"id": "desktop-terminal", "what": "the default terminal is found", "run": "command -v xdg-terminal-exec >/dev/null || ls /usr/share/xdg-terminals | grep -q foot", "timeout": 10},
+  {"id": "desktop-sound", "what": "its sound has the luban output", "run": "test -e /usr/share/pipewire/pipewire.conf.d/luban.conf && command -v luban-audio >/dev/null", "timeout": 10}
+]}
+]]
+
+versions["2026.10.20.1"] = {
+    files = luban.with(luban_desktop.environment(), luban.checks("desktop", CHECKS_2026_10_20)),
+    manifest = {
+        subos_kind = "rootfs",
+        min_client = "2026.10.20.1",
+        from = "luban:core@2026.10.20.1",
+        replaces = { "subos:luban-desktop", "subos:luban-desktop-xdesk" },
+        abi = { kernel = "linux", libc = "gnu" },
+        packages = { desktop_2026_10_20.package, "luban:foot@1.27.0-r1", "luban:xwayland@24.1.14-r1", "luban:tools-dev@2026.10.18.1",
+                     "luban:tools-agent@2026.10.18.1", "luban:tools-cli@2026.10.18.1",
+                     -- The agents unpinned: recorded at `new`, moved by `luban upgrade`.
+                     "xim:claude", "xim:codex", "xim:pi", "xim:opencode" },
+        luban = { settings = { mode = "machine", enter = "desktop", desktop = desktop_2026_10_20.session, login_shell = "/usr/bin/fish" } },
         workspace = {},
     },
 }

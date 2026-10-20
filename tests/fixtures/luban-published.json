@@ -35,6 +35,24 @@
    "sha256": "f180fa1faa625ef31cf371d5807d639bf247b523881c7ebd2d81d28808ddc29a"
   }
  },
+ "pkgs/luban/agent-workspace.lua@2026.10.20.1": {
+  ".xlings.json": {
+   "mode": "644",
+   "sha256": "e4468aeae7342a1831d83d79442e7c19c3702963ef84189a3e7431e884de39de"
+  },
+  "usr/share/factory/etc/motd": {
+   "mode": "644",
+   "sha256": "ba9d52dff3d3f164e8ba4d16df8a4777366cb6204871e75856d99ae8a1a6cdf8"
+  },
+  "usr/share/factory/etc/os-release": {
+   "mode": "644",
+   "sha256": "3a7ebdaf39f3a34460623c9c4cba14d3eb5825ca23498b5c899d4004bcd20d68"
+  },
+  "usr/share/luban/settings.json": {
+   "mode": "644",
+   "sha256": "f180fa1faa625ef31cf371d5807d639bf247b523881c7ebd2d81d28808ddc29a"
+  }
+ },
  "pkgs/luban/core.lua@2026.10.18.1": {
   ".xlings.json": {
    "mode": "644",
@@ -111,6 +129,44 @@
    "sha256": "f180fa1faa625ef31cf371d5807d639bf247b523881c7ebd2d81d28808ddc29a"
   }
  },
+ "pkgs/luban/core.lua@2026.10.20.1": {
+  ".xlings.json": {
+   "mode": "644",
+   "sha256": "2b178acd2230d907911e3b78df1ab4839f7f3d758234a57b3e5241fe63a7544d"
+  },
+  "usr/libexec/luban/command-not-found": {
+   "mode": "755",
+   "sha256": "1cb1c9e929af066c57bf7fedc9763f52cf4b01e0655c7d36fcb286b67ea66bb7"
+  },
+  "usr/share/factory/etc/mcpp/config.toml": {
+   "mode": "644",
+   "sha256": "b7b4c493c7c4a4599d7c36733680ef34b8613b2c4a7fb0970f487d675b174a55"
+  },
+  "usr/share/factory/etc/os-release": {
+   "mode": "644",
+   "sha256": "09cd2f8173c182bfa7a2b8dec7bca6bbfc726755fd30bd391df8059089a846c8"
+  },
+  "usr/share/factory/etc/profile.d/luban-command-not-found.sh": {
+   "mode": "644",
+   "sha256": "ba17979590387665c3ab75ecf51ab77d2be094db6806397e921751d98b6de341"
+  },
+  "usr/share/factory/etc/shells": {
+   "mode": "644",
+   "sha256": "d039dc086cd3e2758f539a001f593e8ac998a1250f4166677a0dc35c5d19f602"
+  },
+  "usr/share/fish/vendor_functions.d/fish_command_not_found.fish": {
+   "mode": "644",
+   "sha256": "1eafc5dbd2468469e686592dbc18ed7ca671cac25bafe49e06df1c32981e8a78"
+  },
+  "usr/share/luban/checks.d/core.json": {
+   "mode": "644",
+   "sha256": "bb36bb921b82985b0843c0054fcae025b0748e027286b0f86d08da7b6ad90ba2"
+  },
+  "usr/share/luban/settings.json": {
+   "mode": "644",
+   "sha256": "f180fa1faa625ef31cf371d5807d639bf247b523881c7ebd2d81d28808ddc29a"
+  }
+ },
  "pkgs/luban/desktop.lua@2026.10.18.1": {
   ".xlings.json": {
    "mode": "644",
@@ -157,6 +213,32 @@
   "usr/share/luban/checks.d/desktop.json": {
    "mode": "644",
    "sha256": "bfaad52a8f3bb07607439604bdb91bab888d4a4186cb947cc10ae8ad6bb8b0ce"
+  },
+  "usr/share/luban/settings.json": {
+   "mode": "644",
+   "sha256": "1d87b6716e02d3ae62d7e77d50352081a657a1d31c04338f7c47ea03868f50ae"
+  }
+ },
+ "pkgs/luban/desktop.lua@2026.10.20.1": {
+  ".xlings.json": {
+   "mode": "644",
+   "sha256": "558fb53b99886358f12e9aef82d0552cdf161f306ec85d6ba8fee8f0bde4d376"
+  },
+  "usr/share/factory/etc/gitconfig": {
+   "mode": "644",
+   "sha256": "a8864c36e9e1d51f165dde6266fa73c1f9cff09bfc18b25d9ce9eb6e254f30a1"
+  },
+  "usr/share/factory/etc/os-release": {
+   "mode": "644",
+   "sha256": "74347055237ecebfe08f572f97ab3c219a6644eb621f3a32efeaa8f04cc36200"
+  },
+  "usr/share/factory/etc/profile.d/luban-registries.sh": {
+   "mode": "644",
+   "sha256": "02506ca1c88c5ada1cf59c3172cc99a5dfd87b717b70fde2fe154973ea5d976a"
+  },
+  "usr/share/luban/checks.d/desktop.json": {
+   "mode": "644",
+   "sha256": "f88f72e625b4e5f50fe57482c248e0d252cda91ba4cdcea0c9a88b59f9507074"
   },
   "usr/share/luban/settings.json": {
    "mode": "644",
