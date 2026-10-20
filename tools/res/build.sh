@@ -1176,15 +1176,21 @@ falkon)
     progs="/usr/bin/falkon /usr/lib/qt6/libexec/QtWebEngineProcess"
     carried="falkon qt6-qtwebengine"
     cp "$here/qt-runtime/tree.sh" "$here/qt-runtime/desktop.sh" "$here/bundle/strip-rpath.sh" "$work/"
-    ALPINE_IMAGE="$ALPINE_DESKTOP" alpine "apk add -q $QT_RUNTIME_APKS $carried \
+    # ICU's whole data (icu-data-full): Blink's line breaker needs it -- the
+    # runtime's libicudata is Alpine's stub, and a page's renderer crashed on
+    # an empty break iterator (xlings design 2026-10-20 WuXian §14, H23).
+    ALPINE_IMAGE="$ALPINE_DESKTOP" alpine "apk add -q $QT_RUNTIME_APKS $carried icu-data-full \
         && apk info -v 2>/dev/null | sort > /w/installed \
         && sh /w/desktop.sh /w/$d falkon \"$QT_RUNTIME_APKS\" \"$progs\" \"$carried\" \
+        && mkdir -p /w/$d/libexec/falkon/share && cp -r /usr/share/icu /w/$d/libexec/falkon/share/ \
         && apk add -q patchelf && sh /w/strip-rpath.sh /w/$d/libexec/falkon /w/$d/lib /w/rt-root/libexec/qt-runtime"
     bundle_upstream falkon "$v"
     bundle_upstream qt6-qtbase "${QT_RUNTIME%%-r[0-9]*}"
     cp -r "$here/falkon/." "$work/$d/"
     mv "$work/$d/env" "$work/$d/libexec/falkon/env"
     [[ -d "$work/$d/share/qt6/resources" ]] || die "falkon: no QtWebEngine resources in share/qt6/resources"
+    icu="$(find "$work/$d/libexec/falkon/share/icu" -name 'icudt*l.dat' -size +20M | head -1)"
+    [[ -n "$icu" ]] || die "falkon: no whole ICU data in libexec/falkon/share/icu"
     python3 "$here/bundle/no-interp.py" "$work/$d/libexec/falkon/lib" "$work/$d/libexec/falkon/plugins" >/dev/null
     sed -e "s/@NAME@/falkon/g" -e "s/@PROG@/falkon/g" "$here/bundle/run-direct.in" > "$work/$d/bin/falkon"
     chmod 755 "$work/$d/bin/falkon"

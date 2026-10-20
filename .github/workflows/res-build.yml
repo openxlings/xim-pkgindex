@@ -93,8 +93,8 @@ jobs:
           - { what: qt-runtime,    version: "6.11.1-r2",          arch: aarch64 }
           - { what: lxqt,          version: "2.4.0-r4",           arch: x86_64 }
           - { what: lxqt,          version: "2.4.0-r4",           arch: aarch64 }
-          - { what: falkon,        version: "26.04.2",            arch: x86_64 }
-          - { what: falkon,        version: "26.04.2",            arch: aarch64 }
+          - { what: falkon,        version: "26.04.2-r1",         arch: x86_64 }
+          - { what: falkon,        version: "26.04.2-r1",         arch: aarch64 }
           - { what: audio,         version: "1.6.8-r2",         arch: x86_64 }
           - { what: audio,         version: "1.6.8-r2",         arch: aarch64 }
           - { what: kde,           version: "6.6.6-r2",           arch: x86_64 }
