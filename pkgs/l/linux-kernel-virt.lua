@@ -16,7 +16,7 @@ package = {
     keywords = {"linux", "kernel", "vmlinuz", "luban", "virt", "qemu", "kvm"},
 
     -- kernel.org's linux-6.12.x (checked against its sha256sums.asc), the
-    -- architecture's defconfig + kvm_guest.config + tools/res/kernel-virt.config,
+    -- architecture's defconfig + kvm_guest.config + tools/res/luban/kernel-virt.config,
     -- built by this index on the architecture itself (tools/res/build.sh,
     -- res-build.yml). At the systemd location lib/modules/<release>/vmlinuz
     -- (with its config); a root links it at /usr/lib/modules/<release>.

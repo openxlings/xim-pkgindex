@@ -14,7 +14,7 @@ from tests.lib.platform_utils import project_root
 
 PKG_FILE = "pkgs/luban/labwc-desktop.lua"
 EDITION_FILE = "pkgs/luban/luban-desktop.lua"
-SESSION = "tools/res/labwc-desktop/share/wayland-sessions/labwc-desktop.desktop"
+SESSION = "tools/res/luban/labwc-desktop/share/wayland-sessions/labwc-desktop.desktop"
 
 
 def text(rel):

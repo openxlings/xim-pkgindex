@@ -1,10 +1,10 @@
--- sudo -- acting as root, for a Luban system (xlings design 2026-10-20 §4.5):
--- built static by this index's factory (tools/res/build.sh sudo: musl, no
--- PAM -- it reads the system's /etc/shadow -- the sudoers policy built in).
--- The system's rules are luban's (/etc/sudoers, /etc/sudoers.d/luban: the
--- wheel group with its password). bin/sudo is setuid; a machine makes it
--- root's at boot (a share shows the host's owner). A sandbox needs none: its
--- writes go through the system's broker. xlings-res/sudo on GitHub and GitCode.
+-- sudo -- acting as root: built static by this index's factory
+-- (tools/res/build.sh sudo: musl, no PAM -- it reads the system's
+-- /etc/shadow -- the sudoers policy built in). Its rules are the system's
+-- own (/etc/sudoers and /etc/sudoers.d/*: whoever makes the system writes
+-- them). bin/sudo is setuid root; a root whose files are shared from a host
+-- (a virtual machine) must make it root's where it runs. xlings-res/sudo on
+-- GitHub and GitCode.
 package = {
     spec = "1",
 

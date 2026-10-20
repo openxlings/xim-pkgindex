@@ -297,12 +297,20 @@ local function mode_check(root)
     local facts = index_facts(root)
     local violations, unresolved, exempted, expired = {}, {}, {}, {}
     local wrong_ns, no_plat = {}, {}
+    local crossing = {}
     local seen = 0
 
     local bad = each_row(root, function(row)
         seen = seen + 1
         local namespace, name = split_dep(row.dep)
         local fact = facts[name]
+
+        -- The ecosystem's boundary (xlings design 2026-10-20 WuXian §16.5):
+        -- Luban's packages may use the index's, never the other way round --
+        -- an xim: package is not for Luban only, and does not depend on it.
+        if namespace == "luban" and not row.file:match("^pkgs/luban/") then
+            crossing[#crossing + 1] = { row = row, what = "depends on `" .. row.dep .. "`" }
+        end
 
         -- Checks that apply to a QUALIFIED dep. Both of these shipped as CI
         -- failures on this branch's first run, from a sweep that assumed every
@@ -337,6 +345,26 @@ local function mode_check(root)
 
     for _, b in ipairs(bad) do
         io.stderr:write(string.format("::error file=%s::cannot load recipe: %s\n", b.file, b.err))
+    end
+
+    -- Nor does it load Luban's libraries (libs/luban*.lua): read from the
+    -- recipe's text, as the import is a call, not a declaration.
+    for _, path in ipairs(recipe_files(root)) do
+        local file = rel_to(root, path)
+        if not file:match("^pkgs/luban/") then
+            local f = io.open(path, "r")
+            local text = f and f:read("a") or ""
+            if f then f:close() end
+            for lib in text:gmatch('import%(%s*["\']xim%.pkgindex%.(luban[%w_]*)["\']') do
+                crossing[#crossing + 1] = { row = { file = file }, what = "imports xim.pkgindex." .. lib }
+            end
+        end
+    end
+    for _, c in ipairs(crossing) do
+        io.write(string.format(
+            "::error file=%s::%s, a package outside pkgs/luban %s: the index's packages are not Luban's, and "
+            .. "never depend on its packages or libraries (a generic one goes in libs/, as libs/policy.lua).\n",
+            c.row.file, c.row.file, c.what))
     end
 
     for _, v in ipairs(violations) do
@@ -406,11 +434,11 @@ local function mode_check(root)
         end
     end
 
-    if #bad > 0 or #violations > 0 or #wrong_ns > 0 or #no_plat > 0 or #expired > 0 then
+    if #bad > 0 or #violations > 0 or #wrong_ns > 0 or #no_plat > 0 or #expired > 0 or #crossing > 0 then
         io.write(string.format(
             "xpkg dep check: FAIL (%d bare, %d expired exemption(s), %d wrong-namespace, "
-            .. "%d platform-missing, %d unreadable recipe(s))\n",
-            #violations, #expired, #wrong_ns, #no_plat, #bad))
+            .. "%d platform-missing, %d unreadable recipe(s), %d crossing into Luban)\n",
+            #violations, #expired, #wrong_ns, #no_plat, #bad, #crossing))
         return 1
     end
     -- The count is part of the result on purpose. A check that read nothing

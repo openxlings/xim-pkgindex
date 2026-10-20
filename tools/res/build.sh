@@ -46,7 +46,6 @@
 #   terminfo        the terminal descriptions (ncurses' terminfo.src, compiled)
 #   adwaita-cursors GNOME's Adwaita cursor theme, and the default theme naming it
 #   luban-fonts     the fonts the Luban OS window ships with
-#   luban-cursors   the Luban pointer theme, pixel art (tools/res/cursors: the one source)
 #
 # Runs on the machine of the target architecture (CI: ubuntu-24.04 and
 # ubuntu-24.04-arm). What it needs runs in a pinned container: the runner
@@ -65,6 +64,9 @@ set -euo pipefail
 
 what="$1"; version="$2"; out="$(mkdir -p "$3" && cd "$3" && pwd)"
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Luban's resources, apart from the generic ones (xlings design 2026-10-20
+# WuXian §16.5): its desktop components, their bundling and the machine kernel.
+luban="$here/luban"
 arch="$(uname -m)"; [[ "$arch" == arm64 ]] && arch=aarch64
 work="$(mktemp -d)"; trap 'rm -rf "$work" 2>/dev/null || sudo rm -rf "$work"' EXIT
 log() { printf '[res] %s\n' "$*" >&2; }
@@ -81,7 +83,7 @@ ALPINE_DESKTOP="alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda91
 # its build checks the Qt it links is this one.
 QT_RUNTIME="6.11.1-r2"
 QT_RUNTIME_APKS="qt6-qtbase qt6-qtbase-x11 qt6-qtbase-wayland qt6-qtwayland qt6-qtsvg qt6-qtdeclarative mesa-dri-gallium"
-# The Qt runtime's tree (tools/res/qt-runtime/tree.sh <dir>, in the Alpine
+# The Qt runtime's tree (tools/res/luban/qt-runtime/tree.sh <dir>, in the Alpine
 # container): the Qt libraries, their plugins and QML modules, every library
 # they link and the musl loader.
 # The xlings that makes a sysroot for what links glibc.
@@ -167,7 +169,7 @@ provenance() {  # directory, text
 #   bundle <name> <dir> "<programs, absolute in the container>" "<shell run first>" ["<more libraries' files>"]
 bundle() {
     local name="$1" d="$2" progs="$3" prep="$4" more="${5:-}" p loader="ld-musl-$arch.so.1"
-    cp "$here/bundle/strip-rpath.sh" "$work/"
+    cp "$luban/bundle/strip-rpath.sh" "$work/"
     ALPINE_IMAGE="$ALPINE_DESKTOP" alpine "$prep \
         && apk info -v 2>/dev/null | sort > /w/installed \
         && mkdir -p /w/$d/bin /w/$d/libexec/$name/bin /w/$d/libexec/$name/lib \
@@ -177,17 +179,17 @@ bundle() {
         && cp -L /lib/$loader /w/$d/libexec/$name/lib/ \
         && apk add -q patchelf && sh /w/strip-rpath.sh /w/$d/libexec/$name"
     [[ ! -e "$work/$d/lib" ]] || die "a lib/ in the tree: a root would link it into its /usr/lib"
-    cp -r "$here/$name/." "$work/$d/"
+    cp -r "$luban/$name/." "$work/$d/"
     mv "$work/$d/env" "$work/$d/libexec/$name/env"
-    n="$(python3 "$here/bundle/no-interp.py" "$work/$d/libexec/$name/bin")"
+    n="$(python3 "$luban/bundle/no-interp.py" "$work/$d/libexec/$name/bin")"
     [[ "$n" -ge 1 ]] || die "PT_INTERP left in place ($n changed)"
     # A library may be a program too (libcap.so.2 prints its version): it
     # names no loader either -- a Luban system refuses an ELF whose loader is
     # outside its checked closure.
-    python3 "$here/bundle/no-interp.py" "$work/$d/libexec/$name/lib" >/dev/null
+    python3 "$luban/bundle/no-interp.py" "$work/$d/libexec/$name/lib" >/dev/null
     for p in $progs; do
         p="$(basename "$p")"
-        sed -e "s/@NAME@/$name/g" -e "s/@PROG@/$p/g" -e "s/@LOADER@/$loader/g" "$here/bundle/run.in" > "$work/$d/bin/$p"
+        sed -e "s/@NAME@/$name/g" -e "s/@PROG@/$p/g" -e "s/@LOADER@/$loader/g" "$luban/bundle/run.in" > "$work/$d/bin/$p"
         chmod 755 "$work/$d/bin/$p"
     done
     mkdir -p "$work/$d/share/licenses"
@@ -251,7 +253,7 @@ kernel-virt)
     sha="$(grep " linux-$kv.tar.xz\$" "$sums" | cut -d' ' -f1)"
     [[ -n "$sha" ]] || die "kernel.org lists no linux-$kv.tar.xz"
     fetch "https://cdn.kernel.org/pub/linux/kernel/v${kv%%.*}.x/linux-$kv.tar.xz" "$sha" "$work/linux.tar.xz"
-    cp "$here/kernel-virt.config" "$work/"
+    cp "$luban/kernel-virt.config" "$work/"
     karch=x86; image=arch/x86/boot/bzImage
     [[ "$arch" == aarch64 ]] && { karch=arm64; image=arch/arm64/boot/Image; }
     debian "apt-get -qq update && apt-get -qq install -y build-essential flex bison bc libelf-dev libssl-dev xz-utils kmod cpio >/dev/null \
@@ -741,14 +743,14 @@ labwc-desktop)
              [ -d /usr/share/licenses/\$p ] && cp -r /usr/share/licenses/\$p /w/$d/share/licenses/ || true; done"
     grep -q "^labwc-$v-r" "$work/versions" || die "Alpine 3.20's labwc is not $v: $(grep '^labwc-' "$work/versions")"
     [[ ! -e "$work/$d/lib" ]] || die "a lib/ in the tree: a root would link it into its /usr/lib"
-    cp -r "$here/labwc-desktop/etc" "$here/labwc-desktop/share" "$work/$d/"
+    cp -r "$luban/labwc-desktop/etc" "$luban/labwc-desktop/share" "$work/$d/"
     # No ELF here names a loader outside the tree (the tree's own runs them).
-    n="$(python3 "$here/bundle/no-interp.py" "$work/$d/libexec")"
+    n="$(python3 "$luban/bundle/no-interp.py" "$work/$d/libexec")"
     [[ "$n" -ge 8 ]] || die "PT_INTERP left in place ($n changed)"
     for p in $progs; do
         # Xwayland's keymaps: the tree's data and its xkbcomp, not the system's paths.
         args=""; [[ "$p" == Xwayland ]] && args='-xkbdir "$here/share/X11/xkb"'
-        sed -e "s/@PROG@/$p/g" -e "s/@LOADER@/$loader/g" -e "s|@ARGS@|$args|" "$here/labwc-desktop/run.in" > "$work/$d/bin/$p"
+        sed -e "s/@PROG@/$p/g" -e "s/@LOADER@/$loader/g" -e "s|@ARGS@|$args|" "$luban/labwc-desktop/run.in" > "$work/$d/bin/$p"
         chmod 755 "$work/$d/bin/$p"
     done
     # It runs on a root that is not Alpine's: a headless session in Debian,
@@ -770,7 +772,7 @@ labwc-desktop)
     [[ "$(px 600 710)" == "$(px 900 710)" && "$(px 600 710)" != "$(px 600 680)" ]] || shot_die "the panel is not drawn"
     grep -q "foot version" "$work/foot.version" || die "foot does not run"
     rm -f "$work/shot.ppm"
-    provenance "$d" "labwc-desktop $version: Alpine 3.20 packages $(tr '\n' ' ' < "$work/versions")-- repackaged with the musl loader and the libraries they link (libexec/lib, private), run through bin/<program>; configuration and the session file from xim-pkgindex tools/res/labwc-desktop; a headless session in Debian 12 drew its background and panel"
+    provenance "$d" "labwc-desktop $version: Alpine 3.20 packages $(tr '\n' ' ' < "$work/versions")-- repackaged with the musl loader and the libraries they link (libexec/lib, private), run through bin/<program>; configuration and the session file from xim-pkgindex tools/res/luban/labwc-desktop; a headless session in Debian 12 drew its background and panel"
     pack "$d" ;;
 foot)
     # luban:foot: the terminal the desktops start through the default-terminal
@@ -784,7 +786,7 @@ foot)
         && cp -r /usr/share/licenses/foot /w/$d/share/licenses/ 2>/dev/null || true"
     headless "$d" "./bin/foot --version > /w/foot.version"
     grep -q "foot version: $v" "$work/foot.version" || die "foot does not run: $(cat "$work/foot.version")"
-    provenance "$d" "luban:foot $version: Alpine 3.24 $(grep -E '^foot-[0-9]' "$work/installed" | tr '\n' ' ')-- with the musl loader and the libraries it links (libexec/foot, private), run through bin/<program>; defaults and the default-terminal entry from xim-pkgindex tools/res/foot; it ran in Debian 12. Sources: https://codeberg.org/dnkl/foot and Alpine's aports (community/foot), unmodified"
+    provenance "$d" "luban:foot $version: Alpine 3.24 $(grep -E '^foot-[0-9]' "$work/installed" | tr '\n' ' ')-- with the musl loader and the libraries it links (libexec/foot, private), run through bin/<program>; defaults and the default-terminal entry from xim-pkgindex tools/res/luban/foot; it ran in Debian 12. Sources: https://codeberg.org/dnkl/foot and Alpine's aports (community/foot), unmodified"
     pack "$d" ;;
 xwayland)
     # luban:xwayland: X11 programs on a Wayland desktop. Alpine's Xwayland
@@ -832,7 +834,7 @@ labwc)
     bundle_upstream labwc "$v"
     ! grep -Eq 'libEGL|libgbm|libgallium|libLLVM' "$work/libs" || die "labwc links GL: $(grep -E 'libEGL|libgbm|libgallium|libLLVM' "$work/libs" | tr '\n' ' ')"
     rm -rf "$work/build"
-    install -m 755 "$here/bundle/xdg-terminal-exec" "$work/$d/bin/xdg-terminal-exec"
+    install -m 755 "$luban/bundle/xdg-terminal-exec" "$work/$d/bin/xdg-terminal-exec"
     # A root has fonts and keymaps (the recipe depends on xim:luban-fonts and
     # xim:xkeyboard-config); labwc does not start without either.
     headless "$d" "apt-get -qq update && apt-get -qq install -y fonts-dejavu-core xkb-data >/dev/null \
@@ -847,7 +849,7 @@ labwc)
     [[ "$(px 640 360)" == 2e3440 ]] || shot_die "the background is not drawn"
     [[ "$(px 600 710)" == "$(px 900 710)" && "$(px 600 710)" != "$(px 600 680)" ]] || shot_die "the panel is not drawn"
     rm -f "$work/shot.ppm"
-    provenance "$d" "luban:labwc $version: Alpine 3.24 $(grep -E '^(labwc|yambar|fuzzel|swaybg|grim)-[0-9]' "$work/installed" | tr '\n' ' ')-- with wlroots $wv (gitlab.freedesktop.org, sha256 $(input wlroots "$wv")) configured as Alpine's APKBUILD but -Drenderers= -Dallocators= (pixman only); the musl loader and the libraries they link private (libexec/labwc), run through bin/<program>; configuration, the session and xdg-terminal-exec from xim-pkgindex tools/res/labwc and tools/res/bundle; a headless session in Debian 12 drew its background and panel"
+    provenance "$d" "luban:labwc $version: Alpine 3.24 $(grep -E '^(labwc|yambar|fuzzel|swaybg|grim)-[0-9]' "$work/installed" | tr '\n' ' ')-- with wlroots $wv (gitlab.freedesktop.org, sha256 $(input wlroots "$wv")) configured as Alpine's APKBUILD but -Drenderers= -Dallocators= (pixman only); the musl loader and the libraries they link private (libexec/labwc), run through bin/<program>; configuration, the session and xdg-terminal-exec from xim-pkgindex tools/res/luban/labwc and tools/res/luban/bundle; a headless session in Debian 12 drew its background and panel"
     pack "$d" ;;
 audio)
     # luban:audio: a Luban desktop's sound (xlings design 2026-10-20 §20.1)
@@ -889,7 +891,7 @@ audio)
     # The modules name no loader and no search path of their own (a root
     # checks every ELF it holds: Alpine's say /usr/lib/pipewire-0.3); they
     # find their libraries through the program's.
-    python3 "$here/bundle/no-interp.py" "$work/$d/lib" >/dev/null
+    python3 "$luban/bundle/no-interp.py" "$work/$d/lib" >/dev/null
     ALPINE_IMAGE="$ALPINE_DESKTOP" alpine "apk add -q patchelf && sh /w/strip-rpath.sh /w/$d/lib"
     # It plays into the `luban` sink, the default: what is played comes out of the pipe.
     headless "$d" "head -c 192000 /dev/urandom > /w/noise.raw \
@@ -906,7 +908,7 @@ audio)
         || die "a module still names a search path"
     ! grep -Eq 'libLLVM|libgallium|libvulkan' "$work/libs" || die "luban:audio links GL or Vulkan: $(grep -E 'libLLVM|libgallium|libvulkan' "$work/libs" | tr '\n' ' ')"
     rm -f "$work/noise.raw" "$work/got.pcm"
-    provenance "$d" "luban:audio $version: Alpine 3.24 $(grep -E '^(pipewire|pipewire-pulse|wireplumber|pipewire-tools|pulseaudio-utils)-[0-9]' "$work/installed" | tr '\n' ' ')-- the musl loader and the libraries they link private (libexec/audio), run through bin/<program>; lib/pipewire-0.3, lib/spa-0.2, lib/wireplumber-0.5 and share/ as Alpine has them; the luban sink and luban-audio from xim-pkgindex tools/res/audio; in Debian 12 noise played into the default sink came out of its pipe"
+    provenance "$d" "luban:audio $version: Alpine 3.24 $(grep -E '^(pipewire|pipewire-pulse|wireplumber|pipewire-tools|pulseaudio-utils)-[0-9]' "$work/installed" | tr '\n' ' ')-- the musl loader and the libraries they link private (libexec/audio), run through bin/<program>; lib/pipewire-0.3, lib/spa-0.2, lib/wireplumber-0.5 and share/ as Alpine has them; the luban sink and luban-audio from xim-pkgindex tools/res/luban/audio; in Debian 12 noise played into the default sink came out of its pipe"
     pack "$d" ;;
 terminfo)
     # The terminal descriptions a root has (xlings design 2026-10-16 L §10):
@@ -1034,26 +1036,6 @@ luban-fonts)
     for x in "$f"/*; do file -b "$x" | grep -Eq "TrueType|OpenType" || die "$(basename "$x") is not a font: $(file -b "$x")"; done
     provenance "$d" "luban-fonts $version: JetBrains Mono 2.304 (Regular, Bold), Inter 4.1 (Regular), Sarasa Mono SC 1.0.42 (Regular, Bold), Noto Sans SC 2.004 (Regular, subset OTF), Fusion Pixel 12px proportional zh_hans 2026.09.25 -- from their GitHub releases, digests in tools/res/inputs.txt; licenses in share/licenses/luban-fonts"
     pack_data "$d" ;;
-luban-cursors)
-    # The Luban pointer theme (xlings design 2026-10-19 §15.2): pixel art on a
-    # 12x12 grid in tools/res/cursors/luban.cursors, the one source for the
-    # host's pointer (share/luban/cursors: PNGs and cursors.json) and the
-    # theme a Luban system installs (share/icons/Luban: Xcursor 24/48/72 px,
-    # the X11 names as links; share/icons/default inheriting it). Our own
-    # work under Apache-2.0. Made by tools/res/cursors/make.py: the standard
-    # library of the runner's python3, no input to fetch.
-    d="luban-cursors-$version"
-    python3 "$here/cursors/make.py" "$work/$d" --preview "$work/$d/share/luban/cursors/preview.png"
-    mkdir -p "$work/$d/share/licenses/luban-cursors"
-    printf 'The Luban pointer theme. Licensed under the Apache License, Version 2.0.\n' > "$work/$d/share/licenses/luban-cursors/LICENSE"
-    for n in default text pointer grab grabbing move ew-resize ns-resize nwse-resize nesw-resize crosshair wait progress not-allowed help; do
-        head -c 4 "$work/$d/share/icons/Luban/cursors/$n" | grep -q Xcur || die "$n is not an Xcursor file"
-        [[ -f "$work/$d/share/luban/cursors/$n-24.png" ]] || die "no $n-24.png"
-    done
-    [[ -L "$work/$d/share/icons/Luban/cursors/left_ptr" ]] || die "no left_ptr link"
-    grep -q '^Inherits=Luban' "$work/$d/share/icons/default/index.theme" || die "the default theme does not inherit Luban"
-    provenance "$d" "luban-cursors $version: the Luban pointer theme, made from tools/res/cursors/luban.cursors (xim-pkgindex) by make.py; Apache-2.0"
-    pack_data "$d" ;;
 qt-runtime)
     # luban:qt-runtime: what LXQt and KDE share (design 2026-10-18 §13.5) --
     # Qt 6 (base, wayland, svg, declarative), the mesa its GUI links (EGL and
@@ -1062,7 +1044,7 @@ qt-runtime)
     # desktop's wrapper runs its programs with this lib/ after its own.
     v="${version%%-r[0-9]*}"; d="qt-runtime-$version-linux-$arch"
     [[ "$version" == "$QT_RUNTIME" ]] || die "build.sh names the Qt runtime $QT_RUNTIME, not $version"
-    cp "$here/qt-runtime/tree.sh" "$here/bundle/strip-rpath.sh" "$work/"
+    cp "$luban/qt-runtime/tree.sh" "$luban/bundle/strip-rpath.sh" "$work/"
     ALPINE_IMAGE="$ALPINE_DESKTOP" alpine "apk add -q $QT_RUNTIME_APKS qt6-qtbase-dev && apk info -v 2>/dev/null | sort > /w/installed \
         && sh /w/tree.sh /w/$d/libexec/qt-runtime $QT_RUNTIME_APKS && mkdir -p /w/$d/share/licenses \
         && apk add -q patchelf && sh /w/strip-rpath.sh /w/$d/libexec/qt-runtime \
@@ -1070,7 +1052,7 @@ qt-runtime)
         && cp -L /usr/lib/qt6/bin/qtpaths6 /w/qtpaths6"
     bundle_upstream qt6-qtbase "$v"
     [[ ! -e "$work/$d/lib" ]] || die "a lib/ in the tree"
-    n="$(python3 "$here/bundle/no-interp.py" "$work/$d/libexec/qt-runtime" "$work/qtpaths6")"
+    n="$(python3 "$luban/bundle/no-interp.py" "$work/$d/libexec/qt-runtime" "$work/qtpaths6")"
     log "qt-runtime: $(ls "$work/$d/libexec/qt-runtime/lib" | wc -l) libraries, $(du -sh "$work/$d" | cut -f1); PT_INTERP cleared in $n"
     # It loads: a Qt program runs against it in Debian, by its loader.
     debian "cd /w/$d && ./libexec/qt-runtime/lib/ld-musl-$arch.so.1 --library-path ./libexec/qt-runtime/lib /w/qtpaths6 --qt-version > /w/qt.version"
@@ -1090,7 +1072,7 @@ lxqt)
         /usr/bin/lxqt-config-session /usr/bin/lxqt-config-input /usr/bin/lxqt-config-monitor /usr/bin/lxqt-notificationd \
         /usr/bin/lxqt-about /usr/bin/lxqt-leave /usr/bin/pcmanfm-qt /usr/bin/dbus-daemon /usr/bin/dbus-run-session \
         /usr/bin/dbus-update-activation-environment /usr/bin/xdg-user-dirs-update /usr/bin/qterminal"
-    cp "$here/qt-runtime/tree.sh" "$here/qt-runtime/desktop.sh" "$here/bundle/strip-rpath.sh" "$work/"
+    cp "$luban/qt-runtime/tree.sh" "$luban/qt-runtime/desktop.sh" "$luban/bundle/strip-rpath.sh" "$work/"
     carried="lxqt-session lxqt-panel lxqt-runner lxqt-config lxqt-notificationd lxqt-about lxqt-qtplugin lxqt-themes lxqt-menu-data \
         liblxqt libqtxdg libfm-qt pcmanfm-qt breeze-icons hicolor-icon-theme dbus xdg-user-dirs qterminal qtermwidget"
     ALPINE_IMAGE="$ALPINE_DESKTOP" alpine "apk add -q $QT_RUNTIME_APKS $carried layer-shell-qt \
@@ -1102,7 +1084,7 @@ lxqt)
              [ ! -e \$a.desktop ] || mv \$a.desktop /w/dropped-\$a.desktop; done"
     bundle_upstream lxqt-session "$v"
     bundle_upstream qt6-qtbase "${QT_RUNTIME%%-r[0-9]*}"
-    cp -r "$here/lxqt/." "$work/$d/"
+    cp -r "$luban/lxqt/." "$work/$d/"
     mv "$work/$d/env" "$work/$d/libexec/lxqt/env"
     # Its defaults for a Luban system (xlings design 2026-10-20 G24-G26): the
     # desktop shows Home and Trash (Computer and Network need gvfs, which a
@@ -1131,10 +1113,10 @@ PY
     # tree's loader and library directories in them where it is installed (a
     # Qt program reads /proc/self/exe; LXQt's panel takes no theme run by a
     # loader). Its libraries and plugins name none.
-    n="$(python3 "$here/bundle/no-interp.py" "$work/$d/libexec/lxqt/lib" "$work/$d/libexec/lxqt/plugins" "$work/$d/lib")"
+    n="$(python3 "$luban/bundle/no-interp.py" "$work/$d/libexec/lxqt/lib" "$work/$d/libexec/lxqt/plugins" "$work/$d/lib")"
     for p in $progs; do
         p="$(basename "$p")"
-        sed -e "s/@NAME@/lxqt/g" -e "s/@PROG@/$p/g" "$here/bundle/run-direct.in" > "$work/$d/bin/$p"
+        sed -e "s/@NAME@/lxqt/g" -e "s/@PROG@/$p/g" "$luban/bundle/run-direct.in" > "$work/$d/bin/$p"
         chmod 755 "$work/$d/bin/$p"
     done
     log "lxqt: $(ls "$work/$d/libexec/lxqt/lib" | wc -l) libraries of its own, $(du -sh "$work/$d" | cut -f1)"
@@ -1144,7 +1126,7 @@ PY
     lv="$(input_version luban-labwc-$arch)"
     source_of "luban-labwc-$arch" "$lv" "https://github.com/xlings-res/labwc/releases/download/$lv/labwc-$lv-linux-$arch.tar.gz" "$work/labwc.tar.gz"
     mkdir -p "$work/test" && tar -xzf "$work/labwc.tar.gz" -C "$work/test"
-    python3 "$here/bundle/no-interp.py" "$work/rt-root" >/dev/null
+    python3 "$luban/bundle/no-interp.py" "$work/rt-root" >/dev/null
     # Installed as the recipe's config() installs it, in a copy.
     cp -a "$work/$d" "$work/test/$d"
     echo "/w/rt-root" > "$work/test/$d/libexec/lxqt/qt-runtime"
@@ -1163,7 +1145,7 @@ PY
     px() { od -An -tx1 -j $((16 + ($2 * 1280 + $1) * 3)) -N 3 "$work/shot.ppm" | tr -d ' '; }
     log "pixels: (640,360) $(px 640 360), (600,710) $(px 600 710), (600,680) $(px 600 680)"
     [[ "$(px 600 710)" != "$(px 600 680)" ]] || shot_die "the panel is not drawn"
-    provenance "$d" "luban:lxqt $version: Alpine 3.24 $(grep -E '^(lxqt-session|lxqt-panel|pcmanfm-qt|liblxqt|layer-shell-qt|breeze-icons|dbus)-[0-9]' "$work/installed" | tr '\n' ' ')-- on luban:qt-runtime $QT_RUNTIME (the same Qt, checked); the libraries beyond the runtime's and the musl loader private (libexec/lxqt), lxqt-panel's plugins in lib/lxqt-panel; the session, defaults and checks from xim-pkgindex tools/res/lxqt; a headless session on luban:labwc in Debian 12 drew its panel. Sources: https://github.com/lxqt and Alpine's aports, unmodified"
+    provenance "$d" "luban:lxqt $version: Alpine 3.24 $(grep -E '^(lxqt-session|lxqt-panel|pcmanfm-qt|liblxqt|layer-shell-qt|breeze-icons|dbus)-[0-9]' "$work/installed" | tr '\n' ' ')-- on luban:qt-runtime $QT_RUNTIME (the same Qt, checked); the libraries beyond the runtime's and the musl loader private (libexec/lxqt), lxqt-panel's plugins in lib/lxqt-panel; the session, defaults and checks from xim-pkgindex tools/res/luban/lxqt; a headless session on luban:labwc in Debian 12 drew its panel. Sources: https://github.com/lxqt and Alpine's aports, unmodified"
     pack "$d" ;;
 falkon)
     # luban:falkon: the browser every Luban desktop carries (xlings design
@@ -1175,7 +1157,7 @@ falkon)
     v="${version%%-r[0-9]*}"; d="falkon-$version-linux-$arch"
     progs="/usr/bin/falkon /usr/lib/qt6/libexec/QtWebEngineProcess"
     carried="falkon qt6-qtwebengine"
-    cp "$here/qt-runtime/tree.sh" "$here/qt-runtime/desktop.sh" "$here/bundle/strip-rpath.sh" "$work/"
+    cp "$luban/qt-runtime/tree.sh" "$luban/qt-runtime/desktop.sh" "$luban/bundle/strip-rpath.sh" "$work/"
     # ICU's whole data (icu-data-full): Blink's line breaker needs it -- the
     # runtime's libicudata is Alpine's stub, and a page's renderer crashed on
     # an empty break iterator (xlings design 2026-10-20 WuXian §14, H23).
@@ -1186,17 +1168,17 @@ falkon)
         && apk add -q patchelf && sh /w/strip-rpath.sh /w/$d/libexec/falkon /w/$d/lib /w/rt-root/libexec/qt-runtime"
     bundle_upstream falkon "$v"
     bundle_upstream qt6-qtbase "${QT_RUNTIME%%-r[0-9]*}"
-    cp -r "$here/falkon/." "$work/$d/"
+    cp -r "$luban/falkon/." "$work/$d/"
     mv "$work/$d/env" "$work/$d/libexec/falkon/env"
     [[ -d "$work/$d/share/qt6/resources" ]] || die "falkon: no QtWebEngine resources in share/qt6/resources"
     icu="$(find "$work/$d/libexec/falkon/share/icu" -name 'icudt*l.dat' -size +20M | head -1)"
     [[ -n "$icu" ]] || die "falkon: no whole ICU data in libexec/falkon/share/icu"
-    python3 "$here/bundle/no-interp.py" "$work/$d/libexec/falkon/lib" "$work/$d/libexec/falkon/plugins" >/dev/null
-    sed -e "s/@NAME@/falkon/g" -e "s/@PROG@/falkon/g" "$here/bundle/run-direct.in" > "$work/$d/bin/falkon"
+    python3 "$luban/bundle/no-interp.py" "$work/$d/libexec/falkon/lib" "$work/$d/libexec/falkon/plugins" >/dev/null
+    sed -e "s/@NAME@/falkon/g" -e "s/@PROG@/falkon/g" "$luban/bundle/run-direct.in" > "$work/$d/bin/falkon"
     chmod 755 "$work/$d/bin/falkon"
     log "falkon: $(ls "$work/$d/libexec/falkon/lib" | wc -l) libraries of its own, $(du -sh "$work/$d" | cut -f1)"
     # It starts and says its version, on the runtime this build made.
-    python3 "$here/bundle/no-interp.py" "$work/rt-root" >/dev/null
+    python3 "$luban/bundle/no-interp.py" "$work/rt-root" >/dev/null
     mkdir -p "$work/test" && cp -a "$work/$d" "$work/test/$d"
     echo "/w/rt-root" > "$work/test/$d/libexec/falkon/qt-runtime"
     headless "test/$d" "apt-get -qq update && apt-get -qq install -y patchelf >/dev/null \
@@ -1204,7 +1186,7 @@ falkon)
              --set-rpath \$PWD/libexec/falkon/lib:/w/rt-root/libexec/qt-runtime/lib \$p; done \
         && QT_QPA_PLATFORM=offscreen ./bin/falkon --version > /w/falkon.version 2>&1"
     grep -qi "^falkon [0-9]" "$work/falkon.version" || die "falkon does not start: $(cat "$work/falkon.version")"
-    provenance "$d" "luban:falkon $version: Alpine 3.24 $(grep -E '^(falkon|qt6-qtwebengine)-[0-9]' "$work/installed" | tr '\n' ' ')-- on luban:qt-runtime $QT_RUNTIME (the same Qt); the libraries beyond the runtime's and the musl loader private (libexec/falkon); the defaults from xim-pkgindex tools/res/falkon. Sources: https://invent.kde.org/network/falkon, https://code.qt.io/qt/qtwebengine and Alpine's aports, unmodified"
+    provenance "$d" "luban:falkon $version: Alpine 3.24 $(grep -E '^(falkon|qt6-qtwebengine)-[0-9]' "$work/installed" | tr '\n' ' ')-- on luban:qt-runtime $QT_RUNTIME (the same Qt); the libraries beyond the runtime's and the musl loader private (libexec/falkon); the defaults from xim-pkgindex tools/res/luban/falkon. Sources: https://invent.kde.org/network/falkon, https://code.qt.io/qt/qtwebengine and Alpine's aports, unmodified"
     pack "$d" ;;
 kde)
     # luban:kde (preview): KDE Plasma 6 -- KWin, Plasma's shell, Dolphin,
@@ -1216,7 +1198,7 @@ kde)
     # its helpers where they were built to be.
     v="${version%%-r[0-9]*}"; d="kde-$version-linux-$arch"
     apks="kwin plasma-workspace plasma-desktop breeze breeze-icons konsole dolphin systemsettings kde-cli-tools"
-    cp "$here/qt-runtime/tree.sh" "$here/qt-runtime/desktop-auto.sh" "$here/bundle/strip-rpath.sh" "$work/"
+    cp "$luban/qt-runtime/tree.sh" "$luban/qt-runtime/desktop-auto.sh" "$luban/bundle/strip-rpath.sh" "$work/"
     ALPINE_IMAGE="$ALPINE_DESKTOP" alpine "sh /w/desktop-auto.sh /w/$d kde \"$QT_RUNTIME_APKS\" \"$apks\" \
         && apk info -v 2>/dev/null | sort > /w/installed \
         && apk add -q patchelf && sh /w/strip-rpath.sh /w/$d/libexec/kde /w/$d/lib /w/rt-root/libexec/qt-runtime"
@@ -1226,27 +1208,27 @@ kde)
     # bridge cannot show; this package's session is the one.
     mkdir -p "$work/dropped"
     for f in "$work/$d"/share/wayland-sessions/* "$work/$d"/share/xsessions/*; do [[ -e "$f" ]] && mv "$f" "$work/dropped/"; done
-    cp -r "$here/kde/." "$work/$d/"
+    cp -r "$luban/kde/." "$work/$d/"
     mv "$work/$d/env" "$work/$d/libexec/kde/env"
     # The camera indicator needs kpipewire's QML module, and a system has no
     # camera to show (xlings design 2026-10-20 G30): not in its tray.
     rm -rf "$work/$d/share/plasma/plasmoids/org.kde.plasma.cameraindicator"
     # Its programs keep their interpreter (config() names its loader in
     # them); its libraries and plugins name none.
-    python3 "$here/bundle/no-interp.py" "$work/$d/libexec/kde/lib" "$work/$d/libexec/kde/plugins" "$work/$d/libexec/kde/qml" >/dev/null
+    python3 "$luban/bundle/no-interp.py" "$work/$d/libexec/kde/lib" "$work/$d/libexec/kde/plugins" "$work/$d/libexec/kde/qml" >/dev/null
     while read -r p; do
-        sed -e "s/@NAME@/kde/g" -e "s/@PROG@/$p/g" "$here/bundle/run-direct.in" > "$work/$d/bin/$p"
+        sed -e "s/@NAME@/kde/g" -e "s/@PROG@/$p/g" "$luban/bundle/run-direct.in" > "$work/$d/bin/$p"
         chmod 755 "$work/$d/bin/$p"
     done < "$work/programs"
     # What config() points at this tree's loader: every ELF naming one.
-    python3 "$here/bundle/programs.py" "$work/$d" > "$work/$d/libexec/kde/programs"
+    python3 "$luban/bundle/programs.py" "$work/$d" > "$work/$d/libexec/kde/programs"
     log "kde: $(wc -l < "$work/programs") programs ($(wc -l < "$work/$d/libexec/kde/programs") ELF with a loader), $(ls "$work/$d/libexec/kde/lib" | wc -l) libraries of its own, $(du -sh "$work/$d" | cut -f1)"
     # A headless session in Debian: luban:labwc (published) as the host
     # compositor, the runtime this build made; Plasma's panel draws.
     lv="$(input_version luban-labwc-$arch)"
     source_of "luban-labwc-$arch" "$lv" "https://github.com/xlings-res/labwc/releases/download/$lv/labwc-$lv-linux-$arch.tar.gz" "$work/labwc.tar.gz"
     mkdir -p "$work/test" && tar -xzf "$work/labwc.tar.gz" -C "$work/test"
-    python3 "$here/bundle/no-interp.py" "$work/rt-root" >/dev/null
+    python3 "$luban/bundle/no-interp.py" "$work/rt-root" >/dev/null
     cp -a "$work/$d" "$work/test/$d"
     echo "/w/rt-root" > "$work/test/$d/libexec/kde/qt-runtime"
     headless "test/$d" "apt-get -qq update && apt-get -qq install -y fonts-dejavu-core xkb-data patchelf >/dev/null \
@@ -1266,7 +1248,7 @@ kde)
     px() { od -An -tx1 -j $((16 + ($2 * 1280 + $1) * 3)) -N 3 "$work/shot.ppm" | tr -d ' '; }
     log "pixels: (640,360) $(px 640 360), (600,700) $(px 600 700), (600,640) $(px 600 640)"
     [[ "$(px 640 360)" != 000000 && "$(px 600 700)" != "$(px 600 640)" ]] || shot_die "Plasma's desktop and panel are not drawn"
-    provenance "$d" "luban:kde $version: Alpine 3.24 $(grep -E '^(plasma-workspace|kwin|plasma-desktop|konsole|dolphin|systemsettings|breeze)-[0-9]' "$work/installed" | tr '\n' ' ')-- on luban:qt-runtime $QT_RUNTIME (the same Qt, checked); every package Plasma brings beyond the runtime's as Alpine lays it out under /usr, the libraries private (libexec/kde) with the musl loader; the session from xim-pkgindex tools/res/kde; a headless session nested in luban:labwc in Debian 12 drew Plasma's desktop and panel. Sources: https://invent.kde.org and Alpine's aports, unmodified"
+    provenance "$d" "luban:kde $version: Alpine 3.24 $(grep -E '^(plasma-workspace|kwin|plasma-desktop|konsole|dolphin|systemsettings|breeze)-[0-9]' "$work/installed" | tr '\n' ' ')-- on luban:qt-runtime $QT_RUNTIME (the same Qt, checked); every package Plasma brings beyond the runtime's as Alpine lays it out under /usr, the libraries private (libexec/kde) with the musl loader; the session from xim-pkgindex tools/res/luban/kde; a headless session nested in luban:labwc in Debian 12 drew Plasma's desktop and panel. Sources: https://invent.kde.org and Alpine's aports, unmodified"
     pack "$d" ;;
 *)
     die "unknown resource: $what" ;;
