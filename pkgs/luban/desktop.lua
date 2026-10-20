@@ -24,10 +24,11 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "2026.10.20.1" },
+            ["latest"] = { ref = "2026.10.21.1" },
             ["2026.10.18.1"] = { min_client = "2026.10.18.1" },
             ["2026.10.19.1"] = { min_client = "2026.10.18.1" },
             ["2026.10.20.1"] = { min_client = "2026.10.20.1" },
+            ["2026.10.21.1"] = { min_client = "2026.10.20.1" },
         },
     },
 }
@@ -140,6 +141,30 @@ versions["2026.10.20.1"] = {
                      -- The agents unpinned: recorded at `new`, moved by `luban upgrade`.
                      "xim:claude", "xim:codex", "xim:pi", "xim:opencode" },
         luban = { settings = { mode = "machine", enter = "desktop", desktop = desktop_2026_10_20.session, login_shell = "/usr/bin/fish" } },
+        workspace = {},
+    },
+}
+
+-- 2026.10.21.1 (xlings design 2026-10-20 WuXian): xdesk 2026.10.21.1 --
+-- workspaces on WuXian, composing with the GPU when the system has one (the
+-- graphics stack, xim:graphics, comes with it), the vector pointer -- and
+-- Falkon with ICU's data. The same core.
+local desktop_2026_10_21 = aarch64 and { package = "luban:labwc@0.20.0-r2", session = "labwc" }
+                                    or { package = "luban:xdesk@2026.10.21.1", session = "xdesk" }
+
+versions["2026.10.21.1"] = {
+    files = luban.with(luban_desktop.environment(), luban.checks("desktop", CHECKS_2026_10_20)),
+    manifest = {
+        subos_kind = "rootfs",
+        min_client = "2026.10.20.1",
+        from = "luban:core@2026.10.20.1",
+        replaces = { "subos:luban-desktop", "subos:luban-desktop-xdesk" },
+        abi = { kernel = "linux", libc = "gnu" },
+        packages = { desktop_2026_10_21.package, "luban:foot@1.27.0-r1", "luban:xwayland@24.1.14-r1", "luban:tools-dev@2026.10.18.1",
+                     "luban:tools-agent@2026.10.18.1", "luban:tools-cli@2026.10.18.1",
+                     -- The agents unpinned: recorded at `new`, moved by `luban upgrade`.
+                     "xim:claude", "xim:codex", "xim:pi", "xim:opencode" },
+        luban = { settings = { mode = "machine", enter = "desktop", desktop = desktop_2026_10_21.session, login_shell = "/usr/bin/fish" } },
         workspace = {},
     },
 }
