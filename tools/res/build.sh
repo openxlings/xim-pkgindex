@@ -636,11 +636,11 @@ qemu-system-gl)
         && ninja -C build install >/dev/null \
         && cd /w && tar -xzf virgl.tar.gz && cd virglrenderer-$gv \
         && meson setup build --prefix=/usr --libdir=lib -Dplatforms=egl -Dvenus=false -Dvideo=false -Dtests=false > /w/virgl.log 2>&1 \
-        && ninja -C build >> /w/virgl.log 2>&1 && DESTDIR=/w/vstage ninja -C build install >> /w/virgl.log 2>&1 \
+        && ninja -C build >> /w/virgl.log 2>&1 && ninja -C build install >> /w/virgl.log 2>&1 \
+        && DESTDIR=/w/vstage ninja -C build install >> /w/virgl.log 2>&1 \
         && cd /w && tar -xJf qemu.tar.xz && tar -xJf dtc.tar.xz && mv dtc-$dv qemu-$v/subprojects/dtc \
         && mkdir qb && cd qb \
-        && PKG_CONFIG_PATH=/opt/slirp/lib/pkgconfig:/w/vstage/usr/lib/pkgconfig CFLAGS=-I/w/vstage/usr/include \
-           LDFLAGS=-L/w/vstage/usr/lib ../qemu-$v/configure --prefix=/usr \
+        && PKG_CONFIG_PATH=/opt/slirp/lib/pkgconfig ../qemu-$v/configure --prefix=/usr \
              --target-list=x86_64-softmmu --enable-slirp --enable-fdt=internal \
              --enable-opengl --enable-virglrenderer --disable-modules \
              --disable-docs --disable-tools --disable-guest-agent --disable-user --disable-linux-user --disable-bsd-user \

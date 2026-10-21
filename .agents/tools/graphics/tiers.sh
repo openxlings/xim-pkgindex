@@ -163,9 +163,15 @@ T4=(
 # why reading mesa's build files could not find it -- it surfaced 1957 targets in,
 # with an error naming neither wayland nor mesa.
 T5=(
-  "mesa|25.0.7|https://archive.mesa3d.org/mesa-25.0.7.tar.xz|meson|-Dgallium-drivers=llvmpipe,softpipe,radeonsi,nouveau,zink,iris,d3d12 -Dvulkan-drivers=amd -Dglvnd=enabled -Dplatforms=x11,wayland -Dllvm=enabled -Dshared-llvm=enabled -Dmesa-clc=enabled -Dgallium-d3d12-video=disabled -Dlmsensors=disabled -Dvalgrind=disabled -Dbuild-tests=false -Dgallium-extra-hud=false|glslang libglvnd libdrm libX11 libxcb libXext libXfixes libXxf86vm libxshmfence wayland zlib expat elfutils xorgproto libpciaccess libXrandr libXau libXdmcp libXrender"
+  "mesa|25.0.7|https://archive.mesa3d.org/mesa-25.0.7.tar.xz|meson|-Dgallium-drivers=llvmpipe,softpipe,radeonsi,nouveau,zink,iris,d3d12,virgl -Dvulkan-drivers=amd -Dglvnd=enabled -Dplatforms=x11,wayland -Dllvm=enabled -Dshared-llvm=enabled -Dmesa-clc=enabled -Dgallium-d3d12-video=disabled -Dlmsensors=disabled -Dvalgrind=disabled -Dbuild-tests=false -Dgallium-extra-hud=false|llvm-dev spirv-tools directx-headers wayland-protocols glslang libglvnd libdrm libX11 libxcb libXext libXfixes libXxf86vm libxshmfence wayland zlib expat elfutils xorgproto libpciaccess libXrandr libXau libXdmcp libXrender"
 )
 
+# 25.0.7.3 (virgl added) was built with the four build-only inputs in --deps as
+# well: their bin/ goes on PATH, and mesa takes `llvm-config` from PATH -- the
+# host's (LLVM 18) answered otherwise. Not with xim:libllvm installed in the
+# subos: its libLLVM.so.20.1 (no SPIR-V target) is ahead of llvm-dev's on the
+# build tools' RPATH, and mesa_clc fails on LLVMInitializeSPIRVTarget.
+#
 # The three build-only inputs mesa needs that are NOT --deps, because a
 # `status = "dev"` package deliberately stages nothing into the sysroot:
 #

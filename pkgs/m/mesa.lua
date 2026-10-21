@@ -3,7 +3,7 @@ package = {
 
     homepage = "https://mesa3d.org",
     name = "mesa",
-    description = "Mesa 3D — OpenGL and Vulkan: llvmpipe, radeonsi, iris, nouveau, zink, d3d12, RADV",
+    description = "Mesa 3D — OpenGL and Vulkan: llvmpipe, radeonsi, iris, nouveau, zink, d3d12, virgl, RADV",
 
     authors = {"Mesa contributors"},
     licenses = {"MIT"},
@@ -98,7 +98,21 @@ package = {
             exports = {
                 runtime = { libdirs = { "lib" } },
             },
-            ["latest"] = { ref = "25.0.7.2" },
+            ["latest"] = { ref = "25.0.7.3" },
+            -- 25.0.7.3: adds virgl to gallium-drivers -- OpenGL inside a Luban
+            -- machine, on the host's GPU through virtio-gpu (xlings design
+            -- 2026-10-20 WuXian §7.5; the host side is xim:qemu-system-gl).
+            -- One file more (lib/dri/virtio_gpu_dri.so, the megadriver
+            -- carrying it); the DT_NEEDED closure and the glibc and libstdc++
+            -- symbol versions measured the same as 25.0.7.2's. Built with
+            -- .agents/tools/graphics/build-in-subos.sh as tiers.sh's T5 line.
+            ["25.0.7.3"] = {
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/mesa/releases/download/25.0.7.3/mesa-25.0.7.3-linux-x86_64.tar.gz",
+                    CN     = "https://gitcode.com/xlings-res/mesa/releases/download/25.0.7.3/mesa-25.0.7.3-linux-x86_64.tar.gz",
+                },
+                sha256 = "ddfa3819df2ad4f34a77d0b2562809554030c3ce3deddc768d47d913c8af1f31",
+            },
             -- 25.0.7.2: upstream is 25.0.7, the fourth component is ours. Adds
             -- iris and d3d12 to gallium-drivers; nothing else about the build
             -- changed, and the external DT_NEEDED closure is byte-for-byte the
