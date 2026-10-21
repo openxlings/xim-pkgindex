@@ -63,6 +63,8 @@ jobs:
           - { what: proot,         version: "5.4.0",              arch: aarch64 }
           - { what: passt,         version: "2026_10_02.cba3570", arch: x86_64 }
           - { what: passt,         version: "2026_10_02.cba3570", arch: aarch64 }
+          - { what: virtiofsd,     version: "1.14.0",             arch: x86_64 }
+          - { what: virtiofsd,     version: "1.14.0",             arch: aarch64 }
           - { what: curl,          version: "8.22.0",             arch: x86_64 }
           - { what: curl,          version: "8.22.0",             arch: aarch64 }
           - { what: git,           version: "2.53.0-1",           arch: x86_64 }

@@ -11,6 +11,7 @@
 #   busybox       a static busybox (musl)
 #   bwrap         a static bubblewrap (musl)
 #   passt         static pasta and passt (musl)
+#   virtiofsd     a static virtiofsd (musl; libseccomp, libcap-ng): a Luban machine's files
 #   e2fsprogs     static mke2fs & co (musl)
 #   curl          a static curl (musl; TLS, socks5h)
 #   proot         a static proot (musl)
@@ -310,6 +311,19 @@ passt)
     static_only "$work/$d/bin/pasta" "$work/$d/bin/passt"
     "$work/$d/bin/pasta" --version | head -1 | grep -q "$version" || die "pasta does not report $version"
     provenance "$d" "passt $version: git https://passt.top/passt at $commit; make static in Alpine 3.20 (musl)"
+    pack "$d" ;;
+virtiofsd)
+    # A Luban machine's files over virtio-fs (xlings design 2026-10-21 §4):
+    # unprivileged, one a share, started by the machine's supervisor.
+    source_of virtiofsd "$version" "https://gitlab.com/virtio-fs/virtiofsd/-/archive/v$version/virtiofsd-v$version.tar.gz" "$work/src.tar.gz"
+    d="virtiofsd-$version-linux-$arch"
+    ALPINE_IMAGE="$ALPINE_DESKTOP" alpine "apk add -q cargo libseccomp-dev libseccomp-static libcap-ng-dev libcap-ng-static \
+        && tar -xzf src.tar.gz && cd virtiofsd-v$version \
+        && RUSTFLAGS='-C target-feature=+crt-static' CARGO_HOME=/w/cargo cargo build -q --release --locked \
+        && mkdir -p /w/$d/bin && cp target/release/virtiofsd /w/$d/bin/ && strip /w/$d/bin/virtiofsd"
+    static_only "$work/$d/bin/virtiofsd"
+    "$work/$d/bin/virtiofsd" --version | grep -q "$version" || die "virtiofsd does not report $version"
+    provenance "$d" "virtiofsd $version: https://gitlab.com/virtio-fs/virtiofsd tag v$version; cargo build --release, crt-static, in Alpine 3.24 (musl)"
     pack "$d" ;;
 e2fsprogs)
     source_of e2fsprogs "$version" "https://mirrors.edge.kernel.org/pub/linux/kernel/people/tytso/e2fsprogs/v$version/e2fsprogs-$version.tar.xz" "$work/src.tar.xz"
