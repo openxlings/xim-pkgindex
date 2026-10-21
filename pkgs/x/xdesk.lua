@@ -43,11 +43,19 @@ package = {
                 "xim:gcc-runtime",
                 -- The GPU (2026.10.21.1): EGL, GLES and gbm, the graphics
                 -- stack's -- lower bounds, the stack moves on its own.
+                -- 25.0.7.3 has virgl: in a Luban machine the GPU is
+                -- virtio-gpu, drawn on the host's (WuXian §7.5).
                 "xim:graphics@>=0.1",
-                "xim:mesa@>=25",
+                "xim:mesa@>=25.0.7.3",
                 "xim:libglvnd@>=1.7.0.1",
             },
-            ["latest"] = { ref = "2026.10.21.1" },
+            ["latest"] = { ref = "2026.10.21.2" },
+            ["2026.10.21.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "c391e2e54c6dddac8e7f2fad142a5de5d954388757dbb9da51df6bfdb83551d4",
+                },
+            },
             ["2026.10.21.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
