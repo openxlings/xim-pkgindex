@@ -34,7 +34,18 @@ package = {
     xpm = {
         linux = {
             deps = { "luban:qt-runtime@6.11.1-r2", "xim:luban-fonts", "xim:patchelf" },
-            ["latest"] = { ref = "26.04.2" },
+            ["latest"] = { ref = "26.04.2-r1" },
+            -- r1: ICU's data carried (Qt's ICU found none: pages and its
+            -- settings failed), the GPU used when the system has a render
+            -- node, and what it says when there is no desktop (xlings
+            -- design 2026-10-20 WuXian §14, §7.6). The same Falkon.
+            ["26.04.2-r1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "47ae69741b86ab9b155c345123b9b655ac7f644d6e3e8d8fbe60273efa2bc875",
+                    aarch64 = "1cba47c816bb70a206cae32df2cc2ee71c6bb918771dd317ddb1b7f52e677d67",
+                },
+            },
             ["26.04.2"] = {
                 url = "XLINGS_RES",
                 sha256 = {

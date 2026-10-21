@@ -26,9 +26,9 @@ package = {
     },
 }
 
-import("xim.pkgindex.luban")
+import("xim.pkgindex.policy")
 
-local policy = [[
+local document = [[
 {
   "extends": "private",
   "min_client": "2026.10.11.1",
@@ -49,5 +49,5 @@ local policy = [[
 ]]
 
 function install()
-    return luban.policy(policy)
+    return policy.write(document)
 end

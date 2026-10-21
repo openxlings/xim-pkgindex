@@ -108,7 +108,7 @@ package = {
             exports = {
                 runtime = { libdirs = { "lib" } },
             },
-            ["latest"] = { ref = "0.1.3" },
+            ["latest"] = { ref = "0.1.4" },
             -- No payload: everything this package installs is a symlink it
             -- creates at install time from what it finds on the host. The
             -- version is the recipe's, not the driver's — the driver version
@@ -155,6 +155,12 @@ package = {
             -- ICD in the subos and fell through to the host's /usr/share —
             -- where the NVIDIA manifest names a bare SONAME it cannot load, and
             -- llvmpipe silently won. See install().
+            -- 0.1.4: the GBM backend too (lib/gbm/nvidia-drm_gbm.so, the
+            -- host's libnvidia-allocator under the name libgbm looks for), so
+            -- GBM on an NVIDIA render node finds the driver -- a Luban
+            -- machine's GL qemu draws there with egl-headless (xlings WuXian
+            -- §7.5; xim:qemu-system-gl). See install().
+            ["0.1.4"] = { },
             ["0.1.3"] = { },
             ["0.1.2"] = { },
             ["0.1.1"] = { },
@@ -335,6 +341,20 @@ function install()
         system.exec(string.format([[ln -sf "%s" "%s"]],
             path.join(nvdir, name), path.join(dir, "lib", name)))
         linked = linked + 1
+    end
+
+    -- The GBM backend. libgbm picks one by the render node's driver name
+    -- (`nvidia-drm` -> nvidia-drm_gbm.so) along GBM_BACKENDS_PATH, which names
+    -- the subos's lib/gbm and nothing of the host's; without it
+    -- gbm_create_device() on an NVIDIA node falls to Mesa's DRI backend and
+    -- fails. The host ships it as a link to libnvidia-allocator (libc and
+    -- libdl only, so our glibc loads it); linked here as the host resolves it.
+    local gbm = path.join(nvdir, "gbm", "nvidia-drm_gbm.so")
+    local target = os.isfile(gbm) and os.iorun(string.format([[readlink -f "%s"]], gbm)) or ""
+    target = target:gsub("%s+$", "")
+    if target ~= "" then
+        os.mkdir(path.join(dir, "lib", "gbm"))
+        system.exec(string.format([[ln -sf "%s" "%s"]], target, path.join(dir, "lib", "gbm", "nvidia-drm_gbm.so")))
     end
 
     -- What the vendor needs from OUR packages, in its own directory.
@@ -799,6 +819,12 @@ function config()
     -- number in `10_nvidia.json` is for and how the host does it.
     graphics.declare_egl_vendor(dir,
         "share/glvnd/egl_vendor.d/10_nvidia.json", tag)
+
+    -- Its GBM backend, beside Mesa's in the subos's lib/gbm (one file: the
+    -- directory is Mesa's too).
+    if os.isfile(path.join(dir, "lib", "gbm", "nvidia-drm_gbm.so")) and xvm.files then
+        xvm.files{ src = "lib/gbm/nvidia-drm_gbm.so", dst = path.join(graphics.GBM_DIR, "nvidia-drm_gbm.so"), binding = tag }
+    end
 
     -- …and the Vulkan ICD into the SAME shared directory, by the same rule.
     -- `10_` beats mesa's `50_` there exactly as it does for EGL, so a machine

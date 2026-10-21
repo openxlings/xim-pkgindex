@@ -47,8 +47,8 @@ jobs:
         include:
           - { what: limine,        version: "12.9.3",             arch: x86_64 }
           - { what: limine,        version: "12.9.3",             arch: aarch64 }
-          - { what: kernel-virt,   version: "6.12.112-r2",        arch: x86_64 }
-          - { what: kernel-virt,   version: "6.12.112-r2",        arch: aarch64 }
+          - { what: kernel-virt,   version: "6.12.112-r3",        arch: x86_64 }
+          - { what: kernel-virt,   version: "6.12.112-r3",        arch: aarch64 }
           - { what: busybox,       version: "1.35.0",             arch: aarch64 }
           - { what: bwrap,         version: "0.11.2",             arch: aarch64 }
           # the aarch64 ecosystem (xlings: 2026-10-11-luban-aarch64-and-docs-i18n-design)
@@ -80,6 +80,7 @@ jobs:
           - { what: edk2-firmware, version: "9.2.4",              arch: x86_64 }
           - { what: qemu-system,   version: "9.2.4-r2",           arch: x86_64 }
           - { what: qemu-system,   version: "9.2.4-r2",           arch: aarch64 }
+          - { what: qemu-system-gl, version: "9.2.4-r1",          arch: x86_64 }
           - { what: labwc-desktop, version: "0.7.2-r1",           arch: x86_64 }
           - { what: labwc-desktop, version: "0.7.2-r1",           arch: aarch64 }
           # the desktop components (xlings: 2026-10-18 Luban OS distribution design §4.6, §13.5)
@@ -93,8 +94,8 @@ jobs:
           - { what: qt-runtime,    version: "6.11.1-r2",          arch: aarch64 }
           - { what: lxqt,          version: "2.4.0-r4",           arch: x86_64 }
           - { what: lxqt,          version: "2.4.0-r4",           arch: aarch64 }
-          - { what: falkon,        version: "26.04.2",            arch: x86_64 }
-          - { what: falkon,        version: "26.04.2",            arch: aarch64 }
+          - { what: falkon,        version: "26.04.2-r1",         arch: x86_64 }
+          - { what: falkon,        version: "26.04.2-r1",         arch: aarch64 }
           - { what: audio,         version: "1.6.8-r2",         arch: x86_64 }
           - { what: audio,         version: "1.6.8-r2",         arch: aarch64 }
           - { what: kde,           version: "6.6.6-r2",           arch: x86_64 }
@@ -107,7 +108,6 @@ jobs:
           - { what: terminfo,        version: "6.6.20261010",     arch: x86_64 }
           - { what: adwaita-cursors, version: "49.0",             arch: x86_64 }
           - { what: luban-fonts,     version: "2026.10.16",       arch: x86_64 }
-          - { what: luban-cursors,   version: "2026.10.20",       arch: x86_64 }
     steps:
       - uses: actions/checkout@v4
         if: env.WANTED == 'true'

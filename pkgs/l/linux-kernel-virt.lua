@@ -16,7 +16,7 @@ package = {
     keywords = {"linux", "kernel", "vmlinuz", "luban", "virt", "qemu", "kvm"},
 
     -- kernel.org's linux-6.12.x (checked against its sha256sums.asc), the
-    -- architecture's defconfig + kvm_guest.config + tools/res/kernel-virt.config,
+    -- architecture's defconfig + kvm_guest.config + tools/res/luban/kernel-virt.config,
     -- built by this index on the architecture itself (tools/res/build.sh,
     -- res-build.yml). At the systemd location lib/modules/<release>/vmlinuz
     -- (with its config); a root links it at /usr/lib/modules/<release>.
@@ -24,7 +24,18 @@ package = {
     -- machine need; a real machine's hardware is linux-kernel's (generic).
     xpm = {
         linux = {
-            ["latest"] = { ref = "6.12.112-r2" },
+            ["latest"] = { ref = "6.12.112-r3" },
+            -- r3: kernel-virt.config adds DRM, virtio-gpu, the fbdev emulation
+            -- and sync files, built in -- a machine's GPU through virgl when its
+            -- host's qemu has GL (xlings design 2026-10-20 WuXian §7.5). The
+            -- same 6.12.112 source.
+            ["6.12.112-r3"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "6d009f49f23554d61239deea0bca9389c5cb42cb8cbbc2f1171dc46e7ec1ef44",
+                    aarch64 = "7bff423eb7f1110bcb59882dd88ce08c5a55f5997938b8110db92f6232511d3f",
+                },
+            },
             -- r2: kernel-virt.config adds UDMABUF -- KWin 6.8's software
             -- rendering allocates from /dev/udmabuf (xlings: 2026-10-18 Luban
             -- OS distribution design §13.3). The same 6.12.112 source.

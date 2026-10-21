@@ -2,7 +2,7 @@ package = {
     spec = "1",
 
     name = "xdesk",
-    description = "xdesk: the Luban OS desktop -- a compositor and shell over wlroots, classic (tiled) and canvas profiles, no GPU needed",
+    description = "xdesk: the Luban OS desktop -- a compositor and shell over wlroots, workspaces on WuXian (an infinite plane), the GPU when there is one",
 
     homepage = "https://github.com/openxlings/xlings",
     repo = "https://github.com/openxlings/xlings",
@@ -12,7 +12,7 @@ package = {
     archs = {"x86_64"},
     status = "stable",
     categories = {"desktop", "wayland", "luban"},
-    keywords = {"xdesk", "wayland", "compositor", "desktop", "canvas", "tile", "luban"},
+    keywords = {"xdesk", "wayland", "compositor", "desktop", "wuxian", "workspaces", "tile", "luban"},
 
     -- The desktop of the desktop editions (xlings: Luban OS desktop part 2),
     -- released with xlings at the same date version (openxlings/xlings,
@@ -26,6 +26,13 @@ package = {
     -- profiles' defaults are data (share/xdesk/<profile>.ini), under a
     -- system's /etc/xdg/xdesk and a person's ~/.config/xdesk. Its terminal
     -- is foot (xim:labwc-desktop carries one, with fonts).
+    --
+    -- From 2026.10.21.1 it composes with GLES on a render node when the
+    -- system's GPU can (pixman otherwise, and it says why): it links libEGL,
+    -- libGLESv2 and libgbm, the graphics stack's (xim:graphics: glvnd and
+    -- Mesa) -- on its RPATH through the deps below, and the stack's discovery
+    -- on its shim (graphics.consumer_envs(), for that version on). One
+    -- settings file, share/xdesk/xdesk.ini, for every session.
     programs = {"xdesk"},
     xvm_enable = true,
 
@@ -34,8 +41,27 @@ package = {
             deps = {
                 "xim:glibc@>=2.44",
                 "xim:gcc-runtime",
+                -- The GPU (2026.10.21.1): EGL, GLES and gbm, the graphics
+                -- stack's -- lower bounds, the stack moves on its own.
+                -- (25.0.7.3, the newest, has virgl: in a Luban machine the
+                -- GPU is virtio-gpu, drawn on the host's -- WuXian §7.5.)
+                "xim:graphics@>=0.1",
+                "xim:mesa@>=25",
+                "xim:libglvnd@>=1.7.0.1",
             },
-            ["latest"] = { ref = "2026.10.20.3" },
+            ["latest"] = { ref = "2026.10.21.2" },
+            ["2026.10.21.2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "c391e2e54c6dddac8e7f2fad142a5de5d954388757dbb9da51df6bfdb83551d4",
+                },
+            },
+            ["2026.10.21.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "82d5dac77a184c11989768bc81055f2e3e57231e3eb2e369b7f7861ed2fd293c",
+                },
+            },
             ["2026.10.20.3"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -145,6 +171,20 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.elfpatch")
+import("xim.pkgindex.graphics")
+
+-- The versions that link GLES (2026.10.21.1 on): their shim names the stack.
+local function draws_with_gles()
+    local v = pkginfo.version() or ""
+    local y, m, d, n = v:match("^(%d+)%.(%d+)%.(%d+)%.(%d+)$")
+    if not y then return false end
+    return tonumber(y) * 1e6 + tonumber(m) * 1e4 + tonumber(d) * 1e2 + tonumber(n) >= 2026102101
+end
+
+local function have_stack()
+    local mesa = pkginfo.dep_install_dir and pkginfo.dep_install_dir("xim:mesa") or nil
+    return mesa and mesa ~= "" and os.isdir(path.join(mesa, "lib"))
+end
 
 function install()
     local dir = pkginfo.install_dir()
@@ -165,7 +205,9 @@ end
 function config()
     local binding = package.name .. "@" .. pkginfo.version()
     -- The program is the package's own name: registered as it, the files bound to it.
-    xvm.add("xdesk", { bindir = path.join(pkginfo.install_dir(), "bin") })
+    local node = { bindir = path.join(pkginfo.install_dir(), "bin") }
+    if draws_with_gles() and have_stack() then node.envs = graphics.consumer_envs() end
+    xvm.add("xdesk", node)
     -- The sessions, where a desktop's manager (and the Luban OS window)
     -- looks; the profiles' defaults, where xdesk does.
     if xvm.files then

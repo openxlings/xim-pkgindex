@@ -67,7 +67,7 @@ local CONFIG_DIR = [[[ -d "${XDG_CONFIG_HOME:-$HOME/.config}/labwc" ] || set -- 
 ]]
 
 -- The background menu: the build's, plus closing the desktop and powering
--- the machine off (tools/res/labwc-desktop/etc/xdg/labwc/menu.xml, which the
+-- the machine off (tools/res/luban/labwc-desktop/etc/xdg/labwc/menu.xml, which the
 -- next build carries itself).
 local MENU = [[<?xml version="1.0"?>
 <!-- The desktop's menu (a click on the background). "Shut down" powers the
