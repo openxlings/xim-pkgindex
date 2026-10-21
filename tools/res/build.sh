@@ -26,6 +26,7 @@
 #   xsel          a static xsel (musl; libX11/xcb static)
 #   edk2-firmware the UEFI firmware qemu ships, decompressed (no build)
 #   qemu-system   static qemu-system-x86_64 and -aarch64 (musl; user networking)
+#   qemu-system-gl qemu-system-x86_64 with OpenGL (virglrenderer, egl-headless; glibc, dynamic)
 #   labwc-desktop the labwc desktop session, relocatable (musl loader and libraries inside)
 #   foot          luban:foot, a terminal, as a component tree (Alpine 3.24; bundle below)
 #   xwayland      luban:xwayland, X11 programs on Wayland, built without glamor and GLX
@@ -605,6 +606,79 @@ qemu-system)
     [[ -f "$work/$d/share/qemu/bios-256k.bin" && -f "$work/$d/share/qemu/edk2-aarch64-code.fd" && -f "$work/$d/share/qemu/edk2-x86_64-code.fd" ]] \
         || die "the firmware is not in share/qemu"
     provenance "$d" "qemu $v (download.qemu.org, sha256 $(input qemu "$v")) system emulators for x86_64 and aarch64, static (musl, Alpine 3.20), user networking from libslirp $sv, 9p (virtfs, libattr) and libfdt from dtc $dv, built static; firmware decompressed in share/qemu"
+    pack "$d" ;;
+qemu-system-gl)
+    # xim:qemu-system-gl: qemu-system-x86_64 that draws a Luban machine's
+    # graphics on the host's GPU (xlings design 2026-10-20 WuXian §7.5):
+    # virtio-gpu-gl-pci, virglrenderer, the egl-headless display on a render
+    # node. Linked dynamically -- EGL and GBM load the host's driver -- against
+    # Debian 12's glibc, which an install patches onto the index's (elfpatch);
+    # every library it needs is a package the recipe names (xim:graphics for
+    # EGL/GBM, glib, pixman, zlib, libepoxy, libdrm), except virglrenderer,
+    # built here and carried in lib/. User networking (libslirp) and libfdt
+    # static as in qemu-system; its firmware in share/qemu.
+    v="${version%%-r[0-9]*}"
+    source_of qemu "$v" "https://download.qemu.org/qemu-$v.tar.xz" "$work/qemu.tar.xz"
+    sv="$(input_version libslirp)"
+    source_of libslirp "$sv" "https://gitlab.freedesktop.org/slirp/libslirp/-/archive/v$sv/libslirp-v$sv.tar.gz" "$work/slirp.tar.gz"
+    dv="$(input_version dtc)"
+    source_of dtc "$dv" "https://mirrors.edge.kernel.org/pub/software/utils/dtc/dtc-$dv.tar.xz" "$work/dtc.tar.xz"
+    gv="$(input_version virglrenderer)"
+    source_of virglrenderer "$gv" "https://gitlab.freedesktop.org/virgl/virglrenderer/-/archive/$gv/virglrenderer-$gv.tar.gz" "$work/virgl.tar.gz"
+    d="qemu-system-gl-$version-linux-$arch"
+    runtime="libglib2.0-0 libpixman-1-0 zlib1g libepoxy0 libdrm2 libgbm1"
+    debian "apt-get -qq update && apt-get -qq install -y --no-install-recommends build-essential python3 python3-venv \
+            ninja-build meson pkg-config flex bison bzip2 xz-utils ca-certificates file \
+            libglib2.0-dev libpixman-1-dev zlib1g-dev libepoxy-dev libdrm-dev libgbm-dev > /w/apt.log 2>&1 \
+        && dpkg-query -W -f '\${Package} \${Version}\n' > /w/installed \
+        && tar -xzf slirp.tar.gz && cd libslirp-v$sv \
+        && meson setup build --prefix=/opt/slirp --libdir=lib --default-library=static -Db_staticpic=true >/dev/null \
+        && ninja -C build install >/dev/null \
+        && cd /w && tar -xzf virgl.tar.gz && cd virglrenderer-$gv \
+        && meson setup build --prefix=/usr --libdir=lib -Dplatforms=egl -Dvenus=false -Dvideo=false -Dtests=false > /w/virgl.log 2>&1 \
+        && ninja -C build >> /w/virgl.log 2>&1 && DESTDIR=/w/vstage ninja -C build install >> /w/virgl.log 2>&1 \
+        && cd /w && tar -xJf qemu.tar.xz && tar -xJf dtc.tar.xz && mv dtc-$dv qemu-$v/subprojects/dtc \
+        && mkdir qb && cd qb \
+        && PKG_CONFIG_PATH=/opt/slirp/lib/pkgconfig:/w/vstage/usr/lib/pkgconfig CFLAGS=-I/w/vstage/usr/include \
+           LDFLAGS=-L/w/vstage/usr/lib ../qemu-$v/configure --prefix=/usr \
+             --target-list=x86_64-softmmu --enable-slirp --enable-fdt=internal \
+             --enable-opengl --enable-virglrenderer --enable-gbm --disable-modules \
+             --disable-docs --disable-tools --disable-guest-agent --disable-user --disable-linux-user --disable-bsd-user \
+             --disable-vnc --disable-sdl --disable-gtk --disable-curses --disable-spice --disable-rutabaga-gfx \
+             --disable-libssh --disable-curl --disable-gnutls --disable-nettle --disable-gcrypt \
+             --disable-libusb --disable-usb-redir --disable-smartcard --disable-xkbcommon --disable-dbus-display \
+             --disable-linux-io-uring --disable-libudev --disable-zstd --disable-pa --disable-alsa --disable-jack \
+             --disable-oss --disable-pipewire --disable-sndio --audio-drv-list= --disable-capstone --disable-libdaxctl \
+             --disable-blkio --disable-brlapi --disable-vde --disable-libnfs --disable-rbd --disable-glusterfs \
+             --disable-libiscsi --disable-seccomp --disable-cap-ng --enable-attr --enable-virtfs --disable-selinux \
+             --disable-bzip2 --disable-lzo --disable-snappy --disable-numa --disable-linux-aio --disable-libpmem \
+             --disable-fuse --disable-lzfse --disable-libkeyutils --disable-png --disable-vte > /w/configure.log 2>&1 \
+        && make -j\$(nproc) > /w/make.log 2>&1 && make install DESTDIR=/w/stage > /w/install.log 2>&1 \
+        && mkdir -p /w/$d/bin /w/$d/lib /w/$d/share && cp /w/stage/usr/bin/qemu-system-x86_64 /w/$d/bin/ \
+        && cp -P /w/vstage/usr/lib/libvirglrenderer.so.1* /w/$d/lib/ \
+        && strip /w/$d/bin/* /w/$d/lib/libvirglrenderer.so.1.* && cp -a /w/stage/usr/share/qemu /w/$d/share/ \
+        && find /w/$d/share/qemu -name '*.bz2' -exec bunzip2 -f {} +" \
+      || { for f in apt virgl configure make install; do [[ -f "$work/$f.log" ]] && { log "--- $f.log"; tail -40 "$work/$f.log" >&2; }; done; die "qemu-system-gl build failed"; }
+    # What it links is glibc's, the packages the recipe names, and its own
+    # virglrenderer -- nothing a Luban machine's host would have to provide.
+    GLIBC_ELFS="$work/$d/bin/qemu-system-x86_64 $(ls "$work/$d"/lib/libvirglrenderer.so.1.*)" \
+        glibc_only libvirglrenderer.so.1 libglib-2.0.so.0 libgmodule-2.0.so.0 libgio-2.0.so.0 libgobject-2.0.so.0 \
+                   libpixman-1.so.0 libz.so.1 libepoxy.so.0 libdrm.so.2 libgbm.so.1 libgcc_s.so.1
+    # It has the GPU device and the display that draws it without a window;
+    # user networking, 9p and its firmware beside it, as qemu-system.
+    debian "apt-get -qq update && apt-get -qq install -y --no-install-recommends $runtime > /dev/null \
+        && q=/w/$d/bin/qemu-system-x86_64 && export LD_LIBRARY_PATH=/w/$d/lib \
+        && \$q --version > /w/version \
+        && \$q -M none -device help > /w/devices && \$q -M none -display help > /w/displays \
+        && \$q -M none -netdev help > /w/netdevs && \$q -M none -L help > /w/datadirs"
+    grep -q "version $v" "$work/version" || die "qemu-system-gl does not report $v: $(cat "$work/version")"
+    grep -q '"virtio-gpu-gl-pci"' "$work/devices" || die "qemu-system-gl has no virtio-gpu-gl-pci"
+    grep -q '"virtio-9p-pci"' "$work/devices" || die "qemu-system-gl has no virtio-9p"
+    grep -qx 'egl-headless' "$work/displays" || die "qemu-system-gl has no egl-headless display: $(tr '\n' ' ' < "$work/displays")"
+    grep -qx user "$work/netdevs" || die "qemu-system-gl has no user networking"
+    grep -qx "/w/$d/share/qemu" "$work/datadirs" || die "qemu-system-gl does not find its data beside it: $(tr '\n' ' ' < "$work/datadirs")"
+    [[ -f "$work/$d/share/qemu/bios-256k.bin" && -f "$work/$d/share/qemu/edk2-x86_64-code.fd" ]] || die "the firmware is not in share/qemu"
+    provenance "$d" "qemu $v (download.qemu.org, sha256 $(input qemu "$v")) qemu-system-x86_64 with OpenGL: virglrenderer $gv (gitlab.freedesktop.org, $(input virglrenderer "$gv")) in lib/, virtio-gpu-gl-pci and the egl-headless display; built on Debian 12 against $(grep -E '^(libc6|libglib2.0-dev|libpixman-1-dev|libepoxy-dev|libdrm-dev|libgbm-dev) ' "$work/installed" | tr '\n' ' ')-- the libraries an install takes from the index; user networking from libslirp $sv and libfdt from dtc $dv, static; firmware decompressed in share/qemu"
     pack "$d" ;;
 edk2-firmware)
     # What qemu ships in pc-bios/ at tag v<version>, decompressed: firmware
