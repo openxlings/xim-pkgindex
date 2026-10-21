@@ -642,7 +642,7 @@ qemu-system-gl)
         && PKG_CONFIG_PATH=/opt/slirp/lib/pkgconfig:/w/vstage/usr/lib/pkgconfig CFLAGS=-I/w/vstage/usr/include \
            LDFLAGS=-L/w/vstage/usr/lib ../qemu-$v/configure --prefix=/usr \
              --target-list=x86_64-softmmu --enable-slirp --enable-fdt=internal \
-             --enable-opengl --enable-virglrenderer --enable-gbm --disable-modules \
+             --enable-opengl --enable-virglrenderer --disable-modules \
              --disable-docs --disable-tools --disable-guest-agent --disable-user --disable-linux-user --disable-bsd-user \
              --disable-vnc --disable-sdl --disable-gtk --disable-curses --disable-spice --disable-rutabaga-gfx \
              --disable-libssh --disable-curl --disable-gnutls --disable-nettle --disable-gcrypt \
