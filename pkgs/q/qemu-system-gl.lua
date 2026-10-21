@@ -45,9 +45,8 @@ package = {
                 "xim:mesa@>=25",
                 "xim:libglvnd@>=1.7.0.1",
                 -- 0.1.4 links NVIDIA's GBM backend, which egl-headless needs on
-                -- an NVIDIA render node; the graphics stack brings the newest
-                -- (an older one: the machine starts in software and says so).
-                "xim:nvidia-gl-host-link@>=0.1",
+                -- an NVIDIA render node.
+                "xim:nvidia-gl-host-link@>=0.1.4",
                 "xim:libepoxy@>=1.5",
                 "xim:libdrm@>=2.4",
                 "xim:glib@>=2.74",
