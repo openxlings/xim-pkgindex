@@ -24,11 +24,12 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "2026.10.21.1" },
+            ["latest"] = { ref = "2026.10.21.3" },
             ["2026.10.18.1"] = { min_client = "2026.10.18.1" },
             ["2026.10.19.1"] = { min_client = "2026.10.18.1" },
             ["2026.10.20.1"] = { min_client = "2026.10.20.1" },
             ["2026.10.21.1"] = { min_client = "2026.10.20.1" },
+            ["2026.10.21.3"] = { min_client = "2026.10.20.1" },
         },
     },
 }
@@ -165,6 +166,31 @@ versions["2026.10.21.1"] = {
                      -- The agents unpinned: recorded at `new`, moved by `luban upgrade`.
                      "xim:claude", "xim:codex", "xim:pi", "xim:opencode" },
         luban = { settings = { mode = "machine", enter = "desktop", desktop = desktop_2026_10_21.session, login_shell = "/usr/bin/fish" } },
+        workspace = {},
+    },
+}
+
+-- 2026.10.21.3 (WuXian §7.5): xdesk 2026.10.21.3 on Mesa with virgl (named
+-- here: a home that has an older Mesa keeps it otherwise) -- as a machine, its
+-- desktop draws on this computer's GPU. The same core.
+local desktop_2026_10_21_3 = aarch64 and { package = "luban:labwc@0.20.0-r2", session = "labwc" }
+                                      or { package = "luban:xdesk@2026.10.21.3", session = "xdesk" }
+local packages_2026_10_21_3 = { desktop_2026_10_21_3.package, "luban:foot@1.27.0-r1", "luban:xwayland@24.1.14-r1",
+                                "luban:tools-dev@2026.10.18.1", "luban:tools-agent@2026.10.18.1", "luban:tools-cli@2026.10.18.1",
+                                -- The agents unpinned: recorded at `new`, moved by `luban upgrade`.
+                                "xim:claude", "xim:codex", "xim:pi", "xim:opencode" }
+if not aarch64 then table.insert(packages_2026_10_21_3, "xim:mesa@25.0.7.3") end
+
+versions["2026.10.21.3"] = {
+    files = luban.with(luban_desktop.environment(), luban.checks("desktop", CHECKS_2026_10_20)),
+    manifest = {
+        subos_kind = "rootfs",
+        min_client = "2026.10.20.1",
+        from = "luban:core@2026.10.20.1",
+        replaces = { "subos:luban-desktop", "subos:luban-desktop-xdesk" },
+        abi = { kernel = "linux", libc = "gnu" },
+        packages = packages_2026_10_21_3,
+        luban = { settings = { mode = "machine", enter = "desktop", desktop = desktop_2026_10_21_3.session, login_shell = "/usr/bin/fish" } },
         workspace = {},
     },
 }
