@@ -670,7 +670,7 @@ qemu-system-gl)
         && q=/w/$d/bin/qemu-system-x86_64 && export LD_LIBRARY_PATH=/w/$d/lib \
         && \$q --version > /w/version \
         && \$q -M none -device help > /w/devices && \$q -M none -display help > /w/displays \
-        && \$q -M none -netdev help > /w/netdevs && \$q -M none -L help > /w/datadirs"
+        && \$q -M none -netdev help > /w/netdevs && \$q -M none -L help | xargs -n1 realpath -m > /w/datadirs"
     grep -q "version $v" "$work/version" || die "qemu-system-gl does not report $v: $(cat "$work/version")"
     grep -q '"virtio-gpu-gl-pci"' "$work/devices" || die "qemu-system-gl has no virtio-gpu-gl-pci"
     grep -q '"virtio-9p-pci"' "$work/devices" || die "qemu-system-gl has no virtio-9p"
