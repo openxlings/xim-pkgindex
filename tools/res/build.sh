@@ -627,7 +627,7 @@ qemu-system-gl)
     source_of virglrenderer "$gv" "https://gitlab.freedesktop.org/virgl/virglrenderer/-/archive/$gv/virglrenderer-$gv.tar.gz" "$work/virgl.tar.gz"
     d="qemu-system-gl-$version-linux-$arch"
     runtime="libglib2.0-0 libpixman-1-0 zlib1g libepoxy0 libdrm2 libgbm1"
-    debian "apt-get -qq update && apt-get -qq install -y --no-install-recommends build-essential python3 python3-venv \
+    debian "apt-get -qq update && apt-get -qq install -y --no-install-recommends build-essential python3 python3-venv python3-yaml \
             ninja-build meson pkg-config flex bison bzip2 xz-utils ca-certificates file \
             libglib2.0-dev libpixman-1-dev zlib1g-dev libepoxy-dev libdrm-dev libgbm-dev > /w/apt.log 2>&1 \
         && dpkg-query -W -f '\${Package} \${Version}\n' > /w/installed \
