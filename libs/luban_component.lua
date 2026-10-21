@@ -10,7 +10,10 @@
 -- programs and the shared files.
 --
 --   luban_component.install(must)        the payload into place; `must`: files it has to hold
---   luban_component.config(programs, shares)
+--   luban_component.config(programs, shares, checks)
+--                                        `checks`: the recipe's extensions.luban.checks,
+--                                        written to share/luban/checks.d/<name>.json
+--                                        (xlings design 2026-10-21 §6.1)
 --   luban_component.uninstall(programs)
 
 import("xim.libxpkg.pkginfo")
@@ -32,7 +35,39 @@ function M.install(must)
     return true
 end
 
-function M.config(programs, shares)
+-- A value as JSON: what a check holds (strings, numbers, booleans).
+local function json_(v)
+    if type(v) == "string" then
+        return '"' .. v:gsub('[%c"\\]', function(c)
+            if c == '"' then return '\\"' elseif c == "\\" then return "\\\\" end
+            return string.format("\\u%04x", c:byte())
+        end) .. '"'
+    elseif type(v) == "number" or type(v) == "boolean" then
+        return tostring(v)
+    end
+    return "null"
+end
+
+-- The recipe's checks, where a system's self-check reads them.
+function M.write_checks(checks)
+    if not checks or #checks == 0 then return nil end
+    local parts = {}
+    for _, c in ipairs(checks) do
+        local keys = {}
+        for k in pairs(c) do table.insert(keys, k) end
+        table.sort(keys)
+        local fields = {}
+        for _, k in ipairs(keys) do table.insert(fields, json_(k) .. ": " .. json_(c[k])) end
+        table.insert(parts, "{" .. table.concat(fields, ", ") .. "}")
+    end
+    local rel = path.join("share", "luban", "checks.d", pkginfo.name() .. ".json")
+    local file = path.join(pkginfo.install_dir(), rel)
+    os.mkdir(path.directory(file))
+    io.writefile(file, '{"checks": [' .. table.concat(parts, ", ") .. "]}\n")
+    return rel
+end
+
+function M.config(programs, shares, checks)
     local binding = pkginfo.name() .. "@" .. pkginfo.version()
     local bindir = path.join(pkginfo.install_dir(), "bin")
     -- The package itself (a program of the same name is it), then what is bound to it.
@@ -42,8 +77,10 @@ function M.config(programs, shares)
     for _, p in ipairs(programs or {}) do
         if p ~= pkginfo.name() then xvm.add(p, { bindir = bindir, binding = binding }) end
     end
+    local written = M.write_checks(checks)
     -- File by file: a directory placed whole is one package's, and two
     -- desktops' sessions share share/wayland-sessions.
+    if xvm.files and written then xvm.files{ src = written, dst = written, binding = binding } end
     if xvm.files then
         local root = pkginfo.install_dir()
         for _, rel in ipairs(shares or {}) do

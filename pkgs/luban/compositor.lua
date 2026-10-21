@@ -18,6 +18,9 @@ package = {
     -- "extensions"): T1, the lightest traditional desktop.
     extensions = {
         luban = {
+            checks = {
+                { id = "compositor-runs", what = "it starts", run = "luban-compositor --version", timeout = 20 },
+            },
             tier = 1,
             title = { en = "Compositor", zh = "Compositor" },
             summary = { en = "Windows only, no desktop: the Luban OS window is the shell",
@@ -39,7 +42,8 @@ package = {
             -- New with this package: bare (labwc.lua says why).
             deps = { "luban:labwc" },
             ["latest"] = { ref = "2026.10.18.1" },
-            ["2026.10.18.1"] = {},
+            -- 1: its checks written where a system's self-check reads them (xlings design 2026-10-21 §6.1).
+            ["2026.10.18.1"] = { revision = 1 },
         },
     },
 }
@@ -133,7 +137,7 @@ function install()
 end
 
 function config()
-    return luban_component.config(package.programs, { "share/wayland-sessions" })
+    return luban_component.config(package.programs, { "share/wayland-sessions" }, package.extensions.luban.checks)
 end
 
 function uninstall()

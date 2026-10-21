@@ -25,6 +25,12 @@ package = {
     programs = {"luban"},
     xvm_enable = true,
 
+    -- How it is checked (xlings design 2026-10-21 §6.1): luban status --check runs
+    -- `run` and `launcher`; a desktop session (luban-os-ci L3) the rest.
+    extensions = { luban = { checks = {
+        { id = "luban-runs", what = "luban answers", run = "luban --version", timeout = 20 },
+    } } },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "2026.10.21.4" },
