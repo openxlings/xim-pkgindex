@@ -101,7 +101,8 @@ def shared_arches(info, entry, template=None):
 
 def candidates(base):
     jobs = []
-    changed = git('diff', '--name-only', base, 'HEAD', '--', 'pkgs').splitlines()
+    # New descriptors use normal package CI; this matrix validates upgrades.
+    changed = git('diff', '--name-only', '--diff-filter=M', base, 'HEAD', '--', 'pkgs').splitlines()
     for filename in changed:
         if not filename.endswith('.lua') or not (ROOT / filename).exists():
             continue

@@ -21,7 +21,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 env:
   PYTHONUTF8: '1'
-  UPDATER_COMMIT: 4ee2daa8a65500a988eb110bf494105f10b84519
+  UPDATER_COMMIT: c2c4e200205e67aff7e1e00dee0e15023149fb7a
   XLINGS_VERSION: v2026.10.21.4
 jobs:
   cadence:
@@ -159,7 +159,7 @@ jobs:
           BASE: ${{ github.ref_name }}
         run: |
           git switch -C "$BASE" "$GITHUB_SHA"
-          python -m xpkgindex_update propose --plan .update-plan/plan.json --base "$BASE" --output proposals.json
+          python -m xpkgindex_update propose --plan .update-plan/plan.json --base "$BASE" --draft --output proposals.json
           python .github/scripts/autoupdate-dispatch.py --proposals proposals.json --base "$BASE"
       - uses: actions/upload-artifact@v4
         if: always()

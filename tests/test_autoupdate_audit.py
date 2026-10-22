@@ -112,3 +112,35 @@ def test_legacy_update_fields_are_still_rejected(index, legacy):
     recipe.write_text('package = { name = "foo", ' + legacy + ' }')
     with pytest.raises(module.Invalid, match='legacy'):
         module.audit()
+
+
+def commit_fixture(root, message):
+    import subprocess
+    subprocess.run(['git', 'add', 'pkgs'], cwd=root, check=True)
+    subprocess.run(['git', '-c', 'user.name=Test', '-c', 'user.email=test@example.org',
+                    'commit', '-qm', message], cwd=root, check=True)
+    return subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root, text=True).strip()
+
+
+def test_new_opt_in_descriptor_uses_regular_package_ci(index):
+    import subprocess
+    module, recipe = index
+    subprocess.run(['git', 'init', '-q'], cwd=module.ROOT, check=True)
+    recipe.write_text('package = { name = "manual" }')
+    base = commit_fixture(module.ROOT, 'baseline')
+    added = recipe.with_name('added.lua')
+    added.write_text(RECIPE)
+    commit_fixture(module.ROOT, 'new package opting in')
+    assert module.candidates(base) == {'include': []}
+
+
+def test_existing_descriptor_upgrade_still_selects_native_jobs(index):
+    import subprocess
+    module, recipe = index
+    subprocess.run(['git', 'init', '-q'], cwd=module.ROOT, check=True)
+    base = commit_fixture(module.ROOT, 'baseline')
+    recipe.write_text(RECIPE.replace('["latest"]', '["1.1.0"] = { url = "https://example.com/foo.zip", sha256 = "new" },\n        ["latest"]'))
+    commit_fixture(module.ROOT, 'append a candidate')
+    assert module.candidates(base) == {'include': [
+        {'id': 'xim:foo', 'path': 'pkgs/f/foo.lua', 'version': '1.1.0',
+         'platform': 'linux', 'arch': 'x86_64', 'os': 'ubuntu-latest'}]}

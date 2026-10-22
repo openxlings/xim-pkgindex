@@ -37,7 +37,8 @@ review. At least one target must remain required. Use `latest = "keep"` for an L
 or pinned default. Before opening the PR, run `inspect` and a package-specific
 `check` with the pinned tool below and review the plan. Keep configuration in the
 recipe itself; document manual-maintenance reasons in a recipe comment or the PR.
-CI validates the current recipes and generates `coverage.json`, uploaded as an
+Initial package versions use normal package CI; the updater candidate checks apply
+to added versions in existing recipes. CI validates current recipes and generates `coverage.json`, uploaded as an
 Actions artifact. Generated audit snapshots do not belong in the PR.
 
 `latest = "advance"` and each resource target's `required = true` are defaults.

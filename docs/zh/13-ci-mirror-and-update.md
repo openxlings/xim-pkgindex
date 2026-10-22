@@ -30,6 +30,7 @@ star 数也不能替代资源完整性和镜像可用性验证。
 目标默认必需；若镜像可选，经 review 显式设置 `required = false`，至少保留一个必需目标。
 LTS 或固定默认版本使用 `latest = "keep"`。提交 PR 前用下方固定版本工具运行 `inspect` 和指定包的
 `check` 并检查 plan。配置只维护在配方自身；人工维护的原因写入配方注释或 PR 说明。
+首次建包走常规建包 CI，updater 候选检查用于已有配方的新增版本。
 CI 直接校验当前配方，自动生成 `coverage.json` 并上传 Actions artifact；生成的审计快照不进入 PR。
 
 默认 `latest = "advance"`，每个目标默认 `required = true`；`latest = "keep"` 保留既有指针。
