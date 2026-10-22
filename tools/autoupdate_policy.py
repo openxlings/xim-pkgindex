@@ -37,8 +37,6 @@ def rollout_reason(package, autoupdate):
         for region, target in resources.items():
             if isinstance(target, str):
                 target = {'url': target}
-            if not target.get('required', True):
-                return 'this index requires every declared target; omit unavailable mirrors'
             for url in leaves(target['url']):
                 parsed = urlsplit(url)
                 if parsed.scheme != 'https' or not parsed.hostname or parsed.username or parsed.password:

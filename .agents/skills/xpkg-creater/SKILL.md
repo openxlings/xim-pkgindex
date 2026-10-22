@@ -57,7 +57,7 @@ description: 在 xim-pkgindex 中创建/更新 xpkg 包（V2/兼容 V1），遵�
 - 多架构条目的 `sha256` 必须覆盖每个受支持架构；缺失时版本检查器必须 fail closed。
 - 自动更新只使用 `extensions.autoupdate = { source, resources }`；
   由固定提交的上游 `xpkgindex-update` 扫描、验证并创建 PR，中央策略为 `.github/xpkgindex-update.yml`。
-- 自动更新每 3 天执行一次（每日轻量日期门禁）。来源 URL 与下载模板独立；有审核过的 CN 镜像时 GLOBAL/CN 均 required，无 CN 时只声明 GLOBAL；历史资源保持原样。
+- 自动更新每 3 天执行一次（每日轻量日期门禁）。来源 URL 与下载模板独立；有审核过的 CN 镜像时 GLOBAL/CN 默认均 required（包可经 review 显式选择 optional，并同步更新审计），无 CN 时只声明 GLOBAL；历史资源保持原样。
 - 新增包或调整接入状态时，同步更新 `.agents/docs/2026-10-22-autoupdate-package-audit.json` 的全量审计记录。
 - `ci = { mirror = true }` 只控制已声明资源的镜像发布。旧更新开关和模板标记不再使用。
 - 平台继承：`ubuntu = { ref = "linux" }`
