@@ -34,6 +34,7 @@ package = {
     extensions = {
         autoupdate = {
             upstream = "golang/go",
+            provider = "go",
             tag = "go${version}",
             latest = "advance",
             url = {

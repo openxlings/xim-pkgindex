@@ -43,7 +43,7 @@ def main():
                 continue
             payload = {'ref': branch}
             if workflow == 'xpkgindex-update.yml':
-                payload['inputs'] = {'validation_base': args.base, 'package': record['id']}
+                payload['inputs'] = {'validation_base': pr['base']['sha'], 'package': record['id']}
             # Request JSON through stdin; no credential or shell interpolation in payloads.
             subprocess.run(['gh', 'api', '--method', 'POST', f'repos/{repo}/actions/workflows/{workflow}/dispatches',
                             '--input', '-'], input=json.dumps(payload), text=True, check=True)
