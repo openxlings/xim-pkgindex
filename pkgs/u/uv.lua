@@ -80,7 +80,10 @@ package = {
                 sha256 = "64ddb5f1087649e3f75aa50d139aa4f36ddde728a5295a141e0fa9697bfb7b0f",
             },
             ["0.13.5"] = {
-                url = "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-x86_64-unknown-linux-musl.tar.gz",
+                url = {
+                    GLOBAL = "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-x86_64-unknown-linux-musl.tar.gz",
+                    CN = "https://mirrors.ustc.edu.cn/github-release/astral-sh/uv/0.13.5/uv-x86_64-unknown-linux-musl.tar.gz",
+                },
                 sha256 = "57ef9d9ccb01fb1bd998df995b0dd221b52f7d7841fbea93f2d4463bf61fb7a9",
             },
         },
@@ -108,7 +111,10 @@ package = {
                 sha256 = "66e37d91f839e12481d7b932a1eccbfe732560f42c1cfb89faddfa2454534ba8",
             },
             ["0.13.5"] = {
-                url = "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-aarch64-apple-darwin.tar.gz",
+                url = {
+                    GLOBAL = "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-aarch64-apple-darwin.tar.gz",
+                    CN = "https://mirrors.ustc.edu.cn/github-release/astral-sh/uv/0.13.5/uv-aarch64-apple-darwin.tar.gz",
+                },
                 sha256 = "743f85035a1996ecb350659e01cd9faea9709829be09b1b4b03c73eaf3c9cd73",
             },
         },
@@ -132,7 +138,10 @@ package = {
                 sha256 = "fe0c7815acf4fc45f8a5eff58ed3cf7ae2e15c3cf1dceadbd10c816ec1690cc1",
             },
             ["0.13.5"] = {
-                url = "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-x86_64-pc-windows-msvc.zip",
+                url = {
+                    GLOBAL = "https://github.com/astral-sh/uv/releases/download/0.13.5/uv-x86_64-pc-windows-msvc.zip",
+                    CN = "https://mirrors.ustc.edu.cn/github-release/astral-sh/uv/0.13.5/uv-x86_64-pc-windows-msvc.zip",
+                },
                 sha256 = "a38b8d1902b7cfbc76b423ba1bb456f623f42064cdc72628b6075b89afd1019a",
             },
         },
