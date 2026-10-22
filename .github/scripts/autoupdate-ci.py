@@ -110,7 +110,7 @@ def run_candidate(identity, filename, version):
     if info['id'] != identity:
         raise Invalid('candidate identity differs from its descriptor')
     xlings = 'xlings'
-    subprocess.run([xlings, 'update'], check=True)
+    subprocess.run([xlings, 'update', '--yes', '--agent'], check=True)
     subprocess.run([xlings, 'config', '--add-xpkg', str(path)], check=True)
     name = identity.split(':', 1)[-1]
     # Overlay registration uses the local namespace; this is a clean runner home.
@@ -122,6 +122,7 @@ def run_candidate(identity, filename, version):
         raise Invalid('candidate installation metadata not found')
     if not any(len(list(d.iterdir())) > 1 for d in installs):
         raise Invalid('candidate installation has metadata but no payload')
+    os.environ['PATH'] = str(home / 'subos/default/bin') + os.pathsep + os.environ['PATH']
     programs = info['package'].get('programs')
     outputs = {}
     for node in (programs.fields.values() if programs else []):
@@ -130,8 +131,8 @@ def run_candidate(identity, filename, version):
         # Generic smoke checks prove registered executable presence; package tests prove behavior.
         import shutil
         executable = shutil.which(program)
-        if not executable:
-            raise Invalid('candidate executable is not registered: ' + program)
+        if not executable or not Path(executable).absolute().is_relative_to(home):
+            raise Invalid('candidate executable is not registered in the isolated home: ' + program)
         if name == 'uv':
             probe = subprocess.run([executable, '--version'], check=True, capture_output=True, text=True)
             if version not in probe.stdout:
@@ -147,6 +148,8 @@ def run_candidate(identity, filename, version):
     subprocess.run([xlings, 'remove', target, '-y'], check=True)
     if any(d.exists() for d in installs):
         raise Invalid('candidate payload survived uninstall')
+    evidence.update(status='verified-and-removed', removed=True)
+    write('candidate-evidence.json', evidence)
 
 
 def main():

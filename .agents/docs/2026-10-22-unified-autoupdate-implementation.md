@@ -25,14 +25,13 @@ PRs, and an automatically triggered real update with successful candidate tests.
 
 ## Implementation decisions
 
-- The existing `XPKG_BOT_TOKEN` was exercised by Actions and returned HTTP 401.
-  The built-in-token alternative was also checked: the organization rejected
-  enabling Actions PR creation with HTTP 409. Repository permissions remain
-  read-only by default and Actions PR creation remains disabled. A request to
-  update the dedicated bot credential or configure a repository-scoped App is
-  pending with the user. No personal OAuth token is copied into Actions secrets.
-  The default active authentication remains the dedicated bot token; built-in
-  mode is opt-in and includes verified, idempotent explicit CI dispatch.
+- The previous `XPKG_BOT_TOKEN` returned HTTP 401. Initially the organization
+  also rejected built-in-token PR creation. The user has now explicitly enabled
+  Actions PR creation; REST verification confirms `can_approve_pull_request_reviews:
+  true` with default workflow permissions still read-only. The active mode is
+  `XPKG_USE_GITHUB_TOKEN=true`, using the job's scoped token and explicit,
+  head-verified, idempotent CI dispatch. No personal credential is copied into
+  Actions secrets. Actual bot PR creation and all dispatched CI still need proof.
 - A push to the explicitly named integration branch automatically scans uv and
   proposes a draft update against that branch. It uses the same fixed-plan
   updater as production, never targets main, and does not require merging the

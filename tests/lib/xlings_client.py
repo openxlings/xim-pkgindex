@@ -35,6 +35,7 @@ class XlingsClient:
         code, out = _run_xlings(f"xlings config --add-xpkg {lua_path}", timeout=45)
         # The output echoes the recipe path, so a package named like
         # `libgpg-error` must not read as a failure of its own registration.
-        scan = out.replace(os.path.basename(lua_path), "<recipe>").lower()
+        scan = out.replace(os.path.basename(lua_path), "<recipe>")
+        scan = scan.replace(os.path.basename(lua_path).removesuffix(".lua"), "<package>").lower()
         has_error = "error" in scan and "please report" not in scan
         return code == 0 and not has_error, out
