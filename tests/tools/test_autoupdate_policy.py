@@ -31,10 +31,10 @@ def test_unreviewed_mirror_is_rejected():
     assert rollout_reason({}, auto('https://mirrors.ustc.edu.cn.evil.example/${tag}.zip'))
 
 
-def test_index_policy_requires_all_declared_targets():
+def test_optional_target_is_selectable_by_a_reviewed_package_declaration():
     declaration = auto('https://mirrors.ustc.edu.cn/foo/${version}.zip')
     declaration['resources']['CN']['required'] = False
-    assert 'requires every' in rollout_reason({}, declaration)
+    assert rollout_reason({}, declaration) is None
 
 
 @pytest.mark.parametrize('url', ['http://github.com/acme/foo/${tag}', 'https://secret:token@github.com/acme/foo/${tag}'])

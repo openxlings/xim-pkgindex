@@ -39,7 +39,8 @@ autoupdate = {
 
 所有目标使用相同的平台/架构矩阵；字符串是只有 url、required 默认为 true 的简写。
 当前实现 GLOBAL/CN 两个运行时区域，不引入 mirrors、availability 或任意脚本执行接口。
-工具允许某个目标 `required = false`；本索引对所有接入且审核过的目标统一要求 true。
+工具与索引均允许包经 review 显式设置 `required = false`；本轮所有接入且审核过的目标均默认配置 true。
+变更必需性时同步更新准入审计，不能省略至少一个必需目标的约束。
 只有 GLOBAL 的包保留 GLOBAL；存在合适 CN 镜像的包同时要求 GLOBAL 和 CN。
 没有任一必需目标的配置无效。
 

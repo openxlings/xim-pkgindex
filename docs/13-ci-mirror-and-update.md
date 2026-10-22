@@ -24,7 +24,8 @@ Use `latest = "keep"` for a pinned/LTS default. A target can expand to
 Source URLs currently recognize GitHub releases/tags; download templates can use
 any public HTTPS source. Select the newest candidate satisfying every required
 region across the complete platform/architecture matrix, using a true intersection.
-The tool supports optional targets; this index requires every reviewed target.
+Targets can explicitly opt into optional availability after package/inventory review.
+This migration configures every reviewed target as required by default.
 Existing xlings-res pairs are consumed; institutional mirrors replace them only
 when their paths and artifact identity match. CN redirects to GitHub do not count
 as available CN assets. Historical resources, manual entries and hooks stay intact.
