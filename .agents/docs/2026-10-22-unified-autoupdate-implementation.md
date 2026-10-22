@@ -10,7 +10,7 @@ automatically approved.
 - Index migration draft: https://github.com/openxlings/xim-pkgindex/pull/1027
 - Actual bot-created uv update draft: https://github.com/openxlings/xim-pkgindex/pull/1028
 - Full inventory: `2026-10-22-autoupdate-package-audit.json`.
-- Committed local plan and native CI evidence: `2026-10-22-autoupdate-evidence/`.
+- Native verification and downloadable artifacts: https://github.com/openxlings/xim-pkgindex/actions/runs/39763672914
 
 The inventory covers all 364 package files and 152 queried GitHub upstream
 repositories. Star counts and release/tag evidence were collected on 2026-10-22.
@@ -67,7 +67,7 @@ also resolves explicit branch inputs through origin. The candidate branch was
 updated with that fix, and native verification passed:
 https://github.com/openxlings/xim-pkgindex/actions/runs/39760502342
 
-Its committed artifacts record `verified-and-removed: true` through status and
+Its downloadable Actions artifacts record `verified-and-removed: true` through status and
 `removed: true`, actual uv/uvx 0.13.5 output on Linux x64, macOS ARM64 and Windows
 x64, recipe hashes and exact local-namespace install directories. Windows checkout
 line endings explain the raw hash difference in this first evidence set; current
@@ -86,15 +86,15 @@ Later runs at the final PR head revalidate the final helper and resource gate.
   budgeted runs. Initial prerelease and 2,000-item listing failures were fixed;
   the third run completed successfully. Follow-up checks confirm the former
   cc-connect/dpcpp/vim failures are resolved (vim correctly waits for producer assets). Additional live checks cover the refined
-  declarations and official Go provider. Their report is committed beside native
-  evidence. Waiting mirrored assets remain visible and do not produce PRs.
+  declarations and official Go provider. Detailed working reports are retained locally; native evidence is available
+  in the linked Actions artifacts. Waiting mirrored assets remain visible and do not produce PRs.
 - Local installation/index tests use a dedicated XLINGS_HOME. The initial shared
   home test overlays were backed up and only matching test-owned registrations
   were removed; existing installed payloads were retained.
 
 ## Existing PR and branch handoff
 
-`legacy-update-pr-audit.json` records all 13 `auto/bump-*` branches. None of the
+The legacy handoff audit covered all 13 `auto/bump-*` branches. None of the
 12 legacy branches has an open automatic PR; they are retained unchanged, with
 no reopening or deletion. The thirteenth is validation draft #1028. Human xlings
 PR #1023 remains open and blocks duplicate default-branch proposals for that
