@@ -78,7 +78,8 @@ this is guidance, not an enforced threshold. Packages can remain manually mainta
 The index scans every three days, selects the newest version satisfying all required
 resources, and opens a PR for review. Existing version entries and hooks are preserved.
 GLOBAL works alone; add a verified CN mirror as required by default, or explicitly
-optional after review. Follow that chapter's local checks and coverage inventory step.
+optional after review. Follow that chapter's local checks; CI generates coverage
+from the recipes. Keep manual-maintenance reasons in a recipe comment or the PR.
 
 ## The hooks
 

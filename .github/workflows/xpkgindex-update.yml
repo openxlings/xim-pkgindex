@@ -13,7 +13,7 @@ on:
         type: string
         required: false
   pull_request:
-    paths: ['pkgs/**', 'tests/**', '.github/xpkgindex-update.yml', '.github/scripts/autoupdate-ci.py', '.github/scripts/autoupdate-dispatch.py', 'tools/autoupdate_policy.py', '.github/workflows/xpkgindex-update.yml', '.agents/docs/2026-10-22-autoupdate-package-audit.json']
+    paths: ['pkgs/**', 'tests/**', '.github/xpkgindex-update.yml', '.github/scripts/autoupdate-ci.py', '.github/scripts/autoupdate-dispatch.py', 'tools/autoupdate_policy.py', '.github/workflows/xpkgindex-update.yml']
 permissions:
   contents: read
 concurrency:
@@ -61,6 +61,10 @@ jobs:
           persist-credentials: false
       - name: Use the pinned updater source
         run: echo "PYTHONPATH=$PWD/.updater/src" >> "$GITHUB_ENV"
+      - name: Test audit generation and admission rules
+        run: |
+          python -m pip install pytest # host-dep-ok: the runner test harness
+          python -m pytest -q tests/test_autoupdate_audit.py
       - name: Audit all package declarations
         run: python .github/scripts/autoupdate-ci.py audit --output coverage.json
       - name: Protect published versions

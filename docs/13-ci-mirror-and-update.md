@@ -35,8 +35,10 @@ actual project path, complete candidate assets and identical SHA256s. Targets ar
 required by default; set `required = false` explicitly for an optional mirror after
 review. At least one target must remain required. Use `latest = "keep"` for an LTS
 or pinned default. Before opening the PR, run `inspect` and a package-specific
-`check` with the pinned tool below, review the plan, and update the repository's
-coverage inventory with the declaration (or a reason for staying manual).
+`check` with the pinned tool below and review the plan. Keep configuration in the
+recipe itself; document manual-maintenance reasons in a recipe comment or the PR.
+CI validates the current recipes and generates `coverage.json`, uploaded as an
+Actions artifact. Generated audit snapshots do not belong in the PR.
 
 `latest = "advance"` and each resource target's `required = true` are defaults.
 Use `latest = "keep"` for a pinned/LTS default. A target can expand to
@@ -44,7 +46,7 @@ Use `latest = "keep"` for a pinned/LTS default. A target can expand to
 Source URLs currently recognize GitHub releases/tags; download templates can use
 any public HTTPS source. Select the newest candidate satisfying every required
 region across the complete platform/architecture matrix, using a true intersection.
-Targets can explicitly opt into optional availability after package/inventory review.
+Targets can explicitly opt into optional availability through review of the package declaration.
 This migration configures every reviewed target as required by default.
 Existing xlings-res pairs are consumed; institutional mirrors replace them only
 when their paths and artifact identity match. CN redirects to GitHub do not count
@@ -88,4 +90,4 @@ those assets once available; it does not create them. Published resource changes
 reviewed revision procedure, not an updater refresh.
 
 The old update fields and workflows have been removed. There is no legacy update fallback.
-The migration PR records the complete package inventory and each eligibility decision.
+CI derives the complete package inventory from recipes on each run; it does not read a committed audit snapshot.

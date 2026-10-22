@@ -9,7 +9,7 @@ Final-head CI results are authoritative at these draft PRs:
 - Upstream tool: https://github.com/openxlings/xpkgindex-update/pull/3
 - Index migration: https://github.com/openxlings/xim-pkgindex/pull/1027
 - Actual Actions-created uv validation update: https://github.com/openxlings/xim-pkgindex/pull/1028
-- Package inventory: `2026-10-22-autoupdate-package-audit.json`.
+- Package inventory: generated from current recipes by the CI audit command as `coverage.json`; raw migration snapshots remain local.
 
 ## Scope and schedule
 

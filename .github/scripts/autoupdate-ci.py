@@ -10,7 +10,7 @@ import subprocess
 from pathlib import Path
 
 from xpkgindex_update.adapters import xim_pkgindex as xim
-from xpkgindex_update.lua_edit import Invalid, parse
+from xpkgindex_update.lua_edit import Invalid, parse, tokens
 from xpkgindex_update.manifest import descriptor_digest, ordered
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -28,19 +28,19 @@ def write(path, value):
 
 
 def audit():
-    snapshot = json.loads((ROOT / '.agents/docs/2026-10-22-autoupdate-package-audit.json').read_text())
-    rows = {r['path']: r for r in snapshot['packages']}
     files = sorted((ROOT / 'pkgs').glob('*/*.lua'))
-    if set(rows) != {p.relative_to(ROOT).as_posix() for p in files}:
-        raise Invalid('coverage inventory does not cover the complete index')
-    enabled = []
+    enabled, rows = [], []
     for path in files:
-        row = rows[path.relative_to(ROOT).as_posix()]
+        text = path.read_text(encoding='utf-8')
+        row = {'path': path.relative_to(ROOT).as_posix()}
         try:
-            pkg = parse(path.read_text()).fields
-        except Invalid:
-            if row['status'] != 'manual' or not row.get('reason'):
+            pkg = parse(text).fields
+        except Invalid as exc:
+            # Legacy expressions may be opaque, but a broken opt-in must not
+            # silently fall back to manual maintenance. The lexer ignores comments.
+            if any(t.kind in ('word', 'string') and t.value == 'autoupdate' for t in tokens(text)):
                 raise
+            rows.append({**row, 'status': 'manual', 'reason': f'unsupported literal metadata: {exc}'})
             continue
         ci = pkg.get('ci')
         if ci and 'update' in ci.table():
@@ -58,17 +58,18 @@ def audit():
             reason = rollout_reason({}, info['autoupdate'])
             if reason:
                 raise Invalid(f'{path}: {reason}')
-            if row['status'] != 'enabled' or info['autoupdate'] != row['autoupdate']:
-                raise Invalid(f'declaration differs from approved coverage inventory: {path}')
             for platform, arches in xim.matrix(info).items():
                 for arch in arches:
                     hosts = shared_arches(info, info['platforms'][platform]['entries'][xim.latest_refs(info)[platform]], next(iter(arches[arch].values()))) if arch == 'shared' else {arch}
                     for host in hosts:
                         native_runner(platform, host)
             enabled.append(info['id'])
-        elif row['status'] != 'manual' or not row.get('reason'):
-            raise Invalid(f'unclassified package or missing update support: {path}')
-    return {'total': len(files), 'enabled': enabled, 'manual': len(files) - len(enabled)}
+            rows.append({**row, 'id': info['id'], 'status': 'enabled',
+                         'targets': list(info['autoupdate']['resources'])})
+        else:
+            rows.append({**row, 'status': 'manual', 'reason': 'no extensions.autoupdate declaration'})
+    return {'total': len(files), 'enabled': enabled, 'manual': len(files) - len(enabled),
+            'packages': rows}
 
 
 def native_runner(platform, arch):

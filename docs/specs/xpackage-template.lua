@@ -42,7 +42,7 @@ package = {
     -- },
     -- latest = "advance" and required = true are defaults. No verified mirror: GLOBAL only.
     -- Add CN only with verified matching assets; required = false makes it optional.
-    -- Update the coverage inventory and run inspect/check before opening the PR.
+    -- Run inspect/check before opening the PR; CI generates the coverage artifact.
 
     xpm = {
         -- the default source: "xlings-res" for official resources, or a template

@@ -1,0 +1,114 @@
+"""Generate coverage from recipes without a checked-in snapshot; fail closed on opt-ins."""
+import importlib.util
+from pathlib import Path
+
+import pytest
+
+pytestmark = pytest.mark.static
+ROOT = Path(__file__).resolve().parents[1]
+RECIPE = '''package = {
+    name = "foo", archs = {"x86_64"},
+    extensions = { autoupdate = {
+        source = "https://github.com/acme/foo/releases",
+        resources = { GLOBAL = "https://github.com/acme/foo/releases/download/${tag}/foo.zip" },
+    } },
+    xpm = { linux = {
+        ["latest"] = { ref = "1.0.0" },
+        ["1.0.0"] = { url = "https://github.com/acme/foo/releases/download/v1.0.0/foo.zip",
+                        sha256 = "''' + 'a' * 64 + '''" },
+    } },
+}'''
+
+
+@pytest.fixture
+def audit_module():
+    # The updater workflow runs this suite with the pinned source available.
+    pytest.importorskip('xpkgindex_update')
+    spec = importlib.util.spec_from_file_location('autoupdate_audit', ROOT / '.github/scripts/autoupdate-ci.py')
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+@pytest.fixture
+def index(tmp_path, monkeypatch, audit_module):
+    monkeypatch.setattr(audit_module, 'ROOT', tmp_path)
+    recipe = tmp_path / 'pkgs/f/foo.lua'
+    recipe.parent.mkdir(parents=True)
+    recipe.write_text(RECIPE)
+    return audit_module, recipe
+
+
+def test_new_packages_and_declaration_changes_need_no_snapshot(index):
+    module, recipe = index
+    first = module.audit()
+    assert first['enabled'] == ['xim:foo']
+    # Changing an approved URL is validated directly, without copying it to an inventory.
+    recipe.write_text(RECIPE.replace('foo.zip', 'foo-new.zip'))
+    manual = recipe.with_name('manual.lua')
+    manual.write_text('package = { name = "manual" }')
+    report = module.audit()
+    assert report['total'] == 2
+    assert report['enabled'] == ['xim:foo']
+    assert report['manual'] == 1
+    assert {r['path'] for r in report['packages']} == {'pkgs/f/foo.lua', 'pkgs/f/manual.lua'}
+    manual.unlink()
+    assert module.audit()['total'] == 1
+    assert not (recipe.parents[2] / '.agents').exists()
+
+
+def test_complete_real_index_is_classified_without_an_inventory(audit_module):
+    report = audit_module.audit()
+    paths = {p.relative_to(ROOT).as_posix() for p in (ROOT / 'pkgs').glob('*/*.lua')}
+    assert {r['path'] for r in report['packages']} == paths
+    assert report['total'] == len(paths) == len(report['enabled']) + report['manual']
+    assert all(r['status'] in ('enabled', 'manual') for r in report['packages'])
+    assert all(r['reason'] for r in report['packages'] if r['status'] == 'manual')
+
+
+def test_unreviewed_cn_is_still_rejected(index):
+    module, recipe = index
+    recipe.write_text(RECIPE.replace('resources = {', 'resources = { CN = "https://unreviewed.example/${version}.zip",'))
+    with pytest.raises(module.Invalid, match='reviewed'):
+        module.audit()
+
+
+def test_optional_reviewed_cn_can_be_declared_without_an_inventory(index):
+    module, recipe = index
+    recipe.write_text(RECIPE.replace('resources = {', '''resources = {
+        CN = { required = false, url = "https://mirrors.nju.edu.cn/foo/${version}.zip" },'''))
+    assert module.audit()['packages'][0]['targets'] == ['CN', 'GLOBAL']
+
+
+def test_invalid_opt_in_cannot_silently_become_manual(index):
+    module, recipe = index
+    recipe.write_text('package = make_recipe({ autoupdate = {} })')
+    with pytest.raises(module.Invalid):
+        module.audit()
+
+
+def test_opaque_manual_recipe_does_not_opt_in_from_a_comment(index):
+    module, recipe = index
+    recipe.write_text('-- autoupdate = {}\npackage = make_recipe()')
+    report = module.audit()
+    assert report['enabled'] == []
+    assert report['manual'] == 1
+    assert 'unsupported literal metadata' in report['packages'][0]['reason']
+
+
+def test_unsupported_runner_is_still_rejected(index):
+    module, recipe = index
+    recipe.write_text(RECIPE.replace('x86_64', 'riscv64'))
+    with pytest.raises(module.Invalid, match='no validated xlings execution environment'):
+        module.audit()
+
+
+@pytest.mark.parametrize('legacy', [
+    'ci = { update = true }',
+    'xpm = { linux = { url_template = "https://example.com/${version}" } }',
+])
+def test_legacy_update_fields_are_still_rejected(index, legacy):
+    module, recipe = index
+    recipe.write_text('package = { name = "foo", ' + legacy + ' }')
+    with pytest.raises(module.Invalid, match='legacy'):
+        module.audit()

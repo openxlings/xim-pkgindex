@@ -58,7 +58,7 @@ description: 在 xim-pkgindex 中创建/更新 xpkg 包（V2/兼容 V1），遵�
 - 自动更新只使用 `extensions.autoupdate = { source, resources }`；
   由固定提交的上游 `xpkgindex-update` 扫描、验证并创建 PR，中央策略为 `.github/xpkgindex-update.yml`。
 - 自动更新每 3 天执行一次（每日轻量日期门禁）。来源 URL 与下载模板独立；有审核过的 CN 镜像时 GLOBAL/CN 默认均 required（包可经 review 显式选择 optional，并同步更新审计），无 CN 时只声明 GLOBAL；历史资源保持原样。
-- 新增包或调整接入状态时，同步更新 `.agents/docs/2026-10-22-autoupdate-package-audit.json` 的全量审计记录。
+- 包声明是自动更新配置的唯一事实来源；CI 直接扫描包文件，生成 `coverage.json` 并上传 artifact，无需维护另一份 JSON 清单。
 - `ci = { mirror = true }` 只控制已声明资源的镜像发布。旧更新开关和模板标记不再使用。
 - 平台继承：`ubuntu = { ref = "linux" }`
 - script/config 类型可使用空资源：`["0.0.1"] = {}`
@@ -138,7 +138,8 @@ extensions = {
 不能把上游归档直接当成同一产物。站点目录和选择路径的经验见 `.agents/docs/2026-10-23-autoupdate-institutional-mirrors.md`。
 
 提交前使用 workflow 固定提交的 xpkgindex-update 执行 `inspect`、`check --package xim:<name> --output plan.json`，
-检查候选、平台、镜像与 hash，并同步全量覆盖审计记录；无支持的来源解析器或无就绪资源时保留人工维护并记录原因。
+检查候选、平台、镜像与 hash；无支持的来源解析器或无就绪资源时保留人工维护，在配方注释或 PR 说明中记录原因。
+CI 自动生成完整覆盖报告；不要提交生成的审计 JSON 或重复抄录包声明。
 自动更新每三天扫描并创建 PR，仍需资源和原生安装/功能/卸载验证，不自动合并、不改历史条目或 hooks。
 完整说明见 `docs/13-ci-mirror-and-update.md` 和 `docs/zh/13-ci-mirror-and-update.md`；
 `docs/specs/xpackage-template.lua` 也提供注释形式的接入模板。

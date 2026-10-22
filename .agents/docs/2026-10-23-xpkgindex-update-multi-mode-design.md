@@ -40,7 +40,7 @@ autoupdate = {
 所有目标使用相同的平台/架构矩阵；字符串是只有 url、required 默认为 true 的简写。
 当前实现 GLOBAL/CN 两个运行时区域，不引入 mirrors、availability 或任意脚本执行接口。
 工具与索引均允许包经 review 显式设置 `required = false`；本轮所有接入且审核过的目标均默认配置 true。
-变更必需性时同步更新准入审计，不能省略至少一个必需目标的约束。
+必需性的变更直接 review 配方声明，不能省略至少一个必需目标的约束。
 只有 GLOBAL 的包保留 GLOBAL；存在合适 CN 镜像的包同时要求 GLOBAL 和 CN。
 没有任一必需目标的配置无效。
 
@@ -88,8 +88,8 @@ Node 当前 latest 是 LTS 指针，显式配置 keep，只新增后续版本，
 
 ## 5. 镜像接入与 xlings-res
 
-全量清单见 [包覆盖审计](2026-10-22-autoupdate-package-audit.json) 与
-[镜像逐包审计](2026-10-23-autoupdate-mirror-audit.json)。镜像站目录不等于完整二进制覆盖。
+全量清单由 CI 从当前包声明生成 `coverage.json` 并上传 artifact；不再提交重复包声明的 JSON 快照。
+初始逐包/镜像调研原始数据保留本地，长期维护规则与结论写入文档。镜像站目录不等于完整二进制覆盖。
 新增站点及常用包迁移建议见 [机构镜像调研](2026-10-23-autoupdate-institutional-mirrors.md)：
 使用 xlings-res 不妨碍后续版本改用更新的可信原版镜像；版本发现也应指向真实上游。
 重打包/拆分包先验证布局与安装契约，历史条目保留。

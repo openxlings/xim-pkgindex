@@ -1,37 +1,15 @@
-"""The legacy update contract is retired; coverage decisions stay reviewable."""
-import json
+"""The legacy update contract is retired; package declarations remain authoritative."""
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).parents[1]
-AUDIT = ROOT / '.agents/docs/2026-10-22-autoupdate-package-audit.json'
-
-
-@pytest.mark.static
-def test_complete_inventory_and_explicit_eligibility_decisions():
-    data = json.loads(AUDIT.read_text())
-    rows = data['packages']
-    paths = {p.relative_to(ROOT).as_posix() for p in (ROOT / 'pkgs').glob('*/*.lua')}
-    assert len(rows) == len(paths)
-    assert {r['path'] for r in rows} == paths
-    for row in rows:
-        assert row['status'] in ('enabled', 'manual'), row
-        if row['status'] == 'enabled':
-            assert set(row['autoupdate']) >= {'source', 'resources'}
-            assert row['autoupdate']['source'].startswith('https://github.com/')
-            assert all(target.get('required', True) for target in row['autoupdate']['resources'].values() if isinstance(target, dict))
-            assert 'autoupdate = {' in (ROOT / row['path']).read_text()
-        else:
-            assert row['reason'], row
 
 
 @pytest.mark.static
 @pytest.mark.parametrize('package', ('fish', 'griddycode'))
 def test_existing_mirror_packages_use_the_unified_declaration(package):
-    row = next(r for r in json.loads(AUDIT.read_text())['packages'] if r.get('id') == 'xim:' + package)
-    assert row['status'] == 'enabled', row
-    text = (ROOT / row['path']).read_text()
+    text = (ROOT / 'pkgs' / package[0] / (package + '.lua')).read_text()
     assert 'mirror = true' in text
     assert 'autoupdate = {' in text
     assert 'update = true' not in text
@@ -48,10 +26,9 @@ def test_legacy_executable_entry_points_are_removed():
 
 @pytest.mark.static
 def test_cn_package_uses_dual_required_targets_and_keeps_publication():
-    row = next(r for r in json.loads(AUDIT.read_text())['packages'] if r.get('id') == 'xim:pnpm')
-    assert row['status'] == 'enabled'
-    assert set(row['autoupdate']['resources']) == {'GLOBAL', 'CN'}
-    assert all(t['required'] for t in row['autoupdate']['resources'].values())
-    text = (ROOT / row['path']).read_text()
+    text = (ROOT / 'pkgs/p/pnpm.lua').read_text()
+    declaration = text.split('autoupdate = {', 1)[1].split('xpm = {', 1)[0]
+    assert 'GLOBAL = {' in declaration and 'CN = {' in declaration
+    assert declaration.count('required = true') == 2
     assert 'mirror = true' in text
     assert 'autoupdate = {' in text
