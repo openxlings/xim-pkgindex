@@ -76,8 +76,7 @@ Later runs at the final PR head revalidate the final helper and resource gate.
 
 ## Validation
 
-- Upstream local tests: 92 passed; Ruff passed; wheel/sdist build passed before
-  the final candidate-verification addition, with CI rebuilding at the final head.
+- Upstream local tests: 92 passed; Ruff passed; wheel/sdist build passed at the final tool commit.
 - Upstream CI includes Linux/macOS/Windows × Python 3.11/3.13 and the Action job.
 - Index local static/isolation: 5,390 passed, 18 skipped, three existing xpasses.
   Index registration: 216 passed. Existing `meta` marker warnings are unchanged.
@@ -85,7 +84,8 @@ Later runs at the final PR head revalidate the final helper and resource gate.
   against main selects no runtime changes for this metadata migration.
 - Live rotating discovery covered all 102 initially enabled packages across three
   budgeted runs. Initial prerelease and 2,000-item listing failures were fixed;
-  the third run completed successfully. Additional live checks cover the refined
+  the third run completed successfully. Follow-up checks confirm the former
+  cc-connect/dpcpp/vim failures are resolved (vim correctly waits for producer assets). Additional live checks cover the refined
   declarations and official Go provider. Their report is committed beside native
   evidence. Waiting mirrored assets remain visible and do not produce PRs.
 - Local installation/index tests use a dedicated XLINGS_HOME. The initial shared

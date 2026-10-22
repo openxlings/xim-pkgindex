@@ -1,0 +1,280 @@
+{
+  "packages": [
+    {
+      "id": "xim:icu",
+      "path": "pkgs/i/icu.lua",
+      "status": "up-to-date",
+      "current": "78.3",
+      "repo": "unicode-org/icu",
+      "latest_policy": "advance",
+      "latest_before": {
+        "linux": "78.3"
+      },
+      "descriptor_sha256": "9756b939eaa90cb6cf58733dd6162798ac8048580696f07c0da0b11928538d6b",
+      "discovery": "releases"
+    },
+    {
+      "id": "xim:krb5",
+      "path": "pkgs/k/krb5.lua",
+      "status": "up-to-date",
+      "current": "1.22.2",
+      "repo": "krb5/krb5",
+      "latest_policy": "advance",
+      "latest_before": {
+        "linux": "1.22.2"
+      },
+      "descriptor_sha256": "61e01fb4b622dc0161eae405507dcd95f0e63a17c48c8c8554c34b8496e3aae5",
+      "discovery": "tags"
+    },
+    {
+      "id": "xim:pcre2",
+      "path": "pkgs/p/pcre2.lua",
+      "status": "waiting-assets",
+      "current": "10.42",
+      "repo": "PCRE2Project/pcre2",
+      "latest_policy": "advance",
+      "latest_before": {
+        "linux": "10.42"
+      },
+      "descriptor_sha256": "82d15781ccc4773833a9dfbd1e69e38d15c5a91c676849a3672e468799a0e290",
+      "discovery": "releases",
+      "candidate": "10.49",
+      "tag": "pcre2-10.49",
+      "upstream_commit": "6f9d7c1373262c541324a16a358785b33ef116cf",
+      "latest_after": "10.49",
+      "reason": "https://github.com/xlings-res/pcre2/releases/download/10.49/pcre2-10.49-linux-x86_64.tar.gz"
+    },
+    {
+      "id": "xim:riscv64-linux-musl-gcc",
+      "path": "pkgs/r/riscv64-linux-musl-gcc.lua",
+      "status": "waiting-assets",
+      "current": "16.1.0",
+      "repo": "gcc-mirror/gcc",
+      "latest_policy": "advance",
+      "latest_before": {
+        "linux": "16.1.0"
+      },
+      "descriptor_sha256": "9168c4b9231247af5a5089e3e20416fa660799daf367966c6dc9541787d9e25d",
+      "discovery": "tags",
+      "candidate": "16.2.0",
+      "tag": "releases/gcc-16.2.0",
+      "upstream_commit": "78d4ac73dd391005b895a6148cd9831e28e1208b",
+      "latest_after": "16.2.0",
+      "reason": "https://github.com/xlings-res/riscv64-linux-musl-gcc/releases/download/16.2.0/riscv64-linux-musl-gcc-16.2.0-linux-x86_64.tar.gz"
+    },
+    {
+      "id": "xim:x86_64-linux-musl-gcc",
+      "path": "pkgs/x/x86_64-linux-musl-gcc.lua",
+      "status": "waiting-assets",
+      "current": "16.1.0",
+      "repo": "gcc-mirror/gcc",
+      "latest_policy": "advance",
+      "latest_before": {
+        "windows": "16.1.0"
+      },
+      "descriptor_sha256": "25648e342d0bafc250947460f5f5fe2d8a317bbb54ff62849e36f43c99008f89",
+      "discovery": "tags",
+      "candidate": "16.2.0",
+      "tag": "releases/gcc-16.2.0",
+      "upstream_commit": "78d4ac73dd391005b895a6148cd9831e28e1208b",
+      "latest_after": "16.2.0",
+      "reason": "https://github.com/xlings-res/x86_64-linux-musl-gcc/releases/download/16.2.0/x86_64-linux-musl-gcc-16.2.0-windows-x86_64.tar.gz"
+    },
+    {
+      "id": "xim:trendradar",
+      "path": "pkgs/t/trendradar.lua",
+      "status": "update-ready",
+      "current": "6.6.1",
+      "repo": "sansan0/TrendRadar",
+      "latest_policy": "advance",
+      "latest_before": {
+        "linux": "6.6.1",
+        "macosx": "6.6.1"
+      },
+      "descriptor_sha256": "3caadfb92a39d5b66c4b380f65f6939c451ee191e8ab1f9960f5fde27a55028a",
+      "discovery": "tags",
+      "candidate": "6.11.0",
+      "tag": "v6.11.0",
+      "upstream_commit": "ceabb027fe9bbdafec59dbbfa12cb46c2ba256ce",
+      "latest_after": "6.11.0",
+      "assets": [
+        {
+          "platform": "linux",
+          "arch": "shared",
+          "resources": {
+            "GLOBAL": {
+              "url": "https://github.com/sansan0/TrendRadar/archive/refs/tags/v6.11.0.tar.gz",
+              "size": 10199404,
+              "sha256": "37fa16048d6d151431b54affe72ac359ed956fbdd4c7486ee838eb9581c9582f"
+            }
+          }
+        },
+        {
+          "platform": "macosx",
+          "arch": "shared",
+          "resources": {
+            "GLOBAL": {
+              "url": "https://github.com/sansan0/TrendRadar/archive/refs/tags/v6.11.0.tar.gz",
+              "size": 10199404,
+              "sha256": "37fa16048d6d151431b54affe72ac359ed956fbdd4c7486ee838eb9581c9582f"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "xim:util-linux",
+      "path": "pkgs/u/util-linux.lua",
+      "status": "waiting-assets",
+      "current": "2.40.2",
+      "repo": "util-linux/util-linux",
+      "latest_policy": "advance",
+      "latest_before": {
+        "linux": "2.40.2"
+      },
+      "descriptor_sha256": "20003765ef5ee8dcb786e7a9c6e4541e6db34b797aa14266a23ebb4b2b3ed5fe",
+      "discovery": "tags",
+      "candidate": "2.42.4",
+      "tag": "v2.42.4",
+      "upstream_commit": "d76cbf8f13e65ff657344f7f6a90042cf755ba59",
+      "latest_after": "2.42.4",
+      "reason": "https://github.com/xlings-res/util-linux/releases/download/2.42.4/util-linux-2.42.4-linux-x86_64.tar.gz"
+    },
+    {
+      "id": "xim:go",
+      "path": "pkgs/g/go.lua",
+      "status": "update-ready",
+      "current": "1.27.0",
+      "repo": "golang/go",
+      "latest_policy": "advance",
+      "latest_before": {
+        "linux": "1.27.0",
+        "macosx": "1.27.0",
+        "windows": "1.27.0"
+      },
+      "descriptor_sha256": "01932f19fe210356b7bfe1b81dc089fd847056d01586a41c94644bb19bc156a9",
+      "discovery": "go.dev",
+      "candidate": "1.27.3",
+      "tag": "go1.27.3",
+      "upstream_commit": "2aae1000ea1d4b28923b96db28acf4e3b99d6aff",
+      "latest_after": "1.27.3",
+      "authority_sha256": {
+        "go1.27.3.linux-amd64.tar.gz": "65efbc80fdc1fa2cd2631cad5b481777a68e8725f34e89f50fc6ac714e379b40",
+        "go1.27.3.darwin-arm64.tar.gz": "dd3908cf20959d798c1e06ebe5b72213f0505ce01373b40ce3110975a6cd99c2",
+        "go1.27.3.windows-amd64.zip": "f26081f438319757f8a1b46d7d0b2c5ec7583d4038e485e0aa725cfde7885fff"
+      },
+      "assets": [
+        {
+          "platform": "linux",
+          "arch": "shared",
+          "resources": {
+            "GLOBAL": {
+              "url": "https://go.dev/dl/go1.27.3.linux-amd64.tar.gz",
+              "size": 70588678,
+              "sha256": "65efbc80fdc1fa2cd2631cad5b481777a68e8725f34e89f50fc6ac714e379b40"
+            }
+          }
+        },
+        {
+          "platform": "macosx",
+          "arch": "shared",
+          "resources": {
+            "GLOBAL": {
+              "url": "https://go.dev/dl/go1.27.3.darwin-arm64.tar.gz",
+              "size": 68196737,
+              "sha256": "dd3908cf20959d798c1e06ebe5b72213f0505ce01373b40ce3110975a6cd99c2"
+            }
+          }
+        },
+        {
+          "platform": "windows",
+          "arch": "shared",
+          "resources": {
+            "GLOBAL": {
+              "url": "https://go.dev/dl/go1.27.3.windows-amd64.zip",
+              "size": 79010309,
+              "sha256": "f26081f438319757f8a1b46d7d0b2c5ec7583d4038e485e0aa725cfde7885fff"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "xim:cc-connect",
+      "path": "pkgs/c/cc-connect.lua",
+      "status": "up-to-date",
+      "current": "1.5.0",
+      "repo": "chenhg5/cc-connect",
+      "latest_policy": "advance",
+      "latest_before": {
+        "linux": "1.5.0",
+        "macosx": "1.5.0",
+        "windows": "1.5.0"
+      },
+      "descriptor_sha256": "338f5945c031793b1cddceef5e61823fa5074000351df2cdc7e831ce99f6d68a",
+      "discovery": "releases"
+    },
+    {
+      "id": "xim:dpcpp",
+      "path": "pkgs/d/dpcpp.lua",
+      "status": "update-ready",
+      "current": "7.1.0",
+      "repo": "intel/llvm",
+      "latest_policy": "advance",
+      "latest_before": {
+        "linux": "7.1.0",
+        "windows": "7.1.0"
+      },
+      "descriptor_sha256": "af2c807002b72c91e2065887c3124070b4c472f2d2ed0414bc017e04e4648c6f",
+      "discovery": "releases",
+      "candidate": "7.2.0",
+      "tag": "v7.2.0",
+      "upstream_commit": "71767974d44acf0464ebf4b26c2059781eb7d6ee",
+      "latest_after": "7.2.0",
+      "assets": [
+        {
+          "platform": "linux",
+          "arch": "x86_64",
+          "resources": {
+            "GLOBAL": {
+              "url": "https://github.com/intel/llvm/releases/download/v7.2.0/sycl_linux.tar.gz",
+              "size": 242327136,
+              "sha256": "385586a25e75ac727883f0be5e442dec0ee81b3c20f9a29037a79921ad2f1728"
+            }
+          }
+        },
+        {
+          "platform": "windows",
+          "arch": "x86_64",
+          "resources": {
+            "GLOBAL": {
+              "url": "https://github.com/intel/llvm/releases/download/v7.2.0/sycl_windows.tar.gz",
+              "size": 372699199,
+              "sha256": "9d8964878a68e6d4ca3edced4fc1093fa6f4f51fd44698808e244870caa77bad"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "xim:vim",
+      "path": "pkgs/v/vim.lua",
+      "status": "waiting-assets",
+      "current": "9.2.1172",
+      "repo": "vim/vim",
+      "latest_policy": "advance",
+      "latest_before": {
+        "linux": "9.2.1172"
+      },
+      "descriptor_sha256": "b2d3287d9b77959a6bd84f7409f870d920e0c38b43afec0ac8e4b70680830ac7",
+      "discovery": "tags",
+      "candidate": "9.2.1225",
+      "tag": "v9.2.1225",
+      "upstream_commit": "f9b3d0d8dd1a4345375fb401861d5f60ff7c7df1",
+      "latest_after": "9.2.1225",
+      "reason": "https://github.com/xlings-res/vim/releases/download/9.2.1225/vim-9.2.1225-linux-x86_64.tar.gz"
+    }
+  ],
+  "requests": 253,
+  "downloaded_bytes": 843044361
+}

@@ -1,0 +1,808 @@
+{
+  "note": "Initial rotating scan used the initial 102 declarations; final audit has 106 enabled packages after eligibility and mirror refinements. Follow-up rows supersede initial provider failures. This does not claim every current producer artifact is ready.",
+  "rounds": [
+    {
+      "round": 1,
+      "summary": {
+        "update-ready": 14,
+        "up-to-date": 16,
+        "waiting-assets": 18,
+        "policy-required": 1,
+        "error": 1,
+        "budget-deferred": 52
+      },
+      "downloaded_bytes": 1152072025,
+      "base_commit": "ea2cedf944fe090eff993291181823cae3261cf9"
+    },
+    {
+      "round": 2,
+      "summary": {
+        "waiting-assets": 18,
+        "up-to-date": 19,
+        "update-ready": 12,
+        "error": 1,
+        "budget-deferred": 52
+      },
+      "downloaded_bytes": 2790338847,
+      "base_commit": "5c6ee71b1c8219f35aeeac6ea94bda28a842d668"
+    },
+    {
+      "round": 3,
+      "summary": {
+        "up-to-date": 19,
+        "update-ready": 15,
+        "waiting-assets": 16,
+        "budget-deferred": 52
+      },
+      "downloaded_bytes": 1767098360,
+      "base_commit": "f6f080b98e6a1e3e63b589640e3b380c89cad746"
+    }
+  ],
+  "final_enabled_count": 106,
+  "latest_observations": [
+    {
+      "id": "xim:7zip",
+      "path": "pkgs/7/7zip.lua",
+      "status": "update-ready",
+      "current": "26.02",
+      "candidate": "26.05"
+    },
+    {
+      "id": "xim:appimagetool",
+      "path": "pkgs/a/appimagetool.lua",
+      "status": "up-to-date",
+      "current": "1.9.1"
+    },
+    {
+      "id": "xim:aria2-next",
+      "path": "pkgs/a/aria2-next.lua",
+      "status": "update-ready",
+      "current": "2.5.5",
+      "candidate": "3.0.8"
+    },
+    {
+      "id": "xim:bat",
+      "path": "pkgs/b/bat.lua",
+      "status": "up-to-date",
+      "current": "0.26.1"
+    },
+    {
+      "id": "xim:bazel",
+      "path": "pkgs/b/bazel.lua",
+      "status": "update-ready",
+      "current": "9.2.0",
+      "candidate": "9.3.1"
+    },
+    {
+      "id": "xim:brotli",
+      "path": "pkgs/b/brotli.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/brotli/releases/download/1.2.1/brotli-1.2.1-linux-aarch64.tar.gz",
+      "current": "1.2.0",
+      "candidate": "1.2.1"
+    },
+    {
+      "id": "xim:bundletool",
+      "path": "pkgs/b/bundletool.lua",
+      "status": "up-to-date",
+      "current": "1.18.3"
+    },
+    {
+      "id": "xim:bwrap",
+      "path": "pkgs/b/bwrap.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/bwrap/releases/download/0.13.1/bwrap-0.13.1-linux-x86_64.tar.gz",
+      "current": "0.11.2",
+      "candidate": "0.13.1"
+    },
+    {
+      "id": "xim:cc-connect",
+      "path": "pkgs/c/cc-connect.lua",
+      "status": "up-to-date",
+      "current": "1.5.0"
+    },
+    {
+      "id": "xim:cmake",
+      "path": "pkgs/c/cmake.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/cmake/releases/download/4.4.4/cmake-4.4.4-linux-x86_64.tar.gz",
+      "current": "4.4.2",
+      "candidate": "4.4.4"
+    },
+    {
+      "id": "xim:coursier",
+      "path": "pkgs/c/coursier.lua",
+      "status": "update-ready",
+      "current": "2.1.24",
+      "candidate": "2.1.26"
+    },
+    {
+      "id": "xim:directx-headers",
+      "path": "pkgs/d/directx-headers.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/directx-headers/releases/download/1.619.5/directx-headers-1.619.5-linux-x86_64.tar.gz",
+      "current": "1.614.1",
+      "candidate": "1.619.5"
+    },
+    {
+      "id": "xim:dpcpp",
+      "path": "pkgs/d/dpcpp.lua",
+      "status": "update-ready",
+      "current": "7.1.0",
+      "candidate": "7.2.0"
+    },
+    {
+      "id": "xim:esbuild",
+      "path": "pkgs/e/esbuild.lua",
+      "status": "update-ready",
+      "current": "0.25.12",
+      "candidate": "0.28.2"
+    },
+    {
+      "id": "xim:expat",
+      "path": "pkgs/e/expat.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/expat/releases/download/2.9.0/expat-2.9.0-linux-x86_64.tar.gz",
+      "current": "2.6.2",
+      "candidate": "2.9.0"
+    },
+    {
+      "id": "xim:fd",
+      "path": "pkgs/f/fd.lua",
+      "status": "up-to-date",
+      "current": "10.5.0"
+    },
+    {
+      "id": "xim:fish",
+      "path": "pkgs/f/fish.lua",
+      "status": "update-ready",
+      "current": "4.8.1",
+      "candidate": "4.9.3"
+    },
+    {
+      "id": "xim:fribidi",
+      "path": "pkgs/f/fribidi.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/fribidi/releases/download/1.0.17/fribidi-1.0.17-linux-x86_64.tar.gz",
+      "current": "1.0.13",
+      "candidate": "1.0.17"
+    },
+    {
+      "id": "xim:fzf",
+      "path": "pkgs/f/fzf.lua",
+      "status": "update-ready",
+      "current": "0.74.3",
+      "candidate": "0.74.5"
+    },
+    {
+      "id": "xim:github-gh",
+      "path": "pkgs/g/github-gh.lua",
+      "status": "update-ready",
+      "current": "2.92.0",
+      "candidate": "2.103.0"
+    },
+    {
+      "id": "xim:glew",
+      "path": "pkgs/g/glew.lua",
+      "status": "update-ready",
+      "current": "2.2.0",
+      "candidate": "2.3.1"
+    },
+    {
+      "id": "xim:go",
+      "path": "pkgs/g/go.lua",
+      "status": "update-ready",
+      "current": "1.27.0",
+      "candidate": "1.27.3"
+    },
+    {
+      "id": "xim:gradle",
+      "path": "pkgs/g/gradle.lua",
+      "status": "update-ready",
+      "current": "9.7.1",
+      "candidate": "9.8.2"
+    },
+    {
+      "id": "xim:graphene",
+      "path": "pkgs/g/graphene.lua",
+      "status": "up-to-date",
+      "current": "1.10.8"
+    },
+    {
+      "id": "xim:graphite2",
+      "path": "pkgs/g/graphite2.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/graphite2/releases/download/1.3.15/graphite2-1.3.15-linux-x86_64.tar.gz",
+      "current": "1.3.14",
+      "candidate": "1.3.15"
+    },
+    {
+      "id": "xim:griddycode",
+      "path": "pkgs/g/griddycode.lua",
+      "status": "up-to-date",
+      "current": "1.2.2"
+    },
+    {
+      "id": "xim:harfbuzz",
+      "path": "pkgs/h/harfbuzz.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/harfbuzz/releases/download/14.6.0/harfbuzz-14.6.0-linux-x86_64.tar.gz",
+      "current": "14.4.0",
+      "candidate": "14.6.0"
+    },
+    {
+      "id": "xim:hermes-agent",
+      "path": "pkgs/h/hermes-agent.lua",
+      "status": "update-ready",
+      "current": "2026.4.23",
+      "candidate": "2026.9.24"
+    },
+    {
+      "id": "xim:hip-nvidia",
+      "path": "pkgs/h/hip-nvidia.lua",
+      "status": "up-to-date",
+      "current": "7.2.4"
+    },
+    {
+      "id": "xim:htop",
+      "path": "pkgs/h/htop.lua",
+      "status": "up-to-date",
+      "current": "3.5.3"
+    },
+    {
+      "id": "xim:icu",
+      "path": "pkgs/i/icu.lua",
+      "status": "up-to-date",
+      "current": "78.3"
+    },
+    {
+      "id": "xim:jdk-zulu",
+      "path": "pkgs/j/jdk-zulu.lua",
+      "status": "up-to-date",
+      "current": "25.0.4"
+    },
+    {
+      "id": "xim:jetbrainsmono-nerd-font",
+      "path": "pkgs/j/jetbrainsmono-nerd-font.lua",
+      "status": "update-ready",
+      "current": "3.4.0",
+      "candidate": "3.5.1"
+    },
+    {
+      "id": "xim:jq",
+      "path": "pkgs/j/jq.lua",
+      "status": "up-to-date",
+      "current": "1.8.2"
+    },
+    {
+      "id": "xim:kotlin",
+      "path": "pkgs/k/kotlin.lua",
+      "status": "update-ready",
+      "current": "2.4.20",
+      "candidate": "2.4.21"
+    },
+    {
+      "id": "xim:krb5",
+      "path": "pkgs/k/krb5.lua",
+      "status": "up-to-date",
+      "current": "1.22.2"
+    },
+    {
+      "id": "xim:labwc-desktop",
+      "path": "pkgs/luban/labwc-desktop.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/labwc-desktop/releases/download/0.20.2-r1/labwc-desktop-0.20.2-r1-linux-aarch64.tar.gz",
+      "current": "0.7.2",
+      "candidate": "0.20.2"
+    },
+    {
+      "id": "xim:libcups",
+      "path": "pkgs/l/libcups.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/libcups/releases/download/2.4.20/libcups-2.4.20-linux-aarch64.tar.gz",
+      "current": "2.3.3",
+      "candidate": "2.4.20"
+    },
+    {
+      "id": "xim:libcxx-headers",
+      "path": "pkgs/l/libcxx-headers.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/libcxx-headers/releases/download/23.1.4/libcxx-headers-23.1.4.tar.xz",
+      "current": "22.1.8",
+      "candidate": "23.1.4"
+    },
+    {
+      "id": "xim:libdatrie",
+      "path": "pkgs/l/libdatrie.lua",
+      "status": "up-to-date",
+      "current": "0.2.14"
+    },
+    {
+      "id": "xim:libepoxy",
+      "path": "pkgs/l/libepoxy.lua",
+      "status": "up-to-date",
+      "current": "1.5.10"
+    },
+    {
+      "id": "xim:libffi",
+      "path": "pkgs/l/libffi.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/libffi/releases/download/3.8.0/libffi-3.8.0-linux-x86_64.tar.gz",
+      "current": "3.4.4",
+      "candidate": "3.8.0"
+    },
+    {
+      "id": "xim:libjpeg-turbo",
+      "path": "pkgs/l/libjpeg-turbo.lua",
+      "status": "up-to-date",
+      "current": "3.2.0"
+    },
+    {
+      "id": "xim:libpng",
+      "path": "pkgs/l/libpng.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/libpng/releases/download/1.6.59/libpng-1.6.59-linux-x86_64.tar.gz",
+      "current": "1.6.43",
+      "candidate": "1.6.59"
+    },
+    {
+      "id": "xim:libpsl",
+      "path": "pkgs/l/libpsl.lua",
+      "status": "up-to-date",
+      "current": "0.23.3"
+    },
+    {
+      "id": "xim:libselinux",
+      "path": "pkgs/l/libselinux.lua",
+      "status": "up-to-date",
+      "current": "3.11"
+    },
+    {
+      "id": "xim:libthai",
+      "path": "pkgs/l/libthai.lua",
+      "status": "up-to-date",
+      "current": "0.1.30"
+    },
+    {
+      "id": "xim:libudev",
+      "path": "pkgs/l/libudev.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/libudev/releases/download/262.1/libudev-262.1-linux-aarch64.tar.gz",
+      "current": "257.4",
+      "candidate": "262.1"
+    },
+    {
+      "id": "xim:libusb",
+      "path": "pkgs/l/libusb.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/libusb/releases/download/1.0.30/libusb-1.0.30-linux-aarch64.tar.gz",
+      "current": "1.0.29",
+      "candidate": "1.0.30"
+    },
+    {
+      "id": "xim:limine",
+      "path": "pkgs/l/limine.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/limine/releases/download/12.9.4/limine-12.9.4-linux-x86_64.tar.gz",
+      "current": "12.9.3",
+      "candidate": "12.9.4"
+    },
+    {
+      "id": "xim:linux-headers",
+      "path": "pkgs/l/linux-headers.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/linux-headers/releases/download/7.3/linux-headers-7.3-linux-aarch64.tar.gz",
+      "current": "5.11.1",
+      "candidate": "7.3"
+    },
+    {
+      "id": "xim:llvm-dev",
+      "path": "pkgs/l/llvm-dev.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/llvm-dev/releases/download/23.1.4/llvm-dev-23.1.4-linux-x86_64.tar.gz",
+      "current": "20.1.7.1",
+      "candidate": "23.1.4"
+    },
+    {
+      "id": "xim:llvm-tools",
+      "path": "pkgs/l/llvm-tools.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/llvm/releases/download/23.1.4/llvm-tools-23.1.4-linux-x86_64.tar.gz",
+      "current": "22.1.8",
+      "candidate": "23.1.4"
+    },
+    {
+      "id": "xim:luban",
+      "path": "pkgs/luban/luban.lua",
+      "status": "up-to-date",
+      "current": "2026.10.22.2"
+    },
+    {
+      "id": "xim:luban-os",
+      "path": "pkgs/luban/luban-os.lua",
+      "status": "up-to-date",
+      "current": "2026.10.22.2"
+    },
+    {
+      "id": "xim:mcpp",
+      "path": "pkgs/m/mcpp.lua",
+      "status": "up-to-date",
+      "current": "2026.10.21.1"
+    },
+    {
+      "id": "xim:mdbook",
+      "path": "pkgs/m/mdbook.lua",
+      "status": "update-ready",
+      "current": "0.5.2",
+      "candidate": "0.5.4"
+    },
+    {
+      "id": "xim:meson",
+      "path": "pkgs/m/meson.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/meson/releases/download/1.12.1/meson-1.12.1-linux-x86_64.tar.gz",
+      "current": "1.8.2",
+      "candidate": "1.12.1"
+    },
+    {
+      "id": "xim:moltenvk",
+      "path": "pkgs/m/moltenvk.lua",
+      "status": "up-to-date",
+      "current": "1.4.2"
+    },
+    {
+      "id": "xim:nasm",
+      "path": "pkgs/n/nasm.lua",
+      "status": "up-to-date",
+      "current": "3.02"
+    },
+    {
+      "id": "xim:ncurses",
+      "path": "pkgs/n/ncurses.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/ncurses/releases/download/6.6.20261017/ncurses-6.6.20261017-linux-x86_64.tar.gz",
+      "current": "6.5",
+      "candidate": "6.6.20261017"
+    },
+    {
+      "id": "xim:nghttp2",
+      "path": "pkgs/n/nghttp2.lua",
+      "status": "up-to-date",
+      "current": "1.70.0"
+    },
+    {
+      "id": "xim:ninja",
+      "path": "pkgs/n/ninja.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/ninja/releases/download/1.13.2/ninja-1.13.2-linux-x86_64.tar.gz",
+      "current": "1.12.1",
+      "candidate": "1.13.2"
+    },
+    {
+      "id": "xim:oh-my-pi",
+      "path": "pkgs/o/oh-my-pi.lua",
+      "status": "update-ready",
+      "current": "18.11.3",
+      "candidate": "18.12.6"
+    },
+    {
+      "id": "xim:ollama",
+      "path": "pkgs/o/ollama.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/ollama/ollama/releases/download/v0.40.8/ollama-linux-amd64.tgz",
+      "current": "0.13.3",
+      "candidate": "0.40.8"
+    },
+    {
+      "id": "xim:opencode",
+      "path": "pkgs/o/opencode.lua",
+      "status": "update-ready",
+      "current": "1.19.0",
+      "candidate": "1.19.3"
+    },
+    {
+      "id": "xim:openssl",
+      "path": "pkgs/o/openssl.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/openssl/releases/download/4.0.3/openssl-4.0.3-linux-x86_64.tar.gz",
+      "current": "3.1.5",
+      "candidate": "4.0.3"
+    },
+    {
+      "id": "xim:pcre2",
+      "path": "pkgs/p/pcre2.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/pcre2/releases/download/10.49/pcre2-10.49-linux-x86_64.tar.gz",
+      "current": "10.42",
+      "candidate": "10.49"
+    },
+    {
+      "id": "xim:perl",
+      "path": "pkgs/p/perl.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/perl/releases/download/5.45.4/perl-5.45.4-linux-x86_64.tar.gz",
+      "current": "5.44.0",
+      "candidate": "5.45.4"
+    },
+    {
+      "id": "xim:pi",
+      "path": "pkgs/p/pi.lua",
+      "status": "update-ready",
+      "current": "1.0.0",
+      "candidate": "1.4.0"
+    },
+    {
+      "id": "xim:picolibc-aarch64",
+      "path": "pkgs/p/picolibc-aarch64.lua",
+      "status": "up-to-date",
+      "current": "1.8.12"
+    },
+    {
+      "id": "xim:picolibc-arm",
+      "path": "pkgs/p/picolibc-arm.lua",
+      "status": "up-to-date",
+      "current": "1.8.12"
+    },
+    {
+      "id": "xim:picolibc-riscv",
+      "path": "pkgs/p/picolibc-riscv.lua",
+      "status": "up-to-date",
+      "current": "1.8.12"
+    },
+    {
+      "id": "xim:picolibc-x86",
+      "path": "pkgs/p/picolibc-x86.lua",
+      "status": "up-to-date",
+      "current": "1.8.12"
+    },
+    {
+      "id": "xim:pnpm",
+      "path": "pkgs/p/pnpm.lua",
+      "status": "update-ready",
+      "current": "12.1.0",
+      "candidate": "12.15.0"
+    },
+    {
+      "id": "xim:pocl",
+      "path": "pkgs/p/pocl.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/pocl/releases/download/7.2/pocl-7.2-linux-aarch64.tar.gz",
+      "current": "7.1",
+      "candidate": "7.2"
+    },
+    {
+      "id": "xim:probe-rs",
+      "path": "pkgs/p/probe-rs.lua",
+      "status": "up-to-date",
+      "current": "0.32.0"
+    },
+    {
+      "id": "xim:proot",
+      "path": "pkgs/p/proot.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/proot/releases/download/5.5.0/proot-5.5.0-linux-x86_64.tar.gz",
+      "current": "5.4.0",
+      "candidate": "5.5.0"
+    },
+    {
+      "id": "xim:python",
+      "path": "pkgs/p/python.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/astral-sh/python-build-standalone/releases/download/20260310/cpython-3.15.1%2B20260310-x86_64-unknown-linux-gnu-install_only.tar.gz",
+      "current": "3.13.12",
+      "candidate": "3.15.1"
+    },
+    {
+      "id": "xim:qemu-user-aarch64",
+      "path": "pkgs/q/qemu-user-aarch64.lua",
+      "status": "up-to-date",
+      "current": "7.2.0"
+    },
+    {
+      "id": "xim:ripgrep",
+      "path": "pkgs/r/ripgrep.lua",
+      "status": "update-ready",
+      "current": "15.1.0",
+      "candidate": "15.2.0"
+    },
+    {
+      "id": "xim:riscv64-linux-musl-gcc",
+      "path": "pkgs/r/riscv64-linux-musl-gcc.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/riscv64-linux-musl-gcc/releases/download/16.2.0/riscv64-linux-musl-gcc-16.2.0-linux-x86_64.tar.gz",
+      "current": "16.1.0",
+      "candidate": "16.2.0"
+    },
+    {
+      "id": "xim:rosdep",
+      "path": "pkgs/r/rosdep.lua",
+      "status": "waiting-assets",
+      "reason": "https://files.pythonhosted.org/packages/bd/c1/15c5c296f41e6a290e6c3515316b2676be580c66b10e26372200a0ecbdd7/rosdep-0.27.0-py3-none-any.whl",
+      "current": "0.26.0",
+      "candidate": "0.27.0"
+    },
+    {
+      "id": "xim:shaderc",
+      "path": "pkgs/s/shaderc.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/shaderc/releases/download/2026.4/shaderc-2026.4-linux-aarch64.tar.gz",
+      "current": "2026.3",
+      "candidate": "2026.4"
+    },
+    {
+      "id": "xim:sing-box",
+      "path": "pkgs/s/sing-box.lua",
+      "status": "update-ready",
+      "current": "1.13.20",
+      "candidate": "1.14.3"
+    },
+    {
+      "id": "xim:slang",
+      "path": "pkgs/s/slang.lua",
+      "status": "update-ready",
+      "current": "2026.14.1",
+      "candidate": "2026.20"
+    },
+    {
+      "id": "xim:sourcetrail",
+      "path": "pkgs/s/sourcetrail.lua",
+      "status": "up-to-date",
+      "current": "2021.4.19"
+    },
+    {
+      "id": "xim:spirv-tools",
+      "path": "pkgs/s/spirv-tools.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/spirv-tools/releases/download/2026.4/spirv-tools-2026.4-linux-x86_64.tar.gz",
+      "current": "2025.1",
+      "candidate": "2026.4"
+    },
+    {
+      "id": "xim:terminfo",
+      "path": "pkgs/t/terminfo.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/terminfo/releases/download/6.6.20261017/terminfo-6.6.20261017.tar.gz",
+      "current": "6.6.20261010",
+      "candidate": "6.6.20261017"
+    },
+    {
+      "id": "xim:tmux",
+      "path": "pkgs/t/tmux.lua",
+      "status": "up-to-date",
+      "current": "3.8"
+    },
+    {
+      "id": "xim:trendradar",
+      "path": "pkgs/t/trendradar.lua",
+      "status": "update-ready",
+      "current": "6.6.1",
+      "candidate": "6.11.0"
+    },
+    {
+      "id": "xim:util-linux",
+      "path": "pkgs/u/util-linux.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/util-linux/releases/download/2.42.4/util-linux-2.42.4-linux-x86_64.tar.gz",
+      "current": "2.40.2",
+      "candidate": "2.42.4"
+    },
+    {
+      "id": "xim:uv",
+      "path": "pkgs/u/uv.lua",
+      "status": "update-ready",
+      "current": "0.12.7",
+      "candidate": "0.13.5"
+    },
+    {
+      "id": "xim:vcpkg",
+      "path": "pkgs/v/vcpkg.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/vcpkg/releases/download/2026.10.16/vcpkg-2026.10.16-linux-x86_64.tar.gz",
+      "current": "2026.7.27",
+      "candidate": "2026.10.16"
+    },
+    {
+      "id": "xim:vcstool",
+      "path": "pkgs/v/vcstool.lua",
+      "status": "up-to-date",
+      "current": "0.3.0"
+    },
+    {
+      "id": "xim:vim",
+      "path": "pkgs/v/vim.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/vim/releases/download/9.2.1225/vim-9.2.1225-linux-x86_64.tar.gz",
+      "current": "9.2.1172",
+      "candidate": "9.2.1225"
+    },
+    {
+      "id": "xim:vulkan-validation-layers",
+      "path": "pkgs/v/vulkan-validation-layers.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/vulkan-validation-layers/releases/download/1.4.363.0/vulkan-validation-layers-1.4.363.0-linux-x86_64.tar.gz",
+      "current": "1.4.357.0",
+      "candidate": "1.4.363.0"
+    },
+    {
+      "id": "xim:wl-clipboard",
+      "path": "pkgs/w/wl-clipboard.lua",
+      "status": "up-to-date",
+      "current": "2.3.0"
+    },
+    {
+      "id": "xim:wsl-installer",
+      "path": "pkgs/w/wsl-installer.lua",
+      "status": "update-ready",
+      "current": "3.0.1",
+      "candidate": "3.0.3"
+    },
+    {
+      "id": "xim:x86_64-linux-musl-gcc",
+      "path": "pkgs/x/x86_64-linux-musl-gcc.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/x86_64-linux-musl-gcc/releases/download/16.2.0/x86_64-linux-musl-gcc-16.2.0-windows-x86_64.tar.gz",
+      "current": "16.1.0",
+      "candidate": "16.2.0"
+    },
+    {
+      "id": "xim:xdesk",
+      "path": "pkgs/x/xdesk.lua",
+      "status": "up-to-date",
+      "current": "2026.10.22.2"
+    },
+    {
+      "id": "xim:xlings",
+      "path": "pkgs/x/xlings.lua",
+      "status": "up-to-date",
+      "current": "2026.10.22.2"
+    },
+    {
+      "id": "xim:xmake",
+      "path": "pkgs/x/xmake.lua",
+      "status": "update-ready",
+      "current": "3.1.1",
+      "candidate": "3.1.2"
+    },
+    {
+      "id": "xim:xsel",
+      "path": "pkgs/x/xsel.lua",
+      "status": "up-to-date",
+      "current": "1.2.1"
+    },
+    {
+      "id": "xim:xz",
+      "path": "pkgs/x/xz.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/xz/releases/download/5.8.4/xz-5.8.4-linux-aarch64.tar.gz",
+      "current": "5.8.3",
+      "candidate": "5.8.4"
+    },
+    {
+      "id": "xim:yazi",
+      "path": "pkgs/y/yazi.lua",
+      "status": "update-ready",
+      "current": "26.5.6",
+      "candidate": "26.9.1"
+    },
+    {
+      "id": "xim:zlib",
+      "path": "pkgs/z/zlib.lua",
+      "status": "waiting-assets",
+      "reason": "https://github.com/xlings-res/zlib/releases/download/1.3.2/zlib-1.3.2-linux-aarch64.tar.gz",
+      "current": "1.3.1",
+      "candidate": "1.3.2"
+    },
+    {
+      "id": "xim:zoxide",
+      "path": "pkgs/z/zoxide.lua",
+      "status": "up-to-date",
+      "current": "0.10.0"
+    },
+    {
+      "id": "xim:zstd",
+      "path": "pkgs/z/zstd.lua",
+      "status": "up-to-date",
+      "current": "1.5.7"
+    }
+  ]
+}
