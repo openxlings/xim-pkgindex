@@ -1,7 +1,7 @@
 # Unified autoupdate implementation and review
 
 Implements `2026-10-22-xpkgindex-update-unified-design.md` with the user's latest
-rollout constraints: **every seven days, GitHub only, exclude packages using CN**.
+rollout constraints: **every three days, GitHub only, exclude packages using CN**.
 Final-head CI results are authoritative at these draft PRs:
 
 - Upstream tool: https://github.com/openxlings/xpkgindex-update/pull/3
@@ -17,8 +17,11 @@ static metadata, baseline, version mapping and native execution requirements,
 have GitHub stars > 50, and satisfy the GitHub-only policy. The other **340** have
 explicit maintenance reasons.
 
-- Scheduled updates run Sunday 02:17 UTC / 11:17 JST, using `17 2 * * 0`.
-  This is a seven-day interval; it does not use a day-of-month `*/7` expression.
+- A daily `17 2 * * *` trigger evaluates a lightweight UTC cadence gate. Actual
+  scan/propose runs every three days from 2026-10-23 (23, 26, 29 October,
+  1 November, etc.), at 02:17 UTC / 11:17 JST. Other scheduled runs skip
+  scan/propose/candidate jobs. This remains three days across month/year boundaries.
+  PR checks and manual triggers bypass the cadence gate.
 - Candidate resources must use HTTPS `github.com` URLs. GitHub's normal asset
   redirects are handled by the upstream downloader.
 - A CN resource anywhere in the recipe's runtime declarations excludes the
@@ -44,7 +47,7 @@ The workflow scans once and proposes from that fixed plan. Limits are 500 API
 requests, 50 packages, 4 GiB/resource, 16 GiB/run and three PRs. A persistent fair
 cursor, bounded retries and explicit error/deferred/waiting states keep results
 observable. Waiting assets become errors after seven days; failed packages are
-retried at the next weekly run. The removed Go vendor provider is not part of
+retried at the next three-day scheduled run. The removed Go vendor provider is not part of
 this GitHub-only implementation.
 
 Candidate CI verifies only versions added by the diff, including all resource
@@ -90,5 +93,5 @@ PR. The PR bodies link final-head verification and downloadable Actions artifact
 
 Review and merge the upstream tool first, then pin its accepted immutable commit
 for the index rollout. All delivered PRs remain drafts. Seven production schedule
-observations remain a post-merge rollout gate, now measured on the weekly cadence.
+observations remain a post-merge rollout gate, now measured on the three-day cadence.
 No automatic merge, old-scanner restoration or historical version deletion is used.

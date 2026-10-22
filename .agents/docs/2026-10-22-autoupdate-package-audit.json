@@ -3037,9 +3037,11 @@
     }
   ],
   "rollout_policy": {
-    "schedule": "17 2 * * 0",
-    "interval_days": 7,
+    "schedule": "17 2 * * *",
+    "interval_days": 3,
     "resources": "HTTPS github.com only",
-    "exclude_packages_with_cn": true
+    "exclude_packages_with_cn": true,
+    "cadence_anchor_utc": "2026-10-23",
+    "schedule_gate": "UTC calendar days since anchor modulo 3; manual/PR checks bypass cadence"
   }
 }

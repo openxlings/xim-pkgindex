@@ -4,10 +4,10 @@
 状态：实现与 CI 验证中，等待 review；交付为草稿 PR。  
 范围：上游版本发现、资源验证、配方追加、更新 PR、候选版本 CI、旧自动更新链路退役。
 
-2026-10-22 范围修订：按用户最新要求，自动更新每 7 天触发一次；本期仅接入纯 GitHub 来源。
+2026-10-22 范围修订：按用户最新要求，自动更新每 3 天触发一次；本期仅接入纯 GitHub 来源。
 配方含 CN 镜像、`XLINGS_RES` 或 `xpm.source = "xlings-res"` 隐式多镜像的包不接入；候选 URL
 必须为 HTTPS `github.com`，厂商接口和外部 registry 均不接入。下文通用工具的区域矩阵能力不代表
-本期启用双镜像包。工作流使用 `17 2 * * 0`，即每周日 02:17 UTC（11:17 JST）；移除测试分支 push 提案入口。
+本期启用双镜像包。工作流每日 `17 2 * * *` 检查日期门禁，以 2026-10-23 UTC 为锚点，仅每 3 天执行扫描/提案（02:17 UTC / 11:17 JST）；移除测试分支 push 提案入口。
 
 ## 1. 设计决策
 
@@ -18,7 +18,7 @@
 - `xpm.source` 是运行时资源声明，可以继续存在，但不隐式开启自动更新，也不充当更新配置的后备来源。
 - `ci.mirror` 属于独立镜像发布能力，本次不迁移其协议；删除 `ci.update` 时保留仍有用途的 `ci` 字段。
 - xim 所需的通用能力在 `xpkgindex-update` 上游实现。xim 仓库不维护私有 fork、补丁副本或第二套版本比较/配方编辑器。
-- 每 7 天一次扫描，生成固定 plan；同一次运行的 propose 消费该 plan，不重新发现版本。
+- 每 3 天一次扫描，生成固定 plan；同一次运行的 propose 消费该 plan，不重新发现版本。
 - 默认每包只更新到最新可接受稳定版本，不在正常升级中自动补历史。
 - 完整平台与架构资源验证通过后，原子追加新版本并推进 `latest.ref`；历史版本保持原样。
 - 只创建 PR，经候选版本 CI 和人工 review 后合并；本方案不引入自动合并。
@@ -152,7 +152,7 @@ extensions = {
 ## 6. 固定计划与执行
 
 ```text
-每 7 天/手动调度
+每 3 天/手动调度
   → inspect + 声明审计
   → check：发现候选、展开完整矩阵、下载校验
   → 固定 plan artifact
@@ -173,7 +173,7 @@ extensions = {
 
 ## 7. 调度、状态与 PR
 
-唯一入口建议为 `.github/workflows/xpkgindex-update.yml`，默认每 7 天运行，可手动按包执行。
+唯一入口建议为 `.github/workflows/xpkgindex-update.yml`，默认每 3 天运行，可手动按包执行。
 删除三天检查时间缓存；预算不足时保留待处理清单，失败不写“已成功”状态。
 
 中央 `.github/xpkgindex-update.yml` 初始保留工具现有字段 `version: 1`、`adapter: xim-pkgindex`、`max_prs: 3`。
@@ -205,7 +205,7 @@ PR 描述列出旧/新 latest、完整资源矩阵、tag commit、plan 来源和
 - 使用内置 `GITHUB_TOKEN`。用户已开启 Actions 创建 PR；REST 权限和真实机器人建 PR 均已验证，不依赖旧 `XPKG_BOT_TOKEN`。
 - 显式 CI dispatch 验证机器人 PR、仓库、基础分支和 head SHA，按工作流/head 幂等补触发；不假定 token 创建的 PR 会自动触发普通 PR CI。
 - checkout 使用 `persist-credentials: false`，工具固定通过 CI 的不可变提交，不使用浮动 `@main`。
-- 移除集成分支 push 自动提案入口；自动升级只按每 7 天的调度执行，仍保留人工触发和 PR 候选验证。
+- 移除集成分支 push 自动提案入口；自动升级只按每 3 天的调度执行，仍保留人工触发和 PR 候选验证。
 
 PR CI 从 diff 选择所有新增 `(package, version)`，不扫描未来上游版本；即使 latest 未变也要测试新增版本。
 自动更新必跑：Lua/元数据校验、历史保护、完整矩阵资源校验、索引注册、受支持 runner 上的安装/功能/卸载检查。
@@ -264,7 +264,7 @@ Go 等需要厂商接口的包，在统一工具实现正式 discovery provider 
 
 ### D. 上线验收与回退
 
-启用后至少观察 7 次周调度和一次真实自动更新 PR 的完整安装测试闭环；当前 GitHub-only 范围需有受控资源验证和实际候选安装证据。
+启用后至少观察 7 次生产调度和一次真实自动更新 PR 的完整安装测试闭环；当前 GitHub-only 范围需有受控资源验证和实际候选安装证据。
 异常时停用新的 propose，保留报告与人工更新；回退不恢复旧扫描器，不自动删除已追加版本。
 
 ## 12. 验收清单
@@ -289,4 +289,4 @@ Go 等需要厂商接口的包，在统一工具实现正式 discovery provider 
 3. xim 显式声明 upstream、latest 和资源矩阵；多架构新版本统一输出 Shape B。
 4. 正常升级只追最新稳定版，历史补录独立；完整矩阵原子提交。
 5. 本期只接入纯 GitHub、无 CN 的包；既有镜像生产独立，不由 updater 发布资源。
-6. 每 7 天扫描、固定 plan、每轮最多 3 个 PR、内置 GITHUB_TOKEN 与显式 CI dispatch、候选版本 CI、人工合并。
+6. 每 3 天扫描、固定 plan、每轮最多 3 个 PR、内置 GITHUB_TOKEN 与显式 CI dispatch、候选版本 CI、人工合并。

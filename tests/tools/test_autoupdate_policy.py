@@ -33,3 +33,21 @@ def test_vendor_provider_is_ineligible():
 @pytest.mark.parametrize('platform', [{'source': 'xlings-res'}, {'1.0': {'url': 'XLINGS_RES'}}])
 def test_implicit_multimirror_resources_are_ineligible(platform):
     assert github_only_reason({'xpm': {'linux': platform}}, {'url': 'https://github.com/acme/foo/${tag}.zip'})
+
+
+@pytest.mark.parametrize('day,expected', [
+    ('2026-10-22', False), ('2026-10-23', True), ('2026-10-24', False),
+    ('2026-10-25', False), ('2026-10-26', True), ('2026-10-29', True),
+    ('2026-10-31', False), ('2026-11-01', True), ('2027-01-03', True),
+])
+def test_three_day_schedule_survives_month_and_year_boundaries(day, expected):
+    from datetime import date
+    from tools.autoupdate_policy import update_due
+    assert update_due('schedule', date.fromisoformat(day)) is expected
+
+
+@pytest.mark.parametrize('event', ['pull_request', 'workflow_dispatch'])
+def test_manual_and_pr_checks_run_even_between_scheduled_updates(event):
+    from datetime import date
+    from tools.autoupdate_policy import update_due
+    assert update_due(event, date(2026, 10, 24))

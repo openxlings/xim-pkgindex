@@ -26,7 +26,10 @@ This rollout accepts only HTTPS `github.com` resource URLs. Packages declaring C
 implicit multi-mirror resource sources remain manual. Non-GitHub registries and vendor downloads
 are excluded; existing runtime resources are preserved.
 
-The workflow runs every seven days (Sunday 02:17 UTC / 11:17 JST), scans once and proposes from the same fixed plan. It never executes Lua,
+The workflow scans every three days at 02:17 UTC / 11:17 JST. A lightweight daily
+trigger checks UTC days from 2026-10-23 and skips scheduled scans between due dates,
+including across month/year boundaries. PR checks and manual triggers bypass this
+cadence gate. A due run scans once and proposes from the same fixed plan. It never executes Lua,
 rewrites published versions, repairs conflicting historical entries, builds payloads, or merges PRs.
 A candidate must pass actual installation, verification and removal on its supported runners.
 The central configuration is `.github/xpkgindex-update.yml`; scan limits and a rotating cursor
