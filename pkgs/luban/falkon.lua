@@ -34,7 +34,7 @@ package = {
     -- How it is checked (xlings design 2026-10-21 §6.1): luban status --check runs
     -- `run` and `launcher`; a desktop session (luban-os-ci L3) the rest.
     extensions = { luban = { checks = {
-        { id = "falkon-runs", what = "it starts", run = "falkon --version", timeout = 30 },
+        { id = "falkon-runs", what = "it starts", run = "QT_QPA_PLATFORM=offscreen falkon --version", timeout = 30 },
         { id = "falkon-listed", what = "the launcher lists it", launcher = "org.kde.falkon" },
         { id = "falkon-window", what = "it opens a page", gui = "falkon about:blank", timeout = 60 },
     } } },
