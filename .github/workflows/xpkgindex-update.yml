@@ -23,7 +23,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 env:
   PYTHONUTF8: '1'
-  UPDATER_COMMIT: c57e220ba84f662f477f31113245975d2eab47e7
+  UPDATER_COMMIT: 1f49c3967cb0fdb80acb6c3a3777c508f4a9115e
   XLINGS_VERSION: v2026.10.21.4
 jobs:
   scan:
@@ -54,7 +54,9 @@ jobs:
         if: github.event_name == 'pull_request' || inputs.validation_base != ''
         env:
           BASE: ${{ github.event.pull_request.base.sha || inputs.validation_base }}
-        run: python -m xpkgindex_update guard --base "$BASE" --output preservation.json
+        run: |
+          resolved=$(git rev-parse --verify "$BASE^{commit}" 2>/dev/null || git rev-parse --verify "origin/$BASE^{commit}")
+          python -m xpkgindex_update guard --base "$resolved" --output preservation.json
       - uses: actions/cache/restore@v4
         if: github.event_name != 'pull_request' && inputs.validation_base == ''
         with:
@@ -82,7 +84,8 @@ jobs:
         env:
           BASE: ${{ github.event.pull_request.base.sha || inputs.validation_base || github.sha }}
         run: |
-          python .github/scripts/autoupdate-ci.py matrix --base "$BASE" --output matrix.json
+          resolved=$(git rev-parse --verify "$BASE^{commit}" 2>/dev/null || git rev-parse --verify "origin/$BASE^{commit}")
+          python .github/scripts/autoupdate-ci.py matrix --base "$resolved" --output matrix.json
           echo "value=$(python -c 'import json; print(json.dumps(json.load(open("matrix.json")),separators=(",",":")))')" >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v4
         if: always()

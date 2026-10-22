@@ -979,7 +979,8 @@
           "linux": "https://go.dev/dl/go${version}.linux-amd64.tar.gz",
           "macosx": "https://go.dev/dl/go${version}.darwin-arm64.tar.gz",
           "windows": "https://go.dev/dl/go${version}.windows-amd64.zip"
-        }
+        },
+        "provider": "go"
       },
       "latest": "1.27.0",
       "add_latest": {}

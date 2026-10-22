@@ -19,7 +19,7 @@ def context(tmp_path, monkeypatch):
     Path('proposals.json').write_text(json.dumps({'packages': [
         {'id': 'xim:foo', 'status': 'created', 'url': 'https://github.com/acme/index/pull/12'}]}))
     monkeypatch.setattr('sys.argv', ['dispatch', '--proposals', 'proposals.json', '--base', 'validation'])
-    pr = {'user': {'login': 'github-actions[bot]'}, 'base': {'ref': 'validation'},
+    pr = {'user': {'login': 'github-actions[bot]'}, 'base': {'ref': 'validation', 'sha': 'b' * 40},
           'head': {'ref': 'auto/bump-xim-foo-1.2.3', 'sha': 'a' * 40,
                    'repo': {'full_name': 'acme/index'}}}
     posts = []
@@ -37,7 +37,7 @@ def test_dispatches_only_the_verified_branch_and_candidate_base(context):
     mod.main()
     assert len(posts) == 5
     assert all(p['ref'] == 'auto/bump-xim-foo-1.2.3' for p in posts)
-    assert posts[-1]['inputs'] == {'validation_base': 'validation', 'package': 'xim:foo'}
+    assert posts[-1]['inputs'] == {'validation_base': 'b' * 40, 'package': 'xim:foo'}
 
 
 def test_rejects_cross_repository_or_wrong_base(context):
