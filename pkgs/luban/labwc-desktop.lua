@@ -26,6 +26,13 @@ package = {
     programs = {"labwc", "foot", "fuzzel", "yambar", "swaybg", "grim", "Xwayland", "xkbcomp"},
     xvm_enable = true,
 
+    -- How it is checked (xlings design 2026-10-21 §6.1): luban status --check runs
+    -- `run` and `launcher`; a desktop session (luban-os-ci L3) the rest.
+    extensions = { luban = { checks = {
+        { id = "labwc-desktop-runs", what = "its compositor starts", run = "labwc --version", timeout = 20 },
+        { id = "labwc-desktop-terminal", what = "its terminal starts", run = "foot --version", timeout = 20 },
+    } } },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "0.7.2" },

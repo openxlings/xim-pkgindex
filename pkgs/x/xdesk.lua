@@ -50,8 +50,17 @@ package = {
                 "xim:mesa@>=25",
                 "xim:libglvnd@>=1.7.0.1",
             },
-            ["latest"] = { ref = "2026.10.21.4" },
+            ["latest"] = { ref = "2026.10.22.1" },
+            ["2026.10.22.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "225bac56f000f3f783efa082616f133953556cca8562169b594e7bfa63d88cb5",
+                },
+            },
             ["2026.10.21.4"] = {
+                -- 1: its share/applications linked (the launchers' "settings";
+                -- xlings design 2026-10-21 J9).
+                revision = 1,
                 url = "XLINGS_RES",
                 sha256 = {
                     x86_64 = "4544fb372a033b12bf07835371a5e9141fc501b3b540b789e7ae70150b5860ce",
@@ -226,6 +235,10 @@ function config()
     if xvm.files then
         xvm.files{ src = "share/wayland-sessions", dst = "share/wayland-sessions", binding = binding }
         xvm.files{ src = "share/xdesk", dst = "share/xdesk", binding = binding }
+        -- Its own applications (its settings), where every launcher looks (J9).
+        if os.isdir(path.join(pkginfo.install_dir(), "share", "applications")) then
+            xvm.files{ src = "share/applications", dst = "share/applications", binding = binding }
+        end
     end
     return true
 end

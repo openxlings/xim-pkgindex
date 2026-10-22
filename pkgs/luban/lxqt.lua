@@ -61,6 +61,8 @@ package = {
             -- Home and Trash on the desktop, a quick launch (xlings design
             -- 2026-10-20 §20, G24-G26).
             ["2.4.0-r4"] = {
+                -- 1: its loader searches only its tree (xlings design 2026-10-21 J12).
+                revision = 1,
                 url = "XLINGS_RES",
                 sha256 = {
                     x86_64 = "3a3c509ff9ff26ed624b5eba0b4d3d48da6d5fcc29bb7843a893c8c52ed7be29",

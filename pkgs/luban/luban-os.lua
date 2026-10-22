@@ -38,6 +38,12 @@ package = {
     programs = {"luban-os"},
     xvm_enable = true,
 
+    -- How it is checked (xlings design 2026-10-21 §6.1): luban status --check runs
+    -- `run` and `launcher`; a desktop session (luban-os-ci L3) the rest.
+    extensions = { luban = { checks = {
+        { id = "luban-os-runs", what = "the Luban OS app starts", run = "luban-os --version", timeout = 20 },
+    } } },
+
     xpm = {
         linux = {
             deps = {
@@ -70,7 +76,13 @@ package = {
                 -- 2026.10.19.2, before which nothing uses it).
                 "luban:cursors",
             },
-            ["latest"] = { ref = "2026.10.21.4" },
+            ["latest"] = { ref = "2026.10.22.1" },
+            ["2026.10.22.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "8b6235452218ceb629a755728ee16512189706e3fc21189778c47e7d06027200",
+                },
+            },
             ["2026.10.21.4"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -203,7 +215,13 @@ package = {
         },
         macosx = {
             deps = { "xim:luban-fonts", "luban:cursors" },
-            ["latest"] = { ref = "2026.10.21.4" },
+            ["latest"] = { ref = "2026.10.22.1" },
+            ["2026.10.22.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "ad190fa8fcf1d476e3fcb2db118fa979d8d6a6948984209f7028ebcd1bbe7d5e",
+                },
+            },
             ["2026.10.21.4"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -309,7 +327,13 @@ package = {
         },
         windows = {
             deps = { "xim:luban-fonts", "luban:cursors" },
-            ["latest"] = { ref = "2026.10.21.4" },
+            ["latest"] = { ref = "2026.10.22.1" },
+            ["2026.10.22.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "479f07261e0e7b60816edf6db35566852b8e4f87bc8773a6da57dbb304911330",
+                },
+            },
             ["2026.10.21.4"] = {
                 url = "XLINGS_RES",
                 sha256 = {

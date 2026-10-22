@@ -60,6 +60,8 @@ package = {
             -- r2: no camera indicator (it needs PipeWire's monitor, which a
             -- Luban system does not run; xlings design 2026-10-20 §20, G30).
             ["6.6.6-r2"] = {
+                -- 1: its loader searches only its tree (xlings design 2026-10-21 J12).
+                revision = 1,
                 url = "XLINGS_RES",
                 sha256 = {
                     x86_64 = "d945f38459d777e2331f5ce13797df708051c29783b5c78af01708a9329d0d27",

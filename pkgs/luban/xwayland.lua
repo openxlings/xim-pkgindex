@@ -24,11 +24,20 @@ package = {
     programs = {"Xwayland", "xkbcomp"},
     xvm_enable = true,
 
+    -- How it is checked (xlings design 2026-10-21 §6.1): luban status --check runs
+    -- `run` and `launcher`; a desktop session (luban-os-ci L3) the rest.
+    extensions = { luban = { checks = {
+        { id = "xwayland-runs", what = "it starts", run = "Xwayland -version", timeout = 20 },
+    } } },
+
     xpm = {
         linux = {
             deps = { "xim:xkeyboard-config" },
             ["latest"] = { ref = "24.1.14-r1" },
             ["24.1.14-r1"] = {
+                -- 1: its checks written where a system's self-check reads them (xlings design 2026-10-21 §6.1);
+                -- its loader searches only its tree (xlings design 2026-10-21 J12).
+                revision = 1,
                 url = "XLINGS_RES",
                 sha256 = {
                     x86_64 = "47c4a3c47eae89049d31a917606daec1e2b359b1e5099652c855312e2e9cfed2",
@@ -46,7 +55,7 @@ function install()
 end
 
 function config()
-    return luban_component.config(package.programs)
+    return luban_component.config(package.programs, nil, package.extensions.luban.checks)
 end
 
 function uninstall()

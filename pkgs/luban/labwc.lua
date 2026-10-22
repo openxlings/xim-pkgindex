@@ -59,8 +59,8 @@ package = {
             ["0.20.0-r2"] = {
                 -- 1: luban:cursors became a dependency (a new install gets the
                 -- theme; one made before stays usable). 2: luban:audio and
-                -- luban:falkon became dependencies.
-                revision = 2,
+                -- luban:falkon became dependencies. 3: its loader searches only its tree (xlings design 2026-10-21 J12).
+                revision = 3,
                 url = "XLINGS_RES",
                 sha256 = {
                     x86_64 = "0e71ecb3c89c134da99aac6c54f61cf6b65e6994c1d8412d3834ab6d7eeddfcf",

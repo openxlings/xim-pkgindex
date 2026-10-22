@@ -1,0 +1,15 @@
+# luban:audacious -- its program runs on luban:qt-runtime (the recipe's
+# config() names its loader and library path); its plugins and skins are
+# this tree's, found beside its program (Audacious places them relative to
+# /proc/self/exe: libexec/audacious/lib/audacious, share/audacious).
+rt="$(cat "$here/libexec/audacious/qt-runtime" 2>/dev/null)/libexec/qt-runtime"
+export QT_PLUGIN_PATH="$here/libexec/audacious/plugins:$rt/plugins"
+# A player opens in a desktop: without one, said so -- not Qt's errors.
+if [ -z "${WAYLAND_DISPLAY}${DISPLAY}" ] && [ "${QT_QPA_PLATFORM:-}" != offscreen ]; then
+    case "${1:-}" in
+        -v|--version|-h|--help|-H|--headless) ;;
+        *) echo "audacious: there is no desktop here to open it in (open it in a desktop: luban enter <system> --display window)" >&2
+           exit 1 ;;
+    esac
+fi
+unset rt

@@ -63,6 +63,8 @@ jobs:
           - { what: proot,         version: "5.4.0",              arch: aarch64 }
           - { what: passt,         version: "2026_10_02.cba3570", arch: x86_64 }
           - { what: passt,         version: "2026_10_02.cba3570", arch: aarch64 }
+          - { what: virtiofsd,     version: "1.14.0",             arch: x86_64 }
+          - { what: virtiofsd,     version: "1.14.0",             arch: aarch64 }
           - { what: curl,          version: "8.22.0",             arch: x86_64 }
           - { what: curl,          version: "8.22.0",             arch: aarch64 }
           - { what: git,           version: "2.53.0-1",           arch: x86_64 }
@@ -96,6 +98,8 @@ jobs:
           - { what: lxqt,          version: "2.4.0-r4",           arch: aarch64 }
           - { what: falkon,        version: "26.04.2-r1",         arch: x86_64 }
           - { what: falkon,        version: "26.04.2-r1",         arch: aarch64 }
+          - { what: audacious,     version: "4.5.1-r1",           arch: x86_64 }
+          - { what: audacious,     version: "4.5.1-r1",           arch: aarch64 }
           - { what: audio,         version: "1.6.8-r2",         arch: x86_64 }
           - { what: audio,         version: "1.6.8-r2",         arch: aarch64 }
           - { what: kde,           version: "6.6.6-r2",           arch: x86_64 }
@@ -108,6 +112,7 @@ jobs:
           - { what: terminfo,        version: "6.6.20261010",     arch: x86_64 }
           - { what: adwaita-cursors, version: "49.0",             arch: x86_64 }
           - { what: luban-fonts,     version: "2026.10.16",       arch: x86_64 }
+          - { what: sample-music,    version: "2026.10.22",       arch: x86_64 }
     steps:
       - uses: actions/checkout@v4
         if: env.WANTED == 'true'

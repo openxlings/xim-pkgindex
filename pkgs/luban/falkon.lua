@@ -31,6 +31,14 @@ package = {
     programs = {"falkon"},
     xvm_enable = true,
 
+    -- How it is checked (xlings design 2026-10-21 §6.1): luban status --check runs
+    -- `run` and `launcher`; a desktop session (luban-os-ci L3) the rest.
+    extensions = { luban = { checks = {
+        { id = "falkon-runs", what = "it starts", run = "QT_QPA_PLATFORM=offscreen falkon --version", timeout = 30 },
+        { id = "falkon-listed", what = "the launcher lists it", launcher = "org.kde.falkon" },
+        { id = "falkon-window", what = "it opens a page", gui = "falkon about:blank", timeout = 60 },
+    } } },
+
     xpm = {
         linux = {
             deps = { "luban:qt-runtime@6.11.1-r2", "xim:luban-fonts", "xim:patchelf" },
@@ -40,6 +48,9 @@ package = {
             -- node, and what it says when there is no desktop (xlings
             -- design 2026-10-20 WuXian §14, §7.6). The same Falkon.
             ["26.04.2-r1"] = {
+                -- 1: its checks written where a system's self-check reads them (xlings design 2026-10-21 §6.1);
+                -- its loader searches only its tree (xlings design 2026-10-21 J12).
+                revision = 1,
                 url = "XLINGS_RES",
                 sha256 = {
                     x86_64 = "47ae69741b86ab9b155c345123b9b655ac7f644d6e3e8d8fbe60273efa2bc875",
@@ -98,7 +109,8 @@ function config()
         log.error("luban:falkon: its programs could not be pointed at their loader (%d of %d)", set.failed, set.scanned)
         return false
     end
-    return luban_component.config(package.programs, { "share/applications", "share/icons", "share/metainfo" })
+    return luban_component.config(package.programs, { "share/applications", "share/icons", "share/metainfo" },
+                                  package.extensions.luban.checks)
 end
 
 function uninstall()

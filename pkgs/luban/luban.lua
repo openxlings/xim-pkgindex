@@ -25,9 +25,22 @@ package = {
     programs = {"luban"},
     xvm_enable = true,
 
+    -- How it is checked (xlings design 2026-10-21 §6.1): luban status --check runs
+    -- `run` and `launcher`; a desktop session (luban-os-ci L3) the rest.
+    extensions = { luban = { checks = {
+        { id = "luban-runs", what = "luban answers", run = "luban --version", timeout = 20 },
+    } } },
+
     xpm = {
         linux = {
-            ["latest"] = { ref = "2026.10.21.4" },
+            ["latest"] = { ref = "2026.10.22.1" },
+            ["2026.10.22.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "3435c90c57c6c02d1520e48e1c466542d5a5b0443445e7478de36af948826767",
+                    x86_64 = "588f23d122d916a7ba5d1805ceaceca9c69e71021ab3fd27108b955941cf8a0d",
+                },
+            },
             ["2026.10.21.4"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -107,7 +120,13 @@ package = {
             },
         },
         macosx = {
-            ["latest"] = { ref = "2026.10.21.4" },
+            ["latest"] = { ref = "2026.10.22.1" },
+            ["2026.10.22.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "73949b4f71a0968abd009913641f59f14b9c49ee0c96ec9a08ae0fff790329b9",
+                },
+            },
             ["2026.10.21.4"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -176,7 +195,13 @@ package = {
             },
         },
         windows = {
-            ["latest"] = { ref = "2026.10.21.4" },
+            ["latest"] = { ref = "2026.10.22.1" },
+            ["2026.10.22.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "e3c66e1b675cd37f2e311f60be4ef8ca293497ba6465b05b24308b85d3a6588f",
+                },
+            },
             ["2026.10.21.4"] = {
                 url = "XLINGS_RES",
                 sha256 = {

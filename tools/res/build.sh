@@ -11,6 +11,7 @@
 #   busybox       a static busybox (musl)
 #   bwrap         a static bubblewrap (musl)
 #   passt         static pasta and passt (musl)
+#   virtiofsd     a static virtiofsd (musl; libseccomp, libcap-ng): a Luban machine's files
 #   e2fsprogs     static mke2fs & co (musl)
 #   curl          a static curl (musl; TLS, socks5h)
 #   proot         a static proot (musl)
@@ -36,6 +37,7 @@
 #   lxqt          luban:lxqt, LXQt on luban:labwc, its libraries beyond the Qt runtime's
 #   kde           luban:kde, KDE Plasma nested in luban:labwc, all it brings beyond the Qt runtime (preview)
 #   falkon        luban:falkon, the browser of every Luban desktop (Falkon on QtWebEngine), on the Qt runtime
+#   audacious     luban:audacious, the desktops' music player (Audacious), on the Qt runtime
 #   bash          bash on glibc (the shape x86_64's is)
 #   coreutils     coreutils on glibc
 #   openssl       openssl on glibc, lib64
@@ -47,6 +49,7 @@
 #   terminfo        the terminal descriptions (ncurses' terminfo.src, compiled)
 #   adwaita-cursors GNOME's Adwaita cursor theme, and the default theme naming it
 #   luban-fonts     the fonts the Luban OS window ships with
+#   sample-music    luban:sample-music, a piece to play (the Open Goldberg Variations' Aria, CC0)
 #
 # Runs on the machine of the target architecture (CI: ubuntu-24.04 and
 # ubuntu-24.04-arm). What it needs runs in a pinned container: the runner
@@ -79,6 +82,8 @@ DEBIAN="debian:12@sha256:2c037a04925515fdd6ea85ea14a682d0e79931f5e9f5d07b6dbfc6b
 # The desktop components' (bundle below): one Alpine for all of them, so their
 # trees agree with each other and with the Qt runtime.
 ALPINE_DESKTOP="alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6"
+# Rust's own toolchain on Alpine (what is built in Rust; its musl target links static).
+RUST_ALPINE="rust:1.91-alpine3.22@sha256:8efbfb788786eeb127adc581394349c5fb567712156e0f8c2e499acadbc23756"
 # The Qt runtime the Qt desktops are built on (luban:qt-runtime): Alpine
 # 3.24's Qt at this index's build of it. A Qt desktop names it exactly, and
 # its build checks the Qt it links is this one.
@@ -310,6 +315,21 @@ passt)
     static_only "$work/$d/bin/pasta" "$work/$d/bin/passt"
     "$work/$d/bin/pasta" --version | head -1 | grep -q "$version" || die "pasta does not report $version"
     provenance "$d" "passt $version: git https://passt.top/passt at $commit; make static in Alpine 3.20 (musl)"
+    pack "$d" ;;
+virtiofsd)
+    # A Luban machine's files over virtio-fs (xlings design 2026-10-21 §4):
+    # unprivileged, one a share, started by the machine's supervisor. Rust's
+    # own toolchain: its musl target links static, Alpine's rust does not.
+    source_of virtiofsd "$version" "https://gitlab.com/virtio-fs/virtiofsd/-/archive/v$version/virtiofsd-v$version.tar.gz" "$work/src.tar.gz"
+    d="virtiofsd-$version-linux-$arch"
+    ALPINE_IMAGE="$RUST_ALPINE" alpine "apk add -q musl-dev libseccomp-dev libseccomp-static libcap-ng-dev libcap-ng-static \
+        && tar -xzf src.tar.gz && cd virtiofsd-v$version \
+        && LIBSECCOMP_LINK_TYPE=static LIBSECCOMP_LIB_PATH=/usr/lib LIBCAPNG_LINK_TYPE=static LIBCAPNG_LIB_PATH=/usr/lib \
+             CARGO_HOME=/w/cargo cargo build -q --release --locked --target $arch-unknown-linux-musl \
+        && mkdir -p /w/$d/bin && cp target/$arch-unknown-linux-musl/release/virtiofsd /w/$d/bin/ && strip /w/$d/bin/virtiofsd"
+    static_only "$work/$d/bin/virtiofsd"
+    "$work/$d/bin/virtiofsd" --version | grep -q "$version" || die "virtiofsd does not report $version"
+    provenance "$d" "virtiofsd $version: https://gitlab.com/virtio-fs/virtiofsd tag v$version; cargo build --release --target $arch-unknown-linux-musl in rust:1.91-alpine3.22 (static)"
     pack "$d" ;;
 e2fsprogs)
     source_of e2fsprogs "$version" "https://mirrors.edge.kernel.org/pub/linux/kernel/people/tytso/e2fsprogs/v$version/e2fsprogs-$version.tar.xz" "$work/src.tar.xz"
@@ -1081,6 +1101,25 @@ NAMES
     done
     provenance "$d" "Adwaita cursors $version: download.gnome.org adwaita-icon-theme-$version.tar.xz (sha256 $(input adwaita-icon-theme "$version")), Adwaita/cursors without .cur/.ani; X11 names linked to the CSS names; icons/default inherits Adwaita"
     pack_data "$d" ;;
+sample-music)
+    # luban:sample-music (xlings design 2026-10-21 §6.3, E12): what a desktop
+    # plays to show its sound works -- the Aria of the Open Goldberg
+    # Variations (J.S. Bach, BWV 988; Kimiko Ishizaka, piano), whose
+    # recording is CC0 1.0 and composition public domain. share/luban/samples/music.
+    d="sample-music-$version"; m="$work/$d/share/luban/samples/music"; l="$work/$d/share/licenses/sample-music"
+    mkdir -p "$m" "$l"
+    source_of open-goldberg-aria 2012.05.28 "https://archive.org/download/OpenGoldbergVariations/Kimiko%20Ishizaka%20-%20J.S.%20Bach-%20-Open-%20Goldberg%20Variations%2C%20BWV%20988%20%28Piano%29%20-%2001%20Aria.ogg" "$m/aria.ogg"
+    cat > "$l/aria.txt" <<'TXT'
+Aria, from the Goldberg Variations, BWV 988 -- Johann Sebastian Bach.
+Performed by Kimiko Ishizaka, The Open Goldberg Variations (2012),
+https://opengoldbergvariations.org, https://archive.org/details/OpenGoldbergVariations
+The recording: CC0 1.0 Universal (https://creativecommons.org/publicdomain/zero/1.0/).
+The composition: public domain.
+TXT
+    provenance "$d" "luban:sample-music $version: share/luban/samples/music/aria.ogg is archive.org's OpenGoldbergVariations '01 Aria.ogg' (Ogg Vorbis), unmodified; CC0 1.0 (the recording), public domain (the composition)"
+    file="$out/sample-music-$version.tar.gz"
+    tar --owner=0 --group=0 --numeric-owner --hard-dereference -czf "$file" -C "$work" "$d"
+    seal "$file" ;;
 luban-fonts)
     # The fonts the Luban OS window ships with (L §13): the console's
     # monospace (JetBrains Mono; Sarasa Mono SC for CJK, two cells wide), the
@@ -1220,6 +1259,50 @@ PY
     log "pixels: (640,360) $(px 640 360), (600,710) $(px 600 710), (600,680) $(px 600 680)"
     [[ "$(px 600 710)" != "$(px 600 680)" ]] || shot_die "the panel is not drawn"
     provenance "$d" "luban:lxqt $version: Alpine 3.24 $(grep -E '^(lxqt-session|lxqt-panel|pcmanfm-qt|liblxqt|layer-shell-qt|breeze-icons|dbus)-[0-9]' "$work/installed" | tr '\n' ' ')-- on luban:qt-runtime $QT_RUNTIME (the same Qt, checked); the libraries beyond the runtime's and the musl loader private (libexec/lxqt), lxqt-panel's plugins in lib/lxqt-panel; the session, defaults and checks from xim-pkgindex tools/res/luban/lxqt; a headless session on luban:labwc in Debian 12 drew its panel. Sources: https://github.com/lxqt and Alpine's aports, unmodified"
+    pack "$d" ;;
+audacious)
+    # luban:audacious: the desktops' music player (xlings design 2026-10-21
+    # §6.3, E11): Alpine 3.24's Audacious and its plugins on luban:qt-runtime
+    # ($QT_RUNTIME), as luban:falkon is. Its plugins and skins where it looks
+    # for them from its own path (libexec/audacious/lib/audacious,
+    # libexec/audacious/share/audacious); the libraries they link beyond the
+    # runtime's private in libexec/audacious/lib. No FFmpeg plugin (its
+    # libraries are most of the size; Vorbis, Opus, FLAC, MP3 and WAV are
+    # Audacious' own plugins); no PipeWire, JACK or SDL output (their clients
+    # load modules from the system's /usr/lib, glibc's in a Luban system):
+    # it plays through PulseAudio, which a Luban desktop's luban:audio serves.
+    v="${version%%-r[0-9]*}"; d="audacious-$version-linux-$arch"
+    progs="/usr/bin/audacious"
+    carried="audacious audacious-plugins"
+    cp "$luban/qt-runtime/tree.sh" "$luban/qt-runtime/desktop.sh" "$luban/bundle/strip-rpath.sh" "$work/"
+    ALPINE_IMAGE="$ALPINE_DESKTOP" alpine "apk add -q $QT_RUNTIME_APKS $carried \
+        && apk info -v 2>/dev/null | sort > /w/installed \
+        && mkdir -p /w/$d/lib && cp -r /usr/lib/audacious /w/$d/lib/ && rm -f /w/$d/lib/audacious/Input/ffaudio.so /w/$d/lib/audacious/Output/pipewire*.so /w/$d/lib/audacious/Output/jack*.so /w/$d/lib/audacious/Output/sdlout.so \
+        && sh /w/desktop.sh /w/$d audacious \"$QT_RUNTIME_APKS\" \"$progs\" \"$carried\" \
+        && mv /w/$d/lib/audacious /w/$d/libexec/audacious/lib/ && rmdir /w/$d/lib \
+        && mkdir -p /w/$d/libexec/audacious/share && mv /w/$d/share/audacious /w/$d/libexec/audacious/share/ \
+        && apk add -q patchelf && sh /w/strip-rpath.sh /w/$d/libexec/audacious /w/rt-root/libexec/qt-runtime"
+    bundle_upstream audacious "$v"
+    bundle_upstream qt6-qtbase "${QT_RUNTIME%%-r[0-9]*}"
+    cp -r "$luban/audacious/." "$work/$d/"
+    mv "$work/$d/env" "$work/$d/libexec/audacious/env"
+    for p in Input/vorbis.so Output/pulse_audio.so General/qtui.so; do
+        [[ -f "$work/$d/libexec/audacious/lib/audacious/$p" ]] || die "audacious: no $p"
+    done
+    python3 "$luban/bundle/no-interp.py" "$work/$d/libexec/audacious/lib" "$work/$d/libexec/audacious/plugins" >/dev/null
+    sed -e "s/@NAME@/audacious/g" -e "s/@PROG@/audacious/g" "$luban/bundle/run-direct.in" > "$work/$d/bin/audacious"
+    chmod 755 "$work/$d/bin/audacious"
+    log "audacious: $(ls "$work/$d/libexec/audacious/lib" | wc -l) libraries of its own, $(du -sh "$work/$d" | cut -f1)"
+    # It starts, says its version and finds its plugins, on the runtime this build made.
+    python3 "$luban/bundle/no-interp.py" "$work/rt-root" >/dev/null
+    mkdir -p "$work/test" && cp -a "$work/$d" "$work/test/$d"
+    echo "/w/rt-root" > "$work/test/$d/libexec/audacious/qt-runtime"
+    headless "test/$d" "apt-get -qq update && apt-get -qq install -y patchelf >/dev/null \
+        && for p in libexec/audacious/bin/*; do patchelf --set-interpreter \$PWD/libexec/audacious/lib/ld-musl-$arch.so.1 \
+             --set-rpath \$PWD/libexec/audacious/lib:/w/rt-root/libexec/qt-runtime/lib \$p; done \
+        && QT_QPA_PLATFORM=offscreen ./bin/audacious --version > /w/audacious.version 2>&1"
+    grep -qi "^audacious [0-9]" "$work/audacious.version" || die "audacious does not start: $(cat "$work/audacious.version")"
+    provenance "$d" "luban:audacious $version: Alpine 3.24 $(grep -E '^(audacious|audacious-plugins)-[0-9]' "$work/installed" | tr '\n' ' ')-- on luban:qt-runtime $QT_RUNTIME (the same Qt); the libraries beyond the runtime's, its plugins and the musl loader private (libexec/audacious), without the FFmpeg plugin. Sources: https://audacious-media-player.org and Alpine's aports, unmodified"
     pack "$d" ;;
 falkon)
     # luban:falkon: the browser every Luban desktop carries (xlings design

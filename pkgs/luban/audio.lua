@@ -35,11 +35,21 @@ package = {
     programs = {"audio", "luban-audio", "pipewire", "pipewire-pulse", "wireplumber", "pw-cat", "pw-cli", "wpctl", "pactl"},
     xvm_enable = true,
 
+    -- How it is checked (xlings design 2026-10-21 §6.1): luban status --check runs
+    -- `run` and `launcher`; a desktop session (luban-os-ci L3) the rest.
+    extensions = { luban = { checks = {
+        { id = "audio-runs", what = "its sound server starts", run = "pipewire --version", timeout = 20 },
+        { id = "audio-heard", what = "a sample is heard on the host", sound = "pw-cat --playback /usr/share/luban/samples/music/aria.ogg", timeout = 30 },
+    } } },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "1.6.8-r2" },
             -- r2: its modules name no search path (a root refuses one outside its closure).
             ["1.6.8-r2"] = {
+                -- 1: its checks written where a system's self-check reads them (xlings design 2026-10-21 §6.1);
+                -- its loader searches only its tree (xlings design 2026-10-21 J12).
+                revision = 1,
                 url = "XLINGS_RES",
                 sha256 = {
                     x86_64 = "a2f1f153e0521853fe4c33bb2220a4c605413f95513865b70c946465d210cc7c",
@@ -72,7 +82,7 @@ function install()
 end
 
 function config()
-    return luban_component.config(package.programs, {})
+    return luban_component.config(package.programs, {}, package.extensions.luban.checks)
 end
 
 function uninstall()
