@@ -1,57 +1,105 @@
-# Unified autoupdate implementation evidence
+# Unified autoupdate implementation and review evidence
 
-Status: in progress; not ready for merge. Goal scope remains the complete design,
-all conforming packages whose GitHub star count is greater than 50, green draft
-PRs, and an automatically triggered real update with successful candidate tests.
+Implemented from `2026-10-22-xpkgindex-update-unified-design.md`. CI results for
+final commits are authoritative at the PR links below. Nothing is merged or
+automatically approved.
 
-## Current repositories
+## Review artifacts
 
-- Tool draft PR: https://github.com/openxlings/xpkgindex-update/pull/3
-- Index worktree: branch `feat/unified-autoupdate`.
-- Full inventory: `2026-10-22-autoupdate-package-audit.json`; 364 package files,
-  152 GitHub upstream repositories queried through GitHub GraphQL. Star counts
-  and recent release/tag evidence were collected on 2026-10-22. Each file has an
-  enabled/manual decision and a reason for manual maintenance.
+- Upstream tool draft: https://github.com/openxlings/xpkgindex-update/pull/3
+- Index migration draft: https://github.com/openxlings/xim-pkgindex/pull/1027
+- Actual bot-created uv update draft: https://github.com/openxlings/xim-pkgindex/pull/1028
+- Full inventory: `2026-10-22-autoupdate-package-audit.json`.
+- Committed local plan and native CI evidence: `2026-10-22-autoupdate-evidence/`.
 
-## Evidence collected
+The inventory covers all 364 package files and 152 queried GitHub upstream
+repositories. Star counts and release/tag evidence were collected on 2026-10-22.
+106 packages meet the declaration, static metadata, baseline, version mapping and
+execution environment requirements and have upstream stars > 50. The other 258
+have explicit maintenance reasons, including absent/low-star upstreams, dynamic
+metadata, pinned or rolling versions, divergent platform pointers, hardcoded
+version hooks, and missing verified resource baselines. esbuild, nasm and glew
+include x86 hosts; the available xlings executables select their build architecture
+and cannot prove x86 installation. Their complete matrices remain manual until a
+verified x86 environment exists. No supported architecture is silently dropped.
 
-- Tool initial matrix and second matrix: all six Linux/macOS/Windows × Python
-  3.11/3.13 test jobs and the composite Action passed.
-- Tool local tests currently cover 81 cases, including complete architecture
-  plans, keep/advance pointers, platform history divergence, plan tampering,
-  failure atomicity, sidecar verification, retry budgets and runtime filtering.
-- A real uv check found 0.12.7 → 0.13.5 and downloaded and hashed the three
-  platform resources. The fixed plan is ready; this alone is not end-to-end proof.
+## Delivered behavior
 
-## Implementation decisions
+- One pinned upstream updater, real adapter dispatch, format-2 fixed plans,
+  complete architecture and region matrices, atomic append, keep/advance latest
+  policy, immutable historical blocks and hooks.
+- Only `extensions.autoupdate` enables updating. Removed the old updater scripts,
+  schedules, policy and active `ci.update`/template markers. Runtime sources,
+  dependencies and `ci.mirror` remain independent.
+- 500 API requests, 50 packages, 4 GiB per resource, 16 GiB per run and three PRs;
+  persistent fair cursor, bounded retries, explicit deferred/error/waiting states.
+  Waiting assets become errors after seven days. Failed packages do not throttle
+  subsequent daily retries.
+- Official Go discovery uses go.dev metadata and authoritative file SHA256.
+  xlings-res consumers require both mirrors and sidecars. Missing producer assets
+  yield waiting reports; the updater does not upload, repack or rewrite history.
+- Candidate CI verifies every added version directly from the diff, including
+  all resource regions and hashes, with no release rediscovery. Native jobs install
+  the checkout recipe at the exact version, verify payload and registered programs,
+  run existing verification tests and uninstall it. Host architecture is checked.
+- Structural runtime filtering avoids redundant installs for declaration-only
+  migration changes; URL/hash/hook/version changes remain selected. The strict
+  automatic-update guard does not block ordinary human revision workflows.
 
-- The previous `XPKG_BOT_TOKEN` returned HTTP 401. Initially the organization
-  also rejected built-in-token PR creation. The user has now explicitly enabled
-  Actions PR creation; REST verification confirms `can_approve_pull_request_reviews:
-  true` with default workflow permissions still read-only. The active mode is
-  `XPKG_USE_GITHUB_TOKEN=true`, using the job's scoped token and explicit,
-  head-verified, idempotent CI dispatch. No personal credential is copied into
-  Actions secrets. Actual bot PR creation and all dispatched CI still need proof.
-- A push to the explicitly named integration branch automatically scans uv and
-  proposes a draft update against that branch. It uses the same fixed-plan
-  updater as production, never targets main, and does not require merging the
-  migration before obtaining real automation evidence.
-- Duplicate-PR checks are scoped to the proposal base branch so the migration PR
-  against main does not block a validation update against its integration branch.
-- Existing installation CI uses the upstream tool's structural runtime diff to
-  avoid re-installing unchanged payloads for declarations-only changes. Runtime
-  URL/hash/hook changes remain selected; new version PRs have dedicated actual
-  candidate installation checks. This is not a check bypass.
-- 7zip needs explicit compact version expansion in artifact filenames. Numeric
-  revision fields must parse as literal numbers. Existing package tests must
-  inspect `xpm`, not confuse the new update URL matrix with runtime platform blocks.
+## Authentication verification and actual update
 
-## Remaining verification
+The old `XPKG_BOT_TOKEN` returned HTTP 401. The user then enabled “Allow GitHub
+Actions to create and approve pull requests”. REST verification returned
+`can_approve_pull_request_reviews: true`, while default workflow permissions remain
+read-only. The implementation now uses **only the scoped built-in GITHUB_TOKEN**
+for proposals and explicit, head-verified, idempotent CI dispatch. No secret needs
+to be replaced, and no personal credential was copied into Actions secrets.
+This is the implemented authentication choice permitted by design section 8,
+replacing its initially preferred App deployment assumption.
 
-Complete eligibility review, run the full static/isolation/index checks, create
-and validate the index draft PR, run the automatically triggered uv draft update,
-and inspect candidate evidence for every platform. Re-run CI at the final heads.
-The tool stays a draft prerequisite; it will not be merged as part of a request
-that asks for reviewable draft PRs. A released/pinned tool commit is needed before
-production rollout. The design's seven daily production observations remain a
-post-merge rollout gate; pre-merge branch validation does not claim to satisfy it.
+The push-triggered run below discovered uv 0.13.5 from baseline 0.12.7, consumed
+the fixed scan plan and created draft #1028 as `github-actions[bot]`:
+https://github.com/openxlings/xim-pkgindex/actions/runs/39759405164
+
+The first explicit candidate dispatch exposed a branch-name resolution defect;
+it failed closed before installation. The fix passes the immutable base SHA and
+also resolves explicit branch inputs through origin. The candidate branch was
+updated with that fix, and native verification passed:
+https://github.com/openxlings/xim-pkgindex/actions/runs/39760502342
+
+Its committed artifacts record `verified-and-removed: true` through status and
+`removed: true`, actual uv/uvx 0.13.5 output on Linux x64, macOS ARM64 and Windows
+x64, recipe hashes and exact local-namespace install directories. Windows checkout
+line endings explain the raw hash difference in this first evidence set; current
+reports use the updater's normalized descriptor digest and include checkout SHA.
+Later runs at the final PR head revalidate the final helper and resource gate.
+
+## Validation
+
+- Upstream local tests: 91 passed; Ruff passed; wheel/sdist build passed before
+  the final candidate-verification addition, with CI rebuilding at the final head.
+- Upstream CI includes Linux/macOS/Windows × Python 3.11/3.13 and the Action job.
+- Index local static/isolation: 5,390 passed, 18 skipped, three existing xpasses.
+  Index registration: 216 passed. Existing `meta` marker warnings are unchanged.
+- Guard confirms historical descriptors preserved. Structural runtime diff
+  against main selects no runtime changes for this metadata migration.
+- Live rotating discovery covered all 102 initially enabled packages across three
+  budgeted runs. Initial prerelease and 2,000-item listing failures were fixed;
+  the third run completed successfully. Additional live checks cover the refined
+  declarations and official Go provider. Their report is committed beside native
+  evidence. Waiting mirrored assets remain visible and do not produce PRs.
+- Local installation/index tests use a dedicated XLINGS_HOME. The initial shared
+  home test overlays were backed up and only matching test-owned registrations
+  were removed; existing installed payloads were retained.
+
+## Merge and rollout
+
+Review and merge the upstream tool first; the migration pins its tested immutable
+commit, with no floating tool ref or private fork. Then review the index migration
+and its bot-generated validation draft. The validation draft targets the integration
+branch, preserving main. No automatic merge or approval is introduced.
+
+The design's seven daily production observations are a **post-merge rollout gate**.
+Pre-merge branch validation proves automation and candidate installation but cannot
+substitute for those observations. Disable proposals if rollout fails, retain
+reports and manual updates, and do not restore the retired scanner.
