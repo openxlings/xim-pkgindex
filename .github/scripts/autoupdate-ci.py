@@ -11,7 +11,7 @@ from pathlib import Path
 
 from xpkgindex_update.adapters import xim_pkgindex as xim
 from xpkgindex_update.lua_edit import Invalid, parse
-from xpkgindex_update.manifest import ordered
+from xpkgindex_update.manifest import descriptor_digest, ordered
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -163,7 +163,8 @@ def run_candidate(identity, filename, version, expected_arch=None):
     if test_file.exists():
         subprocess.run(['python', '-m', 'pytest', str(test_file), '-m', 'verify', '-q'], check=True)
     evidence = {'id': identity, 'version': version, 'descriptor': filename,
-                'descriptor_sha256': __import__('hashlib').sha256(path.read_bytes()).hexdigest(),
+                'descriptor_sha256': descriptor_digest(path.read_bytes().decode('utf-8')),
+                'checkout_commit': git('rev-parse', 'HEAD'), 'runner_arch': expected_arch,
                 'install_dirs': [str(d) for d in installs], 'program_versions': outputs, 'status': 'installed'}
     write('candidate-evidence.json', evidence)
     subprocess.run([xlings, 'remove', target, '-y'], check=True)

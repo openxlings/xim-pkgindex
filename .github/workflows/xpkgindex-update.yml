@@ -51,7 +51,7 @@ jobs:
       - name: Audit all package declarations
         run: python .github/scripts/autoupdate-ci.py audit --output coverage.json
       - name: Protect published versions
-        if: github.event_name == 'pull_request' || inputs.validation_base != ''
+        if: inputs.validation_base != '' || (github.event_name == 'pull_request' && (github.event.pull_request.user.login == 'github-actions[bot]' || github.head_ref == 'feat/unified-autoupdate'))
         env:
           BASE: ${{ github.event.pull_request.base.sha || inputs.validation_base }}
         run: |
@@ -130,19 +130,15 @@ jobs:
           path: .update-plan
       - name: Propose from the fixed plan
         env:
-          GH_TOKEN: ${{ vars.XPKG_USE_GITHUB_TOKEN == 'true' && github.token || secrets.XPKG_BOT_TOKEN }}
-          USE_BUILTIN_TOKEN: ${{ vars.XPKG_USE_GITHUB_TOKEN == 'true' }}
+          GH_TOKEN: ${{ github.token }}
           BASE: ${{ github.ref_name }}
           VALIDATION: ${{ github.ref_name == 'feat/unified-autoupdate' }}
         run: |
-          test -n "$GH_TOKEN" || { echo "Configure a valid XPKG_BOT_TOKEN or an authorized built-in-token mode"; exit 1; }
           git switch -C "$BASE" "$GITHUB_SHA"
           args=()
           if [[ "$VALIDATION" == true ]]; then args+=(--draft --package xim:uv); fi
           python -m xpkgindex_update propose --plan .update-plan/plan.json --base "$BASE" "${args[@]}" --output proposals.json
-          if [[ "$USE_BUILTIN_TOKEN" == true ]]; then
-            python .github/scripts/autoupdate-dispatch.py --proposals proposals.json --base "$BASE"
-          fi
+          python .github/scripts/autoupdate-dispatch.py --proposals proposals.json --base "$BASE"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

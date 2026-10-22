@@ -1,0 +1,15 @@
+{
+  "id": "xim:uv",
+  "version": "0.13.5",
+  "descriptor": "pkgs/u/uv.lua",
+  "descriptor_sha256": "263283f330c8fb00e7fa7ff5378d4d07a4f097b3a3b05919aedd68907342b6fc",
+  "install_dirs": [
+    "/home/runner/.xlings/data/xpkgs/local-x-uv/0.13.5"
+  ],
+  "program_versions": {
+    "uv": "uv 0.13.5 (x86_64-unknown-linux-musl)",
+    "uvx": "uvx 0.13.5 (x86_64-unknown-linux-musl)"
+  },
+  "status": "verified-and-removed",
+  "removed": true
+}
