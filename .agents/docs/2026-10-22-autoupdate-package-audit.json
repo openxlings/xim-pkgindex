@@ -28,7 +28,8 @@
         }
       },
       "latest": "26.02",
-      "add_latest": {}
+      "add_latest": {},
+      "highest_existing": "26.02"
     },
     {
       "path": "pkgs/a/aarch64-linux-musl-gcc.lua",
@@ -59,7 +60,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "49.0",
+      "highest_existing": "49.0"
     },
     {
       "path": "pkgs/a/agent-confined.lua",
@@ -78,8 +81,27 @@
       "id": "xim:alsa-lib",
       "upstream": "alsa-project/alsa-lib",
       "stars": 502,
-      "status": "manual",
-      "reason": "existing extension table needs reviewed insertion"
+      "status": "enabled",
+      "autoupdate": {
+        "source": "https://github.com/xlings-res/alsa-lib/releases",
+        "resources": {
+          "GLOBAL": {
+            "url": {
+              "linux": "https://github.com/xlings-res/alsa-lib/releases/download/${version}/alsa-lib-${version}-linux-x86_64.tar.gz"
+            },
+            "required": true
+          },
+          "CN": {
+            "url": {
+              "linux": "https://gitcode.com/xlings-res/alsa-lib/releases/download/${version}/alsa-lib-${version}-linux-x86_64.tar.gz"
+            },
+            "required": true
+          }
+        },
+        "verify": "sha256-sidecar"
+      },
+      "latest": "1.2.11",
+      "highest_existing": "1.2.11"
     },
     {
       "path": "pkgs/a/android-build-tools.lua",
@@ -114,7 +136,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "1.0.0",
+      "highest_existing": "1.0.0"
     },
     {
       "path": "pkgs/a/android-emulator.lua",
@@ -184,7 +208,8 @@
             "required": true
           }
         }
-      }
+      },
+      "highest_existing": "1.9.1"
     },
     {
       "path": "pkgs/a/apple-device-tools.lua",
@@ -231,7 +256,8 @@
         }
       },
       "latest": "2.5.5",
-      "add_latest": {}
+      "add_latest": {},
+      "highest_existing": "2.5.5"
     },
     {
       "path": "pkgs/a/at-spi2-atk.lua",
@@ -260,7 +286,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "2.38.0",
+      "highest_existing": "2.38.0"
     },
     {
       "path": "pkgs/a/at-spi2-core.lua",
@@ -289,7 +317,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "2.40.3",
+      "highest_existing": "2.40.3"
     },
     {
       "path": "pkgs/a/atk.lua",
@@ -318,7 +348,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "2.38.0",
+      "highest_existing": "2.38.0"
     },
     {
       "path": "pkgs/b/bash.lua",
@@ -347,7 +379,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "5.2.37",
+      "highest_existing": "5.2.37"
     },
     {
       "path": "pkgs/b/bat.lua",
@@ -369,7 +403,8 @@
         }
       },
       "latest": "0.26.1",
-      "add_latest": {}
+      "add_latest": {},
+      "highest_existing": "0.26.1"
     },
     {
       "path": "pkgs/b/bazel.lua",
@@ -399,7 +434,8 @@
             "required": true
           }
         }
-      }
+      },
+      "highest_existing": "9.2.0"
     },
     {
       "path": "pkgs/b/binutils.lua",
@@ -446,7 +482,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "1.2.0"
     },
     {
       "path": "pkgs/b/bun.lua",
@@ -476,7 +513,8 @@
         }
       },
       "latest": "1.18.3",
-      "add_latest": {}
+      "add_latest": {},
+      "highest_existing": "1.18.3"
     },
     {
       "path": "pkgs/b/busybox.lua",
@@ -515,7 +553,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "0.11.2"
     },
     {
       "path": "pkgs/c/ca-certificates.lua",
@@ -544,7 +583,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "1.18.4",
+      "highest_existing": "1.18.4"
     },
     {
       "path": "pkgs/c/cann-toolkit.lua",
@@ -572,7 +613,8 @@
         }
       },
       "latest": "1.5.0",
-      "add_latest": {}
+      "add_latest": {},
+      "highest_existing": "1.5.0"
     },
     {
       "path": "pkgs/c/cc-switch.lua",
@@ -651,7 +693,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "4.4.2"
     },
     {
       "path": "pkgs/c/code.lua",
@@ -704,7 +747,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "9.5",
+      "highest_existing": "9.5"
     },
     {
       "path": "pkgs/c/coursier.lua",
@@ -734,7 +779,8 @@
             "required": true
           }
         }
-      }
+      },
+      "highest_existing": "2.1.24"
     },
     {
       "path": "pkgs/c/cpp.lua",
@@ -881,7 +927,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "1.16.2",
+      "highest_existing": "1.16.2"
     },
     {
       "path": "pkgs/d/devcpp.lua",
@@ -914,7 +962,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "1.614.1"
     },
     {
       "path": "pkgs/d/dotnet.lua",
@@ -947,7 +996,8 @@
         }
       },
       "latest": "7.1.0",
-      "add_latest": {}
+      "add_latest": {},
+      "highest_existing": "7.1.0"
     },
     {
       "path": "pkgs/d/dsh.lua",
@@ -984,7 +1034,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "9.2.4",
+      "highest_existing": "9.2.4"
     },
     {
       "path": "pkgs/e/elfutils.lua",
@@ -1007,7 +1059,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "0.191",
+      "highest_existing": "0.191"
     },
     {
       "path": "pkgs/e/emsdk.lua",
@@ -1052,7 +1106,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "2.6.2"
     },
     {
       "path": "pkgs/f/fd.lua",
@@ -1074,7 +1129,8 @@
         }
       },
       "latest": "10.5.0",
-      "add_latest": {}
+      "add_latest": {},
+      "highest_existing": "10.5.0"
     },
     {
       "path": "pkgs/f/fish.lua",
@@ -1097,7 +1153,8 @@
         }
       },
       "latest": "4.8.1",
-      "add_latest": {}
+      "add_latest": {},
+      "highest_existing": "4.8.1"
     },
     {
       "path": "pkgs/f/fontconfig-user-moyingji.lua",
@@ -1132,7 +1189,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "2.13.2",
+      "highest_existing": "2.13.2"
     },
     {
       "path": "pkgs/f/fribidi.lua",
@@ -1159,7 +1218,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "1.0.13"
     },
     {
       "path": "pkgs/f/fzf.lua",
@@ -1181,7 +1241,8 @@
         }
       },
       "latest": "0.74.3",
-      "add_latest": {}
+      "add_latest": {},
+      "highest_existing": "0.74.3"
     },
     {
       "path": "pkgs/g/gcc-runtime.lua",
@@ -1210,7 +1271,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "15.1.0",
+      "highest_existing": "15.1.0"
     },
     {
       "path": "pkgs/g/gcc-specs-config.lua",
@@ -1249,7 +1312,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "2.44.8",
+      "highest_existing": "2.44.8"
     },
     {
       "path": "pkgs/g/gh.lua",
@@ -1301,7 +1366,8 @@
         }
       },
       "latest": "2.92.0",
-      "add_latest": {}
+      "add_latest": {},
+      "highest_existing": "2.92.0"
     },
     {
       "path": "pkgs/g/github-notifications-clear.lua",
@@ -1319,7 +1385,7 @@
       "status": "manual",
       "latest": "2.2.0",
       "add_latest": {},
-      "reason": "existing extension table needs reviewed insertion"
+      "reason": "no validated xlings execution environment for linux/x86"
     },
     {
       "path": "pkgs/g/glib.lua",
@@ -1342,7 +1408,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "2.88.3",
+      "highest_existing": "2.88.3"
     },
     {
       "path": "pkgs/g/glibc.lua",
@@ -1355,18 +1423,59 @@
       "id": "xim:glslang",
       "upstream": "KhronosGroup/glslang",
       "stars": 3599,
-      "status": "manual",
-      "reason": "existing extension table needs reviewed insertion"
+      "status": "enabled",
+      "autoupdate": {
+        "source": "https://github.com/xlings-res/glslang/releases",
+        "resources": {
+          "GLOBAL": {
+            "url": {
+              "linux": "https://github.com/xlings-res/glslang/releases/download/${version}/glslang-${version}-linux-x86_64.tar.gz"
+            },
+            "required": true
+          },
+          "CN": {
+            "url": {
+              "linux": "https://gitcode.com/xlings-res/glslang/releases/download/${version}/glslang-${version}-linux-x86_64.tar.gz"
+            },
+            "required": true
+          }
+        },
+        "verify": "sha256-sidecar"
+      },
+      "latest": "15.1.0",
+      "highest_existing": "15.1.0"
     },
     {
       "path": "pkgs/g/go.lua",
       "id": "xim:go",
       "upstream": "golang/go",
       "stars": 139400,
-      "status": "manual",
+      "status": "enabled",
       "latest": "1.27.0",
       "add_latest": {},
-      "reason": "resource version discovery needs an explicit reviewed source mapping"
+      "autoupdate": {
+        "source": "https://github.com/golang/go/tags",
+        "tag": "go${version}",
+        "resources": {
+          "GLOBAL": {
+            "url": {
+              "linux": "https://go.dev/dl/go${version}.linux-amd64.tar.gz",
+              "macosx": "https://go.dev/dl/go${version}.darwin-arm64.tar.gz",
+              "windows": "https://go.dev/dl/go${version}.windows-amd64.zip"
+            },
+            "required": true
+          },
+          "CN": {
+            "url": {
+              "linux": "https://mirrors.hust.edu.cn/golang/go${version}.linux-amd64.tar.gz",
+              "macosx": "https://mirrors.hust.edu.cn/golang/go${version}.darwin-arm64.tar.gz",
+              "windows": "https://mirrors.hust.edu.cn/golang/go${version}.windows-amd64.zip"
+            },
+            "required": true
+          }
+        }
+      },
+      "highest_existing": "1.27.0"
     },
     {
       "path": "pkgs/g/godot.lua",
@@ -1381,10 +1490,23 @@
       "id": "xim:gradle",
       "upstream": "gradle/gradle",
       "stars": 18887,
-      "status": "manual",
+      "status": "enabled",
       "latest": "9.7.1",
       "add_latest": {},
-      "reason": "resource version discovery needs an explicit reviewed source mapping"
+      "autoupdate": {
+        "source": "https://github.com/gradle/gradle/releases",
+        "resources": {
+          "GLOBAL": {
+            "url": "https://services.gradle.org/distributions/gradle-${version}-bin.zip",
+            "required": true
+          },
+          "CN": {
+            "url": "https://mirrors.cloud.tencent.com/gradle/gradle-${version}-bin.zip",
+            "required": true
+          }
+        }
+      },
+      "highest_existing": "9.7.1"
     },
     {
       "path": "pkgs/g/graphene.lua",
@@ -1411,7 +1533,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "1.10.8"
     },
     {
       "path": "pkgs/g/graphics.lua",
@@ -1446,7 +1569,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "1.3.14"
     },
     {
       "path": "pkgs/g/griddycode.lua",
@@ -1467,7 +1591,8 @@
         }
       },
       "latest": "1.2.2",
-      "add_latest": {}
+      "add_latest": {},
+      "highest_existing": "1.2.2"
     },
     {
       "path": "pkgs/g/gtk3.lua",
@@ -1496,7 +1621,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "3.24.43",
+      "highest_existing": "3.24.43"
     },
     {
       "path": "pkgs/g/gtk4.lua",
@@ -1519,7 +1646,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "4.16.13",
+      "highest_existing": "4.16.13"
     },
     {
       "path": "pkgs/h/harfbuzz.lua",
@@ -1546,7 +1675,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "14.4.0"
     },
     {
       "path": "pkgs/h/hermes-agent.lua",
@@ -1567,7 +1697,8 @@
         }
       },
       "latest": "2026.4.23",
-      "add_latest": {}
+      "add_latest": {},
+      "highest_existing": "2026.4.23"
     },
     {
       "path": "pkgs/h/hip-nvidia.lua",
@@ -1594,7 +1725,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "7.2.4"
     },
     {
       "path": "pkgs/h/htop.lua",
@@ -1627,7 +1759,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "3.5.3"
     },
     {
       "path": "pkgs/h/huxerui.lua",
@@ -1666,7 +1799,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "78.3",
+      "highest_existing": "78.3"
     },
     {
       "path": "pkgs/i/interposer-stub.lua",
@@ -1688,7 +1823,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "0.1.0",
+      "highest_existing": "0.1.0"
     },
     {
       "path": "pkgs/i/iphoneos-sdk.lua",
@@ -1708,7 +1845,9 @@
           }
         },
         "tag": "iOS${version}-SDKs"
-      }
+      },
+      "latest": "26.5",
+      "highest_existing": "26.5"
     },
     {
       "path": "pkgs/j/jdk-corretto.lua",
@@ -1761,7 +1900,9 @@
             "required": true
           }
         }
-      }
+      },
+      "latest": "25.0.4+7",
+      "highest_existing": "25.0.4+7"
     },
     {
       "path": "pkgs/j/jdk-zulu.lua",
@@ -1801,7 +1942,8 @@
             "required": true
           }
         }
-      }
+      },
+      "highest_existing": "3.4.0"
     },
     {
       "path": "pkgs/j/jq.lua",
@@ -1827,7 +1969,8 @@
         "tag": "jq-${version}"
       },
       "latest": "1.8.2",
-      "add_latest": {}
+      "add_latest": {},
+      "highest_existing": "1.8.2"
     },
     {
       "path": "pkgs/k/keyutils.lua",
@@ -1856,7 +1999,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "1.6.3",
+      "highest_existing": "1.6.3"
     },
     {
       "path": "pkgs/k/khistory.lua",
@@ -1894,7 +2039,8 @@
             "required": true
           }
         }
-      }
+      },
+      "highest_existing": "2.4.20"
     },
     {
       "path": "pkgs/k/krb5.lua",
@@ -1925,7 +2071,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "1.22.2",
+      "highest_existing": "1.22.2"
     },
     {
       "path": "pkgs/l/libX11.lua",
@@ -1948,7 +2096,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "1.8.10",
+      "highest_existing": "1.8.10"
     },
     {
       "path": "pkgs/l/libXau.lua",
@@ -1971,7 +2121,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "1.0.11",
+      "highest_existing": "1.0.11"
     },
     {
       "path": "pkgs/l/libXcomposite.lua",
@@ -2000,7 +2152,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "0.4.6",
+      "highest_existing": "0.4.6"
     },
     {
       "path": "pkgs/l/libXcursor.lua",
@@ -2023,7 +2177,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "1.2.3",
+      "highest_existing": "1.2.3"
     },
     {
       "path": "pkgs/l/libXdamage.lua",
@@ -2046,7 +2202,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "1.1.7",
+      "highest_existing": "1.1.7"
     },
     {
       "path": "pkgs/l/libXdmcp.lua",
@@ -2069,7 +2227,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "1.1.5",
+      "highest_existing": "1.1.5"
     },
     {
       "path": "pkgs/l/libXext.lua",
@@ -2092,7 +2252,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "1.3.6",
+      "highest_existing": "1.3.6"
     },
     {
       "path": "pkgs/l/libXfixes.lua",
@@ -2115,7 +2277,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "6.0.1",
+      "highest_existing": "6.0.1"
     },
     {
       "path": "pkgs/l/libXft.lua",
@@ -2138,7 +2302,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "2.3.9",
+      "highest_existing": "2.3.9"
     },
     {
       "path": "pkgs/l/libXi.lua",
@@ -2161,7 +2327,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "1.8.2",
+      "highest_existing": "1.8.2"
     },
     {
       "path": "pkgs/l/libXinerama.lua",
@@ -2184,7 +2352,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "1.1.5",
+      "highest_existing": "1.1.5"
     },
     {
       "path": "pkgs/l/libXrandr.lua",
@@ -2207,7 +2377,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "1.5.4",
+      "highest_existing": "1.5.4"
     },
     {
       "path": "pkgs/l/libXrender.lua",
@@ -2230,7 +2402,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "0.9.11",
+      "highest_existing": "0.9.11"
     },
     {
       "path": "pkgs/l/libXtst.lua",
@@ -2253,7 +2427,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "1.2.5",
+      "highest_existing": "1.2.5"
     },
     {
       "path": "pkgs/l/libXxf86vm.lua",
@@ -2276,7 +2452,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "1.1.6",
+      "highest_existing": "1.1.6"
     },
     {
       "path": "pkgs/l/libbsd.lua",
@@ -2299,7 +2477,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "0.12.2",
+      "highest_existing": "0.12.2"
     },
     {
       "path": "pkgs/l/libcap.lua",
@@ -2328,7 +2508,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "2.71",
+      "highest_existing": "2.71"
     },
     {
       "path": "pkgs/l/libcublas.lua",
@@ -2381,7 +2563,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "2.3.3"
     },
     {
       "path": "pkgs/l/libcurand.lua",
@@ -2430,7 +2613,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "22.1.8"
     },
     {
       "path": "pkgs/l/libdatrie.lua",
@@ -2457,7 +2641,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "0.2.14"
     },
     {
       "path": "pkgs/l/libdrm.lua",
@@ -2480,7 +2665,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "2.4.123",
+      "highest_existing": "2.4.123"
     },
     {
       "path": "pkgs/l/libedit.lua",
@@ -2509,7 +2696,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "3.1.20250104",
+      "highest_existing": "3.1.20250104"
     },
     {
       "path": "pkgs/l/libepoxy.lua",
@@ -2536,7 +2725,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "1.5.10"
     },
     {
       "path": "pkgs/l/libffi.lua",
@@ -2563,7 +2753,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "3.4.4"
     },
     {
       "path": "pkgs/l/libgcrypt.lua",
@@ -2592,7 +2783,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "1.12.2",
+      "highest_existing": "1.12.2"
     },
     {
       "path": "pkgs/l/libglvnd.lua",
@@ -2627,7 +2820,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "1.61",
+      "highest_existing": "1.61"
     },
     {
       "path": "pkgs/l/libinput-quirks.lua",
@@ -2660,15 +2855,35 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "3.2.0"
     },
     {
       "path": "pkgs/l/libllvm.lua",
       "id": "xim:libllvm",
       "upstream": "llvm/llvm-project",
       "stars": 41154,
-      "status": "manual",
-      "reason": "existing extension table needs reviewed insertion"
+      "status": "enabled",
+      "autoupdate": {
+        "source": "https://github.com/xlings-res/libllvm/releases",
+        "resources": {
+          "GLOBAL": {
+            "url": {
+              "linux": "https://github.com/xlings-res/libllvm/releases/download/${version}/libllvm-${version}-linux-x86_64.tar.gz"
+            },
+            "required": true
+          },
+          "CN": {
+            "url": {
+              "linux": "https://gitcode.com/xlings-res/libllvm/releases/download/${version}/libllvm-${version}-linux-x86_64.tar.gz"
+            },
+            "required": true
+          }
+        },
+        "verify": "sha256-sidecar"
+      },
+      "latest": "20.1.7",
+      "highest_existing": "20.1.7"
     },
     {
       "path": "pkgs/l/libmd.lua",
@@ -2697,7 +2912,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "1.2.0",
+      "highest_existing": "1.2.0"
     },
     {
       "path": "pkgs/l/libnotify.lua",
@@ -2726,7 +2943,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "0.8.6",
+      "highest_existing": "0.8.6"
     },
     {
       "path": "pkgs/l/libnvfatbin.lua",
@@ -2773,7 +2992,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "0.18.1",
+      "highest_existing": "0.18.1"
     },
     {
       "path": "pkgs/l/libpng.lua",
@@ -2800,7 +3021,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "1.6.43"
     },
     {
       "path": "pkgs/l/libpsl.lua",
@@ -2827,7 +3049,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "0.23.3"
     },
     {
       "path": "pkgs/l/libsecret.lua",
@@ -2856,7 +3079,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "0.21.7",
+      "highest_existing": "0.21.7"
     },
     {
       "path": "pkgs/l/libselinux.lua",
@@ -2883,7 +3108,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "3.11"
     },
     {
       "path": "pkgs/l/libsoup.lua",
@@ -2906,7 +3132,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "3.6.6",
+      "highest_existing": "3.6.6"
     },
     {
       "path": "pkgs/l/libthai.lua",
@@ -2933,7 +3161,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "0.1.30"
     },
     {
       "path": "pkgs/l/libtiff.lua",
@@ -2956,7 +3185,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "4.7.2",
+      "highest_existing": "4.7.2"
     },
     {
       "path": "pkgs/l/libudev.lua",
@@ -2989,7 +3220,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "257.4"
     },
     {
       "path": "pkgs/l/libusb.lua",
@@ -3022,7 +3254,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "1.0.29"
     },
     {
       "path": "pkgs/l/libxcb.lua",
@@ -3045,7 +3278,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "1.17.0",
+      "highest_existing": "1.17.0"
     },
     {
       "path": "pkgs/l/libxkbcommon.lua",
@@ -3070,7 +3305,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "1.7.0",
+      "highest_existing": "1.7.0"
     },
     {
       "path": "pkgs/l/libxml2.lua",
@@ -3099,7 +3336,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "1.3.2",
+      "highest_existing": "1.3.2"
     },
     {
       "path": "pkgs/l/limine.lua",
@@ -3132,7 +3371,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "12.9.3"
     },
     {
       "path": "pkgs/l/linux-headers.lua",
@@ -3197,7 +3437,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "20.1.7.1"
     },
     {
       "path": "pkgs/l/llvm-tools.lua",
@@ -3234,15 +3475,45 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "23.1.3"
     },
     {
       "path": "pkgs/l/llvm.lua",
       "id": "xim:llvm",
       "upstream": "llvm/llvm-project",
       "stars": 41154,
-      "status": "manual",
-      "reason": "resource-server baseline has no per-architecture checksums"
+      "status": "enabled",
+      "autoupdate": {
+        "source": "https://github.com/xlings-res/llvm/releases",
+        "verify": "sha256-sidecar",
+        "resources": {
+          "GLOBAL": {
+            "required": true,
+            "url": {
+              "linux": {
+                "x86_64": "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-${version}-linux-x86_64.tar.gz",
+                "aarch64": "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-${version}-linux-aarch64.tar.gz"
+              },
+              "macosx": "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-${version}-macosx-arm64.tar.xz",
+              "windows": "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-${version}-windows-x86_64.zip"
+            }
+          },
+          "CN": {
+            "required": true,
+            "url": {
+              "linux": {
+                "x86_64": "https://gitcode.com/xlings-res/llvm/releases/download/${version}/llvm-${version}-linux-x86_64.tar.gz",
+                "aarch64": "https://gitcode.com/xlings-res/llvm/releases/download/${version}/llvm-${version}-linux-aarch64.tar.gz"
+              },
+              "macosx": "https://gitcode.com/xlings-res/llvm/releases/download/${version}/llvm-${version}-macosx-arm64.tar.xz",
+              "windows": "https://gitcode.com/xlings-res/llvm/releases/download/${version}/llvm-${version}-windows-x86_64.zip"
+            }
+          }
+        }
+      },
+      "latest": "22.1.8",
+      "highest_existing": "23.1.3"
     },
     {
       "path": "pkgs/luban/agent-workspace.lua",
@@ -3310,10 +3581,35 @@
       "id": "xim:labwc-desktop",
       "upstream": "labwc/labwc",
       "stars": 2862,
-      "status": "manual",
+      "status": "enabled",
       "latest": "0.7.2",
       "add_latest": {},
-      "reason": "existing extension table needs reviewed insertion"
+      "autoupdate": {
+        "source": "https://github.com/xlings-res/labwc-desktop/releases",
+        "resources": {
+          "GLOBAL": {
+            "url": {
+              "linux": {
+                "aarch64": "https://github.com/xlings-res/labwc-desktop/releases/download/${version}-r1/labwc-desktop-${version}-r1-linux-aarch64.tar.gz",
+                "x86_64": "https://github.com/xlings-res/labwc-desktop/releases/download/${version}-r1/labwc-desktop-${version}-r1-linux-x86_64.tar.gz"
+              }
+            },
+            "required": true
+          },
+          "CN": {
+            "url": {
+              "linux": {
+                "aarch64": "https://gitcode.com/xlings-res/labwc-desktop/releases/download/${version}-r1/labwc-desktop-${version}-r1-linux-aarch64.tar.gz",
+                "x86_64": "https://gitcode.com/xlings-res/labwc-desktop/releases/download/${version}-r1/labwc-desktop-${version}-r1-linux-x86_64.tar.gz"
+              }
+            },
+            "required": true
+          }
+        },
+        "tag": "${version}-r1",
+        "verify": "sha256-sidecar"
+      },
+      "highest_existing": "0.7.2"
     },
     {
       "path": "pkgs/luban/labwc.lua",
@@ -3375,10 +3671,44 @@
       "id": "xim:luban-os",
       "upstream": "openxlings/xlings",
       "stars": 615,
-      "status": "manual",
-      "latest": "2026.10.22.2",
+      "status": "enabled",
+      "latest": "2026.10.22.4",
       "add_latest": {},
-      "reason": "existing extension table needs reviewed insertion"
+      "autoupdate": {
+        "source": "https://github.com/xlings-res/luban-os/releases",
+        "resources": {
+          "GLOBAL": {
+            "url": {
+              "linux": {
+                "x86_64": "https://github.com/xlings-res/luban-os/releases/download/${version}/luban-os-${version}-linux-x86_64.tar.gz"
+              },
+              "macosx": {
+                "aarch64": "https://github.com/xlings-res/luban-os/releases/download/${version}/luban-os-${version}-macosx-aarch64.tar.gz"
+              },
+              "windows": {
+                "x86_64": "https://github.com/xlings-res/luban-os/releases/download/${version}/luban-os-${version}-windows-x86_64.zip"
+              }
+            },
+            "required": true
+          },
+          "CN": {
+            "url": {
+              "linux": {
+                "x86_64": "https://gitcode.com/xlings-res/luban-os/releases/download/${version}/luban-os-${version}-linux-x86_64.tar.gz"
+              },
+              "macosx": {
+                "aarch64": "https://gitcode.com/xlings-res/luban-os/releases/download/${version}/luban-os-${version}-macosx-aarch64.tar.gz"
+              },
+              "windows": {
+                "x86_64": "https://gitcode.com/xlings-res/luban-os/releases/download/${version}/luban-os-${version}-windows-x86_64.zip"
+              }
+            },
+            "required": true
+          }
+        },
+        "verify": "sha256-sidecar"
+      },
+      "highest_existing": "2026.10.22.4"
     },
     {
       "path": "pkgs/luban/luban-tiny-musl.lua",
@@ -3397,10 +3727,46 @@
       "id": "xim:luban",
       "upstream": "openxlings/xlings",
       "stars": 615,
-      "status": "manual",
-      "latest": "2026.10.22.2",
+      "status": "enabled",
+      "latest": "2026.10.22.4",
       "add_latest": {},
-      "reason": "existing extension table needs reviewed insertion"
+      "autoupdate": {
+        "source": "https://github.com/xlings-res/luban/releases",
+        "resources": {
+          "GLOBAL": {
+            "url": {
+              "linux": {
+                "aarch64": "https://github.com/xlings-res/luban/releases/download/${version}/luban-${version}-linux-aarch64.tar.gz",
+                "x86_64": "https://github.com/xlings-res/luban/releases/download/${version}/luban-${version}-linux-x86_64.tar.gz"
+              },
+              "macosx": {
+                "aarch64": "https://github.com/xlings-res/luban/releases/download/${version}/luban-${version}-macosx-aarch64.tar.gz"
+              },
+              "windows": {
+                "x86_64": "https://github.com/xlings-res/luban/releases/download/${version}/luban-${version}-windows-x86_64.zip"
+              }
+            },
+            "required": true
+          },
+          "CN": {
+            "url": {
+              "linux": {
+                "aarch64": "https://gitcode.com/xlings-res/luban/releases/download/${version}/luban-${version}-linux-aarch64.tar.gz",
+                "x86_64": "https://gitcode.com/xlings-res/luban/releases/download/${version}/luban-${version}-linux-x86_64.tar.gz"
+              },
+              "macosx": {
+                "aarch64": "https://gitcode.com/xlings-res/luban/releases/download/${version}/luban-${version}-macosx-aarch64.tar.gz"
+              },
+              "windows": {
+                "x86_64": "https://gitcode.com/xlings-res/luban/releases/download/${version}/luban-${version}-windows-x86_64.zip"
+              }
+            },
+            "required": true
+          }
+        },
+        "verify": "sha256-sidecar"
+      },
+      "highest_existing": "2026.10.22.4"
     },
     {
       "path": "pkgs/luban/lxqt.lua",
@@ -3441,7 +3807,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "2026.10.22",
+      "highest_existing": "2026.10.22"
     },
     {
       "path": "pkgs/luban/tiny-musl.lua",
@@ -3522,7 +3890,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "4.3",
+      "highest_existing": "4.3"
     },
     {
       "path": "pkgs/m/mcpp-hooks-audioplayer.lua",
@@ -3589,7 +3959,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "2026.10.21.1"
     },
     {
       "path": "pkgs/m/mcppls-nvim.lua",
@@ -3627,7 +3998,8 @@
             "required": true
           }
         }
-      }
+      },
+      "highest_existing": "0.5.2"
     },
     {
       "path": "pkgs/m/media-crawler.lua",
@@ -3664,7 +4036,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "25.0.7.3",
+      "highest_existing": "25.0.7.3"
     },
     {
       "path": "pkgs/m/meson.lua",
@@ -3691,7 +4065,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "1.8.2"
     },
     {
       "path": "pkgs/m/mingw-cross-gcc.lua",
@@ -3718,7 +4093,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "16.1.0",
+      "highest_existing": "16.1.0"
     },
     {
       "path": "pkgs/m/mingw-gcc.lua",
@@ -3747,7 +4124,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "16.1.0",
+      "highest_existing": "16.1.0"
     },
     {
       "path": "pkgs/m/mingw-w64.lua",
@@ -3788,7 +4167,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "1.4.2"
     },
     {
       "path": "pkgs/m/msvc.lua",
@@ -3826,7 +4206,7 @@
       "status": "manual",
       "latest": "3.02",
       "add_latest": {},
-      "reason": "existing extension table needs reviewed insertion"
+      "reason": "no validated xlings execution environment for windows/x86"
     },
     {
       "path": "pkgs/n/ncurses.lua",
@@ -3853,7 +4233,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "6.5"
     },
     {
       "path": "pkgs/n/nghttp2.lua",
@@ -3880,7 +4261,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "1.70.0"
     },
     {
       "path": "pkgs/n/ninja.lua",
@@ -3925,7 +4307,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "1.12.1"
     },
     {
       "path": "pkgs/n/node.lua",
@@ -3972,7 +4355,9 @@
           }
         },
         "latest": "keep"
-      }
+      },
+      "latest": "24.20.0",
+      "highest_existing": "26.11.1"
     },
     {
       "path": "pkgs/n/npm.lua",
@@ -4021,7 +4406,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "4.40",
+      "highest_existing": "4.40"
     },
     {
       "path": "pkgs/n/nss.lua",
@@ -4050,7 +4437,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "3.118",
+      "highest_existing": "3.118"
     },
     {
       "path": "pkgs/n/nvidia-gl-host-link.lua",
@@ -4073,8 +4462,46 @@
       "id": "xim:nvim",
       "upstream": "neovim/neovim",
       "stars": 103109,
-      "status": "manual",
-      "reason": "existing extension table needs reviewed insertion"
+      "status": "enabled",
+      "autoupdate": {
+        "source": "https://github.com/neovim/neovim/releases",
+        "resources": {
+          "GLOBAL": {
+            "url": {
+              "linux": {
+                "aarch64": "https://github.com/neovim/neovim/releases/download/v${version}/nvim-linux-arm64.tar.gz",
+                "x86_64": "https://github.com/neovim/neovim/releases/download/v${version}/nvim-linux-x86_64.tar.gz"
+              },
+              "macosx": {
+                "x86_64": "https://github.com/neovim/neovim/releases/download/v${version}/nvim-macos-x86_64.tar.gz",
+                "aarch64": "https://github.com/neovim/neovim/releases/download/v${version}/nvim-macos-arm64.tar.gz"
+              },
+              "windows": {
+                "x86_64": "https://github.com/neovim/neovim/releases/download/v${version}/nvim-win64.zip"
+              }
+            },
+            "required": true
+          },
+          "CN": {
+            "url": {
+              "linux": {
+                "aarch64": "https://gitcode.com/xlings-res/nvim/releases/download/${version}/nvim-linux-arm64.tar.gz",
+                "x86_64": "https://gitcode.com/xlings-res/nvim/releases/download/${version}/nvim-linux-x86_64.tar.gz"
+              },
+              "macosx": {
+                "x86_64": "https://gitcode.com/xlings-res/nvim/releases/download/${version}/nvim-macos-x86_64.tar.gz",
+                "aarch64": "https://gitcode.com/xlings-res/nvim/releases/download/${version}/nvim-macos-arm64.tar.gz"
+              },
+              "windows": {
+                "x86_64": "https://gitcode.com/xlings-res/nvim/releases/download/${version}/nvim-win64.zip"
+              }
+            },
+            "required": true
+          }
+        }
+      },
+      "latest": "0.12.5",
+      "highest_existing": "0.12.5"
     },
     {
       "path": "pkgs/n/nvm.lua",
@@ -4113,7 +4540,8 @@
         }
       },
       "latest": "18.11.3",
-      "add_latest": {}
+      "add_latest": {},
+      "highest_existing": "18.11.3"
     },
     {
       "path": "pkgs/o/ollama.lua",
@@ -4135,7 +4563,8 @@
         }
       },
       "latest": "0.13.3",
-      "add_latest": {}
+      "add_latest": {},
+      "highest_existing": "0.13.3"
     },
     {
       "path": "pkgs/o/openclaw.lua",
@@ -4189,7 +4618,8 @@
             "required": true
           }
         }
-      }
+      },
+      "highest_existing": "1.19.0"
     },
     {
       "path": "pkgs/o/openssl.lua",
@@ -4222,7 +4652,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "3.1.5"
     },
     {
       "path": "pkgs/p/pango.lua",
@@ -4245,7 +4676,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "1.52.1",
+      "highest_existing": "1.52.1"
     },
     {
       "path": "pkgs/p/passt.lua",
@@ -4284,7 +4717,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "10.42",
+      "highest_existing": "10.42"
     },
     {
       "path": "pkgs/p/perl.lua",
@@ -4325,7 +4760,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "5.44.0"
     },
     {
       "path": "pkgs/p/pi.lua",
@@ -4356,7 +4792,8 @@
         }
       },
       "latest": "1.0.0",
-      "add_latest": {}
+      "add_latest": {},
+      "highest_existing": "1.0.0"
     },
     {
       "path": "pkgs/p/picolibc-aarch64.lua",
@@ -4387,7 +4824,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "1.8.12"
     },
     {
       "path": "pkgs/p/picolibc-arm.lua",
@@ -4418,7 +4856,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "1.8.12"
     },
     {
       "path": "pkgs/p/picolibc-riscv.lua",
@@ -4449,7 +4888,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "1.8.12"
     },
     {
       "path": "pkgs/p/picolibc-x86.lua",
@@ -4480,7 +4920,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "1.8.12"
     },
     {
       "path": "pkgs/p/pixman.lua",
@@ -4503,7 +4944,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "0.42.2",
+      "highest_existing": "0.42.2"
     },
     {
       "path": "pkgs/p/pnpm.lua",
@@ -4533,7 +4976,8 @@
             "required": true
           }
         }
-      }
+      },
+      "highest_existing": "12.1.0"
     },
     {
       "path": "pkgs/p/pocl.lua",
@@ -4566,7 +5010,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "7.1"
     },
     {
       "path": "pkgs/p/powershell-execpolicy.lua",
@@ -4618,7 +5063,8 @@
             "required": true
           }
         }
-      }
+      },
+      "highest_existing": "0.32.0"
     },
     {
       "path": "pkgs/p/procps-ng.lua",
@@ -4647,7 +5093,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "4.0.5",
+      "highest_existing": "4.0.5"
     },
     {
       "path": "pkgs/p/project-graph.lua",
@@ -4688,7 +5136,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "5.4.0"
     },
     {
       "path": "pkgs/p/python.lua",
@@ -4738,7 +5187,9 @@
         },
         "tag": "${version}-r1",
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "9.2.4",
+      "highest_existing": "9.2.4"
     },
     {
       "path": "pkgs/q/qemu-system.lua",
@@ -4768,7 +5219,9 @@
         },
         "tag": "${version}-r2",
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "9.2.4",
+      "highest_existing": "9.2.4"
     },
     {
       "path": "pkgs/q/qemu-user-aarch64.lua",
@@ -4789,7 +5242,8 @@
         "tag": "v${version}-1"
       },
       "latest": "7.2.0",
-      "add_latest": {}
+      "add_latest": {},
+      "highest_existing": "7.2.0"
     },
     {
       "path": "pkgs/q/qemu-x86.lua",
@@ -4843,7 +5297,8 @@
         }
       },
       "latest": "15.1.0",
-      "add_latest": {}
+      "add_latest": {},
+      "highest_existing": "15.1.0"
     },
     {
       "path": "pkgs/r/riscv64-linux-musl-gcc.lua",
@@ -4872,7 +5327,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "16.1.0",
+      "highest_existing": "16.1.0"
     },
     {
       "path": "pkgs/r/ros2-jazzy-ubuntu.lua",
@@ -4938,7 +5395,9 @@
             "required": true
           }
         }
-      }
+      },
+      "latest": "1.28.2",
+      "highest_existing": "1.28.2"
     },
     {
       "path": "pkgs/s/seeme-report.lua",
@@ -4999,7 +5458,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "2026.3"
     },
     {
       "path": "pkgs/s/shortcut-tool.lua",
@@ -5037,7 +5497,8 @@
         }
       },
       "latest": "1.13.20",
-      "add_latest": {}
+      "add_latest": {},
+      "highest_existing": "1.13.20"
     },
     {
       "path": "pkgs/s/slang.lua",
@@ -5068,7 +5529,8 @@
         }
       },
       "latest": "2026.14.1",
-      "add_latest": {}
+      "add_latest": {},
+      "highest_existing": "2026.14.1"
     },
     {
       "path": "pkgs/s/sourcetrail.lua",
@@ -5089,7 +5551,8 @@
         }
       },
       "latest": "2021.4.19",
-      "add_latest": {}
+      "add_latest": {},
+      "highest_existing": "2021.4.19"
     },
     {
       "path": "pkgs/s/spirv-tools.lua",
@@ -5116,7 +5579,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "2025.1"
     },
     {
       "path": "pkgs/s/sqlite.lua",
@@ -5139,7 +5603,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "3.53.4",
+      "highest_existing": "3.53.4"
     },
     {
       "path": "pkgs/s/sudo.lua",
@@ -5180,7 +5646,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "6.6.20261010"
     },
     {
       "path": "pkgs/t/tinynext.lua",
@@ -5221,7 +5688,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "3.8"
     },
     {
       "path": "pkgs/t/tpm2-tss.lua",
@@ -5250,7 +5718,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "4.1.3",
+      "highest_existing": "4.1.3"
     },
     {
       "path": "pkgs/t/trendradar.lua",
@@ -5269,7 +5739,9 @@
             "required": true
           }
         }
-      }
+      },
+      "latest": "6.6.1",
+      "highest_existing": "6.6.1"
     },
     {
       "path": "pkgs/u/util-linux.lua",
@@ -5294,7 +5766,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "2.40.2",
+      "highest_existing": "2.40.2"
     },
     {
       "path": "pkgs/u/uv.lua",
@@ -5324,7 +5798,8 @@
         }
       },
       "latest": "0.12.7",
-      "add_latest": {}
+      "add_latest": {},
+      "highest_existing": "0.12.7"
     },
     {
       "path": "pkgs/v/vc6.lua",
@@ -5379,7 +5854,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "2026.7.27"
     },
     {
       "path": "pkgs/v/vcstool.lua",
@@ -5422,7 +5898,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "9.2.1172"
     },
     {
       "path": "pkgs/v/virtiofsd.lua",
@@ -5451,7 +5928,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "1.14.0",
+      "highest_existing": "1.14.0"
     },
     {
       "path": "pkgs/v/virtualbox-ubuntu.lua",
@@ -5482,7 +5961,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "7.2.8",
+      "highest_existing": "7.2.8"
     },
     {
       "path": "pkgs/v/vs-buildtools.lua",
@@ -5513,7 +5994,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "1.4.313",
+      "highest_existing": "1.4.313"
     },
     {
       "path": "pkgs/v/vulkan-loader.lua",
@@ -5548,7 +6031,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "1.4.357.0"
     },
     {
       "path": "pkgs/w/wayland-protocols.lua",
@@ -5571,7 +6055,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "1.45",
+      "highest_existing": "1.45"
     },
     {
       "path": "pkgs/w/wayland.lua",
@@ -5594,7 +6080,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "1.23.1",
+      "highest_existing": "1.23.1"
     },
     {
       "path": "pkgs/w/windows-acp.lua",
@@ -5649,7 +6137,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "2.3.0"
     },
     {
       "path": "pkgs/w/wsl-gl-host-link.lua",
@@ -5683,7 +6172,8 @@
             "required": true
           }
         }
-      }
+      },
+      "highest_existing": "3.0.1"
     },
     {
       "path": "pkgs/w/wsl-ubuntu.lua",
@@ -5720,7 +6210,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "16.1.0",
+      "highest_existing": "16.1.0"
     },
     {
       "path": "pkgs/x/xcb-proto.lua",
@@ -5743,7 +6235,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "1.17.0",
+      "highest_existing": "1.17.0"
     },
     {
       "path": "pkgs/x/xcb-util-cursor.lua",
@@ -5772,7 +6266,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "0.1.6",
+      "highest_existing": "0.1.6"
     },
     {
       "path": "pkgs/x/xcb-util-image.lua",
@@ -5801,7 +6297,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "0.4.0",
+      "highest_existing": "0.4.0"
     },
     {
       "path": "pkgs/x/xcb-util-keysyms.lua",
@@ -5830,7 +6328,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "0.4.1",
+      "highest_existing": "0.4.1"
     },
     {
       "path": "pkgs/x/xcb-util-renderutil.lua",
@@ -5859,7 +6359,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "0.3.10",
+      "highest_existing": "0.3.10"
     },
     {
       "path": "pkgs/x/xcb-util-wm.lua",
@@ -5888,7 +6390,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "0.4.2",
+      "highest_existing": "0.4.2"
     },
     {
       "path": "pkgs/x/xcb-util.lua",
@@ -5917,7 +6421,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "0.4.1",
+      "highest_existing": "0.4.1"
     },
     {
       "path": "pkgs/x/xdesk.lua",
@@ -5925,7 +6431,7 @@
       "upstream": "openxlings/xlings",
       "stars": 615,
       "status": "enabled",
-      "latest": "2026.10.22.2",
+      "latest": "2026.10.22.4",
       "add_latest": {},
       "autoupdate": {
         "source": "https://github.com/xlings-res/xdesk/releases",
@@ -5948,7 +6454,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "2026.10.22.4"
     },
     {
       "path": "pkgs/x/xkeyboard-config.lua",
@@ -5970,7 +6477,7 @@
       "upstream": "openxlings/xlings",
       "stars": 615,
       "status": "enabled",
-      "latest": "2026.10.22.2",
+      "latest": "2026.10.22.4",
       "add_latest": {},
       "autoupdate": {
         "source": "https://github.com/xlings-res/xlings/releases",
@@ -6007,7 +6514,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "2026.10.22.4"
     },
     {
       "path": "pkgs/x/xmake.lua",
@@ -6037,7 +6545,8 @@
             "required": true
           }
         }
-      }
+      },
+      "highest_existing": "3.1.1"
     },
     {
       "path": "pkgs/x/xorgproto.lua",
@@ -6060,7 +6569,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "2024.1",
+      "highest_existing": "2024.1"
     },
     {
       "path": "pkgs/x/xpkg-helper.lua",
@@ -6101,7 +6612,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "1.2.1"
     },
     {
       "path": "pkgs/x/xtrans.lua",
@@ -6124,7 +6636,9 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "latest": "1.5.2",
+      "highest_existing": "1.5.2"
     },
     {
       "path": "pkgs/x/xvm-sysdetect.lua",
@@ -6173,7 +6687,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "5.8.3"
     },
     {
       "path": "pkgs/y/yazi.lua",
@@ -6209,7 +6724,8 @@
             "required": true
           }
         }
-      }
+      },
+      "highest_existing": "26.5.6"
     },
     {
       "path": "pkgs/z/zlib.lua",
@@ -6242,7 +6758,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "1.3.1"
     },
     {
       "path": "pkgs/z/zoxide.lua",
@@ -6264,7 +6781,8 @@
         }
       },
       "latest": "0.10.0",
-      "add_latest": {}
+      "add_latest": {},
+      "highest_existing": "0.10.0"
     },
     {
       "path": "pkgs/z/zstd.lua",
@@ -6297,7 +6815,8 @@
           }
         },
         "verify": "sha256-sidecar"
-      }
+      },
+      "highest_existing": "1.5.7"
     }
   ],
   "rollout_policy": {

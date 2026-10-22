@@ -17,6 +17,25 @@ package = {
 
     extensions = {
 
+
+        autoupdate = {
+            source = "https://github.com/xlings-res/glslang/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/glslang/releases/download/${version}/glslang-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/glslang/releases/download/${version}/glslang-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
     },
 
     xpm = {
