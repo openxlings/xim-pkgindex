@@ -48,7 +48,7 @@ autoupdate = {
 按版本降序检查，选择严格高于所有已有版本、所有必需目标完整可用的第一个候选。
 例如 GLOBAL 支持 1.5/1.3、CN 支持 1.4/1.3，结果是 1.3，而非两个最大值的较小值 1.4。
 
-- 404/410，或 CN 下载最终回到 GitHub，属于已知资源未就绪，可继续检查较早候选。
+- 404/410，或 CN 下载最终回到 GitHub/已验证的 GLOBAL 下载主机，属于已知资源未就绪，可继续检查较早候选。
 - DNS、超时、403、429、服务器异常等不等于版本不存在；必需目标遇到这些错误停止该包选择。
 - 必需资源必须完整下载并计算 SHA256；不同区域同一平台/架构必须字节一致。
 - 可选目标缺资源、网络失败或与必需目标字节不同，则整体省略该目标并记录原因。
@@ -87,7 +87,7 @@ Node 当前 latest 是 LTS 指针，显式配置 keep，只新增后续版本，
 [镜像逐包审计](2026-10-23-autoupdate-mirror-audit.json)。镜像站目录不等于完整二进制覆盖。
 
 - USTC 的 uv、Temurin 25 已核实项目目录。新版本采用 CN 模板，历史 GitCode/单 GLOBAL 条目保持原样。
-- Node 与 rustup 采用官方 GLOBAL、USTC CN；两边都必须完整且一致。
+- Node 与 rustup 采用官方 GLOBAL、USTC CN；Go 使用官方 GLOBAL、华科 CN；Gradle 使用官方 GLOBAL、腾讯 CN。每个包的两边都必须完整且一致。
 - 清华 LLVM 发布镜像主要提供源码，不能代替本索引 llvm-tools/llvm-dev 的重打包二进制。
 - xlings-res 自建/分包资源继续使用已有 GitHub/GitCode 双腿；以资源仓库的发布版本作为 source，
   不把上游原版 archive 冒充自建包。资源服务 macOS 的 arm64 文件名与 aarch64 键分别处理。

@@ -17,6 +17,37 @@ package = {
 
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/llvm/releases",
+            verify = "sha256-sidecar",
+            resources = {
+                GLOBAL = {
+                    required = true,
+                    url = {
+                        linux = {
+                            x86_64 = "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-${version}-linux-x86_64.tar.gz",
+                            aarch64 = "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-${version}-linux-aarch64.tar.gz",
+                        },
+                        macosx = "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-${version}-macosx-arm64.tar.xz",
+                        windows = "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-${version}-windows-x86_64.zip",
+                    },
+                },
+                CN = {
+                    required = true,
+                    url = {
+                        linux = {
+                            x86_64 = "https://gitcode.com/xlings-res/llvm/releases/download/${version}/llvm-${version}-linux-x86_64.tar.gz",
+                            aarch64 = "https://gitcode.com/xlings-res/llvm/releases/download/${version}/llvm-${version}-linux-aarch64.tar.gz",
+                        },
+                        macosx = "https://gitcode.com/xlings-res/llvm/releases/download/${version}/llvm-${version}-macosx-arm64.tar.xz",
+                        windows = "https://gitcode.com/xlings-res/llvm/releases/download/${version}/llvm-${version}-windows-x86_64.zip",
+                    },
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
             -- slim self-contained toolchain carved from the upstream full release

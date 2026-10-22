@@ -60,6 +60,22 @@ package = {
 
 
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/gradle/gradle/releases",
+            resources = {
+                GLOBAL = {
+                    url = "https://services.gradle.org/distributions/gradle-${version}-bin.zip",
+                    required = true,
+                },
+                CN = {
+                    url = "https://mirrors.cloud.tencent.com/gradle/gradle-${version}-bin.zip",
+                    required = true,
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
             deps = { runtime = { "xim:jdk-temurin@25.0.4+7" } },

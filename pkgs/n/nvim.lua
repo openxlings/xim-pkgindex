@@ -35,6 +35,44 @@ package = {
     -- `nvim-win64/`, `nvim-macos-<arch>/`), which is the same on the mirror.
     extensions = {
 
+
+        autoupdate = {
+            source = "https://github.com/neovim/neovim/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://github.com/neovim/neovim/releases/download/v${version}/nvim-linux-arm64.tar.gz",
+                            x86_64 = "https://github.com/neovim/neovim/releases/download/v${version}/nvim-linux-x86_64.tar.gz",
+                        },
+                        macosx = {
+                            x86_64 = "https://github.com/neovim/neovim/releases/download/v${version}/nvim-macos-x86_64.tar.gz",
+                            aarch64 = "https://github.com/neovim/neovim/releases/download/v${version}/nvim-macos-arm64.tar.gz",
+                        },
+                        windows = {
+                            x86_64 = "https://github.com/neovim/neovim/releases/download/v${version}/nvim-win64.zip",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://gitcode.com/xlings-res/nvim/releases/download/${version}/nvim-linux-arm64.tar.gz",
+                            x86_64 = "https://gitcode.com/xlings-res/nvim/releases/download/${version}/nvim-linux-x86_64.tar.gz",
+                        },
+                        macosx = {
+                            x86_64 = "https://gitcode.com/xlings-res/nvim/releases/download/${version}/nvim-macos-x86_64.tar.gz",
+                            aarch64 = "https://gitcode.com/xlings-res/nvim/releases/download/${version}/nvim-macos-arm64.tar.gz",
+                        },
+                        windows = {
+                            x86_64 = "https://gitcode.com/xlings-res/nvim/releases/download/${version}/nvim-win64.zip",
+                        },
+                    },
+                    required = true,
+                },
+            },
+        },
     },
 
     xpm = {

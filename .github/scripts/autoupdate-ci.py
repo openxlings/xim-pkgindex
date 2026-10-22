@@ -62,7 +62,7 @@ def audit():
                 raise Invalid(f'declaration differs from approved coverage inventory: {path}')
             for platform, arches in xim.matrix(info).items():
                 for arch in arches:
-                    hosts = shared_arches(info, info['platforms'][platform]['entries'][xim.latest_refs(info)[platform]]) if arch == 'shared' else {arch}
+                    hosts = shared_arches(info, info['platforms'][platform]['entries'][xim.latest_refs(info)[platform]], next(iter(arches[arch].values()))) if arch == 'shared' else {arch}
                     for host in hosts:
                         native_runner(platform, host)
             enabled.append(info['id'])
@@ -80,12 +80,13 @@ def native_runner(platform, arch):
     return runner
 
 
-def shared_arches(info, entry):
+def shared_arches(info, entry, template=None):
     try:
         resource = entry.plain()
     except Invalid:
         resource = {}
-    url = resource.get('url', '')
+    resource = resource if isinstance(resource, dict) else {}
+    url = template or resource.get('url', '')
     url = url.get('GLOBAL', '') if isinstance(url, dict) else url
     if re.search(r'(?:aarch64|arm64)', url):
         return {'aarch64'}

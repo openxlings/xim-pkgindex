@@ -33,6 +33,31 @@ package = {
     --     letting us pin sha256 deterministically.
 
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/golang/go/tags",
+            tag = "go${version}",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://go.dev/dl/go${version}.linux-amd64.tar.gz",
+                        macosx = "https://go.dev/dl/go${version}.darwin-arm64.tar.gz",
+                        windows = "https://go.dev/dl/go${version}.windows-amd64.zip",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://mirrors.hust.edu.cn/golang/go${version}.linux-amd64.tar.gz",
+                        macosx = "https://mirrors.hust.edu.cn/golang/go${version}.darwin-arm64.tar.gz",
+                        windows = "https://mirrors.hust.edu.cn/golang/go${version}.windows-amd64.zip",
+                    },
+                    required = true,
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
 
