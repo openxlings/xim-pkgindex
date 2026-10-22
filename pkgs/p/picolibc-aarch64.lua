@@ -50,6 +50,31 @@ package = {
     -- run the script, publish, then edit this file.
 
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/picolibc-aarch64/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/picolibc-aarch64/releases/download/${version}/picolibc-aarch64-${version}.tar.gz",
+                        macosx = "https://github.com/xlings-res/picolibc-aarch64/releases/download/${version}/picolibc-aarch64-${version}.tar.gz",
+                        windows = "https://github.com/xlings-res/picolibc-aarch64/releases/download/${version}/picolibc-aarch64-${version}.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/picolibc-aarch64/releases/download/${version}/picolibc-aarch64-${version}.tar.gz",
+                        macosx = "https://gitcode.com/xlings-res/picolibc-aarch64/releases/download/${version}/picolibc-aarch64-${version}.tar.gz",
+                        windows = "https://gitcode.com/xlings-res/picolibc-aarch64/releases/download/${version}/picolibc-aarch64-${version}.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         source = {
             GLOBAL = "https://github.com/xlings-res/picolibc-aarch64/releases/download/${version}/picolibc-aarch64-${version}.tar.gz",

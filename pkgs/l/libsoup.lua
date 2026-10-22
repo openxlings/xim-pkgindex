@@ -13,6 +13,27 @@ package = {
     categories = {"library", "network", "gnome"},
     keywords = {"libsoup", "http", "soup", "gnome", "lib"},
     xvm_enable = true,
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/libsoup/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/libsoup/releases/download/${version}/libsoup-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/libsoup/releases/download/${version}/libsoup-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- The other library #749 named. 3.6.6 is the newest STABLE

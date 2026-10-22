@@ -31,6 +31,31 @@ package = {
     -- with the standard ELF interpreter, so no patchelf relocation is needed
     -- (unlike musl-gcc). No deps.
     -- See mcpp .agents/docs/2026-07-15-mingw-linux-cross-windows-design.md.
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/mingw-cross-gcc/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://github.com/xlings-res/mingw-cross-gcc/releases/download/${version}/mingw-cross-gcc-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://gitcode.com/xlings-res/mingw-cross-gcc/releases/download/${version}/mingw-cross-gcc-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "16.1.0" },

@@ -15,6 +15,27 @@ package = {
     categories = {"graphics", "lib"},
     keywords = {"libxshmfence", "graphics", "x11"},
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/libxshmfence/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/libxshmfence/releases/download/${version}/libxshmfence-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/libxshmfence/releases/download/${version}/libxshmfence-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             deps = {},

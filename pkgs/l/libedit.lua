@@ -15,6 +15,33 @@ package = {
     categories = {"terminal", "lib"},
     keywords = {"libedit", "editline", "readline", "lib"},
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/libedit/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://github.com/xlings-res/libedit/releases/download/${version}/libedit-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://github.com/xlings-res/libedit/releases/download/${version}/libedit-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://gitcode.com/xlings-res/libedit/releases/download/${version}/libedit-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://gitcode.com/xlings-res/libedit/releases/download/${version}/libedit-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- libedit.so.0 carries DT_NEEDED libncurses.so.6 and

@@ -85,13 +85,16 @@ package = {
 
     extensions = {
         autoupdate = {
-            upstream = "google/bundletool",
-            tag = "${version}",
-            latest = "advance",
-            url = {
-                linux = "https://github.com/google/bundletool/releases/download/${version}/bundletool-all-${version}.jar",
-                macosx = "https://github.com/google/bundletool/releases/download/${version}/bundletool-all-${version}.jar",
-                windows = "https://github.com/google/bundletool/releases/download/${version}/bundletool-all-${version}.jar",
+            source = "https://github.com/google/bundletool/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/google/bundletool/releases/download/${version}/bundletool-all-${version}.jar",
+                        macosx = "https://github.com/google/bundletool/releases/download/${version}/bundletool-all-${version}.jar",
+                        windows = "https://github.com/google/bundletool/releases/download/${version}/bundletool-all-${version}.jar",
+                    },
+                    required = true,
+                },
             },
         },
     },

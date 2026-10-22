@@ -24,6 +24,27 @@ package = {
     -- installs entirely under the xpkgs dir (no system clash, xvm-managed,
     -- version-switchable). Windows/macOS use a different installer layout and
     -- still need on-device validation, so only linux is declared for now.
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/vbox/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/vbox/releases/download/${version}/virtualbox-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/vbox/releases/download/${version}/virtualbox-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "7.2.8" },

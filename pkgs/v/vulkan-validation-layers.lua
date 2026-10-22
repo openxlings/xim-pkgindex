@@ -40,6 +40,27 @@ package = {
 
 
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/vulkan-validation-layers/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/vulkan-validation-layers/releases/download/${version}/vulkan-validation-layers-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/vulkan-validation-layers/releases/download/${version}/vulkan-validation-layers-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             deps = { "xim:glibc@>=2.38" },

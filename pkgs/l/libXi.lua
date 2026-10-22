@@ -15,6 +15,27 @@ package = {
     categories = {"graphics", "lib"},
     keywords = {"libxi", "graphics", "x11"},
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/libXi/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/libXi/releases/download/${version}/libXi-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/libXi/releases/download/${version}/libXi-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             deps = { "xim:libXext@>=1.3", "xim:libXfixes@>=6.0", "xim:glibc", "xim:libX11" },

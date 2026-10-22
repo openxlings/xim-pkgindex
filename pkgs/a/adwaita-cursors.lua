@@ -22,6 +22,27 @@ package = {
     -- ships; and share/icons/default inherits Adwaita, the theme a client
     -- that names none gets (tools/res/build.sh adwaita-cursors). Windows'
     -- .cur and .ani files are left out.
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/adwaita-cursors/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/adwaita-cursors/releases/download/${version}/adwaita-cursors-${version}.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/adwaita-cursors/releases/download/${version}/adwaita-cursors-${version}.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "49.0" },

@@ -48,6 +48,27 @@ package = {
     --
     -- Build details, per-flag, and what each one cost:
     -- https://github.com/xlings-res/mesa
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/mesa/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/mesa/releases/download/${version}/mesa-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/mesa/releases/download/${version}/mesa-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- Ranges, not pins, except where the ABI genuinely is exact.

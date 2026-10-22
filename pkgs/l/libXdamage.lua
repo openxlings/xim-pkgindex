@@ -12,6 +12,27 @@ package = {
     categories = {"library", "x11"},
     keywords = {"xdamage", "x11", "damage", "lib"},
     xvm_enable = true,
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/libXdamage/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/libXdamage/releases/download/${version}/libXdamage-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/libXdamage/releases/download/${version}/libXdamage-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- The one X11 client library GTK 4's X11 backend needs that this

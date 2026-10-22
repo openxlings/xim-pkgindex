@@ -21,6 +21,30 @@ package = {
     keywords = {"rust", "cross-platform", "version-management"},
     programs = {"rustup-init"},
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/rust-lang/rustup/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://static.rust-lang.org/rustup/archive/${version}/x86_64-unknown-linux-gnu/rustup-init",
+                        macosx = "https://static.rust-lang.org/rustup/archive/${version}/x86_64-apple-darwin/rustup-init",
+                        windows = "https://static.rust-lang.org/rustup/archive/${version}/x86_64-pc-windows-msvc/rustup-init.exe",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://mirrors.ustc.edu.cn/rust-static/rustup/archive/${version}/x86_64-unknown-linux-gnu/rustup-init",
+                        macosx = "https://mirrors.ustc.edu.cn/rust-static/rustup/archive/${version}/x86_64-apple-darwin/rustup-init",
+                        windows = "https://mirrors.ustc.edu.cn/rust-static/rustup/archive/${version}/x86_64-pc-windows-msvc/rustup-init.exe",
+                    },
+                    required = true,
+                },
+            },
+        },
+    },
+
     xpm = {
         windows = {
             ["latest"] = { ref = "1.28.2" },

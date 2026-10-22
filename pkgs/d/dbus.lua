@@ -18,6 +18,33 @@ package = {
 
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/dbus/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://github.com/xlings-res/dbus/releases/download/${version}/dbus-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://github.com/xlings-res/dbus/releases/download/${version}/dbus-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://gitcode.com/xlings-res/dbus/releases/download/${version}/dbus-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://gitcode.com/xlings-res/dbus/releases/download/${version}/dbus-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- libdbus-1.so.3 needs libc.so.6 and libpthread.so.0 only, at

@@ -21,13 +21,16 @@ package = {
 
     extensions = {
         autoupdate = {
-            upstream = "ajeetdsouza/zoxide",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = "https://github.com/ajeetdsouza/zoxide/releases/download/v${version}/zoxide-${version}-x86_64-unknown-linux-musl.tar.gz",
-                macosx = "https://github.com/ajeetdsouza/zoxide/releases/download/v${version}/zoxide-${version}-aarch64-apple-darwin.tar.gz",
-                windows = "https://github.com/ajeetdsouza/zoxide/releases/download/v${version}/zoxide-${version}-x86_64-pc-windows-msvc.zip",
+            source = "https://github.com/ajeetdsouza/zoxide/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/ajeetdsouza/zoxide/releases/download/v${version}/zoxide-${version}-x86_64-unknown-linux-musl.tar.gz",
+                        macosx = "https://github.com/ajeetdsouza/zoxide/releases/download/v${version}/zoxide-${version}-aarch64-apple-darwin.tar.gz",
+                        windows = "https://github.com/ajeetdsouza/zoxide/releases/download/v${version}/zoxide-${version}-x86_64-pc-windows-msvc.zip",
+                    },
+                    required = true,
+                },
             },
         },
     },

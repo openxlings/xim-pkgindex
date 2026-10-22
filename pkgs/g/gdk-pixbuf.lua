@@ -14,6 +14,27 @@ package = {
     keywords = {"gdk-pixbuf", "image", "pixbuf", "gtk", "lib"},
     programs = {"gdk-pixbuf-query-loaders", "gdk-pixbuf-pixdata", "gdk-pixbuf-thumbnailer", "gdk-pixbuf-csource"},
     xvm_enable = true,
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/gdk-pixbuf/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/gdk-pixbuf/releases/download/${version}/gdk-pixbuf-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/gdk-pixbuf/releases/download/${version}/gdk-pixbuf-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- One of the two libraries #749 named as missing under huxerui.

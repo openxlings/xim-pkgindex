@@ -1,5 +1,7 @@
 # xim-pkgindex 统一自动更新设计
 
+> 2026-10-23 更新：本文旧的 upstream/url 和 GitHub-only 描述已被 [source/resources 当前设计](2026-10-23-xpkgindex-update-multi-mode-design.md) 取代；以当前设计、覆盖审计和 PR 最新提交为准。
+
 日期：2026-10-22  
 状态：实现与 CI 验证中，等待 review；交付为草稿 PR。  
 范围：上游版本发现、资源验证、配方追加、更新 PR、候选版本 CI、旧自动更新链路退役。

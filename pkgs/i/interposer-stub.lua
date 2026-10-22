@@ -34,6 +34,24 @@ package = {
     -- see is one they cannot uninstall (Spec D1).
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/interposer-stub/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://github.com/xlings-res/interposer-stub/releases/download/${version}/interposer-stub-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://github.com/xlings-res/interposer-stub/releases/download/${version}/interposer-stub-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- Why a package at all: an interposer is produced by patchelf,

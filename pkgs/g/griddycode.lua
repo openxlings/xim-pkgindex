@@ -24,12 +24,15 @@ package = {
 
     extensions = {
         autoupdate = {
-            upstream = "face-hh/griddycode",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = "https://github.com/face-hh/griddycode/releases/download/v${version}/Linux.zip",
-                windows = "https://github.com/face-hh/griddycode/releases/download/v${version}/Windows.zip",
+            source = "https://github.com/face-hh/griddycode/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/face-hh/griddycode/releases/download/v${version}/Linux.zip",
+                        windows = "https://github.com/face-hh/griddycode/releases/download/v${version}/Windows.zip",
+                    },
+                    required = true,
+                },
             },
         },
     },

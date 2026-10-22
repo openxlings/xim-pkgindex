@@ -16,6 +16,27 @@ package = {
                 "gtk4-launch", "gtk4-path-tool", "gtk4-query-settings",
                 "gtk4-rendernode-tool", "gtk4-update-icon-cache"},
     xvm_enable = true,
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/gtk4/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/gtk4/releases/download/${version}/gtk4-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/gtk4/releases/download/${version}/gtk4-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- The third and last of the libraries #749 recorded as missing

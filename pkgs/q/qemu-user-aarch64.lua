@@ -63,12 +63,16 @@ package = {
     -- upstream tag is carried in `source` instead, where nothing sorts it.
     extensions = {
         autoupdate = {
-            upstream = "multiarch/qemu-user-static",
-            tag = "v${version}-1",
-            latest = "advance",
-            url = {
-                linux = "https://github.com/multiarch/qemu-user-static/releases/download/v${version}-1/x86_64_qemu-aarch64-static.tar.gz",
+            source = "https://github.com/multiarch/qemu-user-static/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/multiarch/qemu-user-static/releases/download/v${version}-1/x86_64_qemu-aarch64-static.tar.gz",
+                    },
+                    required = true,
+                },
             },
+            tag = "v${version}-1",
         },
     },
 

@@ -14,6 +14,27 @@ package = {
     keywords = {"sqlite", "sql", "database", "lib"},
     programs = {"sqlite3"},
     xvm_enable = true,
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/sqlite/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/sqlite/releases/download/${version}/sqlite-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/sqlite/releases/download/${version}/sqlite-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- BUILT, not repacked, and that is the exception rather than the

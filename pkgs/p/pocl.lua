@@ -88,6 +88,33 @@ package = {
     -- node.lua, perl.lua, jdk-zulu.lua for the same finding).
 
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/pocl/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://github.com/xlings-res/pocl/releases/download/${version}/pocl-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://github.com/xlings-res/pocl/releases/download/${version}/pocl-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://gitcode.com/xlings-res/pocl/releases/download/${version}/pocl-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://gitcode.com/xlings-res/pocl/releases/download/${version}/pocl-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "7.1" },

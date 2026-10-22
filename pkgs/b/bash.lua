@@ -23,6 +23,33 @@ package = {
     -- (bash's own termcap). Its only NEEDED is libc.so.6, so the installer's
     -- elfpatch is the whole relocation. A SubOS root (`subos new --rootfs`,
     -- luban-core) puts its bin/ into /usr/bin.
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/bash/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://github.com/xlings-res/bash/releases/download/${version}/bash-${version}-linux-x86_64.tar.gz",
+                            aarch64 = "https://github.com/xlings-res/bash/releases/download/${version}/bash-${version}-linux-aarch64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://gitcode.com/xlings-res/bash/releases/download/${version}/bash-${version}-linux-x86_64.tar.gz",
+                            aarch64 = "https://gitcode.com/xlings-res/bash/releases/download/${version}/bash-${version}-linux-aarch64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             deps = { "xim:glibc" },

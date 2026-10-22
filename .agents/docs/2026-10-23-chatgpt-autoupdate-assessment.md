@@ -1,5 +1,7 @@
 # ChatGPT 自动更新评估
 
+> 2026-10-23 更新：本文旧的 upstream/url 和 GitHub-only 描述已被 [source/resources 当前设计](2026-10-23-xpkgindex-update-multi-mode-design.md) 取代；以当前设计、覆盖审计和 PR 最新提交为准。
+
 ## 现有声明来自哪里
 
 `extensions.autoupdate`、tag/version 占位符及平台 URL 映射原本已由

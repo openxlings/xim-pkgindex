@@ -8,21 +8,23 @@
 ```lua
 extensions = {
     autoupdate = {
-        upstream = "acme/foo",
-        tag = "v${version}",
-        latest = "advance",
-        url = {
-            linux = "https://github.com/acme/foo/releases/download/${tag}/foo-linux-amd64.tar.gz",
-            macosx = "https://github.com/acme/foo/releases/download/${tag}/foo-darwin-arm64.tar.gz",
+        source = "https://github.com/acme/foo/releases",
+        resources = {
+            GLOBAL = "https://github.com/acme/foo/releases/download/${tag}/foo-${version}.zip",
+            -- When a verified mirror exists, both targets are required by default:
+            -- CN = "https://verified-mirror.example/foo/${tag}/foo-${version}.zip",
         },
     },
 },
 ```
 
-`advance` 在完整矩阵通过后一起前移所有平台的 latest；`keep` 只追加候选，不改变指针。
-多架构资源显式声明 `x86_64`、`aarch64` 等规范键，新版本生成 V2 架构资源表。
-本期只接入 HTTPS `github.com` 资源。配方含 CN 镜像，或使用隐式多镜像资源源的包维持人工更新。
-非 GitHub 仓库下载源及厂商接口不接入；既有历史资源保持原样。
+默认 `latest = "advance"`，每个目标默认 `required = true`；`latest = "keep"` 保留既有指针。
+复杂目标可写 `{ required = true, url = { linux = { x86_64 = "..." } } }`。
+版本来源当前识别 GitHub releases/tags 地址，下载模板可使用任意公开 HTTPS。
+候选从新到旧检查，取所有必需目标完整平台/架构资源的真实版本交集，并下载校验字节一致。
+工具支持可选目标；本索引对接入且审核过的 GLOBAL/CN 统一要求必需。
+只有 GLOBAL 的包保留单资源。已有 xlings-res 双腿继续消费，合适的大学镜像经项目路径与产物核实后采用。
+CN 跳回 GitHub 不算镜像就绪。只新增候选，保留历史资源、手工条目、注释与 hooks。
 
 实际扫描/提案每 3 天执行一次，时间为 02:17 UTC / 11:17 JST。每日轻量调度按 UTC 日期门禁，
 以 2026-10-23 为锚点（10 月 23/26/29 日、11 月 1 日等），非到期日跳过扫描/提案，跨月和跨年保持等间隔。

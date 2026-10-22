@@ -34,6 +34,27 @@ package = {
     -- installed, correct, published package can sit unused while the host is
     -- consumed in its place, and nothing reports it.
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/wayland-protocols/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/wayland-protocols/releases/download/${version}/wayland-protocols-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/wayland-protocols/releases/download/${version}/wayland-protocols-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             deps = {},

@@ -35,6 +35,45 @@ package = {
     -- Historical 0.4.x entries keep their direct GitHub release URLs.
 
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/xlings/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://github.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://github.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-linux-x86_64.tar.gz",
+                        },
+                        macosx = {
+                            aarch64 = "https://github.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-macosx-arm64.tar.gz",
+                        },
+                        windows = {
+                            x86_64 = "https://github.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-windows-x86_64.zip",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://gitcode.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://gitcode.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-linux-x86_64.tar.gz",
+                        },
+                        macosx = {
+                            aarch64 = "https://gitcode.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-macosx-arm64.tar.gz",
+                        },
+                        windows = {
+                            x86_64 = "https://gitcode.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-windows-x86_64.zip",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- res_versioned: version-bump bot tracks openxlings/xlings releases and

@@ -15,6 +15,33 @@ package = {
     categories = {"graphics", "lib"},
     keywords = {"xcb-util-renderutil", "xcb", "x11", "render"},
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/xcb-util-renderutil/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://github.com/xlings-res/xcb-util-renderutil/releases/download/${version}/xcb-util-renderutil-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://github.com/xlings-res/xcb-util-renderutil/releases/download/${version}/xcb-util-renderutil-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://gitcode.com/xlings-res/xcb-util-renderutil/releases/download/${version}/xcb-util-renderutil-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://gitcode.com/xlings-res/xcb-util-renderutil/releases/download/${version}/xcb-util-renderutil-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- xim:glibc is declared directly (every payload's own

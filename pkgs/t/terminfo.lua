@@ -25,6 +25,27 @@ package = {
     -- described there.
 
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/terminfo/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/terminfo/releases/download/${version}/terminfo-${version}.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/terminfo/releases/download/${version}/terminfo-${version}.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "6.6.20261010" },

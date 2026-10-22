@@ -20,6 +20,33 @@ package = {
     -- NEEDED. Every program is registered: installing coreutils means getting
     -- these tools, and a SubOS root that has busybox too (luban-core) takes
     -- the registered GNU ones for /usr/bin.
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/coreutils/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://github.com/xlings-res/coreutils/releases/download/${version}/coreutils-${version}-linux-x86_64.tar.gz",
+                            aarch64 = "https://github.com/xlings-res/coreutils/releases/download/${version}/coreutils-${version}-linux-aarch64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://gitcode.com/xlings-res/coreutils/releases/download/${version}/coreutils-${version}-linux-x86_64.tar.gz",
+                            aarch64 = "https://gitcode.com/xlings-res/coreutils/releases/download/${version}/coreutils-${version}-linux-aarch64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             deps = { "xim:glibc" },

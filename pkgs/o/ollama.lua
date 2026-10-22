@@ -26,13 +26,16 @@ package = {
     --   bump this package to track the latest upstream release.
     extensions = {
         autoupdate = {
-            upstream = "ollama/ollama",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = "https://github.com/ollama/ollama/releases/download/v${version}/ollama-linux-amd64.tgz",
-                macosx = "https://github.com/ollama/ollama/releases/download/v${version}/ollama-darwin.tgz",
-                windows = "https://github.com/ollama/ollama/releases/download/v${version}/ollama-windows-amd64.zip",
+            source = "https://github.com/ollama/ollama/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/ollama/ollama/releases/download/v${version}/ollama-linux-amd64.tgz",
+                        macosx = "https://github.com/ollama/ollama/releases/download/v${version}/ollama-darwin.tgz",
+                        windows = "https://github.com/ollama/ollama/releases/download/v${version}/ollama-windows-amd64.zip",
+                    },
+                    required = true,
+                },
             },
         },
     },

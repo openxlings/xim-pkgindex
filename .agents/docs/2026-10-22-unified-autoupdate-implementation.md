@@ -1,5 +1,7 @@
 # Unified autoupdate implementation and review
 
+> 2026-10-23 更新：本文旧的 upstream/url 和 GitHub-only 描述已被 [source/resources 当前设计](2026-10-23-xpkgindex-update-multi-mode-design.md) 取代；以当前设计、覆盖审计和 PR 最新提交为准。
+
 Implements `2026-10-22-xpkgindex-update-unified-design.md` with the user's latest
 rollout constraints: **every three days, GitHub only, exclude packages using CN**.
 Final-head CI results are authoritative at these draft PRs:

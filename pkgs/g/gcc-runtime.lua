@@ -30,6 +30,33 @@ package = {
     --   * libstdc++ is forward-compatible; one gcc-runtime version
     --     covers every binary built against an equal-or-older GCC
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/gcc-runtime/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://github.com/xlings-res/gcc-runtime/releases/download/${version}/gcc-runtime-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://github.com/xlings-res/gcc-runtime/releases/download/${version}/gcc-runtime-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://gitcode.com/xlings-res/gcc-runtime/releases/download/${version}/gcc-runtime-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://gitcode.com/xlings-res/gcc-runtime/releases/download/${version}/gcc-runtime-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- Tracks GCC main version. libstdc++ ABI is forward-

@@ -20,13 +20,16 @@ package = {
 
     extensions = {
         autoupdate = {
-            upstream = "BurntSushi/ripgrep",
-            tag = "${version}",
-            latest = "advance",
-            url = {
-                linux = "https://github.com/BurntSushi/ripgrep/releases/download/${version}/ripgrep-${version}-x86_64-unknown-linux-musl.tar.gz",
-                macosx = "https://github.com/BurntSushi/ripgrep/releases/download/${version}/ripgrep-${version}-aarch64-apple-darwin.tar.gz",
-                windows = "https://github.com/BurntSushi/ripgrep/releases/download/${version}/ripgrep-${version}-x86_64-pc-windows-msvc.zip",
+            source = "https://github.com/BurntSushi/ripgrep/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/BurntSushi/ripgrep/releases/download/${version}/ripgrep-${version}-x86_64-unknown-linux-musl.tar.gz",
+                        macosx = "https://github.com/BurntSushi/ripgrep/releases/download/${version}/ripgrep-${version}-aarch64-apple-darwin.tar.gz",
+                        windows = "https://github.com/BurntSushi/ripgrep/releases/download/${version}/ripgrep-${version}-x86_64-pc-windows-msvc.zip",
+                    },
+                    required = true,
+                },
             },
         },
     },

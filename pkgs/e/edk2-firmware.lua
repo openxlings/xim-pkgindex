@@ -20,6 +20,27 @@ package = {
     -- decompressed from qemu's pc-bios/ at the tag named by the version
     -- (tools/res/build.sh edk2-firmware; the .bz2 inputs' digests are in
     -- tools/res/inputs.txt).
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/edk2-firmware/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/edk2-firmware/releases/download/${version}/edk2-firmware-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/edk2-firmware/releases/download/${version}/edk2-firmware-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "9.2.4" },

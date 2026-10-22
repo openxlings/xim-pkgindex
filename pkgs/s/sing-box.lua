@@ -24,13 +24,16 @@ package = {
 
     extensions = {
         autoupdate = {
-            upstream = "SagerNet/sing-box",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = "https://github.com/SagerNet/sing-box/releases/download/v${version}/sing-box-${version}-linux-amd64.tar.gz",
-                macosx = "https://github.com/SagerNet/sing-box/releases/download/v${version}/sing-box-${version}-darwin-arm64.tar.gz",
-                windows = "https://github.com/SagerNet/sing-box/releases/download/v${version}/sing-box-${version}-windows-amd64.zip",
+            source = "https://github.com/SagerNet/sing-box/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/SagerNet/sing-box/releases/download/v${version}/sing-box-${version}-linux-amd64.tar.gz",
+                        macosx = "https://github.com/SagerNet/sing-box/releases/download/v${version}/sing-box-${version}-darwin-arm64.tar.gz",
+                        windows = "https://github.com/SagerNet/sing-box/releases/download/v${version}/sing-box-${version}-windows-amd64.zip",
+                    },
+                    required = true,
+                },
             },
         },
     },

@@ -35,6 +35,30 @@ package = {
     --     primarily; pnpm publishes a standalone too, so we use that.
 
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/pnpm/pnpm/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/pnpm/pnpm/releases/download/v${version}/pnpm-linux-x64.tar.gz",
+                        macosx = "https://github.com/pnpm/pnpm/releases/download/v${version}/pnpm-darwin-arm64.tar.gz",
+                        windows = "https://github.com/pnpm/pnpm/releases/download/v${version}/pnpm-win32-x64.zip",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/pnpm/releases/download/${version}/pnpm-linux-x64.tar.gz",
+                        macosx = "https://gitcode.com/xlings-res/pnpm/releases/download/${version}/pnpm-darwin-arm64.tar.gz",
+                        windows = "https://gitcode.com/xlings-res/pnpm/releases/download/${version}/pnpm-win32-x64.zip",
+                    },
+                    required = true,
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
             -- Runtime deps: pnpm prebuilt is dynamically linked

@@ -15,6 +15,27 @@ package = {
     categories = {"graphics", "lib"},
     keywords = {"wayland", "graphics", "gl"},
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/wayland/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/wayland/releases/download/${version}/wayland-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/wayland/releases/download/${version}/wayland-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- libxml2 and expat are for `bin/wayland-scanner`, not for the

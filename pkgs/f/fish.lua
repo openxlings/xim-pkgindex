@@ -28,13 +28,16 @@ package = {
     -- and Windows is upstream-unsupported, so this xpkg is linux-only.
     extensions = {
         autoupdate = {
-            upstream = "fish-shell/fish-shell",
-            tag = "${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    aarch64 = "https://github.com/fish-shell/fish-shell/releases/download/${version}/fish-${version}-linux-aarch64.tar.xz",
-                    x86_64 = "https://github.com/fish-shell/fish-shell/releases/download/${version}/fish-${version}-linux-x86_64.tar.xz",
+            source = "https://github.com/fish-shell/fish-shell/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://github.com/fish-shell/fish-shell/releases/download/${version}/fish-${version}-linux-aarch64.tar.xz",
+                            x86_64 = "https://github.com/fish-shell/fish-shell/releases/download/${version}/fish-${version}-linux-x86_64.tar.xz",
+                        },
+                    },
+                    required = true,
                 },
             },
         },

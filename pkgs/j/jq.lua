@@ -29,17 +29,21 @@ package = {
     -- need to move it into install_dir and chmod +x it on Unix.
     extensions = {
         autoupdate = {
-            upstream = "jqlang/jq",
-            tag = "jq-${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    aarch64 = "https://github.com/jqlang/jq/releases/download/jq-${version}/jq-linux-arm64",
-                    x86_64 = "https://github.com/jqlang/jq/releases/download/jq-${version}/jq-linux-amd64",
+            source = "https://github.com/jqlang/jq/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://github.com/jqlang/jq/releases/download/jq-${version}/jq-linux-arm64",
+                            x86_64 = "https://github.com/jqlang/jq/releases/download/jq-${version}/jq-linux-amd64",
+                        },
+                        macosx = "https://github.com/jqlang/jq/releases/download/jq-${version}/jq-macos-arm64",
+                        windows = "https://github.com/jqlang/jq/releases/download/jq-${version}/jq-windows-amd64.exe",
+                    },
+                    required = true,
                 },
-                macosx = "https://github.com/jqlang/jq/releases/download/jq-${version}/jq-macos-arm64",
-                windows = "https://github.com/jqlang/jq/releases/download/jq-${version}/jq-windows-amd64.exe",
             },
+            tag = "jq-${version}",
         },
     },
 

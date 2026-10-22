@@ -29,6 +29,27 @@ package = {
     -- while still starting, because the failure is non-fatal -- it falls back to
     -- single-screen geometry. A non-fatal dlopen failure is exactly the kind of
     -- gap that survives every test that only asks "did it run".
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/libXinerama/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/libXinerama/releases/download/${version}/libXinerama-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/libXinerama/releases/download/${version}/libXinerama-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             deps = { "xim:libX11@>=1.8", "xim:libXext@>=1.3", "xim:glibc" },

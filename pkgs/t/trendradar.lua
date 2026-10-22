@@ -20,12 +20,15 @@ package = {
 
     extensions = {
         autoupdate = {
-            upstream = "sansan0/TrendRadar",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = "https://github.com/sansan0/TrendRadar/archive/refs/tags/v${version}.tar.gz",
-                macosx = "https://github.com/sansan0/TrendRadar/archive/refs/tags/v${version}.tar.gz",
+            source = "https://github.com/sansan0/TrendRadar/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/sansan0/TrendRadar/archive/refs/tags/v${version}.tar.gz",
+                        macosx = "https://github.com/sansan0/TrendRadar/archive/refs/tags/v${version}.tar.gz",
+                    },
+                    required = true,
+                },
             },
         },
     },

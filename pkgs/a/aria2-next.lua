@@ -28,21 +28,24 @@ package = {
     -- sha256 below is from the release's own checksums.sha256 file.
     extensions = {
         autoupdate = {
-            upstream = "AnInsomniacy/aria2-next",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    aarch64 = "https://github.com/AnInsomniacy/aria2-next/releases/download/v${version}/aria2-next-${version}-linux-aarch64",
-                    x86_64 = "https://github.com/AnInsomniacy/aria2-next/releases/download/v${version}/aria2-next-${version}-linux-x86_64",
-                },
-                macosx = {
-                    aarch64 = "https://github.com/AnInsomniacy/aria2-next/releases/download/v${version}/aria2-next-${version}-macos-arm64",
-                    x86_64 = "https://github.com/AnInsomniacy/aria2-next/releases/download/v${version}/aria2-next-${version}-macos-x86_64",
-                },
-                windows = {
-                    aarch64 = "https://github.com/AnInsomniacy/aria2-next/releases/download/v${version}/aria2-next-${version}-windows-arm64.exe",
-                    x86_64 = "https://github.com/AnInsomniacy/aria2-next/releases/download/v${version}/aria2-next-${version}-windows-x86_64.exe",
+            source = "https://github.com/AnInsomniacy/aria2-next/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://github.com/AnInsomniacy/aria2-next/releases/download/v${version}/aria2-next-${version}-linux-aarch64",
+                            x86_64 = "https://github.com/AnInsomniacy/aria2-next/releases/download/v${version}/aria2-next-${version}-linux-x86_64",
+                        },
+                        macosx = {
+                            aarch64 = "https://github.com/AnInsomniacy/aria2-next/releases/download/v${version}/aria2-next-${version}-macos-arm64",
+                            x86_64 = "https://github.com/AnInsomniacy/aria2-next/releases/download/v${version}/aria2-next-${version}-macos-x86_64",
+                        },
+                        windows = {
+                            aarch64 = "https://github.com/AnInsomniacy/aria2-next/releases/download/v${version}/aria2-next-${version}-windows-arm64.exe",
+                            x86_64 = "https://github.com/AnInsomniacy/aria2-next/releases/download/v${version}/aria2-next-${version}-windows-x86_64.exe",
+                        },
+                    },
+                    required = true,
                 },
             },
         },

@@ -78,6 +78,30 @@ package = {
     -- is the SAME value for both legs by construction.
 
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/bazelbuild/bazel/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/bazelbuild/bazel/releases/download/${version}/bazel-${version}-linux-x86_64",
+                        macosx = "https://github.com/bazelbuild/bazel/releases/download/${version}/bazel-${version}-darwin-x86_64",
+                        windows = "https://github.com/bazelbuild/bazel/releases/download/${version}/bazel-${version}-windows-x86_64.exe",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/bazel/releases/download/${version}/bazel-${version}-linux-x86_64",
+                        macosx = "https://gitcode.com/xlings-res/bazel/releases/download/${version}/bazel-${version}-darwin-x86_64",
+                        windows = "https://gitcode.com/xlings-res/bazel/releases/download/${version}/bazel-${version}-windows-x86_64.exe",
+                    },
+                    required = true,
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
             deps = {

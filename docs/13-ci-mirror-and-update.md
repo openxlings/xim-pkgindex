@@ -8,23 +8,26 @@ Declare updates only through `package.extensions.autoupdate`; `xpm.source` remai
 ```lua
 extensions = {
     autoupdate = {
-        upstream = "acme/foo",
-        tag = "v${version}",
-        latest = "advance",
-        url = {
-            linux = "https://github.com/acme/foo/releases/download/${tag}/foo-linux-amd64.tar.gz",
-            macosx = "https://github.com/acme/foo/releases/download/${tag}/foo-darwin-arm64.tar.gz",
+        source = "https://github.com/acme/foo/releases",
+        resources = {
+            GLOBAL = "https://github.com/acme/foo/releases/download/${tag}/foo-${version}.zip",
+            -- When a verified mirror exists, both targets are required by default:
+            -- CN = "https://verified-mirror.example/foo/${tag}/foo-${version}.zip",
         },
     },
 },
 ```
 
-`latest = "advance"` advances all declared platform pointers after verifying the complete matrix.
-`keep` appends the candidate while retaining pointers. Explicit architecture maps use canonical keys
-such as `x86_64` and `aarch64`; new multi-architecture entries use V2 resource maps.
-This rollout accepts only HTTPS `github.com` resource URLs. Packages declaring CN mirrors or
-implicit multi-mirror resource sources remain manual. Non-GitHub registries and vendor downloads
-are excluded; existing runtime resources are preserved.
+`latest = "advance"` and each resource target's `required = true` are defaults.
+Use `latest = "keep"` for a pinned/LTS default. A target can expand to
+`{ required = true, url = { linux = { x86_64 = "..." } } }`.
+Source URLs currently recognize GitHub releases/tags; download templates can use
+any public HTTPS source. Select the newest candidate satisfying every required
+region across the complete platform/architecture matrix, using a true intersection.
+The tool supports optional targets; this index requires every reviewed target.
+Existing xlings-res pairs are consumed; institutional mirrors replace them only
+when their paths and artifact identity match. CN redirects to GitHub do not count
+as available CN assets. Historical resources, manual entries and hooks stay intact.
 
 The workflow scans every three days at 02:17 UTC / 11:17 JST. A lightweight daily
 trigger checks UTC days from 2026-10-23 and skips scheduled scans between due dates,

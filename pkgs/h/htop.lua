@@ -23,6 +23,33 @@ package = {
 
 
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/htop/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://github.com/xlings-res/htop/releases/download/${version}/htop-${version}-linux-x86_64.tar.gz",
+                            aarch64 = "https://github.com/xlings-res/htop/releases/download/${version}/htop-${version}-linux-aarch64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://gitcode.com/xlings-res/htop/releases/download/${version}/htop-${version}-linux-x86_64.tar.gz",
+                            aarch64 = "https://gitcode.com/xlings-res/htop/releases/download/${version}/htop-${version}-linux-aarch64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "3.5.3" },

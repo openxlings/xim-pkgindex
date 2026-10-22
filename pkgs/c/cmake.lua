@@ -41,6 +41,43 @@ package = {
     -- recipe change.
 
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/cmake/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://github.com/xlings-res/cmake/releases/download/${version}/cmake-${version}-linux-x86_64.tar.gz",
+                        },
+                        macosx = {
+                            aarch64 = "https://github.com/xlings-res/cmake/releases/download/${version}/cmake-${version}-macosx-arm64.tar.gz",
+                        },
+                        windows = {
+                            x86_64 = "https://github.com/xlings-res/cmake/releases/download/${version}/cmake-${version}-windows-x86_64.zip",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://gitcode.com/xlings-res/cmake/releases/download/${version}/cmake-${version}-linux-x86_64.tar.gz",
+                        },
+                        macosx = {
+                            aarch64 = "https://gitcode.com/xlings-res/cmake/releases/download/${version}/cmake-${version}-macosx-arm64.tar.gz",
+                        },
+                        windows = {
+                            x86_64 = "https://gitcode.com/xlings-res/cmake/releases/download/${version}/cmake-${version}-windows-x86_64.zip",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- Runtime deps, re-measured across the WHOLE 4.4.2 payload rather

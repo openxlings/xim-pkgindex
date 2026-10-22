@@ -59,15 +59,18 @@ package = {
 
     extensions = {
         autoupdate = {
-            upstream = "intel/llvm",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    x86_64 = "https://github.com/intel/llvm/releases/download/v${version}/sycl_linux.tar.gz",
-                },
-                windows = {
-                    x86_64 = "https://github.com/intel/llvm/releases/download/v${version}/sycl_windows.tar.gz",
+            source = "https://github.com/intel/llvm/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://github.com/intel/llvm/releases/download/v${version}/sycl_linux.tar.gz",
+                        },
+                        windows = {
+                            x86_64 = "https://github.com/intel/llvm/releases/download/v${version}/sycl_windows.tar.gz",
+                        },
+                    },
+                    required = true,
                 },
             },
         },
