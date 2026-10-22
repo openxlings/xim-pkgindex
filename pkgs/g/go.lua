@@ -31,19 +31,7 @@ package = {
     --     disk, so no runtime deps declaration needed.
     --   * go.dev publishes per-version hashes via the dl JSON API,
     --     letting us pin sha256 deterministically.
-    extensions = {
-        autoupdate = {
-            upstream = "golang/go",
-            tag = "go${version}",
-            latest = "advance",
-            url = {
-                linux = "https://go.dev/dl/go${version}.linux-amd64.tar.gz",
-                macosx = "https://go.dev/dl/go${version}.darwin-arm64.tar.gz",
-                windows = "https://go.dev/dl/go${version}.windows-amd64.zip",
-            },
-            provider = "go",
-        },
-    },
+
 
     xpm = {
         linux = {

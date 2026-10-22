@@ -49,22 +49,7 @@ package = {
     -- mcpp probes first.
     --
     -- See mcpp .agents/docs/2026-08-03-windows-host-linux-cross-design.md.
-    extensions = {
-        autoupdate = {
-            upstream = "gcc-mirror/gcc",
-            tag = "releases/gcc-${version}",
-            latest = "advance",
-            url = {
-                windows = {
-                    x86_64 = {
-                        GLOBAL = "https://github.com/xlings-res/x86_64-linux-musl-gcc/releases/download/${version}/x86_64-linux-musl-gcc-${version}-windows-x86_64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/x86_64-linux-musl-gcc/releases/download/${version}/x86_64-linux-musl-gcc-${version}-windows-x86_64.tar.gz",
-                    },
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
+
 
     xpm = {
         windows = {

@@ -12,20 +12,7 @@ package = {
     categories = {"library", "text", "unicode"},
     keywords = {"fribidi", "bidi", "unicode", "lib"},
     xvm_enable = true,
-    extensions = {
-        autoupdate = {
-            upstream = "fribidi/fribidi",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    GLOBAL = "https://github.com/xlings-res/fribidi/releases/download/${version}/fribidi-${version}-linux-x86_64.tar.gz",
-                    CN = "https://gitcode.com/xlings-res/fribidi/releases/download/${version}/fribidi-${version}-linux-x86_64.tar.gz",
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
+
 
     xpm = {
         linux = {

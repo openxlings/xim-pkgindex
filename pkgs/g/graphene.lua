@@ -13,20 +13,7 @@ package = {
     categories = {"library", "graphics"},
     keywords = {"graphene", "simd", "math", "gtk", "lib"},
     xvm_enable = true,
-    extensions = {
-        autoupdate = {
-            upstream = "ebassi/graphene",
-            tag = "${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    GLOBAL = "https://github.com/xlings-res/graphene/releases/download/${version}/graphene-${version}-linux-x86_64.tar.gz",
-                    CN = "https://gitcode.com/xlings-res/graphene/releases/download/${version}/graphene-${version}-linux-x86_64.tar.gz",
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
+
 
     xpm = {
         linux = {

@@ -61,26 +61,7 @@ package = {
     -- switch, `xim:zlib` is a HARD dep here, not an optional one: leave it out
     -- and `java` fails to start rather than degrading. Same blockers otherwise
     -- (`libXtst`, `libasound`).
-    extensions = {
-        autoupdate = {
-            upstream = "zulu-openjdk/zulu-openjdk",
-            tag = "${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    aarch64 = "https://cdn.azul.com/zulu/bin/zulu25.36.15-ca-jdk${version}-linux_aarch64.tar.gz",
-                    x86_64 = "https://cdn.azul.com/zulu/bin/zulu25.36.15-ca-jdk${version}-linux_x64.tar.gz",
-                },
-                macosx = {
-                    aarch64 = "https://cdn.azul.com/zulu/bin/zulu25.36.15-ca-jdk${version}-macosx_aarch64.tar.gz",
-                    x86_64 = "https://cdn.azul.com/zulu/bin/zulu25.36.15-ca-jdk${version}-macosx_x64.tar.gz",
-                },
-                windows = {
-                    x86_64 = "https://cdn.azul.com/zulu/bin/zulu25.36.15-ca-jdk${version}-win_x64.zip",
-                },
-            },
-        },
-    },
+
 
     xpm = {
         linux = {

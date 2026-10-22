@@ -21,10 +21,10 @@ extensions = {
 
 `advance` 在完整矩阵通过后一起前移所有平台的 latest；`keep` 只追加候选，不改变指针。
 多架构资源显式声明 `x86_64`、`aarch64` 等规范键，新版本生成 V2 架构资源表。
-资源叶子是 HTTPS URL 或 GLOBAL/CN 双地址；双地址必须已就绪且 SHA256 相同。
-资源服务器消费包声明 `verify = "sha256-sidecar"`，逐项验证 sidecar 和实际下载。
+本期只接入 HTTPS `github.com` 资源。配方含 CN 镜像，或使用隐式多镜像资源源的包维持人工更新。
+非 GitHub 仓库下载源及厂商接口不接入；既有历史资源保持原样。
 
-工作流每日扫描一次，propose 消费同一份固定 plan，不重新发现版本。配方、base、tag commit
+工作流每 7 天触发一次（每周日 02:17 UTC / 11:17 JST），扫描一次，propose 消费同一份固定 plan，不重新发现版本。配方、base、tag commit
 或资源字节变化会拒绝应用。更新不执行 Lua、不改写历史版本、不自动修复冲突、不构建载荷、不自动合并。
 候选版本必须通过相应 runner 上的真实安装、功能验证和卸载。
 

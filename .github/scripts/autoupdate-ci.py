@@ -14,6 +14,9 @@ from xpkgindex_update.lua_edit import Invalid, parse
 from xpkgindex_update.manifest import descriptor_digest, ordered
 
 ROOT = Path(__file__).resolve().parents[2]
+import sys
+sys.path.insert(0, str(ROOT))
+from tools.autoupdate_policy import github_only_reason
 
 
 def git(*args):
@@ -52,6 +55,9 @@ def audit():
         if auto:
             info = xim.package_info(path, ROOT)
             xim.validate_config(info)
+            reason = github_only_reason({k: v.plain() for k, v in info['package'].items()}, info['autoupdate'])
+            if reason:
+                raise Invalid(f'{path}: {reason}')
             if row['status'] != 'enabled' or row.get('stars', 0) <= 50 or info['autoupdate'] != row['autoupdate']:
                 raise Invalid(f'declaration differs from approved coverage inventory: {path}')
             for platform, arches in xim.matrix(info).items():

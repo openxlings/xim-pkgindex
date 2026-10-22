@@ -21,16 +21,7 @@ package = {
     -- Virtual Machine Platform, through xlings' one door for administrator
     -- rights. Nothing here runs at install: the payload is the MSI, kept as
     -- wsl.msi, pinned by Microsoft's published digest.
-    extensions = {
-        autoupdate = {
-            upstream = "microsoft/WSL",
-            tag = "${version}",
-            latest = "advance",
-            url = {
-                windows = "https://github.com/microsoft/WSL/releases/download/${version}/wsl.${version}.0.x64.msi",
-            },
-        },
-    },
+
 
     xpm = {
         windows = {

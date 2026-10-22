@@ -33,18 +33,7 @@ package = {
     --     their upstream wheel layout depends on it) NO — xim:bun and
     --     xim:codex go via npm because their authors publish on npm
     --     primarily; pnpm publishes a standalone too, so we use that.
-    extensions = {
-        autoupdate = {
-            upstream = "pnpm/pnpm",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = "https://github.com/pnpm/pnpm/releases/download/v${version}/pnpm-linux-x64.tar.gz",
-                macosx = "https://github.com/pnpm/pnpm/releases/download/v${version}/pnpm-darwin-arm64.tar.gz",
-                windows = "https://github.com/pnpm/pnpm/releases/download/v${version}/pnpm-win32-x64.zip",
-            },
-        },
-    },
+
 
     xpm = {
         linux = {

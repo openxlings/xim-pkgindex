@@ -50,26 +50,7 @@ package = {
     -- ⚠️ NO win32-arm64 ASSET. `archs` above is the union across platforms and
     -- arch resolution is fail-closed, so an arm64 Windows host is told the arch
     -- is unavailable rather than handed the x64 archive.
-    extensions = {
-        autoupdate = {
-            upstream = "probe-rs/probe-rs",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    x86_64 = "https://github.com/probe-rs/probe-rs/releases/download/v${version}/probe-rs-tools-x86_64-unknown-linux-gnu.tar.xz",
-                    aarch64 = "https://github.com/probe-rs/probe-rs/releases/download/v${version}/probe-rs-tools-aarch64-unknown-linux-gnu.tar.xz",
-                },
-                macosx = {
-                    x86_64 = "https://github.com/probe-rs/probe-rs/releases/download/v${version}/probe-rs-tools-x86_64-apple-darwin.tar.xz",
-                    aarch64 = "https://github.com/probe-rs/probe-rs/releases/download/v${version}/probe-rs-tools-aarch64-apple-darwin.tar.xz",
-                },
-                windows = {
-                    x86_64 = "https://github.com/probe-rs/probe-rs/releases/download/v${version}/probe-rs-tools-x86_64-pc-windows-msvc.zip",
-                },
-            },
-        },
-    },
+
 
     xpm = {
         linux = {

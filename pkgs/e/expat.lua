@@ -12,20 +12,7 @@ package = {
     categories = {"xml", "library"},
     keywords = {"expat", "xml", "parser", "lib"},
     xvm_enable = true,
-    extensions = {
-        autoupdate = {
-            upstream = "libexpat/libexpat",
-            tag = "R_${version:underscore}",
-            latest = "advance",
-            url = {
-                linux = {
-                    GLOBAL = "https://github.com/xlings-res/expat/releases/download/${version}/expat-${version}-linux-x86_64.tar.gz",
-                    CN = "https://gitcode.com/xlings-res/expat/releases/download/${version}/expat-${version}-linux-x86_64.tar.gz",
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
+
 
     xpm = {
         linux = {

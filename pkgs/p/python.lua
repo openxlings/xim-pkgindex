@@ -25,24 +25,7 @@ package = {
 
     xvm_enable = true,
 
-    extensions = {
-        autoupdate = {
-            upstream = "python/cpython",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    x86_64 = "https://github.com/astral-sh/python-build-standalone/releases/download/20260310/cpython-${version}%2B20260310-x86_64-unknown-linux-gnu-install_only.tar.gz",
-                    aarch64 = "https://github.com/astral-sh/python-build-standalone/releases/download/20260310/cpython-${version}%2B20260310-aarch64-unknown-linux-gnu-install_only.tar.gz",
-                },
-                macosx = {
-                    x86_64 = "https://github.com/astral-sh/python-build-standalone/releases/download/20260310/cpython-${version}%2B20260310-x86_64-apple-darwin-install_only.tar.gz",
-                    aarch64 = "https://github.com/astral-sh/python-build-standalone/releases/download/20260310/cpython-${version}%2B20260310-aarch64-apple-darwin-install_only.tar.gz",
-                },
-                windows = "https://github.com/astral-sh/python-build-standalone/releases/download/20260310/cpython-${version}%2B20260310-x86_64-pc-windows-msvc-install_only.tar.gz",
-            },
-        },
-    },
+
 
     xpm = {
         linux = {

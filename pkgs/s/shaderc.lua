@@ -52,38 +52,7 @@ package = {
     -- winner is whichever installed last, and a project that wants glslang
     -- asks for glslang. The libraries stay private to the payload for the
     -- same reason and are not declared into the subos library view.
-    extensions = {
-        autoupdate = {
-            upstream = "google/shaderc",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    aarch64 = {
-                        GLOBAL = "https://github.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-linux-aarch64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-linux-aarch64.tar.gz",
-                    },
-                    x86_64 = {
-                        GLOBAL = "https://github.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-linux-x86_64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-linux-x86_64.tar.gz",
-                    },
-                },
-                macosx = {
-                    aarch64 = {
-                        GLOBAL = "https://github.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-macosx-arm64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-macosx-arm64.tar.gz",
-                    },
-                },
-                windows = {
-                    x86_64 = {
-                        GLOBAL = "https://github.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-windows-x86_64.zip",
-                        CN = "https://gitcode.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-windows-x86_64.zip",
-                    },
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
+
 
     xpm = {
         linux = {

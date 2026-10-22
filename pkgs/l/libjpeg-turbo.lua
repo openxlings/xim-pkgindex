@@ -14,20 +14,7 @@ package = {
     keywords = {"jpeg", "image", "codec", "lib"},
     programs = {"cjpeg", "djpeg", "jpegtran", "rdjpgcom", "tjbench", "wrjpgcom"},
     xvm_enable = true,
-    extensions = {
-        autoupdate = {
-            upstream = "libjpeg-turbo/libjpeg-turbo",
-            tag = "${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    GLOBAL = "https://github.com/xlings-res/libjpeg-turbo/releases/download/${version}/libjpeg-turbo-${version}-linux-x86_64.tar.gz",
-                    CN = "https://gitcode.com/xlings-res/libjpeg-turbo/releases/download/${version}/libjpeg-turbo-${version}-linux-x86_64.tar.gz",
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
+
 
     xpm = {
         linux = {

@@ -13,20 +13,7 @@ package = {
     categories = {"library", "network"},
     keywords = {"http2", "http", "network", "lib"},
     xvm_enable = true,
-    extensions = {
-        autoupdate = {
-            upstream = "nghttp2/nghttp2",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    GLOBAL = "https://github.com/xlings-res/nghttp2/releases/download/${version}/nghttp2-${version}-linux-x86_64.tar.gz",
-                    CN = "https://gitcode.com/xlings-res/nghttp2/releases/download/${version}/nghttp2-${version}-linux-x86_64.tar.gz",
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
+
 
     xpm = {
         linux = {

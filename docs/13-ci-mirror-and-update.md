@@ -22,10 +22,11 @@ extensions = {
 `latest = "advance"` advances all declared platform pointers after verifying the complete matrix.
 `keep` appends the candidate while retaining pointers. Explicit architecture maps use canonical keys
 such as `x86_64` and `aarch64`; new multi-architecture entries use V2 resource maps.
-Each resource can be an HTTPS URL or a GLOBAL/CN pair. Declared mirrors must already exist and
-have identical SHA256. Resource-server consumers require `verify = "sha256-sidecar"`.
+This rollout accepts only HTTPS `github.com` resource URLs. Packages declaring CN mirrors or
+implicit multi-mirror resource sources remain manual. Non-GitHub registries and vendor downloads
+are excluded; existing runtime resources are preserved.
 
-The daily workflow scans once and proposes from the same fixed plan. It never executes Lua,
+The workflow runs every seven days (Sunday 02:17 UTC / 11:17 JST), scans once and proposes from the same fixed plan. It never executes Lua,
 rewrites published versions, repairs conflicting historical entries, builds payloads, or merges PRs.
 A candidate must pass actual installation, verification and removal on its supported runners.
 The central configuration is `.github/xpkgindex-update.yml`; scan limits and a rotating cursor

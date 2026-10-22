@@ -17,26 +17,7 @@ package = {
 
     xvm_enable = true,
 
-    extensions = {
-        autoupdate = {
-            upstream = "google/brotli",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    aarch64 = {
-                        GLOBAL = "https://github.com/xlings-res/brotli/releases/download/${version}/brotli-${version}-linux-aarch64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/brotli/releases/download/${version}/brotli-${version}-linux-aarch64.tar.gz",
-                    },
-                    x86_64 = {
-                        GLOBAL = "https://github.com/xlings-res/brotli/releases/download/${version}/brotli-${version}-linux-x86_64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/brotli/releases/download/${version}/brotli-${version}-linux-x86_64.tar.gz",
-                    },
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
+
 
     xpm = {
         linux = {

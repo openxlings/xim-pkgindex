@@ -33,38 +33,7 @@ package = {
     -- Recent mirrored releases use XLINGS_RES so downloads can
     -- resolve through the configured multi-mirror resource service.
     -- Historical 0.4.x entries keep their direct GitHub release URLs.
-    extensions = {
-        autoupdate = {
-            upstream = "openxlings/xlings",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    aarch64 = {
-                        GLOBAL = "https://github.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-linux-aarch64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-linux-aarch64.tar.gz",
-                    },
-                    x86_64 = {
-                        GLOBAL = "https://github.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-linux-x86_64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-linux-x86_64.tar.gz",
-                    },
-                },
-                macosx = {
-                    aarch64 = {
-                        GLOBAL = "https://github.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-macosx-aarch64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-macosx-aarch64.tar.gz",
-                    },
-                },
-                windows = {
-                    x86_64 = {
-                        GLOBAL = "https://github.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-windows-x86_64.zip",
-                        CN = "https://gitcode.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-windows-x86_64.zip",
-                    },
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
+
 
     xpm = {
         linux = {

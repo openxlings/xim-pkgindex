@@ -53,18 +53,7 @@ package = {
     programs = {"cs", "coursier"},
     xvm_enable = true,
 
-    extensions = {
-        autoupdate = {
-            upstream = "coursier/coursier",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = "https://github.com/coursier/coursier/releases/download/v${version}/coursier.jar",
-                macosx = "https://github.com/coursier/coursier/releases/download/v${version}/coursier.jar",
-                windows = "https://github.com/coursier/coursier/releases/download/v${version}/coursier.jar",
-            },
-        },
-    },
+
 
     xpm = {
         linux = {

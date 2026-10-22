@@ -21,26 +21,7 @@ package = {
     programs = {"htop"},
     xvm_enable = true,
 
-    extensions = {
-        autoupdate = {
-            upstream = "htop-dev/htop",
-            tag = "${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    x86_64 = {
-                        GLOBAL = "https://github.com/xlings-res/htop/releases/download/${version}/htop-${version}-linux-x86_64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/htop/releases/download/${version}/htop-${version}-linux-x86_64.tar.gz",
-                    },
-                    aarch64 = {
-                        GLOBAL = "https://github.com/xlings-res/htop/releases/download/${version}/htop-${version}-linux-aarch64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/htop/releases/download/${version}/htop-${version}-linux-aarch64.tar.gz",
-                    },
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
+
 
     xpm = {
         linux = {

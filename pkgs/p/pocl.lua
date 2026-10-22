@@ -86,26 +86,7 @@ package = {
     -- and applies whichever one is actually present, rather than asking
     -- `os.arch()` -- which this hook runtime does not reliably answer (see
     -- node.lua, perl.lua, jdk-zulu.lua for the same finding).
-    extensions = {
-        autoupdate = {
-            upstream = "pocl/pocl",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    aarch64 = {
-                        GLOBAL = "https://github.com/xlings-res/pocl/releases/download/${version}/pocl-${version}-linux-aarch64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/pocl/releases/download/${version}/pocl-${version}-linux-aarch64.tar.gz",
-                    },
-                    x86_64 = {
-                        GLOBAL = "https://github.com/xlings-res/pocl/releases/download/${version}/pocl-${version}-linux-x86_64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/pocl/releases/download/${version}/pocl-${version}-linux-x86_64.tar.gz",
-                    },
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
+
 
     xpm = {
         linux = {
