@@ -200,7 +200,7 @@ local function patch_program_rpaths(dir)
                             "syclbin-dump" }) do
         local exe = path.join(dir, "bin", prog)
         if os.isfile(exe) then
-            os.exec(string.format([[%s --force-rpath --set-rpath '$ORIGIN/../lib' "%s"]], pe, exe))
+            os.exec(string.format([["%s" --force-rpath --set-rpath '$ORIGIN/../lib' "%s"]], pe, exe))
             -- ASSERT THE ARTIFACT, NOT THE INTENT. patchelf may be absent, and
             -- a skipped rewrite is indistinguishable from a working one until
             -- somebody runs the program on a machine that is not this one.

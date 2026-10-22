@@ -35,8 +35,16 @@ local modules = {
     },
 }
 
+-- The index's own shared modules are the real ones: `shell.quote` builds the
+-- `find` command the relocation walks with.
+local libs = recipe:gsub("pkgs/[^/]+/[^/]+%.lua$", "libs/")
+os.host = os.host or function() return "linux" end
 function import(name)
     local short = name:match("[^.]+$")
+    if not modules[short] and name:match("^xim%.pkgindex%.") then
+        local chunk = loadfile(libs .. short .. ".lua")
+        if chunk then modules[short] = chunk() end
+    end
     _G[short] = modules[short] or proxy
     return _G[short]
 end

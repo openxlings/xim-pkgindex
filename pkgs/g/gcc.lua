@@ -109,6 +109,7 @@ import("xim.libxpkg.log")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.pkgmanager")
+import("xim.pkgindex.shell")
 -- elfpatch import removed: predicate-driven auto-patch (post 2026-05-02
 -- design) reads glibc.lua's exports.runtime.loader and rewrites our
 -- INTERP / RPATH automatically. Default scan = "convention" already
@@ -659,10 +660,12 @@ function __rewrite_specs_linux(rpath, dynamic_linker)
     local specs_config_bin = path.join(system.bindir(), "gcc-specs-config")
 
     log.info("Rewriting gcc specs to payload-direct paths via gcc-specs-config...")
-    system.exec(string.format(
-        "%s %s --dynamic-linker %s --rpath %s --linker-type gnu",
-        specs_config_bin, gcc_bin, dynamic_linker, rpath
-    ))
+    -- AN ARGUMENT VECTOR, NOT A FORMATTED STRING (mcpp#832). Every value
+    -- here is a path under the home, and a home under `/tmp/mc probe` split
+    -- each one at the space: the rewrite named `/tmp/mc` and the install
+    -- failed in a step that has nothing to do with the user's project.
+    shell.exec({specs_config_bin, gcc_bin, "--dynamic-linker", dynamic_linker,
+                "--rpath", rpath, "--linker-type", "gnu"})
 
     -- Fail, do not warn and continue -- the same reasoning as the missing-glibc
     -- branch in __config_linux. A gcc that installs "successfully" and cannot

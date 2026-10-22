@@ -41,7 +41,7 @@ function install()
     os.tryrm(pkginfo.install_dir()) -- 移除可能存在的老代码
     os.trymv("report", pkginfo.install_dir())
     log.debug("Installing dependencies from requirements.txt...")
-    local install_result = os.exec(string.format("pip install -r %s", path.join(pkginfo.install_dir(), "requirement.txt")))-- for win \\
+    local install_result = os.exec(string.format('pip install -r "%s"', path.join(pkginfo.install_dir(), "requirement.txt")))-- for win \\
     log.debug("\n${green}run seeme-server first${clear}")
     log.debug("\n${green}run it, use -> seeme-report run${clear} ")
     log.debug("\n${green}run in background, use -> seeme-reportw run${clear}")

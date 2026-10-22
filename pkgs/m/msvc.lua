@@ -449,6 +449,7 @@ function install()
             --
             -- Safe because %SystemRoot% has no spaces; the ARGUMENTS keep
             -- their quotes, and they are the ones that can.
+            -- exec-quoting-ok: the first token is the system's tar.exe, which cmd.exe must see unquoted
             system.exec(string.format('%s -xf "%s" -C "%s"',
                                       systar,
                                       winpath(path.join(work, e.name)),

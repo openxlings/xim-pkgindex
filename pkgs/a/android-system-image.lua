@@ -616,6 +616,7 @@ function install()
             }
             local args = ""
             for _, w in ipairs(WANTED) do args = args .. ' "' .. w[1] .. '"' end
+            -- exec-quoting-ok: the entry names are quoted where `args` is built
             system.exec(string.format('"%s" x "%s" -o"%s" -y%s',
                                       zbin, system_img, qroot, args))
 

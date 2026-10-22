@@ -53,7 +53,7 @@ function install()
     os.tryrm(pkginfo.install_dir())
     os.trymv("server", pkginfo.install_dir())
     log.debug("Installing dependencies from requirements.txt...")
-    os.exec(string.format("pip install -r %s", path.join(pkginfo.install_dir(), "requirement.txt")))
+    os.exec(string.format('pip install -r "%s"', path.join(pkginfo.install_dir(), "requirement.txt")))
     log.debug("\n${green}use -> seeme-server${clear}\n")
     log.debug("\n${green}install seeme-report after${clear}\n")
     return true

@@ -89,8 +89,8 @@ function install()
     -- installed rather than deleting the file and the feature with it.
     local thumbdir = path.join(pkginfo.install_dir(), "share", "thumbnailers")
     if os.isdir(thumbdir) then
-        system.exec(string.format(
-            "sh -c 'for t in %s/*.thumbnailer; do [ -f \"$t\" ] && "
+        system.exec(string.format(  -- exec-quoting-ok: the install dir is inside the double-quoted sed expression
+            "sh -c 'for t in \"%s\"/*.thumbnailer; do [ -f \"$t\" ] && "
             .. "sed -i \"s|/usr/bin/|%s/bin/|g\" \"$t\"; done'",
             thumbdir, pkginfo.install_dir()))
     end

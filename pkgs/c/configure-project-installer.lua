@@ -65,7 +65,7 @@ function download_scode(cmds)
 
     os.tryrm(tmp_project_dir)
     system.exec(string.format(
-        "xpkg-helper %s --export-path %s",
+        'xpkg-helper "%s" --export-path "%s"',
         xpkg, tmp_project_dir
     ))
 

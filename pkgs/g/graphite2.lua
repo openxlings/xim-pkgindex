@@ -94,7 +94,7 @@ function uninstall()
     -- what it declared -- by name, because `usr/include` is shared.
     local sysroot_dir = system.subos_sysrootdir()
     system.exec(string.format(
-        "sh -c 'rm -rf %s/usr/include/graphite2; rm -f %s/usr/lib/pkgconfig/graphite2.pc'",
+        "sh -c 'rm -rf \"%s\"/usr/include/graphite2; rm -f \"%s\"/usr/lib/pkgconfig/graphite2.pc'",
         sysroot_dir, sysroot_dir
     ))
     return true

@@ -96,6 +96,7 @@ function install()
         -- for a GUI-subsystem process — the hook would check for 7z.exe before
         -- the SFX finished. `Start-Process -Wait` fixes both.
         fs.mkdir_p(install_dir)
+        -- exec-quoting-ok: both values are inside PowerShell's single-quoted arguments
         os.exec(string.format([[
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Start-Process -FilePath '%s' -ArgumentList '/S','/D=%s' -Wait | Out-Null"]], archive, install_dir))
         return os.isfile(path.join(install_dir, "7z.exe"))

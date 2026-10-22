@@ -221,7 +221,7 @@ function install()
         pe = path.join(bd.bin, "patchelf")
     end
     local libc = path.join(pkginfo.install_dir(), "lib", "libc.so")
-    os.exec(string.format([[%s --remove-rpath "%s"]], pe, libc))
+    os.exec(string.format([["%s" --remove-rpath "%s"]], pe, libc))
     local left = os.iorun(string.format([[%s --print-rpath "%s"]], pe, libc))
     if left and left:gsub("%s+", "") ~= "" then
         raise("libc.so still names an RPATH after patchelf: " .. left)
