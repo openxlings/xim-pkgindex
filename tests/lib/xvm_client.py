@@ -1,7 +1,28 @@
 """xvm 操作封装"""
 import subprocess
 import os
-from tests.lib.platform_utils import subos_bin_dir
+import json
+from pathlib import Path
+from tests.lib.platform_utils import subos_bin_dir, xlings_home
+
+
+def _native_info(target: str) -> dict | None:
+    """Read the candidate runner's actual SubOS registry, without legacy xvm."""
+    path = Path(xlings_home()) / 'subos' / os.environ['XLINGS_TEST_SUBOS'] / '.xlings.json'
+    try:
+        workspace = json.loads(path.read_text(encoding='utf-8')).get('workspace') or {}
+        if not isinstance(workspace, dict):
+            raise ValueError('workspace must be an object')
+        node = workspace.get(target)
+        if node is None:
+            return None
+        active = node.get('active')
+        installed = node.get('installed')
+        if not isinstance(active, str) or not active or not isinstance(installed, list) or active not in installed:
+            raise ValueError('active version must belong to installed versions')
+        return {'program': target, 'version': active}
+    except (OSError, ValueError, AttributeError) as exc:
+        raise RuntimeError(f'cannot read native registration for {target}: {path}: {exc}') from exc
 
 
 def _run(cmd: str, timeout: int = 10) -> tuple[int, str]:
@@ -20,6 +41,8 @@ class XvmClient:
 
     @staticmethod
     def info(target: str) -> dict | None:
+        if os.environ.get('XLINGS_TEST_SUBOS'):
+            return _native_info(target)
         code, out = _run(f"xvm info {target}")
         # xvm CLI 本身不可用 (127 = command not found) 时不得返回 None ——
         # None 会被 is_registered 折叠成「未注册」, 让断言在坏环境里静默
