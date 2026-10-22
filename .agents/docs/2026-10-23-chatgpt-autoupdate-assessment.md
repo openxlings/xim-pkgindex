@@ -43,6 +43,12 @@ GitHub-only 是 xim 本期准入策略，不是工具 HTTPS 下载器的域名�
 具体 feed、校验链和资源形态须另行验证，不能仅猜版本号拼 URL。
 本轮未自动放宽 GitHub-only，也未添加不可执行的 ChatGPT 自动更新声明。
 
+## 通用能力方向
+
+后续采用 [多模式统一设计](2026-10-23-xpkgindex-update-multi-mode-design.md)，
+让每个包选择版本发现、资源、校验、平台与镜像策略。GitHub-only 只属于首批仓库启用策略；
+通用工具覆盖官方源、现成 CN 镜像以及未来的镜像发布能力，不为 ChatGPT 发明私有更新脚本。
+
 ## 调度调整
 
 扫描/提案每 3 天运行一次。GitHub Actions 每日 02:17 UTC 检查轻量门禁，
