@@ -1,10 +1,16 @@
 # https://github.com/mqyqingfeng/Blog/issues/236
 
 name: gitee-sync
+# On every push to main; by hand and once a day too: a push GitHub did not
+# deliver (2026-10-22) left the CN mirror a release behind (xlings design
+# 2026-10-23 J46).
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
+  schedule:
+    - cron: '30 18 * * *'
 jobs:
   repo-sync:
     runs-on: ubuntu-latest

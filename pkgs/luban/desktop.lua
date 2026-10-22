@@ -24,7 +24,7 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "2026.10.22.2" },
+            ["latest"] = { ref = "2026.10.23.1" },
             ["2026.10.18.1"] = { min_client = "2026.10.18.1" },
             ["2026.10.19.1"] = { min_client = "2026.10.18.1" },
             ["2026.10.20.1"] = { min_client = "2026.10.20.1" },
@@ -32,6 +32,7 @@ package = {
             ["2026.10.21.3"] = { min_client = "2026.10.20.1" },
             ["2026.10.22.1"] = { min_client = "2026.10.20.1" },
             ["2026.10.22.2"] = { min_client = "2026.10.20.1" },
+            ["2026.10.23.1"] = { min_client = "2026.10.20.1" },
         },
     },
 }
@@ -253,6 +254,21 @@ versions["2026.10.22.2"] = {
     },
 }
 
+
+-- 2026.10.23.1: 2026.10.22.2 on core 2026.10.23.1 (its sudo check, J44).
+versions["2026.10.23.1"] = {
+    files = luban.with(luban_desktop.environment(), luban.checks("desktop", CHECKS_2026_10_22)),
+    manifest = {
+        subos_kind = "rootfs",
+        min_client = "2026.10.20.1",
+        from = "luban:core@2026.10.23.1",
+        replaces = { "subos:luban-desktop", "subos:luban-desktop-xdesk" },
+        abi = { kernel = "linux", libc = "gnu" },
+        packages = packages_2026_10_22_2,
+        luban = { settings = { mode = "machine", enter = "desktop", desktop = desktop_2026_10_22_2.session, login_shell = "/usr/bin/fish" } },
+        workspace = {},
+    },
+}
 function install()
     return luban.edition({ id = "desktop", variant = "Desktop", versions = versions })
 end

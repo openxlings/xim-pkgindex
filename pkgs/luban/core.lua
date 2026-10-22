@@ -35,10 +35,11 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "2026.10.20.1" },
+            ["latest"] = { ref = "2026.10.23.1" },
             ["2026.10.18.1"] = { min_client = "2026.10.18.1" },
             ["2026.10.19.1"] = { min_client = "2026.10.18.1" },
             ["2026.10.20.1"] = { min_client = "2026.10.20.1" },
+            ["2026.10.23.1"] = { min_client = "2026.10.20.1" },
         },
     },
 }
@@ -122,6 +123,32 @@ versions["2026.10.20.1"] = {
   {"id": "core-c++", "what": "g++ builds and runs a C++ program", "run": "d=$(mktemp -d) && printf '#include <vector>\\nint main() { std::vector<int> v{1}; return int(v.size()) - 1; }\\n' > $d/a.cpp && g++ -std=c++23 -o $d/a $d/a.cpp && $d/a; r=$?; rm -rf $d; exit $r", "timeout": 120},
   {"id": "core-tools", "what": "git, fish, nvim, mcpp, yazi, procps (and cmake, xmake on x86_64) start; ps is procps's", "run": "]] .. tool_check .. [[", "timeout": 60},
   {"id": "core-sudo", "what": "sudo is there and says its version", "run": "sudo -V >/dev/null", "timeout": 30},
+  {"id": "core-command-not-found", "what": "a command not found says what it may be", "run": "/usr/libexec/luban/command-not-found xlnigs 2>&1 | grep -q xlings", "timeout": 30}
+]}
+]])),
+    manifest = {
+        subos_kind = "rootfs",
+        min_client = "2026.10.20.1",
+        from = "luban:tiny@2026.10.18.1",
+        replaces = "subos:luban-core",
+        abi = { kernel = "linux", libc = "gnu" },
+        packages = packages_2026_10_20,
+        luban = { settings = { enter = "console", login_shell = "/usr/bin/fish" } },
+        workspace = {},
+    },
+}
+
+
+-- 2026.10.23.1 (xlings design 2026-10-23 J44): 2026.10.20.1, its sudo check
+-- true to where it runs -- a sandbox sets no-new-privileges (sudo refuses even
+-- -V there; its broker does what sudo would), a machine runs sudo.
+versions["2026.10.23.1"] = {
+    files = luban.with({ { "usr/share/factory/etc/shells", "/bin/sh\n/bin/bash\n/usr/bin/fish\n" } },
+                       luban.command_not_found(), luban.mcpp_config(), luban.checks("core", [[
+{"checks": [
+  {"id": "core-c++", "what": "g++ builds and runs a C++ program", "run": "d=$(mktemp -d) && printf '#include <vector>\\nint main() { std::vector<int> v{1}; return int(v.size()) - 1; }\\n' > $d/a.cpp && g++ -std=c++23 -o $d/a $d/a.cpp && $d/a; r=$?; rm -rf $d; exit $r", "timeout": 120},
+  {"id": "core-tools", "what": "git, fish, nvim, mcpp, yazi, procps (and cmake, xmake on x86_64) start; ps is procps's", "run": "]] .. tool_check .. [[", "timeout": 60},
+  {"id": "core-sudo", "what": "sudo is there, and says its version where privileges can be gained (a machine; a sandbox has its broker)", "run": "command -v sudo >/dev/null && { grep -qs '^NoNewPrivs:.*1' /proc/self/status || sudo -V >/dev/null; }", "timeout": 30},
   {"id": "core-command-not-found", "what": "a command not found says what it may be", "run": "/usr/libexec/luban/command-not-found xlnigs 2>&1 | grep -q xlings", "timeout": 30}
 ]}
 ]])),
