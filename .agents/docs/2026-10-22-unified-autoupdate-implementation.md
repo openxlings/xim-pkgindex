@@ -98,7 +98,9 @@ Later runs at the final PR head revalidate the final helper and resource gate.
 12 legacy branches has an open automatic PR; they are retained unchanged, with
 no reopening or deletion. The thirteenth is validation draft #1028. Human xlings
 PR #1023 remains open and blocks duplicate default-branch proposals for that
-package. The new namespace-qualified branches do not overwrite legacy names.
+package. The new namespace-qualified branches do not overwrite legacy names. Open PR
+checks and dismissed-candidate history are both scoped to their target base; the
+validation draft cannot permanently suppress the same candidate on main.
 
 ## Merge and rollout
 
