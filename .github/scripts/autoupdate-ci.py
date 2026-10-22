@@ -166,14 +166,16 @@ def run_candidate(identity, filename, version, expected_arch=None):
         executable = shutil.which(program)
         if not executable or not Path(executable).absolute().is_relative_to(home):
             raise Invalid('candidate executable is not registered in the isolated home: ' + program)
-        if name == 'uv':
-            probe = subprocess.run([executable, '--version'], check=True, capture_output=True, text=True)
+        probe_args = ['version'] if (name, program) == ('go', 'go') else ['--version'] if name == 'uv' else None
+        if probe_args:
+            probe = subprocess.run([executable, *probe_args], check=True, capture_output=True, text=True)
             if version not in probe.stdout:
                 raise Invalid('registered executable reports the wrong candidate version')
             outputs[program] = probe.stdout.strip()
     test_file = ROOT / 'tests' / path.parent.name / ('test_' + name.replace('-', '_').replace('.', '_') + '.py')
     if test_file.exists():
-        subprocess.run(['python', '-m', 'pytest', str(test_file), '-m', 'verify', '-q'], check=True)
+        subprocess.run(['python', '-m', 'pytest', str(test_file), '-m', 'verify', '-q'], check=True,
+                       env={**os.environ, 'XLINGS_TEST_SUBOS': 'default'})
     evidence = {'id': identity, 'version': version, 'descriptor': filename,
                 'descriptor_sha256': descriptor_digest(path.read_bytes().decode('utf-8')),
                 'checkout_commit': git('rev-parse', 'HEAD'), 'runner_arch': expected_arch,

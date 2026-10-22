@@ -37,3 +37,42 @@ def test_registered_target_still_parses(monkeypatch):
         xvm_client, "_run", lambda cmd, timeout=10: (0, out))
     info = XvmClient.info("java")
     assert info == {"program": "java", "version": "25.0.4-zulu", "spath": "/x/bin"}
+
+
+@pytest.fixture
+def native_registry(tmp_path, monkeypatch):
+    monkeypatch.setenv('XLINGS_HOME', str(tmp_path))
+    monkeypatch.setenv('XLINGS_TEST_SUBOS', 'default')
+    monkeypatch.setattr(xvm_client, '_run', lambda *a, **k: pytest.fail('native assertions must not use legacy xvm'))
+    path = tmp_path / 'subos/default/.xlings.json'
+    path.parent.mkdir(parents=True)
+    return path
+
+
+@pytest.mark.static
+def test_native_subos_registration_reads_the_real_workspace_file(native_registry):
+    import json
+    native_registry.write_text(json.dumps({'workspace': {'go': {
+        'active': 'local:1.27.3', 'installed': ['local:1.27.0', 'local:1.27.3']}}}))
+    assert XvmClient.info('go') == {'program': 'go', 'version': 'local:1.27.3'}
+    assert XvmClient.is_registered('go')
+    assert not XvmClient.is_registered('absent')
+
+
+@pytest.mark.static
+@pytest.mark.parametrize('content', [
+    'not JSON',
+    '{"workspace": ["go"]}',
+    '{"workspace": {"go": {"active": "local:1.27.3", "installed": []}}}',
+    '{"workspace": {"go": "local:1.27.3"}}',
+])
+def test_broken_native_registry_is_not_reported_as_unregistered(native_registry, content):
+    native_registry.write_text(content)
+    with pytest.raises(RuntimeError, match='cannot read native registration'):
+        XvmClient.info('go')
+
+
+@pytest.mark.static
+def test_missing_native_registry_fails_instead_of_querying_another_home(native_registry):
+    with pytest.raises(RuntimeError, match='cannot read native registration'):
+        XvmClient.info('go')
