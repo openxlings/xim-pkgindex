@@ -1,7 +1,7 @@
 # xim-pkgindex 统一自动更新设计
 
 日期：2026-10-22  
-状态：待 review；本文仅为设计，不代表下述扩展已实现。  
+状态：实现与 CI 验证中，等待 review；交付为草稿 PR。  
 范围：上游版本发现、资源验证、配方追加、更新 PR、候选版本 CI、旧自动更新链路退役。
 
 2026-10-22 范围修订：按用户最新要求，自动更新每 7 天触发一次；本期仅接入纯 GitHub 来源。
@@ -81,9 +81,9 @@ extensions = {
 },
 ```
 
-### 4.2 拟在上游扩展的 xim 写法
+### 4.2 xim 统一写法
 
-以下字段和嵌套 URL 形态是设计提案，当前工具尚不接受；需在上游实现并发布后才能用于生产。
+以下字段由统一工具上游 PR 实现；xim 固定使用通过 CI 的提交。本期只接入纯 GitHub 资源和不含 CN 的包。
 
 ```lua
 extensions = {
@@ -112,7 +112,7 @@ extensions = {
 - `tag`：沿用工具的 `${version}` / `${version:dash}` 映射。拒绝模糊映射或隐式删除发行后缀。
 - `upstream`：xim 自动更新包必须显式填写，避免把 xlings-res 或 fork 下载仓库误当版本来源。
 - `latest`：xim 必填，枚举为 `advance` / `keep`。`advance` 才允许移动已有 latest；`keep` 只追加。
-- `url`：沿用字符串、平台映射、GLOBAL/CN 资源映射；扩展平台 → 架构 → 资源映射。每个资源叶子是 HTTPS 字符串或 `{ GLOBAL, CN }`。
+- `url`：使用字符串、平台映射或平台 → 架构映射；本期每个资源叶子必须是 HTTPS `github.com` 地址。通用工具的 GLOBAL/CN 矩阵能力不在本期 xim 准入范围内。
 - URL 只使用已声明的占位符。新矩阵使用规范架构名 `x86_64` / `aarch64`；文件名差异显式写在 URL 中，不从旧版本继承 alias。
 - 可选 `verify = "sha256-sidecar"`：上游新增能力；对每个声明的资源验证 `<url>.sha256`，文件名和实际 hash 必须匹配。未声明时仍下载计算 hash。
 - 未声明 `autoupdate` 的包不扫描；声明不完整则报配置错误，不静默转入旧逻辑。
@@ -201,11 +201,11 @@ PR 描述列出旧/新 latest、完整资源矩阵、tag commit、plan 来源和
 
 ## 8. CI 与权限
 
-- scan/候选安装测试只读；propose 才有仓库和 PR 写权限，且只允许默认分支上的定时/手动入口。
-- 首选 GitHub App token 创建 PR，使普通 PR CI 自动触发。实施需核实仓库是否已配置 App；未配置时该项是部署前置条件。
-- 若改用内置 `GITHUB_TOKEN`，必须像 mcpp-index 一样实现显式 CI dispatch、验证 PR/head SHA、幂等补触发；不能只替换 token 后假定 CI 会运行。
-- 本设计默认采用 App 路径；不同时维护两套生产认证流程。checkout 使用 `persist-credentials: false`。
-- 使用固定工具提交；迁移 PR 检查该提交确实包含所需 adapter 与 schema，不把示例字段当作可用功能。
+- scan/候选安装测试只读；propose 才有内容、PR 和显式 CI dispatch 的写权限，且只允许默认分支定时/手动入口。
+- 使用内置 `GITHUB_TOKEN`。用户已开启 Actions 创建 PR；REST 权限和真实机器人建 PR 均已验证，不依赖旧 `XPKG_BOT_TOKEN`。
+- 显式 CI dispatch 验证机器人 PR、仓库、基础分支和 head SHA，按工作流/head 幂等补触发；不假定 token 创建的 PR 会自动触发普通 PR CI。
+- checkout 使用 `persist-credentials: false`，工具固定通过 CI 的不可变提交，不使用浮动 `@main`。
+- 移除集成分支 push 自动提案入口；自动升级只按每 7 天的调度执行，仍保留人工触发和 PR 候选验证。
 
 PR CI 从 diff 选择所有新增 `(package, version)`，不扫描未来上游版本；即使 latest 未变也要测试新增版本。
 自动更新必跑：Lua/元数据校验、历史保护、完整矩阵资源校验、索引注册、受支持 runner 上的安装/功能/卸载检查。
@@ -213,17 +213,16 @@ PR CI 从 diff 选择所有新增 `(package, version)`，不扫描未来上游�
 资源校验覆盖完整矩阵；运行测试按可用原生 runner 或已验证的模拟环境逐项覆盖。缺执行环境的矩阵项必须阻止该包自动更新上线，先人工维护。
 硬件类工具可做无硬件 CLI smoke test；不能把无探针环境的失败解释成候选成功，也不要求 CI 操作真实硬件。
 
-## 9. 镜像与资源生产
+## 9. GitHub 接入范围与独立镜像
 
-统一 updater 只发现、验证和提交，不上传镜像、不构建 LLVM、不重打包第三方资源。
+统一 updater 只发现、验证和提交；本期只支持 GitHub Releases/tags 和 HTTPS `github.com` 资源。
 
-- 直接上游资源：声明可立即下载的权威 URL，完成验证后提 PR。
-- 声明 GLOBAL/CN 双地址：两份都必须存在且 hash 一致后才 ready；不能把尚未发布的 CN 地址写入候选。
-- mcpp/xlings 等 xlings-res 消费包：显式 `upstream` 跟踪真实发布仓库，URL 指向资源仓库，要求 sidecar 和完整矩阵均已发布。新版本输出 Shape B 显式双地址，无需新增 sentinel 写入逻辑。
-- 上游/镜像资源尚未齐备：等待外部资源生产工作流完成，再由下次 check 检测，不给 updater 发布权限。
-- `ci.mirror` 原有已声明版本发布链路保留；本次不把其合并后发布机制变成候选资源就绪的唯一前提，否则形成“等合并发布资源、等资源才建 PR”的循环。
-- 某包若只在合并后产生 CN 资源，迁移时必须选择：新版本只引用上游地址，或先调整独立资源生产流程使双镜像先就绪。没有解决前不接入双镜像自动更新。
-- 不由 updater 回写旧版本以补上后来产生的镜像地址；需要变更已发布条目时走单独人工 revision 流程。
+- 按包筛选：任何历史运行时资源声明含 `CN`，或直接使用 GitCode 地址，则整包不接入。
+- `XLINGS_RES`、`xpm.source = "xlings-res"` 会隐式启用多镜像，也不接入；不通过删除老镜像来让包满足准入。
+- 外部 registry、厂商下载地址和厂商 discovery provider 不接入；Go 等包维持人工维护。
+- 候选资源必须全部位于 GitHub 声明地址，完整架构的 URL 和 SHA256 验证通过后才提 PR；缺资源则等待。
+- 既有版本的 URL/hash、运行时镜像与 `ci.mirror` 独立发布行为保持原样；本期不由 updater 构建、上传或补录资源。
+- 本地证据目录不加入 PR；可复核证据通过 Actions artifact 和工作流链接提供。
 
 ## 10. 历史补录与特殊版本
 
@@ -245,7 +244,7 @@ Go 等需要厂商接口的包，在统一工具实现正式 discovery provider 
 
 静态盘点必须按语法结构读取，不能用全文搜索的 `update = true` 匹配注释。
 逐包输出：旧意图、资源形态、实际矩阵、发现源、mirror 就绪方式、测试环境、迁移/人工维护结论和原因。
-先以 uv/fd 验证普通资源，再以 probe-rs 验证多架构，最后以 mcpp/xlings 验证独立资源仓库。
+以符合本期 GitHub-only 准入的 uv/fd 等包验证普通资源、架构矩阵和三平台候选安装；CN/隐式多镜像包不作为接入试点。
 在测试分支验证 check/apply 与候选测试；显式测试环境中可建 draft PR，生产 propose 仍关闭。
 若只做部分包试点，先停用旧定时更新器，其余包暂人工维护；不允许旧新扫描器同时生产更新 PR。
 
@@ -265,7 +264,7 @@ Go 等需要厂商接口的包，在统一工具实现正式 discovery provider 
 
 ### D. 上线验收与回退
 
-启用后至少观察 7 次周调度和一次真实自动更新 PR 的完整安装测试闭环；三个资源类型均需有受控验证证据。
+启用后至少观察 7 次周调度和一次真实自动更新 PR 的完整安装测试闭环；当前 GitHub-only 范围需有受控资源验证和实际候选安装证据。
 异常时停用新的 propose，保留报告与人工更新；回退不恢复旧扫描器，不自动删除已追加版本。
 
 ## 12. 验收清单
@@ -280,7 +279,7 @@ Go 等需要厂商接口的包，在统一工具实现正式 discovery provider 
 - 预算真正限制请求/下载；重试计费；后续包不会永久饥饿。
 - 重跑不重复建 PR，人工 PR 可阻止重复，推分支后建 PR 失败可以恢复。
 - 每项候选测试证明实际安装的是 PR 中的新版本；写权限 job 不执行候选安装逻辑。
-- xlings-res/GitCode 未就绪不会产生不可安装 PR；不存在镜像发布与合并的循环依赖。
+- 接入包不存在 CN 或隐式多镜像源；GitHub 完整资源未就绪时不创建升级 PR。
 - 上游 mcpp-index 功能与跨平台测试继续通过；xim 接入不会改变 mcpp 的 latest 规则。
 
 ## 13. 本轮 review 需要确认的核心决策
@@ -289,5 +288,5 @@ Go 等需要厂商接口的包，在统一工具实现正式 discovery provider 
 2. 扩展能力统一进入上游工具，生产固定经过验证的最新提交。
 3. xim 显式声明 upstream、latest 和资源矩阵；多架构新版本统一输出 Shape B。
 4. 正常升级只追最新稳定版，历史补录独立；完整矩阵原子提交。
-5. 镜像生产独立，双镜像就绪后才引用；不把 updater 扩展成资源发布系统。
-6. 每 7 天扫描、固定 plan、每轮最多 3 个 PR、GitHub App 认证、候选版本 CI、人工合并。
+5. 本期只接入纯 GitHub、无 CN 的包；既有镜像生产独立，不由 updater 发布资源。
+6. 每 7 天扫描、固定 plan、每轮最多 3 个 PR、内置 GITHUB_TOKEN 与显式 CI dispatch、候选版本 CI、人工合并。
