@@ -1467,9 +1467,9 @@
           },
           "CN": {
             "url": {
-              "linux": "https://mirrors.hust.edu.cn/golang/go${version}.linux-amd64.tar.gz",
-              "macosx": "https://mirrors.hust.edu.cn/golang/go${version}.darwin-arm64.tar.gz",
-              "windows": "https://mirrors.hust.edu.cn/golang/go${version}.windows-amd64.zip"
+              "linux": "https://mirrors.nju.edu.cn/golang/go${version}.linux-amd64.tar.gz",
+              "macosx": "https://mirrors.nju.edu.cn/golang/go${version}.darwin-arm64.tar.gz",
+              "windows": "https://mirrors.nju.edu.cn/golang/go${version}.windows-amd64.zip"
             },
             "required": true
           }
@@ -6533,14 +6533,6 @@
               "linux": "https://github.com/xmake-io/xmake/releases/download/v${version}/xmake-bundle-v${version}.linux.x86_64",
               "macosx": "https://github.com/xmake-io/xmake/releases/download/v${version}/xmake-bundle-v${version}.macos.arm64",
               "windows": "https://github.com/xmake-io/xmake/releases/download/v${version}/xmake-bundle-v${version}.win64.exe"
-            },
-            "required": true
-          },
-          "CN": {
-            "url": {
-              "linux": "https://gitcode.com/xlings-res/xmake/releases/download/${version}/xmake-bundle-v${version}.linux.x86_64",
-              "macosx": "https://gitcode.com/xlings-res/xmake/releases/download/${version}/xmake-bundle-v${version}.macos.arm64",
-              "windows": "https://gitcode.com/xlings-res/xmake/releases/download/${version}/xmake-bundle-v${version}.win64.exe"
             },
             "required": true
           }

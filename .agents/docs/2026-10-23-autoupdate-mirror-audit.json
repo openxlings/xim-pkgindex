@@ -1083,7 +1083,8 @@
         "GLOBAL",
         "CN"
       ],
-      "mirror_documentation": "https://mirrors.hust.edu.cn/golang/"
+      "mirror_documentation": "https://mirrors.nju.edu.cn/golang/",
+      "replacement": "HUST candidate returned differing resource digests; NJU 1.27.3 verified against GLOBAL downloads and the official published SHA256 for all three declared platforms."
     },
     {
       "path": "pkgs/g/godot.lua",
@@ -3176,9 +3177,9 @@
       "decision": "enabled",
       "source": "https://github.com/xmake-io/xmake/releases",
       "targets": [
-        "GLOBAL",
-        "CN"
-      ]
+        "GLOBAL"
+      ],
+      "reason": "No verified current CN mirror for upstream bundle filenames: all three historical CN paths returned 404; resource-service release catalog only contains older, differently named 2.9.9 assets. New versions use GLOBAL only; historical CN declarations remain unchanged."
     },
     {
       "path": "pkgs/x/xorgproto.lua",
@@ -3303,7 +3304,7 @@
       "check_apply_verify": "passed"
     },
     "known_existing_mirror_gaps": [
-      "xmake: historical GitCode paths unavailable; future updates remain blocked unless both mandatory targets exist",
+      "xmake: historical GitCode paths unavailable; new versions use GLOBAL only; historical CN declarations are untouched",
       "bash/coreutils: historical CN x86_64 path probe returned 404; no historical rewrite",
       "uv: old 0.12.7 CN files absent; current 0.13.5 candidate fully verified"
     ],
@@ -3314,6 +3315,41 @@
     "unsupported_native_targets": {
       "glew": "linux/x86",
       "nasm": "windows/x86"
-    }
+    },
+    "live_vendor_checks": [
+      {
+        "package": "go",
+        "version": "1.27.3",
+        "regions": [
+          "GLOBAL",
+          "CN:NJU"
+        ],
+        "resources": 6,
+        "downloaded_bytes": 435591448,
+        "check_apply_verify": "passed",
+        "official_checksum_metadata": "https://go.dev/dl/?mode=json"
+      },
+      {
+        "package": "gradle",
+        "version": "9.8.2",
+        "regions": [
+          "GLOBAL",
+          "CN:Tencent"
+        ],
+        "resources": 2,
+        "downloaded_bytes": 303240276,
+        "check_apply_verify": "passed"
+      },
+      {
+        "package": "jdk-temurin",
+        "status": "waiting-assets",
+        "candidates": [
+          "25.0.5+8",
+          "25.0.4.1+1"
+        ],
+        "downloaded_bytes": 820587268,
+        "reason": "Required upstream aarch64 artifact or USTC mirror asset absent; no incomplete version appended."
+      }
+    ]
   }
 }
