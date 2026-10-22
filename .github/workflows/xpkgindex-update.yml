@@ -23,7 +23,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 env:
   PYTHONUTF8: '1'
-  UPDATER_COMMIT: 1f49c3967cb0fdb80acb6c3a3777c508f4a9115e
+  UPDATER_COMMIT: 78898d401332568f21989f40a50f5e48cb118f4f
   XLINGS_VERSION: v2026.10.21.4
 jobs:
   scan:
@@ -87,6 +87,14 @@ jobs:
           resolved=$(git rev-parse --verify "$BASE^{commit}" 2>/dev/null || git rev-parse --verify "origin/$BASE^{commit}")
           python .github/scripts/autoupdate-ci.py matrix --base "$resolved" --output matrix.json
           echo "value=$(python -c 'import json; print(json.dumps(json.load(open("matrix.json")),separators=(",",":")))')" >> "$GITHUB_OUTPUT"
+      - name: Verify every added candidate resource without discovery
+        if: steps.matrix.outputs.value != '{"include":[]}'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE: ${{ github.event.pull_request.base.sha || inputs.validation_base || github.sha }}
+        run: |
+          resolved=$(git rev-parse --verify "$BASE^{commit}" 2>/dev/null || git rev-parse --verify "origin/$BASE^{commit}")
+          python -m xpkgindex_update verify --base "$resolved" --output candidate-resources.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -96,6 +104,7 @@ jobs:
             coverage.json
             matrix.json
             preservation.json
+            candidate-resources.json
   propose:
     needs: scan
     if: >-
