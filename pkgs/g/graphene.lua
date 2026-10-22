@@ -13,6 +13,17 @@ package = {
     categories = {"library", "graphics"},
     keywords = {"graphene", "simd", "math", "gtk", "lib"},
     xvm_enable = true,
+    extensions = {
+        autoupdate = {
+            upstream = "ebassi/graphene",
+            tag = "${version}",
+            latest = "advance",
+            url = {
+                linux = "https://github.com/xlings-res/graphene/releases/download/${version}/graphene-${version}-linux-x86_64.tar.gz",
+            },
+        },
+    },
+
     xpm = {
         linux = {
             -- GTK 4 requires graphene >= 1.10 and uses it for every point,

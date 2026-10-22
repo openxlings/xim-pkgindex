@@ -17,6 +17,20 @@ package = {
 
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            upstream = "google/brotli",
+            tag = "v${version}",
+            latest = "advance",
+            url = {
+                linux = {
+                    aarch64 = "https://github.com/xlings-res/brotli/releases/download/${version}/brotli-${version}-linux-aarch64.tar.gz",
+                    x86_64 = "https://github.com/xlings-res/brotli/releases/download/${version}/brotli-${version}-linux-x86_64.tar.gz",
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
             -- The libraries need libc.so.6 (libbrotlidec and libbrotlienc also name libbrotlicommon.so.1, in this payload);

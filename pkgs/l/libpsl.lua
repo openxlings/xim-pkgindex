@@ -13,6 +13,17 @@ package = {
     keywords = {"psl", "public-suffix", "domain", "lib"},
     programs = {"psl"},
     xvm_enable = true,
+    extensions = {
+        autoupdate = {
+            upstream = "rockdaboot/libpsl",
+            tag = "${version}",
+            latest = "advance",
+            url = {
+                linux = "https://github.com/xlings-res/libpsl/releases/download/${version}/libpsl-${version}-linux-x86_64.tar.gz",
+            },
+        },
+    },
+
     xpm = {
         linux = {
             -- libsoup links libpsl.so.5 to decide cookie scope.

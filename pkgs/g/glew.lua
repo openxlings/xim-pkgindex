@@ -54,6 +54,19 @@ package = {
 
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            upstream = "nigels-com/glew",
+            tag = "glew-${version}",
+            latest = "advance",
+            url = {
+                linux = "https://github.com/nigels-com/glew/releases/download/glew-${version}/glew-${version}.tgz",
+                macosx = "https://github.com/nigels-com/glew/releases/download/glew-${version}/glew-${version}.tgz",
+                windows = "https://github.com/nigels-com/glew/releases/download/glew-${version}/glew-${version}.tgz",
+            },
+        },
+    },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "2.2.0" },

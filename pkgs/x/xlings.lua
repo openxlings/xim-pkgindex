@@ -11,7 +11,7 @@ package = {
     contributors = "https://github.com/openxlings/xlings/graphs/contributors",
     licenses = {"Apache-2.0"},
     repo = "https://github.com/openxlings/xlings",
-    ci = { update = true },
+    ci = {  },
 
     -- xim pkg info
     archs = {"x86_64", "aarch64"},
@@ -33,11 +33,44 @@ package = {
     -- Recent mirrored releases use XLINGS_RES so downloads can
     -- resolve through the configured multi-mirror resource service.
     -- Historical 0.4.x entries keep their direct GitHub release URLs.
+    extensions = {
+        autoupdate = {
+            upstream = "openxlings/xlings",
+            tag = "v${version}",
+            latest = "advance",
+            url = {
+                linux = {
+                    aarch64 = {
+                        GLOBAL = "https://github.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-linux-aarch64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-linux-aarch64.tar.gz",
+                    },
+                    x86_64 = {
+                        GLOBAL = "https://github.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-linux-x86_64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-linux-x86_64.tar.gz",
+                    },
+                },
+                macosx = {
+                    aarch64 = {
+                        GLOBAL = "https://github.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-macosx-aarch64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-macosx-aarch64.tar.gz",
+                    },
+                },
+                windows = {
+                    x86_64 = {
+                        GLOBAL = "https://github.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-windows-x86_64.zip",
+                        CN = "https://gitcode.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-windows-x86_64.zip",
+                    },
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- res_versioned: version-bump bot tracks openxlings/xlings releases and
             -- appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
-            res_versioned = true,
+
             ["latest"] = { ref = "2026.10.22.2" },
             ["2026.10.22.2"] = {
                 url = "XLINGS_RES",
@@ -988,7 +1021,7 @@ package = {
         macosx = {
             -- res_versioned: version-bump bot tracks openxlings/xlings releases and
             -- appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
-            res_versioned = true,
+
             ["latest"] = { ref = "2026.10.22.2" },
             ["2026.10.22.2"] = {
                 url = "XLINGS_RES",
@@ -1825,7 +1858,7 @@ package = {
         windows = {
             -- res_versioned: version-bump bot tracks openxlings/xlings releases and
             -- appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
-            res_versioned = true,
+
             ["latest"] = { ref = "2026.10.22.2" },
             ["2026.10.22.2"] = {
                 url = "XLINGS_RES",

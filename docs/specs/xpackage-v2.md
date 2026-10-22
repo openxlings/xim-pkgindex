@@ -507,7 +507,8 @@ extensions = {
 },
 ```
 
-- **Namespaces are registered**: `luban` (the Luban OS app and `luban`; its
+- **Namespaces are registered**: `autoupdate` (index maintenance; consumed by the pinned
+  `xpkgindex-update` tool, not by runtime installation), and `luban` (the Luban OS app and `luban`; its
   keys: [`../12-luban-packages.md`](../12-luban-packages.md)). This index's
   static checks accept only registered namespaces.
 - **Values** are strings, numbers, booleans, arrays and tables; anything else

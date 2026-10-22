@@ -24,6 +24,19 @@ package = {
     --   does not auto-extract today (see xlings core/xim/base/utils.lua).
     --   Once xlings learns about .tar.zst (and zstd is wired in) we can
     --   bump this package to track the latest upstream release.
+    extensions = {
+        autoupdate = {
+            upstream = "ollama/ollama",
+            tag = "v${version}",
+            latest = "advance",
+            url = {
+                linux = "https://github.com/ollama/ollama/releases/download/v${version}/ollama-linux-amd64.tgz",
+                macosx = "https://github.com/ollama/ollama/releases/download/v${version}/ollama-darwin.tgz",
+                windows = "https://github.com/ollama/ollama/releases/download/v${version}/ollama-windows-amd64.zip",
+            },
+        },
+    },
+
     xpm = {
         linux = {
             -- Runtime deps:

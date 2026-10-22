@@ -15,6 +15,20 @@ package = {
     -- xvm: xlings version management
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            upstream = "torvalds/linux",
+            tag = "v${version}",
+            latest = "advance",
+            url = {
+                linux = {
+                    aarch64 = "https://github.com/xlings-res/linux-headers/releases/download/${version}/linux-headers-${version}-linux-aarch64.tar.gz",
+                    x86_64 = "https://github.com/xlings-res/scode-res/releases/download/linux-headers/linux-headers-${version}.tar.gz",
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "5.11.1" },

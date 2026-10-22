@@ -18,6 +18,19 @@ package = {
     programs = {"rosdep", "rosdep-source"},
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            upstream = "ros-infrastructure/rosdep",
+            tag = "${version}",
+            latest = "advance",
+            url = {
+                linux = "https://files.pythonhosted.org/packages/bd/c1/15c5c296f41e6a290e6c3515316b2676be580c66b10e26372200a0ecbdd7/rosdep-${version}-py3-none-any.whl",
+                macosx = "https://files.pythonhosted.org/packages/bd/c1/15c5c296f41e6a290e6c3515316b2676be580c66b10e26372200a0ecbdd7/rosdep-${version}-py3-none-any.whl",
+                windows = "https://files.pythonhosted.org/packages/bd/c1/15c5c296f41e6a290e6c3515316b2676be580c66b10e26372200a0ecbdd7/rosdep-${version}-py3-none-any.whl",
+            },
+        },
+    },
+
     xpm = {
         linux = {
             deps = {"xim:python"},

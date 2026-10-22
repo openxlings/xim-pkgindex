@@ -2,89 +2,49 @@
 
 [English](../13-ci-mirror-and-update.md) | **简体中文**
 
-一个包可以让索引的自动化镜像它已声明的版本，并提出新版本。这只是索引维护：xlings 忽略
-它，它也从不改变包的解析方式。
-
-## 加入
+版本自动更新统一使用固定提交的上游 [xpkgindex-update](https://github.com/openxlings/xpkgindex-update)。
+唯一声明入口是 `package.extensions.autoupdate`；`xpm.source` 只负责运行时资源解析。
 
 ```lua
-package = {
-    name = "foo",
-    repo = "https://github.com/acme/foo",
-
-    ci = {
-        mirror = true,
-        update = true,
-    },
-
-    xpm = {
-        source = "https://github.com/acme/foo/releases/download/${version}/foo-${os}-${arch}.${ext}",
-        linux = {
-            ["latest"] = { ref = "1.2.0" },
-            ["1.2.0"] = {
-                sha256 = { x86_64 = "<sha256>", aarch64 = "<sha256>" },
-            },
+extensions = {
+    autoupdate = {
+        upstream = "acme/foo",
+        tag = "v${version}",
+        latest = "advance",
+        url = {
+            linux = "https://github.com/acme/foo/releases/download/${tag}/foo-linux-amd64.tar.gz",
+            macosx = "https://github.com/acme/foo/releases/download/${tag}/foo-darwin-arm64.tar.gz",
         },
     },
-}
+},
 ```
 
-| 字段 | 默认 | 含义 |
-|---|---|---|
-| `ci.mirror` | `false` | 已声明的版本校验通过后，CI 可以创建它的 `xlings-res` 镜像 release |
-| `ci.update` | `false` | 加入周期扫描；上游有新版本时生成一个 PR |
+`advance` 在完整矩阵通过后一起前移所有平台的 latest；`keep` 只追加候选，不改变指针。
+多架构资源显式声明 `x86_64`、`aarch64` 等规范键，新版本生成 V2 架构资源表。
+资源叶子是 HTTPS URL 或 GLOBAL/CN 双地址；双地址必须已就绪且 SHA256 相同。
+资源服务器消费包声明 `verify = "sha256-sidecar"`，逐项验证 sidecar 和实际下载。
 
-周期由仓库统一配置在 `.github/xpkg-ci.yml`，不写进配方：
+工作流每日扫描一次，propose 消费同一份固定 plan，不重新发现版本。配方、base、tag commit
+或资源字节变化会拒绝应用。更新不执行 Lua、不改写历史版本、不自动修复冲突、不构建载荷、不自动合并。
+候选版本必须通过相应 runner 上的真实安装、功能验证和卸载。
 
-```yaml
-version: 1
-update:
-  enabled: true
-  interval: 3d
-  wakeup_cron: "17 2 * * *"
-  max_packages_per_run: 50
-  request_budget: 500
+中央策略位于 `.github/xpkgindex-update.yml`；预算和轮转游标约束扫描，不用多天节流掩盖失败。
+正常升级只追最新稳定版，历史补录独立处理且尚未启用。工具安装后可以运行：
+
+```sh
+xpkgindex-update inspect
+xpkgindex-update check --package xim:foo --output plan.json
+xpkgindex-update apply --plan plan.json --package xim:foo
 ```
 
-workflow 每天唤醒一次；一个包到期后才被扫描。
+`propose --plan plan.json` 使用有写权限的凭据创建每包 PR；已有人工包 PR 同样阻止重复提案。
+推分支成功但建 PR 失败可以恢复，不覆盖不一致的分支。
 
-## 各自做什么
+## 镜像发布
 
-```text
-ci.mirror = true  ->  the versions already declared -> download, verify -> an xlings-res release
-ci.update = true  ->  a newer upstream version -> its resource matrix and sha256s -> a pull request
-```
+`ci = { mirror = true }` 继续独立控制已声明资源的镜像发布。
+`tools/xpkg_ci.py` 仅保留 `inspect`、`materialize`、`verify`、`ensure-repo`、`mirror`。
+镜像发布不能成为同一个更新 PR 合并后才可满足的资源前置条件。
+自建/重打包载荷由独立工作流生产，updater 只消费已就绪资源；已发布资源变更仍走人工 revision 流程。
 
-两者互相独立：`mirror` 从不发现新版本，`update` 从不绕过 PR 修改索引。两者都开启时，
-顺序是：发现、计算 hash、PR、PR 的 CI、合入，然后才是镜像 release。
-
-- `update` 需要包含 `${version}` 的 URL 模板；固定 URL 无法跟踪。
-- `source = "xlings-res"` 时再设 `mirror` 是冲突（它已经是官方镜像），直接失败。
-- 镜像 release 本身不改变用户的下载来源：让安装走镜像是另一个需要 review 的索引改动。
-- 自建资源（目标 sysroot、`tools/res/` 构建的一切）不设 `ci`：镜像会镜像它自己，更新会
-  把 `latest` 指向一个还没人构建的 URL。
-
-## 工具
-
-`tools/xpkg_ci.py` 完成每一步，可以在本地运行：
-
-| 命令 | 做什么 | 网络 | 写入 |
-|---|---|---|---|
-| `inspect` | 读取每个配方的 `ci`、source 和资源矩阵 | 否 | 报告 |
-| `scan` | 查询上游、展开模板、下载、计算 hash | 是 | 报告与缓存 |
-| `verify <manifest>` | 检查一份 manifest 的矩阵和 hash | 是 | 无 |
-| `mirror <manifest> --execute` | 在 GitHub 和 GitCode 上创建 release，三方校验 | 是 | release |
-| `propose --apply` | 为 PR 写出最小的配方改动 | 否 | 配方 |
-
-已存在且内容完全相同的 release 视为成功；任何不同都失败，release 从不被覆盖。
-
-## 旧机制：`url_template` 与 `res_versioned`
-
-较早的配方用每个平台上的 `url_template`（`{version}` 占位符）加入自动更新，写作
-`"XLINGS_RES"` 的条目用 `res_versioned = true`。两者仍然有效；新配方用 `xpm.source`。
-约定见 [url-template](../specs/url-template.md)。
-
-## 每周轮转
-
-`ci-test.yml` 只安装一次推送改动到的包。`ci-sweep.yml` 每周按 ISO 周次安装所有配方中的
-一片，使没有人改过的钩子也定期运行；手动触发可以重跑某一片。
+旧自动更新字段和工作流已移除，不提供旧协议回退。迁移 PR 记录全量包清单和每项准入判断。

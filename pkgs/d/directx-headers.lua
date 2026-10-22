@@ -24,6 +24,17 @@ package = {
     -- and it is what makes `xlings remove directx-headers` resolvable instead of
     -- failing with "removal version is not registered" (openxlings/xlings#503).
 
+    extensions = {
+        autoupdate = {
+            upstream = "microsoft/DirectX-Headers",
+            tag = "v${version}",
+            latest = "advance",
+            url = {
+                linux = "https://github.com/xlings-res/directx-headers/releases/download/${version}/directx-headers-${version}-linux-x86_64.tar.gz",
+            },
+        },
+    },
+
     xpm = {
         linux = {
             -- No deps, and that is deliberate rather than an omission.

@@ -41,7 +41,7 @@ def meta():
 
 
 def _platform_block(raw_content: str, platform: str) -> str:
-    start = raw_content.index(f"        {platform} = {{")
+    start = raw_content.index(f"        {platform} = {{", raw_content.index("    xpm = {"))
     tail = raw_content[start:]
     next_match = re.search(r"\n        (linux|macosx|windows) = \{", tail[1:])
     if next_match:

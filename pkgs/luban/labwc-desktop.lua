@@ -31,7 +31,19 @@ package = {
     extensions = { luban = { checks = {
         { id = "labwc-desktop-runs", what = "its compositor starts", run = "labwc --version", timeout = 20 },
         { id = "labwc-desktop-terminal", what = "its terminal starts", run = "foot --version", timeout = 20 },
-    } } },
+    } },
+        autoupdate = {
+            upstream = "labwc/labwc",
+            tag = "${version}",
+            latest = "advance",
+            url = {
+                linux = {
+                    aarch64 = "https://github.com/xlings-res/labwc-desktop/releases/download/${version}-r1/labwc-desktop-${version}-r1-linux-aarch64.tar.gz",
+                    x86_64 = "https://github.com/xlings-res/labwc-desktop/releases/download/${version}-r1/labwc-desktop-${version}-r1-linux-x86_64.tar.gz",
+                },
+            },
+        },
+    },
 
     xpm = {
         linux = {

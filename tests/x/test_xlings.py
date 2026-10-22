@@ -44,7 +44,7 @@ class TestStatic:
         # to an XLINGS_RES entry in every platform block, and a few stable
         # historical versions stay XLINGS_RES. Avoids going stale on each bump.
         def platform_block(platform, next_platform):
-            start = meta.raw_content.index(f"        {platform} = {{")
+            start = meta.raw_content.index(f"        {platform} = {{", meta.raw_content.index("    xpm = {"))
             if next_platform is None:
                 return meta.raw_content[start:]
             end = meta.raw_content.index(f"        {next_platform} = {{", start)

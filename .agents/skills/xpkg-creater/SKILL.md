@@ -55,8 +55,9 @@ description: 在 xim-pkgindex 中创建/更新 xpkg 包（V2/兼容 V1），遵�
   - `source = "https://.../${version}/...${arch}..."`：第三方 URL template
 - URL 不规则时使用版本项 per-arch resource map；特殊版本用显式 `url` 覆盖默认 source。
 - 多架构条目的 `sha256` 必须覆盖每个受支持架构；缺失时版本检查器必须 fail closed。
-- 可选 `ci = { mirror = true, update = true }` 只声明是否加入官方自动化；扫描周期统一由
-  仓库 `.github/xpkg-ci.yml` 管理，不能在单个包中写入周期。
+- 自动更新只使用 `extensions.autoupdate = { upstream, tag, latest, url }`；
+  由固定提交的上游 `xpkgindex-update` 扫描、验证并创建 PR，中央策略为 `.github/xpkgindex-update.yml`。
+- `ci = { mirror = true }` 只控制已声明资源的镜像发布。旧更新开关和模板标记不再使用。
 - 平台继承：`ubuntu = { ref = "linux" }`
 - script/config 类型可使用空资源：`["0.0.1"] = {}`
 
@@ -96,7 +97,7 @@ xpm = {
 - 两边 release 都包含该版本声明会使用的全部平台资产；文件名必须符合 xlings-res 约定。
 - 两边资产必须来自同一个权威上游 release 或同一次构建产物；发布后从 GitHub RES、GitCode RES、权威上游各下载一次并比对 sha256，确认字节一致。
 - 每个归档都要发布同名 `.sha256` sidecar；索引版本项必须为每个受支持架构写入与 sidecar 一致的 SHA256。
-- `version-check.py --apply` 缺少平台、架构、资产或 sidecar 时必须 fail closed，不得生成不完整条目。
+- `xpkgindex-update apply --plan plan.json` 缺少平台、架构、资产或 sidecar 时必须 fail closed，不得生成不完整条目。
 - 如果补发历史版本，发布后确认两边 `latest` 仍指向应当作为最新的版本，不要因为补旧版本导致 latest 倒退。
 - PR 描述或汇报中写清楚 GitHub RES、GitCode RES 的 release/tag，以及 sha256 校验结果。
 

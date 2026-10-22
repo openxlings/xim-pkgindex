@@ -26,6 +26,28 @@ package = {
     -- asset name does not, and macOS names its arch `arm64` — so explicit
     -- per-arch resource maps (V2 Shape B) rather than a URL template. Every
     -- sha256 below is from the release's own checksums.sha256 file.
+    extensions = {
+        autoupdate = {
+            upstream = "AnInsomniacy/aria2-next",
+            tag = "v${version}",
+            latest = "advance",
+            url = {
+                linux = {
+                    aarch64 = "https://github.com/AnInsomniacy/aria2-next/releases/download/v${version}/aria2-next-${version}-linux-aarch64",
+                    x86_64 = "https://github.com/AnInsomniacy/aria2-next/releases/download/v${version}/aria2-next-${version}-linux-x86_64",
+                },
+                macosx = {
+                    aarch64 = "https://github.com/AnInsomniacy/aria2-next/releases/download/v${version}/aria2-next-${version}-macos-arm64",
+                    x86_64 = "https://github.com/AnInsomniacy/aria2-next/releases/download/v${version}/aria2-next-${version}-macos-x86_64",
+                },
+                windows = {
+                    aarch64 = "https://github.com/AnInsomniacy/aria2-next/releases/download/v${version}/aria2-next-${version}-windows-arm64.exe",
+                    x86_64 = "https://github.com/AnInsomniacy/aria2-next/releases/download/v${version}/aria2-next-${version}-windows-x86_64.exe",
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "2.5.5" },

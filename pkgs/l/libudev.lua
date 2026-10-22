@@ -16,6 +16,20 @@ package = {
 
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            upstream = "systemd/systemd",
+            tag = "v${version}",
+            latest = "advance",
+            url = {
+                linux = {
+                    aarch64 = "https://github.com/xlings-res/libudev/releases/download/${version}/libudev-${version}-linux-aarch64.tar.gz",
+                    x86_64 = "https://github.com/xlings-res/libudev/releases/download/${version}/libudev-${version}-linux-x86_64.tar.gz",
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
             -- DT_NEEDED outside the payload (readelf -d): libcap.

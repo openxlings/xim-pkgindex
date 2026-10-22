@@ -15,6 +15,17 @@ package = {
     categories = {"graphics", "font", "library"},
     keywords = {"graphite2", "font", "shaping", "lib"},
 
+    extensions = {
+        autoupdate = {
+            upstream = "silnrsi/graphite",
+            tag = "${version}",
+            latest = "advance",
+            url = {
+                linux = "https://github.com/xlings-res/graphite2/releases/download/${version}/graphite2-${version}-linux-x86_64.tar.gz",
+            },
+        },
+    },
+
     xpm = {
         linux = {
             -- libc and nothing else: graphite2 is C++ but is built without

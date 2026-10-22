@@ -32,6 +32,28 @@ package = {
     --   * xlings spells macOS `macosx`, upstream spells it `macos`.
     -- `${ext}` already resolves to `zip` on windows and `tar.gz` elsewhere,
     -- which matches upstream exactly.
+    extensions = {
+        autoupdate = {
+            upstream = "shader-slang/slang",
+            tag = "v${version}",
+            latest = "advance",
+            url = {
+                linux = {
+                    x86_64 = "https://github.com/shader-slang/slang/releases/download/v${version}/slang-${version}-linux-x86_64.tar.gz",
+                    aarch64 = "https://github.com/shader-slang/slang/releases/download/v${version}/slang-${version}-linux-aarch64.tar.gz",
+                },
+                macosx = {
+                    aarch64 = "https://github.com/shader-slang/slang/releases/download/v${version}/slang-${version}-macos-aarch64.tar.gz",
+                    x86_64 = "https://github.com/shader-slang/slang/releases/download/v${version}/slang-${version}-macos-x86_64.tar.gz",
+                },
+                windows = {
+                    x86_64 = "https://github.com/shader-slang/slang/releases/download/v${version}/slang-${version}-windows-x86_64.zip",
+                    aarch64 = "https://github.com/shader-slang/slang/releases/download/v${version}/slang-${version}-windows-aarch64.zip",
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
             -- The Linux archives are dynamically linked against glibc and

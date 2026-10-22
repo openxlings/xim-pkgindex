@@ -28,6 +28,19 @@ package = {
     -- xvm: xlings version management
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            upstream = "rust-lang/mdBook",
+            tag = "v${version}",
+            latest = "advance",
+            url = {
+                windows = "https://github.com/rust-lang/mdBook/releases/download/v${version}/mdbook-v${version}-x86_64-pc-windows-msvc.zip",
+                linux = "https://github.com/rust-lang/mdBook/releases/download/v${version}/mdbook-v${version}-x86_64-unknown-linux-musl.tar.gz",
+                macosx = "https://github.com/rust-lang/mdBook/releases/download/v${version}/mdbook-v${version}-aarch64-apple-darwin.tar.gz",
+            },
+        },
+    },
+
     xpm = {
         windows = {
             ["latest"] = { ref = "0.5.2" },

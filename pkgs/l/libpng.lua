@@ -12,6 +12,17 @@ package = {
     categories = {"graphics", "image", "library"},
     keywords = {"libpng", "png", "image", "lib"},
     xvm_enable = true,
+    extensions = {
+        autoupdate = {
+            upstream = "glennrp/libpng",
+            tag = "v${version}",
+            latest = "advance",
+            url = {
+                linux = "https://github.com/xlings-res/libpng/releases/download/${version}/libpng-${version}-linux-x86_64.tar.gz",
+            },
+        },
+    },
+
     xpm = {
         linux = {
             deps = { "xim:zlib@1.3.1" },

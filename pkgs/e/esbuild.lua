@@ -79,6 +79,30 @@ package = {
     programs = {"esbuild"},
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            upstream = "evanw/esbuild",
+            tag = "v${version}",
+            latest = "advance",
+            url = {
+                linux = {
+                    aarch64 = "https://registry.npmjs.org/@esbuild/linux-arm64/-/linux-arm64-${version}.tgz",
+                    x86 = "https://registry.npmjs.org/@esbuild/linux-ia32/-/linux-ia32-${version}.tgz",
+                    x86_64 = "https://registry.npmjs.org/@esbuild/linux-x64/-/linux-x64-${version}.tgz",
+                },
+                macosx = {
+                    aarch64 = "https://registry.npmjs.org/@esbuild/darwin-arm64/-/darwin-arm64-${version}.tgz",
+                    x86_64 = "https://registry.npmjs.org/@esbuild/darwin-x64/-/darwin-x64-${version}.tgz",
+                },
+                windows = {
+                    aarch64 = "https://registry.npmjs.org/@esbuild/win32-arm64/-/win32-arm64-${version}.tgz",
+                    x86 = "https://registry.npmjs.org/@esbuild/win32-ia32/-/win32-ia32-${version}.tgz",
+                    x86_64 = "https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-${version}.tgz",
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "0.25.12" },

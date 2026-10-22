@@ -15,6 +15,10 @@ package = {
     categories = {"graphics", "lib"},
     keywords = {"glslang", "graphics", "gl"},
 
+    extensions = {
+
+    },
+
     xpm = {
         linux = {
             deps = { "xim:gcc-runtime@>=15", "xim:glibc@>=2.38" },

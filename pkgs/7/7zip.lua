@@ -42,6 +42,25 @@ package = {
     -- Linux/macOS upstream ships only the `7zz` CLI binary; there is no
     -- shared library asset on those platforms (no `lib7zip.so`/`.dylib` in
     -- the archives below), so this is a Windows-only distinction.
+    extensions = {
+        autoupdate = {
+            upstream = "ip7z/7zip",
+            tag = "${version}",
+            latest = "advance",
+            url = {
+                linux = {
+                    aarch64 = "https://github.com/ip7z/7zip/releases/download/${version}/7z${version:compact}-linux-arm64.tar.xz",
+                    x86_64 = "https://github.com/ip7z/7zip/releases/download/${version}/7z${version:compact}-linux-x64.tar.xz",
+                },
+                macosx = "https://github.com/ip7z/7zip/releases/download/${version}/7z${version:compact}-mac.tar.xz",
+                windows = {
+                    aarch64 = "https://github.com/ip7z/7zip/releases/download/${version}/7z${version:compact}-arm64.exe",
+                    x86_64 = "https://github.com/ip7z/7zip/releases/download/${version}/7z${version:compact}-x64.exe",
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "26.02" },

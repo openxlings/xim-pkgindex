@@ -1,0 +1,207 @@
+name: xpkgindex-update
+on:
+  schedule:
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'Optional namespace:name'
+        type: string
+        required: false
+  pull_request:
+    paths: ['pkgs/**', 'tests/**', '.github/xpkgindex-update.yml', '.github/scripts/autoupdate-ci.py', '.github/workflows/xpkgindex-update.yml', '.agents/docs/2026-10-22-autoupdate-package-audit.json']
+  push:
+    branches: [feat/unified-autoupdate]
+permissions:
+  contents: read
+concurrency:
+  group: unified-updater-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+env:
+  PYTHONUTF8: '1'
+  UPDATER_COMMIT: 2f5bf1594e662dbfb7b84e8c21c43e48fc51ba28
+  XLINGS_VERSION: v2026.10.21.4
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    outputs:
+      matrix: ${{ steps.matrix.outputs.value }}
+      checked: ${{ steps.check.outcome }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/checkout@v4
+        with:
+          repository: openxlings/xpkgindex-update
+          ref: ${{ env.UPDATER_COMMIT }}
+          path: .updater
+          persist-credentials: false
+      - name: Install the pinned updater
+        run: python -m pip install ./.updater
+      - name: Audit all package declarations
+        run: python .github/scripts/autoupdate-ci.py audit --output coverage.json
+      - name: Protect published versions
+        if: github.event_name == 'pull_request'
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: xpkgindex-update guard --base "$BASE" --output preservation.json
+      - uses: actions/cache/restore@v4
+        if: github.event_name != 'pull_request'
+        with:
+          path: .update-state.json
+          key: unified-update-state-${{ github.run_id }}
+          restore-keys: unified-update-state-
+      - name: Check real upstream resources once
+        id: check
+        if: github.event_name != 'pull_request'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PACKAGE: ${{ github.event_name == 'push' && 'xim:uv' || inputs.package }}
+        run: |
+          args=()
+          if [[ -n "$PACKAGE" ]]; then args+=(--package "$PACKAGE"); fi
+          xpkgindex-update check "${args[@]}" --state-file .update-state.json --output plan.json
+      - uses: actions/cache/save@v4
+        if: always() && github.event_name != 'pull_request'
+        with:
+          path: .update-state.json
+          key: unified-update-state-${{ github.run_id }}
+      - name: Select added candidate versions from the PR diff
+        id: matrix
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.sha }}
+        run: |
+          python .github/scripts/autoupdate-ci.py matrix --base "$BASE" --output matrix.json
+          echo "value=$(python -c 'import json; print(json.dumps(json.load(open("matrix.json")),separators=(",",":")))')" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unified-update-plan
+          path: |
+            plan.json
+            coverage.json
+            matrix.json
+            preservation.json
+  propose:
+    needs: scan
+    if: >-
+      always() && needs.scan.result == 'success' && github.event_name != 'pull_request' &&
+      (github.ref_name == github.event.repository.default_branch ||
+       (github.event_name == 'push' && github.ref_name == 'feat/unified-autoupdate'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/checkout@v4
+        with:
+          repository: openxlings/xpkgindex-update
+          ref: ${{ env.UPDATER_COMMIT }}
+          path: .updater
+          persist-credentials: false
+      - run: python -m pip install ./.updater
+      - uses: actions/download-artifact@v4
+        with:
+          name: unified-update-plan
+          path: .update-plan
+      - name: Propose from the fixed plan
+        env:
+          GH_TOKEN: ${{ secrets.XPKG_BOT_TOKEN }}
+          BASE: ${{ github.ref_name }}
+          VALIDATION: ${{ github.ref_name == 'feat/unified-autoupdate' }}
+        run: |
+          test -n "$GH_TOKEN" || { echo 'XPKG_BOT_TOKEN is required'; exit 1; }
+          git switch -C "$BASE" "$GITHUB_SHA"
+          args=()
+          if [[ "$VALIDATION" == true ]]; then args+=(--draft --package xim:uv); fi
+          xpkgindex-update propose --plan .update-plan/plan.json --base "$BASE" "${args[@]}" --output proposals.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unified-update-proposals
+          path: proposals.json
+  candidate:
+    needs: scan
+    if: needs.scan.outputs.matrix != '' && needs.scan.outputs.matrix != '{"include":[]}'
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix: ${{ fromJSON(needs.scan.outputs.matrix) }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/checkout@v4
+        with:
+          repository: openxlings/xpkgindex-update
+          ref: ${{ env.UPDATER_COMMIT }}
+          path: .updater
+          persist-credentials: false
+      - run: python -m pip install ./.updater pytest
+      - name: Install xlings on POSIX
+        if: runner.os != 'Windows'
+        shell: bash
+        env:
+          XLINGS_NON_INTERACTIVE: '1'
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
+          echo "$HOME/.xlings/bin" >> "$GITHUB_PATH"
+          echo "$HOME/.xlings/subos/default/bin" >> "$GITHUB_PATH"
+      - name: Install xlings on Windows
+        if: runner.os == 'Windows'
+        shell: pwsh
+        env:
+          XLINGS_NON_INTERACTIVE: '1'
+        run: |
+          iex (Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.ps1' -UseBasicParsing).Content
+          Add-Content $env:GITHUB_PATH "$env:USERPROFILE\.xlings\bin"
+          Add-Content $env:GITHUB_PATH "$env:USERPROFILE\.xlings\subos\default\bin"
+      - name: Install, verify and remove the exact candidate
+        env:
+          PACKAGE: ${{ matrix.id }}
+          RECIPE: ${{ matrix.path }}
+          VERSION: ${{ matrix.version }}
+        shell: bash
+        run: python .github/scripts/autoupdate-ci.py candidate --package "$PACKAGE" --path "$RECIPE" --version "$VERSION"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: candidate-${{ strategy.job-index }}
+          path: candidate-evidence.json
+  result:
+    needs: [scan, propose, candidate]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reject incomplete verification
+        env:
+          SCAN: ${{ needs.scan.result }}
+          CHECK: ${{ needs.scan.outputs.checked }}
+          PROPOSE: ${{ needs.propose.result }}
+          CANDIDATE: ${{ needs.candidate.result }}
+        run: |
+          [[ "$SCAN" == success ]]
+          [[ "$CHECK" != failure ]]
+          [[ "$PROPOSE" != failure && "$PROPOSE" != cancelled ]]
+          [[ "$CANDIDATE" != failure && "$CANDIDATE" != cancelled ]]

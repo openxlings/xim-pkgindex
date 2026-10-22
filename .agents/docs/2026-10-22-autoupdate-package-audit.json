@@ -1,0 +1,4023 @@
+{
+  "checked_at": "2026-10-22T09:03:06Z",
+  "threshold": "GitHub stargazerCount > 50",
+  "packages": [
+    {
+      "path": "pkgs/7/7zip.lua",
+      "id": "xim:7zip",
+      "upstream": "ip7z/7zip",
+      "stars": 4231,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "ip7z/7zip",
+        "tag": "${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "aarch64": "https://github.com/ip7z/7zip/releases/download/${version}/7z${version:compact}-linux-arm64.tar.xz",
+            "x86_64": "https://github.com/ip7z/7zip/releases/download/${version}/7z${version:compact}-linux-x64.tar.xz"
+          },
+          "macosx": "https://github.com/ip7z/7zip/releases/download/${version}/7z${version:compact}-mac.tar.xz",
+          "windows": {
+            "aarch64": "https://github.com/ip7z/7zip/releases/download/${version}/7z${version:compact}-arm64.exe",
+            "x86_64": "https://github.com/ip7z/7zip/releases/download/${version}/7z${version:compact}-x64.exe"
+          }
+        }
+      },
+      "latest": "26.02",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/a/aarch64-linux-musl-gcc.lua",
+      "id": "xim:aarch64-linux-musl-gcc",
+      "upstream": "gcc-mirror/gcc",
+      "stars": 11306,
+      "status": "manual",
+      "reason": "resource-server baseline has no verified architecture checksums"
+    },
+    {
+      "path": "pkgs/a/adwaita-cursors.lua",
+      "id": "xim:adwaita-cursors",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/a/agent-confined.lua",
+      "id": "xim:agent-confined",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/a/agent-private.lua",
+      "id": "xim:agent-private",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/a/alsa-lib.lua",
+      "id": "xim:alsa-lib",
+      "upstream": "alsa-project/alsa-lib",
+      "stars": 502,
+      "status": "manual",
+      "reason": "runtime hook contains the current version literally; automatic upgrades require a version-independent install hook"
+    },
+    {
+      "path": "pkgs/a/android-build-tools.lua",
+      "id": "xim:android-build-tools",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/a/android-debug-keystore.lua",
+      "id": "xim:android-debug-keystore",
+      "upstream": "openxlings/xim-pkgindex",
+      "stars": 8,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/a/android-emulator.lua",
+      "id": "xim:android-emulator",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/a/android-ndk.lua",
+      "id": "xim:android-ndk",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/a/android-platform-tools.lua",
+      "id": "xim:android-platform-tools",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/a/android-platform.lua",
+      "id": "xim:android-platform",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/a/android-system-image.lua",
+      "id": "xim:android-system-image",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/a/apitab.lua",
+      "id": "farnaherry:apitab",
+      "upstream": "FarnaHerry/apitab",
+      "stars": 1,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/a/appimagetool.lua",
+      "id": "xim:appimagetool",
+      "upstream": "AppImage/appimagetool",
+      "stars": 437,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "AppImage/appimagetool",
+        "tag": "${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "x86_64": "https://github.com/AppImage/appimagetool/releases/download/${version}/appimagetool-x86_64.AppImage",
+            "aarch64": "https://github.com/AppImage/appimagetool/releases/download/${version}/appimagetool-aarch64.AppImage"
+          }
+        }
+      },
+      "latest": "1.9.1",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/a/apple-device-tools.lua",
+      "id": "xim:apple-device-tools",
+      "upstream": "openxlings/xim-pkgindex",
+      "stars": 8,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/a/apple-simulator-tools.lua",
+      "id": "xim:apple-simulator-tools",
+      "upstream": "openxlings/xim-pkgindex",
+      "stars": 8,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/a/aria2-next.lua",
+      "id": "xim:aria2-next",
+      "upstream": "AnInsomniacy/aria2-next",
+      "stars": 729,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "AnInsomniacy/aria2-next",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "aarch64": "https://github.com/AnInsomniacy/aria2-next/releases/download/v${version}/aria2-next-${version}-linux-aarch64",
+            "x86_64": "https://github.com/AnInsomniacy/aria2-next/releases/download/v${version}/aria2-next-${version}-linux-x86_64"
+          },
+          "macosx": {
+            "aarch64": "https://github.com/AnInsomniacy/aria2-next/releases/download/v${version}/aria2-next-${version}-macos-arm64",
+            "x86_64": "https://github.com/AnInsomniacy/aria2-next/releases/download/v${version}/aria2-next-${version}-macos-x86_64"
+          },
+          "windows": {
+            "aarch64": "https://github.com/AnInsomniacy/aria2-next/releases/download/v${version}/aria2-next-${version}-windows-arm64.exe",
+            "x86_64": "https://github.com/AnInsomniacy/aria2-next/releases/download/v${version}/aria2-next-${version}-windows-x86_64.exe"
+          }
+        }
+      },
+      "latest": "2.5.5",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/a/at-spi2-atk.lua",
+      "id": "xim:at-spi2-atk",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/a/at-spi2-core.lua",
+      "id": "xim:at-spi2-core",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/a/atk.lua",
+      "id": "xim:atk",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/b/bash.lua",
+      "id": "xim:bash",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/b/bat.lua",
+      "id": "xim:bat",
+      "upstream": "sharkdp/bat",
+      "stars": 60890,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "sharkdp/bat",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/sharkdp/bat/releases/download/v${version}/bat-v${version}-x86_64-unknown-linux-musl.tar.gz",
+          "macosx": "https://github.com/sharkdp/bat/releases/download/v${version}/bat-v${version}-aarch64-apple-darwin.tar.gz",
+          "windows": "https://github.com/sharkdp/bat/releases/download/v${version}/bat-v${version}-x86_64-pc-windows-msvc.zip"
+        }
+      },
+      "latest": "0.26.1",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/b/bazel.lua",
+      "id": "xim:bazel",
+      "upstream": "bazelbuild/bazel",
+      "stars": 25973,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "bazelbuild/bazel",
+        "tag": "${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/bazelbuild/bazel/releases/download/${version}/bazel-${version}-linux-x86_64",
+          "macosx": "https://github.com/bazelbuild/bazel/releases/download/${version}/bazel-${version}-darwin-x86_64",
+          "windows": "https://github.com/bazelbuild/bazel/releases/download/${version}/bazel-${version}-windows-x86_64.exe"
+        }
+      },
+      "latest": "9.2.0",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/b/binutils.lua",
+      "id": "xim:binutils",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/b/brew.lua",
+      "id": "xim:brew",
+      "upstream": "Homebrew/brew",
+      "stars": 50086,
+      "status": "manual",
+      "reason": "rolling installer or no ordered published versions"
+    },
+    {
+      "path": "pkgs/b/brotli.lua",
+      "id": "xim:brotli",
+      "upstream": "google/brotli",
+      "stars": 14955,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "google/brotli",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "aarch64": "https://github.com/xlings-res/brotli/releases/download/${version}/brotli-${version}-linux-aarch64.tar.gz",
+            "x86_64": "https://github.com/xlings-res/brotli/releases/download/${version}/brotli-${version}-linux-x86_64.tar.gz"
+          }
+        }
+      },
+      "latest": "1.2.0",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/b/bun.lua",
+      "id": "xim:bun",
+      "upstream": "oven-sh/bun",
+      "stars": 96341,
+      "status": "manual",
+      "reason": "version alias requires dynamic runtime resolution"
+    },
+    {
+      "path": "pkgs/b/bundletool.lua",
+      "id": "xim:bundletool",
+      "upstream": "google/bundletool",
+      "stars": 4046,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "google/bundletool",
+        "tag": "${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/google/bundletool/releases/download/${version}/bundletool-all-${version}.jar",
+          "macosx": "https://github.com/google/bundletool/releases/download/${version}/bundletool-all-${version}.jar",
+          "windows": "https://github.com/google/bundletool/releases/download/${version}/bundletool-all-${version}.jar"
+        }
+      },
+      "latest": "1.18.3",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/b/busybox.lua",
+      "id": "xim:busybox",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/b/bwrap.lua",
+      "id": "xim:bwrap",
+      "upstream": "containers/bubblewrap",
+      "stars": 9160,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "containers/bubblewrap",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/bwrap/releases/download/${version}/bwrap-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/bwrap/releases/download/${version}/bwrap-${version}-linux-x86_64.tar.gz"
+            },
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/bwrap/releases/download/${version}/bwrap-${version}-linux-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/bwrap/releases/download/${version}/bwrap-${version}-linux-aarch64.tar.gz"
+            }
+          }
+        },
+        "verify": "sha256-sidecar"
+      },
+      "latest": "0.11.2",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/c/ca-certificates.lua",
+      "id": "xim:ca-certificates",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/c/cairo.lua",
+      "id": "xim:cairo",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/c/cann-toolkit.lua",
+      "id": "xim:cann-toolkit",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/c/cc-connect.lua",
+      "id": "xim:cc-connect",
+      "upstream": "chenhg5/cc-connect",
+      "stars": 16039,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "chenhg5/cc-connect",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/chenhg5/cc-connect/releases/download/v${version}/cc-connect-v${version}-linux-amd64.tar.gz",
+          "macosx": "https://github.com/chenhg5/cc-connect/releases/download/v${version}/cc-connect-v${version}-darwin-arm64.tar.gz",
+          "windows": "https://github.com/chenhg5/cc-connect/releases/download/v${version}/cc-connect-v${version}-windows-amd64.zip"
+        }
+      },
+      "latest": "1.5.0",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/c/cc-switch.lua",
+      "id": "xim:cc-switch",
+      "upstream": "farion1231/cc-switch",
+      "stars": 147491,
+      "status": "manual",
+      "reason": "dynamic metadata is not supported"
+    },
+    {
+      "path": "pkgs/c/chatgpt.lua",
+      "id": "xim:chatgpt",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/c/clash-flux.lua",
+      "id": "farnaherry:clash-flux",
+      "upstream": "FarnaHerry/Clash-Flux",
+      "stars": 1,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/c/claude-llm.lua",
+      "id": "config:claude-llm",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/c/claude.lua",
+      "id": "xim:claude",
+      "upstream": "anthropics/claude-code",
+      "stars": 152813,
+      "status": "manual",
+      "reason": "dynamic metadata is not supported"
+    },
+    {
+      "path": "pkgs/c/cmake.lua",
+      "id": "xim:cmake",
+      "upstream": "Kitware/CMake",
+      "stars": 8131,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "Kitware/CMake",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/cmake/releases/download/${version}/cmake-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/cmake/releases/download/${version}/cmake-${version}-linux-x86_64.tar.gz"
+            }
+          },
+          "macosx": {
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/cmake/releases/download/${version}/cmake-${version}-macosx-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/cmake/releases/download/${version}/cmake-${version}-macosx-aarch64.tar.gz"
+            }
+          },
+          "windows": {
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/cmake/releases/download/${version}/cmake-${version}-windows-x86_64.zip",
+              "CN": "https://gitcode.com/xlings-res/cmake/releases/download/${version}/cmake-${version}-windows-x86_64.zip"
+            }
+          }
+        },
+        "verify": "sha256-sidecar"
+      },
+      "latest": "4.4.2",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/c/code.lua",
+      "id": "xim:code",
+      "upstream": "microsoft/vscode",
+      "stars": 194201,
+      "status": "manual",
+      "reason": "dynamic metadata is not supported"
+    },
+    {
+      "path": "pkgs/c/codex.lua",
+      "id": "xim:codex",
+      "upstream": "openai/codex",
+      "stars": 130394,
+      "status": "manual",
+      "reason": "dynamic metadata is not supported"
+    },
+    {
+      "path": "pkgs/c/configure-project-installer.lua",
+      "id": "xim:configure-project-installer",
+      "upstream": "openxlings/xim-pkgindex",
+      "stars": 8,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/c/coreutils.lua",
+      "id": "xim:coreutils",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/c/coursier.lua",
+      "id": "xim:coursier",
+      "upstream": "coursier/coursier",
+      "stars": 2138,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "coursier/coursier",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/coursier/coursier/releases/download/v${version}/coursier.jar",
+          "macosx": "https://github.com/coursier/coursier/releases/download/v${version}/coursier.jar",
+          "windows": "https://github.com/coursier/coursier/releases/download/v${version}/coursier.jar"
+        }
+      },
+      "latest": "2.1.24",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/c/cpp.lua",
+      "id": "xim:cpp",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/c/cubism-sdk-native.lua",
+      "id": "xim:cubism-sdk-native",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/c/cubism-sdk-web.lua",
+      "id": "xim:cubism-sdk-web",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/c/cuda-cccl.lua",
+      "id": "xim:cuda-cccl",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/c/cuda-crt.lua",
+      "id": "xim:cuda-crt",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/c/cuda-cudart.lua",
+      "id": "xim:cuda-cudart",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/c/cuda-culibos.lua",
+      "id": "xim:cuda-culibos",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/c/cuda-cuobjdump.lua",
+      "id": "xim:cuda-cuobjdump",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/c/cuda-cuxxfilt.lua",
+      "id": "xim:cuda-cuxxfilt",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/c/cuda-gdb.lua",
+      "id": "xim:cuda-gdb",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/c/cuda-nvcc.lua",
+      "id": "xim:cuda-nvcc",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/c/cuda-nvdisasm.lua",
+      "id": "xim:cuda-nvdisasm",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/c/cuda-nvrtc.lua",
+      "id": "xim:cuda-nvrtc",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/c/cuda-nvtx.lua",
+      "id": "xim:cuda-nvtx",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/c/cuda-profiler-api.lua",
+      "id": "xim:cuda-profiler-api",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/c/cuda-sanitizer.lua",
+      "id": "xim:cuda-sanitizer",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/c/curl.lua",
+      "id": "xim:curl",
+      "upstream": "curl/curl",
+      "stars": 43202,
+      "status": "manual",
+      "reason": "current platform versions disagree; explicit packaging policy required"
+    },
+    {
+      "path": "pkgs/d/d2x.lua",
+      "id": "xim:d2x",
+      "upstream": "d2learn/d2x",
+      "stars": 4,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/d/dash.lua",
+      "id": "xim:dash",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/d/dbus.lua",
+      "id": "xim:dbus",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/d/devcpp.lua",
+      "id": "xim:devcpp",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/d/directx-headers.lua",
+      "id": "xim:directx-headers",
+      "upstream": "microsoft/DirectX-Headers",
+      "stars": 745,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "microsoft/DirectX-Headers",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/xlings-res/directx-headers/releases/download/${version}/directx-headers-${version}-linux-x86_64.tar.gz"
+        }
+      },
+      "latest": "1.614.1",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/d/dotnet.lua",
+      "id": "xim:dotnet",
+      "upstream": "dotnet/sdk",
+      "stars": 3234,
+      "status": "manual",
+      "reason": "dynamic metadata is not supported"
+    },
+    {
+      "path": "pkgs/d/dpcpp.lua",
+      "id": "xim:dpcpp",
+      "upstream": "intel/llvm",
+      "stars": 1540,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "intel/llvm",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "x86_64": "https://github.com/intel/llvm/releases/download/v${version}/sycl_linux.tar.gz"
+          },
+          "windows": {
+            "x86_64": "https://github.com/intel/llvm/releases/download/v${version}/sycl_windows.tar.gz"
+          }
+        }
+      },
+      "latest": "7.1.0",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/d/dsh.lua",
+      "id": "xim:dsh",
+      "upstream": "deepseek-ai/deepseek-harness",
+      "stars": 257571,
+      "status": "manual",
+      "reason": "rolling installer or no ordered published versions"
+    },
+    {
+      "path": "pkgs/e/e2fsprogs.lua",
+      "id": "xim:e2fsprogs",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/e/edk2-firmware.lua",
+      "id": "xim:edk2-firmware",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/e/elfutils.lua",
+      "id": "xim:elfutils",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/e/emsdk.lua",
+      "id": "xim:emsdk",
+      "upstream": "emscripten-core/emscripten",
+      "stars": 27736,
+      "status": "manual",
+      "reason": "source is pinned or URL has no reversible version mapping"
+    },
+    {
+      "path": "pkgs/e/esbuild.lua",
+      "id": "xim:esbuild",
+      "upstream": "evanw/esbuild",
+      "stars": 40102,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "evanw/esbuild",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "aarch64": "https://registry.npmjs.org/@esbuild/linux-arm64/-/linux-arm64-${version}.tgz",
+            "x86": "https://registry.npmjs.org/@esbuild/linux-ia32/-/linux-ia32-${version}.tgz",
+            "x86_64": "https://registry.npmjs.org/@esbuild/linux-x64/-/linux-x64-${version}.tgz"
+          },
+          "macosx": {
+            "aarch64": "https://registry.npmjs.org/@esbuild/darwin-arm64/-/darwin-arm64-${version}.tgz",
+            "x86_64": "https://registry.npmjs.org/@esbuild/darwin-x64/-/darwin-x64-${version}.tgz"
+          },
+          "windows": {
+            "aarch64": "https://registry.npmjs.org/@esbuild/win32-arm64/-/win32-arm64-${version}.tgz",
+            "x86": "https://registry.npmjs.org/@esbuild/win32-ia32/-/win32-ia32-${version}.tgz",
+            "x86_64": "https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-${version}.tgz"
+          }
+        }
+      },
+      "latest": "0.25.12",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/e/expat.lua",
+      "id": "xim:expat",
+      "upstream": "libexpat/libexpat",
+      "stars": 1393,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "libexpat/libexpat",
+        "tag": "R_${version:underscore}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/xlings-res/expat/releases/download/${version}/expat-${version}-linux-x86_64.tar.gz"
+        }
+      },
+      "latest": "2.6.2",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/f/fd.lua",
+      "id": "xim:fd",
+      "upstream": "sharkdp/fd",
+      "stars": 44830,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "sharkdp/fd",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/sharkdp/fd/releases/download/v${version}/fd-v${version}-x86_64-unknown-linux-musl.tar.gz",
+          "macosx": "https://github.com/sharkdp/fd/releases/download/v${version}/fd-v${version}-aarch64-apple-darwin.tar.gz",
+          "windows": "https://github.com/sharkdp/fd/releases/download/v${version}/fd-v${version}-x86_64-pc-windows-msvc.zip"
+        }
+      },
+      "latest": "10.5.0",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/f/fish.lua",
+      "id": "xim:fish",
+      "upstream": "fish-shell/fish-shell",
+      "stars": 34336,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "fish-shell/fish-shell",
+        "tag": "${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "aarch64": "https://github.com/fish-shell/fish-shell/releases/download/${version}/fish-${version}-linux-aarch64.tar.xz",
+            "x86_64": "https://github.com/fish-shell/fish-shell/releases/download/${version}/fish-${version}-linux-x86_64.tar.xz"
+          }
+        }
+      },
+      "latest": "4.8.1",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/f/fontconfig-user-moyingji.lua",
+      "id": "config:fontconfig-user-moyingji",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/f/fontconfig.lua",
+      "id": "xim:fontconfig",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/f/freetype.lua",
+      "id": "xim:freetype",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/f/fribidi.lua",
+      "id": "xim:fribidi",
+      "upstream": "fribidi/fribidi",
+      "stars": 447,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "fribidi/fribidi",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/xlings-res/fribidi/releases/download/${version}/fribidi-${version}-linux-x86_64.tar.gz"
+        }
+      },
+      "latest": "1.0.13",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/f/fzf.lua",
+      "id": "xim:fzf",
+      "upstream": "junegunn/fzf",
+      "stars": 83715,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "junegunn/fzf",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/junegunn/fzf/releases/download/v${version}/fzf-${version}-linux_amd64.tar.gz",
+          "macosx": "https://github.com/junegunn/fzf/releases/download/v${version}/fzf-${version}-darwin_arm64.tar.gz",
+          "windows": "https://github.com/junegunn/fzf/releases/download/v${version}/fzf-${version}-windows_amd64.zip"
+        }
+      },
+      "latest": "0.74.3",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/g/gcc-runtime.lua",
+      "id": "xim:gcc-runtime",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/g/gcc-specs-config.lua",
+      "id": "xim:gcc-specs-config",
+      "upstream": "openxlings/xim-pkgindex",
+      "stars": 8,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/g/gcc.lua",
+      "id": "xim:gcc",
+      "upstream": "gcc-mirror/gcc",
+      "stars": 11306,
+      "status": "manual",
+      "reason": "current platform versions disagree; explicit packaging policy required"
+    },
+    {
+      "path": "pkgs/g/gdk-pixbuf.lua",
+      "id": "xim:gdk-pixbuf",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/g/gh.lua",
+      "id": "xim:gh",
+      "upstream": "cli/cli",
+      "stars": 46722,
+      "status": "manual",
+      "reason": "dynamic metadata is not supported"
+    },
+    {
+      "path": "pkgs/g/git-autosync.lua",
+      "id": "xim:git-autosync",
+      "upstream": "openxlings/xim-pkgindex",
+      "stars": 8,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/g/git.lua",
+      "id": "xim:git",
+      "upstream": "git/git",
+      "stars": 63933,
+      "status": "manual",
+      "reason": "current version is pinned or latest does not reference a literal version"
+    },
+    {
+      "path": "pkgs/g/gitcode-hosts.lua",
+      "id": "config:gitcode-hosts",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/g/github-gh.lua",
+      "id": "xim:github-gh",
+      "upstream": "cli/cli",
+      "stars": 46722,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "cli/cli",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/cli/cli/releases/download/v${version}/gh_${version}_linux_amd64.tar.gz",
+          "macosx": "https://github.com/cli/cli/releases/download/v${version}/gh_${version}_macOS_amd64.zip",
+          "windows": "https://github.com/cli/cli/releases/download/v${version}/gh_${version}_windows_amd64.zip"
+        }
+      },
+      "latest": "2.92.0",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/g/github-notifications-clear.lua",
+      "id": "xim:github-notifications-clear",
+      "upstream": "openxlings/xim-pkgindex",
+      "stars": 8,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/g/glew.lua",
+      "id": "xim:glew",
+      "upstream": "nigels-com/glew",
+      "stars": 2904,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "nigels-com/glew",
+        "tag": "glew-${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/nigels-com/glew/releases/download/glew-${version}/glew-${version}.tgz",
+          "macosx": "https://github.com/nigels-com/glew/releases/download/glew-${version}/glew-${version}.tgz",
+          "windows": "https://github.com/nigels-com/glew/releases/download/glew-${version}/glew-${version}.tgz"
+        }
+      },
+      "latest": "2.2.0",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/g/glib.lua",
+      "id": "xim:glib",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/g/glibc.lua",
+      "id": "xim:glibc",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/g/glslang.lua",
+      "id": "xim:glslang",
+      "upstream": "KhronosGroup/glslang",
+      "stars": 3599,
+      "status": "manual",
+      "reason": "runtime hook contains the current version literally; automatic upgrades require a version-independent install hook"
+    },
+    {
+      "path": "pkgs/g/go.lua",
+      "id": "xim:go",
+      "upstream": "golang/go",
+      "stars": 139400,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "golang/go",
+        "tag": "go${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://go.dev/dl/go${version}.linux-amd64.tar.gz",
+          "macosx": "https://go.dev/dl/go${version}.darwin-arm64.tar.gz",
+          "windows": "https://go.dev/dl/go${version}.windows-amd64.zip"
+        }
+      },
+      "latest": "1.27.0",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/g/godot.lua",
+      "id": "xim:godot",
+      "upstream": "godotengine/godot",
+      "stars": 118841,
+      "status": "manual",
+      "reason": "dynamic metadata is not supported"
+    },
+    {
+      "path": "pkgs/g/gradle.lua",
+      "id": "xim:gradle",
+      "upstream": "gradle/gradle",
+      "stars": 18887,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "gradle/gradle",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://services.gradle.org/distributions/gradle-${version}-bin.zip",
+          "macosx": "https://services.gradle.org/distributions/gradle-${version}-bin.zip",
+          "windows": "https://services.gradle.org/distributions/gradle-${version}-bin.zip"
+        }
+      },
+      "latest": "9.7.1",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/g/graphene.lua",
+      "id": "xim:graphene",
+      "upstream": "ebassi/graphene",
+      "stars": 441,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "ebassi/graphene",
+        "tag": "${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/xlings-res/graphene/releases/download/${version}/graphene-${version}-linux-x86_64.tar.gz"
+        }
+      },
+      "latest": "1.10.8",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/g/graphics.lua",
+      "id": "xim:graphics",
+      "upstream": "openxlings/xim-pkgindex",
+      "stars": 8,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/g/graphite2.lua",
+      "id": "xim:graphite2",
+      "upstream": "silnrsi/graphite",
+      "stars": 192,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "silnrsi/graphite",
+        "tag": "${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/xlings-res/graphite2/releases/download/${version}/graphite2-${version}-linux-x86_64.tar.gz"
+        }
+      },
+      "latest": "1.3.14",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/g/griddycode.lua",
+      "id": "xim:griddycode",
+      "upstream": "face-hh/griddycode",
+      "stars": 2206,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "face-hh/griddycode",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/face-hh/griddycode/releases/download/v${version}/Linux.zip",
+          "windows": "https://github.com/face-hh/griddycode/releases/download/v${version}/Windows.zip"
+        }
+      },
+      "latest": "1.2.2",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/g/gtk3.lua",
+      "id": "xim:gtk3",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/g/gtk4.lua",
+      "id": "xim:gtk4",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/h/harfbuzz.lua",
+      "id": "xim:harfbuzz",
+      "upstream": "harfbuzz/harfbuzz",
+      "stars": 6165,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "harfbuzz/harfbuzz",
+        "tag": "${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/xlings-res/harfbuzz/releases/download/${version}/harfbuzz-${version}-linux-x86_64.tar.gz"
+        }
+      },
+      "latest": "14.4.0",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/h/hermes-agent.lua",
+      "id": "xim:hermes-agent",
+      "upstream": "NousResearch/hermes-agent",
+      "stars": 256078,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "NousResearch/hermes-agent",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/NousResearch/hermes-agent/archive/refs/tags/v${version}.tar.gz",
+          "macosx": "https://github.com/NousResearch/hermes-agent/archive/refs/tags/v${version}.tar.gz"
+        }
+      },
+      "latest": "2026.4.23",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/h/hip-nvidia.lua",
+      "id": "xim:hip-nvidia",
+      "upstream": "ROCm/HIP",
+      "stars": 4418,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "ROCm/HIP",
+        "tag": "rocm-${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/xlings-res/hip-nvidia/releases/download/${version}/hip-nvidia-${version}-noarch.tar.gz"
+        }
+      },
+      "latest": "7.2.4",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/h/htop.lua",
+      "id": "xim:htop",
+      "upstream": "htop-dev/htop",
+      "stars": 8409,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "htop-dev/htop",
+        "tag": "${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/htop/releases/download/${version}/htop-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/htop/releases/download/${version}/htop-${version}-linux-x86_64.tar.gz"
+            },
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/htop/releases/download/${version}/htop-${version}-linux-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/htop/releases/download/${version}/htop-${version}-linux-aarch64.tar.gz"
+            }
+          }
+        },
+        "verify": "sha256-sidecar"
+      },
+      "latest": "3.5.3",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/h/huxerui.lua",
+      "id": "xim:huxerui",
+      "upstream": "HuxerUI/HuxerUI",
+      "stars": 29,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/i/icu.lua",
+      "id": "xim:icu",
+      "upstream": "unicode-org/icu",
+      "stars": 3619,
+      "status": "manual",
+      "reason": "upstream tag cannot be inferred unambiguously; resource production differs from source numbering"
+    },
+    {
+      "path": "pkgs/i/interposer-stub.lua",
+      "id": "xim:interposer-stub",
+      "upstream": "xlings-res/interposer-stub",
+      "stars": 0,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/i/iphoneos-sdk.lua",
+      "id": "xim:iphoneos-sdk",
+      "upstream": "xybp888/iOS-SDKs",
+      "stars": 917,
+      "status": "manual",
+      "reason": "proprietary SDK redistribution/update policy requires manual release review"
+    },
+    {
+      "path": "pkgs/j/jdk-corretto.lua",
+      "id": "xim:jdk-corretto",
+      "upstream": "corretto/corretto-25",
+      "stars": 40,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/j/jdk-temurin.lua",
+      "id": "xim:jdk-temurin",
+      "upstream": "adoptium/temurin25-binaries",
+      "stars": 61,
+      "status": "manual",
+      "reason": "current version is pinned or latest does not reference a literal version"
+    },
+    {
+      "path": "pkgs/j/jdk-zulu.lua",
+      "id": "xim:jdk-zulu",
+      "upstream": "zulu-openjdk/zulu-openjdk",
+      "stars": 289,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "zulu-openjdk/zulu-openjdk",
+        "tag": "${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "aarch64": "https://cdn.azul.com/zulu/bin/zulu25.36.15-ca-jdk${version}-linux_aarch64.tar.gz",
+            "x86_64": "https://cdn.azul.com/zulu/bin/zulu25.36.15-ca-jdk${version}-linux_x64.tar.gz"
+          },
+          "macosx": {
+            "aarch64": "https://cdn.azul.com/zulu/bin/zulu25.36.15-ca-jdk${version}-macosx_aarch64.tar.gz",
+            "x86_64": "https://cdn.azul.com/zulu/bin/zulu25.36.15-ca-jdk${version}-macosx_x64.tar.gz"
+          },
+          "windows": {
+            "x86_64": "https://cdn.azul.com/zulu/bin/zulu25.36.15-ca-jdk${version}-win_x64.zip"
+          }
+        }
+      },
+      "latest": "25.0.4",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/j/jetbrainsmono-nerd-font.lua",
+      "id": "xim:jetbrainsmono-nerd-font",
+      "upstream": "ryanoasis/nerd-fonts",
+      "stars": 64949,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "ryanoasis/nerd-fonts",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/ryanoasis/nerd-fonts/releases/download/v${version}/JetBrainsMono.zip",
+          "macosx": "https://github.com/ryanoasis/nerd-fonts/releases/download/v${version}/JetBrainsMono.zip",
+          "windows": "https://github.com/ryanoasis/nerd-fonts/releases/download/v${version}/JetBrainsMono.zip"
+        }
+      },
+      "latest": "3.4.0",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/j/jq.lua",
+      "id": "xim:jq",
+      "upstream": "jqlang/jq",
+      "stars": 35903,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "jqlang/jq",
+        "tag": "jq-${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "aarch64": "https://github.com/jqlang/jq/releases/download/jq-${version}/jq-linux-arm64",
+            "x86_64": "https://github.com/jqlang/jq/releases/download/jq-${version}/jq-linux-amd64"
+          },
+          "macosx": "https://github.com/jqlang/jq/releases/download/jq-${version}/jq-macos-arm64",
+          "windows": "https://github.com/jqlang/jq/releases/download/jq-${version}/jq-windows-amd64.exe"
+        }
+      },
+      "latest": "1.8.2",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/k/keyutils.lua",
+      "id": "xim:keyutils",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/k/khistory.lua",
+      "id": "xim:khistory",
+      "upstream": "Sunrisepeak/KHistory",
+      "stars": 84,
+      "status": "manual",
+      "reason": "rolling installer or no ordered published versions"
+    },
+    {
+      "path": "pkgs/k/kotlin.lua",
+      "id": "xim:kotlin",
+      "upstream": "JetBrains/kotlin",
+      "stars": 53498,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "JetBrains/kotlin",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/JetBrains/kotlin/releases/download/v${version}/kotlin-compiler-${version}.zip",
+          "macosx": "https://github.com/JetBrains/kotlin/releases/download/v${version}/kotlin-compiler-${version}.zip",
+          "windows": "https://github.com/JetBrains/kotlin/releases/download/v${version}/kotlin-compiler-${version}.zip"
+        }
+      },
+      "latest": "2.4.20",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/k/krb5.lua",
+      "id": "xim:krb5",
+      "upstream": "krb5/krb5",
+      "stars": 608,
+      "status": "manual",
+      "reason": "upstream tag cannot be inferred unambiguously; resource production differs from source numbering"
+    },
+    {
+      "path": "pkgs/l/libX11.lua",
+      "id": "xim:libX11",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libXau.lua",
+      "id": "xim:libXau",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libXcomposite.lua",
+      "id": "xim:libXcomposite",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libXcursor.lua",
+      "id": "xim:libXcursor",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libXdamage.lua",
+      "id": "xim:libXdamage",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libXdmcp.lua",
+      "id": "xim:libXdmcp",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libXext.lua",
+      "id": "xim:libXext",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libXfixes.lua",
+      "id": "xim:libXfixes",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libXft.lua",
+      "id": "xim:libXft",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libXi.lua",
+      "id": "xim:libXi",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libXinerama.lua",
+      "id": "xim:libXinerama",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libXrandr.lua",
+      "id": "xim:libXrandr",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libXrender.lua",
+      "id": "xim:libXrender",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libXtst.lua",
+      "id": "xim:libXtst",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libXxf86vm.lua",
+      "id": "xim:libXxf86vm",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libbsd.lua",
+      "id": "xim:libbsd",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libcap.lua",
+      "id": "xim:libcap",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libcublas.lua",
+      "id": "xim:libcublas",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libcuda-host-link.lua",
+      "id": "xim:libcuda-host-link",
+      "upstream": "openxlings/xim-pkgindex",
+      "stars": 8,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/l/libcufft.lua",
+      "id": "xim:libcufft",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libcups.lua",
+      "id": "xim:libcups",
+      "upstream": "OpenPrinting/cups",
+      "stars": 1778,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "OpenPrinting/cups",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "aarch64": "https://github.com/xlings-res/libcups/releases/download/${version}/libcups-${version}-linux-aarch64.tar.gz",
+            "x86_64": "https://github.com/xlings-res/libcups/releases/download/${version}/libcups-${version}-linux-x86_64.tar.gz"
+          }
+        }
+      },
+      "latest": "2.3.3",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/l/libcurand.lua",
+      "id": "xim:libcurand",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libcusolver.lua",
+      "id": "xim:libcusolver",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libcusparse.lua",
+      "id": "xim:libcusparse",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libcxx-headers.lua",
+      "id": "xim:libcxx-headers",
+      "upstream": "llvm/llvm-project",
+      "stars": 41154,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "llvm/llvm-project",
+        "tag": "llvmorg-${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz",
+          "macosx": "https://github.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz",
+          "windows": "https://github.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz"
+        }
+      },
+      "latest": "22.1.8",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/l/libdatrie.lua",
+      "id": "xim:libdatrie",
+      "upstream": "tlwg/libdatrie",
+      "stars": 184,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "tlwg/libdatrie",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/xlings-res/libdatrie/releases/download/${version}/libdatrie-${version}-linux-x86_64.tar.gz"
+        }
+      },
+      "latest": "0.2.14",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/l/libdrm.lua",
+      "id": "xim:libdrm",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libedit.lua",
+      "id": "xim:libedit",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libepoxy.lua",
+      "id": "xim:libepoxy",
+      "upstream": "anholt/libepoxy",
+      "stars": 753,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "anholt/libepoxy",
+        "tag": "${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/xlings-res/libepoxy/releases/download/${version}/libepoxy-${version}-linux-x86_64.tar.gz"
+        }
+      },
+      "latest": "1.5.10",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/l/libffi.lua",
+      "id": "xim:libffi",
+      "upstream": "libffi/libffi",
+      "stars": 4394,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "libffi/libffi",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/xlings-res/libffi/releases/download/${version}/libffi-${version}-linux-x86_64.tar.gz"
+        }
+      },
+      "latest": "3.4.4",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/l/libgcrypt.lua",
+      "id": "xim:libgcrypt",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libglvnd.lua",
+      "id": "xim:libglvnd",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libgpg-error.lua",
+      "id": "xim:libgpg-error",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libinput-quirks.lua",
+      "id": "xim:libinput-quirks",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libjpeg-turbo.lua",
+      "id": "xim:libjpeg-turbo",
+      "upstream": "libjpeg-turbo/libjpeg-turbo",
+      "stars": 4456,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "libjpeg-turbo/libjpeg-turbo",
+        "tag": "${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/xlings-res/libjpeg-turbo/releases/download/${version}/libjpeg-turbo-${version}-linux-x86_64.tar.gz"
+        }
+      },
+      "latest": "3.2.0",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/l/libllvm.lua",
+      "id": "xim:libllvm",
+      "upstream": "llvm/llvm-project",
+      "stars": 41154,
+      "status": "manual",
+      "reason": "runtime hook contains the current version literally; automatic upgrades require a version-independent install hook"
+    },
+    {
+      "path": "pkgs/l/libmd.lua",
+      "id": "xim:libmd",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libnotify.lua",
+      "id": "xim:libnotify",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libnvfatbin.lua",
+      "id": "xim:libnvfatbin",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libnvjitlink.lua",
+      "id": "xim:libnvjitlink",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libnvptxcompiler.lua",
+      "id": "xim:libnvptxcompiler",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libnvvm.lua",
+      "id": "xim:libnvvm",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libpciaccess.lua",
+      "id": "xim:libpciaccess",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libpng.lua",
+      "id": "xim:libpng",
+      "upstream": "glennrp/libpng",
+      "stars": 1666,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "glennrp/libpng",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/xlings-res/libpng/releases/download/${version}/libpng-${version}-linux-x86_64.tar.gz"
+        }
+      },
+      "latest": "1.6.43",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/l/libpsl.lua",
+      "id": "xim:libpsl",
+      "upstream": "rockdaboot/libpsl",
+      "stars": 226,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "rockdaboot/libpsl",
+        "tag": "${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/xlings-res/libpsl/releases/download/${version}/libpsl-${version}-linux-x86_64.tar.gz"
+        }
+      },
+      "latest": "0.23.3",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/l/libsecret.lua",
+      "id": "xim:libsecret",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libselinux.lua",
+      "id": "xim:libselinux",
+      "upstream": "SELinuxProject/selinux",
+      "stars": 1649,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "SELinuxProject/selinux",
+        "tag": "${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/xlings-res/libselinux/releases/download/${version}/libselinux-${version}-linux-x86_64.tar.gz"
+        }
+      },
+      "latest": "3.11",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/l/libsoup.lua",
+      "id": "xim:libsoup",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libthai.lua",
+      "id": "xim:libthai",
+      "upstream": "tlwg/libthai",
+      "stars": 87,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "tlwg/libthai",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/xlings-res/libthai/releases/download/${version}/libthai-${version}-linux-x86_64.tar.gz"
+        }
+      },
+      "latest": "0.1.30",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/l/libtiff.lua",
+      "id": "xim:libtiff",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libudev.lua",
+      "id": "xim:libudev",
+      "upstream": "systemd/systemd",
+      "stars": 16888,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "systemd/systemd",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "aarch64": "https://github.com/xlings-res/libudev/releases/download/${version}/libudev-${version}-linux-aarch64.tar.gz",
+            "x86_64": "https://github.com/xlings-res/libudev/releases/download/${version}/libudev-${version}-linux-x86_64.tar.gz"
+          }
+        }
+      },
+      "latest": "257.4",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/l/libusb.lua",
+      "id": "xim:libusb",
+      "upstream": "libusb/libusb",
+      "stars": 6175,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "libusb/libusb",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "aarch64": "https://github.com/xlings-res/libusb/releases/download/${version}/libusb-${version}-linux-aarch64.tar.gz",
+            "x86_64": "https://github.com/xlings-res/libusb/releases/download/${version}/libusb-${version}-linux-x86_64.tar.gz"
+          }
+        }
+      },
+      "latest": "1.0.29",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/l/libxcb.lua",
+      "id": "xim:libxcb",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libxkbcommon.lua",
+      "id": "xim:libxkbcommon",
+      "upstream": "xkbcommon/libxkbcommon",
+      "stars": 373,
+      "status": "manual",
+      "reason": "runtime hook contains the current version literally; automatic upgrades require a version-independent install hook"
+    },
+    {
+      "path": "pkgs/l/libxml2.lua",
+      "id": "xim:libxml2",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/libxshmfence.lua",
+      "id": "xim:libxshmfence",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/limine.lua",
+      "id": "xim:limine",
+      "upstream": "limine-bootloader/limine",
+      "stars": 3884,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "limine-bootloader/limine",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/limine/releases/download/${version}/limine-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/limine/releases/download/${version}/limine-${version}-linux-x86_64.tar.gz"
+            },
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/limine/releases/download/${version}/limine-${version}-linux-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/limine/releases/download/${version}/limine-${version}-linux-aarch64.tar.gz"
+            }
+          }
+        },
+        "verify": "sha256-sidecar"
+      },
+      "latest": "12.9.3",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/l/linux-headers.lua",
+      "id": "xim:linux-headers",
+      "upstream": "torvalds/linux",
+      "stars": 253092,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "torvalds/linux",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "aarch64": "https://github.com/xlings-res/linux-headers/releases/download/${version}/linux-headers-${version}-linux-aarch64.tar.gz",
+            "x86_64": "https://github.com/xlings-res/scode-res/releases/download/linux-headers/linux-headers-${version}.tar.gz"
+          }
+        }
+      },
+      "latest": "5.11.1",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/l/linux-kernel-virt.lua",
+      "id": "xim:linux-kernel-virt",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/linux-kernel.lua",
+      "id": "xim:linux-kernel",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/l/linux-sysroot-create.lua",
+      "id": "xim:linux-sysroot-create",
+      "upstream": "openxlings/xim-pkgindex",
+      "stars": 8,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/l/llm-switch.lua",
+      "id": "farnaherry:llm-switch",
+      "upstream": "FarnaHerry/llm-switch",
+      "stars": 1,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/l/llvm-dev.lua",
+      "id": "xim:llvm-dev",
+      "upstream": "llvm/llvm-project",
+      "stars": 41154,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "llvm/llvm-project",
+        "tag": "llvmorg-${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/xlings-res/llvm-dev/releases/download/${version}/llvm-dev-${version}-linux-x86_64.tar.gz"
+        }
+      },
+      "latest": "20.1.7.1",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/l/llvm-tools.lua",
+      "id": "xim:llvm-tools",
+      "upstream": "llvm/llvm-project",
+      "stars": 41154,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "llvm/llvm-project",
+        "tag": "llvmorg-${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "x86_64": "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-linux-x86_64.tar.gz"
+          },
+          "windows": "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-windows-x86_64.zip",
+          "macosx": "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-macosx-arm64.tar.xz"
+        }
+      },
+      "latest": "22.1.8",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/l/llvm.lua",
+      "id": "xim:llvm",
+      "upstream": "llvm/llvm-project",
+      "stars": 41154,
+      "status": "manual",
+      "reason": "resource-server baseline has no verified architecture checksums"
+    },
+    {
+      "path": "pkgs/luban/agent-workspace.lua",
+      "id": "luban:agent-workspace",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/luban/audacious.lua",
+      "id": "luban:audacious",
+      "upstream": "audacious-media-player/audacious",
+      "stars": 1285,
+      "status": "manual",
+      "reason": "rolling installer or no ordered published versions"
+    },
+    {
+      "path": "pkgs/luban/audio.lua",
+      "id": "luban:audio",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/luban/compositor.lua",
+      "id": "luban:compositor",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/luban/core.lua",
+      "id": "luban:core",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/luban/cursors.lua",
+      "status": "manual",
+      "reason": "shared metadata cannot have later package access or mutation"
+    },
+    {
+      "path": "pkgs/luban/desktop.lua",
+      "id": "luban:desktop",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/luban/falkon.lua",
+      "id": "luban:falkon",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/luban/foot.lua",
+      "id": "luban:foot",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/luban/kde.lua",
+      "id": "luban:kde",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/luban/labwc-desktop.lua",
+      "id": "xim:labwc-desktop",
+      "upstream": "labwc/labwc",
+      "stars": 2862,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "labwc/labwc",
+        "tag": "${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "aarch64": "https://github.com/xlings-res/labwc-desktop/releases/download/${version}-r1/labwc-desktop-${version}-r1-linux-aarch64.tar.gz",
+            "x86_64": "https://github.com/xlings-res/labwc-desktop/releases/download/${version}-r1/labwc-desktop-${version}-r1-linux-x86_64.tar.gz"
+          }
+        }
+      },
+      "latest": "0.7.2",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/luban/labwc.lua",
+      "id": "luban:labwc",
+      "upstream": "labwc/labwc",
+      "stars": 2862,
+      "status": "manual",
+      "reason": "rolling installer or no ordered published versions"
+    },
+    {
+      "path": "pkgs/luban/luban-agent-workspace.lua",
+      "id": "subos:luban-agent-workspace",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/luban/luban-boot-generic.lua",
+      "id": "xim:luban-boot-generic",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/luban/luban-boot-virt.lua",
+      "id": "xim:luban-boot-virt",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/luban/luban-core.lua",
+      "id": "subos:luban-core",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/luban/luban-desktop-xdesk.lua",
+      "id": "subos:luban-desktop-xdesk",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/luban/luban-desktop.lua",
+      "id": "subos:luban-desktop",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/luban/luban-fonts.lua",
+      "status": "manual",
+      "reason": "shared metadata cannot have later package access or mutation"
+    },
+    {
+      "path": "pkgs/luban/luban-nano.lua",
+      "id": "subos:luban-nano",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/luban/luban-os.lua",
+      "id": "xim:luban-os",
+      "upstream": "openxlings/xlings",
+      "stars": 615,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "openxlings/xlings",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/luban-os/releases/download/${version}/luban-os-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/luban-os/releases/download/${version}/luban-os-${version}-linux-x86_64.tar.gz"
+            }
+          },
+          "macosx": {
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/luban-os/releases/download/${version}/luban-os-${version}-macosx-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/luban-os/releases/download/${version}/luban-os-${version}-macosx-aarch64.tar.gz"
+            }
+          },
+          "windows": {
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/luban-os/releases/download/${version}/luban-os-${version}-windows-x86_64.zip",
+              "CN": "https://gitcode.com/xlings-res/luban-os/releases/download/${version}/luban-os-${version}-windows-x86_64.zip"
+            }
+          }
+        },
+        "verify": "sha256-sidecar"
+      },
+      "latest": "2026.10.22.2",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/luban/luban-tiny-musl.lua",
+      "id": "subos:luban-tiny-musl",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/luban/luban-tiny.lua",
+      "id": "subos:luban-tiny",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/luban/luban.lua",
+      "id": "xim:luban",
+      "upstream": "openxlings/xlings",
+      "stars": 615,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "openxlings/xlings",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/luban/releases/download/${version}/luban-${version}-linux-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/luban/releases/download/${version}/luban-${version}-linux-aarch64.tar.gz"
+            },
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/luban/releases/download/${version}/luban-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/luban/releases/download/${version}/luban-${version}-linux-x86_64.tar.gz"
+            }
+          },
+          "macosx": {
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/luban/releases/download/${version}/luban-${version}-macosx-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/luban/releases/download/${version}/luban-${version}-macosx-aarch64.tar.gz"
+            }
+          },
+          "windows": {
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/luban/releases/download/${version}/luban-${version}-windows-x86_64.zip",
+              "CN": "https://gitcode.com/xlings-res/luban/releases/download/${version}/luban-${version}-windows-x86_64.zip"
+            }
+          }
+        },
+        "verify": "sha256-sidecar"
+      },
+      "latest": "2026.10.22.2",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/luban/lxqt.lua",
+      "id": "luban:lxqt",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/luban/nano.lua",
+      "id": "luban:nano",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/luban/qt-runtime.lua",
+      "id": "luban:qt-runtime",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/luban/sample-music.lua",
+      "id": "luban:sample-music",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/luban/tiny-musl.lua",
+      "id": "luban:tiny-musl",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/luban/tiny.lua",
+      "id": "luban:tiny",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/luban/tools-agent.lua",
+      "id": "luban:tools-agent",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/luban/tools-cli.lua",
+      "id": "luban:tools-cli",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/luban/tools-dev.lua",
+      "id": "luban:tools-dev",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/luban/xdesk.lua",
+      "id": "luban:xdesk",
+      "upstream": "openxlings/xlings",
+      "stars": 615,
+      "status": "manual",
+      "reason": "resource URL is dynamic or missing"
+    },
+    {
+      "path": "pkgs/luban/xwayland.lua",
+      "id": "luban:xwayland",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/m/macapp-run.lua",
+      "id": "xim:macapp-run",
+      "upstream": "openxlings/xim-pkgindex",
+      "stars": 8,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/m/make.lua",
+      "id": "xim:make",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/m/mcpp-hooks-audioplayer.lua",
+      "id": "xim:mcpp-hooks-audioplayer",
+      "upstream": "helantianshen/mcpp-hooks-audioplayer",
+      "stars": 2,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/m/mcpp-short-cmd.lua",
+      "id": "xim:mcpp-short-cmd",
+      "upstream": "mcpp-community/mcpp",
+      "stars": 181,
+      "status": "manual",
+      "reason": "resource URL is dynamic or missing"
+    },
+    {
+      "path": "pkgs/m/mcpp-vscode-clangd.lua",
+      "id": "config:mcpp-vscode-clangd",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/m/mcpp.lua",
+      "id": "xim:mcpp",
+      "upstream": "mcpp-community/mcpp",
+      "stars": 181,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "mcpp-community/mcpp",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-linux-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-linux-aarch64.tar.gz"
+            },
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-linux-x86_64.tar.gz"
+            }
+          },
+          "macosx": {
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-macosx-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-macosx-aarch64.tar.gz"
+            }
+          },
+          "windows": {
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-windows-x86_64.zip",
+              "CN": "https://gitcode.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-windows-x86_64.zip"
+            }
+          }
+        },
+        "verify": "sha256-sidecar"
+      },
+      "latest": "2026.10.21.1",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/m/mcppls-nvim.lua",
+      "id": "xim:mcppls-nvim",
+      "upstream": "Sunrisepeak/mcpp-language-server",
+      "stars": 22,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/m/mcppls.lua",
+      "id": "xim:mcppls",
+      "upstream": "Sunrisepeak/mcpp-language-server",
+      "stars": 22,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/m/mdbook.lua",
+      "id": "xim:mdbook",
+      "upstream": "rust-lang/mdBook",
+      "stars": 22238,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "rust-lang/mdBook",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "windows": "https://github.com/rust-lang/mdBook/releases/download/v${version}/mdbook-v${version}-x86_64-pc-windows-msvc.zip",
+          "linux": "https://github.com/rust-lang/mdBook/releases/download/v${version}/mdbook-v${version}-x86_64-unknown-linux-musl.tar.gz",
+          "macosx": "https://github.com/rust-lang/mdBook/releases/download/v${version}/mdbook-v${version}-aarch64-apple-darwin.tar.gz"
+        }
+      },
+      "latest": "0.5.2",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/m/media-crawler.lua",
+      "id": "xim:media-crawler",
+      "upstream": "NanmiCoder/MediaCrawler",
+      "stars": 67668,
+      "status": "manual",
+      "reason": "source is pinned or URL has no reversible version mapping"
+    },
+    {
+      "path": "pkgs/m/mesa-lavapipe.lua",
+      "id": "xim:mesa-lavapipe",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/m/mesa.lua",
+      "id": "xim:mesa",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/m/meson.lua",
+      "id": "xim:meson",
+      "upstream": "mesonbuild/meson",
+      "stars": 6647,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "mesonbuild/meson",
+        "tag": "${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/xlings-res/meson/releases/download/${version}/meson-${version}-linux-x86_64.tar.gz"
+        }
+      },
+      "latest": "1.8.2",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/m/mingw-cross-gcc.lua",
+      "id": "xim:mingw-cross-gcc",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/m/mingw-gcc.lua",
+      "id": "xim:mingw-gcc",
+      "upstream": "brechtsanders/winlibs_mingw",
+      "stars": 1368,
+      "status": "manual",
+      "reason": "upstream tag cannot be inferred unambiguously; resource production differs from source numbering"
+    },
+    {
+      "path": "pkgs/m/mingw-w64.lua",
+      "id": "xim:mingw-w64",
+      "upstream": "mingw-w64/mingw-w64",
+      "stars": 595,
+      "status": "manual",
+      "reason": "runtime hook contains the current version literally; automatic upgrades require a version-independent install hook"
+    },
+    {
+      "path": "pkgs/m/moltenvk.lua",
+      "id": "xim:moltenvk",
+      "upstream": "KhronosGroup/MoltenVK",
+      "stars": 5897,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "KhronosGroup/MoltenVK",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "macosx": {
+            "aarch64": "https://github.com/xlings-res/moltenvk/releases/download/${version}/moltenvk-${version}-macosx-universal.tar.gz",
+            "x86_64": "https://github.com/xlings-res/moltenvk/releases/download/${version}/moltenvk-${version}-macosx-universal.tar.gz"
+          }
+        }
+      },
+      "latest": "1.4.2",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/m/msvc.lua",
+      "id": "xim:msvc",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/m/musl-cross-make.lua",
+      "id": "xim:musl-cross-make",
+      "upstream": "richfelker/musl-cross-make",
+      "stars": 1594,
+      "status": "manual",
+      "reason": "configuration/script/subos policy is not a versioned payload package"
+    },
+    {
+      "path": "pkgs/m/musl-gcc.lua",
+      "id": "xim:musl-gcc",
+      "upstream": "gcc-mirror/gcc",
+      "stars": 11306,
+      "status": "manual",
+      "reason": "resource-server baseline has no verified architecture checksums"
+    },
+    {
+      "path": "pkgs/m/musl.lua",
+      "id": "xim:musl",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/n/nasm.lua",
+      "id": "xim:nasm",
+      "upstream": "netwide-assembler/nasm",
+      "stars": 3335,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "netwide-assembler/nasm",
+        "tag": "nasm-${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-linux-x86_64.tar.gz"
+            },
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-linux-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-linux-aarch64.tar.gz"
+            }
+          },
+          "windows": {
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-windows-x86_64.zip",
+              "CN": "https://gitcode.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-windows-x86_64.zip"
+            },
+            "x86": {
+              "GLOBAL": "https://github.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-windows-x86.zip",
+              "CN": "https://gitcode.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-windows-x86.zip"
+            }
+          },
+          "macosx": {
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-macosx-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-macosx-x86_64.tar.gz"
+            },
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-macosx-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-macosx-aarch64.tar.gz"
+            }
+          }
+        },
+        "verify": "sha256-sidecar"
+      },
+      "latest": "3.02",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/n/ncurses.lua",
+      "id": "xim:ncurses",
+      "upstream": "ThomasDickey/ncurses-snapshots",
+      "stars": 106,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "ThomasDickey/ncurses-snapshots",
+        "tag": "v${version:underscore}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/xlings-res/ncurses/releases/download/${version}/ncurses-${version}-linux-x86_64.tar.gz"
+        }
+      },
+      "latest": "6.5",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/n/nghttp2.lua",
+      "id": "xim:nghttp2",
+      "upstream": "nghttp2/nghttp2",
+      "stars": 5069,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "nghttp2/nghttp2",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/xlings-res/nghttp2/releases/download/${version}/nghttp2-${version}-linux-x86_64.tar.gz"
+        }
+      },
+      "latest": "1.70.0",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/n/ninja.lua",
+      "id": "xim:ninja",
+      "upstream": "ninja-build/ninja",
+      "stars": 13316,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "ninja-build/ninja",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-linux-x86_64.tar.gz"
+            },
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-linux-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-linux-aarch64.tar.gz"
+            }
+          },
+          "macosx": {
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-macosx-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-macosx-aarch64.tar.gz"
+            }
+          },
+          "windows": {
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-windows-x86_64.zip",
+              "CN": "https://gitcode.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-windows-x86_64.zip"
+            }
+          }
+        },
+        "verify": "sha256-sidecar"
+      },
+      "latest": "1.12.1",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/n/node.lua",
+      "id": "xim:node",
+      "upstream": "nodejs/node",
+      "stars": 122532,
+      "status": "manual",
+      "reason": "dynamic metadata is not supported"
+    },
+    {
+      "path": "pkgs/n/npm.lua",
+      "id": "xim:npm",
+      "upstream": "npm/cli",
+      "stars": 10202,
+      "status": "manual",
+      "reason": "no supported host platform"
+    },
+    {
+      "path": "pkgs/n/nsight-compute.lua",
+      "id": "xim:nsight-compute",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/n/nsight-systems.lua",
+      "id": "xim:nsight-systems",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/n/nspr.lua",
+      "id": "xim:nspr",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/n/nss.lua",
+      "id": "xim:nss",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/n/nvidia-gl-host-link.lua",
+      "id": "xim:nvidia-gl-host-link",
+      "upstream": "openxlings/xim-pkgindex",
+      "stars": 8,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/n/nvidia-video-host-link.lua",
+      "id": "xim:nvidia-video-host-link",
+      "upstream": "openxlings/xim-pkgindex",
+      "stars": 8,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/n/nvim.lua",
+      "id": "xim:nvim",
+      "upstream": "neovim/neovim",
+      "stars": 103109,
+      "status": "manual",
+      "reason": "runtime hook contains the current version literally; automatic upgrades require a version-independent install hook"
+    },
+    {
+      "path": "pkgs/n/nvm.lua",
+      "id": "xim:nvm",
+      "upstream": "nvm-sh/nvm",
+      "stars": 95612,
+      "status": "manual",
+      "reason": "current platform versions disagree; explicit packaging policy required"
+    },
+    {
+      "path": "pkgs/o/oh-my-pi.lua",
+      "id": "xim:oh-my-pi",
+      "upstream": "can1357/oh-my-pi",
+      "stars": 36206,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "can1357/oh-my-pi",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "x86_64": "https://github.com/can1357/oh-my-pi/releases/download/v${version}/omp-linux-x64",
+            "aarch64": "https://github.com/can1357/oh-my-pi/releases/download/v${version}/omp-linux-arm64"
+          },
+          "macosx": {
+            "x86_64": "https://github.com/can1357/oh-my-pi/releases/download/v${version}/omp-darwin-x64",
+            "aarch64": "https://github.com/can1357/oh-my-pi/releases/download/v${version}/omp-darwin-arm64"
+          },
+          "windows": {
+            "x86_64": "https://github.com/can1357/oh-my-pi/releases/download/v${version}/omp-windows-x64.exe",
+            "aarch64": "https://github.com/can1357/oh-my-pi/releases/download/v${version}/omp-windows-arm64.exe"
+          }
+        }
+      },
+      "latest": "18.11.3",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/o/ollama.lua",
+      "id": "xim:ollama",
+      "upstream": "ollama/ollama",
+      "stars": 184252,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "ollama/ollama",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/ollama/ollama/releases/download/v${version}/ollama-linux-amd64.tgz",
+          "macosx": "https://github.com/ollama/ollama/releases/download/v${version}/ollama-darwin.tgz",
+          "windows": "https://github.com/ollama/ollama/releases/download/v${version}/ollama-windows-amd64.zip"
+        }
+      },
+      "latest": "0.13.3",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/o/openclaw.lua",
+      "id": "xim:openclaw",
+      "upstream": "openclaw/openclaw",
+      "stars": 392725,
+      "status": "manual",
+      "reason": "resource URL is dynamic or missing"
+    },
+    {
+      "path": "pkgs/o/opencode.lua",
+      "id": "xim:opencode",
+      "upstream": "sst/opencode",
+      "stars": 219905,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "sst/opencode",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "x86_64": "https://github.com/sst/opencode/releases/download/v${version}/opencode-linux-x64.tar.gz",
+            "aarch64": "https://github.com/sst/opencode/releases/download/v${version}/opencode-linux-arm64.tar.gz"
+          },
+          "macosx": {
+            "x86_64": "https://github.com/sst/opencode/releases/download/v${version}/opencode-darwin-x64.zip",
+            "aarch64": "https://github.com/sst/opencode/releases/download/v${version}/opencode-darwin-arm64.zip"
+          },
+          "windows": {
+            "x86_64": "https://github.com/sst/opencode/releases/download/v${version}/opencode-windows-x64.zip"
+          }
+        }
+      },
+      "latest": "1.19.0",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/o/openssl.lua",
+      "id": "xim:openssl",
+      "upstream": "openssl/openssl",
+      "stars": 31012,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "openssl/openssl",
+        "tag": "openssl-${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/openssl/releases/download/${version}/openssl-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/openssl/releases/download/${version}/openssl-${version}-linux-x86_64.tar.gz"
+            },
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/openssl/releases/download/${version}/openssl-${version}-linux-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/openssl/releases/download/${version}/openssl-${version}-linux-aarch64.tar.gz"
+            }
+          }
+        },
+        "verify": "sha256-sidecar"
+      },
+      "latest": "3.1.5",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/p/pango.lua",
+      "id": "xim:pango",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/p/passt.lua",
+      "id": "xim:passt",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/p/patchelf.lua",
+      "id": "xim:patchelf",
+      "upstream": "NixOS/patchelf",
+      "stars": 4277,
+      "status": "manual",
+      "reason": "resource-server baseline has no verified architecture checksums"
+    },
+    {
+      "path": "pkgs/p/pcre2.lua",
+      "id": "xim:pcre2",
+      "upstream": "PCRE2Project/pcre2",
+      "stars": 1383,
+      "status": "manual",
+      "reason": "upstream tag cannot be inferred unambiguously; resource production differs from source numbering"
+    },
+    {
+      "path": "pkgs/p/perl.lua",
+      "id": "xim:perl",
+      "upstream": "Perl/perl5",
+      "stars": 2349,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "Perl/perl5",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/perl/releases/download/${version}/perl-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/perl/releases/download/${version}/perl-${version}-linux-x86_64.tar.gz"
+            },
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/perl/releases/download/${version}/perl-${version}-linux-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/perl/releases/download/${version}/perl-${version}-linux-aarch64.tar.gz"
+            }
+          },
+          "macosx": {
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/perl/releases/download/${version}/perl-${version}-macosx-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/perl/releases/download/${version}/perl-${version}-macosx-x86_64.tar.gz"
+            },
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/perl/releases/download/${version}/perl-${version}-macosx-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/perl/releases/download/${version}/perl-${version}-macosx-aarch64.tar.gz"
+            }
+          }
+        },
+        "verify": "sha256-sidecar"
+      },
+      "latest": "5.44.0",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/p/pi.lua",
+      "id": "xim:pi",
+      "upstream": "earendil-works/pi",
+      "stars": 117076,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "earendil-works/pi",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "x86_64": "https://github.com/earendil-works/pi/releases/download/v${version}/pi-linux-x64.tar.gz",
+            "aarch64": "https://github.com/earendil-works/pi/releases/download/v${version}/pi-linux-arm64.tar.gz"
+          },
+          "macosx": {
+            "x86_64": "https://github.com/earendil-works/pi/releases/download/v${version}/pi-darwin-x64.tar.gz",
+            "aarch64": "https://github.com/earendil-works/pi/releases/download/v${version}/pi-darwin-arm64.tar.gz"
+          },
+          "windows": {
+            "x86_64": "https://github.com/earendil-works/pi/releases/download/v${version}/pi-windows-x64.zip",
+            "aarch64": "https://github.com/earendil-works/pi/releases/download/v${version}/pi-windows-arm64.zip"
+          }
+        }
+      },
+      "latest": "1.0.0",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/p/picolibc-aarch64.lua",
+      "id": "xim:picolibc-aarch64",
+      "upstream": "picolibc/picolibc",
+      "stars": 1659,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "picolibc/picolibc",
+        "tag": "${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/xlings-res/picolibc-aarch64/releases/download/${version}/picolibc-aarch64-${version}.tar.gz",
+          "macosx": "https://github.com/xlings-res/picolibc-aarch64/releases/download/${version}/picolibc-aarch64-${version}.tar.gz",
+          "windows": "https://github.com/xlings-res/picolibc-aarch64/releases/download/${version}/picolibc-aarch64-${version}.tar.gz"
+        }
+      },
+      "latest": "1.8.12",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/p/picolibc-arm.lua",
+      "id": "xim:picolibc-arm",
+      "upstream": "picolibc/picolibc",
+      "stars": 1659,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "picolibc/picolibc",
+        "tag": "${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/xlings-res/picolibc-arm/releases/download/${version}/picolibc-arm-${version}.tar.gz",
+          "macosx": "https://github.com/xlings-res/picolibc-arm/releases/download/${version}/picolibc-arm-${version}.tar.gz",
+          "windows": "https://github.com/xlings-res/picolibc-arm/releases/download/${version}/picolibc-arm-${version}.tar.gz"
+        }
+      },
+      "latest": "1.8.12",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/p/picolibc-riscv.lua",
+      "id": "xim:picolibc-riscv",
+      "upstream": "picolibc/picolibc",
+      "stars": 1659,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "picolibc/picolibc",
+        "tag": "${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz",
+          "macosx": "https://github.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz",
+          "windows": "https://github.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz"
+        }
+      },
+      "latest": "1.8.12",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/p/picolibc-x86.lua",
+      "id": "xim:picolibc-x86",
+      "upstream": "picolibc/picolibc",
+      "stars": 1659,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "picolibc/picolibc",
+        "tag": "${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/xlings-res/picolibc-x86/releases/download/${version}/picolibc-x86-${version}.tar.gz",
+          "macosx": "https://github.com/xlings-res/picolibc-x86/releases/download/${version}/picolibc-x86-${version}.tar.gz",
+          "windows": "https://github.com/xlings-res/picolibc-x86/releases/download/${version}/picolibc-x86-${version}.tar.gz"
+        }
+      },
+      "latest": "1.8.12",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/p/pixman.lua",
+      "id": "xim:pixman",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/p/pnpm.lua",
+      "id": "xim:pnpm",
+      "upstream": "pnpm/pnpm",
+      "stars": 36890,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "pnpm/pnpm",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/pnpm/pnpm/releases/download/v${version}/pnpm-linux-x64.tar.gz",
+          "macosx": "https://github.com/pnpm/pnpm/releases/download/v${version}/pnpm-darwin-arm64.tar.gz",
+          "windows": "https://github.com/pnpm/pnpm/releases/download/v${version}/pnpm-win32-x64.zip"
+        }
+      },
+      "latest": "12.1.0",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/p/pocl.lua",
+      "id": "xim:pocl",
+      "upstream": "pocl/pocl",
+      "stars": 1085,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "pocl/pocl",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "aarch64": "https://github.com/xlings-res/pocl/releases/download/${version}/pocl-${version}-linux-aarch64.tar.gz",
+            "x86_64": "https://github.com/xlings-res/pocl/releases/download/${version}/pocl-${version}-linux-x86_64.tar.gz"
+          }
+        }
+      },
+      "latest": "7.1",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/p/powershell-execpolicy.lua",
+      "id": "config:powershell-execpolicy",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/p/probe-rs.lua",
+      "id": "xim:probe-rs",
+      "upstream": "probe-rs/probe-rs",
+      "stars": 2980,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "probe-rs/probe-rs",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "x86_64": "https://github.com/probe-rs/probe-rs/releases/download/v${version}/probe-rs-tools-x86_64-unknown-linux-gnu.tar.xz",
+            "aarch64": "https://github.com/probe-rs/probe-rs/releases/download/v${version}/probe-rs-tools-aarch64-unknown-linux-gnu.tar.xz"
+          },
+          "macosx": {
+            "x86_64": "https://github.com/probe-rs/probe-rs/releases/download/v${version}/probe-rs-tools-x86_64-apple-darwin.tar.xz",
+            "aarch64": "https://github.com/probe-rs/probe-rs/releases/download/v${version}/probe-rs-tools-aarch64-apple-darwin.tar.xz"
+          },
+          "windows": {
+            "x86_64": "https://github.com/probe-rs/probe-rs/releases/download/v${version}/probe-rs-tools-x86_64-pc-windows-msvc.zip"
+          }
+        }
+      },
+      "latest": "0.32.0",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/p/procps-ng.lua",
+      "id": "xim:procps-ng",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/p/project-graph.lua",
+      "id": "xim:project-graph",
+      "upstream": "LiRenTech/project-graph",
+      "stars": 4503,
+      "status": "manual",
+      "reason": "current platform versions disagree; explicit packaging policy required"
+    },
+    {
+      "path": "pkgs/p/proot.lua",
+      "id": "xim:proot",
+      "upstream": "proot-me/proot",
+      "stars": 2631,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "proot-me/proot",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/proot/releases/download/${version}/proot-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/proot/releases/download/${version}/proot-${version}-linux-x86_64.tar.gz"
+            },
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/proot/releases/download/${version}/proot-${version}-linux-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/proot/releases/download/${version}/proot-${version}-linux-aarch64.tar.gz"
+            }
+          }
+        },
+        "verify": "sha256-sidecar"
+      },
+      "latest": "5.4.0",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/p/python.lua",
+      "id": "xim:python",
+      "upstream": "python/cpython",
+      "stars": 77732,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "python/cpython",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "x86_64": "https://github.com/astral-sh/python-build-standalone/releases/download/20260310/cpython-${version}%2B20260310-x86_64-unknown-linux-gnu-install_only.tar.gz",
+            "aarch64": "https://github.com/astral-sh/python-build-standalone/releases/download/20260310/cpython-${version}%2B20260310-aarch64-unknown-linux-gnu-install_only.tar.gz"
+          },
+          "macosx": {
+            "x86_64": "https://github.com/astral-sh/python-build-standalone/releases/download/20260310/cpython-${version}%2B20260310-x86_64-apple-darwin-install_only.tar.gz",
+            "aarch64": "https://github.com/astral-sh/python-build-standalone/releases/download/20260310/cpython-${version}%2B20260310-aarch64-apple-darwin-install_only.tar.gz"
+          },
+          "windows": "https://github.com/astral-sh/python-build-standalone/releases/download/20260310/cpython-${version}%2B20260310-x86_64-pc-windows-msvc-install_only.tar.gz"
+        }
+      },
+      "latest": "3.13.12",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/q/qemu-arm.lua",
+      "id": "xim:qemu-arm",
+      "upstream": "xpack-dev-tools/qemu-arm-xpack",
+      "stars": 158,
+      "status": "manual",
+      "reason": "rolling installer or no ordered published versions"
+    },
+    {
+      "path": "pkgs/q/qemu-riscv.lua",
+      "id": "xim:qemu-riscv",
+      "upstream": "xpack-dev-tools/qemu-riscv-xpack",
+      "stars": 13,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/q/qemu-system-gl.lua",
+      "id": "xim:qemu-system-gl",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/q/qemu-system.lua",
+      "id": "xim:qemu-system",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/q/qemu-user-aarch64.lua",
+      "id": "xim:qemu-user-aarch64",
+      "upstream": "multiarch/qemu-user-static",
+      "stars": 2720,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "multiarch/qemu-user-static",
+        "tag": "v${version}-1",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/multiarch/qemu-user-static/releases/download/v${version}-1/x86_64_qemu-aarch64-static.tar.gz"
+        }
+      },
+      "latest": "7.2.0",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/q/qemu-x86.lua",
+      "id": "xim:qemu-x86",
+      "upstream": "mcpplibs/qemu-x86",
+      "stars": 0,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/q/qt-addons.lua",
+      "id": "xim:qt-addons",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/q/qt-base.lua",
+      "id": "xim:qt-base",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/q/qt.lua",
+      "id": "xim:qt",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/q/qt5.lua",
+      "id": "xim:qt5",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/r/ripgrep.lua",
+      "id": "xim:ripgrep",
+      "upstream": "BurntSushi/ripgrep",
+      "stars": 69327,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "BurntSushi/ripgrep",
+        "tag": "${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/BurntSushi/ripgrep/releases/download/${version}/ripgrep-${version}-x86_64-unknown-linux-musl.tar.gz",
+          "macosx": "https://github.com/BurntSushi/ripgrep/releases/download/${version}/ripgrep-${version}-aarch64-apple-darwin.tar.gz",
+          "windows": "https://github.com/BurntSushi/ripgrep/releases/download/${version}/ripgrep-${version}-x86_64-pc-windows-msvc.zip"
+        }
+      },
+      "latest": "15.1.0",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/r/riscv64-linux-musl-gcc.lua",
+      "id": "xim:riscv64-linux-musl-gcc",
+      "upstream": "gcc-mirror/gcc",
+      "stars": 11306,
+      "status": "manual",
+      "reason": "upstream tag cannot be inferred unambiguously; resource production differs from source numbering"
+    },
+    {
+      "path": "pkgs/r/ros2-jazzy-ubuntu.lua",
+      "id": "xim:ros2-jazzy-ubnutu",
+      "upstream": "ros2/ros2",
+      "stars": 6214,
+      "status": "manual",
+      "reason": "configuration/script/subos policy is not a versioned payload package"
+    },
+    {
+      "path": "pkgs/r/rosdep.lua",
+      "id": "xim:rosdep",
+      "upstream": "ros-infrastructure/rosdep",
+      "stars": 93,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "ros-infrastructure/rosdep",
+        "tag": "${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://files.pythonhosted.org/packages/bd/c1/15c5c296f41e6a290e6c3515316b2676be580c66b10e26372200a0ecbdd7/rosdep-${version}-py3-none-any.whl",
+          "macosx": "https://files.pythonhosted.org/packages/bd/c1/15c5c296f41e6a290e6c3515316b2676be580c66b10e26372200a0ecbdd7/rosdep-${version}-py3-none-any.whl",
+          "windows": "https://files.pythonhosted.org/packages/bd/c1/15c5c296f41e6a290e6c3515316b2676be580c66b10e26372200a0ecbdd7/rosdep-${version}-py3-none-any.whl"
+        }
+      },
+      "latest": "0.26.0",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/r/rust-crates-mirror.lua",
+      "id": "config:rust-crates-mirror",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/r/rust.lua",
+      "id": "xim:rust",
+      "upstream": "rust-lang/rust",
+      "stars": 120656,
+      "status": "manual",
+      "reason": "rolling installer or no ordered published versions"
+    },
+    {
+      "path": "pkgs/r/rustup-mirror.lua",
+      "id": "config:rustup-mirror",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/r/rustup.lua",
+      "id": "xim:rustup",
+      "upstream": "rust-lang/rustup",
+      "stars": 7087,
+      "status": "manual",
+      "reason": "dynamic metadata is not supported"
+    },
+    {
+      "path": "pkgs/s/seeme-report.lua",
+      "id": "xim:seeme-report",
+      "upstream": "2412322029/seeme",
+      "stars": 4,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/s/seeme-server.lua",
+      "id": "xim:seeme-server",
+      "upstream": "2412322029/seeme",
+      "stars": 4,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/s/shaderc.lua",
+      "id": "xim:shaderc",
+      "upstream": "google/shaderc",
+      "stars": 2195,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "google/shaderc",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "aarch64": "https://github.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-linux-aarch64.tar.gz",
+            "x86_64": "https://github.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-linux-x86_64.tar.gz"
+          },
+          "macosx": {
+            "aarch64": "https://github.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-macosx-arm64.tar.gz"
+          },
+          "windows": {
+            "x86_64": "https://github.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-windows-x86_64.zip"
+          }
+        }
+      },
+      "latest": "2026.3",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/s/shortcut-tool.lua",
+      "id": "xim:shortcut-tool",
+      "upstream": "openxlings/xim-pkgindex",
+      "stars": 8,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/s/sing-box-helper.lua",
+      "id": "xim:sing-box-helper",
+      "upstream": "openxlings/xim-pkgindex",
+      "stars": 8,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/s/sing-box.lua",
+      "id": "xim:sing-box",
+      "upstream": "SagerNet/sing-box",
+      "stars": 39122,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "SagerNet/sing-box",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/SagerNet/sing-box/releases/download/v${version}/sing-box-${version}-linux-amd64.tar.gz",
+          "macosx": "https://github.com/SagerNet/sing-box/releases/download/v${version}/sing-box-${version}-darwin-arm64.tar.gz",
+          "windows": "https://github.com/SagerNet/sing-box/releases/download/v${version}/sing-box-${version}-windows-amd64.zip"
+        }
+      },
+      "latest": "1.13.20",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/s/slang.lua",
+      "id": "xim:slang",
+      "upstream": "shader-slang/slang",
+      "stars": 5755,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "shader-slang/slang",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "x86_64": "https://github.com/shader-slang/slang/releases/download/v${version}/slang-${version}-linux-x86_64.tar.gz",
+            "aarch64": "https://github.com/shader-slang/slang/releases/download/v${version}/slang-${version}-linux-aarch64.tar.gz"
+          },
+          "macosx": {
+            "aarch64": "https://github.com/shader-slang/slang/releases/download/v${version}/slang-${version}-macos-aarch64.tar.gz",
+            "x86_64": "https://github.com/shader-slang/slang/releases/download/v${version}/slang-${version}-macos-x86_64.tar.gz"
+          },
+          "windows": {
+            "x86_64": "https://github.com/shader-slang/slang/releases/download/v${version}/slang-${version}-windows-x86_64.zip",
+            "aarch64": "https://github.com/shader-slang/slang/releases/download/v${version}/slang-${version}-windows-aarch64.zip"
+          }
+        }
+      },
+      "latest": "2026.14.1",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/s/sourcetrail.lua",
+      "id": "xim:sourcetrail",
+      "upstream": "CoatiSoftware/Sourcetrail",
+      "stars": 16466,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "CoatiSoftware/Sourcetrail",
+        "tag": "${version}",
+        "latest": "advance",
+        "url": {
+          "windows": "https://github.com/CoatiSoftware/Sourcetrail/releases/download/${version}/Sourcetrail_2021_4_19_Windows_64bit_Portable.zip",
+          "linux": "https://github.com/CoatiSoftware/Sourcetrail/releases/download/${version}/Sourcetrail_2021_4_19_Linux_64bit.tar.gz"
+        }
+      },
+      "latest": "2021.4.19",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/s/spirv-tools.lua",
+      "id": "xim:spirv-tools",
+      "upstream": "KhronosGroup/SPIRV-Tools",
+      "stars": 1374,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "KhronosGroup/SPIRV-Tools",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/xlings-res/spirv-tools/releases/download/${version}/spirv-tools-${version}-linux-x86_64.tar.gz"
+        }
+      },
+      "latest": "2025.1",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/s/sqlite.lua",
+      "id": "xim:sqlite",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/s/sudo.lua",
+      "id": "xim:sudo",
+      "upstream": "sudo-project/sudo",
+      "stars": 1730,
+      "status": "manual",
+      "reason": "rolling installer or no ordered published versions"
+    },
+    {
+      "path": "pkgs/s/syslinux.lua",
+      "id": "xim:syslinux",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/t/terminfo.lua",
+      "id": "xim:terminfo",
+      "upstream": "ThomasDickey/ncurses-snapshots",
+      "stars": 106,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "ThomasDickey/ncurses-snapshots",
+        "tag": "v${version:underscore}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/xlings-res/terminfo/releases/download/${version}/terminfo-${version}.tar.gz"
+        }
+      },
+      "latest": "6.6.20261010",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/t/tinynext.lua",
+      "id": "farnaherry:tinynext",
+      "upstream": "FarnaHerry/tinynext",
+      "stars": 0,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/t/tmux.lua",
+      "id": "xim:tmux",
+      "upstream": "tmux/tmux",
+      "stars": 49971,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "tmux/tmux",
+        "tag": "${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/tmux/releases/download/${version}/tmux-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/tmux/releases/download/${version}/tmux-${version}-linux-x86_64.tar.gz"
+            },
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/tmux/releases/download/${version}/tmux-${version}-linux-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/tmux/releases/download/${version}/tmux-${version}-linux-aarch64.tar.gz"
+            }
+          }
+        },
+        "verify": "sha256-sidecar"
+      },
+      "latest": "3.8",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/t/tpm2-tss.lua",
+      "id": "xim:tpm2-tss",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/t/trendradar.lua",
+      "id": "xim:trendradar",
+      "upstream": "sansan0/TrendRadar",
+      "stars": 63102,
+      "status": "manual",
+      "reason": "upstream tag cannot be inferred unambiguously; resource production differs from source numbering"
+    },
+    {
+      "path": "pkgs/u/util-linux.lua",
+      "id": "xim:util-linux",
+      "upstream": "util-linux/util-linux",
+      "stars": 3241,
+      "status": "manual",
+      "reason": "upstream tag cannot be inferred unambiguously; resource production differs from source numbering"
+    },
+    {
+      "path": "pkgs/u/uv.lua",
+      "id": "xim:uv",
+      "upstream": "astral-sh/uv",
+      "stars": 91008,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "astral-sh/uv",
+        "tag": "${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/astral-sh/uv/releases/download/${version}/uv-x86_64-unknown-linux-musl.tar.gz",
+          "macosx": "https://github.com/astral-sh/uv/releases/download/${version}/uv-aarch64-apple-darwin.tar.gz",
+          "windows": "https://github.com/astral-sh/uv/releases/download/${version}/uv-x86_64-pc-windows-msvc.zip"
+        }
+      },
+      "latest": "0.12.7",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/v/vc6.lua",
+      "id": "xim:vc6",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/v/vcpkg.lua",
+      "id": "xim:vcpkg",
+      "upstream": "microsoft/vcpkg",
+      "stars": 27530,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "microsoft/vcpkg",
+        "tag": "${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-linux-x86_64.tar.gz"
+            },
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-linux-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-linux-aarch64.tar.gz"
+            }
+          },
+          "macosx": {
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-macosx-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-macosx-aarch64.tar.gz"
+            },
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-macosx-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-macosx-x86_64.tar.gz"
+            }
+          },
+          "windows": {
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-windows-x86_64.zip",
+              "CN": "https://gitcode.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-windows-x86_64.zip"
+            },
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-windows-aarch64.zip",
+              "CN": "https://gitcode.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-windows-aarch64.zip"
+            }
+          }
+        },
+        "verify": "sha256-sidecar"
+      },
+      "latest": "2026.7.27",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/v/vcstool.lua",
+      "id": "xim:vcstool",
+      "upstream": "dirk-thomas/vcstool",
+      "stars": 505,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "dirk-thomas/vcstool",
+        "tag": "${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://files.pythonhosted.org/packages/6c/d5/4aca2c05481a0fb74bd2660b14b0dd0ea975e4f38bc150511a64c55af986/vcstool-${version}-py3-none-any.whl",
+          "macosx": "https://files.pythonhosted.org/packages/6c/d5/4aca2c05481a0fb74bd2660b14b0dd0ea975e4f38bc150511a64c55af986/vcstool-${version}-py3-none-any.whl",
+          "windows": "https://files.pythonhosted.org/packages/6c/d5/4aca2c05481a0fb74bd2660b14b0dd0ea975e4f38bc150511a64c55af986/vcstool-${version}-py3-none-any.whl"
+        }
+      },
+      "latest": "0.3.0",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/v/vim.lua",
+      "id": "xim:vim",
+      "upstream": "vim/vim",
+      "stars": 41153,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "vim/vim",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/vim/releases/download/${version}/vim-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/vim/releases/download/${version}/vim-${version}-linux-x86_64.tar.gz"
+            },
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/vim/releases/download/${version}/vim-${version}-linux-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/vim/releases/download/${version}/vim-${version}-linux-aarch64.tar.gz"
+            }
+          }
+        },
+        "verify": "sha256-sidecar"
+      },
+      "latest": "9.2.1172",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/v/virtiofsd.lua",
+      "id": "xim:virtiofsd",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/v/virtualbox-ubuntu.lua",
+      "id": "config:virtualbox-ubuntu",
+      "upstream": "openxlings/xim-pkgindex",
+      "stars": 8,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/v/virtualbox.lua",
+      "id": "xim:virtualbox",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/v/vs-buildtools.lua",
+      "id": "xim:vs-buildtools",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/v/vulkan-headers.lua",
+      "id": "xim:vulkan-headers",
+      "upstream": "KhronosGroup/Vulkan-Headers",
+      "stars": 1103,
+      "status": "manual",
+      "reason": "runtime hook contains the current version literally; automatic upgrades require a version-independent install hook"
+    },
+    {
+      "path": "pkgs/v/vulkan-loader.lua",
+      "id": "xim:vulkan-loader",
+      "upstream": "KhronosGroup/Vulkan-Loader",
+      "stars": 707,
+      "status": "manual",
+      "reason": "current platform versions disagree; explicit packaging policy required"
+    },
+    {
+      "path": "pkgs/v/vulkan-validation-layers.lua",
+      "id": "xim:vulkan-validation-layers",
+      "upstream": "KhronosGroup/Vulkan-ValidationLayers",
+      "stars": 1047,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "KhronosGroup/Vulkan-ValidationLayers",
+        "tag": "vulkan-sdk-${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/xlings-res/vulkan-validation-layers/releases/download/${version}/vulkan-validation-layers-${version}-linux-x86_64.tar.gz"
+        }
+      },
+      "latest": "1.4.357.0",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/w/wayland-protocols.lua",
+      "id": "xim:wayland-protocols",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/w/wayland.lua",
+      "id": "xim:wayland",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/w/windows-acp.lua",
+      "id": "xim:windows-acp",
+      "upstream": "openxlings/xim-pkgindex",
+      "stars": 8,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/w/windows-sdk.lua",
+      "id": "xim:windows-sdk",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/w/wix.lua",
+      "id": "xim:wix",
+      "upstream": "wixtoolset/wix",
+      "stars": 1163,
+      "status": "manual",
+      "reason": "current version is pinned or latest does not reference a literal version"
+    },
+    {
+      "path": "pkgs/w/wl-clipboard.lua",
+      "id": "xim:wl-clipboard",
+      "upstream": "bugaevc/wl-clipboard",
+      "stars": 2465,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "bugaevc/wl-clipboard",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/wl-clipboard/releases/download/${version}/wl-clipboard-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/wl-clipboard/releases/download/${version}/wl-clipboard-${version}-linux-x86_64.tar.gz"
+            },
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/wl-clipboard/releases/download/${version}/wl-clipboard-${version}-linux-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/wl-clipboard/releases/download/${version}/wl-clipboard-${version}-linux-aarch64.tar.gz"
+            }
+          }
+        },
+        "verify": "sha256-sidecar"
+      },
+      "latest": "2.3.0",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/w/wsl-gl-host-link.lua",
+      "id": "xim:wsl-gl-host-link",
+      "upstream": "openxlings/xim-pkgindex",
+      "stars": 8,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/w/wsl-installer.lua",
+      "id": "xim:wsl-installer",
+      "upstream": "microsoft/WSL",
+      "stars": 34166,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "microsoft/WSL",
+        "tag": "${version}",
+        "latest": "advance",
+        "url": {
+          "windows": "https://github.com/microsoft/WSL/releases/download/${version}/wsl.${version}.0.x64.msi"
+        }
+      },
+      "latest": "3.0.1",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/w/wsl-ubuntu.lua",
+      "id": "xim:wsl-ubuntu",
+      "upstream": "openxlings/xim-pkgindex",
+      "stars": 8,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/x/x86_64-linux-musl-gcc.lua",
+      "id": "xim:x86_64-linux-musl-gcc",
+      "upstream": "gcc-mirror/gcc",
+      "stars": 11306,
+      "status": "manual",
+      "reason": "upstream tag cannot be inferred unambiguously; resource production differs from source numbering"
+    },
+    {
+      "path": "pkgs/x/xcb-proto.lua",
+      "id": "xim:xcb-proto",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/x/xcb-util-cursor.lua",
+      "id": "xim:xcb-util-cursor",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/x/xcb-util-image.lua",
+      "id": "xim:xcb-util-image",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/x/xcb-util-keysyms.lua",
+      "id": "xim:xcb-util-keysyms",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/x/xcb-util-renderutil.lua",
+      "id": "xim:xcb-util-renderutil",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/x/xcb-util-wm.lua",
+      "id": "xim:xcb-util-wm",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/x/xcb-util.lua",
+      "id": "xim:xcb-util",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/x/xdesk.lua",
+      "id": "xim:xdesk",
+      "upstream": "openxlings/xlings",
+      "stars": 615,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "openxlings/xlings",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/xdesk/releases/download/${version}/xdesk-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/xdesk/releases/download/${version}/xdesk-${version}-linux-x86_64.tar.gz"
+            }
+          }
+        },
+        "verify": "sha256-sidecar"
+      },
+      "latest": "2026.10.22.2",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/x/xkeyboard-config.lua",
+      "id": "xim:xkeyboard-config",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/x/xlings-project-templates.lua",
+      "id": "xim:xlings-project-templates",
+      "upstream": "d2learn/xlings-project-templates",
+      "stars": 1,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/x/xlings.lua",
+      "id": "xim:xlings",
+      "upstream": "openxlings/xlings",
+      "stars": 615,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "openxlings/xlings",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-linux-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-linux-aarch64.tar.gz"
+            },
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-linux-x86_64.tar.gz"
+            }
+          },
+          "macosx": {
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-macosx-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-macosx-aarch64.tar.gz"
+            }
+          },
+          "windows": {
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-windows-x86_64.zip",
+              "CN": "https://gitcode.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-windows-x86_64.zip"
+            }
+          }
+        },
+        "verify": "sha256-sidecar"
+      },
+      "latest": "2026.10.22.2",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/x/xmake.lua",
+      "id": "xim:xmake",
+      "upstream": "xmake-io/xmake",
+      "stars": 12265,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "xmake-io/xmake",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/xmake-io/xmake/releases/download/v${version}/xmake-bundle-v${version}.linux.x86_64",
+          "macosx": "https://github.com/xmake-io/xmake/releases/download/v${version}/xmake-bundle-v${version}.macos.arm64",
+          "windows": "https://github.com/xmake-io/xmake/releases/download/v${version}/xmake-bundle-v${version}.win64.exe"
+        }
+      },
+      "latest": "3.1.1",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/x/xorgproto.lua",
+      "id": "xim:xorgproto",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/x/xpkg-helper.lua",
+      "id": "xim:xpkg-helper",
+      "upstream": "openxlings/xim-pkgindex",
+      "stars": 8,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/x/xsel.lua",
+      "id": "xim:xsel",
+      "upstream": "kfish/xsel",
+      "stars": 411,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "kfish/xsel",
+        "tag": "${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/xsel/releases/download/${version}/xsel-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/xsel/releases/download/${version}/xsel-${version}-linux-x86_64.tar.gz"
+            },
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/xsel/releases/download/${version}/xsel-${version}-linux-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/xsel/releases/download/${version}/xsel-${version}-linux-aarch64.tar.gz"
+            }
+          }
+        },
+        "verify": "sha256-sidecar"
+      },
+      "latest": "1.2.1",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/x/xtrans.lua",
+      "id": "xim:xtrans",
+      "status": "manual",
+      "reason": "no GitHub upstream with verifiable star count"
+    },
+    {
+      "path": "pkgs/x/xvm-sysdetect.lua",
+      "id": "xim:xvm-sysdetect",
+      "upstream": "openxlings/xim-pkgindex",
+      "stars": 8,
+      "status": "manual",
+      "reason": "GitHub stars <= 50"
+    },
+    {
+      "path": "pkgs/x/xvm.lua",
+      "id": "xim:xvm",
+      "upstream": "openxlings/xlings",
+      "stars": 615,
+      "status": "manual",
+      "reason": "resource-server baseline has no verified architecture checksums"
+    },
+    {
+      "path": "pkgs/x/xz.lua",
+      "id": "xim:xz",
+      "upstream": "tukaani-project/xz",
+      "stars": 1690,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "tukaani-project/xz",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "aarch64": "https://github.com/xlings-res/xz/releases/download/${version}/xz-${version}-linux-aarch64.tar.gz",
+            "x86_64": "https://github.com/xlings-res/xz/releases/download/${version}/xz-${version}-linux-x86_64.tar.gz"
+          }
+        }
+      },
+      "latest": "5.8.3",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/y/yazi.lua",
+      "id": "xim:yazi",
+      "upstream": "sxyazi/yazi",
+      "stars": 42966,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "sxyazi/yazi",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "aarch64": "https://github.com/sxyazi/yazi/releases/download/v${version}/yazi-aarch64-unknown-linux-musl.zip",
+            "x86_64": "https://github.com/sxyazi/yazi/releases/download/v${version}/yazi-x86_64-unknown-linux-musl.zip"
+          },
+          "macosx": "https://github.com/sxyazi/yazi/releases/download/v${version}/yazi-aarch64-apple-darwin.zip",
+          "windows": "https://github.com/sxyazi/yazi/releases/download/v${version}/yazi-x86_64-pc-windows-msvc.zip"
+        }
+      },
+      "latest": "26.5.6",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/z/zlib.lua",
+      "id": "xim:zlib",
+      "upstream": "madler/zlib",
+      "stars": 7161,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "madler/zlib",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "aarch64": "https://github.com/xlings-res/zlib/releases/download/${version}/zlib-${version}-linux-aarch64.tar.gz",
+            "x86_64": "https://github.com/xlings-res/zlib/releases/download/${version}/zlib-${version}-linux-x86_64.tar.gz"
+          }
+        }
+      },
+      "latest": "1.3.1",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/z/zoxide.lua",
+      "id": "xim:zoxide",
+      "upstream": "ajeetdsouza/zoxide",
+      "stars": 40242,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "ajeetdsouza/zoxide",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/ajeetdsouza/zoxide/releases/download/v${version}/zoxide-${version}-x86_64-unknown-linux-musl.tar.gz",
+          "macosx": "https://github.com/ajeetdsouza/zoxide/releases/download/v${version}/zoxide-${version}-aarch64-apple-darwin.tar.gz",
+          "windows": "https://github.com/ajeetdsouza/zoxide/releases/download/v${version}/zoxide-${version}-x86_64-pc-windows-msvc.zip"
+        }
+      },
+      "latest": "0.10.0",
+      "add_latest": {}
+    },
+    {
+      "path": "pkgs/z/zstd.lua",
+      "id": "xim:zstd",
+      "upstream": "facebook/zstd",
+      "stars": 28075,
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "facebook/zstd",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "aarch64": "https://github.com/xlings-res/zstd/releases/download/${version}/zstd-${version}-linux-aarch64.tar.gz",
+            "x86_64": "https://github.com/xlings-res/zstd/releases/download/${version}/zstd-${version}-linux-x86_64.tar.gz"
+          }
+        }
+      },
+      "latest": "1.5.7",
+      "add_latest": {}
+    }
+  ]
+}

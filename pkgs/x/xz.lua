@@ -18,6 +18,20 @@ package = {
     programs = {"xz", "xzcat", "unxz", "lzma", "unlzma", "lzcat", "lzmainfo", "lzmadec", "xzdec"},
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            upstream = "tukaani-project/xz",
+            tag = "v${version}",
+            latest = "advance",
+            url = {
+                linux = {
+                    aarch64 = "https://github.com/xlings-res/xz/releases/download/${version}/xz-${version}-linux-aarch64.tar.gz",
+                    x86_64 = "https://github.com/xlings-res/xz/releases/download/${version}/xz-${version}-linux-x86_64.tar.gz",
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
             deps = {

@@ -28,6 +28,10 @@ package = {
     --
     -- See openxlings/xim-pkgindex#568.
 
+    extensions = {
+
+    },
+
     xpm = {
         linux = {
             -- Just glibc, and measured rather than assumed:

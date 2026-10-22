@@ -43,7 +43,7 @@ class TestStatic:
         # The latest target must keep the legacy URL sentinel while adding the
         # complete per-platform architecture checksum set.
         def platform_block(platform, next_marker):
-            start = meta.raw_content.index(f"        {platform} = {{")
+            start = meta.raw_content.index(f"        {platform} = {{", meta.raw_content.index("    xpm = {"))
             end = meta.raw_content.index(next_marker, start)
             return meta.raw_content[start:end]
 

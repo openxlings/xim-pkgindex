@@ -42,9 +42,30 @@ package = {
     -- XLINGS_RES sentinel resolves to:
     --   GLOBAL → github.com/xlings-res/bwrap/releases/download/<ver>/...
     --   CN     → gitcode.com/xlings-res/bwrap/releases/download/<ver>/...
+    extensions = {
+        autoupdate = {
+            upstream = "containers/bubblewrap",
+            tag = "v${version}",
+            latest = "advance",
+            url = {
+                linux = {
+                    x86_64 = {
+                        GLOBAL = "https://github.com/xlings-res/bwrap/releases/download/${version}/bwrap-${version}-linux-x86_64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/bwrap/releases/download/${version}/bwrap-${version}-linux-x86_64.tar.gz",
+                    },
+                    aarch64 = {
+                        GLOBAL = "https://github.com/xlings-res/bwrap/releases/download/${version}/bwrap-${version}-linux-aarch64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/bwrap/releases/download/${version}/bwrap-${version}-linux-aarch64.tar.gz",
+                    },
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
-            url_template = "https://github.com/containers/bubblewrap/releases/download/v{version}/bubblewrap-{version}.tar.xz",
+
             ["latest"] = { ref = "0.11.2" },
             ["0.11.2"] = {
                 -- r1: installed as an ordinary binary (no setuid).

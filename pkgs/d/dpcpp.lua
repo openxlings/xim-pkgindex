@@ -57,6 +57,22 @@ package = {
 
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            upstream = "intel/llvm",
+            tag = "v${version}",
+            latest = "advance",
+            url = {
+                linux = {
+                    x86_64 = "https://github.com/intel/llvm/releases/download/v${version}/sycl_linux.tar.gz",
+                },
+                windows = {
+                    x86_64 = "https://github.com/intel/llvm/releases/download/v${version}/sycl_windows.tar.gz",
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
             -- patchelf, to force DT_RPATH rather than DT_RUNPATH on the

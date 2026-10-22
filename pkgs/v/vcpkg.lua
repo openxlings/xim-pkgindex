@@ -68,6 +68,47 @@ package = {
     -- x86_64-named) carry the SAME universal vcpkg binary; they are still two
     -- distinct archives with two distinct sha256, not one file referenced
     -- twice, so both are pinned here rather than aliased.
+    extensions = {
+        autoupdate = {
+            upstream = "microsoft/vcpkg",
+            tag = "${version}",
+            latest = "advance",
+            url = {
+                linux = {
+                    x86_64 = {
+                        GLOBAL = "https://github.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-linux-x86_64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-linux-x86_64.tar.gz",
+                    },
+                    aarch64 = {
+                        GLOBAL = "https://github.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-linux-aarch64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-linux-aarch64.tar.gz",
+                    },
+                },
+                macosx = {
+                    aarch64 = {
+                        GLOBAL = "https://github.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-macosx-aarch64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-macosx-aarch64.tar.gz",
+                    },
+                    x86_64 = {
+                        GLOBAL = "https://github.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-macosx-x86_64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-macosx-x86_64.tar.gz",
+                    },
+                },
+                windows = {
+                    x86_64 = {
+                        GLOBAL = "https://github.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-windows-x86_64.zip",
+                        CN = "https://gitcode.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-windows-x86_64.zip",
+                    },
+                    aarch64 = {
+                        GLOBAL = "https://github.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-windows-aarch64.zip",
+                        CN = "https://gitcode.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-windows-aarch64.zip",
+                    },
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "2026.7.27" },

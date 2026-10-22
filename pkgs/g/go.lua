@@ -9,7 +9,7 @@ package = {
     contributors = "https://github.com/golang/go/graphs/contributors",
     licenses = {"BSD-3-Clause"},
     repo = "https://github.com/golang/go",
-    ci = { mirror = true, update = true },
+    ci = { mirror = true },
     docs = "https://go.dev/doc",
 
     type = "package",
@@ -31,9 +31,22 @@ package = {
     --     disk, so no runtime deps declaration needed.
     --   * go.dev publishes per-version hashes via the dl JSON API,
     --     letting us pin sha256 deterministically.
+    extensions = {
+        autoupdate = {
+            upstream = "golang/go",
+            tag = "go${version}",
+            latest = "advance",
+            url = {
+                linux = "https://go.dev/dl/go${version}.linux-amd64.tar.gz",
+                macosx = "https://go.dev/dl/go${version}.darwin-arm64.tar.gz",
+                windows = "https://go.dev/dl/go${version}.windows-amd64.zip",
+            },
+        },
+    },
+
     xpm = {
         linux = {
-            url_template = "https://go.dev/dl/go{version}.linux-amd64.tar.gz",
+
             ["latest"] = { ref = "1.27.0" },
             ["1.27.0"] = {
                 url = "https://go.dev/dl/go1.27.0.linux-amd64.tar.gz",
@@ -45,7 +58,7 @@ package = {
             },
         },
         macosx = {
-            url_template = "https://go.dev/dl/go{version}.darwin-arm64.tar.gz",
+
             ["latest"] = { ref = "1.27.0" },
             ["1.27.0"] = {
                 url = "https://go.dev/dl/go1.27.0.darwin-arm64.tar.gz",
@@ -57,7 +70,7 @@ package = {
             },
         },
         windows = {
-            url_template = "https://go.dev/dl/go{version}.windows-amd64.zip",
+
             ["latest"] = { ref = "1.27.0" },
             ["1.27.0"] = {
                 url = "https://go.dev/dl/go1.27.0.windows-amd64.zip",

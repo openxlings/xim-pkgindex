@@ -2,98 +2,58 @@
 
 **English** | [简体中文](zh/13-ci-mirror-and-update.md)
 
-A package can ask the index's automation to mirror its declared versions and to
-propose new ones. This is index maintenance only: xlings ignores it, and it never
-changes how a package resolves.
-
-## Opting in
+Automatic version updates use the pinned upstream [xpkgindex-update](https://github.com/openxlings/xpkgindex-update).
+Declare updates only through `package.extensions.autoupdate`; `xpm.source` remains runtime configuration.
 
 ```lua
-package = {
-    name = "foo",
-    repo = "https://github.com/acme/foo",
-
-    ci = {
-        mirror = true,
-        update = true,
-    },
-
-    xpm = {
-        source = "https://github.com/acme/foo/releases/download/${version}/foo-${os}-${arch}.${ext}",
-        linux = {
-            ["latest"] = { ref = "1.2.0" },
-            ["1.2.0"] = {
-                sha256 = { x86_64 = "<sha256>", aarch64 = "<sha256>" },
-            },
+extensions = {
+    autoupdate = {
+        upstream = "acme/foo",
+        tag = "v${version}",
+        latest = "advance",
+        url = {
+            linux = "https://github.com/acme/foo/releases/download/${tag}/foo-linux-amd64.tar.gz",
+            macosx = "https://github.com/acme/foo/releases/download/${tag}/foo-darwin-arm64.tar.gz",
         },
     },
-}
+},
 ```
 
-| Field | Default | Meaning |
-|---|---|---|
-| `ci.mirror` | `false` | once a declared version is verified, CI may create its `xlings-res` mirror release |
-| `ci.update` | `false` | the package joins the periodic scan; a newer upstream version becomes a pull request |
+`latest = "advance"` advances all declared platform pointers after verifying the complete matrix.
+`keep` appends the candidate while retaining pointers. Explicit architecture maps use canonical keys
+such as `x86_64` and `aarch64`; new multi-architecture entries use V2 resource maps.
+Each resource can be an HTTPS URL or a GLOBAL/CN pair. Declared mirrors must already exist and
+have identical SHA256. Resource-server consumers require `verify = "sha256-sidecar"`.
 
-The schedule is the repository's, in `.github/xpkg-ci.yml`, never a recipe's:
+The daily workflow scans once and proposes from the same fixed plan. It never executes Lua,
+rewrites published versions, repairs conflicting historical entries, builds payloads, or merges PRs.
+A candidate must pass actual installation, verification and removal on its supported runners.
+The central configuration is `.github/xpkgindex-update.yml`; scan limits and a rotating cursor
+prevent request exhaustion without a multi-day failure throttle. Ordinary updates select the newest
+stable release. Historical backfill is separate and is not enabled.
 
-```yaml
-version: 1
-update:
-  enabled: true
-  interval: 3d
-  wakeup_cron: "17 2 * * *"
-  max_packages_per_run: 50
-  request_budget: 500
+With the workflow's pinned tool installed:
+
+```sh
+xpkgindex-update inspect
+xpkgindex-update check --package xim:foo --output plan.json
+xpkgindex-update apply --plan plan.json --package xim:foo
 ```
 
-The workflow wakes daily; a package is scanned when its interval has passed.
+`propose --plan plan.json` requires repository write credentials and creates per-package PRs.
+Existing manual package PRs block duplicate proposals. Failed PR creation after a push can be resumed.
+Plans are rejected when the base commit, descriptor, tag commit or resource bytes change.
 
-## What each does
+## Mirror publication
 
-```text
-ci.mirror = true  ->  the versions already declared -> download, verify -> an xlings-res release
-ci.update = true  ->  a newer upstream version -> its resource matrix and sha256s -> a pull request
-```
+`ci = { mirror = true }` remains an independent request to mirror already declared resources.
+`tools/xpkg_ci.py` provides `inspect`, `materialize`, `verify`, `ensure-repo` and `mirror`.
+It has no version discovery or proposal command. Mirror publication runs separately and cannot
+produce the resources a proposal is waiting for only after that same proposal is merged.
 
-The two are independent: `mirror` never discovers a version, and `update` never
-edits the index without a pull request. With both, the order is: discover, hash,
-pull request, its CI, merge, then the mirror release.
+Self-built/repacked payloads need their own resource production workflow. The updater can consume
+those assets once available; it does not create them. Published resource changes require the existing
+reviewed revision procedure, not an updater refresh.
 
-- `update` needs a URL template containing `${version}`; a fixed URL cannot be
-  followed.
-- `mirror` with `source = "xlings-res"` is a conflict (it is already the official
-  mirror) and fails closed.
-- A mirror release never changes where users download from on its own: routing
-  installs to the mirror is a separate, reviewed index change.
-- A self-built resource (a target sysroot, anything from `tools/res/`) sets no
-  `ci`: mirroring would mirror itself, and an update would point `latest` at a
-  URL nobody built yet.
-
-## The tool
-
-`tools/xpkg_ci.py` does each step, runnable locally:
-
-| Command | Does | Network | Writes |
-|---|---|---|---|
-| `inspect` | reads every recipe's `ci`, source and matrix | no | a report |
-| `scan` | queries upstream, expands templates, downloads, hashes | yes | a report and a cache |
-| `verify <manifest>` | checks a manifest's matrix and hashes | yes | nothing |
-| `mirror <manifest> --execute` | creates the release on GitHub and GitCode, verifies three ways | yes | releases |
-| `propose --apply` | writes the minimal recipe change for a pull request | no | the recipe |
-
-A release that already exists with identical content is success; any difference
-fails, and a release is never overwritten.
-
-## Legacy: `url_template` and `res_versioned`
-
-Older recipes opt into updates with a per-platform `url_template` (a
-`{version}` placeholder), or `res_versioned = true` for entries written
-`"XLINGS_RES"`. Both still work; new recipes use `xpm.source`. Their contract is
-[url-template](specs/url-template.md).
-
-## The weekly sweep
-
-`ci-test.yml` installs only what a push changed. `ci-sweep.yml` installs one slice
-of every recipe each week, chosen by ISO week, so a hook nobody edited is still
-exercised regularly; a dispatch re-runs one slice.
+The old update fields and workflows have been removed. There is no legacy update fallback.
+The migration PR records the complete package inventory and each eligibility decision.

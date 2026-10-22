@@ -7,7 +7,7 @@ package = {
     maintainers = {"Junegunn Choi"},
     licenses = {"MIT"},
     repo = "https://github.com/junegunn/fzf",
-    ci = { mirror = true, update = true },
+    ci = { mirror = true },
     docs = "https://junegunn.github.io/fzf/",
 
     type = "package",
@@ -19,9 +19,22 @@ package = {
     programs = {"fzf"},
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            upstream = "junegunn/fzf",
+            tag = "v${version}",
+            latest = "advance",
+            url = {
+                linux = "https://github.com/junegunn/fzf/releases/download/v${version}/fzf-${version}-linux_amd64.tar.gz",
+                macosx = "https://github.com/junegunn/fzf/releases/download/v${version}/fzf-${version}-darwin_arm64.tar.gz",
+                windows = "https://github.com/junegunn/fzf/releases/download/v${version}/fzf-${version}-windows_amd64.zip",
+            },
+        },
+    },
+
     xpm = {
         linux = {
-            url_template = "https://github.com/junegunn/fzf/releases/download/v{version}/fzf-{version}-linux_amd64.tar.gz",
+
             ["latest"] = { ref = "0.74.3" },
             ["0.74.3"] = {
                 url = "https://github.com/junegunn/fzf/releases/download/v0.74.3/fzf-0.74.3-linux_amd64.tar.gz",
@@ -37,7 +50,7 @@ package = {
             },
         },
         macosx = {
-            url_template = "https://github.com/junegunn/fzf/releases/download/v{version}/fzf-{version}-darwin_arm64.tar.gz",
+
             ["latest"] = { ref = "0.74.3" },
             ["0.74.3"] = {
                 url = "https://github.com/junegunn/fzf/releases/download/v0.74.3/fzf-0.74.3-darwin_arm64.tar.gz",
@@ -53,7 +66,7 @@ package = {
             },
         },
         windows = {
-            url_template = "https://github.com/junegunn/fzf/releases/download/v{version}/fzf-{version}-windows_amd64.zip",
+
             ["latest"] = { ref = "0.74.3" },
             ["0.74.3"] = {
                 url = "https://github.com/junegunn/fzf/releases/download/v0.74.3/fzf-0.74.3-windows_amd64.zip",

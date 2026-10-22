@@ -23,6 +23,17 @@ package = {
     -- ghostty (tools/res/build.sh terminfo). In a Luban root it is
     -- /usr/share/terminfo; a person who enters from any terminal is
     -- described there.
+    extensions = {
+        autoupdate = {
+            upstream = "ThomasDickey/ncurses-snapshots",
+            tag = "v${version:underscore}",
+            latest = "advance",
+            url = {
+                linux = "https://github.com/xlings-res/terminfo/releases/download/${version}/terminfo-${version}.tar.gz",
+            },
+        },
+    },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "6.6.20261010" },

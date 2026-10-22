@@ -39,6 +39,35 @@ package = {
     -- also why this recipe sat on 4.0.2 while upstream reached 4.4.2 — worth
     -- automating (mirror-then-bump), but that is a tooling change, not a
     -- recipe change.
+    extensions = {
+        autoupdate = {
+            upstream = "Kitware/CMake",
+            tag = "v${version}",
+            latest = "advance",
+            url = {
+                linux = {
+                    x86_64 = {
+                        GLOBAL = "https://github.com/xlings-res/cmake/releases/download/${version}/cmake-${version}-linux-x86_64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/cmake/releases/download/${version}/cmake-${version}-linux-x86_64.tar.gz",
+                    },
+                },
+                macosx = {
+                    aarch64 = {
+                        GLOBAL = "https://github.com/xlings-res/cmake/releases/download/${version}/cmake-${version}-macosx-aarch64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/cmake/releases/download/${version}/cmake-${version}-macosx-aarch64.tar.gz",
+                    },
+                },
+                windows = {
+                    x86_64 = {
+                        GLOBAL = "https://github.com/xlings-res/cmake/releases/download/${version}/cmake-${version}-windows-x86_64.zip",
+                        CN = "https://gitcode.com/xlings-res/cmake/releases/download/${version}/cmake-${version}-windows-x86_64.zip",
+                    },
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- Runtime deps, re-measured across the WHOLE 4.4.2 payload rather

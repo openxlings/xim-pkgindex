@@ -131,7 +131,7 @@ deps = {
 ## 在本地测试
 
 ```bash
-python3 .github/scripts/version-check.py --workspace .
+xpkgindex-update inspect
 pytest tests/<letter>/test_<name>.py -m "static or isolation"
 ```
 

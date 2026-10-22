@@ -12,6 +12,17 @@ package = {
     categories = {"library", "text", "i18n"},
     keywords = {"thai", "text", "i18n", "lib"},
     xvm_enable = true,
+    extensions = {
+        autoupdate = {
+            upstream = "tlwg/libthai",
+            tag = "v${version}",
+            latest = "advance",
+            url = {
+                linux = "https://github.com/xlings-res/libthai/releases/download/${version}/libthai-${version}-linux-x86_64.tar.gz",
+            },
+        },
+    },
+
     xpm = {
         linux = {
             -- NOT a new capability -- a missing one. The PUBLISHED pango payload

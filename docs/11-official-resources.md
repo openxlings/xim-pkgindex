@@ -70,7 +70,7 @@ A resource is named by a recipe only after all of these hold:
 2. **One build is the authority**: the sha256 is computed from it, then each copy
    (upstream, GitHub, GitCode) is downloaded and compared byte for byte. GitCode
    is verified with GET, not HEAD (it answers HEAD with 401).
-3. **The `.sha256` sidecar exists** for every asset; `version-check.py --apply`
+3. **The `.sha256` sidecar exists** for every asset; `xpkgindex-update apply --plan plan.json`
    fails, changing nothing, when a supported architecture's hash is missing.
 4. **`latest` moves only to a verified version**, and never backwards when an
    older version is added.

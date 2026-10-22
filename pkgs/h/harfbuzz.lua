@@ -12,6 +12,17 @@ package = {
     categories = {"graphics", "text", "library"},
     keywords = {"harfbuzz", "text", "shaping", "lib"},
     xvm_enable = true,
+    extensions = {
+        autoupdate = {
+            upstream = "harfbuzz/harfbuzz",
+            tag = "${version}",
+            latest = "advance",
+            url = {
+                linux = "https://github.com/xlings-res/harfbuzz/releases/download/${version}/harfbuzz-${version}-linux-x86_64.tar.gz",
+            },
+        },
+    },
+
     xpm = {
         linux = {
             -- The full DT_NEEDED closure of libharfbuzz.so.0, enumerated from

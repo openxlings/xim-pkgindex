@@ -58,6 +58,19 @@ package = {
     programs = {"gradle"},
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            upstream = "gradle/gradle",
+            tag = "v${version}",
+            latest = "advance",
+            url = {
+                linux = "https://services.gradle.org/distributions/gradle-${version}-bin.zip",
+                macosx = "https://services.gradle.org/distributions/gradle-${version}-bin.zip",
+                windows = "https://services.gradle.org/distributions/gradle-${version}-bin.zip",
+            },
+        },
+    },
+
     xpm = {
         linux = {
             deps = { runtime = { "xim:jdk-temurin@25.0.4+7" } },

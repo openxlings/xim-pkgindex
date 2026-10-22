@@ -83,7 +83,7 @@ class TestResources:
         """A CN URL naming a different asset than GLOBAL would pass every static
         check and then fail the sha256 at install time, in China only."""
         import re
-        for block in re.findall(r'url = \{(.*?)\},', code, re.S):
+        for block in re.findall(r'url = \{(.*?)\},', code.split('    xpm = {', 1)[1], re.S):
             g = re.search(r'GLOBAL = "([^"]+)"', block)
             c = re.search(r'CN = "([^"]+)"', block)
             assert g and c, block

@@ -1,0 +1,288 @@
+# xim-pkgindex 统一自动更新设计
+
+日期：2026-10-22  
+状态：待 review；本文仅为设计，不代表下述扩展已实现。  
+范围：上游版本发现、资源验证、配方追加、更新 PR、候选版本 CI、旧自动更新链路退役。
+
+## 1. 设计决策
+
+统一使用 `openxlings/xpkgindex-update`，不保留 xim 旧自动更新协议的兼容层。
+
+- 唯一更新声明为 `package.extensions.autoupdate`。
+- 删除自动更新对 `ci.update`、`url_template`、`res_versioned` 的识别与执行路径；不建立字段翻译、双读或旧 CLI 转发。
+- `xpm.source` 是运行时资源声明，可以继续存在，但不隐式开启自动更新，也不充当更新配置的后备来源。
+- `ci.mirror` 属于独立镜像发布能力，本次不迁移其协议；删除 `ci.update` 时保留仍有用途的 `ci` 字段。
+- xim 所需的通用能力在 `xpkgindex-update` 上游实现。xim 仓库不维护私有 fork、补丁副本或第二套版本比较/配方编辑器。
+- 每日一次扫描，生成固定 plan；同一次运行的 propose 消费该 plan，不重新发现版本。
+- 默认每包只更新到最新可接受稳定版本，不在正常升级中自动补历史。
+- 完整平台与架构资源验证通过后，原子追加新版本并推进 `latest.ref`；历史版本保持原样。
+- 只创建 PR，经候选版本 CI 和人工 review 后合并；本方案不引入自动合并。
+
+“不兼容旧协议”针对自动更新输入与入口，不意味着删除历史版本、重写安装逻辑或取消旧版本安装。
+
+## 2. 现状与能力边界
+
+调查基线：`xpkgindex-update` 远端 main 为 `6c0bee2941e36132bc2ac3d1f7edbef8b5790320`。
+实施时先复核最新上游，再固定一个包含所需能力、通过验证的提交；禁止生产工作流跟随浮动 `@main`。
+
+| 内容 | 当前已有 | 本方案要求新增/调整 |
+|---|---|---|
+| 更新声明 | `extensions.autoupdate = { tag, url }` | xim 策略、显式上游、平台/架构 URL 矩阵 |
+| 发现 | GitHub Releases，必要时回退 tags；数字/日期等版本排序 | 显式上游与资源仓库解耦；不支持的编号策略明确停止 |
+| 计划与写入 | 配方摘要、上游 commit、资源 hash、apply 复核、原子写入 | 按架构记录资源；记录预期 latest 与最终 latest |
+| adapter | xim 文件仅重导出 mcpp append | 真正的 adapter 分发，覆盖 check/apply/propose/guard |
+| latest | 检测到已有 latest 时拒绝追加 | xim 明确允许的前移/保持策略 |
+| 平台版本 | 要求历史平台版本集合一致 | 允许历史差异；新候选必须覆盖声明矩阵 |
+| PR | 每包去重、识别人工 PR、孤立 worktree、恢复未建 PR 的分支 | 按包隔离失败、结构化汇总，落实一致的 CI 触发方式 |
+| 下载 | 缓存、重试、hash、基础归档识别；512 MiB/资源、4 GiB/运行 | 中央可配置预算，支持大型工具链，完善 tar.xz 等资源检查 |
+
+现有 xim 的离线复现已确认：共享扫描状态会跳过后续扫描、错误仍写检查时间并返回成功、平台版本取并集会漏报缺失。
+现有 version-check 单元脚本和 14 项 backfill 测试通过，不能据此认为这些边界已被覆盖。
+
+参考：
+
+- [工具说明（调查基线）](https://github.com/openxlings/xpkgindex-update/blob/6c0bee2941e36132bc2ac3d1f7edbef8b5790320/docs/usage.md)
+- [xim adapter（调查基线）](https://github.com/openxlings/xpkgindex-update/blob/6c0bee2941e36132bc2ac3d1f7edbef8b5790320/src/xpkgindex_update/adapters/xim_pkgindex.py)
+- [mcpp-index 集成](https://github.com/mcpplibs/mcpp-index/blob/main/.github/workflows/xpkgindex-update.yml)
+- [现有 xim CI/镜像设计](2026-07-12-xpkg-ci-mirror-update-design.md)
+- [现有 V2 资源形态](../../docs/V2/xpackage-spec.md)
+
+## 3. 职责划分
+
+| 所在位置 | 职责 |
+|---|---|
+| `xpkgindex-update` | 解析声明、发现版本、比较版本、展开矩阵、下载校验、生成与复核 plan、编辑配方、保护历史、管理更新 PR |
+| xim 包文件 | 声明更新意图、固定 tag/URL 映射、支持的资源矩阵和 latest 策略；保留实际安装/配置逻辑 |
+| xim 中央配置 | adapter、请求/下载预算、每次 PR 上限 |
+| xim workflow/薄 CI helper | 调度、传递 artifact、选择测试、安装候选、收集证据、汇总门禁 |
+| 既有资源生产/镜像工作流 | 构建、重打包、发布 GitHub/GitCode 资源及 sidecar |
+| maintainer | 审查变更、决定平台增减、特殊编号、历史修复和合并 |
+
+CI helper 不实现版本比较、资源 URL 展开或 Lua 源码改写。需要这些操作时调用统一工具。
+工具不得执行包内自定义更新脚本或任意 Lua，以绕过声明模型。
+
+## 4. 统一声明
+
+### 4.1 现有标准写法
+
+单个共享源码资源继续使用工具已有的声明：
+
+```lua
+extensions = {
+    autoupdate = {
+        tag = "v${version}",
+        url = "https://github.com/acme/foo/archive/refs/tags/${tag}.tar.gz",
+    },
+},
+```
+
+### 4.2 拟在上游扩展的 xim 写法
+
+以下字段和嵌套 URL 形态是设计提案，当前工具尚不接受；需在上游实现并发布后才能用于生产。
+
+```lua
+extensions = {
+    autoupdate = {
+        upstream = "acme/foo", -- 发现版本的 GitHub 仓库，与资源仓库独立
+        tag = "v${version}",
+        latest = "advance",
+        url = {
+            linux = {
+                x86_64 = "https://github.com/acme/foo/releases/download/${tag}/foo-${version}-linux-amd64.tar.gz",
+                aarch64 = "https://github.com/acme/foo/releases/download/${tag}/foo-${version}-linux-arm64.tar.gz",
+            },
+            macosx = {
+                aarch64 = "https://github.com/acme/foo/releases/download/${tag}/foo-${version}-darwin-arm64.tar.gz",
+            },
+            windows = {
+                x86_64 = "https://github.com/acme/foo/releases/download/${tag}/foo-${version}-windows-amd64.zip",
+            },
+        },
+    },
+},
+```
+
+字段约束：
+
+- `tag`：沿用工具的 `${version}` / `${version:dash}` 映射。拒绝模糊映射或隐式删除发行后缀。
+- `upstream`：xim 自动更新包必须显式填写，避免把 xlings-res 或 fork 下载仓库误当版本来源。
+- `latest`：xim 必填，枚举为 `advance` / `keep`。`advance` 才允许移动已有 latest；`keep` 只追加。
+- `url`：沿用字符串、平台映射、GLOBAL/CN 资源映射；扩展平台 → 架构 → 资源映射。每个资源叶子是 HTTPS 字符串或 `{ GLOBAL, CN }`。
+- URL 只使用已声明的占位符。新矩阵使用规范架构名 `x86_64` / `aarch64`；文件名差异显式写在 URL 中，不从旧版本继承 alias。
+- 可选 `verify = "sha256-sidecar"`：上游新增能力；对每个声明的资源验证 `<url>.sha256`，文件名和实际 hash 必须匹配。未声明时仍下载计算 hash。
+- 未声明 `autoupdate` 的包不扫描；声明不完整则报配置错误，不静默转入旧逻辑。
+
+平台映射和区域映射按键空间判定，禁止同层混用平台/架构/区域。未知键、非规范架构、空矩阵和重复资源身份均报错。
+工具已有 mcpp 的 `{ tag, url }` 写法继续有效；xim 的必填约束由 xim adapter 校验，不强加给 mcpp。
+
+### 4.3 新版本的运行时输出
+
+多架构二进制统一生成 V2 已支持的 Shape B，具体 URL/hash 一一对应：
+
+```lua
+["1.2.3"] = {
+    x86_64 = { url = "https://.../foo-1.2.3-linux-amd64.tar.gz", sha256 = "<verified>" },
+    aarch64 = { url = "https://.../foo-1.2.3-linux-arm64.tar.gz", sha256 = "<verified>" },
+},
+```
+
+单架构/共享源码维持简单 `{ url, sha256 }`，相同资源可以复用工具已有的共享表机制。
+已有 Shape C、source、sentinel、alias 与历史版本块不重写；新 Shape B 用显式资源，不依赖历史 alias 或 source 的隐式继承。
+采用 Shape B 的包需在迁移时满足并标注仓库现有客户端能力/最低版本要求，不能假定所有旧客户端都理解新形态。
+
+## 5. latest 与完整矩阵
+
+1. 从新声明和当前 latest 解析结果建立平台/架构覆盖表；迁移 PR 明确确认实际支持集合，不能把顶层 `archs` 的并集直接复制到所有平台。
+2. 所有声明的平台必须存在于 xpm；现有平台必须在更新声明中被明确覆盖。暂不支持隐式忽略某个平台。
+3. 每个平台的新资源集合必须保持当前 latest 的实际架构集合。增减架构/平台单独人工 PR，不能由上游缺资产触发。
+4. 历史版本允许平台不同，但当前 latest 在各目标平台必须一致；不一致时返回 `policy-required`，不自动对齐。
+5. `advance` 的候选必须高于当前 latest 和各目标平台已存在的可比较版本。不能把一个低于现存版本的候选写成 latest。
+6. `keep` 追加候选后不改 latest；它同样不承担低版本补录。
+7. 候选只存在于部分平台时返回 `existing-version-conflict`；普通更新不修复、覆盖或重复插入。
+8. 原子写入前验证全部资源及输出解析结果。任一失败，整个包文件保持原样。
+
+历史保护允许改变已声明策略下的 `latest.ref`，不放宽历史资源块保护；`guard` 按 adapter 验证允许的指针前移和候选完整性。
+自动更新不得改动历史 URL/hash、资源共享表旧值、revision、依赖或安装函数。guard 仅作为自动更新范围的严格门禁；人工 revision 变更继续遵循既有 revision 流程。
+
+## 6. 固定计划与执行
+
+```text
+每日/手动调度
+  → inspect + 声明审计
+  → check：发现候选、展开完整矩阵、下载校验
+  → 固定 plan artifact
+  → propose --plan：复核、每包隔离追加、创建/恢复 PR
+  → PR CI：静态检查 + 实际候选安装/运行
+  → maintainer review / merge
+```
+
+计划包含 schema 版本、adapter、索引 base commit、包身份/路径/配方摘要、旧/新 latest、策略摘要、tag 与上游 commit，
+以及每个 `(platform, arch, region)` 的 URL、大小、SHA256 和 sidecar 校验结果。
+新矩阵使用新 plan schema 版本；旧执行器必须拒绝新格式，不能忽略架构字段继续写入。
+
+- propose 必须消费 scan 的 artifact；不使用当前 composite `mode: propose`，因为它会自行重新 check。
+- apply/propose 都复核 base、配方摘要、上游 tag commit、矩阵和资源内容；资源缓存限本次验证生命周期，缓存不能替代跨运行复核。
+- base 变化后本轮报告 `stale-plan`，下次重新扫描；不在旧 plan 上自动 rebase 后继续执行。
+- plan 只能来自同次受信任默认分支运行，不能从 PR 工作区提交或任意外部 artifact 获取后进入写权限 job。
+- 新增/变动 tag、缺资源、镜像不一致都不允许降级到“猜一个 URL 继续”。
+
+## 7. 调度、状态与 PR
+
+唯一入口建议为 `.github/workflows/xpkgindex-update.yml`，默认每日运行，可手动按包执行。
+删除三天检查时间缓存；预算不足时保留待处理清单，失败不写“已成功”状态。
+
+中央 `.github/xpkgindex-update.yml` 初始保留工具现有字段 `version: 1`、`adapter: xim-pkgindex`、`max_prs: 3`。
+请求数、下载字节数、单资源大小和包扫描上限在工具上游增加正式配置；拟定初值为 500 次 API 请求、每轮 50 包、
+每资源 4 GiB、每轮 16 GiB。预算在请求/下载之前及流式读取中执行，重试也计费；大资源按包去重下载。
+预算截止状态与下一次起点需要持久化，否则持续重扫前 50 包会饿死后续包；状态只保存游标和结果索引，不用于推迟失败重试。
+工作流串行化，恢复状态失败可重扫，但不得永久漏包。
+
+| 状态 | 行为 |
+|---|---|
+| `up-to-date` | 正常完成 |
+| `update-ready` | 允许 propose |
+| `waiting-assets` | 上游 404/410 等资源尚未齐备，下一次重试，不创建 PR |
+| `pending` | 已有自动或人工 PR 修改该包，不重复创建 |
+| `pinned-*` / `policy-required` | 明确展示原因，需要人工修订声明 |
+| `budget-deferred` / `stale-plan` | 保存原因，下一次优先重新处理 |
+| `error` / `existing-version-conflict` | 当前包失败，其他包继续；最终汇总失败 |
+
+`waiting-assets` 连续 7 天仍未就绪时纳入失败汇总，防止永久等待被当作健康。
+按包隔离可用部分 plan 中的 update-ready 记录继续 propose；汇总 job 在最后统一报告错误，不能靠 scan job 失败把全部候选静默跳过。
+
+每包最多一个开放更新 PR；人工包修改 PR 同样阻止重复提案。已关闭且未合并的同一候选不自动重开。
+已有分支但没有 PR 时，复核分支内容与计划一致后恢复建 PR；不覆盖不一致的分支。
+PR 描述列出旧/新 latest、完整资源矩阵、tag commit、plan 来源和待完成 CI。
+
+## 8. CI 与权限
+
+- scan/候选安装测试只读；propose 才有仓库和 PR 写权限，且只允许默认分支上的定时/手动入口。
+- 首选 GitHub App token 创建 PR，使普通 PR CI 自动触发。实施需核实仓库是否已配置 App；未配置时该项是部署前置条件。
+- 若改用内置 `GITHUB_TOKEN`，必须像 mcpp-index 一样实现显式 CI dispatch、验证 PR/head SHA、幂等补触发；不能只替换 token 后假定 CI 会运行。
+- 本设计默认采用 App 路径；不同时维护两套生产认证流程。checkout 使用 `persist-credentials: false`。
+- 使用固定工具提交；迁移 PR 检查该提交确实包含所需 adapter 与 schema，不把示例字段当作可用功能。
+
+PR CI 从 diff 选择所有新增 `(package, version)`，不扫描未来上游版本；即使 latest 未变也要测试新增版本。
+自动更新必跑：Lua/元数据校验、历史保护、完整矩阵资源校验、索引注册、受支持 runner 上的安装/功能/卸载检查。
+测试显式安装候选版本，确认候选配方来自 PR checkout，并记录安装元数据与程序实际版本，避免缓存或已发布索引掩盖错误。
+资源校验覆盖完整矩阵；运行测试按可用原生 runner 或已验证的模拟环境逐项覆盖。缺执行环境的矩阵项必须阻止该包自动更新上线，先人工维护。
+硬件类工具可做无硬件 CLI smoke test；不能把无探针环境的失败解释成候选成功，也不要求 CI 操作真实硬件。
+
+## 9. 镜像与资源生产
+
+统一 updater 只发现、验证和提交，不上传镜像、不构建 LLVM、不重打包第三方资源。
+
+- 直接上游资源：声明可立即下载的权威 URL，完成验证后提 PR。
+- 声明 GLOBAL/CN 双地址：两份都必须存在且 hash 一致后才 ready；不能把尚未发布的 CN 地址写入候选。
+- mcpp/xlings 等 xlings-res 消费包：显式 `upstream` 跟踪真实发布仓库，URL 指向资源仓库，要求 sidecar 和完整矩阵均已发布。新版本输出 Shape B 显式双地址，无需新增 sentinel 写入逻辑。
+- 上游/镜像资源尚未齐备：等待外部资源生产工作流完成，再由下次 check 检测，不给 updater 发布权限。
+- `ci.mirror` 原有已声明版本发布链路保留；本次不把其合并后发布机制变成候选资源就绪的唯一前提，否则形成“等合并发布资源、等资源才建 PR”的循环。
+- 某包若只在合并后产生 CN 资源，迁移时必须选择：新版本只引用上游地址，或先调整独立资源生产流程使双镜像先就绪。没有解决前不接入双镜像自动更新。
+- 不由 updater 回写旧版本以补上后来产生的镜像地址；需要变更已发布条目时走单独人工 revision 流程。
+
+## 10. 历史补录与特殊版本
+
+正常升级只提最新可接受稳定版。历史补录是未来统一工具的独立显式操作，需指定版本范围/数量、生成 plan、通过同样矩阵门禁，且保持 latest。
+首轮不实现自动 backfill，也不保留旧脚本作为 backfill 入口；确需补录时先实现统一工具能力或人工 PR。
+commit snapshot、包版本与源码版本不一致、重新编号、发行后缀无法无歧义映射的包先人工维护。
+Go 等需要厂商接口的包，在统一工具实现正式 discovery provider 前不能假定 GitHub Releases 可替代官方版本接口。
+
+## 11. 迁移与退役
+
+### A. 上游工具完成能力
+
+在 `xpkgindex-update` 提 PR 实现：adapter 真分发、xim 身份默认命名空间、latest 策略、多架构矩阵、新 plan schema、sidecar、
+历史差异处理、预算/游标、结构化状态、PR 故障恢复与 guard。保持 mcpp 现有用法及测试通过。
+必须覆盖真实 xim 配方的静态语法与安装函数尾部；解析器不支持时明确拒绝，不能执行 Lua 或退回正则改写。
+先合并并验证工具提交，再让 xim 固定使用该提交。
+
+### B. 迁移清单与试运行
+
+静态盘点必须按语法结构读取，不能用全文搜索的 `update = true` 匹配注释。
+逐包输出：旧意图、资源形态、实际矩阵、发现源、mirror 就绪方式、测试环境、迁移/人工维护结论和原因。
+先以 uv/fd 验证普通资源，再以 probe-rs 验证多架构，最后以 mcpp/xlings 验证独立资源仓库。
+在测试分支验证 check/apply 与候选测试；显式测试环境中可建 draft PR，生产 propose 仍关闭。
+若只做部分包试点，先停用旧定时更新器，其余包暂人工维护；不允许旧新扫描器同时生产更新 PR。
+
+### C. 切换 PR
+
+同一切换 PR 完成：
+
+1. 添加中央配置、新 workflow 和调用统一工具的 CI helper。
+2. 将批准接入的包改为 `extensions.autoupdate`；尚不具备条件的包登记人工维护。
+3. 移除全部旧 `ci.update` / `url_template` / `res_versioned` 自动更新声明；保留 runtime source、ci.mirror 和历史资源。
+4. 删除 `version-check.yml`、`version-bump.yml`、`version-check.py` 及仅服务旧链路的测试/说明。
+5. 删除 `tools/xpkg_ci.py` 的 scan/propose、旧策略读取与 `load_vcheck` 依赖；保留 inspect/verify/materialize/mirror 中镜像仍需的逻辑，明确其仅消费镜像元数据。
+6. 删除 `.github/xpkg-ci.yml` 中失去用途的更新策略和旧扫描缓存路径，更新文档、贡献规范和包创建 skill。
+7. 审计已有自动 bump PR 与孤立分支，登记接管/关闭方案；不能未经核实批量关闭人工工作。
+
+用户 review 设计后再实施。所有工具代码、包、测试和 workflow 修改分别走 PR 与 CI，本次文档不触发生产切换。
+
+### D. 上线验收与回退
+
+启用后至少观察 7 次日常调度和一次真实自动更新 PR 的完整安装测试闭环；三个资源类型均需有受控验证证据。
+异常时停用新的 propose，保留报告与人工更新；回退不恢复旧扫描器，不自动删除已追加版本。
+
+## 12. 验收清单
+
+- 生产只有一个 updater 和一个更新声明入口，无旧字段读取、转发或第二套编辑器。
+- 同次 scan 的 plan 被 propose 原样消费；base、配方、tag 或资源变化会拒绝应用。
+- 历史平台差异不阻止合法新版本；新版本任一平台/架构缺资源时整个包不写入。
+- latest 不倒退；keep 不移动；平台指针不一致和部分候选冲突可见且不自动修复。
+- 原有版本、镜像、hash、注释、顺序及共享引用内容保持不变。
+- 注释内的旧开关不被当成有效配置；运行时 source 不会隐式开启更新。
+- 网络/校验错误不产生成功状态；其他包能继续，最终汇总准确失败。
+- 预算真正限制请求/下载；重试计费；后续包不会永久饥饿。
+- 重跑不重复建 PR，人工 PR 可阻止重复，推分支后建 PR 失败可以恢复。
+- 每项候选测试证明实际安装的是 PR 中的新版本；写权限 job 不执行候选安装逻辑。
+- xlings-res/GitCode 未就绪不会产生不可安装 PR；不存在镜像发布与合并的循环依赖。
+- 上游 mcpp-index 功能与跨平台测试继续通过；xim 接入不会改变 mcpp 的 latest 规则。
+
+## 13. 本轮 review 需要确认的核心决策
+
+1. 自动更新协议整体切换，无旧字段/CLI 兼容；未迁移的包明确人工维护。
+2. 扩展能力统一进入上游工具，生产固定经过验证的最新提交。
+3. xim 显式声明 upstream、latest 和资源矩阵；多架构新版本统一输出 Shape B。
+4. 正常升级只追最新稳定版，历史补录独立；完整矩阵原子提交。
+5. 镜像生产独立，双镜像就绪后才引用；不把 updater 扩展成资源发布系统。
+6. 每日扫描、固定 plan、每轮最多 3 个 PR、GitHub App 认证、候选版本 CI、人工合并。

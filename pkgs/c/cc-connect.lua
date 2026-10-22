@@ -7,7 +7,7 @@ package = {
     maintainers = {"chenhg5"},
     licenses = {"MIT"},
     repo = "https://github.com/chenhg5/cc-connect",
-    ci = { mirror = true, update = true },
+    ci = { mirror = true },
     docs = "https://github.com/chenhg5/cc-connect#readme",
 
     type = "package",
@@ -19,9 +19,22 @@ package = {
     programs = {"cc-connect"},
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            upstream = "chenhg5/cc-connect",
+            tag = "v${version}",
+            latest = "advance",
+            url = {
+                linux = "https://github.com/chenhg5/cc-connect/releases/download/v${version}/cc-connect-v${version}-linux-amd64.tar.gz",
+                macosx = "https://github.com/chenhg5/cc-connect/releases/download/v${version}/cc-connect-v${version}-darwin-arm64.tar.gz",
+                windows = "https://github.com/chenhg5/cc-connect/releases/download/v${version}/cc-connect-v${version}-windows-amd64.zip",
+            },
+        },
+    },
+
     xpm = {
         linux = {
-            url_template = "https://github.com/chenhg5/cc-connect/releases/download/v{version}/cc-connect-v{version}-linux-amd64.tar.gz",
+
             ["latest"] = { ref = "1.5.0" },
             ["1.5.0"] = {
                 url = "https://github.com/chenhg5/cc-connect/releases/download/v1.5.0/cc-connect-v1.5.0-linux-amd64.tar.gz",
@@ -37,7 +50,7 @@ package = {
             },
         },
         macosx = {
-            url_template = "https://github.com/chenhg5/cc-connect/releases/download/v{version}/cc-connect-v{version}-darwin-arm64.tar.gz",
+
             ["latest"] = { ref = "1.5.0" },
             ["1.5.0"] = {
                 url = "https://github.com/chenhg5/cc-connect/releases/download/v1.5.0/cc-connect-v1.5.0-darwin-arm64.tar.gz",
@@ -53,7 +66,7 @@ package = {
             },
         },
         windows = {
-            url_template = "https://github.com/chenhg5/cc-connect/releases/download/v{version}/cc-connect-v{version}-windows-amd64.zip",
+
             ["latest"] = { ref = "1.5.0" },
             ["1.5.0"] = {
                 url = "https://github.com/chenhg5/cc-connect/releases/download/v1.5.0/cc-connect-v1.5.0-windows-amd64.zip",

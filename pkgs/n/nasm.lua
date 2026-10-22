@@ -49,6 +49,47 @@ package = {
     --     (nasm-<ver>.tar.xz) as fully-static musl binaries (musl-gcc /
     --     aarch64-linux-musl-gcc, `-O2 -static`, stripped), so they are
     --     portable across distributions with no glibc runtime dep.
+    extensions = {
+        autoupdate = {
+            upstream = "netwide-assembler/nasm",
+            tag = "nasm-${version}",
+            latest = "advance",
+            url = {
+                linux = {
+                    x86_64 = {
+                        GLOBAL = "https://github.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-linux-x86_64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-linux-x86_64.tar.gz",
+                    },
+                    aarch64 = {
+                        GLOBAL = "https://github.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-linux-aarch64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-linux-aarch64.tar.gz",
+                    },
+                },
+                windows = {
+                    x86_64 = {
+                        GLOBAL = "https://github.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-windows-x86_64.zip",
+                        CN = "https://gitcode.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-windows-x86_64.zip",
+                    },
+                    x86 = {
+                        GLOBAL = "https://github.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-windows-x86.zip",
+                        CN = "https://gitcode.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-windows-x86.zip",
+                    },
+                },
+                macosx = {
+                    x86_64 = {
+                        GLOBAL = "https://github.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-macosx-x86_64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-macosx-x86_64.tar.gz",
+                    },
+                    aarch64 = {
+                        GLOBAL = "https://github.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-macosx-aarch64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-macosx-aarch64.tar.gz",
+                    },
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "3.02" },

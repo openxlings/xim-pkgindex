@@ -19,6 +19,39 @@ package = {
     -- xvm: xlings version management
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            upstream = "ninja-build/ninja",
+            tag = "v${version}",
+            latest = "advance",
+            url = {
+                linux = {
+                    x86_64 = {
+                        GLOBAL = "https://github.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-linux-x86_64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-linux-x86_64.tar.gz",
+                    },
+                    aarch64 = {
+                        GLOBAL = "https://github.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-linux-aarch64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-linux-aarch64.tar.gz",
+                    },
+                },
+                macosx = {
+                    aarch64 = {
+                        GLOBAL = "https://github.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-macosx-aarch64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-macosx-aarch64.tar.gz",
+                    },
+                },
+                windows = {
+                    x86_64 = {
+                        GLOBAL = "https://github.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-windows-x86_64.zip",
+                        CN = "https://gitcode.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-windows-x86_64.zip",
+                    },
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- Self-contained, no runtime deps (mirrors patchelf.lua, the other

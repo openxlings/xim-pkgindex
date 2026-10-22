@@ -36,7 +36,7 @@ package = {
     --   CN     → gitcode.com/xlings-res/patchelf/releases/download/<ver>/...
     xpm = {
         linux = {
-            url_template = "https://github.com/NixOS/patchelf/releases/download/{version}/patchelf-{version}-x86_64.tar.gz",
+
             ["latest"] = { ref = "0.18.0" },
             ["0.18.0"] = "XLINGS_RES",
         },

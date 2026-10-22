@@ -25,6 +25,17 @@ package = {
     -- `programs` asserts EXCLUSIVE ownership of those names. Consumers reach them
     -- by payload path, which is how build-in-subos.sh already invokes build tools.
 
+    extensions = {
+        autoupdate = {
+            upstream = "KhronosGroup/SPIRV-Tools",
+            tag = "v${version}",
+            latest = "advance",
+            url = {
+                linux = "https://github.com/xlings-res/spirv-tools/releases/download/${version}/spirv-tools-${version}-linux-x86_64.tar.gz",
+            },
+        },
+    },
+
     xpm = {
         linux = {
             -- gcc-runtime, not gcc.

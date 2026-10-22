@@ -18,6 +18,18 @@ package = {
     programs = {"hermes", "hermes-agent", "hermes-acp"},
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            upstream = "NousResearch/hermes-agent",
+            tag = "v${version}",
+            latest = "advance",
+            url = {
+                linux = "https://github.com/NousResearch/hermes-agent/archive/refs/tags/v${version}.tar.gz",
+                macosx = "https://github.com/NousResearch/hermes-agent/archive/refs/tags/v${version}.tar.gz",
+            },
+        },
+    },
+
     xpm = {
         linux = {
             deps = {"xim:python"},

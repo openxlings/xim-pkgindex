@@ -24,6 +24,28 @@ package = {
     programs = {"omp"},
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            upstream = "can1357/oh-my-pi",
+            tag = "v${version}",
+            latest = "advance",
+            url = {
+                linux = {
+                    x86_64 = "https://github.com/can1357/oh-my-pi/releases/download/v${version}/omp-linux-x64",
+                    aarch64 = "https://github.com/can1357/oh-my-pi/releases/download/v${version}/omp-linux-arm64",
+                },
+                macosx = {
+                    x86_64 = "https://github.com/can1357/oh-my-pi/releases/download/v${version}/omp-darwin-x64",
+                    aarch64 = "https://github.com/can1357/oh-my-pi/releases/download/v${version}/omp-darwin-arm64",
+                },
+                windows = {
+                    x86_64 = "https://github.com/can1357/oh-my-pi/releases/download/v${version}/omp-windows-x64.exe",
+                    aarch64 = "https://github.com/can1357/oh-my-pi/releases/download/v${version}/omp-windows-arm64.exe",
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
             source = "https://github.com/can1357/oh-my-pi/releases/download/v${version}/omp-linux-${arch_alias}",

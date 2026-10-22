@@ -61,7 +61,7 @@ artifact。
 2. **以一次构建为准**：sha256 从它计算，然后分别从上游、GitHub、GitCode 下载并逐字节比较。
    GitCode 用 GET 而不是 HEAD 验证（它对 HEAD 返回 401）。
 3. **每个资产都有 `.sha256` sidecar**；缺少某个受支持架构的 hash 时，
-   `version-check.py --apply` 失败且不做任何修改。
+   `xpkgindex-update apply --plan plan.json` 失败且不做任何修改。
 4. **`latest` 只移到已验证的版本**，补发旧版本时绝不后退。
 5. **已发布的资源永不改变。** 重新构建（补丁、前缀、布局修正、去掉硬链接）以新的 tag 和
    资产名 `<version>-r<N>` 发布，版本项的 `revision` 改为 N。旧资产原样保留：缓存了索引的
