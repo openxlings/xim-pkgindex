@@ -18,6 +18,19 @@ extensions = {
 },
 ```
 
+新建包可将上面的固定模板放入 `package` 表，按需接入自动更新。
+**建议上游 GitHub 仓库至少有 50 stars**；这是贡献者建议，不是 CI 或工具的硬门槛，
+star 数也不能替代资源完整性和镜像可用性验证。
+将示例仓库和资产路径替换为已核实的真实值。各平台共用同一产物时使用字符串简写，
+否则展开平台/架构 URL 矩阵，覆盖包声明支持的全部组合。
+`${tag}` 为原始 release 标签，`${version}` 为提取后的版本，普通数字或 `v` 前缀无需额外配置。
+自动更新模板独立于 `xpm.source`，不会隐式展开运行时的 `${os}`、`${arch_alias}`、`${ext}` 等占位符。
+
+没有已验证镜像时只声明 GLOBAL；增加 CN 前核实真实项目路径、完整候选资产及两侧 SHA256 一致性。
+目标默认必需；若镜像可选，经 review 显式设置 `required = false`，至少保留一个必需目标。
+LTS 或固定默认版本使用 `latest = "keep"`。提交 PR 前用下方固定版本工具运行 `inspect` 和指定包的
+`check`，检查 plan，并将声明同步到仓库覆盖审计清单；保持人工更新的包填写原因。
+
 默认 `latest = "advance"`，每个目标默认 `required = true`；`latest = "keep"` 保留既有指针。
 复杂目标可写 `{ required = true, url = { linux = { x86_64 = "..." } } }`。
 版本来源当前识别 GitHub releases/tags 地址，下载模板可使用任意公开 HTTPS。

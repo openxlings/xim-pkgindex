@@ -105,6 +105,41 @@ xpm = {
 
 如果 GitHub RES 和 GitCode RES 任一侧缺资源、版本不一致、资产不一致，不能把该版本切到 `"XLINGS_RES"`；先补齐镜像资源，再改包索引。
 
+### 1.2.2 新包自动更新接入模板
+
+新建包可以按需使用以下固定模板，合并到 `package.extensions`，不要创建重复的 `extensions` 字段。
+建议上游 GitHub 仓库 **至少 50 stars** 再接入；这是选包建议，不是工具或 CI 的强制门槛。
+不能用 star 数替代资源验证，也不要添加 star 数下降就停更的逻辑。
+
+```lua
+extensions = {
+    autoupdate = {
+        source = "https://github.com/acme/foo/releases",
+        resources = {
+            GLOBAL = { url = {
+                linux = {
+                    x86_64 = "https://github.com/acme/foo/releases/download/${tag}/foo-linux-x64.tar.gz",
+                    aarch64 = "https://github.com/acme/foo/releases/download/${tag}/foo-linux-arm64.tar.gz",
+                },
+            } },
+        },
+    },
+},
+```
+
+将仓库和路径替换为真实值，平台/架构矩阵必须与完整包声明一致；上例仅适用于只支持 Linux 双架构的包。
+各平台共用同一资产时可把 GLOBAL 简写为 URL 字符串。`${tag}` 保留原始标签，`${version}` 为提取后的版本；
+普通数字/v 前缀无需 `tag`。不要照搬 `xpm.source` 的 `${os}` / `${arch_alias}` / `${ext}` 运行时占位符。
+没有核实镜像时只声明 GLOBAL；有 USTC、清华等权威镜像也要逐项核实真实路径、完整资产与跨区 SHA256 一致，
+不能根据域名猜路径。每个目标默认 `required = true`；显式设为 false 表示可选，至少一个目标必须必需。
+选择所有必需目标完整可用的最新版本交集；可选目标失败整组省略。`latest = "keep"` 用于 LTS/固定默认版本。
+
+提交前使用 workflow 固定提交的 xpkgindex-update 执行 `inspect`、`check --package xim:<name> --output plan.json`，
+检查候选、平台、镜像与 hash，并同步全量覆盖审计记录；无支持的来源解析器或无就绪资源时保留人工维护并记录原因。
+自动更新每三天扫描并创建 PR，仍需资源和原生安装/功能/卸载验证，不自动合并、不改历史条目或 hooks。
+完整说明见 `docs/13-ci-mirror-and-update.md` 和 `docs/zh/13-ci-mirror-and-update.md`；
+`docs/specs/xpackage-template.lua` 也提供注释形式的接入模板。
+
 ## 2) hooks 实现规范（核心）
 
 ### 2.1 import 规范

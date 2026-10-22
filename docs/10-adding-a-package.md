@@ -67,6 +67,19 @@ Every architecture has its sha256. Without an authoritative hash, keep the old
 form until the resource and its sidecar exist; never publish a new official
 binary without one.
 
+## Automatic updates for new packages
+
+Copy the `package.extensions.autoupdate` template from
+[CI: Mirror and Update](13-ci-mirror-and-update.md), then replace its source and
+asset URLs with verified project paths and cover every supported platform/architecture.
+We recommend this for upstream GitHub repositories with **at least 50 stars**;
+this is guidance, not an enforced threshold. Packages can remain manually maintained.
+
+The index scans every three days, selects the newest version satisfying all required
+resources, and opens a PR for review. Existing version entries and hooks are preserved.
+GLOBAL works alone; add a verified CN mirror as required by default, or explicitly
+optional after review. Follow that chapter's local checks and coverage inventory step.
+
 ## The hooks
 
 ```lua

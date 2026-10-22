@@ -19,6 +19,31 @@ package = {
     -- hands it on and never reads it (docs/specs/xpackage-v2.md "extensions")
     -- extensions = { luban = { title = { en = "Package Name" } } },
 
+    -- Optional automatic updates (docs/13-ci-mirror-and-update.md).
+    -- Recommended for upstream GitHub repositories with >= 50 stars; not enforced.
+    -- Uncomment after verifying URLs and the complete supported platform/arch matrix.
+    -- Merge this into an existing extensions table rather than adding a second one.
+    -- extensions = {
+    --     autoupdate = {
+    --         source = "https://github.com/acme/package-name/releases",
+    --         resources = {
+    --             GLOBAL = { url = {
+    --                 linux = {
+    --                     x86_64 = "https://github.com/acme/package-name/releases/download/${tag}/package-name-linux-amd64.tar.gz",
+    --                     aarch64 = "https://github.com/acme/package-name/releases/download/${tag}/package-name-linux-arm64.tar.gz",
+    --                 },
+    --                 macosx = {
+    --                     x86_64 = "https://github.com/acme/package-name/releases/download/${tag}/package-name-macos-x64.tar.gz",
+    --                     aarch64 = "https://github.com/acme/package-name/releases/download/${tag}/package-name-macos-arm64.tar.gz",
+    --                 },
+    --             } },
+    --         },
+    --     },
+    -- },
+    -- latest = "advance" and required = true are defaults. No verified mirror: GLOBAL only.
+    -- Add CN only with verified matching assets; required = false makes it optional.
+    -- Update the coverage inventory and run inspect/check before opening the PR.
+
     xpm = {
         -- the default source: "xlings-res" for official resources, or a template
         -- with ${name} ${version} ${os} ${arch} ${arch_alias} ${ext}

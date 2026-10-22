@@ -44,6 +44,10 @@ autoupdate = {
 只有 GLOBAL 的包保留 GLOBAL；存在合适 CN 镜像的包同时要求 GLOBAL 和 CN。
 没有任一必需目标的配置无效。
 
+新建包通过建包文档、`docs/specs/xpackage-template.lua` 和 xpkg-creater skill 的固定模板接入。
+建议上游 GitHub 仓库至少有 50 stars；该建议不构成工具/CI 硬门槛，不影响已有包继续更新。
+star 数不能替代来源、完整资源、hash 和原生安装验证。
+
 ## 2. 候选版本是必需目标的真实交集
 
 按版本降序检查，选择严格高于所有已有版本、所有必需目标完整可用的第一个候选。

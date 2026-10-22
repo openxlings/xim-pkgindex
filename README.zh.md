@@ -34,6 +34,9 @@ xlings update
 2. 添加 `tests/<首字母>/test_<name>.py`。
 3. 发起 PR —— 完整路径见[添加一个包](docs/zh/10-adding-a-package.md)。
 
+新包可使用固定声明模板接入[自动更新](docs/zh/13-ci-mirror-and-update.md)。
+建议上游 GitHub 仓库至少有 50 stars，这是建议而非强制门槛。
+
 格式见 [XPackage V2](docs/specs/xpackage-v2.md)；全部文档在 [docs/zh/](docs/zh/README.md)。
 
 ### 用 AI agent 贡献
