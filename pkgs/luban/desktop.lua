@@ -24,13 +24,14 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "2026.10.22.1" },
+            ["latest"] = { ref = "2026.10.22.2" },
             ["2026.10.18.1"] = { min_client = "2026.10.18.1" },
             ["2026.10.19.1"] = { min_client = "2026.10.18.1" },
             ["2026.10.20.1"] = { min_client = "2026.10.20.1" },
             ["2026.10.21.1"] = { min_client = "2026.10.20.1" },
             ["2026.10.21.3"] = { min_client = "2026.10.20.1" },
             ["2026.10.22.1"] = { min_client = "2026.10.20.1" },
+            ["2026.10.22.2"] = { min_client = "2026.10.20.1" },
         },
     },
 }
@@ -227,6 +228,27 @@ versions["2026.10.22.1"] = {
         abi = { kernel = "linux", libc = "gnu" },
         packages = packages_2026_10_22_1,
         luban = { settings = { mode = "machine", enter = "desktop", desktop = desktop_2026_10_22_1.session, login_shell = "/usr/bin/fish" } },
+        workspace = {},
+    },
+}
+
+-- 2026.10.22.2: the same desktop on luban:xdesk 2026.10.22.2 -- an xdesk that
+-- runs on the C++ runtime a Luban system binds (xlings design 2026-10-21 J34).
+local desktop_2026_10_22_2 = aarch64 and { package = "luban:labwc@0.20.0-r2", session = "labwc" }
+                                      or { package = "luban:xdesk@2026.10.22.2", session = "xdesk" }
+local packages_2026_10_22_2 = { desktop_2026_10_22_2.package }
+for i = 2, #packages_2026_10_22_1 do table.insert(packages_2026_10_22_2, packages_2026_10_22_1[i]) end
+
+versions["2026.10.22.2"] = {
+    files = luban.with(luban_desktop.environment(), luban.checks("desktop", CHECKS_2026_10_22)),
+    manifest = {
+        subos_kind = "rootfs",
+        min_client = "2026.10.20.1",
+        from = "luban:core@2026.10.20.1",
+        replaces = { "subos:luban-desktop", "subos:luban-desktop-xdesk" },
+        abi = { kernel = "linux", libc = "gnu" },
+        packages = packages_2026_10_22_2,
+        luban = { settings = { mode = "machine", enter = "desktop", desktop = desktop_2026_10_22_2.session, login_shell = "/usr/bin/fish" } },
         workspace = {},
     },
 }
