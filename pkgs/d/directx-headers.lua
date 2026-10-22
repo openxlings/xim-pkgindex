@@ -30,8 +30,12 @@ package = {
             tag = "v${version}",
             latest = "advance",
             url = {
-                linux = "https://github.com/xlings-res/directx-headers/releases/download/${version}/directx-headers-${version}-linux-x86_64.tar.gz",
+                linux = {
+                    GLOBAL = "https://github.com/xlings-res/directx-headers/releases/download/${version}/directx-headers-${version}-linux-x86_64.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/directx-headers/releases/download/${version}/directx-headers-${version}-linux-x86_64.tar.gz",
+                },
             },
+            verify = "sha256-sidecar",
         },
     },
 

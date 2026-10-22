@@ -22,10 +22,17 @@ package = {
             latest = "advance",
             url = {
                 linux = {
-                    aarch64 = "https://github.com/xlings-res/linux-headers/releases/download/${version}/linux-headers-${version}-linux-aarch64.tar.gz",
-                    x86_64 = "https://github.com/xlings-res/scode-res/releases/download/linux-headers/linux-headers-${version}.tar.gz",
+                    aarch64 = {
+                        GLOBAL = "https://github.com/xlings-res/linux-headers/releases/download/${version}/linux-headers-${version}-linux-aarch64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/linux-headers/releases/download/${version}/linux-headers-${version}-linux-aarch64.tar.gz",
+                    },
+                    x86_64 = {
+                        GLOBAL = "https://github.com/xlings-res/scode-res/releases/download/linux-headers/linux-headers-${version}.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/scode-res/releases/download/linux-headers/linux-headers-${version}.tar.gz",
+                    },
                 },
             },
+            verify = "sha256-sidecar",
         },
     },
 

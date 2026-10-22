@@ -200,8 +200,9 @@ jobs:
           PACKAGE: ${{ matrix.id }}
           RECIPE: ${{ matrix.path }}
           VERSION: ${{ matrix.version }}
+          ARCH: ${{ matrix.arch }}
         shell: bash
-        run: python .github/scripts/autoupdate-ci.py candidate --package "$PACKAGE" --path "$RECIPE" --version "$VERSION"
+        run: python .github/scripts/autoupdate-ci.py candidate --package "$PACKAGE" --path "$RECIPE" --version "$VERSION" --arch "$ARCH"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -62,8 +62,12 @@ package = {
             tag = "rocm-${version}",
             latest = "advance",
             url = {
-                linux = "https://github.com/xlings-res/hip-nvidia/releases/download/${version}/hip-nvidia-${version}-noarch.tar.gz",
+                linux = {
+                    GLOBAL = "https://github.com/xlings-res/hip-nvidia/releases/download/${version}/hip-nvidia-${version}-noarch.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/hip-nvidia/releases/download/${version}/hip-nvidia-${version}-noarch.tar.gz",
+                },
             },
+            verify = "sha256-sidecar",
         },
     },
 

@@ -18,8 +18,12 @@ package = {
             tag = "R_${version:underscore}",
             latest = "advance",
             url = {
-                linux = "https://github.com/xlings-res/expat/releases/download/${version}/expat-${version}-linux-x86_64.tar.gz",
+                linux = {
+                    GLOBAL = "https://github.com/xlings-res/expat/releases/download/${version}/expat-${version}-linux-x86_64.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/expat/releases/download/${version}/expat-${version}-linux-x86_64.tar.gz",
+                },
             },
+            verify = "sha256-sidecar",
         },
     },
 

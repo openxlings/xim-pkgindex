@@ -34,7 +34,6 @@ package = {
     extensions = {
         autoupdate = {
             upstream = "golang/go",
-            provider = "go",
             tag = "go${version}",
             latest = "advance",
             url = {
@@ -42,6 +41,7 @@ package = {
                 macosx = "https://go.dev/dl/go${version}.darwin-arm64.tar.gz",
                 windows = "https://go.dev/dl/go${version}.windows-amd64.zip",
             },
+            provider = "go",
         },
     },
 

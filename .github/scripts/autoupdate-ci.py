@@ -54,10 +54,38 @@ def audit():
             xim.validate_config(info)
             if row['status'] != 'enabled' or row.get('stars', 0) <= 50 or info['autoupdate'] != row['autoupdate']:
                 raise Invalid(f'declaration differs from approved coverage inventory: {path}')
+            for platform, arches in xim.matrix(info).items():
+                for arch in arches:
+                    hosts = shared_arches(info, info['platforms'][platform]['entries'][xim.latest_refs(info)[platform]]) if arch == 'shared' else {arch}
+                    for host in hosts:
+                        native_runner(platform, host)
             enabled.append(info['id'])
         elif row['status'] != 'manual' or not row.get('reason'):
             raise Invalid(f'unclassified package or missing update support: {path}')
     return {'total': len(files), 'enabled': enabled, 'manual': len(files) - len(enabled)}
+
+
+def native_runner(platform, arch):
+    runner = {'linux': {'x86_64': 'ubuntu-latest', 'aarch64': 'ubuntu-24.04-arm'},
+              'macosx': {'x86_64': 'macos-15-intel', 'aarch64': 'macos-latest'},
+              'windows': {'x86_64': 'windows-latest', 'aarch64': 'windows-11-arm'}}.get(platform, {}).get(arch)
+    if not runner:
+        raise Invalid(f'no validated xlings execution environment for {platform}/{arch}')
+    return runner
+
+
+def shared_arches(info, entry):
+    resource = entry.plain()
+    url = resource.get('url', '')
+    url = url.get('GLOBAL', '') if isinstance(url, dict) else url
+    if re.search(r'(?:aarch64|arm64)', url):
+        return {'aarch64'}
+    if re.search(r'(?:x86_64|amd64|x64)', url):
+        return {'x86_64'}
+    declared = info['package'].get('archs')
+    if not declared:
+        raise Invalid('shared resource needs explicit supported host architectures')
+    return {{'arm64': 'aarch64', 'amd64': 'x86_64', 'i386': 'x86'}.get(node.string(), node.string()) for node in declared.fields.values()}
 
 
 def candidates(base):
@@ -84,31 +112,24 @@ def candidates(base):
                     continue
                 arches = xim.entry_arches(entry)
                 if not arches:
-                    resource = entry.plain()
-                    url = resource.get('url', '')
-                    url = url.get('GLOBAL', '') if isinstance(url, dict) else url
-                    if re.search(r'aarch64|arm64', url):
-                        arches = {'aarch64'}
-                    else:
-                        arches = {'x86_64'}
+                    arches = shared_arches(info, entry)
                 for arch in sorted(arches):
-                    runner = {'linux': {'x86_64': 'ubuntu-latest', 'aarch64': 'ubuntu-24.04-arm',
-                                        'x86': 'ubuntu-latest'},
-                              'macosx': {'x86_64': 'macos-15-intel', 'aarch64': 'macos-latest'},
-                              'windows': {'x86_64': 'windows-latest', 'aarch64': 'windows-11-arm',
-                                          'x86': 'windows-latest'}}.get(platform, {}).get(arch)
-                    if not runner:
-                        raise Invalid(f'no validated runner for {info["id"]} {platform}/{arch}')
+                    runner = native_runner(platform, arch)
                     jobs.append({'id': info['id'], 'path': filename, 'version': version,
                                  'platform': platform, 'arch': arch, 'os': runner})
     return {'include': jobs}
 
 
-def run_candidate(identity, filename, version):
+def run_candidate(identity, filename, version, expected_arch=None):
     path = ROOT / filename
     info = xim.package_info(path, ROOT)
     if info['id'] != identity:
         raise Invalid('candidate identity differs from its descriptor')
+    if expected_arch:
+        import platform
+        actual = {'amd64': 'x86_64', 'arm64': 'aarch64'}.get(platform.machine().lower(), platform.machine().lower())
+        if actual != expected_arch:
+            raise Invalid(f'candidate runner architecture differs: {actual} != {expected_arch}')
     xlings = 'xlings'
     subprocess.run([xlings, 'update', '--yes', '--agent'], check=True)
     subprocess.run([xlings, 'config', '--add-xpkg', str(path)], check=True)
@@ -160,9 +181,10 @@ def main():
     parser.add_argument('--package')
     parser.add_argument('--path')
     parser.add_argument('--version')
+    parser.add_argument('--arch')
     args = parser.parse_args()
     if args.command == 'candidate':
-        run_candidate(args.package, args.path, args.version)
+        run_candidate(args.package, args.path, args.version, args.arch)
     else:
         write(args.output, audit() if args.command == 'audit' else candidates(args.base))
 

@@ -50,10 +50,20 @@ package = {
             tag = "${version}",
             latest = "advance",
             url = {
-                linux = "https://github.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz",
-                macosx = "https://github.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz",
-                windows = "https://github.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz",
+                linux = {
+                    GLOBAL = "https://github.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz",
+                },
+                macosx = {
+                    GLOBAL = "https://github.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz",
+                },
+                windows = {
+                    GLOBAL = "https://github.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz",
+                },
             },
+            verify = "sha256-sidecar",
         },
     },
 

@@ -29,8 +29,12 @@ package = {
             tag = "v${version:underscore}",
             latest = "advance",
             url = {
-                linux = "https://github.com/xlings-res/terminfo/releases/download/${version}/terminfo-${version}.tar.gz",
+                linux = {
+                    GLOBAL = "https://github.com/xlings-res/terminfo/releases/download/${version}/terminfo-${version}.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/terminfo/releases/download/${version}/terminfo-${version}.tar.gz",
+                },
             },
+            verify = "sha256-sidecar",
         },
     },
 
