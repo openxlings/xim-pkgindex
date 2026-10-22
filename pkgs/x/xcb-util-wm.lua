@@ -15,6 +15,33 @@ package = {
     categories = {"graphics", "lib"},
     keywords = {"xcb-util-wm", "xcb", "x11", "ewmh", "icccm"},
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/xcb-util-wm/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://github.com/xlings-res/xcb-util-wm/releases/download/${version}/xcb-util-wm-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://github.com/xlings-res/xcb-util-wm/releases/download/${version}/xcb-util-wm-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://gitcode.com/xlings-res/xcb-util-wm/releases/download/${version}/xcb-util-wm-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://gitcode.com/xlings-res/xcb-util-wm/releases/download/${version}/xcb-util-wm-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- xim:glibc is declared directly (every payload's own

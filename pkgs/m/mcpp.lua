@@ -47,6 +47,45 @@ package = {
     -- directly; the shell launcher is only useful from the bundle root.
 
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/mcpp/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://github.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://github.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-linux-x86_64.tar.gz",
+                        },
+                        macosx = {
+                            aarch64 = "https://github.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-macosx-arm64.tar.gz",
+                        },
+                        windows = {
+                            x86_64 = "https://github.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-windows-x86_64.zip",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://gitcode.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://gitcode.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-linux-x86_64.tar.gz",
+                        },
+                        macosx = {
+                            aarch64 = "https://gitcode.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-macosx-arm64.tar.gz",
+                        },
+                        windows = {
+                            x86_64 = "https://gitcode.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-windows-x86_64.zip",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         source = "xlings-res",
         linux = {

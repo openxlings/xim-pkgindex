@@ -16,6 +16,27 @@ package = {
     -- config() registers it only when the payload has it.
     programs = {"cairo-trace"},
     xvm_enable = true,
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/cairo/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/cairo/releases/download/${version}/cairo-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/cairo/releases/download/${version}/cairo-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- The X11 entries arrived with 1.18.4. 1.18.0 was an "xcb-free /

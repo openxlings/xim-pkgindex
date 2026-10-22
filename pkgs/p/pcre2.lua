@@ -14,6 +14,27 @@ package = {
     xvm_enable = true,
 
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/pcre2/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/pcre2/releases/download/${version}/pcre2-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/pcre2/releases/download/${version}/pcre2-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "10.42" },

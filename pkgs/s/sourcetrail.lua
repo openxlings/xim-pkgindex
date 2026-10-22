@@ -18,12 +18,15 @@ package = {
 
     extensions = {
         autoupdate = {
-            upstream = "CoatiSoftware/Sourcetrail",
-            tag = "${version}",
-            latest = "advance",
-            url = {
-                windows = "https://github.com/CoatiSoftware/Sourcetrail/releases/download/${version}/Sourcetrail_2021_4_19_Windows_64bit_Portable.zip",
-                linux = "https://github.com/CoatiSoftware/Sourcetrail/releases/download/${version}/Sourcetrail_2021_4_19_Linux_64bit.tar.gz",
+            source = "https://github.com/CoatiSoftware/Sourcetrail/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        windows = "https://github.com/CoatiSoftware/Sourcetrail/releases/download/${version}/Sourcetrail_2021_4_19_Windows_64bit_Portable.zip",
+                        linux = "https://github.com/CoatiSoftware/Sourcetrail/releases/download/${version}/Sourcetrail_2021_4_19_Linux_64bit.tar.gz",
+                    },
+                    required = true,
+                },
             },
         },
     },

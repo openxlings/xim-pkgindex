@@ -16,6 +16,33 @@ package = {
 
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/gtk3/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://github.com/xlings-res/gtk3/releases/download/${version}/gtk3-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://github.com/xlings-res/gtk3/releases/download/${version}/gtk3-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://gitcode.com/xlings-res/gtk3/releases/download/${version}/gtk3-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://gitcode.com/xlings-res/gtk3/releases/download/${version}/gtk3-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- DT_NEEDED outside the payload (readelf -d): glib, pango, cairo, harfbuzz, fribidi, fontconfig, gdk-pixbuf, atk, atk-bridge, cups, epoxy, wayland, xkbcommon and eight X11 client libraries.

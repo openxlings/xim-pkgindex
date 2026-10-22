@@ -14,6 +14,27 @@ package = {
     xvm_enable = true,
 
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/harfbuzz/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/harfbuzz/releases/download/${version}/harfbuzz-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/harfbuzz/releases/download/${version}/harfbuzz-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- The full DT_NEEDED closure of libharfbuzz.so.0, enumerated from

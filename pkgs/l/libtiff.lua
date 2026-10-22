@@ -16,6 +16,27 @@ package = {
                 "tiff2pdf", "tiff2ps", "tiff2rgba", "tiff2bw", "tiffcrop", "tiffdither",
                 "tiffmedian", "fax2ps", "fax2tiff", "pal2rgb", "ppm2tiff", "raw2tiff"},
     xvm_enable = true,
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/libtiff/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/libtiff/releases/download/${version}/libtiff-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/libtiff/releases/download/${version}/libtiff-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- Measured DT_NEEDED of libtiff.so.6: libjpeg.so.62, libz.so.1,

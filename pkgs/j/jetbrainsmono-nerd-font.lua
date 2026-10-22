@@ -22,6 +22,30 @@ package = {
     -- under every supported OS/arch entry.
 
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/ryanoasis/nerd-fonts/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/ryanoasis/nerd-fonts/releases/download/v${version}/JetBrainsMono.zip",
+                        macosx = "https://github.com/ryanoasis/nerd-fonts/releases/download/v${version}/JetBrainsMono.zip",
+                        windows = "https://github.com/ryanoasis/nerd-fonts/releases/download/v${version}/JetBrainsMono.zip",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/jetbrainsmono-nerd-font/releases/download/${version}/JetBrainsMono.zip",
+                        macosx = "https://gitcode.com/xlings-res/jetbrainsmono-nerd-font/releases/download/${version}/JetBrainsMono.zip",
+                        windows = "https://gitcode.com/xlings-res/jetbrainsmono-nerd-font/releases/download/${version}/JetBrainsMono.zip",
+                    },
+                    required = true,
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "3.4.0" },

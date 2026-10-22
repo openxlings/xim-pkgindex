@@ -1,7 +1,7 @@
 name: xpkgindex-update
 on:
   schedule:
-    - cron: '17 2 * * 0' # Every 7 days, Sunday 02:17 UTC (11:17 JST)
+    - cron: '17 2 * * *' # Daily cadence gate; actual updates every 3 UTC days from 2026-10-23
   workflow_dispatch:
     inputs:
       package:
@@ -21,10 +21,25 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 env:
   PYTHONUTF8: '1'
-  UPDATER_COMMIT: f786445af0119f63beedb3995303c6a588000176
+  UPDATER_COMMIT: 28ec15ac8d314f35e9f154bb9e519d8a10eac8f8
   XLINGS_VERSION: v2026.10.21.4
 jobs:
+  cadence:
+    runs-on: ubuntu-latest
+    outputs:
+      due: ${{ steps.cadence.outputs.due }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Enforce a three-day update interval across month boundaries
+        id: cadence
+        env:
+          EVENT: ${{ github.event_name }}
+        run: python3 tools/autoupdate_policy.py --event "$EVENT" --github-output "$GITHUB_OUTPUT"
   scan:
+    needs: cadence
+    if: needs.cadence.outputs.due == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 90
     outputs:
@@ -208,8 +223,8 @@ jobs:
           name: candidate-${{ strategy.job-index }}
           path: candidate-evidence.json
   result:
-    needs: [scan, propose, candidate]
-    if: always()
+    needs: [cadence, scan, propose, candidate]
+    if: always() && needs.cadence.outputs.due == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Reject incomplete verification

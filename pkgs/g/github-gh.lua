@@ -22,13 +22,16 @@ package = {
 
     extensions = {
         autoupdate = {
-            upstream = "cli/cli",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = "https://github.com/cli/cli/releases/download/v${version}/gh_${version}_linux_amd64.tar.gz",
-                macosx = "https://github.com/cli/cli/releases/download/v${version}/gh_${version}_macOS_amd64.zip",
-                windows = "https://github.com/cli/cli/releases/download/v${version}/gh_${version}_windows_amd64.zip",
+            source = "https://github.com/cli/cli/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/cli/cli/releases/download/v${version}/gh_${version}_linux_amd64.tar.gz",
+                        macosx = "https://github.com/cli/cli/releases/download/v${version}/gh_${version}_macOS_amd64.zip",
+                        windows = "https://github.com/cli/cli/releases/download/v${version}/gh_${version}_windows_amd64.zip",
+                    },
+                    required = true,
+                },
             },
         },
     },

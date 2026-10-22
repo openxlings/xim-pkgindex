@@ -23,6 +23,26 @@ package = {
     -- wsl.msi, pinned by Microsoft's published digest.
 
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/microsoft/WSL/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        windows = "https://github.com/microsoft/WSL/releases/download/${version}/wsl.${version}.0.x64.msi",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        windows = "https://gitcode.com/xlings-res/wsl/releases/download/${version}/wsl.${version}.0.x64.msi",
+                    },
+                    required = true,
+                },
+            },
+        },
+    },
+
     xpm = {
         windows = {
             ["latest"] = { ref = "3.0.1" },

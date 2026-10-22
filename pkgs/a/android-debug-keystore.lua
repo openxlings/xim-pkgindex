@@ -126,6 +126,31 @@ package = {
     -- entry resolves once published. `source` at the root, not per host,
     -- because HOST INDEPENDENT above means all three hosts want the same
     -- URL shape and the same single sha256.
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/android-debug-keystore/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/android-debug-keystore/releases/download/${version}/debug.keystore",
+                        macosx = "https://github.com/xlings-res/android-debug-keystore/releases/download/${version}/debug.keystore",
+                        windows = "https://github.com/xlings-res/android-debug-keystore/releases/download/${version}/debug.keystore",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/android-debug-keystore/releases/download/${version}/debug.keystore",
+                        macosx = "https://gitcode.com/xlings-res/android-debug-keystore/releases/download/${version}/debug.keystore",
+                        windows = "https://gitcode.com/xlings-res/android-debug-keystore/releases/download/${version}/debug.keystore",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         source = {
             GLOBAL = "https://github.com/xlings-res/android-debug-keystore/releases/download/${version}/debug.keystore",

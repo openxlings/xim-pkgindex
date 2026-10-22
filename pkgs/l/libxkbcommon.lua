@@ -15,6 +15,27 @@ package = {
     categories = {"graphics", "lib"},
     keywords = {"libxkbcommon", "graphics", "x11"},
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/libxkbcommon/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/libxkbcommon/releases/download/${version}/libxkbcommon-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/libxkbcommon/releases/download/${version}/libxkbcommon-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             deps = { "xim:glibc", "xim:libxcb" },

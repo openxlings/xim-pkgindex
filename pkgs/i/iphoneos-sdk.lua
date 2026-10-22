@@ -153,6 +153,22 @@ package = {
     categories = {"toolchain", "sdk", "ios", "apple"},
     keywords = {"ios", "iphoneos", "sdk", "apple", "sysroot", "cross"},
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xybp888/iOS-SDKs/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xybp888/iOS-SDKs/releases/download/iOS${version}-SDKs/iPhoneOS${version}.sdk.zip",
+                        macosx = "https://github.com/xybp888/iOS-SDKs/releases/download/iOS${version}-SDKs/iPhoneOS${version}.sdk.zip",
+                    },
+                    required = true,
+                },
+            },
+            tag = "iOS${version}-SDKs",
+        },
+    },
+
     xpm = {
         -- BOTH HOSTS, AND LINUX IS NOT A CURIOSITY. clang and lld cross-target
         -- `arm64-apple-ios` with `-isysroot`, measured above, so a Linux host

@@ -19,6 +19,27 @@ package = {
     -- 2026-10-21 §6.3, E12): share/luban/samples/music/aria.ogg, the
     -- recording's licence beside it (tools/res/build.sh sample-music). The
     -- same file on every architecture.
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/sample-music/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/sample-music/releases/download/${version}/sample-music-${version}.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/sample-music/releases/download/${version}/sample-music-${version}.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "2026.10.22" },

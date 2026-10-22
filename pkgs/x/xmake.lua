@@ -71,6 +71,30 @@ package = {
     -- musl-static bundle, the deps can be dropped entirely.
 
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xmake-io/xmake/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xmake-io/xmake/releases/download/v${version}/xmake-bundle-v${version}.linux.x86_64",
+                        macosx = "https://github.com/xmake-io/xmake/releases/download/v${version}/xmake-bundle-v${version}.macos.arm64",
+                        windows = "https://github.com/xmake-io/xmake/releases/download/v${version}/xmake-bundle-v${version}.win64.exe",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/xmake/releases/download/${version}/xmake-bundle-v${version}.linux.x86_64",
+                        macosx = "https://gitcode.com/xlings-res/xmake/releases/download/${version}/xmake-bundle-v${version}.macos.arm64",
+                        windows = "https://gitcode.com/xlings-res/xmake/releases/download/${version}/xmake-bundle-v${version}.win64.exe",
+                    },
+                    required = true,
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
             -- Both deps are read straight off the readelf measurement above,

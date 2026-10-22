@@ -38,6 +38,31 @@ package = {
 
 
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/xdesk/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://github.com/xlings-res/xdesk/releases/download/${version}/xdesk-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://gitcode.com/xlings-res/xdesk/releases/download/${version}/xdesk-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             deps = {
@@ -52,7 +77,19 @@ package = {
                 "xim:mesa@>=25",
                 "xim:libglvnd@>=1.7.0.1",
             },
-            ["latest"] = { ref = "2026.10.22.2" },
+            ["latest"] = { ref = "2026.10.22.4" },
+            ["2026.10.22.4"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "ee043ee2499c4d2bad240b758f6b0afdd7b807cb0fb7a2e525b8d96a04c83924",
+                },
+            },
+            ["2026.10.22.3"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "a8437add86877fec813309a3298e026db9997dbc26418096308cb255c45f8dff",
+                },
+            },
             ["2026.10.22.2"] = {
                 url = "XLINGS_RES",
                 sha256 = {

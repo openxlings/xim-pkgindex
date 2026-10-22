@@ -25,13 +25,16 @@ package = {
 
     extensions = {
         autoupdate = {
-            upstream = "sharkdp/bat",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = "https://github.com/sharkdp/bat/releases/download/v${version}/bat-v${version}-x86_64-unknown-linux-musl.tar.gz",
-                macosx = "https://github.com/sharkdp/bat/releases/download/v${version}/bat-v${version}-aarch64-apple-darwin.tar.gz",
-                windows = "https://github.com/sharkdp/bat/releases/download/v${version}/bat-v${version}-x86_64-pc-windows-msvc.zip",
+            source = "https://github.com/sharkdp/bat/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/sharkdp/bat/releases/download/v${version}/bat-v${version}-x86_64-unknown-linux-musl.tar.gz",
+                        macosx = "https://github.com/sharkdp/bat/releases/download/v${version}/bat-v${version}-aarch64-apple-darwin.tar.gz",
+                        windows = "https://github.com/sharkdp/bat/releases/download/v${version}/bat-v${version}-x86_64-pc-windows-msvc.zip",
+                    },
+                    required = true,
+                },
             },
         },
     },

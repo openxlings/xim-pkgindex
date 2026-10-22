@@ -15,6 +15,27 @@ package = {
     categories = {"graphics", "lib"},
     keywords = {"libxext", "graphics", "x11"},
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/libXext/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/libXext/releases/download/${version}/libXext-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/libXext/releases/download/${version}/libXext-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             deps = { "xim:libX11@>=1.8", "xim:glibc" },

@@ -21,13 +21,16 @@ package = {
 
     extensions = {
         autoupdate = {
-            upstream = "junegunn/fzf",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = "https://github.com/junegunn/fzf/releases/download/v${version}/fzf-${version}-linux_amd64.tar.gz",
-                macosx = "https://github.com/junegunn/fzf/releases/download/v${version}/fzf-${version}-darwin_arm64.tar.gz",
-                windows = "https://github.com/junegunn/fzf/releases/download/v${version}/fzf-${version}-windows_amd64.zip",
+            source = "https://github.com/junegunn/fzf/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/junegunn/fzf/releases/download/v${version}/fzf-${version}-linux_amd64.tar.gz",
+                        macosx = "https://github.com/junegunn/fzf/releases/download/v${version}/fzf-${version}-darwin_arm64.tar.gz",
+                        windows = "https://github.com/junegunn/fzf/releases/download/v${version}/fzf-${version}-windows_amd64.zip",
+                    },
+                    required = true,
+                },
             },
         },
     },

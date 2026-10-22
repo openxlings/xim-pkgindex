@@ -15,6 +15,27 @@ package = {
     categories = {"graphics", "lib"},
     keywords = {"libx11", "graphics", "x11"},
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/libX11/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/libX11/releases/download/${version}/libX11-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/libX11/releases/download/${version}/libX11-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             deps = { "xim:libxcb@>=1.17", "xim:xorgproto@>=2024", "xim:glibc" },

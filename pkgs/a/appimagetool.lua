@@ -184,6 +184,32 @@ package = {
     -- track for this whole package.
 
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/AppImage/appimagetool/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://github.com/AppImage/appimagetool/releases/download/${version}/appimagetool-x86_64.AppImage",
+                            aarch64 = "https://github.com/AppImage/appimagetool/releases/download/${version}/appimagetool-aarch64.AppImage",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://gitcode.com/xlings-res/appimagetool/releases/download/${version}/appimagetool-x86_64.AppImage",
+                            aarch64 = "https://gitcode.com/xlings-res/appimagetool/releases/download/${version}/appimagetool-aarch64.AppImage",
+                        },
+                    },
+                    required = true,
+                },
+            },
+        },
+    },
+
     xpm = {
         -- TWO REGIONS, ONE CHECKSUM, AND THAT IS THE WHOLE CONTRACT A MIRROR
         -- CARRIES. The version entry pins one sha256 per architecture and

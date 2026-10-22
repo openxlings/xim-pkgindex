@@ -20,6 +20,36 @@ package = {
 
 
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/sxyazi/yazi/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://github.com/sxyazi/yazi/releases/download/v${version}/yazi-aarch64-unknown-linux-musl.zip",
+                            x86_64 = "https://github.com/sxyazi/yazi/releases/download/v${version}/yazi-x86_64-unknown-linux-musl.zip",
+                        },
+                        macosx = "https://github.com/sxyazi/yazi/releases/download/v${version}/yazi-aarch64-apple-darwin.zip",
+                        windows = "https://github.com/sxyazi/yazi/releases/download/v${version}/yazi-x86_64-pc-windows-msvc.zip",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://gitcode.com/xlings-res/yazi/releases/download/${version}/yazi-aarch64-unknown-linux-musl.zip",
+                            x86_64 = "https://gitcode.com/xlings-res/yazi/releases/download/${version}/yazi-x86_64-unknown-linux-musl.zip",
+                        },
+                        macosx = "https://gitcode.com/xlings-res/yazi/releases/download/${version}/yazi-aarch64-apple-darwin.zip",
+                        windows = "https://gitcode.com/xlings-res/yazi/releases/download/${version}/yazi-x86_64-pc-windows-msvc.zip",
+                    },
+                    required = true,
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
 

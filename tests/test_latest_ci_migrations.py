@@ -18,8 +18,9 @@ def test_complete_inventory_and_explicit_eligibility_decisions():
     for row in rows:
         assert row['status'] in ('enabled', 'manual'), row
         if row['status'] == 'enabled':
-            assert row['stars'] > 50
-            assert set(row['autoupdate']) >= {'upstream', 'tag', 'latest', 'url'}
+            assert set(row['autoupdate']) >= {'source', 'resources'}
+            assert row['autoupdate']['source'].startswith('https://github.com/')
+            assert all(target.get('required', True) for target in row['autoupdate']['resources'].values() if isinstance(target, dict))
             assert 'autoupdate = {' in (ROOT / row['path']).read_text()
         else:
             assert row['reason'], row
@@ -46,9 +47,11 @@ def test_legacy_executable_entry_points_are_removed():
 
 
 @pytest.mark.static
-def test_cn_package_keeps_mirror_publication_but_not_autoupdate():
+def test_cn_package_uses_dual_required_targets_and_keeps_publication():
     row = next(r for r in json.loads(AUDIT.read_text())['packages'] if r.get('id') == 'xim:pnpm')
-    assert row['status'] == 'manual' and 'CN' in row['reason']
+    assert row['status'] == 'enabled'
+    assert set(row['autoupdate']['resources']) == {'GLOBAL', 'CN'}
+    assert all(t['required'] for t in row['autoupdate']['resources'].values())
     text = (ROOT / row['path']).read_text()
     assert 'mirror = true' in text
-    assert 'autoupdate = {' not in text
+    assert 'autoupdate = {' in text

@@ -21,13 +21,16 @@ package = {
 
     extensions = {
         autoupdate = {
-            upstream = "chenhg5/cc-connect",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = "https://github.com/chenhg5/cc-connect/releases/download/v${version}/cc-connect-v${version}-linux-amd64.tar.gz",
-                macosx = "https://github.com/chenhg5/cc-connect/releases/download/v${version}/cc-connect-v${version}-darwin-arm64.tar.gz",
-                windows = "https://github.com/chenhg5/cc-connect/releases/download/v${version}/cc-connect-v${version}-windows-amd64.zip",
+            source = "https://github.com/chenhg5/cc-connect/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/chenhg5/cc-connect/releases/download/v${version}/cc-connect-v${version}-linux-amd64.tar.gz",
+                        macosx = "https://github.com/chenhg5/cc-connect/releases/download/v${version}/cc-connect-v${version}-darwin-arm64.tar.gz",
+                        windows = "https://github.com/chenhg5/cc-connect/releases/download/v${version}/cc-connect-v${version}-windows-amd64.zip",
+                    },
+                    required = true,
+                },
             },
         },
     },

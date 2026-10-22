@@ -23,6 +23,33 @@ package = {
     programs = {"ps", "top", "free", "pgrep", "pkill", "pidof", "uptime", "vmstat", "watch"},
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/procps-ng/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://github.com/xlings-res/procps-ng/releases/download/${version}/procps-ng-${version}-linux-x86_64.tar.gz",
+                            aarch64 = "https://github.com/xlings-res/procps-ng/releases/download/${version}/procps-ng-${version}-linux-aarch64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://gitcode.com/xlings-res/procps-ng/releases/download/${version}/procps-ng-${version}-linux-x86_64.tar.gz",
+                            aarch64 = "https://gitcode.com/xlings-res/procps-ng/releases/download/${version}/procps-ng-${version}-linux-aarch64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "4.0.5" },

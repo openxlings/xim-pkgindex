@@ -114,6 +114,47 @@ package = {
     -- declare glibc plus those six and the switch is a one-line change.
     -- Until then this stays on the host loader deliberately, because a
     -- self-contained JVM that cannot open a window is a regression.
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/adoptium/temurin25-binaries/releases",
+            tag = "jdk-${version}",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-${version}/OpenJDK25U-jdk_x64_linux_hotspot_${version:base}_${version:build}.tar.gz",
+                            aarch64 = "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-${version}/OpenJDK25U-jdk_aarch64_linux_hotspot_${version:base}_${version:build}.tar.gz",
+                        },
+                        macosx = {
+                            x86_64 = "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-${version}/OpenJDK25U-jdk_x64_mac_hotspot_${version:base}_${version:build}.tar.gz",
+                            aarch64 = "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-${version}/OpenJDK25U-jdk_aarch64_mac_hotspot_${version:base}_${version:build}.tar.gz",
+                        },
+                        windows = {
+                            x86_64 = "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-${version}/OpenJDK25U-jdk_x64_windows_hotspot_${version:base}_${version:build}.zip",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://mirrors.ustc.edu.cn/github-release/adoptium/temurin25-binaries/jdk-${version}/OpenJDK25U-jdk_x64_linux_hotspot_${version:base}_${version:build}.tar.gz",
+                            aarch64 = "https://mirrors.ustc.edu.cn/github-release/adoptium/temurin25-binaries/jdk-${version}/OpenJDK25U-jdk_aarch64_linux_hotspot_${version:base}_${version:build}.tar.gz",
+                        },
+                        macosx = {
+                            x86_64 = "https://mirrors.ustc.edu.cn/github-release/adoptium/temurin25-binaries/jdk-${version}/OpenJDK25U-jdk_x64_mac_hotspot_${version:base}_${version:build}.tar.gz",
+                            aarch64 = "https://mirrors.ustc.edu.cn/github-release/adoptium/temurin25-binaries/jdk-${version}/OpenJDK25U-jdk_aarch64_mac_hotspot_${version:base}_${version:build}.tar.gz",
+                        },
+                        windows = {
+                            x86_64 = "https://mirrors.ustc.edu.cn/github-release/adoptium/temurin25-binaries/jdk-${version}/OpenJDK25U-jdk_x64_windows_hotspot_${version:base}_${version:build}.zip",
+                        },
+                    },
+                    required = true,
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "25.0.4+7" },

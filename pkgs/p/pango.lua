@@ -12,6 +12,27 @@ package = {
     categories = {"graphics", "text", "library"},
     keywords = {"pango", "text", "layout", "lib"},
     xvm_enable = true,
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/pango/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/pango/releases/download/${version}/pango-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/pango/releases/download/${version}/pango-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- fromsource 漏了 glib/fribidi, 这里补全(pango 运行时确需)

@@ -21,13 +21,24 @@ package = {
 
     extensions = {
         autoupdate = {
-            upstream = "astral-sh/uv",
-            tag = "${version}",
-            latest = "advance",
-            url = {
-                linux = "https://github.com/astral-sh/uv/releases/download/${version}/uv-x86_64-unknown-linux-musl.tar.gz",
-                macosx = "https://github.com/astral-sh/uv/releases/download/${version}/uv-aarch64-apple-darwin.tar.gz",
-                windows = "https://github.com/astral-sh/uv/releases/download/${version}/uv-x86_64-pc-windows-msvc.zip",
+            source = "https://github.com/astral-sh/uv/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/astral-sh/uv/releases/download/${version}/uv-x86_64-unknown-linux-musl.tar.gz",
+                        macosx = "https://github.com/astral-sh/uv/releases/download/${version}/uv-aarch64-apple-darwin.tar.gz",
+                        windows = "https://github.com/astral-sh/uv/releases/download/${version}/uv-x86_64-pc-windows-msvc.zip",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://mirrors.ustc.edu.cn/github-release/astral-sh/uv/${version}/uv-x86_64-unknown-linux-musl.tar.gz",
+                        macosx = "https://mirrors.ustc.edu.cn/github-release/astral-sh/uv/${version}/uv-aarch64-apple-darwin.tar.gz",
+                        windows = "https://mirrors.ustc.edu.cn/github-release/astral-sh/uv/${version}/uv-x86_64-pc-windows-msvc.zip",
+                    },
+                    required = true,
+                },
             },
         },
     },

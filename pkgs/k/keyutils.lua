@@ -17,6 +17,33 @@ package = {
 
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/keyutils/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://github.com/xlings-res/keyutils/releases/download/${version}/keyutils-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://github.com/xlings-res/keyutils/releases/download/${version}/keyutils-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://gitcode.com/xlings-res/keyutils/releases/download/${version}/keyutils-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://gitcode.com/xlings-res/keyutils/releases/download/${version}/keyutils-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- The libraries need libc.so.6;

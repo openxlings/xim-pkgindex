@@ -55,6 +55,30 @@ package = {
 
 
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/coursier/coursier/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/coursier/coursier/releases/download/v${version}/coursier.jar",
+                        macosx = "https://github.com/coursier/coursier/releases/download/v${version}/coursier.jar",
+                        windows = "https://github.com/coursier/coursier/releases/download/v${version}/coursier.jar",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/coursier/releases/download/${version}/coursier.jar",
+                        macosx = "https://gitcode.com/xlings-res/coursier/releases/download/${version}/coursier.jar",
+                        windows = "https://gitcode.com/xlings-res/coursier/releases/download/${version}/coursier.jar",
+                    },
+                    required = true,
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
             deps = { runtime = { "xim:jdk-temurin@25.0.4+7" } },

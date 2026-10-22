@@ -15,6 +15,33 @@ package = {
     categories = {"graphics", "lib"},
     keywords = {"xcb-util-keysyms", "xcb", "x11", "keysyms"},
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/xcb-util-keysyms/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://github.com/xlings-res/xcb-util-keysyms/releases/download/${version}/xcb-util-keysyms-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://github.com/xlings-res/xcb-util-keysyms/releases/download/${version}/xcb-util-keysyms-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://gitcode.com/xlings-res/xcb-util-keysyms/releases/download/${version}/xcb-util-keysyms-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://gitcode.com/xlings-res/xcb-util-keysyms/releases/download/${version}/xcb-util-keysyms-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- xim:glibc is declared directly (every payload's own

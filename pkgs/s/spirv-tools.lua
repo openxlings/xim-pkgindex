@@ -27,6 +27,27 @@ package = {
 
 
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/spirv-tools/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/spirv-tools/releases/download/${version}/spirv-tools-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/spirv-tools/releases/download/${version}/spirv-tools-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- gcc-runtime, not gcc.

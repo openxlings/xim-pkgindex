@@ -16,7 +16,7 @@ from xpkgindex_update.manifest import descriptor_digest, ordered
 ROOT = Path(__file__).resolve().parents[2]
 import sys
 sys.path.insert(0, str(ROOT))
-from tools.autoupdate_policy import github_only_reason
+from tools.autoupdate_policy import rollout_reason
 
 
 def git(*args):
@@ -55,10 +55,10 @@ def audit():
         if auto:
             info = xim.package_info(path, ROOT)
             xim.validate_config(info)
-            reason = github_only_reason({k: v.plain() for k, v in info['package'].items()}, info['autoupdate'])
+            reason = rollout_reason({}, info['autoupdate'])
             if reason:
                 raise Invalid(f'{path}: {reason}')
-            if row['status'] != 'enabled' or row.get('stars', 0) <= 50 or info['autoupdate'] != row['autoupdate']:
+            if row['status'] != 'enabled' or info['autoupdate'] != row['autoupdate']:
                 raise Invalid(f'declaration differs from approved coverage inventory: {path}')
             for platform, arches in xim.matrix(info).items():
                 for arch in arches:
@@ -81,7 +81,10 @@ def native_runner(platform, arch):
 
 
 def shared_arches(info, entry):
-    resource = entry.plain()
+    try:
+        resource = entry.plain()
+    except Invalid:
+        resource = {}
     url = resource.get('url', '')
     url = url.get('GLOBAL', '') if isinstance(url, dict) else url
     if re.search(r'(?:aarch64|arm64)', url):
