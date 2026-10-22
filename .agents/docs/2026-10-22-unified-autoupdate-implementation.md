@@ -92,6 +92,14 @@ Later runs at the final PR head revalidate the final helper and resource gate.
   home test overlays were backed up and only matching test-owned registrations
   were removed; existing installed payloads were retained.
 
+## Existing PR and branch handoff
+
+`legacy-update-pr-audit.json` records all 13 `auto/bump-*` branches. None of the
+12 legacy branches has an open automatic PR; they are retained unchanged, with
+no reopening or deletion. The thirteenth is validation draft #1028. Human xlings
+PR #1023 remains open and blocks duplicate default-branch proposals for that
+package. The new namespace-qualified branches do not overwrite legacy names.
+
 ## Merge and rollout
 
 Review and merge the upstream tool first; the migration pins its tested immutable
