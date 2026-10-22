@@ -47,7 +47,8 @@ package = {
             ["latest"] = { ref = "1.6.8-r2" },
             -- r2: its modules name no search path (a root refuses one outside its closure).
             ["1.6.8-r2"] = {
-                -- 1: its checks written where a system's self-check reads them (xlings design 2026-10-21 §6.1).
+                -- 1: its checks written where a system's self-check reads them (xlings design 2026-10-21 §6.1);
+                -- its loader searches only its tree (xlings design 2026-10-21 J12).
                 revision = 1,
                 url = "XLINGS_RES",
                 sha256 = {

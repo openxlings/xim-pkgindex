@@ -15,6 +15,12 @@
 --                                        written to share/luban/checks.d/<name>.json
 --                                        (xlings design 2026-10-21 §6.1)
 --   luban_component.uninstall(programs)
+--
+-- A tree's own musl loader searches only the tree: an empty
+-- libexec/<name>/etc/ld-musl-<arch>.path beside it (musl reads it there) takes
+-- away the default /lib:/usr/local/lib:/usr/lib -- a Luban system's /usr/lib
+-- is glibc's, and a library dlopen()ed from there (libvulkan) crashes the
+-- program (xlings design 2026-10-21 J12).
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
@@ -67,7 +73,23 @@ function M.write_checks(checks)
     return rel
 end
 
+-- Every loader the tree holds, its path file beside it (empty: nothing but
+-- the tree's own libraries, which its programs name).
+function M.close_loaders()
+    for _, tree in ipairs(os.dirs(path.join(pkginfo.install_dir(), "libexec", "*")) or {}) do
+        for _, ldso in ipairs(fs.files(path.join(tree, "lib")) or {}) do
+            local arch = path.filename(ldso):match("^ld%-musl%-(.+)%.so%.1$")
+            local file = arch and path.join(tree, "etc", "ld-musl-" .. arch .. ".path")
+            if file and not os.isfile(file) then
+                os.mkdir(path.directory(file))
+                io.writefile(file, "")
+            end
+        end
+    end
+end
+
 function M.config(programs, shares, checks)
+    M.close_loaders()
     local binding = pkginfo.name() .. "@" .. pkginfo.version()
     local bindir = path.join(pkginfo.install_dir(), "bin")
     -- The package itself (a program of the same name is it), then what is bound to it.

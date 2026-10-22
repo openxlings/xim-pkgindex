@@ -35,7 +35,8 @@ package = {
             deps = { "xim:xkeyboard-config" },
             ["latest"] = { ref = "24.1.14-r1" },
             ["24.1.14-r1"] = {
-                -- 1: its checks written where a system's self-check reads them (xlings design 2026-10-21 §6.1).
+                -- 1: its checks written where a system's self-check reads them (xlings design 2026-10-21 §6.1);
+                -- its loader searches only its tree (xlings design 2026-10-21 J12).
                 revision = 1,
                 url = "XLINGS_RES",
                 sha256 = {

@@ -32,6 +32,8 @@ package = {
         linux = {
             ["latest"] = { ref = "6.11.1-r2" },
             ["6.11.1-r2"] = {
+                -- 1: its loader searches only its tree (xlings design 2026-10-21 J12).
+                revision = 1,
                 url = "XLINGS_RES",
                 sha256 = {
                     x86_64 = "7e8b9924547fd23f02f8a91a9cf2d622c3c4d1d8a3700c1ab4b086c71bcf5e78",

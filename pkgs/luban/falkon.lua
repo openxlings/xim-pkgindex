@@ -48,7 +48,8 @@ package = {
             -- node, and what it says when there is no desktop (xlings
             -- design 2026-10-20 WuXian §14, §7.6). The same Falkon.
             ["26.04.2-r1"] = {
-                -- 1: its checks written where a system's self-check reads them (xlings design 2026-10-21 §6.1).
+                -- 1: its checks written where a system's self-check reads them (xlings design 2026-10-21 §6.1);
+                -- its loader searches only its tree (xlings design 2026-10-21 J12).
                 revision = 1,
                 url = "XLINGS_RES",
                 sha256 = {

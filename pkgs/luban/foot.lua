@@ -30,6 +30,8 @@ package = {
             deps = { "xim:luban-fonts" },
             ["latest"] = { ref = "1.27.0-r1" },
             ["1.27.0-r1"] = {
+                -- 1: its loader searches only its tree (xlings design 2026-10-21 J12).
+                revision = 1,
                 url = "XLINGS_RES",
                 sha256 = {
                     x86_64 = "b3f887a75117e076448ae4d99b18768c42b86b9754b65c34486968ca5c7bc13d",
