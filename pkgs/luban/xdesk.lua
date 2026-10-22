@@ -40,13 +40,12 @@ package = {
             -- xim:graphics: xdesk 2026.10.21.1 composes with GLES when the
             -- system's GPU can (xlings design 2026-10-20 WuXian §7.4).
             -- luban:audacious: the desktops' player, with a piece to play (xlings design 2026-10-21 §6.3).
-            -- xdesk 2026.10.22.1 needs GCC 16's C++ runtime (GLIBCXX_3.4.35),
-            -- newer than the one a Luban system binds (xim:gcc-runtime 15.1.0):
-            -- it could not start. Its desktops stay on 2026.10.21.3 until a
-            -- build that runs on that runtime (xlings 2026.10.22.2).
-            deps = { "xim:xdesk@2026.10.21.3", "luban:foot", "luban:cursors", "luban:audio", "luban:falkon", "luban:audacious",
+            -- xdesk 2026.10.22.2: 2026.10.22.1's desktop on the C++ runtime a
+            -- Luban system binds (2026.10.22.1 needed GCC 16's, GLIBCXX_3.4.35,
+            -- and could not start; xlings design 2026-10-21 J34).
+            deps = { "xim:xdesk@2026.10.22.2", "luban:foot", "luban:cursors", "luban:audio", "luban:falkon", "luban:audacious",
                      "xim:graphics@>=0.1" },
-            ["latest"] = { ref = "2026.10.22.1" },
+            ["latest"] = { ref = "2026.10.22.2" },
             -- 1: luban:cursors became a dependency. 2: xdesk 2026.10.19.2.
             -- 3 (and 2026.10.19.2's 1): luban:audio and luban:falkon.
             -- 4 (2026.10.19.2's 2): xdesk 2026.10.20.1 -- its switchers,
@@ -61,13 +60,16 @@ package = {
             -- 2026.10.21.3's 1): xdesk 2026.10.22.1 -- bookmarks, collapse,
             -- the tour, its words in Chinese, the bus -- and luban:audacious
             -- (xlings design 2026-10-21).
-            -- 8 (and each one's next): back to xdesk 2026.10.21.3 (above).
-            ["2026.10.18.1"] = { revision = 8 },
-            ["2026.10.19.2"] = { revision = 6 },
-            ["2026.10.20.1"] = { revision = 4 },
-            ["2026.10.21.1"] = { revision = 3 },
-            ["2026.10.21.3"] = { revision = 2 },
-            ["2026.10.22.1"] = { revision = 1 },
+            -- 8 (and each one's next): back to xdesk 2026.10.21.3. 9 (and each
+            -- one's next): xdesk 2026.10.22.2, which runs on the bound runtime.
+            -- A system that has 2026.10.22.1 active moves with the new version.
+            ["2026.10.18.1"] = { revision = 9 },
+            ["2026.10.19.2"] = { revision = 7 },
+            ["2026.10.20.1"] = { revision = 5 },
+            ["2026.10.21.1"] = { revision = 4 },
+            ["2026.10.21.3"] = { revision = 3 },
+            ["2026.10.22.1"] = { revision = 2 },
+            ["2026.10.22.2"] = {},
         },
     },
 }
