@@ -48,9 +48,9 @@ package = {
                 },
                 CN = {
                     url = {
-                        linux = "https://mirrors.hust.edu.cn/golang/go${version}.linux-amd64.tar.gz",
-                        macosx = "https://mirrors.hust.edu.cn/golang/go${version}.darwin-arm64.tar.gz",
-                        windows = "https://mirrors.hust.edu.cn/golang/go${version}.windows-amd64.zip",
+                        linux = "https://mirrors.nju.edu.cn/golang/go${version}.linux-amd64.tar.gz",
+                        macosx = "https://mirrors.nju.edu.cn/golang/go${version}.darwin-arm64.tar.gz",
+                        windows = "https://mirrors.nju.edu.cn/golang/go${version}.windows-amd64.zip",
                     },
                     required = true,
                 },

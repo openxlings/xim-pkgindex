@@ -83,14 +83,6 @@ package = {
                     },
                     required = true,
                 },
-                CN = {
-                    url = {
-                        linux = "https://gitcode.com/xlings-res/xmake/releases/download/${version}/xmake-bundle-v${version}.linux.x86_64",
-                        macosx = "https://gitcode.com/xlings-res/xmake/releases/download/${version}/xmake-bundle-v${version}.macos.arm64",
-                        windows = "https://gitcode.com/xlings-res/xmake/releases/download/${version}/xmake-bundle-v${version}.win64.exe",
-                    },
-                    required = true,
-                },
             },
         },
     },

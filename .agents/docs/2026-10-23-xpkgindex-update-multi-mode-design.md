@@ -52,7 +52,7 @@ autoupdate = {
 - DNS、超时、403、429、服务器异常等不等于版本不存在；必需目标遇到这些错误停止该包选择。
 - 必需资源必须完整下载并计算 SHA256；不同区域同一平台/架构必须字节一致。
 - 可选目标缺资源、网络失败或与必需目标字节不同，则整体省略该目标并记录原因。
-- 预算耗尽返回 budget-deferred，不能凭部分扫描宣布“已是最新”。候选回溯受现有请求/下载预算约束。
+- 预算耗尽返回 budget-deferred，不能凭部分扫描宣布“已是最新”。候选回溯受统一请求/下载预算约束，资源 404、重试与 sidecar 请求都计入预算。
 - 全部必需目标未就绪则等待，不回退 latest、不生成半个平台的版本。
 
 “完整”按该目标声明的每个平台/架构检查。CN 某一格失败不能留下部分 CN 地址。
@@ -87,7 +87,7 @@ Node 当前 latest 是 LTS 指针，显式配置 keep，只新增后续版本，
 [镜像逐包审计](2026-10-23-autoupdate-mirror-audit.json)。镜像站目录不等于完整二进制覆盖。
 
 - USTC 的 uv、Temurin 25 已核实项目目录。新版本采用 CN 模板，历史 GitCode/单 GLOBAL 条目保持原样。
-- Node 与 rustup 采用官方 GLOBAL、USTC CN；Go 使用官方 GLOBAL、华科 CN；Gradle 使用官方 GLOBAL、腾讯 CN。每个包的两边都必须完整且一致。
+- Node 与 rustup 采用官方 GLOBAL、USTC CN；Go 使用官方 GLOBAL、南京大学 CN；Gradle 使用官方 GLOBAL、腾讯 CN。每个包的两边都必须完整且一致。
 - 清华 LLVM 发布镜像主要提供源码，不能代替本索引 llvm-tools/llvm-dev 的重打包二进制。
 - xlings-res 自建/分包资源继续使用已有 GitHub/GitCode 双腿；以资源仓库的发布版本作为 source，
   不把上游原版 archive 冒充自建包。资源服务 macOS 的 arm64 文件名与 aarch64 键分别处理。
