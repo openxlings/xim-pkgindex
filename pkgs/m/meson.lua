@@ -37,8 +37,12 @@ package = {
             tag = "${version}",
             latest = "advance",
             url = {
-                linux = "https://github.com/xlings-res/meson/releases/download/${version}/meson-${version}-linux-x86_64.tar.gz",
+                linux = {
+                    GLOBAL = "https://github.com/xlings-res/meson/releases/download/${version}/meson-${version}-linux-x86_64.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/meson/releases/download/${version}/meson-${version}-linux-x86_64.tar.gz",
+                },
             },
+            verify = "sha256-sidecar",
         },
     },
 

@@ -60,10 +60,20 @@ package = {
             tag = "${version}",
             latest = "advance",
             url = {
-                linux = "https://github.com/xlings-res/picolibc-x86/releases/download/${version}/picolibc-x86-${version}.tar.gz",
-                macosx = "https://github.com/xlings-res/picolibc-x86/releases/download/${version}/picolibc-x86-${version}.tar.gz",
-                windows = "https://github.com/xlings-res/picolibc-x86/releases/download/${version}/picolibc-x86-${version}.tar.gz",
+                linux = {
+                    GLOBAL = "https://github.com/xlings-res/picolibc-x86/releases/download/${version}/picolibc-x86-${version}.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/picolibc-x86/releases/download/${version}/picolibc-x86-${version}.tar.gz",
+                },
+                macosx = {
+                    GLOBAL = "https://github.com/xlings-res/picolibc-x86/releases/download/${version}/picolibc-x86-${version}.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/picolibc-x86/releases/download/${version}/picolibc-x86-${version}.tar.gz",
+                },
+                windows = {
+                    GLOBAL = "https://github.com/xlings-res/picolibc-x86/releases/download/${version}/picolibc-x86-${version}.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/picolibc-x86/releases/download/${version}/picolibc-x86-${version}.tar.gz",
+                },
             },
+            verify = "sha256-sidecar",
         },
     },
 

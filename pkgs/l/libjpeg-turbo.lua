@@ -20,8 +20,12 @@ package = {
             tag = "${version}",
             latest = "advance",
             url = {
-                linux = "https://github.com/xlings-res/libjpeg-turbo/releases/download/${version}/libjpeg-turbo-${version}-linux-x86_64.tar.gz",
+                linux = {
+                    GLOBAL = "https://github.com/xlings-res/libjpeg-turbo/releases/download/${version}/libjpeg-turbo-${version}-linux-x86_64.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/libjpeg-turbo/releases/download/${version}/libjpeg-turbo-${version}-linux-x86_64.tar.gz",
+                },
             },
+            verify = "sha256-sidecar",
         },
     },
 

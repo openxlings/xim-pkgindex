@@ -1,0 +1,15 @@
+{
+  "id": "xim:uv",
+  "version": "0.13.5",
+  "descriptor": "pkgs/u/uv.lua",
+  "descriptor_sha256": "263283f330c8fb00e7fa7ff5378d4d07a4f097b3a3b05919aedd68907342b6fc",
+  "install_dirs": [
+    "/Users/runner/.xlings/data/xpkgs/local-x-uv/0.13.5"
+  ],
+  "program_versions": {
+    "uv": "uv 0.13.5 (46776a95d 2026-10-21 aarch64-apple-darwin)",
+    "uvx": "uvx 0.13.5 (46776a95d 2026-10-21 aarch64-apple-darwin)"
+  },
+  "status": "verified-and-removed",
+  "removed": true
+}

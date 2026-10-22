@@ -17,6 +17,27 @@ package = {
 
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            upstream = "krb5/krb5",
+            tag = "krb5-${version}-final",
+            latest = "advance",
+            url = {
+                linux = {
+                    x86_64 = {
+                        GLOBAL = "https://github.com/xlings-res/krb5/releases/download/${version}/krb5-${version}-linux-x86_64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/krb5/releases/download/${version}/krb5-${version}-linux-x86_64.tar.gz",
+                    },
+                    aarch64 = {
+                        GLOBAL = "https://github.com/xlings-res/krb5/releases/download/${version}/krb5-${version}-linux-aarch64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/krb5/releases/download/${version}/krb5-${version}-linux-aarch64.tar.gz",
+                    },
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- The libraries need libc.so.6, libresolv.so.2, libdl.so.2, libkeyutils.so.1 (xim:keyutils) and libcrypto.so.3 at OPENSSL_3.0.0 (xim:openssl);

@@ -265,10 +265,17 @@
         "latest": "advance",
         "url": {
           "linux": {
-            "aarch64": "https://github.com/xlings-res/brotli/releases/download/${version}/brotli-${version}-linux-aarch64.tar.gz",
-            "x86_64": "https://github.com/xlings-res/brotli/releases/download/${version}/brotli-${version}-linux-x86_64.tar.gz"
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/brotli/releases/download/${version}/brotli-${version}-linux-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/brotli/releases/download/${version}/brotli-${version}-linux-aarch64.tar.gz"
+            },
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/brotli/releases/download/${version}/brotli-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/brotli/releases/download/${version}/brotli-${version}-linux-x86_64.tar.gz"
+            }
           }
-        }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "1.2.0",
       "add_latest": {}
@@ -631,8 +638,12 @@
         "tag": "v${version}",
         "latest": "advance",
         "url": {
-          "linux": "https://github.com/xlings-res/directx-headers/releases/download/${version}/directx-headers-${version}-linux-x86_64.tar.gz"
-        }
+          "linux": {
+            "GLOBAL": "https://github.com/xlings-res/directx-headers/releases/download/${version}/directx-headers-${version}-linux-x86_64.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/directx-headers/releases/download/${version}/directx-headers-${version}-linux-x86_64.tar.gz"
+          }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "1.614.1",
       "add_latest": {}
@@ -706,30 +717,10 @@
       "id": "xim:esbuild",
       "upstream": "evanw/esbuild",
       "stars": 40102,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "evanw/esbuild",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "aarch64": "https://registry.npmjs.org/@esbuild/linux-arm64/-/linux-arm64-${version}.tgz",
-            "x86": "https://registry.npmjs.org/@esbuild/linux-ia32/-/linux-ia32-${version}.tgz",
-            "x86_64": "https://registry.npmjs.org/@esbuild/linux-x64/-/linux-x64-${version}.tgz"
-          },
-          "macosx": {
-            "aarch64": "https://registry.npmjs.org/@esbuild/darwin-arm64/-/darwin-arm64-${version}.tgz",
-            "x86_64": "https://registry.npmjs.org/@esbuild/darwin-x64/-/darwin-x64-${version}.tgz"
-          },
-          "windows": {
-            "aarch64": "https://registry.npmjs.org/@esbuild/win32-arm64/-/win32-arm64-${version}.tgz",
-            "x86": "https://registry.npmjs.org/@esbuild/win32-ia32/-/win32-ia32-${version}.tgz",
-            "x86_64": "https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-${version}.tgz"
-          }
-        }
-      },
+      "status": "manual",
       "latest": "0.25.12",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "x86 candidate cannot be installed by the available xlings runners (build architecture is fixed); a verified x86 execution environment is required before enabling the full matrix"
     },
     {
       "path": "pkgs/e/expat.lua",
@@ -742,8 +733,12 @@
         "tag": "R_${version:underscore}",
         "latest": "advance",
         "url": {
-          "linux": "https://github.com/xlings-res/expat/releases/download/${version}/expat-${version}-linux-x86_64.tar.gz"
-        }
+          "linux": {
+            "GLOBAL": "https://github.com/xlings-res/expat/releases/download/${version}/expat-${version}-linux-x86_64.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/expat/releases/download/${version}/expat-${version}-linux-x86_64.tar.gz"
+          }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "2.6.2",
       "add_latest": {}
@@ -816,8 +811,12 @@
         "tag": "v${version}",
         "latest": "advance",
         "url": {
-          "linux": "https://github.com/xlings-res/fribidi/releases/download/${version}/fribidi-${version}-linux-x86_64.tar.gz"
-        }
+          "linux": {
+            "GLOBAL": "https://github.com/xlings-res/fribidi/releases/download/${version}/fribidi-${version}-linux-x86_64.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/fribidi/releases/download/${version}/fribidi-${version}-linux-x86_64.tar.gz"
+          }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "1.0.13",
       "add_latest": {}
@@ -931,19 +930,10 @@
       "id": "xim:glew",
       "upstream": "nigels-com/glew",
       "stars": 2904,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "nigels-com/glew",
-        "tag": "glew-${version}",
-        "latest": "advance",
-        "url": {
-          "linux": "https://github.com/nigels-com/glew/releases/download/glew-${version}/glew-${version}.tgz",
-          "macosx": "https://github.com/nigels-com/glew/releases/download/glew-${version}/glew-${version}.tgz",
-          "windows": "https://github.com/nigels-com/glew/releases/download/glew-${version}/glew-${version}.tgz"
-        }
-      },
+      "status": "manual",
       "latest": "2.2.0",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "shared source supports x86 hosts; no verified x86 xlings execution environment is available for the complete matrix"
     },
     {
       "path": "pkgs/g/glib.lua",
@@ -1023,8 +1013,12 @@
         "tag": "${version}",
         "latest": "advance",
         "url": {
-          "linux": "https://github.com/xlings-res/graphene/releases/download/${version}/graphene-${version}-linux-x86_64.tar.gz"
-        }
+          "linux": {
+            "GLOBAL": "https://github.com/xlings-res/graphene/releases/download/${version}/graphene-${version}-linux-x86_64.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/graphene/releases/download/${version}/graphene-${version}-linux-x86_64.tar.gz"
+          }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "1.10.8",
       "add_latest": {}
@@ -1048,8 +1042,12 @@
         "tag": "${version}",
         "latest": "advance",
         "url": {
-          "linux": "https://github.com/xlings-res/graphite2/releases/download/${version}/graphite2-${version}-linux-x86_64.tar.gz"
-        }
+          "linux": {
+            "GLOBAL": "https://github.com/xlings-res/graphite2/releases/download/${version}/graphite2-${version}-linux-x86_64.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/graphite2/releases/download/${version}/graphite2-${version}-linux-x86_64.tar.gz"
+          }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "1.3.14",
       "add_latest": {}
@@ -1095,8 +1093,12 @@
         "tag": "${version}",
         "latest": "advance",
         "url": {
-          "linux": "https://github.com/xlings-res/harfbuzz/releases/download/${version}/harfbuzz-${version}-linux-x86_64.tar.gz"
-        }
+          "linux": {
+            "GLOBAL": "https://github.com/xlings-res/harfbuzz/releases/download/${version}/harfbuzz-${version}-linux-x86_64.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/harfbuzz/releases/download/${version}/harfbuzz-${version}-linux-x86_64.tar.gz"
+          }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "14.4.0",
       "add_latest": {}
@@ -1130,8 +1132,12 @@
         "tag": "rocm-${version}",
         "latest": "advance",
         "url": {
-          "linux": "https://github.com/xlings-res/hip-nvidia/releases/download/${version}/hip-nvidia-${version}-noarch.tar.gz"
-        }
+          "linux": {
+            "GLOBAL": "https://github.com/xlings-res/hip-nvidia/releases/download/${version}/hip-nvidia-${version}-noarch.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/hip-nvidia/releases/download/${version}/hip-nvidia-${version}-noarch.tar.gz"
+          }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "7.2.4",
       "add_latest": {}
@@ -1176,8 +1182,25 @@
       "id": "xim:icu",
       "upstream": "unicode-org/icu",
       "stars": 3619,
-      "status": "manual",
-      "reason": "upstream tag cannot be inferred unambiguously; resource production differs from source numbering"
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "unicode-org/icu",
+        "tag": "release-${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/icu/releases/download/${version}/icu-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/icu/releases/download/${version}/icu-${version}-linux-x86_64.tar.gz"
+            },
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/icu/releases/download/${version}/icu-${version}-linux-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/icu/releases/download/${version}/icu-${version}-linux-aarch64.tar.gz"
+            }
+          }
+        },
+        "verify": "sha256-sidecar"
+      }
     },
     {
       "path": "pkgs/i/interposer-stub.lua",
@@ -1317,8 +1340,25 @@
       "id": "xim:krb5",
       "upstream": "krb5/krb5",
       "stars": 608,
-      "status": "manual",
-      "reason": "upstream tag cannot be inferred unambiguously; resource production differs from source numbering"
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "krb5/krb5",
+        "tag": "krb5-${version}-final",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/krb5/releases/download/${version}/krb5-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/krb5/releases/download/${version}/krb5-${version}-linux-x86_64.tar.gz"
+            },
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/krb5/releases/download/${version}/krb5-${version}-linux-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/krb5/releases/download/${version}/krb5-${version}-linux-aarch64.tar.gz"
+            }
+          }
+        },
+        "verify": "sha256-sidecar"
+      }
     },
     {
       "path": "pkgs/l/libX11.lua",
@@ -1454,10 +1494,17 @@
         "latest": "advance",
         "url": {
           "linux": {
-            "aarch64": "https://github.com/xlings-res/libcups/releases/download/${version}/libcups-${version}-linux-aarch64.tar.gz",
-            "x86_64": "https://github.com/xlings-res/libcups/releases/download/${version}/libcups-${version}-linux-x86_64.tar.gz"
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/libcups/releases/download/${version}/libcups-${version}-linux-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/libcups/releases/download/${version}/libcups-${version}-linux-aarch64.tar.gz"
+            },
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/libcups/releases/download/${version}/libcups-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/libcups/releases/download/${version}/libcups-${version}-linux-x86_64.tar.gz"
+            }
           }
-        }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "2.3.3",
       "add_latest": {}
@@ -1491,10 +1538,20 @@
         "tag": "llvmorg-${version}",
         "latest": "advance",
         "url": {
-          "linux": "https://github.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz",
-          "macosx": "https://github.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz",
-          "windows": "https://github.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz"
-        }
+          "linux": {
+            "GLOBAL": "https://github.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz",
+            "CN": "https://gitcode.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz"
+          },
+          "macosx": {
+            "GLOBAL": "https://github.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz",
+            "CN": "https://gitcode.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz"
+          },
+          "windows": {
+            "GLOBAL": "https://github.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz",
+            "CN": "https://gitcode.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz"
+          }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "22.1.8",
       "add_latest": {}
@@ -1510,8 +1567,12 @@
         "tag": "v${version}",
         "latest": "advance",
         "url": {
-          "linux": "https://github.com/xlings-res/libdatrie/releases/download/${version}/libdatrie-${version}-linux-x86_64.tar.gz"
-        }
+          "linux": {
+            "GLOBAL": "https://github.com/xlings-res/libdatrie/releases/download/${version}/libdatrie-${version}-linux-x86_64.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/libdatrie/releases/download/${version}/libdatrie-${version}-linux-x86_64.tar.gz"
+          }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "0.2.14",
       "add_latest": {}
@@ -1539,8 +1600,12 @@
         "tag": "${version}",
         "latest": "advance",
         "url": {
-          "linux": "https://github.com/xlings-res/libepoxy/releases/download/${version}/libepoxy-${version}-linux-x86_64.tar.gz"
-        }
+          "linux": {
+            "GLOBAL": "https://github.com/xlings-res/libepoxy/releases/download/${version}/libepoxy-${version}-linux-x86_64.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/libepoxy/releases/download/${version}/libepoxy-${version}-linux-x86_64.tar.gz"
+          }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "1.5.10",
       "add_latest": {}
@@ -1556,8 +1621,12 @@
         "tag": "v${version}",
         "latest": "advance",
         "url": {
-          "linux": "https://github.com/xlings-res/libffi/releases/download/${version}/libffi-${version}-linux-x86_64.tar.gz"
-        }
+          "linux": {
+            "GLOBAL": "https://github.com/xlings-res/libffi/releases/download/${version}/libffi-${version}-linux-x86_64.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/libffi/releases/download/${version}/libffi-${version}-linux-x86_64.tar.gz"
+          }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "3.4.4",
       "add_latest": {}
@@ -1597,8 +1666,12 @@
         "tag": "${version}",
         "latest": "advance",
         "url": {
-          "linux": "https://github.com/xlings-res/libjpeg-turbo/releases/download/${version}/libjpeg-turbo-${version}-linux-x86_64.tar.gz"
-        }
+          "linux": {
+            "GLOBAL": "https://github.com/xlings-res/libjpeg-turbo/releases/download/${version}/libjpeg-turbo-${version}-linux-x86_64.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/libjpeg-turbo/releases/download/${version}/libjpeg-turbo-${version}-linux-x86_64.tar.gz"
+          }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "3.2.0",
       "add_latest": {}
@@ -1664,8 +1737,12 @@
         "tag": "v${version}",
         "latest": "advance",
         "url": {
-          "linux": "https://github.com/xlings-res/libpng/releases/download/${version}/libpng-${version}-linux-x86_64.tar.gz"
-        }
+          "linux": {
+            "GLOBAL": "https://github.com/xlings-res/libpng/releases/download/${version}/libpng-${version}-linux-x86_64.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/libpng/releases/download/${version}/libpng-${version}-linux-x86_64.tar.gz"
+          }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "1.6.43",
       "add_latest": {}
@@ -1681,8 +1758,12 @@
         "tag": "${version}",
         "latest": "advance",
         "url": {
-          "linux": "https://github.com/xlings-res/libpsl/releases/download/${version}/libpsl-${version}-linux-x86_64.tar.gz"
-        }
+          "linux": {
+            "GLOBAL": "https://github.com/xlings-res/libpsl/releases/download/${version}/libpsl-${version}-linux-x86_64.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/libpsl/releases/download/${version}/libpsl-${version}-linux-x86_64.tar.gz"
+          }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "0.23.3",
       "add_latest": {}
@@ -1704,8 +1785,12 @@
         "tag": "${version}",
         "latest": "advance",
         "url": {
-          "linux": "https://github.com/xlings-res/libselinux/releases/download/${version}/libselinux-${version}-linux-x86_64.tar.gz"
-        }
+          "linux": {
+            "GLOBAL": "https://github.com/xlings-res/libselinux/releases/download/${version}/libselinux-${version}-linux-x86_64.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/libselinux/releases/download/${version}/libselinux-${version}-linux-x86_64.tar.gz"
+          }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "3.11",
       "add_latest": {}
@@ -1727,8 +1812,12 @@
         "tag": "v${version}",
         "latest": "advance",
         "url": {
-          "linux": "https://github.com/xlings-res/libthai/releases/download/${version}/libthai-${version}-linux-x86_64.tar.gz"
-        }
+          "linux": {
+            "GLOBAL": "https://github.com/xlings-res/libthai/releases/download/${version}/libthai-${version}-linux-x86_64.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/libthai/releases/download/${version}/libthai-${version}-linux-x86_64.tar.gz"
+          }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "0.1.30",
       "add_latest": {}
@@ -1751,10 +1840,17 @@
         "latest": "advance",
         "url": {
           "linux": {
-            "aarch64": "https://github.com/xlings-res/libudev/releases/download/${version}/libudev-${version}-linux-aarch64.tar.gz",
-            "x86_64": "https://github.com/xlings-res/libudev/releases/download/${version}/libudev-${version}-linux-x86_64.tar.gz"
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/libudev/releases/download/${version}/libudev-${version}-linux-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/libudev/releases/download/${version}/libudev-${version}-linux-aarch64.tar.gz"
+            },
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/libudev/releases/download/${version}/libudev-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/libudev/releases/download/${version}/libudev-${version}-linux-x86_64.tar.gz"
+            }
           }
-        }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "257.4",
       "add_latest": {}
@@ -1771,10 +1867,17 @@
         "latest": "advance",
         "url": {
           "linux": {
-            "aarch64": "https://github.com/xlings-res/libusb/releases/download/${version}/libusb-${version}-linux-aarch64.tar.gz",
-            "x86_64": "https://github.com/xlings-res/libusb/releases/download/${version}/libusb-${version}-linux-x86_64.tar.gz"
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/libusb/releases/download/${version}/libusb-${version}-linux-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/libusb/releases/download/${version}/libusb-${version}-linux-aarch64.tar.gz"
+            },
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/libusb/releases/download/${version}/libusb-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/libusb/releases/download/${version}/libusb-${version}-linux-x86_64.tar.gz"
+            }
           }
-        }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "1.0.29",
       "add_latest": {}
@@ -1844,10 +1947,17 @@
         "latest": "advance",
         "url": {
           "linux": {
-            "aarch64": "https://github.com/xlings-res/linux-headers/releases/download/${version}/linux-headers-${version}-linux-aarch64.tar.gz",
-            "x86_64": "https://github.com/xlings-res/scode-res/releases/download/linux-headers/linux-headers-${version}.tar.gz"
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/linux-headers/releases/download/${version}/linux-headers-${version}-linux-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/linux-headers/releases/download/${version}/linux-headers-${version}-linux-aarch64.tar.gz"
+            },
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/scode-res/releases/download/linux-headers/linux-headers-${version}.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/scode-res/releases/download/linux-headers/linux-headers-${version}.tar.gz"
+            }
           }
-        }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "5.11.1",
       "add_latest": {}
@@ -1891,8 +2001,12 @@
         "tag": "llvmorg-${version}",
         "latest": "advance",
         "url": {
-          "linux": "https://github.com/xlings-res/llvm-dev/releases/download/${version}/llvm-dev-${version}-linux-x86_64.tar.gz"
-        }
+          "linux": {
+            "GLOBAL": "https://github.com/xlings-res/llvm-dev/releases/download/${version}/llvm-dev-${version}-linux-x86_64.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/llvm-dev/releases/download/${version}/llvm-dev-${version}-linux-x86_64.tar.gz"
+          }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "20.1.7.1",
       "add_latest": {}
@@ -1909,11 +2023,21 @@
         "latest": "advance",
         "url": {
           "linux": {
-            "x86_64": "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-linux-x86_64.tar.gz"
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-linux-x86_64.tar.gz"
+            }
           },
-          "windows": "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-windows-x86_64.zip",
-          "macosx": "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-macosx-arm64.tar.xz"
-        }
+          "windows": {
+            "GLOBAL": "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-windows-x86_64.zip",
+            "CN": "https://gitcode.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-windows-x86_64.zip"
+          },
+          "macosx": {
+            "GLOBAL": "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-macosx-arm64.tar.xz",
+            "CN": "https://gitcode.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-macosx-arm64.tar.xz"
+          }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "22.1.8",
       "add_latest": {}
@@ -1999,10 +2123,17 @@
         "latest": "advance",
         "url": {
           "linux": {
-            "aarch64": "https://github.com/xlings-res/labwc-desktop/releases/download/${version}-r1/labwc-desktop-${version}-r1-linux-aarch64.tar.gz",
-            "x86_64": "https://github.com/xlings-res/labwc-desktop/releases/download/${version}-r1/labwc-desktop-${version}-r1-linux-x86_64.tar.gz"
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/labwc-desktop/releases/download/${version}-r1/labwc-desktop-${version}-r1-linux-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/labwc-desktop/releases/download/${version}-r1/labwc-desktop-${version}-r1-linux-aarch64.tar.gz"
+            },
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/labwc-desktop/releases/download/${version}-r1/labwc-desktop-${version}-r1-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/labwc-desktop/releases/download/${version}-r1/labwc-desktop-${version}-r1-linux-x86_64.tar.gz"
+            }
           }
-        }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "0.7.2",
       "add_latest": {}
@@ -2357,8 +2488,12 @@
         "tag": "${version}",
         "latest": "advance",
         "url": {
-          "linux": "https://github.com/xlings-res/meson/releases/download/${version}/meson-${version}-linux-x86_64.tar.gz"
-        }
+          "linux": {
+            "GLOBAL": "https://github.com/xlings-res/meson/releases/download/${version}/meson-${version}-linux-x86_64.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/meson/releases/download/${version}/meson-${version}-linux-x86_64.tar.gz"
+          }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "1.8.2",
       "add_latest": {}
@@ -2397,10 +2532,17 @@
         "latest": "advance",
         "url": {
           "macosx": {
-            "aarch64": "https://github.com/xlings-res/moltenvk/releases/download/${version}/moltenvk-${version}-macosx-universal.tar.gz",
-            "x86_64": "https://github.com/xlings-res/moltenvk/releases/download/${version}/moltenvk-${version}-macosx-universal.tar.gz"
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/moltenvk/releases/download/${version}/moltenvk-${version}-macosx-universal.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/moltenvk/releases/download/${version}/moltenvk-${version}-macosx-universal.tar.gz"
+            },
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/moltenvk/releases/download/${version}/moltenvk-${version}-macosx-universal.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/moltenvk/releases/download/${version}/moltenvk-${version}-macosx-universal.tar.gz"
+            }
           }
-        }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "1.4.2",
       "add_latest": {}
@@ -2438,47 +2580,10 @@
       "id": "xim:nasm",
       "upstream": "netwide-assembler/nasm",
       "stars": 3335,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "netwide-assembler/nasm",
-        "tag": "nasm-${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-linux-x86_64.tar.gz"
-            },
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-linux-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-linux-aarch64.tar.gz"
-            }
-          },
-          "windows": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-windows-x86_64.zip",
-              "CN": "https://gitcode.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-windows-x86_64.zip"
-            },
-            "x86": {
-              "GLOBAL": "https://github.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-windows-x86.zip",
-              "CN": "https://gitcode.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-windows-x86.zip"
-            }
-          },
-          "macosx": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-macosx-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-macosx-x86_64.tar.gz"
-            },
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-macosx-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/nasm/releases/download/${version}/nasm-${version}-macosx-aarch64.tar.gz"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "3.02",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "x86 candidate cannot be installed by the available xlings runners (build architecture is fixed); a verified x86 execution environment is required before enabling the full matrix"
     },
     {
       "path": "pkgs/n/ncurses.lua",
@@ -2491,8 +2596,12 @@
         "tag": "v${version:underscore}",
         "latest": "advance",
         "url": {
-          "linux": "https://github.com/xlings-res/ncurses/releases/download/${version}/ncurses-${version}-linux-x86_64.tar.gz"
-        }
+          "linux": {
+            "GLOBAL": "https://github.com/xlings-res/ncurses/releases/download/${version}/ncurses-${version}-linux-x86_64.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/ncurses/releases/download/${version}/ncurses-${version}-linux-x86_64.tar.gz"
+          }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "6.5",
       "add_latest": {}
@@ -2508,8 +2617,12 @@
         "tag": "v${version}",
         "latest": "advance",
         "url": {
-          "linux": "https://github.com/xlings-res/nghttp2/releases/download/${version}/nghttp2-${version}-linux-x86_64.tar.gz"
-        }
+          "linux": {
+            "GLOBAL": "https://github.com/xlings-res/nghttp2/releases/download/${version}/nghttp2-${version}-linux-x86_64.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/nghttp2/releases/download/${version}/nghttp2-${version}-linux-x86_64.tar.gz"
+          }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "1.70.0",
       "add_latest": {}
@@ -2759,8 +2872,19 @@
       "id": "xim:pcre2",
       "upstream": "PCRE2Project/pcre2",
       "stars": 1383,
-      "status": "manual",
-      "reason": "upstream tag cannot be inferred unambiguously; resource production differs from source numbering"
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "PCRE2Project/pcre2",
+        "tag": "pcre2-${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "GLOBAL": "https://github.com/xlings-res/pcre2/releases/download/${version}/pcre2-${version}-linux-x86_64.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/pcre2/releases/download/${version}/pcre2-${version}-linux-x86_64.tar.gz"
+          }
+        },
+        "verify": "sha256-sidecar"
+      }
     },
     {
       "path": "pkgs/p/perl.lua",
@@ -2838,10 +2962,20 @@
         "tag": "${version}",
         "latest": "advance",
         "url": {
-          "linux": "https://github.com/xlings-res/picolibc-aarch64/releases/download/${version}/picolibc-aarch64-${version}.tar.gz",
-          "macosx": "https://github.com/xlings-res/picolibc-aarch64/releases/download/${version}/picolibc-aarch64-${version}.tar.gz",
-          "windows": "https://github.com/xlings-res/picolibc-aarch64/releases/download/${version}/picolibc-aarch64-${version}.tar.gz"
-        }
+          "linux": {
+            "GLOBAL": "https://github.com/xlings-res/picolibc-aarch64/releases/download/${version}/picolibc-aarch64-${version}.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/picolibc-aarch64/releases/download/${version}/picolibc-aarch64-${version}.tar.gz"
+          },
+          "macosx": {
+            "GLOBAL": "https://github.com/xlings-res/picolibc-aarch64/releases/download/${version}/picolibc-aarch64-${version}.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/picolibc-aarch64/releases/download/${version}/picolibc-aarch64-${version}.tar.gz"
+          },
+          "windows": {
+            "GLOBAL": "https://github.com/xlings-res/picolibc-aarch64/releases/download/${version}/picolibc-aarch64-${version}.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/picolibc-aarch64/releases/download/${version}/picolibc-aarch64-${version}.tar.gz"
+          }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "1.8.12",
       "add_latest": {}
@@ -2857,10 +2991,20 @@
         "tag": "${version}",
         "latest": "advance",
         "url": {
-          "linux": "https://github.com/xlings-res/picolibc-arm/releases/download/${version}/picolibc-arm-${version}.tar.gz",
-          "macosx": "https://github.com/xlings-res/picolibc-arm/releases/download/${version}/picolibc-arm-${version}.tar.gz",
-          "windows": "https://github.com/xlings-res/picolibc-arm/releases/download/${version}/picolibc-arm-${version}.tar.gz"
-        }
+          "linux": {
+            "GLOBAL": "https://github.com/xlings-res/picolibc-arm/releases/download/${version}/picolibc-arm-${version}.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/picolibc-arm/releases/download/${version}/picolibc-arm-${version}.tar.gz"
+          },
+          "macosx": {
+            "GLOBAL": "https://github.com/xlings-res/picolibc-arm/releases/download/${version}/picolibc-arm-${version}.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/picolibc-arm/releases/download/${version}/picolibc-arm-${version}.tar.gz"
+          },
+          "windows": {
+            "GLOBAL": "https://github.com/xlings-res/picolibc-arm/releases/download/${version}/picolibc-arm-${version}.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/picolibc-arm/releases/download/${version}/picolibc-arm-${version}.tar.gz"
+          }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "1.8.12",
       "add_latest": {}
@@ -2876,10 +3020,20 @@
         "tag": "${version}",
         "latest": "advance",
         "url": {
-          "linux": "https://github.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz",
-          "macosx": "https://github.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz",
-          "windows": "https://github.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz"
-        }
+          "linux": {
+            "GLOBAL": "https://github.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz"
+          },
+          "macosx": {
+            "GLOBAL": "https://github.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz"
+          },
+          "windows": {
+            "GLOBAL": "https://github.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz"
+          }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "1.8.12",
       "add_latest": {}
@@ -2895,10 +3049,20 @@
         "tag": "${version}",
         "latest": "advance",
         "url": {
-          "linux": "https://github.com/xlings-res/picolibc-x86/releases/download/${version}/picolibc-x86-${version}.tar.gz",
-          "macosx": "https://github.com/xlings-res/picolibc-x86/releases/download/${version}/picolibc-x86-${version}.tar.gz",
-          "windows": "https://github.com/xlings-res/picolibc-x86/releases/download/${version}/picolibc-x86-${version}.tar.gz"
-        }
+          "linux": {
+            "GLOBAL": "https://github.com/xlings-res/picolibc-x86/releases/download/${version}/picolibc-x86-${version}.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/picolibc-x86/releases/download/${version}/picolibc-x86-${version}.tar.gz"
+          },
+          "macosx": {
+            "GLOBAL": "https://github.com/xlings-res/picolibc-x86/releases/download/${version}/picolibc-x86-${version}.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/picolibc-x86/releases/download/${version}/picolibc-x86-${version}.tar.gz"
+          },
+          "windows": {
+            "GLOBAL": "https://github.com/xlings-res/picolibc-x86/releases/download/${version}/picolibc-x86-${version}.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/picolibc-x86/releases/download/${version}/picolibc-x86-${version}.tar.gz"
+          }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "1.8.12",
       "add_latest": {}
@@ -2940,10 +3104,17 @@
         "latest": "advance",
         "url": {
           "linux": {
-            "aarch64": "https://github.com/xlings-res/pocl/releases/download/${version}/pocl-${version}-linux-aarch64.tar.gz",
-            "x86_64": "https://github.com/xlings-res/pocl/releases/download/${version}/pocl-${version}-linux-x86_64.tar.gz"
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/pocl/releases/download/${version}/pocl-${version}-linux-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/pocl/releases/download/${version}/pocl-${version}-linux-aarch64.tar.gz"
+            },
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/pocl/releases/download/${version}/pocl-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/pocl/releases/download/${version}/pocl-${version}-linux-x86_64.tar.gz"
+            }
           }
-        }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "7.1",
       "add_latest": {}
@@ -3148,8 +3319,21 @@
       "id": "xim:riscv64-linux-musl-gcc",
       "upstream": "gcc-mirror/gcc",
       "stars": 11306,
-      "status": "manual",
-      "reason": "upstream tag cannot be inferred unambiguously; resource production differs from source numbering"
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "gcc-mirror/gcc",
+        "tag": "releases/gcc-${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/riscv64-linux-musl-gcc/releases/download/${version}/riscv64-linux-musl-gcc-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/riscv64-linux-musl-gcc/releases/download/${version}/riscv64-linux-musl-gcc-${version}-linux-x86_64.tar.gz"
+            }
+          }
+        },
+        "verify": "sha256-sidecar"
+      }
     },
     {
       "path": "pkgs/r/ros2-jazzy-ubuntu.lua",
@@ -3234,16 +3418,29 @@
         "latest": "advance",
         "url": {
           "linux": {
-            "aarch64": "https://github.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-linux-aarch64.tar.gz",
-            "x86_64": "https://github.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-linux-x86_64.tar.gz"
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-linux-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-linux-aarch64.tar.gz"
+            },
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-linux-x86_64.tar.gz"
+            }
           },
           "macosx": {
-            "aarch64": "https://github.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-macosx-arm64.tar.gz"
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-macosx-arm64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-macosx-arm64.tar.gz"
+            }
           },
           "windows": {
-            "x86_64": "https://github.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-windows-x86_64.zip"
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-windows-x86_64.zip",
+              "CN": "https://gitcode.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-windows-x86_64.zip"
+            }
           }
-        }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "2026.3",
       "add_latest": {}
@@ -3340,8 +3537,12 @@
         "tag": "v${version}",
         "latest": "advance",
         "url": {
-          "linux": "https://github.com/xlings-res/spirv-tools/releases/download/${version}/spirv-tools-${version}-linux-x86_64.tar.gz"
-        }
+          "linux": {
+            "GLOBAL": "https://github.com/xlings-res/spirv-tools/releases/download/${version}/spirv-tools-${version}-linux-x86_64.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/spirv-tools/releases/download/${version}/spirv-tools-${version}-linux-x86_64.tar.gz"
+          }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "2025.1",
       "add_latest": {}
@@ -3377,8 +3578,12 @@
         "tag": "v${version:underscore}",
         "latest": "advance",
         "url": {
-          "linux": "https://github.com/xlings-res/terminfo/releases/download/${version}/terminfo-${version}.tar.gz"
-        }
+          "linux": {
+            "GLOBAL": "https://github.com/xlings-res/terminfo/releases/download/${version}/terminfo-${version}.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/terminfo/releases/download/${version}/terminfo-${version}.tar.gz"
+          }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "6.6.20261010",
       "add_latest": {}
@@ -3429,16 +3634,35 @@
       "id": "xim:trendradar",
       "upstream": "sansan0/TrendRadar",
       "stars": 63102,
-      "status": "manual",
-      "reason": "upstream tag cannot be inferred unambiguously; resource production differs from source numbering"
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "sansan0/TrendRadar",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": "https://github.com/sansan0/TrendRadar/archive/refs/tags/v${version}.tar.gz",
+          "macosx": "https://github.com/sansan0/TrendRadar/archive/refs/tags/v${version}.tar.gz"
+        }
+      }
     },
     {
       "path": "pkgs/u/util-linux.lua",
       "id": "xim:util-linux",
       "upstream": "util-linux/util-linux",
       "stars": 3241,
-      "status": "manual",
-      "reason": "upstream tag cannot be inferred unambiguously; resource production differs from source numbering"
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "util-linux/util-linux",
+        "tag": "v${version}",
+        "latest": "advance",
+        "url": {
+          "linux": {
+            "GLOBAL": "https://github.com/xlings-res/util-linux/releases/download/${version}/util-linux-${version}-linux-x86_64.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/util-linux/releases/download/${version}/util-linux-${version}-linux-x86_64.tar.gz"
+          }
+        },
+        "verify": "sha256-sidecar"
+      }
     },
     {
       "path": "pkgs/u/uv.lua",
@@ -3611,8 +3835,12 @@
         "tag": "vulkan-sdk-${version}",
         "latest": "advance",
         "url": {
-          "linux": "https://github.com/xlings-res/vulkan-validation-layers/releases/download/${version}/vulkan-validation-layers-${version}-linux-x86_64.tar.gz"
-        }
+          "linux": {
+            "GLOBAL": "https://github.com/xlings-res/vulkan-validation-layers/releases/download/${version}/vulkan-validation-layers-${version}-linux-x86_64.tar.gz",
+            "CN": "https://gitcode.com/xlings-res/vulkan-validation-layers/releases/download/${version}/vulkan-validation-layers-${version}-linux-x86_64.tar.gz"
+          }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "1.4.357.0",
       "add_latest": {}
@@ -3716,8 +3944,21 @@
       "id": "xim:x86_64-linux-musl-gcc",
       "upstream": "gcc-mirror/gcc",
       "stars": 11306,
-      "status": "manual",
-      "reason": "upstream tag cannot be inferred unambiguously; resource production differs from source numbering"
+      "status": "enabled",
+      "autoupdate": {
+        "upstream": "gcc-mirror/gcc",
+        "tag": "releases/gcc-${version}",
+        "latest": "advance",
+        "url": {
+          "windows": {
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/x86_64-linux-musl-gcc/releases/download/${version}/x86_64-linux-musl-gcc-${version}-windows-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/x86_64-linux-musl-gcc/releases/download/${version}/x86_64-linux-musl-gcc-${version}-windows-x86_64.tar.gz"
+            }
+          }
+        },
+        "verify": "sha256-sidecar"
+      }
     },
     {
       "path": "pkgs/x/xcb-proto.lua",
@@ -3931,10 +4172,17 @@
         "latest": "advance",
         "url": {
           "linux": {
-            "aarch64": "https://github.com/xlings-res/xz/releases/download/${version}/xz-${version}-linux-aarch64.tar.gz",
-            "x86_64": "https://github.com/xlings-res/xz/releases/download/${version}/xz-${version}-linux-x86_64.tar.gz"
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/xz/releases/download/${version}/xz-${version}-linux-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/xz/releases/download/${version}/xz-${version}-linux-aarch64.tar.gz"
+            },
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/xz/releases/download/${version}/xz-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/xz/releases/download/${version}/xz-${version}-linux-x86_64.tar.gz"
+            }
           }
-        }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "5.8.3",
       "add_latest": {}
@@ -3973,10 +4221,17 @@
         "latest": "advance",
         "url": {
           "linux": {
-            "aarch64": "https://github.com/xlings-res/zlib/releases/download/${version}/zlib-${version}-linux-aarch64.tar.gz",
-            "x86_64": "https://github.com/xlings-res/zlib/releases/download/${version}/zlib-${version}-linux-x86_64.tar.gz"
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/zlib/releases/download/${version}/zlib-${version}-linux-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/zlib/releases/download/${version}/zlib-${version}-linux-aarch64.tar.gz"
+            },
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/zlib/releases/download/${version}/zlib-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/zlib/releases/download/${version}/zlib-${version}-linux-x86_64.tar.gz"
+            }
           }
-        }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "1.3.1",
       "add_latest": {}
@@ -4012,10 +4267,17 @@
         "latest": "advance",
         "url": {
           "linux": {
-            "aarch64": "https://github.com/xlings-res/zstd/releases/download/${version}/zstd-${version}-linux-aarch64.tar.gz",
-            "x86_64": "https://github.com/xlings-res/zstd/releases/download/${version}/zstd-${version}-linux-x86_64.tar.gz"
+            "aarch64": {
+              "GLOBAL": "https://github.com/xlings-res/zstd/releases/download/${version}/zstd-${version}-linux-aarch64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/zstd/releases/download/${version}/zstd-${version}-linux-aarch64.tar.gz"
+            },
+            "x86_64": {
+              "GLOBAL": "https://github.com/xlings-res/zstd/releases/download/${version}/zstd-${version}-linux-x86_64.tar.gz",
+              "CN": "https://gitcode.com/xlings-res/zstd/releases/download/${version}/zstd-${version}-linux-x86_64.tar.gz"
+            }
           }
-        }
+        },
+        "verify": "sha256-sidecar"
       },
       "latest": "1.5.7",
       "add_latest": {}

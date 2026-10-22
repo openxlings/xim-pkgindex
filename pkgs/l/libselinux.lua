@@ -21,8 +21,12 @@ package = {
             tag = "${version}",
             latest = "advance",
             url = {
-                linux = "https://github.com/xlings-res/libselinux/releases/download/${version}/libselinux-${version}-linux-x86_64.tar.gz",
+                linux = {
+                    GLOBAL = "https://github.com/xlings-res/libselinux/releases/download/${version}/libselinux-${version}-linux-x86_64.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/libselinux/releases/download/${version}/libselinux-${version}-linux-x86_64.tar.gz",
+                },
             },
+            verify = "sha256-sidecar",
         },
     },
 

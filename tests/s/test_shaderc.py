@@ -71,7 +71,7 @@ class TestStatic:
         reason and the wrong one -- it could only ever notice that the number
         changed, never that a platform had lost its CN mirror.
         """
-        code = _code(meta.raw_content)
+        code = _code(meta.raw_content.split("    xpm = {", 1)[1])
         globals_ = re.findall(
             r'GLOBAL\s*=\s*"https://github\.com/xlings-res/shaderc/[^"]*/([^"/]+)"', code)
         cns = re.findall(

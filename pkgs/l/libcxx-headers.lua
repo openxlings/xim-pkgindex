@@ -76,10 +76,20 @@ package = {
             tag = "llvmorg-${version}",
             latest = "advance",
             url = {
-                linux = "https://github.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz",
-                macosx = "https://github.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz",
-                windows = "https://github.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz",
+                linux = {
+                    GLOBAL = "https://github.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz",
+                    CN = "https://gitcode.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz",
+                },
+                macosx = {
+                    GLOBAL = "https://github.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz",
+                    CN = "https://gitcode.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz",
+                },
+                windows = {
+                    GLOBAL = "https://github.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz",
+                    CN = "https://gitcode.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz",
+                },
             },
+            verify = "sha256-sidecar",
         },
     },
 

@@ -26,10 +26,17 @@ package = {
             latest = "advance",
             url = {
                 linux = {
-                    aarch64 = "https://github.com/xlings-res/zstd/releases/download/${version}/zstd-${version}-linux-aarch64.tar.gz",
-                    x86_64 = "https://github.com/xlings-res/zstd/releases/download/${version}/zstd-${version}-linux-x86_64.tar.gz",
+                    aarch64 = {
+                        GLOBAL = "https://github.com/xlings-res/zstd/releases/download/${version}/zstd-${version}-linux-aarch64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/zstd/releases/download/${version}/zstd-${version}-linux-aarch64.tar.gz",
+                    },
+                    x86_64 = {
+                        GLOBAL = "https://github.com/xlings-res/zstd/releases/download/${version}/zstd-${version}-linux-x86_64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/zstd/releases/download/${version}/zstd-${version}-linux-x86_64.tar.gz",
+                    },
                 },
             },
+            verify = "sha256-sidecar",
         },
     },
 

@@ -18,6 +18,18 @@ package = {
     programs = {"trendradar", "trendradar-mcp"},
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            upstream = "sansan0/TrendRadar",
+            tag = "v${version}",
+            latest = "advance",
+            url = {
+                linux = "https://github.com/sansan0/TrendRadar/archive/refs/tags/v${version}.tar.gz",
+                macosx = "https://github.com/sansan0/TrendRadar/archive/refs/tags/v${version}.tar.gz",
+            },
+        },
+    },
+
     xpm = {
         linux = {
             deps = {"xim:python"},

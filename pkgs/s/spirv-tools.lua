@@ -31,8 +31,12 @@ package = {
             tag = "v${version}",
             latest = "advance",
             url = {
-                linux = "https://github.com/xlings-res/spirv-tools/releases/download/${version}/spirv-tools-${version}-linux-x86_64.tar.gz",
+                linux = {
+                    GLOBAL = "https://github.com/xlings-res/spirv-tools/releases/download/${version}/spirv-tools-${version}-linux-x86_64.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/spirv-tools/releases/download/${version}/spirv-tools-${version}-linux-x86_64.tar.gz",
+                },
             },
+            verify = "sha256-sidecar",
         },
     },
 

@@ -23,11 +23,21 @@ package = {
             latest = "advance",
             url = {
                 linux = {
-                    x86_64 = "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-linux-x86_64.tar.gz",
+                    x86_64 = {
+                        GLOBAL = "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-linux-x86_64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-linux-x86_64.tar.gz",
+                    },
                 },
-                windows = "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-windows-x86_64.zip",
-                macosx = "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-macosx-arm64.tar.xz",
+                windows = {
+                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-windows-x86_64.zip",
+                    CN = "https://gitcode.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-windows-x86_64.zip",
+                },
+                macosx = {
+                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-macosx-arm64.tar.xz",
+                    CN = "https://gitcode.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-macosx-arm64.tar.xz",
+                },
             },
+            verify = "sha256-sidecar",
         },
     },
 

@@ -16,6 +16,27 @@ package = {
     categories = {"i18n", "lib"},
     keywords = {"icu", "unicode", "i18n", "l10n", "lib"},
 
+    extensions = {
+        autoupdate = {
+            upstream = "unicode-org/icu",
+            tag = "release-${version}",
+            latest = "advance",
+            url = {
+                linux = {
+                    x86_64 = {
+                        GLOBAL = "https://github.com/xlings-res/icu/releases/download/${version}/icu-${version}-linux-x86_64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/icu/releases/download/${version}/icu-${version}-linux-x86_64.tar.gz",
+                    },
+                    aarch64 = {
+                        GLOBAL = "https://github.com/xlings-res/icu/releases/download/${version}/icu-${version}-linux-aarch64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/icu/releases/download/${version}/icu-${version}-linux-aarch64.tar.gz",
+                    },
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- libicui18n/io/tu/uc all carry DT_NEEDED libstdc++.so.6 and
