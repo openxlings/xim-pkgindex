@@ -39,8 +39,10 @@ package = {
             -- luban:audio and luban:falkon: a desktop's sound and its browser (xlings design 2026-10-20 §20).
             -- xim:graphics: xdesk 2026.10.21.1 composes with GLES when the
             -- system's GPU can (xlings design 2026-10-20 WuXian §7.4).
-            deps = { "xim:xdesk@2026.10.21.3", "luban:foot", "luban:cursors", "luban:audio", "luban:falkon", "xim:graphics@>=0.1" },
-            ["latest"] = { ref = "2026.10.21.3" },
+            -- luban:audacious: the desktops' player, with a piece to play (xlings design 2026-10-21 §6.3).
+            deps = { "xim:xdesk@2026.10.22.1", "luban:foot", "luban:cursors", "luban:audio", "luban:falkon", "luban:audacious",
+                     "xim:graphics@>=0.1" },
+            ["latest"] = { ref = "2026.10.22.1" },
             -- 1: luban:cursors became a dependency. 2: xdesk 2026.10.19.2.
             -- 3 (and 2026.10.19.2's 1): luban:audio and luban:falkon.
             -- 4 (2026.10.19.2's 2): xdesk 2026.10.20.1 -- its switchers,
@@ -51,11 +53,16 @@ package = {
             -- 6 (2026.10.19.2's 4, 2026.10.20.1's 2, 2026.10.21.1's 1): xdesk
             -- 2026.10.21.3 -- on Mesa with virgl, a machine's desktop on the
             -- host's GPU (xlings design 2026-10-20 WuXian §7.5).
-            ["2026.10.18.1"] = { revision = 6 },
-            ["2026.10.19.2"] = { revision = 4 },
-            ["2026.10.20.1"] = { revision = 2 },
-            ["2026.10.21.1"] = { revision = 1 },
-            ["2026.10.21.3"] = {},
+            -- 7 (2026.10.19.2's 5, 2026.10.20.1's 3, 2026.10.21.1's 2,
+            -- 2026.10.21.3's 1): xdesk 2026.10.22.1 -- bookmarks, collapse,
+            -- the tour, its words in Chinese, the bus -- and luban:audacious
+            -- (xlings design 2026-10-21).
+            ["2026.10.18.1"] = { revision = 7 },
+            ["2026.10.19.2"] = { revision = 5 },
+            ["2026.10.20.1"] = { revision = 3 },
+            ["2026.10.21.1"] = { revision = 2 },
+            ["2026.10.21.3"] = { revision = 1 },
+            ["2026.10.22.1"] = {},
         },
     },
 }

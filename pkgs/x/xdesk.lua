@@ -50,7 +50,13 @@ package = {
                 "xim:mesa@>=25",
                 "xim:libglvnd@>=1.7.0.1",
             },
-            ["latest"] = { ref = "2026.10.21.4" },
+            ["latest"] = { ref = "2026.10.22.1" },
+            ["2026.10.22.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "225bac56f000f3f783efa082616f133953556cca8562169b594e7bfa63d88cb5",
+                },
+            },
             ["2026.10.21.4"] = {
                 -- 1: its share/applications linked (the launchers' "settings";
                 -- xlings design 2026-10-21 J9).
