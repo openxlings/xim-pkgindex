@@ -6,6 +6,8 @@ import subprocess
 from pathlib import Path
 
 base = os.environ['BASE']
+if not base or set(base) == {'0'}:
+    base = 'HEAD^'
 subprocess.run(['python', '-m', 'xpkgindex_update', 'runtime-diff', '--base', base,
                 '--output', 'runtime-diff.json'], check=True)
 records = json.loads(Path('runtime-diff.json').read_text())['packages']

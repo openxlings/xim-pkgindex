@@ -8,6 +8,10 @@ on:
         description: 'Optional namespace:name'
         type: string
         required: false
+      validation_base:
+        description: 'Candidate CI only: compare against this ref and never propose'
+        type: string
+        required: false
   pull_request:
     paths: ['pkgs/**', 'tests/**', '.github/xpkgindex-update.yml', '.github/scripts/autoupdate-ci.py', '.github/workflows/xpkgindex-update.yml', '.agents/docs/2026-10-22-autoupdate-package-audit.json']
   push:
@@ -19,7 +23,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 env:
   PYTHONUTF8: '1'
-  UPDATER_COMMIT: 2f5bf1594e662dbfb7b84e8c21c43e48fc51ba28
+  UPDATER_COMMIT: a153833f603931db5e84813759decc4adfadd480
   XLINGS_VERSION: v2026.10.21.4
 jobs:
   scan:
@@ -42,24 +46,24 @@ jobs:
           ref: ${{ env.UPDATER_COMMIT }}
           path: .updater
           persist-credentials: false
-      - name: Install the pinned updater
-        run: python -m pip install ./.updater
+      - name: Use the pinned updater source
+        run: echo "PYTHONPATH=$PWD/.updater/src" >> "$GITHUB_ENV"
       - name: Audit all package declarations
         run: python .github/scripts/autoupdate-ci.py audit --output coverage.json
       - name: Protect published versions
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' || inputs.validation_base != ''
         env:
-          BASE: ${{ github.event.pull_request.base.sha }}
-        run: xpkgindex-update guard --base "$BASE" --output preservation.json
+          BASE: ${{ github.event.pull_request.base.sha || inputs.validation_base }}
+        run: python -m xpkgindex_update guard --base "$BASE" --output preservation.json
       - uses: actions/cache/restore@v4
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && inputs.validation_base == ''
         with:
           path: .update-state.json
           key: unified-update-state-${{ github.run_id }}
           restore-keys: unified-update-state-
       - name: Check real upstream resources once
         id: check
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && inputs.validation_base == ''
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
@@ -67,16 +71,16 @@ jobs:
         run: |
           args=()
           if [[ -n "$PACKAGE" ]]; then args+=(--package "$PACKAGE"); fi
-          xpkgindex-update check "${args[@]}" --state-file .update-state.json --output plan.json
+          python -m xpkgindex_update check "${args[@]}" --state-file .update-state.json --output plan.json
       - uses: actions/cache/save@v4
-        if: always() && github.event_name != 'pull_request'
+        if: always() && github.event_name != 'pull_request' && inputs.validation_base == ''
         with:
           path: .update-state.json
           key: unified-update-state-${{ github.run_id }}
       - name: Select added candidate versions from the PR diff
         id: matrix
         env:
-          BASE: ${{ github.event.pull_request.base.sha || github.sha }}
+          BASE: ${{ github.event.pull_request.base.sha || inputs.validation_base || github.sha }}
         run: |
           python .github/scripts/autoupdate-ci.py matrix --base "$BASE" --output matrix.json
           echo "value=$(python -c 'import json; print(json.dumps(json.load(open("matrix.json")),separators=(",",":")))')" >> "$GITHUB_OUTPUT"
@@ -92,7 +96,7 @@ jobs:
   propose:
     needs: scan
     if: >-
-      always() && needs.scan.result == 'success' && github.event_name != 'pull_request' &&
+      always() && needs.scan.result == 'success' && github.event_name != 'pull_request' && inputs.validation_base == '' &&
       (github.ref_name == github.event.repository.default_branch ||
        (github.event_name == 'push' && github.ref_name == 'feat/unified-autoupdate'))
     runs-on: ubuntu-latest
@@ -100,6 +104,7 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
+      actions: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -115,27 +120,33 @@ jobs:
           ref: ${{ env.UPDATER_COMMIT }}
           path: .updater
           persist-credentials: false
-      - run: python -m pip install ./.updater
+      - run: echo "PYTHONPATH=$PWD/.updater/src" >> "$GITHUB_ENV"
       - uses: actions/download-artifact@v4
         with:
           name: unified-update-plan
           path: .update-plan
       - name: Propose from the fixed plan
         env:
-          GH_TOKEN: ${{ secrets.XPKG_BOT_TOKEN }}
+          GH_TOKEN: ${{ vars.XPKG_USE_GITHUB_TOKEN == 'true' && github.token || secrets.XPKG_BOT_TOKEN }}
+          USE_BUILTIN_TOKEN: ${{ vars.XPKG_USE_GITHUB_TOKEN == 'true' }}
           BASE: ${{ github.ref_name }}
           VALIDATION: ${{ github.ref_name == 'feat/unified-autoupdate' }}
         run: |
-          test -n "$GH_TOKEN" || { echo 'XPKG_BOT_TOKEN is required'; exit 1; }
+          test -n "$GH_TOKEN" || { echo "Configure a valid XPKG_BOT_TOKEN or an authorized built-in-token mode"; exit 1; }
           git switch -C "$BASE" "$GITHUB_SHA"
           args=()
           if [[ "$VALIDATION" == true ]]; then args+=(--draft --package xim:uv); fi
-          xpkgindex-update propose --plan .update-plan/plan.json --base "$BASE" "${args[@]}" --output proposals.json
+          python -m xpkgindex_update propose --plan .update-plan/plan.json --base "$BASE" "${args[@]}" --output proposals.json
+          if [[ "$USE_BUILTIN_TOKEN" == true ]]; then
+            python .github/scripts/autoupdate-dispatch.py --proposals proposals.json --base "$BASE"
+          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: unified-update-proposals
-          path: proposals.json
+          path: |
+            proposals.json
+            dispatches.json
   candidate:
     needs: scan
     if: needs.scan.outputs.matrix != '' && needs.scan.outputs.matrix != '{"include":[]}'
@@ -158,7 +169,11 @@ jobs:
           ref: ${{ env.UPDATER_COMMIT }}
           path: .updater
           persist-credentials: false
-      - run: python -m pip install ./.updater pytest
+      - name: Use the pinned updater and CI test harness
+        shell: bash
+        run: |
+          echo "PYTHONPATH=$(python -c 'from pathlib import Path; print(Path(".updater/src").resolve())')" >> "$GITHUB_ENV"
+          python -m pip install pytest # host-dep-ok: the runner test harness, not a package runtime dependency
       - name: Install xlings on POSIX
         if: runner.os != 'Windows'
         shell: bash

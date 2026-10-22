@@ -25,10 +25,14 @@ PRs, and an automatically triggered real update with successful candidate tests.
 
 ## Implementation decisions
 
-- The existing configured `XPKG_BOT_TOKEN` is used for the integration. No GitHub
-  App credentials were found among configured repository secret names. The token
-  must be demonstrated to trigger ordinary PR CI; no claim is made before that
-  real run succeeds. No credentials are exported from Actions.
+- The existing `XPKG_BOT_TOKEN` was exercised by Actions and returned HTTP 401.
+  The built-in-token alternative was also checked: the organization rejected
+  enabling Actions PR creation with HTTP 409. Repository permissions remain
+  read-only by default and Actions PR creation remains disabled. A request to
+  update the dedicated bot credential or configure a repository-scoped App is
+  pending with the user. No personal OAuth token is copied into Actions secrets.
+  The default active authentication remains the dedicated bot token; built-in
+  mode is opt-in and includes verified, idempotent explicit CI dispatch.
 - A push to the explicitly named integration branch automatically scans uv and
   proposes a draft update against that branch. It uses the same fixed-plan
   updater as production, never targets main, and does not require merging the
