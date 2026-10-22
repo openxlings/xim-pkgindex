@@ -76,7 +76,7 @@ Later runs at the final PR head revalidate the final helper and resource gate.
 
 ## Validation
 
-- Upstream local tests: 91 passed; Ruff passed; wheel/sdist build passed before
+- Upstream local tests: 92 passed; Ruff passed; wheel/sdist build passed before
   the final candidate-verification addition, with CI rebuilding at the final head.
 - Upstream CI includes Linux/macOS/Windows × Python 3.11/3.13 and the Action job.
 - Index local static/isolation: 5,390 passed, 18 skipped, three existing xpasses.
