@@ -657,15 +657,32 @@ function __rewrite_specs_linux(rpath, dynamic_linker)
             .. "runnable binary -- rewriting to repair it.")
     end
 
-    local specs_config_bin = path.join(system.bindir(), "gcc-specs-config")
+    -- THE SCRIPT ITSELF, NOT ITS SHIM, when its payload can be found. The
+    -- shim runs the alias xlings recorded for a script package,
+    -- `xlings script <path>`, and xlings releases before the alias was quoted
+    -- split that path at a space: a home under `/tmp/mc probe` failed here
+    -- with `package file not found: /tmp/mc` (mcpp#832). Running the script
+    -- through `xlings script` as an argument vector reaches it on every
+    -- client; the shim stays the fallback for a layout this does not know.
+    local specs_config = { path.join(system.bindir(), "gcc-specs-config") }
+    local specs_dir = pkginfo.dep_install_dir("xim:gcc-specs-config")
+    if specs_dir and os.isfile(path.join(specs_dir, "gcc-specs-config.lua")) then
+        specs_config = { path.join(system.bindir(), "xlings"), "script",
+                         path.join(specs_dir, "gcc-specs-config.lua") }
+    end
 
     log.info("Rewriting gcc specs to payload-direct paths via gcc-specs-config...")
     -- AN ARGUMENT VECTOR, NOT A FORMATTED STRING (mcpp#832). Every value
     -- here is a path under the home, and a home under `/tmp/mc probe` split
     -- each one at the space: the rewrite named `/tmp/mc` and the install
     -- failed in a step that has nothing to do with the user's project.
-    shell.exec({specs_config_bin, gcc_bin, "--dynamic-linker", dynamic_linker,
-                "--rpath", rpath, "--linker-type", "gnu"})
+    local argv = {}
+    for _, a in ipairs(specs_config) do argv[#argv + 1] = a end
+    for _, a in ipairs({gcc_bin, "--dynamic-linker", dynamic_linker,
+                        "--rpath", rpath, "--linker-type", "gnu"}) do
+        argv[#argv + 1] = a
+    end
+    shell.exec(argv)
 
     -- Fail, do not warn and continue -- the same reasoning as the missing-glibc
     -- branch in __config_linux. A gcc that installs "successfully" and cannot
