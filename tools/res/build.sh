@@ -80,6 +80,8 @@ DEBIAN="debian:12@sha256:2c037a04925515fdd6ea85ea14a682d0e79931f5e9f5d07b6dbfc6b
 # The desktop components' (bundle below): one Alpine for all of them, so their
 # trees agree with each other and with the Qt runtime.
 ALPINE_DESKTOP="alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6"
+# Rust's own toolchain on Alpine (what is built in Rust; its musl target links static).
+RUST_ALPINE="rust:1.91-alpine3.22@sha256:8efbfb788786eeb127adc581394349c5fb567712156e0f8c2e499acadbc23756"
 # The Qt runtime the Qt desktops are built on (luban:qt-runtime): Alpine
 # 3.24's Qt at this index's build of it. A Qt desktop names it exactly, and
 # its build checks the Qt it links is this one.
@@ -314,18 +316,18 @@ passt)
     pack "$d" ;;
 virtiofsd)
     # A Luban machine's files over virtio-fs (xlings design 2026-10-21 §4):
-    # unprivileged, one a share, started by the machine's supervisor. The
-    # target named: crt-static is then the program's, not the proc-macros'.
+    # unprivileged, one a share, started by the machine's supervisor. Rust's
+    # own toolchain: its musl target links static, Alpine's rust does not.
     source_of virtiofsd "$version" "https://gitlab.com/virtio-fs/virtiofsd/-/archive/v$version/virtiofsd-v$version.tar.gz" "$work/src.tar.gz"
     d="virtiofsd-$version-linux-$arch"
-    ALPINE_IMAGE="$ALPINE_DESKTOP" alpine "apk add -q cargo libseccomp-dev libseccomp-static libcap-ng-dev libcap-ng-static \
+    ALPINE_IMAGE="$RUST_ALPINE" alpine "apk add -q musl-dev libseccomp-dev libseccomp-static libcap-ng-dev libcap-ng-static \
         && tar -xzf src.tar.gz && cd virtiofsd-v$version \
-        && RUSTFLAGS='-C target-feature=+crt-static' CARGO_HOME=/w/cargo \
-             cargo build -q --release --locked --target $arch-alpine-linux-musl \
-        && mkdir -p /w/$d/bin && cp target/$arch-alpine-linux-musl/release/virtiofsd /w/$d/bin/ && strip /w/$d/bin/virtiofsd"
+        && LIBSECCOMP_LINK_TYPE=static LIBSECCOMP_LIB_PATH=/usr/lib LIBCAPNG_LINK_TYPE=static LIBCAPNG_LIB_PATH=/usr/lib \
+             CARGO_HOME=/w/cargo cargo build -q --release --locked --target $arch-unknown-linux-musl \
+        && mkdir -p /w/$d/bin && cp target/$arch-unknown-linux-musl/release/virtiofsd /w/$d/bin/ && strip /w/$d/bin/virtiofsd"
     static_only "$work/$d/bin/virtiofsd"
     "$work/$d/bin/virtiofsd" --version | grep -q "$version" || die "virtiofsd does not report $version"
-    provenance "$d" "virtiofsd $version: https://gitlab.com/virtio-fs/virtiofsd tag v$version; cargo build --release, crt-static, in Alpine 3.24 (musl)"
+    provenance "$d" "virtiofsd $version: https://gitlab.com/virtio-fs/virtiofsd tag v$version; cargo build --release --target $arch-unknown-linux-musl in rust:1.91-alpine3.22 (static)"
     pack "$d" ;;
 e2fsprogs)
     source_of e2fsprogs "$version" "https://mirrors.edge.kernel.org/pub/linux/kernel/people/tytso/e2fsprogs/v$version/e2fsprogs-$version.tar.xz" "$work/src.tar.xz"
