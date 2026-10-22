@@ -48,7 +48,11 @@ Targets can explicitly opt into optional availability after package/inventory re
 This migration configures every reviewed target as required by default.
 Existing xlings-res pairs are consumed; institutional mirrors replace them only
 when their paths and artifact identity match. CN redirects to GitHub do not count
-as available CN assets. Historical resources, manual entries and hooks stay intact.
+as available CN assets. A package currently using xlings-res can use newer original
+upstream assets and a verified institutional mirror for future versions. Point
+`source` at the actual upstream version directory as well, so an old resource
+repository does not cap discovery. Repacked/split payloads need layout and install
+validation before such a migration. Historical resources, manual entries and hooks stay intact.
 
 The workflow scans every three days at 02:17 UTC / 11:17 JST. A lightweight daily
 trigger checks UTC days from 2026-10-23 and skips scheduled scans between due dates,

@@ -90,6 +90,9 @@ Node 当前 latest 是 LTS 指针，显式配置 keep，只新增后续版本，
 
 全量清单见 [包覆盖审计](2026-10-22-autoupdate-package-audit.json) 与
 [镜像逐包审计](2026-10-23-autoupdate-mirror-audit.json)。镜像站目录不等于完整二进制覆盖。
+新增站点及常用包迁移建议见 [机构镜像调研](2026-10-23-autoupdate-institutional-mirrors.md)：
+使用 xlings-res 不妨碍后续版本改用更新的可信原版镜像；版本发现也应指向真实上游。
+重打包/拆分包先验证布局与安装契约，历史条目保留。
 
 - USTC 的 uv、Temurin 25 已核实项目目录。新版本采用 CN 模板，历史 GitCode/单 GLOBAL 条目保持原样。
 - Node 与 rustup 采用官方 GLOBAL、USTC CN；Go 使用官方 GLOBAL、南京大学 CN；Gradle 使用官方 GLOBAL、腾讯 CN。每个包的两边都必须完整且一致。

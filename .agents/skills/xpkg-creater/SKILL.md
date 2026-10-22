@@ -133,6 +133,9 @@ extensions = {
 没有核实镜像时只声明 GLOBAL；有 USTC、清华等权威镜像也要逐项核实真实路径、完整资产与跨区 SHA256 一致，
 不能根据域名猜路径。每个目标默认 `required = true`；显式设为 false 表示可选，至少一个目标必须必需。
 选择所有必需目标完整可用的最新版本交集；可选目标失败整组省略。`latest = "keep"` 用于 LTS/固定默认版本。
+当前使用 xlings-res 也可迁移后续版本：若可信机构镜像已有更新的完整上游原版资产，同时切换真实上游 `source`
+和 GLOBAL/CN 模板，避免继续从旧 xlings-res 目录发现版本；保留所有旧版本块。对重打包/拆分资产先验证布局和 hooks，
+不能把上游归档直接当成同一产物。站点目录和选择路径的经验见 `.agents/docs/2026-10-23-autoupdate-institutional-mirrors.md`。
 
 提交前使用 workflow 固定提交的 xpkgindex-update 执行 `inspect`、`check --package xim:<name> --output plan.json`，
 检查候选、平台、镜像与 hash，并同步全量覆盖审计记录；无支持的来源解析器或无就绪资源时保留人工维护并记录原因。
