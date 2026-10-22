@@ -83,36 +83,7 @@ package = {
     -- linux), while the sha256 table is keyed by the NORMALIZED arch
     -- (`aarch64` on both). See installer.cppm detect_arch_() vs
     -- normalize_arch().
-    extensions = {
-        autoupdate = {
-            upstream = "Perl/perl5",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    x86_64 = {
-                        GLOBAL = "https://github.com/xlings-res/perl/releases/download/${version}/perl-${version}-linux-x86_64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/perl/releases/download/${version}/perl-${version}-linux-x86_64.tar.gz",
-                    },
-                    aarch64 = {
-                        GLOBAL = "https://github.com/xlings-res/perl/releases/download/${version}/perl-${version}-linux-aarch64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/perl/releases/download/${version}/perl-${version}-linux-aarch64.tar.gz",
-                    },
-                },
-                macosx = {
-                    x86_64 = {
-                        GLOBAL = "https://github.com/xlings-res/perl/releases/download/${version}/perl-${version}-macosx-x86_64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/perl/releases/download/${version}/perl-${version}-macosx-x86_64.tar.gz",
-                    },
-                    aarch64 = {
-                        GLOBAL = "https://github.com/xlings-res/perl/releases/download/${version}/perl-${version}-macosx-aarch64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/perl/releases/download/${version}/perl-${version}-macosx-aarch64.tar.gz",
-                    },
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
+
 
     xpm = {
         linux = {

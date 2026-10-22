@@ -29,20 +29,7 @@ package = {
     -- config() still registers package.name as a release anchor; see the note
     -- there for why that is required even with no program to shim.
 
-    extensions = {
-        autoupdate = {
-            upstream = "llvm/llvm-project",
-            tag = "llvmorg-${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    GLOBAL = "https://github.com/xlings-res/llvm-dev/releases/download/${version}/llvm-dev-${version}-linux-x86_64.tar.gz",
-                    CN = "https://gitcode.com/xlings-res/llvm-dev/releases/download/${version}/llvm-dev-${version}-linux-x86_64.tar.gz",
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
+
 
     xpm = {
         linux = {

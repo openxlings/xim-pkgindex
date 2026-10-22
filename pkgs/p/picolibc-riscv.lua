@@ -44,28 +44,7 @@ package = {
     -- picolibc release and re-download a URL that does not exist yet -- this
     -- artifact has to be REBUILT for a version bump, and that is a human step:
     -- run the script, publish, then edit this file.
-    extensions = {
-        autoupdate = {
-            upstream = "picolibc/picolibc",
-            tag = "${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    GLOBAL = "https://github.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz",
-                    CN = "https://gitcode.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz",
-                },
-                macosx = {
-                    GLOBAL = "https://github.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz",
-                    CN = "https://gitcode.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz",
-                },
-                windows = {
-                    GLOBAL = "https://github.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz",
-                    CN = "https://gitcode.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz",
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
+
 
     xpm = {
         source = {

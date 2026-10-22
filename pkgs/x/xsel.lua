@@ -20,26 +20,7 @@ package = {
     programs = {"xsel"},
     xvm_enable = true,
 
-    extensions = {
-        autoupdate = {
-            upstream = "kfish/xsel",
-            tag = "${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    x86_64 = {
-                        GLOBAL = "https://github.com/xlings-res/xsel/releases/download/${version}/xsel-${version}-linux-x86_64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/xsel/releases/download/${version}/xsel-${version}-linux-x86_64.tar.gz",
-                    },
-                    aarch64 = {
-                        GLOBAL = "https://github.com/xlings-res/xsel/releases/download/${version}/xsel-${version}-linux-aarch64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/xsel/releases/download/${version}/xsel-${version}-linux-aarch64.tar.gz",
-                    },
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
+
 
     xpm = {
         linux = {

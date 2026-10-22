@@ -30,36 +30,7 @@ package = {
     extensions = { luban = { checks = {
         { id = "luban-runs", what = "luban answers", run = "luban --version", timeout = 20 },
     } },
-        autoupdate = {
-            upstream = "openxlings/xlings",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    aarch64 = {
-                        GLOBAL = "https://github.com/xlings-res/luban/releases/download/${version}/luban-${version}-linux-aarch64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/luban/releases/download/${version}/luban-${version}-linux-aarch64.tar.gz",
-                    },
-                    x86_64 = {
-                        GLOBAL = "https://github.com/xlings-res/luban/releases/download/${version}/luban-${version}-linux-x86_64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/luban/releases/download/${version}/luban-${version}-linux-x86_64.tar.gz",
-                    },
-                },
-                macosx = {
-                    aarch64 = {
-                        GLOBAL = "https://github.com/xlings-res/luban/releases/download/${version}/luban-${version}-macosx-aarch64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/luban/releases/download/${version}/luban-${version}-macosx-aarch64.tar.gz",
-                    },
-                },
-                windows = {
-                    x86_64 = {
-                        GLOBAL = "https://github.com/xlings-res/luban/releases/download/${version}/luban-${version}-windows-x86_64.zip",
-                        CN = "https://gitcode.com/xlings-res/luban/releases/download/${version}/luban-${version}-windows-x86_64.zip",
-                    },
-                },
-            },
-            verify = "sha256-sidecar",
-        },
+
     },
 
     xpm = {

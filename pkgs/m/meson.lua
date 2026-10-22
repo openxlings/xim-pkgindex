@@ -31,20 +31,7 @@ package = {
     -- The host-leakage audit could not catch it: that audit inspects what the
     -- build driver FOUND (meson-log.txt, build.ninja) and never the driver.
 
-    extensions = {
-        autoupdate = {
-            upstream = "mesonbuild/meson",
-            tag = "${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    GLOBAL = "https://github.com/xlings-res/meson/releases/download/${version}/meson-${version}-linux-x86_64.tar.gz",
-                    CN = "https://gitcode.com/xlings-res/meson/releases/download/${version}/meson-${version}-linux-x86_64.tar.gz",
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
+
 
     xpm = {
         linux = {

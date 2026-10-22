@@ -21,26 +21,7 @@ package = {
     programs = {"tmux"},
     xvm_enable = true,
 
-    extensions = {
-        autoupdate = {
-            upstream = "tmux/tmux",
-            tag = "${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    x86_64 = {
-                        GLOBAL = "https://github.com/xlings-res/tmux/releases/download/${version}/tmux-${version}-linux-x86_64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/tmux/releases/download/${version}/tmux-${version}-linux-x86_64.tar.gz",
-                    },
-                    aarch64 = {
-                        GLOBAL = "https://github.com/xlings-res/tmux/releases/download/${version}/tmux-${version}-linux-aarch64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/tmux/releases/download/${version}/tmux-${version}-linux-aarch64.tar.gz",
-                    },
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
+
 
     xpm = {
         linux = {

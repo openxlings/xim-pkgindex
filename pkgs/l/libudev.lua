@@ -16,26 +16,7 @@ package = {
 
     xvm_enable = true,
 
-    extensions = {
-        autoupdate = {
-            upstream = "systemd/systemd",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    aarch64 = {
-                        GLOBAL = "https://github.com/xlings-res/libudev/releases/download/${version}/libudev-${version}-linux-aarch64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/libudev/releases/download/${version}/libudev-${version}-linux-aarch64.tar.gz",
-                    },
-                    x86_64 = {
-                        GLOBAL = "https://github.com/xlings-res/libudev/releases/download/${version}/libudev-${version}-linux-x86_64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/libudev/releases/download/${version}/libudev-${version}-linux-x86_64.tar.gz",
-                    },
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
+
 
     xpm = {
         linux = {

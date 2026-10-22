@@ -18,21 +18,7 @@ package = {
     programs = {"yazi", "ya"},
     xvm_enable = true,
 
-    extensions = {
-        autoupdate = {
-            upstream = "sxyazi/yazi",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    aarch64 = "https://github.com/sxyazi/yazi/releases/download/v${version}/yazi-aarch64-unknown-linux-musl.zip",
-                    x86_64 = "https://github.com/sxyazi/yazi/releases/download/v${version}/yazi-x86_64-unknown-linux-musl.zip",
-                },
-                macosx = "https://github.com/sxyazi/yazi/releases/download/v${version}/yazi-aarch64-apple-darwin.zip",
-                windows = "https://github.com/sxyazi/yazi/releases/download/v${version}/yazi-x86_64-pc-windows-msvc.zip",
-            },
-        },
-    },
+
 
     xpm = {
         linux = {

@@ -15,20 +15,7 @@ package = {
     categories = {"lib", "system"},
     keywords = {"libselinux", "selinux", "lib"},
 
-    extensions = {
-        autoupdate = {
-            upstream = "SELinuxProject/selinux",
-            tag = "${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    GLOBAL = "https://github.com/xlings-res/libselinux/releases/download/${version}/libselinux-${version}-linux-x86_64.tar.gz",
-                    CN = "https://gitcode.com/xlings-res/libselinux/releases/download/${version}/libselinux-${version}-linux-x86_64.tar.gz",
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
+
 
     xpm = {
         linux = {

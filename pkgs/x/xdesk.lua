@@ -36,22 +36,7 @@ package = {
     programs = {"xdesk"},
     xvm_enable = true,
 
-    extensions = {
-        autoupdate = {
-            upstream = "openxlings/xlings",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    x86_64 = {
-                        GLOBAL = "https://github.com/xlings-res/xdesk/releases/download/${version}/xdesk-${version}-linux-x86_64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/xdesk/releases/download/${version}/xdesk-${version}-linux-x86_64.tar.gz",
-                    },
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
+
 
     xpm = {
         linux = {

@@ -56,18 +56,7 @@ package = {
     programs = {"kotlinc", "kotlin"},
     xvm_enable = true,
 
-    extensions = {
-        autoupdate = {
-            upstream = "JetBrains/kotlin",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = "https://github.com/JetBrains/kotlin/releases/download/v${version}/kotlin-compiler-${version}.zip",
-                macosx = "https://github.com/JetBrains/kotlin/releases/download/v${version}/kotlin-compiler-${version}.zip",
-                windows = "https://github.com/JetBrains/kotlin/releases/download/v${version}/kotlin-compiler-${version}.zip",
-            },
-        },
-    },
+
 
     xpm = {
         linux = {

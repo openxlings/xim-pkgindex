@@ -38,20 +38,7 @@ package = {
     -- Version = the Vulkan SDK tag the layer is built from, the same line
     -- mcpp-index's compat.vulkan (the loader) tracks.
 
-    extensions = {
-        autoupdate = {
-            upstream = "KhronosGroup/Vulkan-ValidationLayers",
-            tag = "vulkan-sdk-${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    GLOBAL = "https://github.com/xlings-res/vulkan-validation-layers/releases/download/${version}/vulkan-validation-layers-${version}-linux-x86_64.tar.gz",
-                    CN = "https://gitcode.com/xlings-res/vulkan-validation-layers/releases/download/${version}/vulkan-validation-layers-${version}-linux-x86_64.tar.gz",
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
+
 
     xpm = {
         linux = {

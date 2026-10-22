@@ -16,26 +16,7 @@ package = {
 
     xvm_enable = true,
 
-    extensions = {
-        autoupdate = {
-            upstream = "libusb/libusb",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    aarch64 = {
-                        GLOBAL = "https://github.com/xlings-res/libusb/releases/download/${version}/libusb-${version}-linux-aarch64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/libusb/releases/download/${version}/libusb-${version}-linux-aarch64.tar.gz",
-                    },
-                    x86_64 = {
-                        GLOBAL = "https://github.com/xlings-res/libusb/releases/download/${version}/libusb-${version}-linux-x86_64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/libusb/releases/download/${version}/libusb-${version}-linux-x86_64.tar.gz",
-                    },
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
+
 
     xpm = {
         linux = {

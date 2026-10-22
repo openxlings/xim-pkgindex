@@ -81,28 +81,7 @@ package = {
     -- `update` would bump `latest` to a picolibc release whose artifact does not
     -- exist yet. This payload has to be REBUILT for a version bump, and that is
     -- a human step: run the script, publish, then edit this file.
-    extensions = {
-        autoupdate = {
-            upstream = "picolibc/picolibc",
-            tag = "${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    GLOBAL = "https://github.com/xlings-res/picolibc-arm/releases/download/${version}/picolibc-arm-${version}.tar.gz",
-                    CN = "https://gitcode.com/xlings-res/picolibc-arm/releases/download/${version}/picolibc-arm-${version}.tar.gz",
-                },
-                macosx = {
-                    GLOBAL = "https://github.com/xlings-res/picolibc-arm/releases/download/${version}/picolibc-arm-${version}.tar.gz",
-                    CN = "https://gitcode.com/xlings-res/picolibc-arm/releases/download/${version}/picolibc-arm-${version}.tar.gz",
-                },
-                windows = {
-                    GLOBAL = "https://github.com/xlings-res/picolibc-arm/releases/download/${version}/picolibc-arm-${version}.tar.gz",
-                    CN = "https://gitcode.com/xlings-res/picolibc-arm/releases/download/${version}/picolibc-arm-${version}.tar.gz",
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
+
 
     xpm = {
         source = {

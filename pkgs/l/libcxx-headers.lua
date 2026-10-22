@@ -70,28 +70,7 @@ package = {
     -- it. This descriptor does not reference it: one archive is the honest
     -- shape for a host-independent payload, and `llvm.lua` already establishes
     -- that xim extracts `.tar.xz` on win32.
-    extensions = {
-        autoupdate = {
-            upstream = "llvm/llvm-project",
-            tag = "llvmorg-${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    GLOBAL = "https://github.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz",
-                    CN = "https://gitcode.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz",
-                },
-                macosx = {
-                    GLOBAL = "https://github.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz",
-                    CN = "https://gitcode.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz",
-                },
-                windows = {
-                    GLOBAL = "https://github.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz",
-                    CN = "https://gitcode.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz",
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
+
 
     xpm = {
         source = {

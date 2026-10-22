@@ -26,7 +26,7 @@ def test_complete_inventory_and_explicit_eligibility_decisions():
 
 
 @pytest.mark.static
-@pytest.mark.parametrize('package', ('fish', 'griddycode', 'pnpm'))
+@pytest.mark.parametrize('package', ('fish', 'griddycode'))
 def test_existing_mirror_packages_use_the_unified_declaration(package):
     row = next(r for r in json.loads(AUDIT.read_text())['packages'] if r.get('id') == 'xim:' + package)
     assert row['status'] == 'enabled', row
@@ -43,3 +43,12 @@ def test_legacy_executable_entry_points_are_removed():
         assert not (ROOT / name).exists()
     mirror = (ROOT / 'tools/xpkg_ci.py').read_text()
     assert 'load_vcheck' not in mirror and 'def cmd_scan' not in mirror and 'def cmd_propose' not in mirror
+
+
+@pytest.mark.static
+def test_cn_package_keeps_mirror_publication_but_not_autoupdate():
+    row = next(r for r in json.loads(AUDIT.read_text())['packages'] if r.get('id') == 'xim:pnpm')
+    assert row['status'] == 'manual' and 'CN' in row['reason']
+    text = (ROOT / row['path']).read_text()
+    assert 'mirror = true' in text
+    assert 'autoupdate = {' not in text

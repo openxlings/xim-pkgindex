@@ -16,30 +16,7 @@ package = {
 
     xvm_enable = true,
 
-    extensions = {
-        autoupdate = {
-            upstream = "llvm/llvm-project",
-            tag = "llvmorg-${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    x86_64 = {
-                        GLOBAL = "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-linux-x86_64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-linux-x86_64.tar.gz",
-                    },
-                },
-                windows = {
-                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-windows-x86_64.zip",
-                    CN = "https://gitcode.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-windows-x86_64.zip",
-                },
-                macosx = {
-                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-macosx-arm64.tar.xz",
-                    CN = "https://gitcode.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-macosx-arm64.tar.xz",
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
+
 
     xpm = {
         linux = {

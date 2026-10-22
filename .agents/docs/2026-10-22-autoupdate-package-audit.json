@@ -118,20 +118,10 @@
       "id": "xim:appimagetool",
       "upstream": "AppImage/appimagetool",
       "stars": 437,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "AppImage/appimagetool",
-        "tag": "${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "x86_64": "https://github.com/AppImage/appimagetool/releases/download/${version}/appimagetool-x86_64.AppImage",
-            "aarch64": "https://github.com/AppImage/appimagetool/releases/download/${version}/appimagetool-aarch64.AppImage"
-          }
-        }
-      },
+      "status": "manual",
       "latest": "1.9.1",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/a/apple-device-tools.lua",
@@ -225,19 +215,10 @@
       "id": "xim:bazel",
       "upstream": "bazelbuild/bazel",
       "stars": 25973,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "bazelbuild/bazel",
-        "tag": "${version}",
-        "latest": "advance",
-        "url": {
-          "linux": "https://github.com/bazelbuild/bazel/releases/download/${version}/bazel-${version}-linux-x86_64",
-          "macosx": "https://github.com/bazelbuild/bazel/releases/download/${version}/bazel-${version}-darwin-x86_64",
-          "windows": "https://github.com/bazelbuild/bazel/releases/download/${version}/bazel-${version}-windows-x86_64.exe"
-        }
-      },
+      "status": "manual",
       "latest": "9.2.0",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/b/binutils.lua",
@@ -258,27 +239,10 @@
       "id": "xim:brotli",
       "upstream": "google/brotli",
       "stars": 14955,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "google/brotli",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/brotli/releases/download/${version}/brotli-${version}-linux-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/brotli/releases/download/${version}/brotli-${version}-linux-aarch64.tar.gz"
-            },
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/brotli/releases/download/${version}/brotli-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/brotli/releases/download/${version}/brotli-${version}-linux-x86_64.tar.gz"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "1.2.0",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/b/bun.lua",
@@ -318,27 +282,10 @@
       "id": "xim:bwrap",
       "upstream": "containers/bubblewrap",
       "stars": 9160,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "containers/bubblewrap",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/bwrap/releases/download/${version}/bwrap-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/bwrap/releases/download/${version}/bwrap-${version}-linux-x86_64.tar.gz"
-            },
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/bwrap/releases/download/${version}/bwrap-${version}-linux-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/bwrap/releases/download/${version}/bwrap-${version}-linux-aarch64.tar.gz"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "0.11.2",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources or an implicit multi-mirror resource source; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/c/ca-certificates.lua",
@@ -418,35 +365,10 @@
       "id": "xim:cmake",
       "upstream": "Kitware/CMake",
       "stars": 8131,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "Kitware/CMake",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/cmake/releases/download/${version}/cmake-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/cmake/releases/download/${version}/cmake-${version}-linux-x86_64.tar.gz"
-            }
-          },
-          "macosx": {
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/cmake/releases/download/${version}/cmake-${version}-macosx-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/cmake/releases/download/${version}/cmake-${version}-macosx-aarch64.tar.gz"
-            }
-          },
-          "windows": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/cmake/releases/download/${version}/cmake-${version}-windows-x86_64.zip",
-              "CN": "https://gitcode.com/xlings-res/cmake/releases/download/${version}/cmake-${version}-windows-x86_64.zip"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "4.4.2",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources or an implicit multi-mirror resource source; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/c/code.lua",
@@ -483,19 +405,10 @@
       "id": "xim:coursier",
       "upstream": "coursier/coursier",
       "stars": 2138,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "coursier/coursier",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": "https://github.com/coursier/coursier/releases/download/v${version}/coursier.jar",
-          "macosx": "https://github.com/coursier/coursier/releases/download/v${version}/coursier.jar",
-          "windows": "https://github.com/coursier/coursier/releases/download/v${version}/coursier.jar"
-        }
-      },
+      "status": "manual",
       "latest": "2.1.24",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/c/cpp.lua",
@@ -632,21 +545,10 @@
       "id": "xim:directx-headers",
       "upstream": "microsoft/DirectX-Headers",
       "stars": 745,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "microsoft/DirectX-Headers",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "GLOBAL": "https://github.com/xlings-res/directx-headers/releases/download/${version}/directx-headers-${version}-linux-x86_64.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/directx-headers/releases/download/${version}/directx-headers-${version}-linux-x86_64.tar.gz"
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "1.614.1",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/d/dotnet.lua",
@@ -727,21 +629,10 @@
       "id": "xim:expat",
       "upstream": "libexpat/libexpat",
       "stars": 1393,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "libexpat/libexpat",
-        "tag": "R_${version:underscore}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "GLOBAL": "https://github.com/xlings-res/expat/releases/download/${version}/expat-${version}-linux-x86_64.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/expat/releases/download/${version}/expat-${version}-linux-x86_64.tar.gz"
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "2.6.2",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/f/fd.lua",
@@ -805,21 +696,10 @@
       "id": "xim:fribidi",
       "upstream": "fribidi/fribidi",
       "stars": 447,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "fribidi/fribidi",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "GLOBAL": "https://github.com/xlings-res/fribidi/releases/download/${version}/fribidi-${version}-linux-x86_64.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/fribidi/releases/download/${version}/fribidi-${version}-linux-x86_64.tar.gz"
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "1.0.13",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/f/fzf.lua",
@@ -960,20 +840,10 @@
       "id": "xim:go",
       "upstream": "golang/go",
       "stars": 139400,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "golang/go",
-        "tag": "go${version}",
-        "latest": "advance",
-        "url": {
-          "linux": "https://go.dev/dl/go${version}.linux-amd64.tar.gz",
-          "macosx": "https://go.dev/dl/go${version}.darwin-arm64.tar.gz",
-          "windows": "https://go.dev/dl/go${version}.windows-amd64.zip"
-        },
-        "provider": "go"
-      },
+      "status": "manual",
       "latest": "1.27.0",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "release discovery must use GitHub; vendor providers are outside this rollout"
     },
     {
       "path": "pkgs/g/godot.lua",
@@ -988,40 +858,20 @@
       "id": "xim:gradle",
       "upstream": "gradle/gradle",
       "stars": 18887,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "gradle/gradle",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": "https://services.gradle.org/distributions/gradle-${version}-bin.zip",
-          "macosx": "https://services.gradle.org/distributions/gradle-${version}-bin.zip",
-          "windows": "https://services.gradle.org/distributions/gradle-${version}-bin.zip"
-        }
-      },
+      "status": "manual",
       "latest": "9.7.1",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/g/graphene.lua",
       "id": "xim:graphene",
       "upstream": "ebassi/graphene",
       "stars": 441,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "ebassi/graphene",
-        "tag": "${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "GLOBAL": "https://github.com/xlings-res/graphene/releases/download/${version}/graphene-${version}-linux-x86_64.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/graphene/releases/download/${version}/graphene-${version}-linux-x86_64.tar.gz"
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "1.10.8",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/g/graphics.lua",
@@ -1036,21 +886,10 @@
       "id": "xim:graphite2",
       "upstream": "silnrsi/graphite",
       "stars": 192,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "silnrsi/graphite",
-        "tag": "${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "GLOBAL": "https://github.com/xlings-res/graphite2/releases/download/${version}/graphite2-${version}-linux-x86_64.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/graphite2/releases/download/${version}/graphite2-${version}-linux-x86_64.tar.gz"
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "1.3.14",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/g/griddycode.lua",
@@ -1087,21 +926,10 @@
       "id": "xim:harfbuzz",
       "upstream": "harfbuzz/harfbuzz",
       "stars": 6165,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "harfbuzz/harfbuzz",
-        "tag": "${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "GLOBAL": "https://github.com/xlings-res/harfbuzz/releases/download/${version}/harfbuzz-${version}-linux-x86_64.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/harfbuzz/releases/download/${version}/harfbuzz-${version}-linux-x86_64.tar.gz"
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "14.4.0",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/h/hermes-agent.lua",
@@ -1126,48 +954,20 @@
       "id": "xim:hip-nvidia",
       "upstream": "ROCm/HIP",
       "stars": 4418,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "ROCm/HIP",
-        "tag": "rocm-${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "GLOBAL": "https://github.com/xlings-res/hip-nvidia/releases/download/${version}/hip-nvidia-${version}-noarch.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/hip-nvidia/releases/download/${version}/hip-nvidia-${version}-noarch.tar.gz"
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "7.2.4",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/h/htop.lua",
       "id": "xim:htop",
       "upstream": "htop-dev/htop",
       "stars": 8409,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "htop-dev/htop",
-        "tag": "${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/htop/releases/download/${version}/htop-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/htop/releases/download/${version}/htop-${version}-linux-x86_64.tar.gz"
-            },
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/htop/releases/download/${version}/htop-${version}-linux-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/htop/releases/download/${version}/htop-${version}-linux-aarch64.tar.gz"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "3.5.3",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources or an implicit multi-mirror resource source; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/h/huxerui.lua",
@@ -1182,25 +982,8 @@
       "id": "xim:icu",
       "upstream": "unicode-org/icu",
       "stars": 3619,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "unicode-org/icu",
-        "tag": "release-${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/icu/releases/download/${version}/icu-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/icu/releases/download/${version}/icu-${version}-linux-x86_64.tar.gz"
-            },
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/icu/releases/download/${version}/icu-${version}-linux-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/icu/releases/download/${version}/icu-${version}-linux-aarch64.tar.gz"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      }
+      "status": "manual",
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/i/interposer-stub.lua",
@@ -1239,46 +1022,20 @@
       "id": "xim:jdk-zulu",
       "upstream": "zulu-openjdk/zulu-openjdk",
       "stars": 289,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "zulu-openjdk/zulu-openjdk",
-        "tag": "${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "aarch64": "https://cdn.azul.com/zulu/bin/zulu25.36.15-ca-jdk${version}-linux_aarch64.tar.gz",
-            "x86_64": "https://cdn.azul.com/zulu/bin/zulu25.36.15-ca-jdk${version}-linux_x64.tar.gz"
-          },
-          "macosx": {
-            "aarch64": "https://cdn.azul.com/zulu/bin/zulu25.36.15-ca-jdk${version}-macosx_aarch64.tar.gz",
-            "x86_64": "https://cdn.azul.com/zulu/bin/zulu25.36.15-ca-jdk${version}-macosx_x64.tar.gz"
-          },
-          "windows": {
-            "x86_64": "https://cdn.azul.com/zulu/bin/zulu25.36.15-ca-jdk${version}-win_x64.zip"
-          }
-        }
-      },
+      "status": "manual",
       "latest": "25.0.4",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/j/jetbrainsmono-nerd-font.lua",
       "id": "xim:jetbrainsmono-nerd-font",
       "upstream": "ryanoasis/nerd-fonts",
       "stars": 64949,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "ryanoasis/nerd-fonts",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": "https://github.com/ryanoasis/nerd-fonts/releases/download/v${version}/JetBrainsMono.zip",
-          "macosx": "https://github.com/ryanoasis/nerd-fonts/releases/download/v${version}/JetBrainsMono.zip",
-          "windows": "https://github.com/ryanoasis/nerd-fonts/releases/download/v${version}/JetBrainsMono.zip"
-        }
-      },
+      "status": "manual",
       "latest": "3.4.0",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/j/jq.lua",
@@ -1321,44 +1078,18 @@
       "id": "xim:kotlin",
       "upstream": "JetBrains/kotlin",
       "stars": 53498,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "JetBrains/kotlin",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": "https://github.com/JetBrains/kotlin/releases/download/v${version}/kotlin-compiler-${version}.zip",
-          "macosx": "https://github.com/JetBrains/kotlin/releases/download/v${version}/kotlin-compiler-${version}.zip",
-          "windows": "https://github.com/JetBrains/kotlin/releases/download/v${version}/kotlin-compiler-${version}.zip"
-        }
-      },
+      "status": "manual",
       "latest": "2.4.20",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/k/krb5.lua",
       "id": "xim:krb5",
       "upstream": "krb5/krb5",
       "stars": 608,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "krb5/krb5",
-        "tag": "krb5-${version}-final",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/krb5/releases/download/${version}/krb5-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/krb5/releases/download/${version}/krb5-${version}-linux-x86_64.tar.gz"
-            },
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/krb5/releases/download/${version}/krb5-${version}-linux-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/krb5/releases/download/${version}/krb5-${version}-linux-aarch64.tar.gz"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      }
+      "status": "manual",
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/l/libX11.lua",
@@ -1487,27 +1218,10 @@
       "id": "xim:libcups",
       "upstream": "OpenPrinting/cups",
       "stars": 1778,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "OpenPrinting/cups",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/libcups/releases/download/${version}/libcups-${version}-linux-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/libcups/releases/download/${version}/libcups-${version}-linux-aarch64.tar.gz"
-            },
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/libcups/releases/download/${version}/libcups-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/libcups/releases/download/${version}/libcups-${version}-linux-x86_64.tar.gz"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "2.3.3",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/l/libcurand.lua",
@@ -1532,50 +1246,20 @@
       "id": "xim:libcxx-headers",
       "upstream": "llvm/llvm-project",
       "stars": 41154,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "llvm/llvm-project",
-        "tag": "llvmorg-${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "GLOBAL": "https://github.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz",
-            "CN": "https://gitcode.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz"
-          },
-          "macosx": {
-            "GLOBAL": "https://github.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz",
-            "CN": "https://gitcode.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz"
-          },
-          "windows": {
-            "GLOBAL": "https://github.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz",
-            "CN": "https://gitcode.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz"
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "22.1.8",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/l/libdatrie.lua",
       "id": "xim:libdatrie",
       "upstream": "tlwg/libdatrie",
       "stars": 184,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "tlwg/libdatrie",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "GLOBAL": "https://github.com/xlings-res/libdatrie/releases/download/${version}/libdatrie-${version}-linux-x86_64.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/libdatrie/releases/download/${version}/libdatrie-${version}-linux-x86_64.tar.gz"
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "0.2.14",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/l/libdrm.lua",
@@ -1594,42 +1278,20 @@
       "id": "xim:libepoxy",
       "upstream": "anholt/libepoxy",
       "stars": 753,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "anholt/libepoxy",
-        "tag": "${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "GLOBAL": "https://github.com/xlings-res/libepoxy/releases/download/${version}/libepoxy-${version}-linux-x86_64.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/libepoxy/releases/download/${version}/libepoxy-${version}-linux-x86_64.tar.gz"
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "1.5.10",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/l/libffi.lua",
       "id": "xim:libffi",
       "upstream": "libffi/libffi",
       "stars": 4394,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "libffi/libffi",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "GLOBAL": "https://github.com/xlings-res/libffi/releases/download/${version}/libffi-${version}-linux-x86_64.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/libffi/releases/download/${version}/libffi-${version}-linux-x86_64.tar.gz"
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "3.4.4",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/l/libgcrypt.lua",
@@ -1660,21 +1322,10 @@
       "id": "xim:libjpeg-turbo",
       "upstream": "libjpeg-turbo/libjpeg-turbo",
       "stars": 4456,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "libjpeg-turbo/libjpeg-turbo",
-        "tag": "${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "GLOBAL": "https://github.com/xlings-res/libjpeg-turbo/releases/download/${version}/libjpeg-turbo-${version}-linux-x86_64.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/libjpeg-turbo/releases/download/${version}/libjpeg-turbo-${version}-linux-x86_64.tar.gz"
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "3.2.0",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/l/libllvm.lua",
@@ -1731,42 +1382,20 @@
       "id": "xim:libpng",
       "upstream": "glennrp/libpng",
       "stars": 1666,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "glennrp/libpng",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "GLOBAL": "https://github.com/xlings-res/libpng/releases/download/${version}/libpng-${version}-linux-x86_64.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/libpng/releases/download/${version}/libpng-${version}-linux-x86_64.tar.gz"
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "1.6.43",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/l/libpsl.lua",
       "id": "xim:libpsl",
       "upstream": "rockdaboot/libpsl",
       "stars": 226,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "rockdaboot/libpsl",
-        "tag": "${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "GLOBAL": "https://github.com/xlings-res/libpsl/releases/download/${version}/libpsl-${version}-linux-x86_64.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/libpsl/releases/download/${version}/libpsl-${version}-linux-x86_64.tar.gz"
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "0.23.3",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/l/libsecret.lua",
@@ -1779,21 +1408,10 @@
       "id": "xim:libselinux",
       "upstream": "SELinuxProject/selinux",
       "stars": 1649,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "SELinuxProject/selinux",
-        "tag": "${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "GLOBAL": "https://github.com/xlings-res/libselinux/releases/download/${version}/libselinux-${version}-linux-x86_64.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/libselinux/releases/download/${version}/libselinux-${version}-linux-x86_64.tar.gz"
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "3.11",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/l/libsoup.lua",
@@ -1806,21 +1424,10 @@
       "id": "xim:libthai",
       "upstream": "tlwg/libthai",
       "stars": 87,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "tlwg/libthai",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "GLOBAL": "https://github.com/xlings-res/libthai/releases/download/${version}/libthai-${version}-linux-x86_64.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/libthai/releases/download/${version}/libthai-${version}-linux-x86_64.tar.gz"
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "0.1.30",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/l/libtiff.lua",
@@ -1833,54 +1440,20 @@
       "id": "xim:libudev",
       "upstream": "systemd/systemd",
       "stars": 16888,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "systemd/systemd",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/libudev/releases/download/${version}/libudev-${version}-linux-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/libudev/releases/download/${version}/libudev-${version}-linux-aarch64.tar.gz"
-            },
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/libudev/releases/download/${version}/libudev-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/libudev/releases/download/${version}/libudev-${version}-linux-x86_64.tar.gz"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "257.4",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/l/libusb.lua",
       "id": "xim:libusb",
       "upstream": "libusb/libusb",
       "stars": 6175,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "libusb/libusb",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/libusb/releases/download/${version}/libusb-${version}-linux-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/libusb/releases/download/${version}/libusb-${version}-linux-aarch64.tar.gz"
-            },
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/libusb/releases/download/${version}/libusb-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/libusb/releases/download/${version}/libusb-${version}-linux-x86_64.tar.gz"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "1.0.29",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/l/libxcb.lua",
@@ -1913,54 +1486,20 @@
       "id": "xim:limine",
       "upstream": "limine-bootloader/limine",
       "stars": 3884,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "limine-bootloader/limine",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/limine/releases/download/${version}/limine-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/limine/releases/download/${version}/limine-${version}-linux-x86_64.tar.gz"
-            },
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/limine/releases/download/${version}/limine-${version}-linux-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/limine/releases/download/${version}/limine-${version}-linux-aarch64.tar.gz"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "12.9.3",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources or an implicit multi-mirror resource source; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/l/linux-headers.lua",
       "id": "xim:linux-headers",
       "upstream": "torvalds/linux",
       "stars": 253092,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "torvalds/linux",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/linux-headers/releases/download/${version}/linux-headers-${version}-linux-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/linux-headers/releases/download/${version}/linux-headers-${version}-linux-aarch64.tar.gz"
-            },
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/scode-res/releases/download/linux-headers/linux-headers-${version}.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/scode-res/releases/download/linux-headers/linux-headers-${version}.tar.gz"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "5.11.1",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/l/linux-kernel-virt.lua",
@@ -1995,52 +1534,20 @@
       "id": "xim:llvm-dev",
       "upstream": "llvm/llvm-project",
       "stars": 41154,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "llvm/llvm-project",
-        "tag": "llvmorg-${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "GLOBAL": "https://github.com/xlings-res/llvm-dev/releases/download/${version}/llvm-dev-${version}-linux-x86_64.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/llvm-dev/releases/download/${version}/llvm-dev-${version}-linux-x86_64.tar.gz"
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "20.1.7.1",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/l/llvm-tools.lua",
       "id": "xim:llvm-tools",
       "upstream": "llvm/llvm-project",
       "stars": 41154,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "llvm/llvm-project",
-        "tag": "llvmorg-${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-linux-x86_64.tar.gz"
-            }
-          },
-          "windows": {
-            "GLOBAL": "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-windows-x86_64.zip",
-            "CN": "https://gitcode.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-windows-x86_64.zip"
-          },
-          "macosx": {
-            "GLOBAL": "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-macosx-arm64.tar.xz",
-            "CN": "https://gitcode.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-macosx-arm64.tar.xz"
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "22.1.8",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/l/llvm.lua",
@@ -2116,27 +1623,10 @@
       "id": "xim:labwc-desktop",
       "upstream": "labwc/labwc",
       "stars": 2862,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "labwc/labwc",
-        "tag": "${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/labwc-desktop/releases/download/${version}-r1/labwc-desktop-${version}-r1-linux-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/labwc-desktop/releases/download/${version}-r1/labwc-desktop-${version}-r1-linux-aarch64.tar.gz"
-            },
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/labwc-desktop/releases/download/${version}-r1/labwc-desktop-${version}-r1-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/labwc-desktop/releases/download/${version}-r1/labwc-desktop-${version}-r1-linux-x86_64.tar.gz"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "0.7.2",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/luban/labwc.lua",
@@ -2198,35 +1688,10 @@
       "id": "xim:luban-os",
       "upstream": "openxlings/xlings",
       "stars": 615,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "openxlings/xlings",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/luban-os/releases/download/${version}/luban-os-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/luban-os/releases/download/${version}/luban-os-${version}-linux-x86_64.tar.gz"
-            }
-          },
-          "macosx": {
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/luban-os/releases/download/${version}/luban-os-${version}-macosx-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/luban-os/releases/download/${version}/luban-os-${version}-macosx-aarch64.tar.gz"
-            }
-          },
-          "windows": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/luban-os/releases/download/${version}/luban-os-${version}-windows-x86_64.zip",
-              "CN": "https://gitcode.com/xlings-res/luban-os/releases/download/${version}/luban-os-${version}-windows-x86_64.zip"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "2026.10.22.2",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources or an implicit multi-mirror resource source; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/luban/luban-tiny-musl.lua",
@@ -2245,39 +1710,10 @@
       "id": "xim:luban",
       "upstream": "openxlings/xlings",
       "stars": 615,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "openxlings/xlings",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/luban/releases/download/${version}/luban-${version}-linux-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/luban/releases/download/${version}/luban-${version}-linux-aarch64.tar.gz"
-            },
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/luban/releases/download/${version}/luban-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/luban/releases/download/${version}/luban-${version}-linux-x86_64.tar.gz"
-            }
-          },
-          "macosx": {
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/luban/releases/download/${version}/luban-${version}-macosx-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/luban/releases/download/${version}/luban-${version}-macosx-aarch64.tar.gz"
-            }
-          },
-          "windows": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/luban/releases/download/${version}/luban-${version}-windows-x86_64.zip",
-              "CN": "https://gitcode.com/xlings-res/luban/releases/download/${version}/luban-${version}-windows-x86_64.zip"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "2026.10.22.2",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources or an implicit multi-mirror resource source; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/luban/lxqt.lua",
@@ -2388,39 +1824,10 @@
       "id": "xim:mcpp",
       "upstream": "mcpp-community/mcpp",
       "stars": 181,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "mcpp-community/mcpp",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-linux-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-linux-aarch64.tar.gz"
-            },
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-linux-x86_64.tar.gz"
-            }
-          },
-          "macosx": {
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-macosx-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-macosx-aarch64.tar.gz"
-            }
-          },
-          "windows": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-windows-x86_64.zip",
-              "CN": "https://gitcode.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-windows-x86_64.zip"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "2026.10.21.1",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources or an implicit multi-mirror resource source; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/m/mcppls-nvim.lua",
@@ -2443,19 +1850,10 @@
       "id": "xim:mdbook",
       "upstream": "rust-lang/mdBook",
       "stars": 22238,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "rust-lang/mdBook",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "windows": "https://github.com/rust-lang/mdBook/releases/download/v${version}/mdbook-v${version}-x86_64-pc-windows-msvc.zip",
-          "linux": "https://github.com/rust-lang/mdBook/releases/download/v${version}/mdbook-v${version}-x86_64-unknown-linux-musl.tar.gz",
-          "macosx": "https://github.com/rust-lang/mdBook/releases/download/v${version}/mdbook-v${version}-aarch64-apple-darwin.tar.gz"
-        }
-      },
+      "status": "manual",
       "latest": "0.5.2",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources or an implicit multi-mirror resource source; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/m/media-crawler.lua",
@@ -2482,21 +1880,10 @@
       "id": "xim:meson",
       "upstream": "mesonbuild/meson",
       "stars": 6647,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "mesonbuild/meson",
-        "tag": "${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "GLOBAL": "https://github.com/xlings-res/meson/releases/download/${version}/meson-${version}-linux-x86_64.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/meson/releases/download/${version}/meson-${version}-linux-x86_64.tar.gz"
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "1.8.2",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/m/mingw-cross-gcc.lua",
@@ -2525,27 +1912,10 @@
       "id": "xim:moltenvk",
       "upstream": "KhronosGroup/MoltenVK",
       "stars": 5897,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "KhronosGroup/MoltenVK",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "macosx": {
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/moltenvk/releases/download/${version}/moltenvk-${version}-macosx-universal.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/moltenvk/releases/download/${version}/moltenvk-${version}-macosx-universal.tar.gz"
-            },
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/moltenvk/releases/download/${version}/moltenvk-${version}-macosx-universal.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/moltenvk/releases/download/${version}/moltenvk-${version}-macosx-universal.tar.gz"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "1.4.2",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/m/msvc.lua",
@@ -2590,81 +1960,30 @@
       "id": "xim:ncurses",
       "upstream": "ThomasDickey/ncurses-snapshots",
       "stars": 106,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "ThomasDickey/ncurses-snapshots",
-        "tag": "v${version:underscore}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "GLOBAL": "https://github.com/xlings-res/ncurses/releases/download/${version}/ncurses-${version}-linux-x86_64.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/ncurses/releases/download/${version}/ncurses-${version}-linux-x86_64.tar.gz"
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "6.5",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/n/nghttp2.lua",
       "id": "xim:nghttp2",
       "upstream": "nghttp2/nghttp2",
       "stars": 5069,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "nghttp2/nghttp2",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "GLOBAL": "https://github.com/xlings-res/nghttp2/releases/download/${version}/nghttp2-${version}-linux-x86_64.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/nghttp2/releases/download/${version}/nghttp2-${version}-linux-x86_64.tar.gz"
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "1.70.0",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/n/ninja.lua",
       "id": "xim:ninja",
       "upstream": "ninja-build/ninja",
       "stars": 13316,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "ninja-build/ninja",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-linux-x86_64.tar.gz"
-            },
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-linux-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-linux-aarch64.tar.gz"
-            }
-          },
-          "macosx": {
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-macosx-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-macosx-aarch64.tar.gz"
-            }
-          },
-          "windows": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-windows-x86_64.zip",
-              "CN": "https://gitcode.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-windows-x86_64.zip"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "1.12.1",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources or an implicit multi-mirror resource source; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/n/node.lua",
@@ -2798,54 +2117,20 @@
       "id": "xim:opencode",
       "upstream": "sst/opencode",
       "stars": 219905,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "sst/opencode",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "x86_64": "https://github.com/sst/opencode/releases/download/v${version}/opencode-linux-x64.tar.gz",
-            "aarch64": "https://github.com/sst/opencode/releases/download/v${version}/opencode-linux-arm64.tar.gz"
-          },
-          "macosx": {
-            "x86_64": "https://github.com/sst/opencode/releases/download/v${version}/opencode-darwin-x64.zip",
-            "aarch64": "https://github.com/sst/opencode/releases/download/v${version}/opencode-darwin-arm64.zip"
-          },
-          "windows": {
-            "x86_64": "https://github.com/sst/opencode/releases/download/v${version}/opencode-windows-x64.zip"
-          }
-        }
-      },
+      "status": "manual",
       "latest": "1.19.0",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/o/openssl.lua",
       "id": "xim:openssl",
       "upstream": "openssl/openssl",
       "stars": 31012,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "openssl/openssl",
-        "tag": "openssl-${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/openssl/releases/download/${version}/openssl-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/openssl/releases/download/${version}/openssl-${version}-linux-x86_64.tar.gz"
-            },
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/openssl/releases/download/${version}/openssl-${version}-linux-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/openssl/releases/download/${version}/openssl-${version}-linux-aarch64.tar.gz"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "3.1.5",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources or an implicit multi-mirror resource source; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/p/pango.lua",
@@ -2872,56 +2157,18 @@
       "id": "xim:pcre2",
       "upstream": "PCRE2Project/pcre2",
       "stars": 1383,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "PCRE2Project/pcre2",
-        "tag": "pcre2-${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "GLOBAL": "https://github.com/xlings-res/pcre2/releases/download/${version}/pcre2-${version}-linux-x86_64.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/pcre2/releases/download/${version}/pcre2-${version}-linux-x86_64.tar.gz"
-          }
-        },
-        "verify": "sha256-sidecar"
-      }
+      "status": "manual",
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/p/perl.lua",
       "id": "xim:perl",
       "upstream": "Perl/perl5",
       "stars": 2349,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "Perl/perl5",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/perl/releases/download/${version}/perl-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/perl/releases/download/${version}/perl-${version}-linux-x86_64.tar.gz"
-            },
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/perl/releases/download/${version}/perl-${version}-linux-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/perl/releases/download/${version}/perl-${version}-linux-aarch64.tar.gz"
-            }
-          },
-          "macosx": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/perl/releases/download/${version}/perl-${version}-macosx-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/perl/releases/download/${version}/perl-${version}-macosx-x86_64.tar.gz"
-            },
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/perl/releases/download/${version}/perl-${version}-macosx-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/perl/releases/download/${version}/perl-${version}-macosx-aarch64.tar.gz"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "5.44.0",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources or an implicit multi-mirror resource source; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/p/pi.lua",
@@ -2956,116 +2203,40 @@
       "id": "xim:picolibc-aarch64",
       "upstream": "picolibc/picolibc",
       "stars": 1659,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "picolibc/picolibc",
-        "tag": "${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "GLOBAL": "https://github.com/xlings-res/picolibc-aarch64/releases/download/${version}/picolibc-aarch64-${version}.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/picolibc-aarch64/releases/download/${version}/picolibc-aarch64-${version}.tar.gz"
-          },
-          "macosx": {
-            "GLOBAL": "https://github.com/xlings-res/picolibc-aarch64/releases/download/${version}/picolibc-aarch64-${version}.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/picolibc-aarch64/releases/download/${version}/picolibc-aarch64-${version}.tar.gz"
-          },
-          "windows": {
-            "GLOBAL": "https://github.com/xlings-res/picolibc-aarch64/releases/download/${version}/picolibc-aarch64-${version}.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/picolibc-aarch64/releases/download/${version}/picolibc-aarch64-${version}.tar.gz"
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "1.8.12",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/p/picolibc-arm.lua",
       "id": "xim:picolibc-arm",
       "upstream": "picolibc/picolibc",
       "stars": 1659,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "picolibc/picolibc",
-        "tag": "${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "GLOBAL": "https://github.com/xlings-res/picolibc-arm/releases/download/${version}/picolibc-arm-${version}.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/picolibc-arm/releases/download/${version}/picolibc-arm-${version}.tar.gz"
-          },
-          "macosx": {
-            "GLOBAL": "https://github.com/xlings-res/picolibc-arm/releases/download/${version}/picolibc-arm-${version}.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/picolibc-arm/releases/download/${version}/picolibc-arm-${version}.tar.gz"
-          },
-          "windows": {
-            "GLOBAL": "https://github.com/xlings-res/picolibc-arm/releases/download/${version}/picolibc-arm-${version}.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/picolibc-arm/releases/download/${version}/picolibc-arm-${version}.tar.gz"
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "1.8.12",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/p/picolibc-riscv.lua",
       "id": "xim:picolibc-riscv",
       "upstream": "picolibc/picolibc",
       "stars": 1659,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "picolibc/picolibc",
-        "tag": "${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "GLOBAL": "https://github.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz"
-          },
-          "macosx": {
-            "GLOBAL": "https://github.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz"
-          },
-          "windows": {
-            "GLOBAL": "https://github.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/picolibc-riscv/releases/download/${version}/picolibc-riscv-${version}.tar.gz"
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "1.8.12",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/p/picolibc-x86.lua",
       "id": "xim:picolibc-x86",
       "upstream": "picolibc/picolibc",
       "stars": 1659,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "picolibc/picolibc",
-        "tag": "${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "GLOBAL": "https://github.com/xlings-res/picolibc-x86/releases/download/${version}/picolibc-x86-${version}.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/picolibc-x86/releases/download/${version}/picolibc-x86-${version}.tar.gz"
-          },
-          "macosx": {
-            "GLOBAL": "https://github.com/xlings-res/picolibc-x86/releases/download/${version}/picolibc-x86-${version}.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/picolibc-x86/releases/download/${version}/picolibc-x86-${version}.tar.gz"
-          },
-          "windows": {
-            "GLOBAL": "https://github.com/xlings-res/picolibc-x86/releases/download/${version}/picolibc-x86-${version}.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/picolibc-x86/releases/download/${version}/picolibc-x86-${version}.tar.gz"
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "1.8.12",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/p/pixman.lua",
@@ -3078,46 +2249,20 @@
       "id": "xim:pnpm",
       "upstream": "pnpm/pnpm",
       "stars": 36890,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "pnpm/pnpm",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": "https://github.com/pnpm/pnpm/releases/download/v${version}/pnpm-linux-x64.tar.gz",
-          "macosx": "https://github.com/pnpm/pnpm/releases/download/v${version}/pnpm-darwin-arm64.tar.gz",
-          "windows": "https://github.com/pnpm/pnpm/releases/download/v${version}/pnpm-win32-x64.zip"
-        }
-      },
+      "status": "manual",
       "latest": "12.1.0",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/p/pocl.lua",
       "id": "xim:pocl",
       "upstream": "pocl/pocl",
       "stars": 1085,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "pocl/pocl",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/pocl/releases/download/${version}/pocl-${version}-linux-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/pocl/releases/download/${version}/pocl-${version}-linux-aarch64.tar.gz"
-            },
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/pocl/releases/download/${version}/pocl-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/pocl/releases/download/${version}/pocl-${version}-linux-x86_64.tar.gz"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "7.1",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/p/powershell-execpolicy.lua",
@@ -3130,27 +2275,10 @@
       "id": "xim:probe-rs",
       "upstream": "probe-rs/probe-rs",
       "stars": 2980,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "probe-rs/probe-rs",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "x86_64": "https://github.com/probe-rs/probe-rs/releases/download/v${version}/probe-rs-tools-x86_64-unknown-linux-gnu.tar.xz",
-            "aarch64": "https://github.com/probe-rs/probe-rs/releases/download/v${version}/probe-rs-tools-aarch64-unknown-linux-gnu.tar.xz"
-          },
-          "macosx": {
-            "x86_64": "https://github.com/probe-rs/probe-rs/releases/download/v${version}/probe-rs-tools-x86_64-apple-darwin.tar.xz",
-            "aarch64": "https://github.com/probe-rs/probe-rs/releases/download/v${version}/probe-rs-tools-aarch64-apple-darwin.tar.xz"
-          },
-          "windows": {
-            "x86_64": "https://github.com/probe-rs/probe-rs/releases/download/v${version}/probe-rs-tools-x86_64-pc-windows-msvc.zip"
-          }
-        }
-      },
+      "status": "manual",
       "latest": "0.32.0",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/p/procps-ng.lua",
@@ -3171,52 +2299,20 @@
       "id": "xim:proot",
       "upstream": "proot-me/proot",
       "stars": 2631,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "proot-me/proot",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/proot/releases/download/${version}/proot-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/proot/releases/download/${version}/proot-${version}-linux-x86_64.tar.gz"
-            },
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/proot/releases/download/${version}/proot-${version}-linux-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/proot/releases/download/${version}/proot-${version}-linux-aarch64.tar.gz"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "5.4.0",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources or an implicit multi-mirror resource source; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/p/python.lua",
       "id": "xim:python",
       "upstream": "python/cpython",
       "stars": 77732,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "python/cpython",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "x86_64": "https://github.com/astral-sh/python-build-standalone/releases/download/20260310/cpython-${version}%2B20260310-x86_64-unknown-linux-gnu-install_only.tar.gz",
-            "aarch64": "https://github.com/astral-sh/python-build-standalone/releases/download/20260310/cpython-${version}%2B20260310-aarch64-unknown-linux-gnu-install_only.tar.gz"
-          },
-          "macosx": {
-            "x86_64": "https://github.com/astral-sh/python-build-standalone/releases/download/20260310/cpython-${version}%2B20260310-x86_64-apple-darwin-install_only.tar.gz",
-            "aarch64": "https://github.com/astral-sh/python-build-standalone/releases/download/20260310/cpython-${version}%2B20260310-aarch64-apple-darwin-install_only.tar.gz"
-          },
-          "windows": "https://github.com/astral-sh/python-build-standalone/releases/download/20260310/cpython-${version}%2B20260310-x86_64-pc-windows-msvc-install_only.tar.gz"
-        }
-      },
+      "status": "manual",
       "latest": "3.13.12",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/q/qemu-arm.lua",
@@ -3319,21 +2415,8 @@
       "id": "xim:riscv64-linux-musl-gcc",
       "upstream": "gcc-mirror/gcc",
       "stars": 11306,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "gcc-mirror/gcc",
-        "tag": "releases/gcc-${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/riscv64-linux-musl-gcc/releases/download/${version}/riscv64-linux-musl-gcc-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/riscv64-linux-musl-gcc/releases/download/${version}/riscv64-linux-musl-gcc-${version}-linux-x86_64.tar.gz"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      }
+      "status": "manual",
+      "reason": "package declares CN resources or an implicit multi-mirror resource source; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/r/ros2-jazzy-ubuntu.lua",
@@ -3348,19 +2431,10 @@
       "id": "xim:rosdep",
       "upstream": "ros-infrastructure/rosdep",
       "stars": 93,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "ros-infrastructure/rosdep",
-        "tag": "${version}",
-        "latest": "advance",
-        "url": {
-          "linux": "https://files.pythonhosted.org/packages/bd/c1/15c5c296f41e6a290e6c3515316b2676be580c66b10e26372200a0ecbdd7/rosdep-${version}-py3-none-any.whl",
-          "macosx": "https://files.pythonhosted.org/packages/bd/c1/15c5c296f41e6a290e6c3515316b2676be580c66b10e26372200a0ecbdd7/rosdep-${version}-py3-none-any.whl",
-          "windows": "https://files.pythonhosted.org/packages/bd/c1/15c5c296f41e6a290e6c3515316b2676be580c66b10e26372200a0ecbdd7/rosdep-${version}-py3-none-any.whl"
-        }
-      },
+      "status": "manual",
       "latest": "0.26.0",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "candidate resources must use HTTPS GitHub URLs; external registries and vendor downloads are excluded"
     },
     {
       "path": "pkgs/r/rust-crates-mirror.lua",
@@ -3411,39 +2485,10 @@
       "id": "xim:shaderc",
       "upstream": "google/shaderc",
       "stars": 2195,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "google/shaderc",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-linux-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-linux-aarch64.tar.gz"
-            },
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-linux-x86_64.tar.gz"
-            }
-          },
-          "macosx": {
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-macosx-arm64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-macosx-arm64.tar.gz"
-            }
-          },
-          "windows": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-windows-x86_64.zip",
-              "CN": "https://gitcode.com/xlings-res/shaderc/releases/download/${version}/shaderc-${version}-windows-x86_64.zip"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "2026.3",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/s/shortcut-tool.lua",
@@ -3531,21 +2576,10 @@
       "id": "xim:spirv-tools",
       "upstream": "KhronosGroup/SPIRV-Tools",
       "stars": 1374,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "KhronosGroup/SPIRV-Tools",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "GLOBAL": "https://github.com/xlings-res/spirv-tools/releases/download/${version}/spirv-tools-${version}-linux-x86_64.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/spirv-tools/releases/download/${version}/spirv-tools-${version}-linux-x86_64.tar.gz"
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "2025.1",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/s/sqlite.lua",
@@ -3572,21 +2606,10 @@
       "id": "xim:terminfo",
       "upstream": "ThomasDickey/ncurses-snapshots",
       "stars": 106,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "ThomasDickey/ncurses-snapshots",
-        "tag": "v${version:underscore}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "GLOBAL": "https://github.com/xlings-res/terminfo/releases/download/${version}/terminfo-${version}.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/terminfo/releases/download/${version}/terminfo-${version}.tar.gz"
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "6.6.20261010",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/t/tinynext.lua",
@@ -3601,27 +2624,10 @@
       "id": "xim:tmux",
       "upstream": "tmux/tmux",
       "stars": 49971,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "tmux/tmux",
-        "tag": "${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/tmux/releases/download/${version}/tmux-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/tmux/releases/download/${version}/tmux-${version}-linux-x86_64.tar.gz"
-            },
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/tmux/releases/download/${version}/tmux-${version}-linux-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/tmux/releases/download/${version}/tmux-${version}-linux-aarch64.tar.gz"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "3.8",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources or an implicit multi-mirror resource source; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/t/tpm2-tss.lua",
@@ -3650,19 +2656,8 @@
       "id": "xim:util-linux",
       "upstream": "util-linux/util-linux",
       "stars": 3241,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "util-linux/util-linux",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "GLOBAL": "https://github.com/xlings-res/util-linux/releases/download/${version}/util-linux-${version}-linux-x86_64.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/util-linux/releases/download/${version}/util-linux-${version}-linux-x86_64.tar.gz"
-          }
-        },
-        "verify": "sha256-sidecar"
-      }
+      "status": "manual",
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/u/uv.lua",
@@ -3694,93 +2689,30 @@
       "id": "xim:vcpkg",
       "upstream": "microsoft/vcpkg",
       "stars": 27530,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "microsoft/vcpkg",
-        "tag": "${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-linux-x86_64.tar.gz"
-            },
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-linux-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-linux-aarch64.tar.gz"
-            }
-          },
-          "macosx": {
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-macosx-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-macosx-aarch64.tar.gz"
-            },
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-macosx-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-macosx-x86_64.tar.gz"
-            }
-          },
-          "windows": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-windows-x86_64.zip",
-              "CN": "https://gitcode.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-windows-x86_64.zip"
-            },
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-windows-aarch64.zip",
-              "CN": "https://gitcode.com/xlings-res/vcpkg/releases/download/${version}/vcpkg-${version}-windows-aarch64.zip"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "2026.7.27",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources or an implicit multi-mirror resource source; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/v/vcstool.lua",
       "id": "xim:vcstool",
       "upstream": "dirk-thomas/vcstool",
       "stars": 505,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "dirk-thomas/vcstool",
-        "tag": "${version}",
-        "latest": "advance",
-        "url": {
-          "linux": "https://files.pythonhosted.org/packages/6c/d5/4aca2c05481a0fb74bd2660b14b0dd0ea975e4f38bc150511a64c55af986/vcstool-${version}-py3-none-any.whl",
-          "macosx": "https://files.pythonhosted.org/packages/6c/d5/4aca2c05481a0fb74bd2660b14b0dd0ea975e4f38bc150511a64c55af986/vcstool-${version}-py3-none-any.whl",
-          "windows": "https://files.pythonhosted.org/packages/6c/d5/4aca2c05481a0fb74bd2660b14b0dd0ea975e4f38bc150511a64c55af986/vcstool-${version}-py3-none-any.whl"
-        }
-      },
+      "status": "manual",
       "latest": "0.3.0",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "candidate resources must use HTTPS GitHub URLs; external registries and vendor downloads are excluded"
     },
     {
       "path": "pkgs/v/vim.lua",
       "id": "xim:vim",
       "upstream": "vim/vim",
       "stars": 41153,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "vim/vim",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/vim/releases/download/${version}/vim-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/vim/releases/download/${version}/vim-${version}-linux-x86_64.tar.gz"
-            },
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/vim/releases/download/${version}/vim-${version}-linux-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/vim/releases/download/${version}/vim-${version}-linux-aarch64.tar.gz"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "9.2.1172",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources or an implicit multi-mirror resource source; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/v/virtiofsd.lua",
@@ -3829,21 +2761,10 @@
       "id": "xim:vulkan-validation-layers",
       "upstream": "KhronosGroup/Vulkan-ValidationLayers",
       "stars": 1047,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "KhronosGroup/Vulkan-ValidationLayers",
-        "tag": "vulkan-sdk-${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "GLOBAL": "https://github.com/xlings-res/vulkan-validation-layers/releases/download/${version}/vulkan-validation-layers-${version}-linux-x86_64.tar.gz",
-            "CN": "https://gitcode.com/xlings-res/vulkan-validation-layers/releases/download/${version}/vulkan-validation-layers-${version}-linux-x86_64.tar.gz"
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "1.4.357.0",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/w/wayland-protocols.lua",
@@ -3884,27 +2805,10 @@
       "id": "xim:wl-clipboard",
       "upstream": "bugaevc/wl-clipboard",
       "stars": 2465,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "bugaevc/wl-clipboard",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/wl-clipboard/releases/download/${version}/wl-clipboard-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/wl-clipboard/releases/download/${version}/wl-clipboard-${version}-linux-x86_64.tar.gz"
-            },
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/wl-clipboard/releases/download/${version}/wl-clipboard-${version}-linux-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/wl-clipboard/releases/download/${version}/wl-clipboard-${version}-linux-aarch64.tar.gz"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "2.3.0",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources or an implicit multi-mirror resource source; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/w/wsl-gl-host-link.lua",
@@ -3919,17 +2823,10 @@
       "id": "xim:wsl-installer",
       "upstream": "microsoft/WSL",
       "stars": 34166,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "microsoft/WSL",
-        "tag": "${version}",
-        "latest": "advance",
-        "url": {
-          "windows": "https://github.com/microsoft/WSL/releases/download/${version}/wsl.${version}.0.x64.msi"
-        }
-      },
+      "status": "manual",
       "latest": "3.0.1",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/w/wsl-ubuntu.lua",
@@ -3944,21 +2841,8 @@
       "id": "xim:x86_64-linux-musl-gcc",
       "upstream": "gcc-mirror/gcc",
       "stars": 11306,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "gcc-mirror/gcc",
-        "tag": "releases/gcc-${version}",
-        "latest": "advance",
-        "url": {
-          "windows": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/x86_64-linux-musl-gcc/releases/download/${version}/x86_64-linux-musl-gcc-${version}-windows-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/x86_64-linux-musl-gcc/releases/download/${version}/x86_64-linux-musl-gcc-${version}-windows-x86_64.tar.gz"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      }
+      "status": "manual",
+      "reason": "package declares CN resources or an implicit multi-mirror resource source; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/x/xcb-proto.lua",
@@ -4007,23 +2891,10 @@
       "id": "xim:xdesk",
       "upstream": "openxlings/xlings",
       "stars": 615,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "openxlings/xlings",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/xdesk/releases/download/${version}/xdesk-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/xdesk/releases/download/${version}/xdesk-${version}-linux-x86_64.tar.gz"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "2026.10.22.2",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources or an implicit multi-mirror resource source; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/x/xkeyboard-config.lua",
@@ -4044,58 +2915,20 @@
       "id": "xim:xlings",
       "upstream": "openxlings/xlings",
       "stars": 615,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "openxlings/xlings",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-linux-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-linux-aarch64.tar.gz"
-            },
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-linux-x86_64.tar.gz"
-            }
-          },
-          "macosx": {
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-macosx-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-macosx-aarch64.tar.gz"
-            }
-          },
-          "windows": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-windows-x86_64.zip",
-              "CN": "https://gitcode.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-windows-x86_64.zip"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "2026.10.22.2",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources or an implicit multi-mirror resource source; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/x/xmake.lua",
       "id": "xim:xmake",
       "upstream": "xmake-io/xmake",
       "stars": 12265,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "xmake-io/xmake",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": "https://github.com/xmake-io/xmake/releases/download/v${version}/xmake-bundle-v${version}.linux.x86_64",
-          "macosx": "https://github.com/xmake-io/xmake/releases/download/v${version}/xmake-bundle-v${version}.macos.arm64",
-          "windows": "https://github.com/xmake-io/xmake/releases/download/v${version}/xmake-bundle-v${version}.win64.exe"
-        }
-      },
+      "status": "manual",
       "latest": "3.1.1",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/x/xorgproto.lua",
@@ -4116,27 +2949,10 @@
       "id": "xim:xsel",
       "upstream": "kfish/xsel",
       "stars": 411,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "kfish/xsel",
-        "tag": "${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/xsel/releases/download/${version}/xsel-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/xsel/releases/download/${version}/xsel-${version}-linux-x86_64.tar.gz"
-            },
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/xsel/releases/download/${version}/xsel-${version}-linux-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/xsel/releases/download/${version}/xsel-${version}-linux-aarch64.tar.gz"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "1.2.1",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources or an implicit multi-mirror resource source; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/x/xtrans.lua",
@@ -4165,76 +2981,30 @@
       "id": "xim:xz",
       "upstream": "tukaani-project/xz",
       "stars": 1690,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "tukaani-project/xz",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/xz/releases/download/${version}/xz-${version}-linux-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/xz/releases/download/${version}/xz-${version}-linux-aarch64.tar.gz"
-            },
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/xz/releases/download/${version}/xz-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/xz/releases/download/${version}/xz-${version}-linux-x86_64.tar.gz"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "5.8.3",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/y/yazi.lua",
       "id": "xim:yazi",
       "upstream": "sxyazi/yazi",
       "stars": 42966,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "sxyazi/yazi",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "aarch64": "https://github.com/sxyazi/yazi/releases/download/v${version}/yazi-aarch64-unknown-linux-musl.zip",
-            "x86_64": "https://github.com/sxyazi/yazi/releases/download/v${version}/yazi-x86_64-unknown-linux-musl.zip"
-          },
-          "macosx": "https://github.com/sxyazi/yazi/releases/download/v${version}/yazi-aarch64-apple-darwin.zip",
-          "windows": "https://github.com/sxyazi/yazi/releases/download/v${version}/yazi-x86_64-pc-windows-msvc.zip"
-        }
-      },
+      "status": "manual",
       "latest": "26.5.6",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/z/zlib.lua",
       "id": "xim:zlib",
       "upstream": "madler/zlib",
       "stars": 7161,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "madler/zlib",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/zlib/releases/download/${version}/zlib-${version}-linux-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/zlib/releases/download/${version}/zlib-${version}-linux-aarch64.tar.gz"
-            },
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/zlib/releases/download/${version}/zlib-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/zlib/releases/download/${version}/zlib-${version}-linux-x86_64.tar.gz"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "1.3.1",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     },
     {
       "path": "pkgs/z/zoxide.lua",
@@ -4260,27 +3030,16 @@
       "id": "xim:zstd",
       "upstream": "facebook/zstd",
       "stars": 28075,
-      "status": "enabled",
-      "autoupdate": {
-        "upstream": "facebook/zstd",
-        "tag": "v${version}",
-        "latest": "advance",
-        "url": {
-          "linux": {
-            "aarch64": {
-              "GLOBAL": "https://github.com/xlings-res/zstd/releases/download/${version}/zstd-${version}-linux-aarch64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/zstd/releases/download/${version}/zstd-${version}-linux-aarch64.tar.gz"
-            },
-            "x86_64": {
-              "GLOBAL": "https://github.com/xlings-res/zstd/releases/download/${version}/zstd-${version}-linux-x86_64.tar.gz",
-              "CN": "https://gitcode.com/xlings-res/zstd/releases/download/${version}/zstd-${version}-linux-x86_64.tar.gz"
-            }
-          }
-        },
-        "verify": "sha256-sidecar"
-      },
+      "status": "manual",
       "latest": "1.5.7",
-      "add_latest": {}
+      "add_latest": {},
+      "reason": "package declares CN resources; this rollout only enables packages without CN"
     }
-  ]
+  ],
+  "rollout_policy": {
+    "schedule": "17 2 * * 0",
+    "interval_days": 7,
+    "resources": "HTTPS github.com only",
+    "exclude_packages_with_cn": true
+  }
 }

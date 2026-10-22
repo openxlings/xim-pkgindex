@@ -24,26 +24,7 @@ package = {
     programs = {"limine"},
     xvm_enable = true,
 
-    extensions = {
-        autoupdate = {
-            upstream = "limine-bootloader/limine",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    x86_64 = {
-                        GLOBAL = "https://github.com/xlings-res/limine/releases/download/${version}/limine-${version}-linux-x86_64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/limine/releases/download/${version}/limine-${version}-linux-x86_64.tar.gz",
-                    },
-                    aarch64 = {
-                        GLOBAL = "https://github.com/xlings-res/limine/releases/download/${version}/limine-${version}-linux-aarch64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/limine/releases/download/${version}/limine-${version}-linux-aarch64.tar.gz",
-                    },
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
+
 
     xpm = {
         linux = {

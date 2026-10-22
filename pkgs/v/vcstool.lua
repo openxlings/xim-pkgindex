@@ -18,18 +18,7 @@ package = {
     programs = {"vcs"},
     xvm_enable = true,
 
-    extensions = {
-        autoupdate = {
-            upstream = "dirk-thomas/vcstool",
-            tag = "${version}",
-            latest = "advance",
-            url = {
-                linux = "https://files.pythonhosted.org/packages/6c/d5/4aca2c05481a0fb74bd2660b14b0dd0ea975e4f38bc150511a64c55af986/vcstool-${version}-py3-none-any.whl",
-                macosx = "https://files.pythonhosted.org/packages/6c/d5/4aca2c05481a0fb74bd2660b14b0dd0ea975e4f38bc150511a64c55af986/vcstool-${version}-py3-none-any.whl",
-                windows = "https://files.pythonhosted.org/packages/6c/d5/4aca2c05481a0fb74bd2660b14b0dd0ea975e4f38bc150511a64c55af986/vcstool-${version}-py3-none-any.whl",
-            },
-        },
-    },
+
 
     xpm = {
         linux = {

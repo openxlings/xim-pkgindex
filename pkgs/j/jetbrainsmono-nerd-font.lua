@@ -20,18 +20,7 @@ package = {
     -- registered for lifecycle tracking. No executable program is exposed.
     -- The xlings-res asset is the arch-independent upstream font zip reused
     -- under every supported OS/arch entry.
-    extensions = {
-        autoupdate = {
-            upstream = "ryanoasis/nerd-fonts",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = "https://github.com/ryanoasis/nerd-fonts/releases/download/v${version}/JetBrainsMono.zip",
-                macosx = "https://github.com/ryanoasis/nerd-fonts/releases/download/v${version}/JetBrainsMono.zip",
-                windows = "https://github.com/ryanoasis/nerd-fonts/releases/download/v${version}/JetBrainsMono.zip",
-            },
-        },
-    },
+
 
     xpm = {
         linux = {

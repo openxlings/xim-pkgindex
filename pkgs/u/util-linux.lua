@@ -15,20 +15,7 @@ package = {
     categories = {"lib", "system"},
     keywords = {"libmount", "libblkid", "libuuid", "util-linux", "lib"},
 
-    extensions = {
-        autoupdate = {
-            upstream = "util-linux/util-linux",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    GLOBAL = "https://github.com/xlings-res/util-linux/releases/download/${version}/util-linux-${version}-linux-x86_64.tar.gz",
-                    CN = "https://gitcode.com/xlings-res/util-linux/releases/download/${version}/util-linux-${version}-linux-x86_64.tar.gz",
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
+
 
     xpm = {
         linux = {

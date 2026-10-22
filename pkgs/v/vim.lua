@@ -29,26 +29,7 @@ package = {
     -- still highly capable (Huge variant, no GUI), and there is no
     -- newer truly-static x86_64 vim build out there. Bumping requires
     -- finding (or producing) a newer static binary; track separately.
-    extensions = {
-        autoupdate = {
-            upstream = "vim/vim",
-            tag = "v${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    x86_64 = {
-                        GLOBAL = "https://github.com/xlings-res/vim/releases/download/${version}/vim-${version}-linux-x86_64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/vim/releases/download/${version}/vim-${version}-linux-x86_64.tar.gz",
-                    },
-                    aarch64 = {
-                        GLOBAL = "https://github.com/xlings-res/vim/releases/download/${version}/vim-${version}-linux-aarch64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/vim/releases/download/${version}/vim-${version}-linux-aarch64.tar.gz",
-                    },
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
+
 
     xpm = {
         linux = {

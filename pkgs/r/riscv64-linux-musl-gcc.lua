@@ -39,22 +39,7 @@ package = {
     -- xvm: xlings version management
     xvm_enable = true,
 
-    extensions = {
-        autoupdate = {
-            upstream = "gcc-mirror/gcc",
-            tag = "releases/gcc-${version}",
-            latest = "advance",
-            url = {
-                linux = {
-                    x86_64 = {
-                        GLOBAL = "https://github.com/xlings-res/riscv64-linux-musl-gcc/releases/download/${version}/riscv64-linux-musl-gcc-${version}-linux-x86_64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/riscv64-linux-musl-gcc/releases/download/${version}/riscv64-linux-musl-gcc-${version}-linux-x86_64.tar.gz",
-                    },
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
+
 
     xpm = {
         linux = {
