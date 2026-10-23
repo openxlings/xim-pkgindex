@@ -135,14 +135,38 @@ def recover_published_archives(directory, source_run, source_sha):
     }, indent=2) + '\n')
 
 
+def validate_glibc_derivation(revision, name, digest, proof, ledger, derived=None):
+    """Bind the active revision to the reviewed native r3 build, fail closed."""
+    source_name = 'glibc-2.44.3-r3-linux-aarch64.tar.gz'
+    source_digest = proof.get('archives', {}).get(source_name)
+    if (proof.get('status') != 'native-build-and-mirrors-passed'
+            or not source_digest or ledger.get('archives', {}).get(source_name) != source_digest
+            or (proof.get('source_run_id'), proof.get('source_commit')) != (
+                ledger.get('source_run_id'), ledger.get('source_commit'))):
+        raise ValueError('published glibc identity differs from the native source ledger')
+    if revision == '3' and (name, digest) == (source_name, source_digest):
+        return
+    if revision == '4' and derived:
+        origin = derived.get('derived_from', {})
+        if (derived.get('revision') == 4 and derived.get('status') == 'derived-and-mirrors-passed'
+                and derived.get('archives', {}).get(name) == digest
+                and name == 'glibc-2.44.3-r4-linux-aarch64.tar.gz'
+                and origin.get('revision') == 3
+                and origin.get('admission') == '2026-10-08-glibc-r3-resource-admission.json'
+                and origin.get('tool') == '.agents/tools/dereference-hard-links.py'
+                and origin.get('archives', {}).get(source_name) == source_digest):
+            return
+    raise ValueError('published glibc revision has no authenticated native derivation')
+
+
 def replace_published_glibc(directory, source_run, source_sha):
     # Execute the actual recipe metadata contract, rather than approximating
     # Lua or release URL expansion in a second parser.
     values = subprocess.check_output(['lua5.4', 'tests/lua/glibc_metadata_harness.lua',
         'pkgs/g/glibc.lua', 'aarch64'], text=True).strip().split('\t')
     loader, abi, revision, version, digest, global_url, cn_url, _ = values
-    if revision != '3':
-        raise ValueError('only the admitted published glibc revision 3 is supported')
+    if revision not in ('3', '4'):
+        raise ValueError('only admitted published glibc revisions 3 and 4 are supported')
     name = f'glibc-2.44.3-r{revision}-linux-aarch64.tar.gz'
     if (loader, abi, revision, version) != ('lib64/ld-linux-aarch64.so.1',
             'linux-aarch64-glibc', revision, '2.44.3'):
@@ -159,12 +183,8 @@ def replace_published_glibc(directory, source_run, source_sha):
     proof_path = '.agents/docs/2026-10-08-glibc-r3-resource-admission.json'
     proof = json.loads(Path(proof_path).read_text())
     ledger = json.loads(Path('.agents/docs/2026-10-08-glibc-r3-source-build.json').read_text())
-    if (proof.get('status') != 'native-build-and-mirrors-passed'
-            or proof.get('archives', {}).get(name) != digest
-            or ledger.get('archives', {}).get(name) != digest
-            or (proof.get('source_run_id'), proof.get('source_commit')) != (
-                ledger.get('source_run_id'), ledger.get('source_commit'))):
-        raise ValueError('published glibc identity differs from the native source ledger')
+    derived = json.loads(Path('.agents/docs/2026-10-10-glibc-r4-resource-admission.json').read_text()) if revision == '4' else None
+    validate_glibc_derivation(revision, name, digest, proof, ledger, derived)
     origin_id, origin_sha = str(proof['source_run_id']), proof['source_commit']
     if not re.fullmatch('[0-9]+', origin_id) or not re.fullmatch('[0-9a-f]{40}', origin_sha):
         raise ValueError('invalid published glibc source identity')

@@ -41,3 +41,22 @@ def test_recovery_never_guesses_unknown_coordinates(tmp_path, monkeypatch):
     monkeypatch.setattr(mod, 'UNCHANGED_ARCHIVES', {'unknown.tar.gz': 'a' * 64})
     with pytest.raises(ValueError, match='unrecognized'):
         mod.recover_published_archives(tmp_path, '123', 'a' * 40)
+
+
+@pytest.mark.parametrize('change', ['none', 'digest', 'source', 'revision'])
+def test_published_r4_stays_bound_to_reviewed_native_r3(change):
+    import copy
+    proof = json.loads((ROOT / '.agents/docs/2026-10-08-glibc-r3-resource-admission.json').read_text())
+    ledger = json.loads((ROOT / '.agents/docs/2026-10-08-glibc-r3-source-build.json').read_text())
+    derived = copy.deepcopy(json.loads((ROOT / '.agents/docs/2026-10-10-glibc-r4-resource-admission.json').read_text()))
+    name = 'glibc-2.44.3-r4-linux-aarch64.tar.gz'
+    digest = derived['archives'][name]
+    revision = '4'
+    if change == 'digest': digest = '0' * 64
+    elif change == 'source': derived['derived_from']['archives']['glibc-2.44.3-r3-linux-aarch64.tar.gz'] = '0' * 64
+    elif change == 'revision': revision = '5'
+    if change == 'none':
+        mod.validate_glibc_derivation(revision, name, digest, proof, ledger, derived)
+    else:
+        with pytest.raises(ValueError, match='derivation'):
+            mod.validate_glibc_derivation(revision, name, digest, proof, ledger, derived)
