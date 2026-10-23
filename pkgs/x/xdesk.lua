@@ -50,7 +50,13 @@ package = {
                 "xim:mesa@>=25",
                 "xim:libglvnd@>=1.7.0.1",
             },
-            ["latest"] = { ref = "2026.10.23.2" },
+            ["latest"] = { ref = "2026.10.24.1" },
+            ["2026.10.24.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "11d5ded44ec37e90f56354fc0931dcb04d3592e87d01ca6fe1af7ea3aff0582b",
+                },
+            },
             ["2026.10.23.2"] = {
                 url = "XLINGS_RES",
                 sha256 = {
