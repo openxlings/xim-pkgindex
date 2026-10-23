@@ -83,9 +83,10 @@ def validate_source_history(source_sha, repository):
 # LLVM/dependencies or an arbitrary previously successful artifact.
 UNCHANGED_ARCHIVES = {'gcc-runtime-15.1.0-linux-aarch64.tar.gz': '86aed3a2f78f623c48fa0dffa0eb377d405343ee5c733ee96f38f598e87d8b6e', 'libxml2-2.13.5-linux-aarch64.tar.gz': '723f97d01c6a7618ace30842e1a03cfbd99965a340c1df263d31ba217cfd1cee', 'linux-headers-5.11.1-linux-aarch64.tar.gz': 'ffb294cc183e9ddb87af3411364ba09c9724390494c2f271a81e98a3d6ccfbd7', 'llvm-23.1.3-linux-aarch64.tar.gz': '8a4697b6f22703c1fb8d808a0ef6022f3a9e9111a70e7a02009b7814bdbe46a9', 'llvm-tools-23.1.3-linux-aarch64.tar.gz': 'e9c3675a170d6f1aaa21ee2fd9c8ba7c67813aab4721d87772f45a83c0c89ad2', 'zlib-1.3.1-linux-aarch64.tar.gz': '84605519e53f272c998a92bf806abace459b10937037f27e4b993d9d161546b5', 'llvm-23.1.3-linux-aarch64.tar.xz': 'fb763a21041d27ea6058df64e42dfb26456517e51f943e7caff8bed5310aa4c3', 'llvm-tools-23.1.3-linux-aarch64.tar.xz': '39357154fcfaec5e8a12ab649814d1e05c167389311feff70c8c2a0bf30d0282'}
 
-def verify_unchanged_archives(directory):
+def verify_unchanged_archives(directory, legacy_runtime=True):
     archives = {p.name for p in directory.iterdir() if p.name.endswith(('.tar.gz', '.tar.xz'))}
-    if archives != set(UNCHANGED_ARCHIVES) | {'glibc-2.44.3-r1-linux-aarch64.tar.gz'}:
+    expected = set(UNCHANGED_ARCHIVES) | ({'glibc-2.44.3-r1-linux-aarch64.tar.gz'} if legacy_runtime else set())
+    if archives != expected:
         raise ValueError('source archive set is not the exact nine-archive closure')
     for name, expected in UNCHANGED_ARCHIVES.items():
         file = directory / name
@@ -95,14 +96,77 @@ def verify_unchanged_archives(directory):
             raise ValueError(f'unchanged source archive identity differs: {name}')
 
 
+def recover_published_archives(directory, source_run, source_sha):
+    """Recover expired transport artifacts, preserving every pinned identity.
+
+    Source-run validation, ancestry and builder equality happen before this
+    function. These are the exact eight already-admitted archives, never
+    latest or rebuilt substitutes. Native admission still runs afterwards.
+    """
+    coordinates = {
+        'gcc-runtime': ('gcc-runtime', '15.1.0'),
+        'libxml2': ('libxml2', '2.13.5'),
+        'linux-headers': ('linux-headers', '5.11.1'),
+        'llvm-tools': ('llvm', '23.1.3'),
+        'llvm': ('llvm', '23.1.3'),
+        'zlib': ('zlib', '1.3.1'),
+    }
+    recovered = []
+    for name, digest in UNCHANGED_ARCHIVES.items():
+        prefix = name.split('-linux-aarch64.', 1)[0]
+        matches = [(repo, version) for pkg, (repo, version) in coordinates.items()
+                   if prefix == pkg + '-' + version]
+        if len(matches) != 1:
+            raise ValueError('unrecognized pinned archive coordinate: ' + name)
+        repo, version = matches[0]
+        url = f'https://github.com/xlings-res/{repo}/releases/download/{version}/{name}'
+        target = directory / name
+        subprocess.run(['curl', '-fL', '--retry', '3', '-o', str(target), url], check=True)
+        with target.open('rb') as stream:
+            actual = hashlib.file_digest(stream, 'sha256').hexdigest()
+        if actual != digest:
+            raise ValueError('published archive differs from admitted source: ' + name)
+        recovered.append({'archive': name, 'url': url, 'sha256': actual})
+    verify_unchanged_archives(directory, legacy_runtime=False)
+    (directory / 'PUBLISHED-ARCHIVE-REUSE.json').write_text(json.dumps({
+        'reason': 'source transport artifact expired or absent',
+        'source_run_id': source_run, 'source_commit': source_sha,
+        'archives': recovered, 'admission': 'fresh native gates still required',
+    }, indent=2) + '\n')
+
+
+def validate_glibc_derivation(revision, name, digest, proof, ledger, derived=None):
+    """Bind the active revision to the reviewed native r3 build, fail closed."""
+    source_name = 'glibc-2.44.3-r3-linux-aarch64.tar.gz'
+    source_digest = proof.get('archives', {}).get(source_name)
+    if (proof.get('status') != 'native-build-and-mirrors-passed'
+            or not source_digest or ledger.get('archives', {}).get(source_name) != source_digest
+            or (proof.get('source_run_id'), proof.get('source_commit')) != (
+                ledger.get('source_run_id'), ledger.get('source_commit'))):
+        raise ValueError('published glibc identity differs from the native source ledger')
+    if revision == '3' and (name, digest) == (source_name, source_digest):
+        return
+    if revision == '4' and derived:
+        origin = derived.get('derived_from', {})
+        if (derived.get('revision') == 4 and derived.get('status') == 'derived-and-mirrors-passed'
+                and derived.get('archives', {}).get(name) == digest
+                and name == 'glibc-2.44.3-r4-linux-aarch64.tar.gz'
+                and origin.get('revision') == 3
+                and origin.get('admission') == '2026-10-08-glibc-r3-resource-admission.json'
+                and origin.get('tool') == '.agents/tools/dereference-hard-links.py'
+                and origin.get('archives', {}).get(source_name) == source_digest):
+            return
+    raise ValueError('published glibc revision has no authenticated native derivation')
+
+
 def replace_published_glibc(directory, source_run, source_sha):
     # Execute the actual recipe metadata contract, rather than approximating
     # Lua or release URL expansion in a second parser.
     values = subprocess.check_output(['lua5.4', 'tests/lua/glibc_metadata_harness.lua',
         'pkgs/g/glibc.lua', 'aarch64'], text=True).strip().split('\t')
     loader, abi, revision, version, digest, global_url, cn_url, _ = values
-    if revision != '3':
-        raise ValueError('only the admitted published glibc revision 3 is supported')
+    if revision not in ('3', '4'):
+        raise ValueError('only admitted published glibc revisions 3 and 4 are supported')
     name = f'glibc-2.44.3-r{revision}-linux-aarch64.tar.gz'
     if (loader, abi, revision, version) != ('lib64/ld-linux-aarch64.so.1',
             'linux-aarch64-glibc', revision, '2.44.3'):
@@ -119,12 +183,8 @@ def replace_published_glibc(directory, source_run, source_sha):
     proof_path = '.agents/docs/2026-10-08-glibc-r3-resource-admission.json'
     proof = json.loads(Path(proof_path).read_text())
     ledger = json.loads(Path('.agents/docs/2026-10-08-glibc-r3-source-build.json').read_text())
-    if (proof.get('status') != 'native-build-and-mirrors-passed'
-            or proof.get('archives', {}).get(name) != digest
-            or ledger.get('archives', {}).get(name) != digest
-            or (proof.get('source_run_id'), proof.get('source_commit')) != (
-                ledger.get('source_run_id'), ledger.get('source_commit'))):
-        raise ValueError('published glibc identity differs from the native source ledger')
+    derived = json.loads(Path('.agents/docs/2026-10-10-glibc-r4-resource-admission.json').read_text()) if revision == '4' else None
+    validate_glibc_derivation(revision, name, digest, proof, ledger, derived)
     origin_id, origin_sha = str(proof['source_run_id']), proof['source_commit']
     if not re.fullmatch('[0-9]+', origin_id) or not re.fullmatch('[0-9a-f]{40}', origin_sha):
         raise ValueError('invalid published glibc source identity')
@@ -187,11 +247,21 @@ def main():
     print(f'Reusing successful native run {args.run_id}, commit {sha}; mode='
           f'{"published-glibc-only" if args.published_glibc_only else "identical-builders"}.', flush=True)
     args.directory.mkdir(parents=True, exist_ok=True)
-    subprocess.run(['gh', 'run', 'download', args.run_id, '--repo', repository,
-                    '--name', 'llvm2313-linux-aarch64-assets', '--dir', str(args.directory)], check=True)
-    subprocess.run(['sha256sum', '-c', 'SHA256SUMS'], cwd=args.directory, check=True)
+    artifacts = json.loads(subprocess.check_output(['gh', 'api',
+        f'repos/{repository}/actions/runs/{args.run_id}/artifacts?per_page=100'], text=True))
+    available = any(a.get('name') == 'llvm2313-linux-aarch64-assets' and not a.get('expired', True)
+                    for a in artifacts['artifacts'])
+    if available:
+        subprocess.run(['gh', 'run', 'download', args.run_id, '--repo', repository,
+                        '--name', 'llvm2313-linux-aarch64-assets', '--dir', str(args.directory)], check=True)
+        subprocess.run(['sha256sum', '-c', 'SHA256SUMS'], cwd=args.directory, check=True)
+        if args.published_glibc_only:
+            verify_unchanged_archives(args.directory)
+    elif args.published_glibc_only:
+        recover_published_archives(args.directory, args.run_id, sha)
+    else:
+        raise ValueError('source artifact expired; exact legacy closure cannot be recovered')
     if args.published_glibc_only:
-        verify_unchanged_archives(args.directory)
         replace_published_glibc(args.directory, args.run_id, sha)
     with open(os.environ['GITHUB_ENV'], 'a') as env:
         env.write(f'ADMISSION_SOURCE_COMMIT={sha}\nADMISSION_SOURCE_RUN_ID={args.run_id}\n')

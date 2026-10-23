@@ -13,26 +13,36 @@
 name: toolchain consumer smoke
 
 on:
-  pull_request:
-    paths:
-      - 'pkgs/l/llvm.lua'
-      - 'pkgs/g/gcc.lua'
-      - 'pkgs/m/musl-gcc.lua'
-
-concurrency:
-  group: toolchain-smoke-${{ github.ref }}
-  cancel-in-progress: true
+  workflow_call:
+    inputs:
+      files:
+        type: string
+        default: ""
+      base_sha:
+        type: string
+        default: ""
+      head_sha:
+        type: string
+        default: ""
 
 jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: plan
+        env:
+          FILES: ${{ inputs.files }}
+        run: python3 .github/scripts/ci-toolchain-plan.py --files "$FILES" --github-output "$GITHUB_OUTPUT"
   consumer-smoke:
+    needs: plan
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - os: ubuntu-latest
-            platform: linux
-          - os: macos-latest
-            platform: macos
+        include: ${{ fromJSON(needs.plan.outputs.matrix).include }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     steps:
@@ -61,9 +71,11 @@ jobs:
           # `local:<pkg>` install then targets it unambiguously — a bare
           # name is ambiguous once the descriptor exists in two indexes.
           xlings config --index-repo "scode:https://github.com/openxlings/xim-pkgindex-scode.git" 2>/dev/null || true
-          CHANGED="${{ steps.changed.outputs.all_changed_files }}"
+          CHANGED="${{ inputs.files || steps.changed.outputs.all_changed_files }}"
           echo "changed: $CHANGED"
-          for f in $CHANGED; do xlings config --add-xpkg "$f"; done
+          for f in $CHANGED; do
+            case "$f" in pkgs/l/llvm.lua|pkgs/g/gcc.lua|pkgs/m/musl-gcc.lua) xlings config --add-xpkg "$f" ;; esac
+          done
           # AND THE SHARED MODULES THE DESCRIPTOR IMPORTS. Without them a
           # `local:` recipe's `import("xim.pkgindex.*")` resolves to the proxy
           # that swallows every call (ci-xpkg-test.yml says the same of
@@ -79,20 +91,12 @@ jobs:
           # Derive the tool from the changed FILE NAME (musl-gcc.lua also
           # matches *gcc.lua* — order matters; round 4 installed local:gcc
           # for a musl-gcc bump and died on 'not found').
-          TOOL=""
-          case "$CHANGED_FILES" in
-            *llvm.lua*)     TOOL=llvm ;;
-            *musl-gcc.lua*) [ "${{ matrix.platform }}" = "linux" ] && TOOL=musl-gcc ;;
-            *gcc.lua*)      [ "${{ matrix.platform }}" = "linux" ] && TOOL=gcc ;;
-          esac
-          if [ -n "$TOOL" ]; then
-            xlings install "local:$TOOL" -y
-          else
-            # e.g. the macos job on a linux-only (gcc/musl-gcc) bump:
-            # run the consumer smoke against the official llvm baseline.
-            echo "no descriptor relevant to this platform changed; baseline install"
-            xlings install "xim:llvm" -y
-          fi
+          TOOL="${{ matrix.tool }}"
+          RECIPE="${{ matrix.recipe }}"
+          SOURCE=xim
+          if [[ " $CHANGED_FILES " == *" $RECIPE "* ]]; then SOURCE=local; fi
+          xlings install "$SOURCE:$TOOL" -y
+          echo "TOOL_SOURCE=$SOURCE" >> "$GITHUB_ENV"
           xlings install mcpp -y
           MCPP="$HOME/.xlings/subos/default/bin/mcpp"
           test -x "$MCPP"
@@ -107,20 +111,32 @@ jobs:
           # it the default toolchain.
           set -e
           mkdir -p "$HOME/.mcpp/registry/data/xpkgs"
-          for kind in xim-x-llvm xim-x-gcc xim-x-musl-gcc; do
-            src_root="$HOME/.xlings/data/xpkgs/$kind"
-            [ -d "$src_root" ] || continue
-            for verdir in "$src_root"/*/; do
-              ver=$(basename "$verdir")
-              printf '1\n' > "$verdir/.mcpp_ok" || true
-              mkdir -p "$HOME/.mcpp/registry/data/xpkgs/$kind"
-              ln -sfn "$verdir" "$HOME/.mcpp/registry/data/xpkgs/$kind/$ver"
-              case "$kind" in
-                xim-x-llvm)     echo "TOOLCHAIN=llvm@$ver"      >> "$GITHUB_ENV" ;;
-                xim-x-gcc)      echo "TOOLCHAIN=gcc@$ver"       >> "$GITHUB_ENV" ;;
-                xim-x-musl-gcc) echo "TOOLCHAIN=gcc@$ver-musl"  >> "$GITHUB_ENV" ;;
-              esac
+          # The compiler's complete installed closure is part of this fixture.
+          # Reusing only LLVM hides sibling UAPI headers from mcpp's probes.
+          for provider in "$HOME/.xlings/data/xpkgs/"*; do
+            [ -d "$provider" ] || continue
+            name=$(basename "$provider")
+            mkdir -p "$HOME/.mcpp/registry/data/xpkgs/$name"
+            for payload in "$provider"/*/; do
+              [ -d "$payload" ] || continue
+              version=$(basename "$payload")
+              ln -sfn "$payload" "$HOME/.mcpp/registry/data/xpkgs/$name/$version"
             done
+          done
+          tool="${{ matrix.tool }}"
+          kind="xim-x-$tool"
+          src_root="$HOME/.xlings/data/xpkgs/$TOOL_SOURCE-x-$tool"
+          test -d "$src_root"
+          for verdir in "$src_root"/*/; do
+            ver=$(basename "$verdir")
+            printf '1\n' > "$verdir/.mcpp_ok"
+            mkdir -p "$HOME/.mcpp/registry/data/xpkgs/$kind"
+            ln -sfn "$verdir" "$HOME/.mcpp/registry/data/xpkgs/$kind/$ver"
+            case "$tool" in
+              llvm) echo "TOOLCHAIN=llvm@$ver" >> "$GITHUB_ENV" ;;
+              gcc) echo "TOOLCHAIN=gcc@$ver" >> "$GITHUB_ENV" ;;
+              musl-gcc) echo "TOOLCHAIN=gcc@$ver-musl" >> "$GITHUB_ENV" ;;
+            esac
           done
 
       - name: Consumer smoke — mcpp builds + tests with the bumped toolchain

@@ -1,0 +1,35 @@
+name: Set up xlings
+description: Install an explicit xlings version and refresh its bundled index.
+inputs:
+  version:
+    description: Client compatibility version
+    default: v2026.8.10.1
+runs:
+  using: composite
+  steps:
+    - if: runner.os != 'Windows'
+      shell: bash
+      env:
+        XLINGS_VERSION: ${{ inputs.version }}
+        XLINGS_NON_INTERACTIVE: '1'
+      run: |
+        curl -fsSL --retry 3 --retry-all-errors https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
+        echo "XLINGS_HOME=$HOME/.xlings" >> "$GITHUB_ENV"
+        echo "$HOME/.xlings/bin" >> "$GITHUB_PATH"
+        echo "$HOME/.xlings/subos/default/bin" >> "$GITHUB_PATH"
+        "$HOME/.xlings/bin/xlings" update --yes
+    - if: runner.os == 'Windows'
+      shell: pwsh
+      env:
+        XLINGS_VERSION: ${{ inputs.version }}
+        XLINGS_NON_INTERACTIVE: '1'
+      run: |
+        $ErrorActionPreference = 'Stop'
+        iex (Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.ps1' -UseBasicParsing).Content
+        $homeDir = "$env:USERPROFILE\.xlings"
+        if (-not (Test-Path "$homeDir\bin\xlings.exe")) { throw 'xlings executable missing' }
+        Add-Content $env:GITHUB_ENV "XLINGS_HOME=$homeDir"
+        Add-Content $env:GITHUB_PATH "$homeDir\bin"
+        Add-Content $env:GITHUB_PATH "$homeDir\subos\default\bin"
+        & "$homeDir\bin\xlings.exe" update --yes
+        if ($LASTEXITCODE -ne 0) { throw 'xlings update failed' }

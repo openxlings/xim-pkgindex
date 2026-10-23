@@ -9,20 +9,15 @@ name: node native modules
 # against, encodes a PNG on each platform.
 
 on:
-  pull_request:
-    paths:
-      - 'pkgs/n/node.lua'
-      - 'tests/n/test_node.py'
-      - 'tests/lua/node_preload_harness.lua'
-      - '.github/workflows/node-native-modules.yml'
-      - '.github/scripts/program-checks/install-xlings.sh'
-      - '.github/scripts/program-checks/install-recipe.sh'
-      - '.github/scripts/program-checks/node.sh'
-  workflow_dispatch:
-
-concurrency:
-  group: node-native-modules-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  workflow_call:
+    inputs:
+      base_sha:
+        type: string
+        default: ""
+      head_sha:
+        type: string
+        default: ""
+  workflow_dispatch: null
 
 jobs:
   posix:

@@ -26,18 +26,10 @@ name: Publish Index Artifact
 # NOT added to `pkgindex-deloy.yml` / `site-check.yml`: those render the docs
 # site from package metadata, and `libs/` is not user-facing documentation.
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - 'pkgs/**'
-      - 'libs/**'
-      - 'xim-indexrepos.lua'
-      - '.xpkgindex.json'
-      # This file, the way ci-test.yml already lists itself. A publisher whose
-      # trigger or steps changed should PUBLISH once, because that is the only
-      # thing that demonstrates it still works — and it makes a change like this
-      # one self-verifying: merging it produces an artifact or it does not.
-      - '.github/workflows/publish-artifact.yml'
+  workflow_run:
+    workflows: [CI]
+    branches: [main]
+    types: [completed]
   workflow_dispatch:
   schedule:
     - cron: '0 18 * * *'   # nightly catch-all / mirror re-sync
@@ -49,9 +41,15 @@ concurrency:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   publish:
+    if: >-
+      github.event_name != 'workflow_run' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     env:
       # PAT with write to xlings-res/xim-index (release assets + pointer file).
@@ -63,7 +61,21 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           fetch-depth: 0   # need HEAD short-sha for content-hash artifact name
+
+      - name: Publication scope
+        id: scope
+        env:
+          EVENT: ${{ github.event_name }}
+        run: python3 .github/scripts/ci-publication-scope.py --target index --event "$EVENT" --github-output "$GITHUB_OUTPUT"
+
+      - name: Require successful main CI for this exact source
+        if: steps.scope.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: python3 .github/scripts/ci-verified-source.py --repository "$REPOSITORY"
 
       - name: Enable vendored gtc (gitcode-cli)
         run: |
@@ -71,7 +83,7 @@ jobs:
           echo "$PWD/tools" >> "$GITHUB_PATH"
 
       - name: Build + publish index artifact (content-hash version)
-        if: ${{ env.XLINGS_RES_TOKEN != '' }}
+        if: steps.scope.outputs.changed == 'true' && env.XLINGS_RES_TOKEN != ''
         run: |
           set -euo pipefail
           # Content-hash naming: decouple the artifact from any xlings/mcpp version.

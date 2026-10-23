@@ -12,22 +12,15 @@ name: apple runners
 # on the first criterion that does not hold.
 
 on:
-  pull_request:
-    paths:
-      - 'pkgs/m/macapp-run.lua'
-      - 'pkgs/a/apple-simulator-tools.lua'
-      - '.github/workflows/apple-runners.yml'
-      - '.github/scripts/program-checks/install-xlings.sh'
-      - '.github/scripts/program-checks/install-recipe.sh'
-      - '.github/scripts/program-checks/macapp-run.sh'
-      - '.github/scripts/program-checks/simctl-run.sh'
-      - 'pkgs/a/apple-device-tools.lua'
-      - '.github/scripts/program-checks/devicectl-run.sh'
-  workflow_dispatch:
-
-concurrency:
-  group: apple-runners-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  workflow_call:
+    inputs:
+      base_sha:
+        type: string
+        default: ""
+      head_sha:
+        type: string
+        default: ""
+  workflow_dispatch: null
 
 jobs:
   macapp-run:

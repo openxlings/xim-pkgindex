@@ -1,396 +1,47 @@
-name: pkgindex test
-
-# `pull_request` as well as `push`, and the reason is not thoroughness.
-#
-# With push alone, `changed-files` compares HEAD against the PREVIOUS COMMIT,
-# so the gate only ever sees the last push's diff -- never the change the PR
-# actually proposes. A PR that adds a package in one commit and depends on it
-# in the next produces, in order:
-#
-#   commit 1  tests the new package alone
-#   commit 2  tests the consumer -- FAILS, its dep is "not found"
-#   commit 3  touches no pkgs/ file -- the step is skipped, and the check
-#             reports GREEN
-#
-# The last one is what a reviewer sees. "Every changed package installs" and
-# "no package was tested" produce the same green check. Measured on #532
-# (2026-08-06): a passing linux-install-test that ran zero packages.
-#
-# On a pull_request event changed-files diffs against the base, so the gate
-# sees the whole PR every time. The concurrency group below keeps the
-# duplicate push run from doubling the cost.
-# `libs/**` is in the filters below, and it was missing.
-#
-# `libs/graphics.lua` is imported by mesa, nvidia-gl-host-link,
-# xkeyboard-config and libinput-quirks — four recipes whose install and config
-# hooks are mostly calls into it. A change confined to that file therefore has
-# the widest blast radius in the index and, until this line, was the ONLY such
-# change that ran no CI at all. Measured on #735, which touches nothing else and
-# reported `no checks reported on the branch`.
+name: Package lifecycle
 on:
-  push:
-    branches:
-      - '**'
-    paths:
-      - 'pkgs/**'
-      - 'libs/**'
-      - '.github/workflows/ci-test.yml'
-      - '.github/scripts/**'
-  pull_request:
-    paths:
-      - 'pkgs/**'
-      - 'libs/**'
-      - '.github/workflows/ci-test.yml'
-      - '.github/scripts/**'
-  workflow_dispatch:
-
-concurrency:
-  group: pkgindex-test-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
+  workflow_call:
+    inputs:
+      matrix:
+        type: string
+        required: true
 jobs:
-
-  linux-test:
-    runs-on: ubuntu-latest
-
+  install:
+    name: install (${{ matrix.platform }})
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(inputs.matrix) }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
-
-      - name: Installation Xlings on Ubuntu
-        run: |
-          export XLINGS_NON_INTERACTIVE=1
-          export XLINGS_VERSION=v2026.8.10.1
-          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
-          echo "XLINGS_HOME=$HOME/.xlings" >> "$GITHUB_ENV"
-          echo "PATH=$HOME/.xlings/subos/current/bin:$HOME/.xlings/bin:$PATH" >> "$GITHUB_ENV"
-
-      - name: Lint xpkg libpath policy
-        run: |
-          chmod +x .github/scripts/check-no-direct-ld-libpath.sh
-          .github/scripts/check-no-direct-ld-libpath.sh
-          chmod +x .github/scripts/check-no-gnu-only-stat.sh
-          .github/scripts/check-no-gnu-only-stat.sh
-
-      # An install hook that calls io.read() blocks forever when nobody is
-      # there to answer. `rust`'s windows hook parked a windows-test job for
-      # four hours on "please input (1 or 2):" -- against a normal runtime of
-      # under three minutes -- and GitHub serves no logs for an in-progress
-      # job, so the prompt was invisible until someone watched the runner.
-      # A hang is worse than a failure: there is no error, and from outside
-      # "slow" and "stuck" look the same.
-      - name: Lint xpkg blocking stdin reads
-        run: |
-          chmod +x .github/scripts/check-no-blocking-input.sh
-          .github/scripts/check-no-blocking-input.sh
-
-      # A bare dep name (`expat@2.6.2` rather than `xim:expat@2.6.2`) resolves
-      # while exactly one index provides that package -- and CI registers every
-      # CHANGED recipe a second time under `local:`, so the moment a PR touches
-      # both the consumer and the dependency, resolution reports
-      # `package 'expat@2.6.2' is ambiguous` and the install stops. Latent by
-      # construction: it is a property of the changed set, not of the recipe,
-      # so it surfaces on an unrelated PR (fontconfig, #497) rather than the one
-      # that introduced it.
-      #
-      # Two further assertions over QUALIFIED deps, both of which shipped as red
-      # CI before they existed: the prefix must match the provider's own
-      # declared namespace (rustup-mirror is `config:`, so `xim:` names
-      # nothing), and the provider must have a section for the platform doing
-      # the depending (xim:python is linux+windows, so a macosx dep on it can
-      # never resolve).
-      #
-      # xpm.debian / xpm.ubuntu are deliberately NOT reported: detect_platform()
-      # returns build_os(), which is linux/macosx/windows and nothing else, so
-      # those sections are never selected and a dep inside one cannot fail. A
-      # check with unfixable findings gets ignored wholesale.
-      #
-      # lua5.4 because the check LOADS each recipe rather than grepping it: a dep
-      # list spans lines, repeats under several xpm sections and has two legal
-      # shapes, and npm assigns one table to three platforms after the literal.
-      - name: Lint xpkg dep namespace
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends lua5.4
-          chmod +x .github/scripts/check-dep-namespace.sh
-          .github/scripts/check-dep-namespace.sh
-
-      # A published version entry changes what it installs only together with
-      # a higher `revision` (docs/specs/xpackage-v2.md). A client records the
-      # revision it installed and reinstalls when the recipe's differs, so an
-      # entry whose url or sha256 changed under an unchanged revision carries
-      # bytes that no machine already holding the version ever receives, and
-      # that a client with a cached index fails to verify. The check compares
-      # every entry the base already has, in every recipe the change touches,
-      # loading both sides as Lua with the lua5.4 installed above. A hook
-      # change that alters the installed files needs a higher revision too;
-      # that is judged in review, not here.
-      - name: Lint version-entry revisions
-        run: |
-          chmod +x .github/scripts/check-revision.sh
-          .github/scripts/check-revision.sh
-
-
-
-      - name: Get changed-files (only pull_request）
-        uses: tj-actions/changed-files@v46
-        id: changed-files
-        with:
-          path: pkgs/
-
-      - name: Package File Test
-        run: |
-          source ~/.bashrc
-          export PATH=/home/xlings/.xlings_data/bin:$PATH
-          for file in ${{ steps.changed-files.outputs.all_changed_files }}; do
-            echo "---"
-            xpkg_file="${{ github.workspace }}/pkgs/$file"
-            if grep -qP '^\s*package\s*=\s*\{.*\bref\s*=' "$xpkg_file"; then
-              echo "⏩ Skip ref package: $file"
-              continue
-            fi
-            output=$(xlings config --add-xpkg "$xpkg_file" 2>&1)
-            echo "$output"
-            # the output echoes the recipe path; `libgpg-error.lua` is not an error
-            if echo "$output" | sed "s|$(basename "$file")|<recipe>|g" | grep -i "error"; then
-              echo "❌ Error detected in $file"
-              exit 1
-            fi
-          done
-
-  windows-test:
-    runs-on: windows-latest
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install xlings on Windows
-        shell: pwsh
-        run: |
-          $env:XLINGS_NON_INTERACTIVE = "1"
-          $env:XLINGS_VERSION = "v2026.8.10.1"
-          iex (Invoke-WebRequest `
-            -Uri "https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.ps1" `
-            -UseBasicParsing).Content
-
-          $xlingsHome = "$env:USERPROFILE\.xlings"
-          if (-not (Test-Path "$xlingsHome\bin\xlings.exe")) {
-            throw "xlings install did not produce $xlingsHome\bin\xlings.exe"
-          }
-
-          Add-Content $env:GITHUB_PATH "$xlingsHome\bin"
-          Add-Content $env:GITHUB_PATH "$xlingsHome\subos\current\bin"
-          Add-Content $env:GITHUB_ENV  "XLINGS_HOME=$xlingsHome"
-
-
-      # Refresh the index. The release tarball bundles a pkgindex snapshot
-      # frozen at build time, so without this a package's DEPENDENCIES resolve
-      # against a months-old index even though the package under test comes
-      # from this checkout. That is how `local:rust` failed with
-      # `sh: 1: rustup-init: not found`: its rustup dep came from the frozen
-      # snapshot, where rustup's config hook still aborted, so the shim was
-      # never registered. Nothing about rust was wrong.
-      - name: Refresh package index
-        run: xlings update
-      - name: Verify xlings
-        shell: pwsh
-        run: |
-          xlings --version
-          xlings config
-
       - uses: actions/checkout@v4
         with:
-          repository: openxlings/xpkgindex-update
-          ref: 516e15d5f797803743486a7c0ef6e9ccbd2f5978
-          path: .updater
-          persist-credentials: false
-      - name: Select runtime changes structurally
-        id: runtime-changes
-        env:
-          BASE: ${{ github.event.pull_request.base.sha || github.event.before || 'HEAD^' }}
-        shell: bash
-        run: |
-          export PYTHONPATH="$(python -c 'from pathlib import Path; print(Path(".updater/src").resolve())')"
-          python .github/scripts/filter-runtime-changes.py
-
-      - name: Windows install/uninstall test (changed packages)
-        if: steps.runtime-changes.outputs.any_changed == 'true'
-        shell: pwsh
-        run: |
-          pwsh -NoProfile -File .github/scripts/windows-test.ps1 `
-            -ChangedFiles "${{ steps.runtime-changes.outputs.files }}" `
-            -WorkspaceRoot "${{ github.workspace }}"
-
-  linux-install-test:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-
-      - name: Install xlings on Ubuntu
-        run: |
-          export XLINGS_NON_INTERACTIVE=1
-          export XLINGS_VERSION=v2026.8.10.1
-          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
-          echo "XLINGS_HOME=$HOME/.xlings" >> "$GITHUB_ENV"
-          echo "$HOME/.xlings/bin"               >> "$GITHUB_PATH"
-          echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
-
-
-      # See the bash legs for why: the bundled snapshot resolves deps against a
-      # months-old index unless refreshed.
-      - name: Refresh package index
-        run: xlings update
-      - name: Verify xlings
-        run: |
-          xlings --version
-          xlings config
-
-      - uses: actions/checkout@v4
-        with:
-          repository: openxlings/xpkgindex-update
-          ref: 516e15d5f797803743486a7c0ef6e9ccbd2f5978
-          path: .updater
-          persist-credentials: false
-      - name: Select runtime changes structurally
-        id: runtime-changes
-        env:
-          BASE: ${{ github.event.pull_request.base.sha || github.event.before || 'HEAD^' }}
-        shell: bash
-        run: |
-          export PYTHONPATH="$(python -c 'from pathlib import Path; print(Path(".updater/src").resolve())')"
-          python .github/scripts/filter-runtime-changes.py
-
-      # patchelf/binutils and lua5.4 are what the post-install dependency
-      # closure check needs (dep-closure-check.sh: readelf for DT_NEEDED,
-      # lua to read the recipe's deps structurally).
-      #
-      # This is a SEPARATE job from linux-test, on its own runner, so a lua5.4
-      # installed there is not here. Without this step the check finds no
-      # interpreter and exits 3 -- correctly reported as "not evaluated", but a
-      # guard that never evaluates anything is not a guard, and the job still
-      # goes green.
-      - name: Install ELF + Lua tooling for the closure check
-        if: steps.runtime-changes.outputs.any_changed == 'true'
+      - uses: ./.github/actions/setup-xlings
+      - name: ELF and Lua tooling
+        if: runner.os == 'Linux'
         timeout-minutes: 12
+        shell: bash
         run: |
-          set -euo pipefail
-          # The watchdog runs as root so it can terminate root-owned APT children.
-          sudo timeout --signal=TERM --kill-after=15s 240s \
-            apt-get -o Acquire::http::Timeout=30 \
-              -o Acquire::https::Timeout=30 -o Acquire::Retries=2 \
-              -o Dpkg::Lock::Timeout=60 update -qq
-          sudo timeout --signal=TERM --kill-after=15s 420s \
-            env DEBIAN_FRONTEND=noninteractive apt-get \
-              -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 \
-              -o Acquire::Retries=2 -o Dpkg::Lock::Timeout=60 \
-              install -y --no-install-recommends binutils patchelf lua5.4
-          readelf --version | head -1
-          patchelf --version
-          lua5.4 -v
-
-      - name: Linux install/uninstall test (changed packages)
-        if: steps.runtime-changes.outputs.any_changed == 'true'
+          sudo timeout --signal=TERM --kill-after=15s 240s apt-get -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::Retries=2 update -qq
+          sudo timeout --signal=TERM --kill-after=15s 420s env DEBIAN_FRONTEND=noninteractive apt-get -o Acquire::Retries=2 install -y --no-install-recommends binutils patchelf lua5.4
+      - name: Install and remove planned packages (POSIX)
+        if: runner.os != 'Windows'
+        shell: bash
+        env:
+          FILES: ${{ matrix.files }}
+          PLATFORM: ${{ matrix.platform }}
         run: |
           chmod +x .github/scripts/posix-test.sh .github/scripts/dep-closure-check.sh
-          .github/scripts/posix-test.sh \
-            "${{ steps.runtime-changes.outputs.files }}" \
-            "${{ github.workspace }}" \
-            linux
-
-  macos-install-test:
-    runs-on: macos-latest
-
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install xlings on macOS
-        run: |
-          export XLINGS_NON_INTERACTIVE=1
-          export XLINGS_VERSION=v2026.8.10.1
-          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
-          echo "XLINGS_HOME=$HOME/.xlings" >> "$GITHUB_ENV"
-          echo "$HOME/.xlings/bin"               >> "$GITHUB_PATH"
-          echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
-
-
-      # See the bash legs for why: the bundled snapshot resolves deps against a
-      # months-old index unless refreshed.
-      - name: Refresh package index
-        run: xlings update
-      - name: Verify xlings (and dump install layout)
-        run: |
-          xlings --version
-          xlings config
-          echo "--- which xlings ---"
-          which xlings || true
-          echo "--- find $HOME/.xlings (depth 4) ---"
-          find "$HOME/.xlings" -maxdepth 4 -mindepth 1 \
-              \( -type d -o -type f -o -type l \) \
-              -print 2>/dev/null | head -80 || true
-
-      - uses: actions/checkout@v4
-        with:
-          repository: openxlings/xpkgindex-update
-          ref: 516e15d5f797803743486a7c0ef6e9ccbd2f5978
-          path: .updater
-          persist-credentials: false
-      - name: Select runtime changes structurally
-        id: runtime-changes
+          .github/scripts/posix-test.sh "$FILES" "$GITHUB_WORKSPACE" "$PLATFORM"
+      - name: Install and remove planned packages (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
         env:
-          BASE: ${{ github.event.pull_request.base.sha || github.event.before || 'HEAD^' }}
-        shell: bash
+          FILES: ${{ matrix.files }}
         run: |
-          export PYTHONPATH="$(python -c 'from pathlib import Path; print(Path(".updater/src").resolve())')"
-          python .github/scripts/filter-runtime-changes.py
-
-      - name: macOS install/uninstall test (changed packages)
-        if: steps.runtime-changes.outputs.any_changed == 'true'
-        run: |
-          chmod +x .github/scripts/posix-test.sh
-          # Disable exit-on-error so the post-test diagnostic always runs;
-          # the captured rc is forwarded as this step's exit status.
-          set +e
-          .github/scripts/posix-test.sh \
-            "${{ steps.runtime-changes.outputs.files }}" \
-            "${{ github.workspace }}" \
-            macosx
-          rc=$?
-          set -e
-          echo ""
-          echo "============================================================"
-          echo " post-test diagnostic dump (always runs)"
-          echo "============================================================"
-          echo "--- find $HOME/.xlings/subos (depth 4) ---"
-          find "$HOME/.xlings/subos" -maxdepth 4 -mindepth 1 \
-              \( -type d -o -type f -o -type l \) \
-              -print 2>/dev/null | head -80 || true
-          echo "--- find $HOME/.xlings/data/xpkgs (depth 4) ---"
-          find "$HOME/.xlings/data/xpkgs" -maxdepth 4 -mindepth 1 \
-              \( -type d -o -type f -o -type l \) \
-              -print 2>/dev/null | head -40 || true
-          exit $rc
+          & .github/scripts/windows-test.ps1 -ChangedFiles $env:FILES -WorkspaceRoot $env:GITHUB_WORKSPACE
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

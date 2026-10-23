@@ -19,18 +19,15 @@
 name: baremetal riscv smoke
 
 on:
-  pull_request:
-    paths:
-      - 'pkgs/q/qemu-riscv.lua'
-      - 'pkgs/p/picolibc-riscv.lua'
-      - 'tests/q/**'
-      - 'tests/p/test_picolibc_riscv.py'
-      - '.agents/tools/build-baremetal-sysroot.sh'
-  workflow_dispatch:
-
-concurrency:
-  group: baremetal-riscv-${{ github.ref }}
-  cancel-in-progress: true
+  workflow_call:
+    inputs:
+      base_sha:
+        type: string
+        default: ""
+      head_sha:
+        type: string
+        default: ""
+  workflow_dispatch: null
 
 jobs:
   boot-a-kernel:

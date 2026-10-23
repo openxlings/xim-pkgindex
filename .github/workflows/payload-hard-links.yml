@@ -7,13 +7,14 @@ name: payload hard links
 # .github/scripts/check-payload-hard-links.py for what is and is not checked.
 
 on:
-  pull_request:
-    paths:
-      - 'pkgs/**'
-
-concurrency:
-  group: payload-hard-links-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+  workflow_call:
+    inputs:
+      base_sha:
+        type: string
+        default: ""
+      head_sha:
+        type: string
+        default: ""
 
 jobs:
   check:
@@ -26,4 +27,4 @@ jobs:
       - name: New payload archives hold no hard links
         run: |
           python3 .github/scripts/check-payload-hard-links.py \
-            --base "${{ github.event.pull_request.base.sha }}" --head "${{ github.event.pull_request.head.sha }}"
+            --base "${{ inputs.base_sha || github.event.pull_request.base.sha }}" --head "${{ inputs.head_sha || github.event.pull_request.head.sha || github.sha }}"

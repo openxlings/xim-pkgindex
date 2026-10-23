@@ -6,14 +6,14 @@ name: release-owned packages, read by the published xlings
 # self-update test (xlings design 2026-10-23 part 3, U5, U6) -- with the
 # published xlings, against this checkout, on every platform it declares.
 on:
-  pull_request:
-    paths:
-      - 'pkgs/x/xlings.lua'
-      - 'pkgs/luban/luban.lua'
-      - 'pkgs/luban/luban-os.lua'
-      - 'pkgs/x/xdesk.lua'
-      - 'scripts/test-release-owned-client.py'
-      - '.github/workflows/release-owned.yml'
+  workflow_call:
+    inputs:
+      base_sha:
+        type: string
+        default: ""
+      head_sha:
+        type: string
+        default: ""
   workflow_dispatch:
 
 jobs:

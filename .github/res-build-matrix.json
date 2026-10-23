@@ -1,0 +1,322 @@
+[
+  {
+    "what": "limine",
+    "version": "12.9.3",
+    "arch": "x86_64"
+  },
+  {
+    "what": "limine",
+    "version": "12.9.3",
+    "arch": "aarch64"
+  },
+  {
+    "what": "kernel-virt",
+    "version": "6.12.112-r3",
+    "arch": "x86_64"
+  },
+  {
+    "what": "kernel-virt",
+    "version": "6.12.112-r3",
+    "arch": "aarch64"
+  },
+  {
+    "what": "busybox",
+    "version": "1.35.0",
+    "arch": "aarch64"
+  },
+  {
+    "what": "bwrap",
+    "version": "0.11.2",
+    "arch": "aarch64"
+  },
+  {
+    "what": "gcc",
+    "version": "16.1.0",
+    "arch": "aarch64"
+  },
+  {
+    "what": "binutils",
+    "version": "2.42",
+    "arch": "aarch64"
+  },
+  {
+    "what": "bash",
+    "version": "5.2.37",
+    "arch": "aarch64"
+  },
+  {
+    "what": "coreutils",
+    "version": "9.5",
+    "arch": "aarch64"
+  },
+  {
+    "what": "openssl",
+    "version": "3.1.5",
+    "arch": "aarch64"
+  },
+  {
+    "what": "make",
+    "version": "4.3",
+    "arch": "aarch64"
+  },
+  {
+    "what": "musl",
+    "version": "1.2.5",
+    "arch": "aarch64"
+  },
+  {
+    "what": "e2fsprogs",
+    "version": "1.47.3",
+    "arch": "aarch64"
+  },
+  {
+    "what": "proot",
+    "version": "5.4.0",
+    "arch": "aarch64"
+  },
+  {
+    "what": "passt",
+    "version": "2026_10_02.cba3570",
+    "arch": "x86_64"
+  },
+  {
+    "what": "passt",
+    "version": "2026_10_02.cba3570",
+    "arch": "aarch64"
+  },
+  {
+    "what": "virtiofsd",
+    "version": "1.14.0",
+    "arch": "x86_64"
+  },
+  {
+    "what": "virtiofsd",
+    "version": "1.14.0",
+    "arch": "aarch64"
+  },
+  {
+    "what": "curl",
+    "version": "8.22.0",
+    "arch": "x86_64"
+  },
+  {
+    "what": "curl",
+    "version": "8.22.0",
+    "arch": "aarch64"
+  },
+  {
+    "what": "git",
+    "version": "2.53.0-1",
+    "arch": "x86_64"
+  },
+  {
+    "what": "git",
+    "version": "2.53.0-1",
+    "arch": "aarch64"
+  },
+  {
+    "what": "vim",
+    "version": "9.2.1172",
+    "arch": "x86_64"
+  },
+  {
+    "what": "vim",
+    "version": "9.2.1172",
+    "arch": "aarch64"
+  },
+  {
+    "what": "procps-ng",
+    "version": "4.0.5",
+    "arch": "x86_64"
+  },
+  {
+    "what": "procps-ng",
+    "version": "4.0.5",
+    "arch": "aarch64"
+  },
+  {
+    "what": "sudo",
+    "version": "1.9.17p2",
+    "arch": "x86_64"
+  },
+  {
+    "what": "sudo",
+    "version": "1.9.17p2",
+    "arch": "aarch64"
+  },
+  {
+    "what": "wl-clipboard",
+    "version": "2.3.0",
+    "arch": "x86_64"
+  },
+  {
+    "what": "wl-clipboard",
+    "version": "2.3.0",
+    "arch": "aarch64"
+  },
+  {
+    "what": "xsel",
+    "version": "1.2.1",
+    "arch": "x86_64"
+  },
+  {
+    "what": "xsel",
+    "version": "1.2.1",
+    "arch": "aarch64"
+  },
+  {
+    "what": "edk2-firmware",
+    "version": "9.2.4",
+    "arch": "x86_64"
+  },
+  {
+    "what": "qemu-system",
+    "version": "9.2.4-r2",
+    "arch": "x86_64"
+  },
+  {
+    "what": "qemu-system",
+    "version": "9.2.4-r2",
+    "arch": "aarch64"
+  },
+  {
+    "what": "qemu-system-gl",
+    "version": "9.2.4-r1",
+    "arch": "x86_64"
+  },
+  {
+    "what": "labwc-desktop",
+    "version": "0.7.2-r1",
+    "arch": "x86_64"
+  },
+  {
+    "what": "labwc-desktop",
+    "version": "0.7.2-r1",
+    "arch": "aarch64"
+  },
+  {
+    "what": "foot",
+    "version": "1.27.0-r1",
+    "arch": "x86_64"
+  },
+  {
+    "what": "foot",
+    "version": "1.27.0-r1",
+    "arch": "aarch64"
+  },
+  {
+    "what": "xwayland",
+    "version": "24.1.14-r1",
+    "arch": "x86_64"
+  },
+  {
+    "what": "xwayland",
+    "version": "24.1.14-r1",
+    "arch": "aarch64"
+  },
+  {
+    "what": "labwc",
+    "version": "0.20.0-r2",
+    "arch": "x86_64"
+  },
+  {
+    "what": "labwc",
+    "version": "0.20.0-r2",
+    "arch": "aarch64"
+  },
+  {
+    "what": "qt-runtime",
+    "version": "6.11.1-r2",
+    "arch": "x86_64"
+  },
+  {
+    "what": "qt-runtime",
+    "version": "6.11.1-r2",
+    "arch": "aarch64"
+  },
+  {
+    "what": "lxqt",
+    "version": "2.4.0-r4",
+    "arch": "x86_64"
+  },
+  {
+    "what": "lxqt",
+    "version": "2.4.0-r4",
+    "arch": "aarch64"
+  },
+  {
+    "what": "falkon",
+    "version": "26.04.2-r1",
+    "arch": "x86_64"
+  },
+  {
+    "what": "falkon",
+    "version": "26.04.2-r1",
+    "arch": "aarch64"
+  },
+  {
+    "what": "audacious",
+    "version": "4.5.1-r1",
+    "arch": "x86_64"
+  },
+  {
+    "what": "audacious",
+    "version": "4.5.1-r1",
+    "arch": "aarch64"
+  },
+  {
+    "what": "audio",
+    "version": "1.6.8-r2",
+    "arch": "x86_64"
+  },
+  {
+    "what": "audio",
+    "version": "1.6.8-r2",
+    "arch": "aarch64"
+  },
+  {
+    "what": "kde",
+    "version": "6.6.6-r2",
+    "arch": "x86_64"
+  },
+  {
+    "what": "tmux",
+    "version": "3.8",
+    "arch": "x86_64"
+  },
+  {
+    "what": "tmux",
+    "version": "3.8",
+    "arch": "aarch64"
+  },
+  {
+    "what": "htop",
+    "version": "3.5.3",
+    "arch": "x86_64"
+  },
+  {
+    "what": "htop",
+    "version": "3.5.3",
+    "arch": "aarch64"
+  },
+  {
+    "what": "terminfo",
+    "version": "6.6.20261010",
+    "arch": "x86_64"
+  },
+  {
+    "what": "adwaita-cursors",
+    "version": "49.0",
+    "arch": "x86_64"
+  },
+  {
+    "what": "luban-fonts",
+    "version": "2026.10.16",
+    "arch": "x86_64"
+  },
+  {
+    "what": "sample-music",
+    "version": "2026.10.22",
+    "arch": "x86_64"
+  }
+]

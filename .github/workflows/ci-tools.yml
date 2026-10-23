@@ -5,26 +5,39 @@ name: tools test
 # what writes the index pointer every client reads -- breaking one is silent
 # until a publish goes out wrong.
 on:
-  workflow_dispatch:
-  push:
-    branches: [ '**' ]
-    paths:
-      - 'tools/**'
-      - 'tests/scripts/**'
-      - 'scripts/**'
-      - '.github/workflows/**'
-  pull_request:
-    paths:
-      - 'tools/**'
-      - 'tests/scripts/**'
-      - 'scripts/**'
-      - '.github/workflows/**'
+  workflow_call:
+    inputs:
+      base_sha:
+        type: string
+        default: ""
+      head_sha:
+        type: string
+        default: ""
+  workflow_dispatch: null
 
 jobs:
   tools:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
+
+      - name: Lint workflow and action expressions
+        env:
+          TOOLROOT: ${{ runner.temp }}/actionlint
+        run: |
+          mkdir -p "$TOOLROOT"
+          curl -fsSL --retry 3 https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz -o "$TOOLROOT/actionlint.tar.gz"
+          printf '8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  %s\n' "$TOOLROOT/actionlint.tar.gz" | sha256sum -c -
+          tar -xzf "$TOOLROOT/actionlint.tar.gz" -C "$TOOLROOT" actionlint
+          # Keep expression/type validation identical on developer hosts and runners.
+          # Shell policy checks below have their own explicit scope.
+          "$TOOLROOT/actionlint" -color -shellcheck= -pyflakes=
+
+      - name: CI architecture regression tests
+        run: |
+          python3 -m pip install pytest pyyaml # host-dep-ok: CI test harness
+          python3 -m pytest tests/test_ci_architecture.py tests/test_autoupdate_dispatch.py -q
 
       - name: Shell scripts parse
         run: |

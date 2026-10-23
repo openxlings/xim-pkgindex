@@ -9,18 +9,20 @@ name: site-check
 # and the result should depend only on what is in the repository.
 
 on:
-  pull_request:
-    paths:
-      - 'pkgs/**'
-      - '.xpkgindex.json'
-      - '.xpkgindex/**'
-      - 'docs/**'
-      - '.github/workflows/site-check.yml'
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      base_sha:
+        type: string
+        default: ""
+      head_sha:
+        type: string
+        default: ""
+  workflow_dispatch: null
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
         with:
@@ -41,7 +43,9 @@ jobs:
         # --strict turns the growth reconciliation warning into an error: if
         # the replayed history disagrees with the tree, the curve on the site
         # would be wrong, and that is worth failing a pull request over.
-        run: xpkgindex generate . --output /tmp/site --offline --strict | tee /tmp/build.log
+        run: |
+          set -euo pipefail
+          xpkgindex generate . --output /tmp/site --offline --strict | tee /tmp/build.log
 
       - name: No warnings
         run: |

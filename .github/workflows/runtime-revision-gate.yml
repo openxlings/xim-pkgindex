@@ -21,21 +21,23 @@ name: runtime revision gate
 # pull request's base and head.
 
 on:
-  pull_request:
-    paths:
-      - 'pkgs/**'
+  workflow_call:
+    inputs:
+      base_sha:
+        type: string
+        default: ""
+      head_sha:
+        type: string
+        default: ""
   workflow_dispatch:
     inputs:
       mcpp_version:
-        description: >
-          Released mcpp version (e.g. 2026.9.17.1) to build the two legs
-          with. Empty uses this index's own latest mcpp (pkgs/m/mcpp.lua).
+        description: 'Released mcpp version (e.g. 2026.9.17.1) to build the two legs
+          with. Empty uses this index''s own latest mcpp (pkgs/m/mcpp.lua).
+
+          '
         required: false
         default: ''
-
-concurrency:
-  group: runtime-revision-gate-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
 
 jobs:
   # Detection is by the FIELD a descriptor declares, not by the package name
@@ -59,9 +61,9 @@ jobs:
         id: refs
         run: |
           set -euo pipefail
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "base_sha=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
-            echo "head_sha=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+          if [ -n "${{ inputs.base_sha || github.event.pull_request.base.sha }}" ]; then
+            echo "base_sha=${{ inputs.base_sha || github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
+            echo "head_sha=${{ inputs.head_sha || github.event.pull_request.head.sha || github.sha }}" >> "$GITHUB_OUTPUT"
           else
             # workflow_dispatch has no pull request to diff. Compare the
             # dispatched commit against its own parent, so a manual run (for

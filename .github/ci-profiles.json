@@ -1,0 +1,251 @@
+{
+  "ci_xpkg_test": {
+    "workflow": "ci-xpkg-test.yml",
+    "paths": [
+      ".github/actions/setup-xlings/**",
+      ".github/ci-profiles.json",
+      ".github/scripts/**",
+      ".github/scripts/check-dep-namespace.sh",
+      ".github/scripts/check-no-blocking-input.sh",
+      ".github/scripts/check-no-direct-ld-libpath.sh",
+      ".github/scripts/check-no-gnu-only-stat.sh",
+      ".github/scripts/check-revision.sh",
+      ".github/scripts/ci-plan.py",
+      ".github/scripts/ci-required.py",
+      ".github/workflows/ci-xpkg-test.yml",
+      "libs/**",
+      "pkgs/**",
+      "tests/**",
+      "tests/n/test_ncurses.py"
+    ]
+  },
+  "ci_tools": {
+    "workflow": "ci-tools.yml",
+    "paths": [
+      ".github/ci-profiles.json",
+      ".github/res-build-matrix.json",
+      ".github/scripts/**",
+      ".github/scripts/ci-res-plan.py",
+      ".github/workflows/**",
+      ".github/workflows/ci-tools.yml",
+      "scripts/**",
+      "tests/scripts/**",
+      "tests/scripts/test_index_pointer_history.py",
+      "tests/test_ci_architecture.py",
+      "tools/**",
+      "tools/build_xim_index_artifact.sh",
+      "tools/check_index_compat.py",
+      "tools/lint_exec_quoting.sh",
+      "tools/lint_host_deps.sh"
+    ]
+  },
+  "site_check": {
+    "workflow": "site-check.yml",
+    "paths": [
+      ".github/workflows/site-check.yml",
+      ".xpkgindex.json",
+      ".xpkgindex/**",
+      "README.md",
+      "README.zh.md",
+      "docs/**",
+      "pkgs/**"
+    ]
+  },
+  "consumer_through_index_override": {
+    "workflow": "consumer-through-index-override.yml",
+    "paths": [
+      ".github/consumers/**",
+      ".github/scripts/consumer-through-index-override.sh",
+      ".github/workflows/consumer-through-index-override.yml",
+      "libs/**",
+      "pkgs/**"
+    ]
+  },
+  "payload_hard_links": {
+    "workflow": "payload-hard-links.yml",
+    "paths": [
+      ".github/scripts/check-payload-hard-links.py",
+      ".github/workflows/payload-hard-links.yml",
+      "pkgs/**"
+    ]
+  },
+  "runtime_revision_gate": {
+    "workflow": "runtime-revision-gate.yml",
+    "paths": [
+      ".github/scripts/detect-runtime-revision-move.py",
+      ".github/scripts/print-latest-ref.py",
+      ".github/scripts/runtime-revision-gate.sh",
+      ".github/workflows/runtime-revision-gate.yml",
+      "pkgs/**",
+      ".github/scripts/lua_table.py"
+    ]
+  },
+  "eden_smoke": {
+    "workflow": "eden-smoke.yml",
+    "paths": [
+      ".github/workflows/eden-smoke.yml",
+      "pkgs/e/eden*.lua",
+      "tests/e/test_eden*.py"
+    ]
+  },
+  "android_runner": {
+    "workflow": "android-runner.yml",
+    "paths": [
+      ".github/scripts/program-checks/adb-run.sh",
+      ".github/scripts/program-checks/install-recipe.sh",
+      ".github/scripts/program-checks/install-xlings.sh",
+      ".github/workflows/android-runner.yml",
+      "pkgs/a/android-platform-tools.lua"
+    ]
+  },
+  "apple_runners": {
+    "workflow": "apple-runners.yml",
+    "paths": [
+      ".github/scripts/program-checks/devicectl-run.sh",
+      ".github/scripts/program-checks/install-recipe.sh",
+      ".github/scripts/program-checks/install-xlings.sh",
+      ".github/scripts/program-checks/macapp-run.sh",
+      ".github/scripts/program-checks/simctl-run.sh",
+      ".github/workflows/apple-runners.yml",
+      "pkgs/a/apple-device-tools.lua",
+      "pkgs/a/apple-simulator-tools.lua",
+      "pkgs/m/macapp-run.lua"
+    ]
+  },
+  "baremetal_riscv_smoke": {
+    "workflow": "baremetal-riscv-smoke.yml",
+    "paths": [
+      ".agents/tools/build-baremetal-sysroot.sh",
+      ".github/workflows/baremetal-riscv-smoke.yml",
+      "pkgs/p/picolibc-riscv.lua",
+      "pkgs/q/qemu-riscv.lua",
+      "tests/p/test_picolibc_riscv.py",
+      "tests/q/**"
+    ]
+  },
+  "bundletool": {
+    "workflow": "bundletool.yml",
+    "paths": [
+      ".github/scripts/program-checks/install-recipe.sh",
+      ".github/scripts/program-checks/install-xlings.sh",
+      ".github/workflows/bundletool.yml",
+      "pkgs/b/bundletool.lua"
+    ]
+  },
+  "chatgpt_runtime": {
+    "workflow": "chatgpt-runtime.yml",
+    "paths": [
+      ".github/scripts/program-checks/chatgpt-launch.sh",
+      ".github/scripts/program-checks/chatgpt.sh",
+      ".github/scripts/program-checks/install-xlings.sh",
+      ".github/workflows/chatgpt-runtime.yml",
+      "pkgs/c/chatgpt.lua"
+    ]
+  },
+  "jvm_build_tools": {
+    "workflow": "jvm-build-tools.yml",
+    "paths": [
+      ".github/scripts/program-checks/coursier.sh",
+      ".github/scripts/program-checks/install-recipe.sh",
+      ".github/scripts/program-checks/install-xlings.sh",
+      ".github/scripts/program-checks/kotlin.sh",
+      ".github/workflows/jvm-build-tools.yml",
+      "pkgs/c/coursier.lua",
+      "pkgs/k/kotlin.lua"
+    ]
+  },
+  "node_native_modules": {
+    "workflow": "node-native-modules.yml",
+    "paths": [
+      ".github/scripts/program-checks/install-recipe.sh",
+      ".github/scripts/program-checks/install-xlings.sh",
+      ".github/scripts/program-checks/node.sh",
+      ".github/workflows/node-native-modules.yml",
+      "pkgs/n/node.lua",
+      "tests/lua/node_preload_harness.lua",
+      "tests/n/test_node.py"
+    ]
+  },
+  "wix_bundle": {
+    "workflow": "wix-bundle.yml",
+    "paths": [
+      ".github/scripts/program-checks/wix.ps1",
+      ".github/workflows/wix-bundle.yml",
+      "pkgs/w/wix.lua"
+    ]
+  },
+  "toolchain_consumer_smoke": {
+    "workflow": "toolchain-consumer-smoke.yml",
+    "paths": [
+      ".github/scripts/ci-toolchain-plan.py",
+      ".github/workflows/toolchain-consumer-smoke.yml",
+      "pkgs/g/gcc.lua",
+      "pkgs/l/llvm.lua",
+      "pkgs/m/musl-gcc.lua"
+    ]
+  },
+  "luban_agent_workspace": {
+    "workflow": "luban-agent-workspace.yml",
+    "paths": [
+      ".github/workflows/luban-agent-workspace.yml",
+      "libs/luban*.lua",
+      "pkgs/a/agent-confined.lua",
+      "pkgs/a/agent-private.lua",
+      "pkgs/b/binutils.lua",
+      "pkgs/d/dsh.lua",
+      "pkgs/g/gcc.lua",
+      "pkgs/g/git.lua",
+      "pkgs/l/limine.lua",
+      "pkgs/l/linux-kernel-virt.lua",
+      "pkgs/luban/*.lua",
+      "pkgs/m/musl.lua",
+      "pkgs/v/vim.lua",
+      "scripts/test-luban-agent-workspace.py",
+      "scripts/test-luban-editions.sh",
+      "tests/fixtures/luban_network_probe.cpp"
+    ]
+  },
+  "glibc_root_runtime": {
+    "workflow": "glibc-root-runtime.yml",
+    "paths": [
+      ".agents/tools/check-glibc-data-inventory.py",
+      ".agents/tools/graphics/build-glibc.sh",
+      ".agents/tools/graphics/check-glibc-root-cache.sh",
+      ".agents/tools/graphics/patches/glibc-*.patch",
+      ".agents/tools/publish-glibc-r3-assets.py",
+      ".github/workflows/glibc-root-runtime.yml"
+    ]
+  },
+  "llvm_linux_aarch64": {
+    "workflow": "llvm-linux-aarch64.yml",
+    "paths": [
+      ".agents/tools/admit-linux-aarch64-assets.sh",
+      ".agents/tools/build-linux-aarch64-deps.sh",
+      ".agents/tools/build-llvm-subpkg.sh",
+      ".agents/tools/graphics/build-glibc.sh",
+      ".agents/tools/graphics/patches/glibc-*",
+      ".agents/tools/reuse-linux-aarch64-assets.py",
+      ".agents/tools/upload-linux-aarch64-assets.py",
+      ".agents/tools/verify-toolchain.sh",
+      ".github/workflows/llvm-linux-aarch64.yml"
+    ]
+  },
+  "ci_sweep": {
+    "workflow": "ci-sweep.yml",
+    "paths": [
+      ".github/scripts/windows-test.ps1",
+      ".github/workflows/ci-sweep.yml"
+    ]
+  },
+  "release_owned": {
+    "workflow": "release-owned.yml",
+    "paths": [
+      ".github/workflows/release-owned.yml",
+      "pkgs/luban/luban-os.lua",
+      "pkgs/luban/luban.lua",
+      "pkgs/x/xdesk.lua",
+      "pkgs/x/xlings.lua",
+      "scripts/test-release-owned-client.py"
+    ]
+  }
+}
