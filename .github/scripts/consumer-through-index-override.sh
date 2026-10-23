@@ -25,7 +25,7 @@ for dir in "$FIXTURES"/*/; do
         pick=1
     else
         for changed in ${CHANGED_FILES:-}; do
-            case "$changed" in .github/consumers/"$name"/*) pick=1 ;; esac
+            case "$changed" in .github/consumers/"$name"/*|.github/scripts/consumer-through-index-override.sh|.github/workflows/consumer-through-index-override.yml) pick=1 ;; esac
             while IFS= read -r path; do
                 [ -n "$path" ] && [ "$changed" = "$path" ] && pick=1
             done < "$dir/consumes"

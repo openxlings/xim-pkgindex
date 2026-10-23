@@ -11,18 +11,18 @@ name: consumer through the index override
 # this checkout.
 
 on:
-  pull_request:
-    paths:
-      - 'pkgs/**'
-      - 'libs/**'
-      - '.github/consumers/**'
-      - '.github/scripts/consumer-through-index-override.sh'
-      - '.github/workflows/consumer-through-index-override.yml'
-  workflow_dispatch:
-
-concurrency:
-  group: consumer-through-index-override-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  workflow_call:
+    inputs:
+      files:
+        type: string
+        default: ""
+      base_sha:
+        type: string
+        default: ""
+      head_sha:
+        type: string
+        default: ""
+  workflow_dispatch: null
 
 env:
   MCPP_VERSION: 2026.9.14.1
@@ -41,6 +41,6 @@ jobs:
       - name: Build the consumer fixtures of the changed files
         timeout-minutes: 50
         env:
-          CHANGED_FILES: ${{ steps.changed.outputs.all_changed_files }}
-          EVENT: ${{ github.event_name }}
+          CHANGED_FILES: ${{ inputs.files || steps.changed.outputs.all_changed_files }}
+          EVENT: ${{ inputs.files != '' && 'planned' || github.event_name }}
         run: bash .github/scripts/consumer-through-index-override.sh

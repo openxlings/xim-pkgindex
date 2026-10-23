@@ -7,18 +7,15 @@ name: android runner
 # measured on mcpp-community/mcpp#635.
 
 on:
-  pull_request:
-    paths:
-      - 'pkgs/a/android-platform-tools.lua'
-      - '.github/workflows/android-runner.yml'
-      - '.github/scripts/program-checks/install-xlings.sh'
-      - '.github/scripts/program-checks/install-recipe.sh'
-      - '.github/scripts/program-checks/adb-run.sh'
-  workflow_dispatch:
-
-concurrency:
-  group: android-runner-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  workflow_call:
+    inputs:
+      base_sha:
+        type: string
+        default: ""
+      head_sha:
+        type: string
+        default: ""
+  workflow_dispatch: null
 
 jobs:
   adb-run:

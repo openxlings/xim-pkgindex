@@ -4,28 +4,30 @@ name: xpkg test
 # under `libs/` are where four graphics recipes' install and config hooks
 # actually live, and a change confined to one of them used to run no CI at all.
 on:
-  workflow_dispatch:
-  push:
-    branches:
-      - '**'
-    paths:
-      - 'pkgs/**'
-      - 'libs/**'
-      - 'tests/**'
-  pull_request:
-    paths:
-      - 'pkgs/**'
-      - 'libs/**'
-      - 'tests/**'
+  workflow_call:
+    inputs:
+      base_sha:
+        type: string
+        default: ""
+      head_sha:
+        type: string
+        default: ""
+      closure:
+        type: boolean
+        default: false
+  workflow_dispatch: null
 
 jobs:
 
   # L0 + L2: 静态分析 + 隔离合规 (无需 xlings, 秒级完成)
   static-and-isolation:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -33,12 +35,22 @@ jobs:
           python-version: '3.12'
 
       - name: Install pytest
-        run: pip install pytest
+        run: pip install pytest pyyaml
 
       # The recipe and libs/ harnesses (tests/lua/, resource-table checks)
       # evaluate Lua; without an interpreter they had nothing to run here.
       - name: Install Lua
         run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends lua5.4
+
+      - name: Package policies
+        env:
+          REVISION_BASE_REF: ${{ inputs.base_sha }}
+        run: |
+          bash .github/scripts/check-no-direct-ld-libpath.sh
+          bash .github/scripts/check-no-gnu-only-stat.sh
+          bash .github/scripts/check-no-blocking-input.sh
+          bash .github/scripts/check-dep-namespace.sh
+          bash .github/scripts/check-revision.sh
 
       - name: L0 Static Analysis
         run: pytest tests/ -m static --tb=short -q
@@ -49,10 +61,13 @@ jobs:
   # L1: 索引注册 (需要 xlings)
   index-registration:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: static-and-isolation
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -60,16 +75,11 @@ jobs:
           python-version: '3.12'
 
       - name: Install pytest
-        run: pip install pytest
+        run: pip install pytest pyyaml
 
-      - name: Install xlings
-        run: |
-          export XLINGS_NON_INTERACTIVE=1
-          export XLINGS_VERSION=v2026.8.8.2
-          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
-          echo "XLINGS_HOME=$HOME/.xlings" >> "$GITHUB_ENV"
-          echo "PATH=$HOME/.xlings/subos/current/bin:$HOME/.xlings/bin:$PATH" >> "$GITHUB_ENV"
-
+      - uses: ./.github/actions/setup-xlings
+        with:
+          version: v2026.8.8.2
 
       # Refresh the index. The release tarball bundles a pkgindex snapshot
       # frozen at build time, so without this a package's DEPENDENCIES resolve
@@ -78,8 +88,6 @@ jobs:
       # `sh: 1: rustup-init: not found`: its rustup dep came from the frozen
       # snapshot, where rustup's config hook still aborted, so the shim was
       # never registered. Nothing about rust was wrong.
-      - name: Refresh package index
-        run: xlings update
       - name: L1 Index Registration
         run: pytest tests/ -m index --tb=short -q
 
@@ -110,13 +118,15 @@ jobs:
   # 发布后的 re-run 即是「守发布物」—— 那份职责不在 PR 门禁上, 否则任何
   # 给已发布包加版本键的 PR 都结构性首红。
   closure-lifecycle:
+    if: inputs.closure || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     needs: index-registration
-    # ncurses 载荷 <1MB + glibc 依赖, 预算从容
-    timeout-minutes: 10
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -124,22 +134,16 @@ jobs:
           python-version: '3.12'
 
       - name: Install pytest
-        run: pip install pytest
+        run: pip install pytest pyyaml
 
-      - name: Install xlings
-        run: |
-          export XLINGS_NON_INTERACTIVE=1
-          export XLINGS_VERSION=v2026.8.8.2
-          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
-          echo "XLINGS_HOME=$HOME/.xlings" >> "$GITHUB_ENV"
-          echo "PATH=$HOME/.xlings/subos/current/bin:$HOME/.xlings/bin:$PATH" >> "$GITHUB_ENV"
+      - uses: ./.github/actions/setup-xlings
+        with:
+          version: v2026.8.8.2
 
       # 先 update 再 overlay, 且之后不得再 update —— update 会重拉发布
       # artifact 把覆盖进去的文件盖回去。overlay 让 ncurses 的 deps 按本
       # checkout 解析: xim:glibc 的 latest 在这里是 2.44 (glibc.lua 的
       # 永久地板策略), 不是发布索引里的旧值。
-      - name: Refresh package index
-        run: xlings update
 
       - name: Overlay this checkout onto the index (posix-test.sh mechanism)
         run: |

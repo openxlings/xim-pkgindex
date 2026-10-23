@@ -1,21 +1,25 @@
 name: glibc root runtime
 
 on:
-  pull_request:
-    paths:
-      - '.agents/tools/graphics/build-glibc.sh'
-      - '.agents/tools/graphics/check-glibc-root-cache.sh'
-      - '.agents/tools/graphics/patches/glibc-*.patch'
-      - '.github/workflows/glibc-root-runtime.yml'
+  workflow_call:
+    inputs:
+      base_sha:
+        type: string
+        default: ''
+      head_sha:
+        type: string
+        default: ''
   workflow_dispatch:
     inputs:
       source_run_id:
-        description: 'Publication only: reviewed successful two-architecture r3 source run (no rebuild)'
+        description: 'Publication only: reviewed successful two-architecture r3 source
+          run (no rebuild)'
         type: string
         required: false
         default: ''
       publish_global:
-        description: 'Publish only immutable GLOBAL glibc r3 assets; package index stays inactive'
+        description: Publish only immutable GLOBAL glibc r3 assets; package index stays
+          inactive
         type: boolean
         required: false
         default: false

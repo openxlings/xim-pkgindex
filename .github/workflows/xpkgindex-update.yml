@@ -12,8 +12,6 @@ on:
         description: 'Candidate CI only: compare against this ref and never propose'
         type: string
         required: false
-  pull_request:
-    paths: ['pkgs/**', 'tests/**', '.github/xpkgindex-update.yml', '.github/scripts/autoupdate-ci.py', '.github/scripts/autoupdate-dispatch.py', 'tools/autoupdate_policy.py', '.github/workflows/xpkgindex-update.yml']
 permissions:
   contents: read
 concurrency:
@@ -168,66 +166,8 @@ jobs:
           path: |
             proposals.json
             dispatches.json
-  candidate:
-    needs: scan
-    if: needs.scan.outputs.matrix != '' && needs.scan.outputs.matrix != '{"include":[]}'
-    strategy:
-      fail-fast: false
-      max-parallel: 8
-      matrix: ${{ fromJSON(needs.scan.outputs.matrix) }}
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 90
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          persist-credentials: false
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-      - uses: actions/checkout@v4
-        with:
-          repository: openxlings/xpkgindex-update
-          ref: ${{ env.UPDATER_COMMIT }}
-          path: .updater
-          persist-credentials: false
-      - name: Use the pinned updater and CI test harness
-        shell: bash
-        run: |
-          echo "PYTHONPATH=$(python -c 'from pathlib import Path; print(Path(".updater/src").resolve())')" >> "$GITHUB_ENV"
-          python -m pip install pytest # host-dep-ok: the runner test harness, not a package runtime dependency
-      - name: Install xlings on POSIX
-        if: runner.os != 'Windows'
-        shell: bash
-        env:
-          XLINGS_NON_INTERACTIVE: '1'
-        run: |
-          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
-          echo "$HOME/.xlings/bin" >> "$GITHUB_PATH"
-          echo "$HOME/.xlings/subos/default/bin" >> "$GITHUB_PATH"
-      - name: Install xlings on Windows
-        if: runner.os == 'Windows'
-        shell: pwsh
-        env:
-          XLINGS_NON_INTERACTIVE: '1'
-        run: |
-          iex (Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.ps1' -UseBasicParsing).Content
-          Add-Content $env:GITHUB_PATH "$env:USERPROFILE\.xlings\bin"
-          Add-Content $env:GITHUB_PATH "$env:USERPROFILE\.xlings\subos\default\bin"
-      - name: Install, verify and remove the exact candidate
-        env:
-          PACKAGE: ${{ matrix.id }}
-          RECIPE: ${{ matrix.path }}
-          VERSION: ${{ matrix.version }}
-          ARCH: ${{ matrix.arch }}
-        shell: bash
-        run: python .github/scripts/autoupdate-ci.py candidate --package "$PACKAGE" --path "$RECIPE" --version "$VERSION" --arch "$ARCH"
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: candidate-${{ strategy.job-index }}
-          path: candidate-evidence.json
   result:
-    needs: [cadence, scan, propose, candidate]
+    needs: [cadence, scan, propose]
     if: always() && needs.cadence.outputs.due == 'true'
     runs-on: ubuntu-latest
     steps:
@@ -236,9 +176,7 @@ jobs:
           SCAN: ${{ needs.scan.result }}
           CHECK: ${{ needs.scan.outputs.checked }}
           PROPOSE: ${{ needs.propose.result }}
-          CANDIDATE: ${{ needs.candidate.result }}
         run: |
           [[ "$SCAN" == success ]]
           [[ "$CHECK" != failure ]]
           [[ "$PROPOSE" != failure && "$PROPOSE" != cancelled ]]
-          [[ "$CANDIDATE" != failure && "$CANDIDATE" != cancelled ]]

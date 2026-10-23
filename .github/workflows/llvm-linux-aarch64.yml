@@ -1,34 +1,34 @@
 name: LLVM Linux aarch64 closure
 
 on:
+  workflow_call:
+    inputs:
+      base_sha:
+        type: string
+        default: ''
+      head_sha:
+        type: string
+        default: ''
   workflow_dispatch:
     inputs:
       source_run_id:
-        description: 'Optional successful native run to reuse; unchanged builder sources and fresh admission required'
+        description: Optional successful native run to reuse; unchanged builder sources
+          and fresh admission required
         type: string
         required: false
         default: ''
       published_glibc_only:
-        description: 'Reuse eight identical source archives and verify current published glibc r3 from both mirrors'
+        description: Reuse eight identical source archives and verify current published
+          glibc r3 from both mirrors
         type: boolean
         required: false
         default: false
       publish_global:
-        description: 'Upload immutable GLOBAL resources after native build admission (index remains inactive)'
+        description: Upload immutable GLOBAL resources after native build admission
+          (index remains inactive)
         type: boolean
         required: false
         default: false
-  pull_request:
-    paths:
-      - '.agents/tools/build-linux-aarch64-deps.sh'
-      - '.agents/tools/admit-linux-aarch64-assets.sh'
-      - '.agents/tools/upload-linux-aarch64-assets.py'
-      - '.agents/tools/reuse-linux-aarch64-assets.py'
-      - '.agents/tools/verify-toolchain.sh'
-      - '.agents/tools/build-llvm-subpkg.sh'
-      - '.agents/tools/graphics/build-glibc.sh'
-      - '.agents/tools/graphics/patches/glibc-*'
-      - '.github/workflows/llvm-linux-aarch64.yml'
 
 concurrency:
   group: llvm-aarch64-${{ github.ref }}

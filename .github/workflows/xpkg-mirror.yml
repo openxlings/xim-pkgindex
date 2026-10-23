@@ -5,7 +5,8 @@ name: xpkg-mirror-release
 # provide a verified manifest before this job can publish immutable assets.
 on:
   workflow_run:
-    workflows: ["xpkg test"]
+    workflows: [CI]
+    branches: [main]
     types: [completed]
   workflow_dispatch:
     inputs:
@@ -17,12 +18,18 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: resource-mirror-main
+  cancel-in-progress: false
+
 jobs:
   discover:
     if: >-
       github.event_name == 'workflow_run' &&
       github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.head_branch == 'main'
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -33,7 +40,7 @@ jobs:
         with:
           # Publish with the current mainline mirror tooling. The event SHA is
           # still used below to identify which package files changed.
-          ref: main
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           fetch-depth: 0
 
       - uses: actions/setup-python@v5
@@ -87,7 +94,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           fetch-depth: 0
 
       - uses: actions/setup-python@v5
@@ -115,7 +122,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           fetch-depth: 0
 
       - uses: actions/setup-python@v5

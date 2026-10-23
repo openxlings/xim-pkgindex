@@ -1,0 +1,261 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      base_sha:
+        description: 'Full comparison base (required for bot PR validation)'
+        type: string
+        default: ''
+      head_sha:
+        description: 'Expected checked-out head (reject a branch that moved)'
+        type: string
+        default: ''
+      full:
+        description: 'Explicit full package sweep'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'push' }}
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      ci_sweep: ${{ steps.plan.outputs.ci_sweep }}
+      llvm_linux_aarch64: ${{ steps.plan.outputs.llvm_linux_aarch64 }}
+      glibc_root_runtime: ${{ steps.plan.outputs.glibc_root_runtime }}
+      base_sha: ${{ steps.plan.outputs.base_sha }}
+      head_sha: ${{ steps.plan.outputs.head_sha }}
+      matrix: ${{ steps.plan.outputs.matrix }}
+      files: ${{ steps.plan.outputs.files }}
+      install: ${{ steps.plan.outputs.install }}
+      closure: ${{ steps.plan.outputs.closure }}
+      ci_xpkg_test: ${{ steps.plan.outputs.ci_xpkg_test }}
+      ci_tools: ${{ steps.plan.outputs.ci_tools }}
+      site_check: ${{ steps.plan.outputs.site_check }}
+      consumer_through_index_override: ${{ steps.plan.outputs.consumer_through_index_override }}
+      payload_hard_links: ${{ steps.plan.outputs.payload_hard_links }}
+      runtime_revision_gate: ${{ steps.plan.outputs.runtime_revision_gate }}
+      eden_smoke: ${{ steps.plan.outputs.eden_smoke }}
+      android_runner: ${{ steps.plan.outputs.android_runner }}
+      apple_runners: ${{ steps.plan.outputs.apple_runners }}
+      baremetal_riscv_smoke: ${{ steps.plan.outputs.baremetal_riscv_smoke }}
+      bundletool: ${{ steps.plan.outputs.bundletool }}
+      chatgpt_runtime: ${{ steps.plan.outputs.chatgpt_runtime }}
+      jvm_build_tools: ${{ steps.plan.outputs.jvm_build_tools }}
+      node_native_modules: ${{ steps.plan.outputs.node_native_modules }}
+      wix_bundle: ${{ steps.plan.outputs.wix_bundle }}
+      toolchain_consumer_smoke: ${{ steps.plan.outputs.toolchain_consumer_smoke }}
+      luban_agent_workspace: ${{ steps.plan.outputs.luban_agent_workspace }}
+      ci_candidates: ${{ steps.plan.outputs.ci_candidates }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/checkout@v4
+        with:
+          repository: openxlings/xpkgindex-update
+          ref: 516e15d5f797803743486a7c0ef6e9ccbd2f5978
+          path: .updater
+          persist-credentials: false
+      - name: Plan validations from the complete comparison
+        id: plan
+        env:
+          BASE: ${{ inputs.base_sha || github.event.pull_request.base.sha || github.event.before || 'HEAD^' }}
+          EXPECTED: ${{ inputs.head_sha }}
+          HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+          FULL: ${{ inputs.full }}
+          PYTHONPATH: .updater/src
+        run: |
+          if [ -n "$EXPECTED" ] && [ "$EXPECTED" != "$HEAD" ]; then
+            echo '::error::Dispatched branch no longer matches the expected head'; exit 1
+          fi
+          if [[ "$BASE" =~ ^0+$ ]]; then BASE=HEAD^; fi
+          args=()
+          if [ "$FULL" = true ]; then args+=(--force); fi
+          python .github/scripts/ci-plan.py --base "$BASE" --head "$HEAD" --github-output "$GITHUB_OUTPUT" "${args[@]}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ci-plan
+          path: ci-plan.json
+          retention-days: 7
+  install:
+    needs: plan
+    if: needs.plan.outputs.install == 'true'
+    uses: ./.github/workflows/ci-test.yml
+    with:
+      matrix: ${{ needs.plan.outputs.matrix }}
+  ci_xpkg_test:
+    needs: plan
+    if: needs.plan.outputs.ci_xpkg_test == 'true'
+    uses: ./.github/workflows/ci-xpkg-test.yml
+    with:
+      base_sha: ${{ needs.plan.outputs.base_sha }}
+      head_sha: ${{ needs.plan.outputs.head_sha }}
+      closure: ${{ needs.plan.outputs.closure == 'true' }}
+  ci_tools:
+    needs: plan
+    if: needs.plan.outputs.ci_tools == 'true'
+    uses: ./.github/workflows/ci-tools.yml
+    with:
+      base_sha: ${{ needs.plan.outputs.base_sha }}
+      head_sha: ${{ needs.plan.outputs.head_sha }}
+  site_check:
+    needs: plan
+    if: needs.plan.outputs.site_check == 'true'
+    uses: ./.github/workflows/site-check.yml
+    with:
+      base_sha: ${{ needs.plan.outputs.base_sha }}
+      head_sha: ${{ needs.plan.outputs.head_sha }}
+  consumer_through_index_override:
+    needs: plan
+    if: needs.plan.outputs.consumer_through_index_override == 'true'
+    uses: ./.github/workflows/consumer-through-index-override.yml
+    with:
+      base_sha: ${{ needs.plan.outputs.base_sha }}
+      head_sha: ${{ needs.plan.outputs.head_sha }}
+      files: ${{ needs.plan.outputs.files }}
+
+  payload_hard_links:
+    needs: plan
+    if: needs.plan.outputs.payload_hard_links == 'true'
+    uses: ./.github/workflows/payload-hard-links.yml
+    with:
+      base_sha: ${{ needs.plan.outputs.base_sha }}
+      head_sha: ${{ needs.plan.outputs.head_sha }}
+  runtime_revision_gate:
+    needs: plan
+    if: needs.plan.outputs.runtime_revision_gate == 'true'
+    uses: ./.github/workflows/runtime-revision-gate.yml
+    with:
+      base_sha: ${{ needs.plan.outputs.base_sha }}
+      head_sha: ${{ needs.plan.outputs.head_sha }}
+  eden_smoke:
+    needs: plan
+    if: needs.plan.outputs.eden_smoke == 'true'
+    uses: ./.github/workflows/eden-smoke.yml
+    with:
+      base_sha: ${{ needs.plan.outputs.base_sha }}
+      head_sha: ${{ needs.plan.outputs.head_sha }}
+  android_runner:
+    needs: plan
+    if: needs.plan.outputs.android_runner == 'true'
+    uses: ./.github/workflows/android-runner.yml
+    with:
+      base_sha: ${{ needs.plan.outputs.base_sha }}
+      head_sha: ${{ needs.plan.outputs.head_sha }}
+  apple_runners:
+    needs: plan
+    if: needs.plan.outputs.apple_runners == 'true'
+    uses: ./.github/workflows/apple-runners.yml
+    with:
+      base_sha: ${{ needs.plan.outputs.base_sha }}
+      head_sha: ${{ needs.plan.outputs.head_sha }}
+  baremetal_riscv_smoke:
+    needs: plan
+    if: needs.plan.outputs.baremetal_riscv_smoke == 'true'
+    uses: ./.github/workflows/baremetal-riscv-smoke.yml
+    with:
+      base_sha: ${{ needs.plan.outputs.base_sha }}
+      head_sha: ${{ needs.plan.outputs.head_sha }}
+  bundletool:
+    needs: plan
+    if: needs.plan.outputs.bundletool == 'true'
+    uses: ./.github/workflows/bundletool.yml
+    with:
+      base_sha: ${{ needs.plan.outputs.base_sha }}
+      head_sha: ${{ needs.plan.outputs.head_sha }}
+  chatgpt_runtime:
+    needs: plan
+    if: needs.plan.outputs.chatgpt_runtime == 'true'
+    uses: ./.github/workflows/chatgpt-runtime.yml
+    with:
+      base_sha: ${{ needs.plan.outputs.base_sha }}
+      head_sha: ${{ needs.plan.outputs.head_sha }}
+  jvm_build_tools:
+    needs: plan
+    if: needs.plan.outputs.jvm_build_tools == 'true'
+    uses: ./.github/workflows/jvm-build-tools.yml
+    with:
+      base_sha: ${{ needs.plan.outputs.base_sha }}
+      head_sha: ${{ needs.plan.outputs.head_sha }}
+  node_native_modules:
+    needs: plan
+    if: needs.plan.outputs.node_native_modules == 'true'
+    uses: ./.github/workflows/node-native-modules.yml
+    with:
+      base_sha: ${{ needs.plan.outputs.base_sha }}
+      head_sha: ${{ needs.plan.outputs.head_sha }}
+  wix_bundle:
+    needs: plan
+    if: needs.plan.outputs.wix_bundle == 'true'
+    uses: ./.github/workflows/wix-bundle.yml
+    with:
+      base_sha: ${{ needs.plan.outputs.base_sha }}
+      head_sha: ${{ needs.plan.outputs.head_sha }}
+  toolchain_consumer_smoke:
+    needs: plan
+    if: needs.plan.outputs.toolchain_consumer_smoke == 'true'
+    uses: ./.github/workflows/toolchain-consumer-smoke.yml
+    with:
+      base_sha: ${{ needs.plan.outputs.base_sha }}
+      head_sha: ${{ needs.plan.outputs.head_sha }}
+      files: ${{ needs.plan.outputs.files }}
+
+  luban_agent_workspace:
+    needs: plan
+    if: needs.plan.outputs.luban_agent_workspace == 'true'
+    uses: ./.github/workflows/luban-agent-workspace.yml
+    with:
+      base_sha: ${{ needs.plan.outputs.base_sha }}
+      head_sha: ${{ needs.plan.outputs.head_sha }}
+  glibc_root_runtime:
+    needs: plan
+    if: needs.plan.outputs.glibc_root_runtime == 'true'
+    uses: ./.github/workflows/glibc-root-runtime.yml
+    with:
+      base_sha: ${{ needs.plan.outputs.base_sha }}
+      head_sha: ${{ needs.plan.outputs.head_sha }}
+  llvm_linux_aarch64:
+    needs: plan
+    if: needs.plan.outputs.llvm_linux_aarch64 == 'true'
+    uses: ./.github/workflows/llvm-linux-aarch64.yml
+    with:
+      base_sha: ${{ needs.plan.outputs.base_sha }}
+      head_sha: ${{ needs.plan.outputs.head_sha }}
+  ci_sweep:
+    needs: plan
+    if: needs.plan.outputs.ci_sweep == 'true'
+    uses: ./.github/workflows/ci-sweep.yml
+    with:
+      base_sha: ${{ needs.plan.outputs.base_sha }}
+      head_sha: ${{ needs.plan.outputs.head_sha }}
+  ci_candidates:
+    needs: plan
+    if: needs.plan.outputs.ci_candidates == 'true'
+    uses: ./.github/workflows/ci-candidates.yml
+    with:
+      base_sha: ${{ needs.plan.outputs.base_sha }}
+      head_sha: ${{ needs.plan.outputs.head_sha }}
+  required:
+    if: always()
+    needs: [plan, install, ci_xpkg_test, ci_tools, site_check, consumer_through_index_override, payload_hard_links, runtime_revision_gate, eden_smoke, android_runner, apple_runners, baremetal_riscv_smoke, bundletool, chatgpt_runtime, jvm_build_tools, node_native_modules, wix_bundle, toolchain_consumer_smoke, luban_agent_workspace, glibc_root_runtime, llvm_linux_aarch64, ci_sweep, ci_candidates]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Every planned validation must succeed
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: printf '%s' "$RESULTS" | python3 .github/scripts/ci-required.py

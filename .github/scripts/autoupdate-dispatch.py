@@ -34,16 +34,14 @@ def main():
         if pr['base']['ref'] != args.base or pr['head']['repo']['full_name'] != repo:
             raise ValueError('bot PR repository/base mismatch')
         branch, sha = pr['head']['ref'], pr['head']['sha']
-        workflows = ['ci-test.yml', 'ci-xpkg-test.yml', 'site-check.yml',
-                     'runtime-revision-gate.yml', 'xpkgindex-update.yml']
+        workflows = ['ci.yml']
         for workflow in workflows:
             listing = json.loads(gh('api', f'repos/{repo}/actions/workflows/{workflow}/runs?branch={branch}&event=workflow_dispatch&per_page=100'))
             if any(run['head_sha'] == sha for run in listing['workflow_runs']):
                 outcomes.append({'id': record['id'], 'workflow': workflow, 'sha': sha, 'status': 'already-dispatched'})
                 continue
             payload = {'ref': branch}
-            if workflow == 'xpkgindex-update.yml':
-                payload['inputs'] = {'validation_base': pr['base']['sha'], 'package': record['id']}
+            payload['inputs'] = {'base_sha': pr['base']['sha'], 'head_sha': sha}
             # Request JSON through stdin; no credential or shell interpolation in payloads.
             subprocess.run(['gh', 'api', '--method', 'POST', f'repos/{repo}/actions/workflows/{workflow}/dispatches',
                             '--input', '-'], input=json.dumps(payload), text=True, check=True)

@@ -5,9 +5,13 @@ on:
   push:
     branches:
       - main
+concurrency:
+  group: gitee-main
+  cancel-in-progress: false
 jobs:
   repo-sync:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Mirror the Github organization repos to Gitee.
         uses: Yikun/hub-mirror-action@master

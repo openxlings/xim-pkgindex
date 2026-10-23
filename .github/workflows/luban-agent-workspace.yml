@@ -5,30 +5,21 @@ name: Luban agent workspace acceptance
 # `luban new <n> --edition agent-workspace --proxy`, its persona, tools, C++23 build,
 # proxy-only network with no fallback, and offline export.
 on:
-  pull_request:
-    paths:
-      - 'pkgs/luban/*.lua'
-      - 'pkgs/a/agent-private.lua'
-      - 'pkgs/a/agent-confined.lua'
-      - 'pkgs/l/limine.lua'
-      - 'pkgs/l/linux-kernel-virt.lua'
-      - 'pkgs/g/gcc.lua'
-      - 'pkgs/b/binutils.lua'
-      - 'pkgs/m/musl.lua'
-      - 'pkgs/v/vim.lua'
-      - 'pkgs/g/git.lua'
-      - 'pkgs/d/dsh.lua'
-      - 'libs/luban*.lua'
-      - 'scripts/test-luban-editions.sh'
-      - 'scripts/test-luban-agent-workspace.py'
-      - 'tests/fixtures/luban_network_probe.cpp'
-      - '.github/workflows/luban-agent-workspace.yml'
+  workflow_call:
+    inputs:
+      base_sha:
+        type: string
+        default: ""
+      head_sha:
+        type: string
+        default: ""
   workflow_dispatch:
     inputs:
       xlings_run:
-        description: "an openxlings/xlings CI run whose xlings-linux-x86_64 artifact is the build under test (default: the published release)"
+        description: 'an openxlings/xlings CI run whose xlings-linux-x86_64 artifact
+          is the build under test (default: the published release)'
         required: false
-        default: ""
+        default: ''
 
 jobs:
   workspace:

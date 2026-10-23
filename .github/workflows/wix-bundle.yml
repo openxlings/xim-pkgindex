@@ -5,16 +5,15 @@ name: wix bundle
 # recipe carries turns the MSI into a bundle with WiX's stock installer UI.
 
 on:
-  pull_request:
-    paths:
-      - 'pkgs/w/wix.lua'
-      - '.github/workflows/wix-bundle.yml'
-      - '.github/scripts/program-checks/wix.ps1'
-  workflow_dispatch:
-
-concurrency:
-  group: wix-bundle-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
+  workflow_call:
+    inputs:
+      base_sha:
+        type: string
+        default: ""
+      head_sha:
+        type: string
+        default: ""
+  workflow_dispatch: null
 
 jobs:
   wix:

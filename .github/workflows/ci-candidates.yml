@@ -1,0 +1,135 @@
+name: Candidate validation
+'on':
+  workflow_call:
+    inputs:
+      base_sha:
+        type: string
+        required: true
+      head_sha:
+        type: string
+        default: ''
+permissions:
+  contents: read
+env:
+  PYTHONUTF8: '1'
+  UPDATER_COMMIT: 516e15d5f797803743486a7c0ef6e9ccbd2f5978
+  XLINGS_VERSION: v2026.10.21.4
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    outputs:
+      matrix: ${{ steps.matrix.outputs.value }}
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+        persist-credentials: false
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - uses: actions/checkout@v4
+      with:
+        repository: openxlings/xpkgindex-update
+        ref: ${{ env.UPDATER_COMMIT }}
+        path: .updater
+        persist-credentials: false
+    - name: Use the pinned updater source
+      run: echo "PYTHONPATH=$PWD/.updater/src" >> "$GITHUB_ENV"
+    - name: Test audit generation and admission rules
+      run: |
+        python -m pip install pytest # host-dep-ok: the runner test harness
+        python -m pytest -q tests/test_autoupdate_audit.py
+    - name: Audit all package declarations
+      run: python .github/scripts/autoupdate-ci.py audit --output coverage.json
+    - name: Protect published versions
+      env:
+        BASE: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
+      run: |
+        resolved=$(git rev-parse --verify "$BASE^{commit}" 2>/dev/null || git rev-parse --verify "origin/$BASE^{commit}")
+        python -m xpkgindex_update guard --base "$resolved" --output preservation.json
+    - name: Select added candidate versions from the PR diff
+      id: matrix
+      env:
+        BASE: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
+      run: |
+        resolved=$(git rev-parse --verify "$BASE^{commit}" 2>/dev/null || git rev-parse --verify "origin/$BASE^{commit}")
+        python .github/scripts/autoupdate-ci.py matrix --base "$resolved" --output matrix.json
+        echo "value=$(python -c 'import json; print(json.dumps(json.load(open("matrix.json")),separators=(",",":")))')" >> "$GITHUB_OUTPUT"
+    - name: Verify every added candidate resource without discovery
+      if: steps.matrix.outputs.value != '{"include":[]}'
+      env:
+        GH_TOKEN: ${{ github.token }}
+        BASE: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
+      run: |
+        resolved=$(git rev-parse --verify "$BASE^{commit}" 2>/dev/null || git rev-parse --verify "origin/$BASE^{commit}")
+        python -m xpkgindex_update verify --base "$resolved" --output candidate-resources.json
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: unified-update-plan
+        path: |
+          plan.json
+          coverage.json
+          matrix.json
+          preservation.json
+          candidate-resources.json
+  candidate:
+    needs: scan
+    if: needs.scan.outputs.matrix != '' && needs.scan.outputs.matrix != '{"include":[]}'
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix: ${{ fromJSON(needs.scan.outputs.matrix) }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    - uses: actions/checkout@v4
+      with:
+        repository: openxlings/xpkgindex-update
+        ref: ${{ env.UPDATER_COMMIT }}
+        path: .updater
+        persist-credentials: false
+    - name: Use the pinned updater and CI test harness
+      shell: bash
+      run: |
+        echo "PYTHONPATH=$(python -c 'from pathlib import Path; print(Path(".updater/src").resolve())')" >> "$GITHUB_ENV"
+        python -m pip install pytest # host-dep-ok: the runner test harness, not a package runtime dependency
+    - name: Install xlings on POSIX
+      if: runner.os != 'Windows'
+      shell: bash
+      env:
+        XLINGS_NON_INTERACTIVE: '1'
+      run: |
+        curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
+        echo "$HOME/.xlings/bin" >> "$GITHUB_PATH"
+        echo "$HOME/.xlings/subos/default/bin" >> "$GITHUB_PATH"
+    - name: Install xlings on Windows
+      if: runner.os == 'Windows'
+      shell: pwsh
+      env:
+        XLINGS_NON_INTERACTIVE: '1'
+      run: |
+        iex (Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.ps1' -UseBasicParsing).Content
+        Add-Content $env:GITHUB_PATH "$env:USERPROFILE\.xlings\bin"
+        Add-Content $env:GITHUB_PATH "$env:USERPROFILE\.xlings\subos\default\bin"
+    - name: Install, verify and remove the exact candidate
+      env:
+        PACKAGE: ${{ matrix.id }}
+        RECIPE: ${{ matrix.path }}
+        VERSION: ${{ matrix.version }}
+        ARCH: ${{ matrix.arch }}
+      shell: bash
+      run: python .github/scripts/autoupdate-ci.py candidate --package "$PACKAGE" --path "$RECIPE" --version "$VERSION" --arch
+        "$ARCH"
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: candidate-${{ strategy.job-index }}
+        path: candidate-evidence.json

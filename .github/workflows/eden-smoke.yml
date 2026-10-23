@@ -1,12 +1,15 @@
 name: Eden smoke
 
 on:
-  pull_request:
-    paths:
-      - 'pkgs/e/eden*.lua'
-      - 'tests/e/test_eden*.py'
-      - '.github/workflows/eden-smoke.yml'
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      base_sha:
+        type: string
+        default: ""
+      head_sha:
+        type: string
+        default: ""
+  workflow_dispatch: null
 
 jobs:
   cli-and-apk:
@@ -21,24 +24,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install xlings (Linux)
-        if: runner.os == 'Linux'
-        shell: bash
-        run: |
-          export XLINGS_NON_INTERACTIVE=1
-          export XLINGS_VERSION=v2026.8.10.1
-          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
-          echo "$HOME/.xlings/bin" >> "$GITHUB_PATH"
-          echo "$HOME/.xlings/subos/default/bin" >> "$GITHUB_PATH"
-      - name: Install xlings (Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $env:XLINGS_NON_INTERACTIVE = '1'
-          $env:XLINGS_VERSION = 'v2026.8.10.1'
-          iex (Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.ps1' -UseBasicParsing).Content
-          "$env:USERPROFILE\.xlings\bin" | Out-File $env:GITHUB_PATH -Append
-          "$env:USERPROFILE\.xlings\subos\default\bin" | Out-File $env:GITHUB_PATH -Append
+      - uses: ./.github/actions/setup-xlings
       - name: Install, execute CLI, inspect APK and uninstall
         shell: python
         run: |

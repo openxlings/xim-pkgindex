@@ -29,31 +29,36 @@
 name: ci-sweep
 
 on:
+  workflow_call:
+    inputs:
+      base_sha:
+        type: string
+        default: ''
+      head_sha:
+        type: string
+        default: ''
   schedule:
-    # Mondays 04:00 UTC — off the hour, and clear of mcpp-index's Sunday 06:00
-    # full regression so the two are not competing for the same runners.
-    - cron: "0 4 * * 1"
+  - cron: 0 4 * * 1
   workflow_dispatch:
     inputs:
       slice:
-        description: "Slice index to run (blank = pick from the ISO week)"
+        description: Slice index to run (blank = pick from the ISO week)
         required: false
-        default: ""
-  # A workflow that only fires on a schedule cannot be reviewed before it
-  # lands: the PR that adds it reports no checks, and the first real run is
-  # after merge on someone else's Monday. So it watches itself.
-  pull_request:
-    paths:
-      - '.github/workflows/ci-sweep.yml'
+        default: ''
 
 env:
   # Every recipe every SLICES weeks. Raise it if a run gets too long; lower it
   # to tighten the loop. Nothing else depends on the value.
   SLICES: "4"
 
+concurrency:
+  group: sweep-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   plan:
     runs-on: ubuntu-latest
+    timeout-minutes: 180
     outputs:
       files: ${{ steps.pick.outputs.files }}
       slice: ${{ steps.pick.outputs.slice }}
@@ -62,9 +67,17 @@ jobs:
       - uses: actions/checkout@v4
       - id: pick
         shell: bash
+        env:
+          VALIDATION: ${{ inputs.base_sha != '' || github.event_name == 'pull_request' }}
         run: |
           set -euo pipefail
           n="${SLICES}"
+          if [ "$VALIDATION" = true ]; then
+            echo 'files=pkgs/e/eden.lua pkgs/e/eden-android.lua' >> "$GITHUB_OUTPUT"
+            echo 'slice=validation' >> "$GITHUB_OUTPUT"
+            echo 'count=2' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
           if [ -n "${{ inputs.slice }}" ]; then
             s="${{ inputs.slice }}"
           else
@@ -88,6 +101,7 @@ jobs:
   linux:
     needs: plan
     runs-on: ubuntu-latest
+    timeout-minutes: 180
     name: sweep linux (slice ${{ needs.plan.outputs.slice }}, ${{ needs.plan.outputs.count }} recipes)
     steps:
       - uses: actions/checkout@v4
@@ -116,6 +130,7 @@ jobs:
   windows:
     needs: plan
     runs-on: windows-latest
+    timeout-minutes: 180
     name: sweep windows (slice ${{ needs.plan.outputs.slice }})
     steps:
       - uses: actions/checkout@v4
