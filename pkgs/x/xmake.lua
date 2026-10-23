@@ -8,7 +8,7 @@ package = {
     maintainers = {"ruki"},
     licenses = {"Apache-2.0"},
     repo = "https://github.com/xmake-io/xmake",
-    ci = { update = true },
+    ci = {  },
     homepage = "https://xmake.io",
     docs = "https://xmake.io/#/getting_started",
 
@@ -69,6 +69,24 @@ package = {
     -- NEXT BUMP costs one readelf on the new linux bundle: if NEEDED or the max
     -- GLIBC_ reference move, update the linux deps; if upstream ever restores a
     -- musl-static bundle, the deps can be dropped entirely.
+
+
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xmake-io/xmake/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xmake-io/xmake/releases/download/v${version}/xmake-bundle-v${version}.linux.x86_64",
+                        macosx = "https://github.com/xmake-io/xmake/releases/download/v${version}/xmake-bundle-v${version}.macos.arm64",
+                        windows = "https://github.com/xmake-io/xmake/releases/download/v${version}/xmake-bundle-v${version}.win64.exe",
+                    },
+                    required = true,
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
             -- Both deps are read straight off the readelf measurement above,

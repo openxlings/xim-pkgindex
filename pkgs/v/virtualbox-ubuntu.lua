@@ -113,9 +113,9 @@ function install()
 
     log.info("Creating VM '%s' (%s vCPU, %s MB RAM, %s MB disk)...", cfg.name, cfg.cpus, cfg.ram, cfg.disk)
     system.exec(string.format([[VBoxManage createvm --name "%s" --ostype Ubuntu_64 --register]], cfg.name))
-    system.exec(string.format([[VBoxManage modifyvm "%s" --cpus %s --memory %s --vram 16 --nic1 nat --graphicscontroller vmsvga]],
+    system.exec(string.format([[VBoxManage modifyvm "%s" --cpus "%s" --memory "%s" --vram 16 --nic1 nat --graphicscontroller vmsvga]],
         cfg.name, cfg.cpus, cfg.ram))
-    system.exec(string.format([[VBoxManage createmedium disk --filename "%s" --size %s --format VDI]], vdi, cfg.disk))
+    system.exec(string.format([[VBoxManage createmedium disk --filename "%s" --size "%s" --format VDI]], vdi, cfg.disk))
     system.exec(string.format([[VBoxManage storagectl "%s" --name SATA --add sata --controller IntelAhci]], cfg.name))
     system.exec(string.format([[VBoxManage storageattach "%s" --storagectl SATA --port 0 --device 0 --type hdd --medium "%s"]],
         cfg.name, vdi))
@@ -123,7 +123,7 @@ function install()
     local start_mode = (cfg.headless == "true") and "headless" or "gui"
     log.info("Starting unattended Ubuntu installation (mode: %s)...", start_mode)
     system.exec(string.format(
-        [[VBoxManage unattended install "%s" --iso="%s" --user="%s" --password="%s" --full-user-name="%s" --hostname=ubuntu2404.local --install-additions --start-vm=%s]],
+        [[VBoxManage unattended install "%s" --iso="%s" --user="%s" --password="%s" --full-user-name="%s" --hostname=ubuntu2404.local --install-additions --start-vm="%s"]],
         cfg.name, iso, cfg.user, cfg.password, cfg.user, start_mode))
 
     log.info("VM '%s' is installing Ubuntu. Default login: %s / %s (change the password after first boot).",

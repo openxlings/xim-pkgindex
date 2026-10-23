@@ -327,6 +327,7 @@ import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.elfpatch")
 import("xim.pkgindex.sysroot")
+import("xim.pkgindex.shell")
 
 -- The prefix libc is configured with (.agents/tools/graphics/build-glibc.sh).
 -- RESERVED_PREFIX is AD-11's dead path; payloads up to 2.44.3 revision 0 carry
@@ -858,7 +859,7 @@ local PATH_DELIMS = {
 }
 
 function __sh_quote(s)
-    return "'" .. tostring(s):gsub("'", "'\\''") .. "'"
+    return shell.quote(s)
 end
 
 -- Every regular file of the payload. Symlinks are not followed and not

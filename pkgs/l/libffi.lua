@@ -12,6 +12,29 @@ package = {
     categories = {"library", "ffi"},
     keywords = {"libffi", "ffi", "lib"},
     xvm_enable = true,
+
+
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/libffi/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/libffi/releases/download/${version}/libffi-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/libffi/releases/download/${version}/libffi-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             deps = { "xim:glibc" },
@@ -61,11 +84,11 @@ function config()
     local sysroot = system.subos_sysrootdir()
     local sys_inc = path.join(sysroot, "usr/include")
     os.mkdir(sys_inc)
-    system.exec(string.format("sh -c 'cp -a %s/include/* %s/ 2>/dev/null || true'", idir, sys_inc))
+    system.exec(string.format("sh -c 'cp -a \"%s\"/include/* \"%s\"/ 2>/dev/null || true'", idir, sys_inc))
     local sys_pc = path.join(sysroot, "usr/lib/pkgconfig")
     os.mkdir(sys_pc)
-    system.exec(string.format(
-        "sh -c 'for pc in %s/lib/pkgconfig/*.pc; do [ -f \"$pc\" ] && sed \"s|^prefix=.*|prefix=%s|\" \"$pc\" > %s/$(basename \"$pc\"); done'",
+    system.exec(string.format(  -- exec-quoting-ok: the prefix is inside the double-quoted sed expression
+        "sh -c 'for pc in \"%s\"/lib/pkgconfig/*.pc; do [ -f \"$pc\" ] && sed \"s|^prefix=.*|prefix=%s|\" \"$pc\" > \"%s\"/$(basename \"$pc\"); done'",
         idir, idir, sys_pc
     ))
     return true
@@ -75,6 +98,6 @@ function uninstall()
     xvm.remove(package.name)
     for _, lib in ipairs(libs) do xvm.remove(lib) end
     local sysroot = system.subos_sysrootdir()
-    system.exec(string.format("sh -c 'rm -f %s/usr/include/ffi.h %s/usr/include/ffitarget.h %s/usr/lib/pkgconfig/libffi.pc'", sysroot, sysroot, sysroot))
+    system.exec(string.format("sh -c 'rm -f \"%s\"/usr/include/ffi.h \"%s\"/usr/include/ffitarget.h \"%s\"/usr/lib/pkgconfig/libffi.pc'", sysroot, sysroot, sysroot))
     return true
 end

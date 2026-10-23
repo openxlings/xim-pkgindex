@@ -523,8 +523,8 @@ function install()
                 end }
                 rp = rp and rp:trim() or ""
                 if #rp > 0 then
-                    os.exec(string.format(
-                        [[%s --force-rpath --set-rpath %q %q]], pe, rp, out))
+                    os.exec(string.format(  -- exec-quoting-ok: %q quotes the two paths
+                        [["%s" --force-rpath --set-rpath %q %q]], pe, rp, out))
                 else
                     -- Do not continue. Without the rewrite this file is a
                     -- vendor library that cannot load its own vendor, and the
@@ -760,7 +760,7 @@ function __force_rpath_on_interposers(dir)
                               .. "GL would render in software", name, pe)
                     return false
                 end
-                os.exec(string.format([[%s --force-rpath --set-rpath %q %q]],
+                os.exec(string.format([["%s" --force-rpath --set-rpath %q %q]],
                                       pe, rp, f))
                 local after = os.iorun(string.format([[readelf -d "%s"]], f))
                 if not (after ~= "" and after:find("(RPATH)", 1, true)) then

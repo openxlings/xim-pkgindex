@@ -12,7 +12,7 @@ package = {
     -- CI automation opt-in (metadata only; ignored by libxpkg/installer).
     -- mirror: publish the declared version to xlings-res after merge.
     -- update: enroll in the central scanner to PR new upstream releases.
-    ci = { mirror = true, update = true },
+    ci = { mirror = true },
 
     type = "package",
     archs = {"x86_64", "aarch64"},
@@ -23,9 +23,25 @@ package = {
     programs = {"bat"},
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/sharkdp/bat/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/sharkdp/bat/releases/download/v${version}/bat-v${version}-x86_64-unknown-linux-musl.tar.gz",
+                        macosx = "https://github.com/sharkdp/bat/releases/download/v${version}/bat-v${version}-aarch64-apple-darwin.tar.gz",
+                        windows = "https://github.com/sharkdp/bat/releases/download/v${version}/bat-v${version}-x86_64-pc-windows-msvc.zip",
+                    },
+                    required = true,
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
-            url_template = "https://github.com/sharkdp/bat/releases/download/v{version}/bat-v{version}-x86_64-unknown-linux-musl.tar.gz",
+
             ["latest"] = { ref = "0.26.1" },
             ["0.26.1"] = {
                 url = "https://github.com/sharkdp/bat/releases/download/v0.26.1/bat-v0.26.1-x86_64-unknown-linux-musl.tar.gz",
@@ -33,7 +49,7 @@ package = {
             },
         },
         macosx = {
-            url_template = "https://github.com/sharkdp/bat/releases/download/v{version}/bat-v{version}-aarch64-apple-darwin.tar.gz",
+
             ["latest"] = { ref = "0.26.1" },
             ["0.26.1"] = {
                 url = "https://github.com/sharkdp/bat/releases/download/v0.26.1/bat-v0.26.1-aarch64-apple-darwin.tar.gz",
@@ -41,7 +57,7 @@ package = {
             },
         },
         windows = {
-            url_template = "https://github.com/sharkdp/bat/releases/download/v{version}/bat-v{version}-x86_64-pc-windows-msvc.zip",
+
             ["latest"] = { ref = "0.26.1" },
             ["0.26.1"] = {
                 url = "https://github.com/sharkdp/bat/releases/download/v0.26.1/bat-v0.26.1-x86_64-pc-windows-msvc.zip",

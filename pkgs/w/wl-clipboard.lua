@@ -21,6 +21,35 @@ package = {
     programs = {"wl-copy", "wl-paste"},
     xvm_enable = true,
 
+
+
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/wl-clipboard/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://github.com/xlings-res/wl-clipboard/releases/download/${version}/wl-clipboard-${version}-linux-x86_64.tar.gz",
+                            aarch64 = "https://github.com/xlings-res/wl-clipboard/releases/download/${version}/wl-clipboard-${version}-linux-aarch64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://gitcode.com/xlings-res/wl-clipboard/releases/download/${version}/wl-clipboard-${version}-linux-x86_64.tar.gz",
+                            aarch64 = "https://gitcode.com/xlings-res/wl-clipboard/releases/download/${version}/wl-clipboard-${version}-linux-aarch64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "2.3.0" },

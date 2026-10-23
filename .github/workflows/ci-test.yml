@@ -130,8 +130,6 @@ jobs:
           chmod +x .github/scripts/check-revision.sh
           .github/scripts/check-revision.sh
 
-      - name: version-check unit tests (url_template + XLINGS_RES bump)
-        run: python3 .github/scripts/test_version_check.py
 
 
       - name: Get changed-files (only pull_request）
@@ -208,18 +206,27 @@ jobs:
           xlings --version
           xlings config
 
-      - name: Get changed-files
-        uses: tj-actions/changed-files@v46
-        id: changed-files
+      - uses: actions/checkout@v4
         with:
-          files: pkgs/**/*.lua
+          repository: openxlings/xpkgindex-update
+          ref: 516e15d5f797803743486a7c0ef6e9ccbd2f5978
+          path: .updater
+          persist-credentials: false
+      - name: Select runtime changes structurally
+        id: runtime-changes
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before || 'HEAD^' }}
+        shell: bash
+        run: |
+          export PYTHONPATH="$(python -c 'from pathlib import Path; print(Path(".updater/src").resolve())')"
+          python .github/scripts/filter-runtime-changes.py
 
       - name: Windows install/uninstall test (changed packages)
-        if: steps.changed-files.outputs.any_changed == 'true'
+        if: steps.runtime-changes.outputs.any_changed == 'true'
         shell: pwsh
         run: |
           pwsh -NoProfile -File .github/scripts/windows-test.ps1 `
-            -ChangedFiles "${{ steps.changed-files.outputs.all_changed_files }}" `
+            -ChangedFiles "${{ steps.runtime-changes.outputs.files }}" `
             -WorkspaceRoot "${{ github.workspace }}"
 
   linux-install-test:
@@ -255,11 +262,20 @@ jobs:
           xlings --version
           xlings config
 
-      - name: Get changed-files
-        uses: tj-actions/changed-files@v46
-        id: changed-files
+      - uses: actions/checkout@v4
         with:
-          files: pkgs/**/*.lua
+          repository: openxlings/xpkgindex-update
+          ref: 516e15d5f797803743486a7c0ef6e9ccbd2f5978
+          path: .updater
+          persist-credentials: false
+      - name: Select runtime changes structurally
+        id: runtime-changes
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before || 'HEAD^' }}
+        shell: bash
+        run: |
+          export PYTHONPATH="$(python -c 'from pathlib import Path; print(Path(".updater/src").resolve())')"
+          python .github/scripts/filter-runtime-changes.py
 
       # patchelf/binutils and lua5.4 are what the post-install dependency
       # closure check needs (dep-closure-check.sh: readelf for DT_NEEDED,
@@ -271,7 +287,7 @@ jobs:
       # guard that never evaluates anything is not a guard, and the job still
       # goes green.
       - name: Install ELF + Lua tooling for the closure check
-        if: steps.changed-files.outputs.any_changed == 'true'
+        if: steps.runtime-changes.outputs.any_changed == 'true'
         timeout-minutes: 12
         run: |
           set -euo pipefail
@@ -290,11 +306,11 @@ jobs:
           lua5.4 -v
 
       - name: Linux install/uninstall test (changed packages)
-        if: steps.changed-files.outputs.any_changed == 'true'
+        if: steps.runtime-changes.outputs.any_changed == 'true'
         run: |
           chmod +x .github/scripts/posix-test.sh .github/scripts/dep-closure-check.sh
           .github/scripts/posix-test.sh \
-            "${{ steps.changed-files.outputs.all_changed_files }}" \
+            "${{ steps.runtime-changes.outputs.files }}" \
             "${{ github.workspace }}" \
             linux
 
@@ -337,21 +353,30 @@ jobs:
               \( -type d -o -type f -o -type l \) \
               -print 2>/dev/null | head -80 || true
 
-      - name: Get changed-files
-        uses: tj-actions/changed-files@v46
-        id: changed-files
+      - uses: actions/checkout@v4
         with:
-          files: pkgs/**/*.lua
+          repository: openxlings/xpkgindex-update
+          ref: 516e15d5f797803743486a7c0ef6e9ccbd2f5978
+          path: .updater
+          persist-credentials: false
+      - name: Select runtime changes structurally
+        id: runtime-changes
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before || 'HEAD^' }}
+        shell: bash
+        run: |
+          export PYTHONPATH="$(python -c 'from pathlib import Path; print(Path(".updater/src").resolve())')"
+          python .github/scripts/filter-runtime-changes.py
 
       - name: macOS install/uninstall test (changed packages)
-        if: steps.changed-files.outputs.any_changed == 'true'
+        if: steps.runtime-changes.outputs.any_changed == 'true'
         run: |
           chmod +x .github/scripts/posix-test.sh
           # Disable exit-on-error so the post-test diagnostic always runs;
           # the captured rc is forwarded as this step's exit status.
           set +e
           .github/scripts/posix-test.sh \
-            "${{ steps.changed-files.outputs.all_changed_files }}" \
+            "${{ steps.runtime-changes.outputs.files }}" \
             "${{ github.workspace }}" \
             macosx
           rc=$?

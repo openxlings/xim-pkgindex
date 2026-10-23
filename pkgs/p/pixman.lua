@@ -16,6 +16,27 @@ package = {
 
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/pixman/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/pixman/releases/download/${version}/pixman-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/pixman/releases/download/${version}/pixman-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "0.42.2" },
@@ -68,7 +89,7 @@ function config()
     os.mkdir(sys_inc)
     local inc = path.join(idir, "include")
     if os.isdir(inc) then
-        system.exec(string.format("sh -c 'cp -a %s/* %s/ 2>/dev/null || true'", inc, sys_inc))
+        system.exec(string.format("sh -c 'cp -a \"%s\"/* \"%s\"/ 2>/dev/null || true'", inc, sys_inc))
     end
     -- *.pc → sysroot, prefix 重写到 install dir
     local sys_pc = path.join(sysroot, "usr/lib/pkgconfig")
@@ -76,7 +97,7 @@ function config()
     -- The payload's .pc files were already pointed at the payload in
     -- install(); copying them verbatim is what keeps that the only answer.
     system.exec(string.format(
-        "sh -c 'for pc in %s/lib/pkgconfig/*.pc; do [ -f \"$pc\" ] && cp -f \"$pc\" %s/; done'",
+        "sh -c 'for pc in \"%s\"/lib/pkgconfig/*.pc; do [ -f \"$pc\" ] && cp -f \"$pc\" \"%s\"/; done'",
         idir, sys_pc
     ))
     return true
@@ -87,6 +108,6 @@ function uninstall()
     for _, lib in ipairs(libs) do xvm.remove(lib) end
     local sysroot = system.subos_sysrootdir()
     os.tryrm(path.join(sysroot, "usr/include/pixman-1"))
-    system.exec(string.format("sh -c 'rm -f %s/usr/lib/pkgconfig/pixman-1.pc'", sysroot))
+    system.exec(string.format("sh -c 'rm -f \"%s\"/usr/lib/pkgconfig/pixman-1.pc'", sysroot))
     return true
 end

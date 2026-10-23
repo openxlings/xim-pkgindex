@@ -1,23 +1,13 @@
 #!/usr/bin/env python3
-"""CI-only xpkg mirror/update helper.
+"""Mirror-only helper: inspect, materialize, verify and publish declared resources.
 
-The package manifest remains the runtime contract.  This tool consumes the
-optional package.ci opt-in and delegates release/version semantics to the
-existing, tested version-check implementation.
-
-Commands:
-  inspect  Parse package.ci metadata without network access.
-  scan     Run the opt-in upstream scanner and emit JSON.
-  verify   Validate a mirror manifest without publishing anything.
-  mirror   Publish a verified manifest (requires --execute; dry-run default).
-  propose  Run the version bump proposer (requires --apply to edit files).
+Automatic package updates use the pinned upstream xpkgindex-update tool.
 """
 
 from __future__ import annotations
 
 import argparse
 import hashlib
-import importlib.util
 import json
 import os
 import re
@@ -34,7 +24,6 @@ from typing import Any
 
 
 ROOT = Path(__file__).resolve().parents[1]
-VC_PATH = ROOT / ".github" / "scripts" / "version-check.py"
 GITCODE_RELEASE_TIMEOUT = 60
 # Canonical arch spellings used in release URLs when a recipe doesn't declare
 # its own per-version alias (e.g. jq ships jq-linux-amd64 / jq-macos-arm64).
@@ -45,15 +34,6 @@ ARCHIVE_SUFFIXES = (".tar.gz", ".tar.xz", ".tar.bz2", ".tgz", ".zip")
 # GitCode's upload callback is especially slow for large release assets.
 GITCODE_UPLOAD_TIMEOUT = 600
 GITCODE_VERIFY_TIMEOUT = 20
-
-
-def load_vcheck():
-    spec = importlib.util.spec_from_file_location("version_check", VC_PATH)
-    if spec is None or spec.loader is None:
-        raise RuntimeError(f"unable to load {VC_PATH}")
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
 
 
 def ci_block(text: str) -> str:
@@ -108,7 +88,6 @@ def inspect_package(path: Path) -> dict[str, Any]:
         "repo": repo.group(1) if repo else None,
         "source": source_value(text),
         "mirror": bool_field(body, "mirror"),
-        "update": bool_field(body, "update"),
         "platforms": platforms,
     }
 
@@ -119,44 +98,6 @@ def cmd_inspect(args: argparse.Namespace) -> int:
     if args.only:
         records = [r for r in records if r["package"] == args.only]
     print(json.dumps({"packages": records}, indent=2, ensure_ascii=False))
-    return 0
-
-
-def cmd_scan(args: argparse.Namespace) -> int:
-    root = Path(args.workspace)
-    vcheck = load_vcheck()
-    policy = vcheck.load_ci_policy(root)
-    state_path = Path(args.state_file) if args.state_file else None
-    state = {}
-    if state_path and state_path.is_file():
-        try:
-            state = json.loads(state_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            state = {}
-    interval_days = int(str(policy["interval"]).removesuffix("d"))
-    now = int(time.time())
-    records = []
-    skipped_due = 0
-    for path in sorted((root / "pkgs").glob("*/*.lua")):
-        if args.only and path.stem != args.only:
-            continue
-        metadata = inspect_package(path)
-        if not metadata["update"]:
-            continue
-        last_checked = int(state.get(path.stem, 0) or 0)
-        if not args.force and last_checked and now - last_checked < interval_days * 86400:
-            skipped_due += 1
-            continue
-        record = vcheck.check_package(path, args.token)
-        if record is not None:
-            records.append(record)
-        state[path.stem] = now
-    if len(records) > int(policy["max_packages_per_run"]):
-        return fail(f"scan set {len(records)} exceeds policy max_packages_per_run")
-    if state_path:
-        state_path.parent.mkdir(parents=True, exist_ok=True)
-        state_path.write_text(json.dumps(state, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps({"policy": policy, "skipped_due": skipped_due, "packages": records}, indent=2))
     return 0
 
 
@@ -741,17 +682,6 @@ def cmd_mirror(args: argparse.Namespace) -> int:
     return finalize(f"GitCode assets verified for {gitcode_repo}@{tag}")
 
 
-def cmd_propose(args: argparse.Namespace) -> int:
-    vcheck = load_vcheck()
-    command = [sys.executable, str(VC_PATH), "--workspace", args.workspace]
-    if args.only:
-        command.extend(["--only", args.only])
-    if args.apply:
-        command.append("--apply")
-    result = subprocess.run(command)
-    return result.returncode
-
-
 def fail(message: str) -> int:
     print(f"error: {message}", file=sys.stderr)
     return 2
@@ -762,14 +692,9 @@ def main() -> int:
     parser.add_argument("--workspace", default=str(ROOT))
     sub = parser.add_subparsers(dest="command", required=True)
 
-    for name, func in (("inspect", cmd_inspect), ("scan", cmd_scan)):
-        p = sub.add_parser(name)
-        p.add_argument("--only")
-        p.add_argument("--token", default=None)
-        if name == "scan":
-            p.add_argument("--state-file")
-            p.add_argument("--force", action="store_true")
-        p.set_defaults(func=func)
+    p = sub.add_parser("inspect")
+    p.add_argument("--only")
+    p.set_defaults(func=cmd_inspect)
     p = sub.add_parser("verify")
     p.add_argument("manifest")
     p.set_defaults(func=cmd_verify)
@@ -789,10 +714,6 @@ def main() -> int:
     p.add_argument("--version")
     p.add_argument("--output", required=True)
     p.set_defaults(func=materialize)
-    p = sub.add_parser("propose")
-    p.add_argument("--only")
-    p.add_argument("--apply", action="store_true")
-    p.set_defaults(func=cmd_propose)
     args = parser.parse_args()
     return args.func(args)
 

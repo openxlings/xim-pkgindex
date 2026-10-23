@@ -13,6 +13,29 @@ package = {
     categories = {"library", "network"},
     keywords = {"http2", "http", "network", "lib"},
     xvm_enable = true,
+
+
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/nghttp2/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/nghttp2/releases/download/${version}/nghttp2-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/nghttp2/releases/download/${version}/nghttp2-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- libsoup >= 3.2 requires libnghttp2.so.14 for its HTTP/2 support.

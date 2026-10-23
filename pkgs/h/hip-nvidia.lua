@@ -56,6 +56,29 @@ package = {
     -- --cuda-gpu-arch=sm_89 -D__HIP_PLATFORM_NVIDIA__` produced an object,
     -- linked against `-lcudart_static`, and ran a `hipLaunchKernelGGL` kernel
     -- on an RTX 4080.
+
+
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/hip-nvidia/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/hip-nvidia/releases/download/${version}/hip-nvidia-${version}-noarch.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/hip-nvidia/releases/download/${version}/hip-nvidia-${version}-noarch.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "7.2.4" },

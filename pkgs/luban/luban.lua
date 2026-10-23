@@ -29,7 +29,46 @@ package = {
     -- `run` and `launcher`; a desktop session (luban-os-ci L3) the rest.
     extensions = { luban = { checks = {
         { id = "luban-runs", what = "luban answers", run = "luban --version", timeout = 20 },
-    } } },
+    } },
+
+
+        autoupdate = {
+            source = "https://github.com/xlings-res/luban/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://github.com/xlings-res/luban/releases/download/${version}/luban-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://github.com/xlings-res/luban/releases/download/${version}/luban-${version}-linux-x86_64.tar.gz",
+                        },
+                        macosx = {
+                            aarch64 = "https://github.com/xlings-res/luban/releases/download/${version}/luban-${version}-macosx-aarch64.tar.gz",
+                        },
+                        windows = {
+                            x86_64 = "https://github.com/xlings-res/luban/releases/download/${version}/luban-${version}-windows-x86_64.zip",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://gitcode.com/xlings-res/luban/releases/download/${version}/luban-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://gitcode.com/xlings-res/luban/releases/download/${version}/luban-${version}-linux-x86_64.tar.gz",
+                        },
+                        macosx = {
+                            aarch64 = "https://gitcode.com/xlings-res/luban/releases/download/${version}/luban-${version}-macosx-aarch64.tar.gz",
+                        },
+                        windows = {
+                            x86_64 = "https://gitcode.com/xlings-res/luban/releases/download/${version}/luban-${version}-windows-x86_64.zip",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
 
     xpm = {
         linux = {

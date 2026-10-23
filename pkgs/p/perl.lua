@@ -83,6 +83,43 @@ package = {
     -- linux), while the sha256 table is keyed by the NORMALIZED arch
     -- (`aarch64` on both). See installer.cppm detect_arch_() vs
     -- normalize_arch().
+
+
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/perl/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://github.com/xlings-res/perl/releases/download/${version}/perl-${version}-linux-x86_64.tar.gz",
+                            aarch64 = "https://github.com/xlings-res/perl/releases/download/${version}/perl-${version}-linux-aarch64.tar.gz",
+                        },
+                        macosx = {
+                            x86_64 = "https://github.com/xlings-res/perl/releases/download/${version}/perl-${version}-macosx-x86_64.tar.gz",
+                            aarch64 = "https://github.com/xlings-res/perl/releases/download/${version}/perl-${version}-macosx-arm64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://gitcode.com/xlings-res/perl/releases/download/${version}/perl-${version}-linux-x86_64.tar.gz",
+                            aarch64 = "https://gitcode.com/xlings-res/perl/releases/download/${version}/perl-${version}-linux-aarch64.tar.gz",
+                        },
+                        macosx = {
+                            x86_64 = "https://gitcode.com/xlings-res/perl/releases/download/${version}/perl-${version}-macosx-x86_64.tar.gz",
+                            aarch64 = "https://gitcode.com/xlings-res/perl/releases/download/${version}/perl-${version}-macosx-arm64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "5.44.0" },

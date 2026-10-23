@@ -16,6 +16,33 @@ package = {
 
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/nss/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://github.com/xlings-res/nss/releases/download/${version}/nss-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://github.com/xlings-res/nss/releases/download/${version}/nss-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://gitcode.com/xlings-res/nss/releases/download/${version}/nss-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://gitcode.com/xlings-res/nss/releases/download/${version}/nss-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- DT_NEEDED outside the payload (readelf -d): libnspr4, libplc4, libplds4, libsqlite3.

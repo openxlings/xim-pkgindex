@@ -7,7 +7,7 @@ package = {
     maintainers = {"fish-shell"},
     licenses = {"GPL-2.0"},
     repo = "https://github.com/fish-shell/fish-shell",
-    ci = { mirror = true, update = true },
+    ci = { mirror = true },
     docs = "https://fishshell.com/docs/current/",
 
     type = "package",
@@ -26,9 +26,26 @@ package = {
     -- 4.6.0 ships static-pie binaries on linux only; the macOS release
     -- tarballs are .app bundles / .pkg installers (not flat CLI tarballs)
     -- and Windows is upstream-unsupported, so this xpkg is linux-only.
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/fish-shell/fish-shell/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://github.com/fish-shell/fish-shell/releases/download/${version}/fish-${version}-linux-aarch64.tar.xz",
+                            x86_64 = "https://github.com/fish-shell/fish-shell/releases/download/${version}/fish-${version}-linux-x86_64.tar.xz",
+                        },
+                    },
+                    required = true,
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
-            url_template = "https://github.com/fish-shell/fish-shell/releases/download/{version}/fish-{version}-linux-x86_64.tar.xz",
+
             ["latest"] = { ref = "4.8.1" },
             ["4.8.1"] = {
                 x86_64 = {

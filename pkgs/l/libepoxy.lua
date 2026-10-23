@@ -12,6 +12,29 @@ package = {
     categories = {"library", "graphics", "opengl"},
     keywords = {"epoxy", "opengl", "gl", "egl", "glx", "lib"},
     xvm_enable = true,
+
+
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/libepoxy/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/libepoxy/releases/download/${version}/libepoxy-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/libepoxy/releases/download/${version}/libepoxy-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- GTK 4's GL renderer talks to the driver through epoxy rather

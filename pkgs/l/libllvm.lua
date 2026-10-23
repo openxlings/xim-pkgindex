@@ -15,6 +15,29 @@ package = {
     categories = {"graphics", "lib"},
     keywords = {"libllvm", "graphics", "gl"},
 
+    extensions = {
+
+
+        autoupdate = {
+            source = "https://github.com/xlings-res/libllvm/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/libllvm/releases/download/${version}/libllvm-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/libllvm/releases/download/${version}/libllvm-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             deps = { "xim:gcc-runtime@>=15", "xim:glibc@>=2.38" },

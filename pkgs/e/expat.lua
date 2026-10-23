@@ -12,6 +12,29 @@ package = {
     categories = {"xml", "library"},
     keywords = {"expat", "xml", "parser", "lib"},
     xvm_enable = true,
+
+
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/expat/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/expat/releases/download/${version}/expat-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/expat/releases/download/${version}/expat-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             deps = { "xim:glibc" },
@@ -76,13 +99,13 @@ function config()
     local sysroot = system.subos_sysrootdir()
     local sys_inc = path.join(sysroot, "usr/include")
     os.mkdir(sys_inc)
-    system.exec(string.format("sh -c 'cp -a %s/include/* %s/ 2>/dev/null || true'", idir, sys_inc))
+    system.exec(string.format("sh -c 'cp -a \"%s\"/include/* \"%s\"/ 2>/dev/null || true'", idir, sys_inc))
     local sys_pc = path.join(sysroot, "usr/lib/pkgconfig")
     os.mkdir(sys_pc)
     -- The payload's .pc files were already pointed at the payload in
     -- install(); copying them verbatim is what keeps that the only answer.
     system.exec(string.format(
-        "sh -c 'for pc in %s/lib/pkgconfig/*.pc; do [ -f \"$pc\" ] && cp -f \"$pc\" %s/; done'",
+        "sh -c 'for pc in \"%s\"/lib/pkgconfig/*.pc; do [ -f \"$pc\" ] && cp -f \"$pc\" \"%s\"/; done'",
         idir, sys_pc
     ))
     return true
@@ -92,6 +115,6 @@ function uninstall()
     xvm.remove(package.name)
     for _, lib in ipairs(libs) do xvm.remove(lib) end
     local sysroot = system.subos_sysrootdir()
-    system.exec(string.format("sh -c 'rm -f %s/usr/include/expat.h %s/usr/include/expat_external.h %s/usr/lib/pkgconfig/expat.pc'", sysroot, sysroot, sysroot))
+    system.exec(string.format("sh -c 'rm -f \"%s\"/usr/include/expat.h \"%s\"/usr/include/expat_external.h \"%s\"/usr/lib/pkgconfig/expat.pc'", sysroot, sysroot, sysroot))
     return true
 end

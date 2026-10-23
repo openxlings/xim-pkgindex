@@ -30,6 +30,23 @@ package = {
     keywords = {"chatgpt", "openai", "desktop"},
     programs = {"chatgpt"},
     xvm_enable = true,
+    extensions = {
+        autoupdate = {
+            source = "https://persistent.oaistatic.com/codex-app-prod/appcast.xml",
+            -- Advance only when BOTH platforms publish the same full version.
+            -- Platform-specific historical versions remain untouched.
+            resources = {
+                GLOBAL = { url = {
+                    linux = {
+                        x86_64 = "https://persistent.oaistatic.com/codex-app-prod/linux/deb/pool/main/c/chatgpt/chatgpt_${version}_amd64.deb",
+                    },
+                    macosx = {
+                        aarch64 = "https://persistent.oaistatic.com/codex-app-prod/ChatGPT-darwin-arm64-${version}.zip",
+                    },
+                } },
+            },
+        },
+    },
     xpm = {
         linux = {
             -- Linux arm64 debs exist upstream, but glibc and gcc-runtime have

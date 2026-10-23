@@ -15,6 +15,29 @@ package = {
     categories = {"lib", "system"},
     keywords = {"libselinux", "selinux", "lib"},
 
+
+
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/libselinux/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/libselinux/releases/download/${version}/libselinux-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/libselinux/releases/download/${version}/libselinux-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- pcre2 is a real runtime dependency: libselinux.so.1 names

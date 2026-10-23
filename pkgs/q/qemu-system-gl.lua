@@ -36,6 +36,28 @@ package = {
     -- needs) --
     -- found through the variables that stack declares in the SubOS, which
     -- luban hands to qemu (the Port's subos_env).
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/qemu-system-gl/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/qemu-system-gl/releases/download/${version}-r1/qemu-system-gl-${version}-r1-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/qemu-system-gl/releases/download/${version}-r1/qemu-system-gl-${version}-r1-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            tag = "${version}-r1",
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             deps = {

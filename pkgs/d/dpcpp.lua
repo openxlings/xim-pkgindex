@@ -57,6 +57,25 @@ package = {
 
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/intel/llvm/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://github.com/intel/llvm/releases/download/v${version}/sycl_linux.tar.gz",
+                        },
+                        windows = {
+                            x86_64 = "https://github.com/intel/llvm/releases/download/v${version}/sycl_windows.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
             -- patchelf, to force DT_RPATH rather than DT_RUNPATH on the
@@ -200,7 +219,7 @@ local function patch_program_rpaths(dir)
                             "syclbin-dump" }) do
         local exe = path.join(dir, "bin", prog)
         if os.isfile(exe) then
-            os.exec(string.format([[%s --force-rpath --set-rpath '$ORIGIN/../lib' "%s"]], pe, exe))
+            os.exec(string.format([["%s" --force-rpath --set-rpath '$ORIGIN/../lib' "%s"]], pe, exe))
             -- ASSERT THE ARTIFACT, NOT THE INTENT. patchelf may be absent, and
             -- a skipped rewrite is indistinguishable from a working one until
             -- somebody runs the program on a machine that is not this one.

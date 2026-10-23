@@ -25,6 +25,29 @@ package = {
     -- `programs` asserts EXCLUSIVE ownership of those names. Consumers reach them
     -- by payload path, which is how build-in-subos.sh already invokes build tools.
 
+
+
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/spirv-tools/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/spirv-tools/releases/download/${version}/spirv-tools-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/spirv-tools/releases/download/${version}/spirv-tools-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- gcc-runtime, not gcc.

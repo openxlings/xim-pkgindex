@@ -79,6 +79,10 @@ package = {
     programs = {"esbuild"},
     xvm_enable = true,
 
+    extensions = {
+
+    },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "0.25.12" },

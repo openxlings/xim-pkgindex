@@ -64,6 +64,14 @@ jobs:
           CHANGED="${{ steps.changed.outputs.all_changed_files }}"
           echo "changed: $CHANGED"
           for f in $CHANGED; do xlings config --add-xpkg "$f"; done
+          # AND THE SHARED MODULES THE DESCRIPTOR IMPORTS. Without them a
+          # `local:` recipe's `import("xim.pkgindex.*")` resolves to the proxy
+          # that swallows every call (ci-xpkg-test.yml says the same of
+          # selfcontain.seal): gcc's specs rewrite through `shell.exec` then
+          # did nothing, and the install failed on its own verification.
+          LOCAL_IDX="$HOME/.xlings/data/xim-pkgindex-local"
+          mkdir -p "$LOCAL_IDX/libs"
+          cp -f libs/*.lua "$LOCAL_IDX/libs/"
           echo "CHANGED_FILES=$CHANGED" >> "$GITHUB_ENV"
 
       - name: Install the bumped toolchain + mcpp

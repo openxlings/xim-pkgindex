@@ -188,7 +188,8 @@ function __wire_glx_vendor_search_path()
     -- SINGLE quotes. `$ORIGIN` must reach patchelf literally, and `os.exec`
     -- goes through a shell. `__shq` handles a path containing a quote, which
     -- would otherwise turn the command into something unparseable.
-    os.exec(string.format([[%s --force-rpath --set-rpath %s %s]],
+    -- exec-quoting-ok: the two paths go through __shq
+    os.exec(string.format([["%s" --force-rpath --set-rpath %s %s]],
                           pe, __shq(merged), __shq(dispatch)))
 
     -- Assert the result, do not assume it. patchelf may be absent, and a

@@ -29,6 +29,34 @@ package = {
     --
     -- Static, so `deps` is empty: nothing for elfpatch to relocate, and no
     -- loader to hand it.
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/qemu-system/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://github.com/xlings-res/qemu-system/releases/download/${version}-r2/qemu-system-${version}-r2-linux-aarch64.tar.gz",
+                            x86_64 = "https://github.com/xlings-res/qemu-system/releases/download/${version}-r2/qemu-system-${version}-r2-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://gitcode.com/xlings-res/qemu-system/releases/download/${version}-r2/qemu-system-${version}-r2-linux-aarch64.tar.gz",
+                            x86_64 = "https://gitcode.com/xlings-res/qemu-system/releases/download/${version}-r2/qemu-system-${version}-r2-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            tag = "${version}-r2",
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "9.2.4" },

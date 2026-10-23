@@ -6,7 +6,7 @@ package = {
     licenses = {"MIT"},
     type = "package",
     repo = "https://github.com/pnpm/pnpm",
-    ci = { mirror = true, update = true },
+    ci = { mirror = true },
     docs = "https://pnpm.io/motivation",
 
     -- xim pkg info
@@ -33,6 +33,32 @@ package = {
     --     their upstream wheel layout depends on it) NO — xim:bun and
     --     xim:codex go via npm because their authors publish on npm
     --     primarily; pnpm publishes a standalone too, so we use that.
+
+
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/pnpm/pnpm/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/pnpm/pnpm/releases/download/v${version}/pnpm-linux-x64.tar.gz",
+                        macosx = "https://github.com/pnpm/pnpm/releases/download/v${version}/pnpm-darwin-arm64.tar.gz",
+                        windows = "https://github.com/pnpm/pnpm/releases/download/v${version}/pnpm-win32-x64.zip",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/pnpm/releases/download/${version}/pnpm-linux-x64.tar.gz",
+                        macosx = "https://gitcode.com/xlings-res/pnpm/releases/download/${version}/pnpm-darwin-arm64.tar.gz",
+                        windows = "https://gitcode.com/xlings-res/pnpm/releases/download/${version}/pnpm-win32-x64.zip",
+                    },
+                    required = true,
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
             -- Runtime deps: pnpm prebuilt is dynamically linked
@@ -44,7 +70,7 @@ package = {
             deps = {
                 runtime = { "xim:glibc@>=2.39", "xim:gcc-runtime@15.1.0" },
             },
-            url_template = "https://github.com/pnpm/pnpm/releases/download/v{version}/pnpm-linux-x64.tar.gz",
+
             ["latest"] = { ref = "12.1.0" },
             ["12.1.0"] = {
                 url = {
@@ -114,7 +140,7 @@ package = {
             },
         },
         macosx = {
-            url_template = "https://github.com/pnpm/pnpm/releases/download/v{version}/pnpm-darwin-arm64.tar.gz",
+
             ["latest"] = { ref = "12.1.0" },
             ["12.1.0"] = {
                 url = {
@@ -149,7 +175,7 @@ package = {
             },
         },
         windows = {
-            url_template = "https://github.com/pnpm/pnpm/releases/download/v{version}/pnpm-win32-x64.zip",
+
             ["latest"] = { ref = "12.1.0" },
             ["12.1.0"] = {
                 url = {

@@ -10,7 +10,7 @@ package = {
     -- update only: GitCode rejects an xlings-res/sing-box repo under its
     -- content policy, so the two-forge mirror cannot complete. sing-box still
     -- auto-updates via url_template + latest.ref.
-    ci = { update = true },
+    ci = {  },
     docs = "https://sing-box.sagernet.org/",
 
     type = "package",
@@ -22,9 +22,25 @@ package = {
     programs = {"sing-box"},
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/SagerNet/sing-box/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/SagerNet/sing-box/releases/download/v${version}/sing-box-${version}-linux-amd64.tar.gz",
+                        macosx = "https://github.com/SagerNet/sing-box/releases/download/v${version}/sing-box-${version}-darwin-arm64.tar.gz",
+                        windows = "https://github.com/SagerNet/sing-box/releases/download/v${version}/sing-box-${version}-windows-amd64.zip",
+                    },
+                    required = true,
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
-            url_template = "https://github.com/SagerNet/sing-box/releases/download/v{version}/sing-box-{version}-linux-amd64.tar.gz",
+
             ["latest"] = { ref = "1.13.20" },
             ["1.13.20"] = {
                 url = "https://github.com/SagerNet/sing-box/releases/download/v1.13.20/sing-box-1.13.20-linux-amd64.tar.gz",
@@ -36,7 +52,7 @@ package = {
             },
         },
         macosx = {
-            url_template = "https://github.com/SagerNet/sing-box/releases/download/v{version}/sing-box-{version}-darwin-arm64.tar.gz",
+
             ["latest"] = { ref = "1.13.20" },
             ["1.13.20"] = {
                 url = "https://github.com/SagerNet/sing-box/releases/download/v1.13.20/sing-box-1.13.20-darwin-arm64.tar.gz",
@@ -48,7 +64,7 @@ package = {
             },
         },
         windows = {
-            url_template = "https://github.com/SagerNet/sing-box/releases/download/v{version}/sing-box-{version}-windows-amd64.zip",
+
             ["latest"] = { ref = "1.13.20" },
             ["1.13.20"] = {
                 url = "https://github.com/SagerNet/sing-box/releases/download/v1.13.20/sing-box-1.13.20-windows-amd64.zip",

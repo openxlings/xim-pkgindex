@@ -55,8 +55,11 @@ description: 在 xim-pkgindex 中创建/更新 xpkg 包（V2/兼容 V1），遵�
   - `source = "https://.../${version}/...${arch}..."`：第三方 URL template
 - URL 不规则时使用版本项 per-arch resource map；特殊版本用显式 `url` 覆盖默认 source。
 - 多架构条目的 `sha256` 必须覆盖每个受支持架构；缺失时版本检查器必须 fail closed。
-- 可选 `ci = { mirror = true, update = true }` 只声明是否加入官方自动化；扫描周期统一由
-  仓库 `.github/xpkg-ci.yml` 管理，不能在单个包中写入周期。
+- 自动更新只使用 `extensions.autoupdate = { source, resources }`；
+  由固定提交的上游 `xpkgindex-update` 扫描、验证并创建 PR，中央策略为 `.github/xpkgindex-update.yml`。
+- 自动更新每 3 天执行一次（每日轻量日期门禁）。来源 URL 与下载模板独立；有审核过的 CN 镜像时 GLOBAL/CN 默认均 required（包可经 review 显式选择 optional，并同步更新审计），无 CN 时只声明 GLOBAL；历史资源保持原样。
+- 包声明是自动更新配置的唯一事实来源；CI 直接扫描包文件，生成 `coverage.json` 并上传 artifact，无需维护另一份 JSON 清单。
+- `ci = { mirror = true }` 只控制已声明资源的镜像发布。旧更新开关和模板标记不再使用。
 - 平台继承：`ubuntu = { ref = "linux" }`
 - script/config 类型可使用空资源：`["0.0.1"] = {}`
 
@@ -96,11 +99,54 @@ xpm = {
 - 两边 release 都包含该版本声明会使用的全部平台资产；文件名必须符合 xlings-res 约定。
 - 两边资产必须来自同一个权威上游 release 或同一次构建产物；发布后从 GitHub RES、GitCode RES、权威上游各下载一次并比对 sha256，确认字节一致。
 - 每个归档都要发布同名 `.sha256` sidecar；索引版本项必须为每个受支持架构写入与 sidecar 一致的 SHA256。
-- `version-check.py --apply` 缺少平台、架构、资产或 sidecar 时必须 fail closed，不得生成不完整条目。
+- `xpkgindex-update apply --plan plan.json` 缺少平台、架构、资产或 sidecar 时必须 fail closed，不得生成不完整条目。
 - 如果补发历史版本，发布后确认两边 `latest` 仍指向应当作为最新的版本，不要因为补旧版本导致 latest 倒退。
 - PR 描述或汇报中写清楚 GitHub RES、GitCode RES 的 release/tag，以及 sha256 校验结果。
 
 如果 GitHub RES 和 GitCode RES 任一侧缺资源、版本不一致、资产不一致，不能把该版本切到 `"XLINGS_RES"`；先补齐镜像资源，再改包索引。
+
+### 1.2.2 新包自动更新接入模板
+
+新建包可以按需使用以下固定模板，合并到 `package.extensions`，不要创建重复的 `extensions` 字段。
+建议上游 GitHub 仓库 **至少 50 stars** 再接入；这是选包建议，不是工具或 CI 的强制门槛。
+不能用 star 数替代资源验证，也不要添加 star 数下降就停更的逻辑。
+
+```lua
+extensions = {
+    autoupdate = {
+        source = "https://github.com/acme/foo/releases",
+        resources = {
+            GLOBAL = { url = {
+                linux = {
+                    x86_64 = "https://github.com/acme/foo/releases/download/${tag}/foo-linux-x64.tar.gz",
+                    aarch64 = "https://github.com/acme/foo/releases/download/${tag}/foo-linux-arm64.tar.gz",
+                },
+            } },
+        },
+    },
+},
+```
+
+将仓库和路径替换为真实值，平台/架构矩阵必须与完整包声明一致；上例仅适用于只支持 Linux 双架构的包。
+各平台共用同一资产时可把 GLOBAL 简写为 URL 字符串。`${tag}` 保留原始标签，`${version}` 为提取后的版本；
+普通数字/v 前缀无需 `tag`。不要照搬 `xpm.source` 的 `${os}` / `${arch_alias}` / `${ext}` 运行时占位符。
+官方 Sparkle RSS 可用 `.xml` HTTPS 地址作为 `source`，模板使用 `${version}`，无需 GitHub 仓库或 `tag`；
+数字短版本号对应完整 enclosure，至少一个必需模板须匹配其 URL 和长度，排除增量及 channel 发布。
+例如 ChatGPT 的 Linux/macOS 都是必需平台，只有两者同版本资源齐全才推进，暂不做各平台独立更新；
+保留历史 helper 条目与安装签名/版本检查。厂商官方来源不适用 GitHub star 数建议。详细边界见上述中英文文档。
+没有核实镜像时只声明 GLOBAL；有 USTC、清华等权威镜像也要逐项核实真实路径、完整资产与跨区 SHA256 一致，
+不能根据域名猜路径。每个目标默认 `required = true`；显式设为 false 表示可选，至少一个目标必须必需。
+选择所有必需目标完整可用的最新版本交集；可选目标失败整组省略。`latest = "keep"` 用于 LTS/固定默认版本。
+当前使用 xlings-res 也可迁移后续版本：若可信机构镜像已有更新的完整上游原版资产，同时切换真实上游 `source`
+和 GLOBAL/CN 模板，避免继续从旧 xlings-res 目录发现版本；保留所有旧版本块。对重打包/拆分资产先验证布局和 hooks，
+不能把上游归档直接当成同一产物。站点目录和选择路径的经验见 `.agents/docs/2026-10-23-autoupdate-institutional-mirrors.md`。
+
+提交前使用 workflow 固定提交的 xpkgindex-update 执行 `inspect`、`check --package xim:<name> --output plan.json`，
+检查候选、平台、镜像与 hash；无支持的来源解析器或无就绪资源时保留人工维护，在配方注释或 PR 说明中记录原因。
+CI 自动生成完整覆盖报告；不要提交生成的审计 JSON 或重复抄录包声明。
+自动更新每三天扫描并创建 PR，仍需资源和原生安装/功能/卸载验证，不自动合并、不改历史条目或 hooks。
+完整说明见 `docs/13-ci-mirror-and-update.md` 和 `docs/zh/13-ci-mirror-and-update.md`；
+`docs/specs/xpackage-template.lua` 也提供注释形式的接入模板。
 
 ## 2) hooks 实现规范（核心）
 

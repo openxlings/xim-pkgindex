@@ -8,7 +8,7 @@ package = {
     maintainers = {"face-hh"},
     licenses = {"Apache-2.0"},
     repo = "https://github.com/face-hh/griddycode",
-    ci = { mirror = true, update = true },
+    ci = { mirror = true },
 
     -- xim pkg info
     type = "package",
@@ -21,6 +21,21 @@ package = {
 
     -- xvm: xlings version management
     xvm_enable = true,
+
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/face-hh/griddycode/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/face-hh/griddycode/releases/download/v${version}/Linux.zip",
+                        windows = "https://github.com/face-hh/griddycode/releases/download/v${version}/Windows.zip",
+                    },
+                    required = true,
+                },
+            },
+        },
+    },
 
     xpm = {
         linux = {
@@ -37,12 +52,12 @@ package = {
             deps = {
                 runtime = { "xim:glibc@>=2.39" },
             },
-            url_template = "https://github.com/face-hh/griddycode/releases/download/v{version}/Linux.zip",
+
             ["latest"] = { ref = "1.2.2" },
             ["1.2.2"] = { url = "https://github.com/face-hh/griddycode/releases/download/v1.2.2/Linux.zip" },
         },
         windows = {
-            url_template = "https://github.com/face-hh/griddycode/releases/download/v{version}/Windows.zip",
+
             ["latest"] = { ref = "1.2.2" },
             ["1.2.2"] = { url = "https://github.com/face-hh/griddycode/releases/download/v1.2.2/Windows.zip" },
         },

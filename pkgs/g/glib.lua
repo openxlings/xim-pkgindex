@@ -16,6 +16,27 @@ package = {
     -- recipe stays correct for both.
     programs = {"gapplication", "gdbus", "gdbus-codegen", "gio", "gio-querymodules", "glib-compile-resources", "glib-compile-schemas", "glib-genmarshal", "glib-gettextize", "glib-mkenums", "gobject-query", "gresource", "gsettings", "gtester", "gtester-report"},
     xvm_enable = true,
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/glib/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/glib/releases/download/${version}/glib-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/glib/releases/download/${version}/glib-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             deps = {

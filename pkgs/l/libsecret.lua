@@ -15,6 +15,33 @@ package = {
 
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/libsecret/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://github.com/xlings-res/libsecret/releases/download/${version}/libsecret-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://github.com/xlings-res/libsecret/releases/download/${version}/libsecret-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://gitcode.com/xlings-res/libsecret/releases/download/${version}/libsecret-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://gitcode.com/xlings-res/libsecret/releases/download/${version}/libsecret-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- DT_NEEDED outside the payload (readelf -d): libgcrypt, libgio-2.0, libglib-2.0, libgobject-2.0.

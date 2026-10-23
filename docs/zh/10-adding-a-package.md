@@ -62,6 +62,16 @@ package = {
 每个架构都要有 sha256。没有权威 hash 时，先保留旧写法，等资源和它的 sidecar 都存在后
 再迁移；不能发布没有 hash 的新官方二进制版本。
 
+## 新包的自动更新
+
+复制 [CI：镜像与自动更新](13-ci-mirror-and-update.md) 中的 `package.extensions.autoupdate`
+固定模板，将来源和资产 URL 替换为已验证的真实项目路径，覆盖全部支持的平台/架构。
+**建议上游 GitHub 仓库至少有 50 stars**；这是建议，不是强制门槛。包也可以继续人工维护。
+
+索引每三天扫描一次，选择满足所有必需资源的最新版本并创建 PR 供 review，保留历史版本条目和 hooks。
+没有镜像时只声明 GLOBAL；有已核实 CN 镜像时默认设为必需，也可经 review 显式设为可选。
+按该章节完成本地检查；CI 从配方生成覆盖报告，人工维护的原因写入配方注释或 PR 说明。
+
 ## 钩子
 
 ```lua
@@ -131,7 +141,7 @@ deps = {
 ## 在本地测试
 
 ```bash
-python3 .github/scripts/version-check.py --workspace .
+xpkgindex-update inspect
 pytest tests/<letter>/test_<name>.py -m "static or isolation"
 ```
 

@@ -16,6 +16,39 @@ package = {
 
     xvm_enable = true,
 
+
+
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/llvm/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-linux-x86_64.tar.gz",
+                        },
+                        windows = "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-windows-x86_64.zip",
+                        macosx = "https://github.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-macosx-arm64.tar.xz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://gitcode.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://gitcode.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-linux-x86_64.tar.gz",
+                        },
+                        windows = "https://gitcode.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-windows-x86_64.zip",
+                        macosx = "https://gitcode.com/xlings-res/llvm/releases/download/${version}/llvm-tools-${version}-macosx-arm64.tar.xz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- These three are the payload's ENTIRE external closure, measured

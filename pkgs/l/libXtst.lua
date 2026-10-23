@@ -33,6 +33,27 @@ package = {
     --
     -- `alsa-lib` (libasound) is the other half. See openxlings/xim-pkgindex#568.
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/libXtst/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/libXtst/releases/download/${version}/libXtst-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/libXtst/releases/download/${version}/libXtst-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- Exactly the payload's runtime closure, measured:

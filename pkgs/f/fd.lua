@@ -7,7 +7,7 @@ package = {
     maintainers = {"David Peter"},
     licenses = {"MIT", "Apache-2.0"},
     repo = "https://github.com/sharkdp/fd",
-    ci = { mirror = true, update = true },
+    ci = { mirror = true },
     docs = "https://github.com/sharkdp/fd#readme",
 
     type = "package",
@@ -19,9 +19,25 @@ package = {
     programs = {"fd"},
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/sharkdp/fd/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/sharkdp/fd/releases/download/v${version}/fd-v${version}-x86_64-unknown-linux-musl.tar.gz",
+                        macosx = "https://github.com/sharkdp/fd/releases/download/v${version}/fd-v${version}-aarch64-apple-darwin.tar.gz",
+                        windows = "https://github.com/sharkdp/fd/releases/download/v${version}/fd-v${version}-x86_64-pc-windows-msvc.zip",
+                    },
+                    required = true,
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
-            url_template = "https://github.com/sharkdp/fd/releases/download/v{version}/fd-v{version}-x86_64-unknown-linux-musl.tar.gz",
+
             ["latest"] = { ref = "10.5.0" },
             ["10.5.0"] = {
                 url = "https://github.com/sharkdp/fd/releases/download/v10.5.0/fd-v10.5.0-x86_64-unknown-linux-musl.tar.gz",
@@ -33,7 +49,7 @@ package = {
             },
         },
         macosx = {
-            url_template = "https://github.com/sharkdp/fd/releases/download/v{version}/fd-v{version}-aarch64-apple-darwin.tar.gz",
+
             ["latest"] = { ref = "10.5.0" },
             ["10.5.0"] = {
                 url = "https://github.com/sharkdp/fd/releases/download/v10.5.0/fd-v10.5.0-aarch64-apple-darwin.tar.gz",
@@ -45,7 +61,7 @@ package = {
             },
         },
         windows = {
-            url_template = "https://github.com/sharkdp/fd/releases/download/v{version}/fd-v{version}-x86_64-pc-windows-msvc.zip",
+
             ["latest"] = { ref = "10.5.0" },
             ["10.5.0"] = {
                 url = "https://github.com/sharkdp/fd/releases/download/v10.5.0/fd-v10.5.0-x86_64-pc-windows-msvc.zip",

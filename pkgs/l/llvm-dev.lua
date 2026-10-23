@@ -29,6 +29,29 @@ package = {
     -- config() still registers package.name as a release anchor; see the note
     -- there for why that is required even with no program to shim.
 
+
+
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/llvm-dev/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/llvm-dev/releases/download/${version}/llvm-dev-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/llvm-dev/releases/download/${version}/llvm-dev-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- gcc-runtime, and this is the promised payoff of the #560 fix.

@@ -59,6 +59,35 @@ package = {
     -- NO `deps`. The payload is one dylib whose external references are macOS
     -- system frameworks (Metal, Foundation, IOSurface), which are the host's by
     -- definition -- there is no closure here for this index to supply.
+
+
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/moltenvk/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        macosx = {
+                            aarch64 = "https://github.com/xlings-res/moltenvk/releases/download/${version}/moltenvk-${version}-macosx-universal.tar.gz",
+                            x86_64 = "https://github.com/xlings-res/moltenvk/releases/download/${version}/moltenvk-${version}-macosx-universal.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        macosx = {
+                            aarch64 = "https://gitcode.com/xlings-res/moltenvk/releases/download/${version}/moltenvk-${version}-macosx-universal.tar.gz",
+                            x86_64 = "https://gitcode.com/xlings-res/moltenvk/releases/download/${version}/moltenvk-${version}-macosx-universal.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         macosx = {
             ["latest"] = { ref = "1.4.2" },

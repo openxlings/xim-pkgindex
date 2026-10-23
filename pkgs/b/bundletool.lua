@@ -83,6 +83,22 @@ package = {
     programs = {"bundletool"},
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/google/bundletool/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/google/bundletool/releases/download/${version}/bundletool-all-${version}.jar",
+                        macosx = "https://github.com/google/bundletool/releases/download/${version}/bundletool-all-${version}.jar",
+                        windows = "https://github.com/google/bundletool/releases/download/${version}/bundletool-all-${version}.jar",
+                    },
+                    required = true,
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
             deps = { runtime = { "xim:jdk-temurin@25.0.4+7" } },

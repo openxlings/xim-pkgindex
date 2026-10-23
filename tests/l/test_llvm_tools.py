@@ -40,7 +40,7 @@ class TestStatic:
     @pytest.mark.static
     def test_supports_macosx_arm64(self, meta):
         # Apple Silicon slim bundle, mirroring llvm.lua's macOS-ARM64 source.
-        macosx = re.search(r"macosx\s*=\s*\{(.*?)\n        \}", meta.raw_content, re.DOTALL)
+        macosx = re.search(r"macosx\s*=\s*\{(.*?)\n        \}", meta.raw_content.split("    xpm = {", 1)[1], re.DOTALL)
         assert macosx, "missing macosx xpm block"
         body = macosx.group(1)
         assert "llvm-tools-20.1.7-macosx-arm64.tar.xz" in body, \

@@ -28,9 +28,38 @@ package = {
     -- XLINGS_RES sentinel resolves to:
     --   GLOBAL → github.com/xlings-res/proot/releases/download/<ver>/...
     --   CN     → gitcode.com/xlings-res/proot/releases/download/<ver>/...
+
+
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/proot/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://github.com/xlings-res/proot/releases/download/${version}/proot-${version}-linux-x86_64.tar.gz",
+                            aarch64 = "https://github.com/xlings-res/proot/releases/download/${version}/proot-${version}-linux-aarch64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://gitcode.com/xlings-res/proot/releases/download/${version}/proot-${version}-linux-x86_64.tar.gz",
+                            aarch64 = "https://gitcode.com/xlings-res/proot/releases/download/${version}/proot-${version}-linux-aarch64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
-            url_template = "https://github.com/proot-me/proot/archive/v{version}/proot-{version}.tar.gz",
+
             ["latest"] = { ref = "5.4.0" },
             ["5.4.0"] = {
                 url = "XLINGS_RES",

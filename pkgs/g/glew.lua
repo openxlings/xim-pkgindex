@@ -54,6 +54,10 @@ package = {
 
     xvm_enable = true,
 
+    extensions = {
+
+    },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "2.2.0" },

@@ -36,7 +36,9 @@ def source_text():
     from tests.lib.platform_utils import project_root
     import os
     with open(os.path.join(project_root(), PKG_FILE), encoding="utf-8") as handle:
-        return handle.read()
+        text = handle.read()
+    # These assertions concern runtime sources, independently of CI resource templates.
+    return text.split("    xpm = {", 1)[0].split("    extensions = {", 1)[0] + "    xpm = {" + text.split("    xpm = {", 1)[1]
 
 
 class TestStatic:

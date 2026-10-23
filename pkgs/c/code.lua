@@ -129,7 +129,7 @@ function install()
         -- unzip the stable by powershell
         os.mv("stable", "stable.zip")
         -- avoid warning info by -ExecutionPolicy Bypass
-        os.exec(string.format([[powershell -ExecutionPolicy Bypass -Command "Expand-Archive -Path stable.zip -DestinationPath %s -Force"]], pkginfo.install_dir()))
+        os.exec(string.format([[powershell -ExecutionPolicy Bypass -Command "Expand-Archive -Path stable.zip -DestinationPath '%s' -Force"]], pkginfo.install_dir()))
         os.tryrm("stable.zip")
     elseif os.host() == "macosx" then
         os.exec("unzip stable")

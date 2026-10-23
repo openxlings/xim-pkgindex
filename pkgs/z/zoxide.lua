@@ -7,7 +7,7 @@ package = {
     maintainers = {"ajeetdsouza"},
     licenses = {"MIT"},
     repo = "https://github.com/ajeetdsouza/zoxide",
-    ci = { mirror = true, update = true },
+    ci = { mirror = true },
     docs = "https://github.com/ajeetdsouza/zoxide#readme",
 
     type = "package",
@@ -19,9 +19,25 @@ package = {
     programs = {"zoxide"},
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/ajeetdsouza/zoxide/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/ajeetdsouza/zoxide/releases/download/v${version}/zoxide-${version}-x86_64-unknown-linux-musl.tar.gz",
+                        macosx = "https://github.com/ajeetdsouza/zoxide/releases/download/v${version}/zoxide-${version}-aarch64-apple-darwin.tar.gz",
+                        windows = "https://github.com/ajeetdsouza/zoxide/releases/download/v${version}/zoxide-${version}-x86_64-pc-windows-msvc.zip",
+                    },
+                    required = true,
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
-            url_template = "https://github.com/ajeetdsouza/zoxide/releases/download/v{version}/zoxide-{version}-x86_64-unknown-linux-musl.tar.gz",
+
             ["latest"] = { ref = "0.10.0" },
             ["0.10.0"] = {
                 url = "https://github.com/ajeetdsouza/zoxide/releases/download/v0.10.0/zoxide-0.10.0-x86_64-unknown-linux-musl.tar.gz",
@@ -37,7 +53,7 @@ package = {
             },
         },
         macosx = {
-            url_template = "https://github.com/ajeetdsouza/zoxide/releases/download/v{version}/zoxide-{version}-aarch64-apple-darwin.tar.gz",
+
             ["latest"] = { ref = "0.10.0" },
             ["0.10.0"] = {
                 url = "https://github.com/ajeetdsouza/zoxide/releases/download/v0.10.0/zoxide-0.10.0-aarch64-apple-darwin.tar.gz",
@@ -53,7 +69,7 @@ package = {
             },
         },
         windows = {
-            url_template = "https://github.com/ajeetdsouza/zoxide/releases/download/v{version}/zoxide-{version}-x86_64-pc-windows-msvc.zip",
+
             ["latest"] = { ref = "0.10.0" },
             ["0.10.0"] = {
                 url = "https://github.com/ajeetdsouza/zoxide/releases/download/v0.10.0/zoxide-0.10.0-x86_64-pc-windows-msvc.zip",

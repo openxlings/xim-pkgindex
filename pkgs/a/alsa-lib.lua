@@ -28,6 +28,29 @@ package = {
     --
     -- See openxlings/xim-pkgindex#568.
 
+    extensions = {
+
+
+        autoupdate = {
+            source = "https://github.com/xlings-res/alsa-lib/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/alsa-lib/releases/download/${version}/alsa-lib-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/alsa-lib/releases/download/${version}/alsa-lib-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- Just glibc, and measured rather than assumed:

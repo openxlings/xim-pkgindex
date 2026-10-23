@@ -7,7 +7,7 @@ package = {
     contributors = "https://github.com/neovim/neovim/graphs/contributors",
     licenses = {"Apache-2.0"},
     repo = "https://github.com/neovim/neovim",
-    ci = { mirror = true, update = true },
+    ci = { mirror = true },
     docs = "https://neovim.io/doc",
 
     -- xim pkg info
@@ -33,6 +33,48 @@ package = {
     --
     -- The install hook relies on the tarball's own top directory (`nvim-linux-x86_64/`,
     -- `nvim-win64/`, `nvim-macos-<arch>/`), which is the same on the mirror.
+    extensions = {
+
+
+        autoupdate = {
+            source = "https://github.com/neovim/neovim/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://github.com/neovim/neovim/releases/download/v${version}/nvim-linux-arm64.tar.gz",
+                            x86_64 = "https://github.com/neovim/neovim/releases/download/v${version}/nvim-linux-x86_64.tar.gz",
+                        },
+                        macosx = {
+                            x86_64 = "https://github.com/neovim/neovim/releases/download/v${version}/nvim-macos-x86_64.tar.gz",
+                            aarch64 = "https://github.com/neovim/neovim/releases/download/v${version}/nvim-macos-arm64.tar.gz",
+                        },
+                        windows = {
+                            x86_64 = "https://github.com/neovim/neovim/releases/download/v${version}/nvim-win64.zip",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://gitcode.com/xlings-res/nvim/releases/download/${version}/nvim-linux-arm64.tar.gz",
+                            x86_64 = "https://gitcode.com/xlings-res/nvim/releases/download/${version}/nvim-linux-x86_64.tar.gz",
+                        },
+                        macosx = {
+                            x86_64 = "https://gitcode.com/xlings-res/nvim/releases/download/${version}/nvim-macos-x86_64.tar.gz",
+                            aarch64 = "https://gitcode.com/xlings-res/nvim/releases/download/${version}/nvim-macos-arm64.tar.gz",
+                        },
+                        windows = {
+                            x86_64 = "https://gitcode.com/xlings-res/nvim/releases/download/${version}/nvim-win64.zip",
+                        },
+                    },
+                    required = true,
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
             -- Runtime deps. nvim prebuilt (nvim-linux-x86_64.tar.gz)

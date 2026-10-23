@@ -39,6 +39,33 @@ package = {
     -- xvm: xlings version management
     xvm_enable = true,
 
+
+
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/riscv64-linux-musl-gcc/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://github.com/xlings-res/riscv64-linux-musl-gcc/releases/download/${version}/riscv64-linux-musl-gcc-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://gitcode.com/xlings-res/riscv64-linux-musl-gcc/releases/download/${version}/riscv64-linux-musl-gcc-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- No deps: a fully self-contained toolchain. The single host asset

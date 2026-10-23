@@ -49,6 +49,33 @@ package = {
     -- mcpp probes first.
     --
     -- See mcpp .agents/docs/2026-08-03-windows-host-linux-cross-design.md.
+
+
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/x86_64-linux-musl-gcc/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        windows = {
+                            x86_64 = "https://github.com/xlings-res/x86_64-linux-musl-gcc/releases/download/${version}/x86_64-linux-musl-gcc-${version}-windows-x86_64.zip",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        windows = {
+                            x86_64 = "https://gitcode.com/xlings-res/x86_64-linux-musl-gcc/releases/download/${version}/x86_64-linux-musl-gcc-${version}-windows-x86_64.zip",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         windows = {
             ["latest"] = { ref = "16.1.0" },

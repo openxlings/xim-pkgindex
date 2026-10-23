@@ -29,6 +29,48 @@ package = {
     programs = {"opencode"},
     xvm_enable = true,
 
+
+
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/sst/opencode/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://github.com/sst/opencode/releases/download/v${version}/opencode-linux-x64.tar.gz",
+                            aarch64 = "https://github.com/sst/opencode/releases/download/v${version}/opencode-linux-arm64.tar.gz",
+                        },
+                        macosx = {
+                            x86_64 = "https://github.com/sst/opencode/releases/download/v${version}/opencode-darwin-x64.zip",
+                            aarch64 = "https://github.com/sst/opencode/releases/download/v${version}/opencode-darwin-arm64.zip",
+                        },
+                        windows = {
+                            x86_64 = "https://github.com/sst/opencode/releases/download/v${version}/opencode-windows-x64.zip",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://gitcode.com/xlings-res/opencode/releases/download/${version}/opencode-linux-x64.tar.gz",
+                            aarch64 = "https://gitcode.com/xlings-res/opencode/releases/download/${version}/opencode-linux-arm64.tar.gz",
+                        },
+                        macosx = {
+                            x86_64 = "https://gitcode.com/xlings-res/opencode/releases/download/${version}/opencode-darwin-x64.zip",
+                            aarch64 = "https://gitcode.com/xlings-res/opencode/releases/download/${version}/opencode-darwin-arm64.zip",
+                        },
+                        windows = {
+                            x86_64 = "https://gitcode.com/xlings-res/opencode/releases/download/${version}/opencode-windows-x64.zip",
+                        },
+                    },
+                    required = true,
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
             deps = { "xim:glibc@>=2.39" },

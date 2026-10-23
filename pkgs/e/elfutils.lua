@@ -15,6 +15,27 @@ package = {
     categories = {"graphics", "lib"},
     keywords = {"elfutils", "graphics", "gl"},
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/elfutils/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/elfutils/releases/download/${version}/elfutils-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/elfutils/releases/download/${version}/elfutils-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             deps = { "xim:zlib@>=1.2", "xim:glibc@>=2.38" },

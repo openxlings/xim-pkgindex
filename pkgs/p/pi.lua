@@ -21,6 +21,31 @@ package = {
     programs = {"pi"},
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/earendil-works/pi/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://github.com/earendil-works/pi/releases/download/v${version}/pi-linux-x64.tar.gz",
+                            aarch64 = "https://github.com/earendil-works/pi/releases/download/v${version}/pi-linux-arm64.tar.gz",
+                        },
+                        macosx = {
+                            x86_64 = "https://github.com/earendil-works/pi/releases/download/v${version}/pi-darwin-x64.tar.gz",
+                            aarch64 = "https://github.com/earendil-works/pi/releases/download/v${version}/pi-darwin-arm64.tar.gz",
+                        },
+                        windows = {
+                            x86_64 = "https://github.com/earendil-works/pi/releases/download/v${version}/pi-windows-x64.zip",
+                            aarch64 = "https://github.com/earendil-works/pi/releases/download/v${version}/pi-windows-arm64.zip",
+                        },
+                    },
+                    required = true,
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
             source = "https://github.com/earendil-works/pi/releases/download/v${version}/pi-linux-${arch_alias}.tar.gz",

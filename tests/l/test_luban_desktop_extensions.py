@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[2]
-REGISTERED = {"luban"}           # xpkg spec §3.1's registry
+REGISTERED = {"luban", "autoupdate"}           # xpkg spec §3.1's registry
 DESKTOPS = ["compositor", "labwc", "lxqt", "kde", "xdesk"]
 
 # Loads a recipe the way the catalog does (import() a no-op) and prints its

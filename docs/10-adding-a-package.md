@@ -67,6 +67,20 @@ Every architecture has its sha256. Without an authoritative hash, keep the old
 form until the resource and its sidecar exist; never publish a new official
 binary without one.
 
+## Automatic updates for new packages
+
+Copy the `package.extensions.autoupdate` template from
+[CI: Mirror and Update](13-ci-mirror-and-update.md), then replace its source and
+asset URLs with verified project paths and cover every supported platform/architecture.
+We recommend this for upstream GitHub repositories with **at least 50 stars**;
+this is guidance, not an enforced threshold. Packages can remain manually maintained.
+
+The index scans every three days, selects the newest version satisfying all required
+resources, and opens a PR for review. Existing version entries and hooks are preserved.
+GLOBAL works alone; add a verified CN mirror as required by default, or explicitly
+optional after review. Follow that chapter's local checks; CI generates coverage
+from the recipes. Keep manual-maintenance reasons in a recipe comment or the PR.
+
 ## The hooks
 
 ```lua
@@ -147,7 +161,7 @@ deps = {
 ## Test it locally
 
 ```bash
-python3 .github/scripts/version-check.py --workspace .
+xpkgindex-update inspect
 pytest tests/<letter>/test_<name>.py -m "static or isolation"
 ```
 

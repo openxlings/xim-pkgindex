@@ -56,6 +56,32 @@ package = {
     programs = {"kotlinc", "kotlin"},
     xvm_enable = true,
 
+
+
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/JetBrains/kotlin/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/JetBrains/kotlin/releases/download/v${version}/kotlin-compiler-${version}.zip",
+                        macosx = "https://github.com/JetBrains/kotlin/releases/download/v${version}/kotlin-compiler-${version}.zip",
+                        windows = "https://github.com/JetBrains/kotlin/releases/download/v${version}/kotlin-compiler-${version}.zip",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/kotlin/releases/download/${version}/kotlin-compiler-${version}.zip",
+                        macosx = "https://gitcode.com/xlings-res/kotlin/releases/download/${version}/kotlin-compiler-${version}.zip",
+                        windows = "https://gitcode.com/xlings-res/kotlin/releases/download/${version}/kotlin-compiler-${version}.zip",
+                    },
+                    required = true,
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
             deps = { runtime = { "xim:jdk-temurin@25.0.4+7" } },

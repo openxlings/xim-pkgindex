@@ -7,7 +7,7 @@ package = {
     maintainers = {"Astral"},
     licenses = {"MIT", "Apache-2.0"},
     repo = "https://github.com/astral-sh/uv",
-    ci = { mirror = true, update = true },
+    ci = { mirror = true },
     docs = "https://docs.astral.sh/uv",
 
     type = "package",
@@ -18,6 +18,30 @@ package = {
 
     programs = {"uv", "uvx"},
     xvm_enable = true,
+
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/astral-sh/uv/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/astral-sh/uv/releases/download/${version}/uv-x86_64-unknown-linux-musl.tar.gz",
+                        macosx = "https://github.com/astral-sh/uv/releases/download/${version}/uv-aarch64-apple-darwin.tar.gz",
+                        windows = "https://github.com/astral-sh/uv/releases/download/${version}/uv-x86_64-pc-windows-msvc.zip",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://mirrors.ustc.edu.cn/github-release/astral-sh/uv/${version}/uv-x86_64-unknown-linux-musl.tar.gz",
+                        macosx = "https://mirrors.ustc.edu.cn/github-release/astral-sh/uv/${version}/uv-aarch64-apple-darwin.tar.gz",
+                        windows = "https://mirrors.ustc.edu.cn/github-release/astral-sh/uv/${version}/uv-x86_64-pc-windows-msvc.zip",
+                    },
+                    required = true,
+                },
+            },
+        },
+    },
 
     xpm = {
         linux = {
@@ -37,7 +61,7 @@ package = {
             -- version when proposing a bump. xlings install does not read
             -- this field; it stays on the explicit per-version `url`.
             -- See docs/spec/url-template.md.
-            url_template = "https://github.com/astral-sh/uv/releases/download/{version}/uv-x86_64-unknown-linux-musl.tar.gz",
+
             ["latest"] = { ref = "0.12.7" },
             ["0.12.7"] = {
                 url = "https://github.com/astral-sh/uv/releases/download/0.12.7/uv-x86_64-unknown-linux-musl.tar.gz",
@@ -61,7 +85,7 @@ package = {
         -- which is what we ship. Intel-Mac users would need a separate
         -- per-arch dispatch (xpm doesn't natively branch on arch yet).
         macosx = {
-            url_template = "https://github.com/astral-sh/uv/releases/download/{version}/uv-aarch64-apple-darwin.tar.gz",
+
             ["latest"] = { ref = "0.12.7" },
             ["0.12.7"] = {
                 url = "https://github.com/astral-sh/uv/releases/download/0.12.7/uv-aarch64-apple-darwin.tar.gz",
@@ -81,7 +105,7 @@ package = {
             },
         },
         windows = {
-            url_template = "https://github.com/astral-sh/uv/releases/download/{version}/uv-x86_64-pc-windows-msvc.zip",
+
             ["latest"] = { ref = "0.12.7" },
             ["0.12.7"] = {
                 url = "https://github.com/astral-sh/uv/releases/download/0.12.7/uv-x86_64-pc-windows-msvc.zip",

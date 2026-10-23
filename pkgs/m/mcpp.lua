@@ -16,7 +16,7 @@ package = {
     maintainers = {"https://github.com/mcpp-community/mcpp/graphs/contributors"},
     licenses = {"Apache-2.0"},
     repo = "https://github.com/mcpp-community/mcpp",
-    ci = { update = true },
+    ci = {  },
     homepage = "https://github.com/mcpp-community/mcpp",
     docs = "https://github.com/mcpp-community/mcpp#readme",
 
@@ -45,12 +45,53 @@ package = {
     --   LICENSE, README.md
     -- xvm registers `bindir = <install>/bin` so the binary is invoked
     -- directly; the shell launcher is only useful from the bundle root.
+
+
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/mcpp/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://github.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://github.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-linux-x86_64.tar.gz",
+                        },
+                        macosx = {
+                            aarch64 = "https://github.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-macosx-arm64.tar.gz",
+                        },
+                        windows = {
+                            x86_64 = "https://github.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-windows-x86_64.zip",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://gitcode.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://gitcode.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-linux-x86_64.tar.gz",
+                        },
+                        macosx = {
+                            aarch64 = "https://gitcode.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-macosx-arm64.tar.gz",
+                        },
+                        windows = {
+                            x86_64 = "https://gitcode.com/xlings-res/mcpp/releases/download/${version}/mcpp-${version}-windows-x86_64.zip",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         source = "xlings-res",
         linux = {
             -- res_versioned: version-bump bot tracks mcpp-community/mcpp releases
             -- and appends checked XLINGS_RES entries (see version-check.py).
-            res_versioned = true,
+
             ["latest"] = { ref = "2026.10.21.1" },
             ["2026.10.21.1"] = {
                 url = "XLINGS_RES",
@@ -1356,7 +1397,7 @@ package = {
         macosx = {
             -- res_versioned: version-bump bot tracks mcpp-community/mcpp releases
             -- and appends checked XLINGS_RES entries (see version-check.py).
-            res_versioned = true,
+
             ["latest"] = { ref = "2026.10.21.1" },
             ["2026.10.21.1"] = {
                 url = "XLINGS_RES",
@@ -2473,7 +2514,7 @@ package = {
         windows = {
             -- res_versioned: version-bump bot tracks mcpp-community/mcpp releases
             -- and appends checked XLINGS_RES entries (see version-check.py).
-            res_versioned = true,
+
             ["latest"] = { ref = "2026.10.21.1" },
             ["2026.10.21.1"] = {
                 url = "XLINGS_RES",

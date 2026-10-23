@@ -9,7 +9,7 @@ package = {
     licenses = {"GPL-2.0-only"},
     repo = "https://github.com/xpack-dev-tools/qemu-riscv-xpack",
     docs = "https://xpack-dev-tools.github.io/qemu-riscv-xpack/",
-    ci = { mirror = true, update = true },
+    ci = { mirror = true },
 
     type = "package",
     archs = {"x86_64", "aarch64"},

@@ -9,7 +9,7 @@ package = {
     licenses = {"GPL-2.0-only"},
     repo = "https://github.com/multiarch/qemu-user-static",
     docs = "https://github.com/multiarch/qemu-user-static#readme",
-    ci = { mirror = true, update = true },
+    ci = { mirror = true },
 
     type = "package",
     -- x86_64 only, and that is the whole point rather than a gap: this is
@@ -61,6 +61,21 @@ package = {
     -- an alpha segment sorts BELOW the plain one -- `2.44r1` was measured to
     -- be a pre-release of 2.44 to every range expression (see glibc.lua). The
     -- upstream tag is carried in `source` instead, where nothing sorts it.
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/multiarch/qemu-user-static/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/multiarch/qemu-user-static/releases/download/v${version}-1/x86_64_qemu-aarch64-static.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            tag = "v${version}-1",
+        },
+    },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "7.2.0" },

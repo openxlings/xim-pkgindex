@@ -88,7 +88,7 @@ function config_file_check()
 
     if not os.isfile(get_git_autosync_sh_file()) then
         io.writefile(get_git_autosync_sh_file(), __git_autosync_sh)
-        os.exec(string.format("chmod +x %s", get_git_autosync_sh_file()))
+        os.exec(string.format('chmod +x "%s"', get_git_autosync_sh_file()))
     end
 
     if not os.isfile(get_crontab_file()) then
@@ -160,7 +160,7 @@ end
 function sync_to_system()
     -- sync to /etc/cron.d
     log.warn("Updating system crontab, you may be asked for your password...")
-    system.exec(string.format("sudo cp -f %s /etc/cron.d/git-autosync-crontab", get_crontab_file()))  -- elevation-ok: the system crontab is changed when a person asks for it, at their terminal
+    system.exec(string.format('sudo cp -f "%s" /etc/cron.d/git-autosync-crontab', get_crontab_file()))  -- elevation-ok: the system crontab is changed when a person asks for it, at their terminal
     system.exec("sudo chmod 644 /etc/cron.d/git-autosync-crontab")  -- elevation-ok: the system crontab is changed when a person asks for it, at their terminal
     system.exec("sudo systemctl restart cron")  -- elevation-ok: the system crontab is changed when a person asks for it, at their terminal
 end
@@ -226,7 +226,7 @@ function action_sync(cmds)
 
         if not os.isdir(repo_dir) then
             log.info("Cloning repository %s into %s", git_url, repo_dir)
-            os.exec(string.format("git clone --recursive %s %s", git_url, repo_dir))
+            os.exec(string.format('git clone --recursive "%s" "%s"', git_url, repo_dir))
         else
             log.info("Pulling latest changes for repository %s", git_url)
             os.cd(repo_dir)
@@ -350,7 +350,7 @@ function xpkg_main(action, projectdir, ...)
         log.info("Task for project dir [ %s ] removed!", cmds["--project-dir"])
     elseif action == "log" then
         if os.isfile(get_log_file()) then
-            os.exec(string.format("tail -n 100 %s", get_log_file()))
+            os.exec(string.format('tail -n 100 "%s"', get_log_file()))
         else
             log.warn("Log file does not exist!")
         end

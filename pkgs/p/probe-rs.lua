@@ -9,7 +9,7 @@ package = {
     licenses = {"Apache-2.0", "MIT"},
     repo = "https://github.com/probe-rs/probe-rs",
     docs = "https://probe.rs/docs/",
-    ci = { mirror = true, update = true },
+    ci = { mirror = true },
 
     type = "package",
     archs = {"x86_64", "aarch64"},
@@ -50,6 +50,48 @@ package = {
     -- ⚠️ NO win32-arm64 ASSET. `archs` above is the union across platforms and
     -- arch resolution is fail-closed, so an arm64 Windows host is told the arch
     -- is unavailable rather than handed the x64 archive.
+
+
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/probe-rs/probe-rs/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://github.com/probe-rs/probe-rs/releases/download/v${version}/probe-rs-tools-x86_64-unknown-linux-gnu.tar.xz",
+                            aarch64 = "https://github.com/probe-rs/probe-rs/releases/download/v${version}/probe-rs-tools-aarch64-unknown-linux-gnu.tar.xz",
+                        },
+                        macosx = {
+                            x86_64 = "https://github.com/probe-rs/probe-rs/releases/download/v${version}/probe-rs-tools-x86_64-apple-darwin.tar.xz",
+                            aarch64 = "https://github.com/probe-rs/probe-rs/releases/download/v${version}/probe-rs-tools-aarch64-apple-darwin.tar.xz",
+                        },
+                        windows = {
+                            x86_64 = "https://github.com/probe-rs/probe-rs/releases/download/v${version}/probe-rs-tools-x86_64-pc-windows-msvc.zip",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://gitcode.com/xlings-res/probe-rs/releases/download/${version}/probe-rs-tools-x86_64-unknown-linux-gnu.tar.xz",
+                            aarch64 = "https://gitcode.com/xlings-res/probe-rs/releases/download/${version}/probe-rs-tools-aarch64-unknown-linux-gnu.tar.xz",
+                        },
+                        macosx = {
+                            x86_64 = "https://gitcode.com/xlings-res/probe-rs/releases/download/${version}/probe-rs-tools-x86_64-apple-darwin.tar.xz",
+                            aarch64 = "https://gitcode.com/xlings-res/probe-rs/releases/download/${version}/probe-rs-tools-aarch64-apple-darwin.tar.xz",
+                        },
+                        windows = {
+                            x86_64 = "https://gitcode.com/xlings-res/probe-rs/releases/download/${version}/probe-rs-tools-x86_64-pc-windows-msvc.zip",
+                        },
+                    },
+                    required = true,
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
             -- `deps` is deliberately EMPTY. The binary is a Rust build against

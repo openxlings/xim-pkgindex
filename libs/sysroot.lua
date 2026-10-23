@@ -488,7 +488,7 @@ function sysroot.relocate_pkgconfig(install_dir, src_rel)
                 seds[#seds + 1] = string.format("-e \"s|-L/usr/lib|-L%s/lib|g\"", install_dir)
                 seds[#seds + 1] = string.format("-e \"s|-I/usr/include|-I%s/include|g\"", install_dir)
 
-                system.exec(string.format("sh -c 'sed -i %s \"%s\"'",
+                system.exec(string.format("sh -c 'sed -i %s \"%s\"'",  -- exec-quoting-ok: the seds are quoted where they are built
                     table.concat(seds, " "), pc))
             end
         end
@@ -557,7 +557,7 @@ function sysroot.relocate_pkgconfig(install_dir, src_rel)
                 end
                 table.sort(drop)
                 for _, var in ipairs(drop) do
-                    system.exec(string.format("sh -c 'sed -i \"/^%s=/d\" \"%s\"'", var, pc))
+                    system.exec(string.format("sh -c 'sed -i \"/^%s=/d\" \"%s\"'", var, pc))  -- exec-quoting-ok: a .pc variable name
                 end
             end
         end
@@ -648,7 +648,7 @@ function sysroot.declare_pkgconfig(install_dir, src_rel, binding)
     local sysroot_pc = path.join(system.subos_sysrootdir(), "usr/lib/pkgconfig")
     os.mkdir(sysroot_pc)
     system.exec(string.format(
-        "sh -c 'for pc in %s/%s/*.pc; do [ -f \"$pc\" ] && cp -f \"$pc\" %s/; done'",
+        "sh -c 'for pc in \"%s\"/\"%s\"/*.pc; do [ -f \"$pc\" ] && cp -f \"$pc\" \"%s\"/; done'",
         install_dir, src_rel, sysroot_pc))
     return true
 end

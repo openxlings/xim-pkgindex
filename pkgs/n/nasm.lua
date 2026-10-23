@@ -49,6 +49,10 @@ package = {
     --     (nasm-<ver>.tar.xz) as fully-static musl binaries (musl-gcc /
     --     aarch64-linux-musl-gcc, `-O2 -static`, stripped), so they are
     --     portable across distributions with no glibc runtime dep.
+    extensions = {
+
+    },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "3.02" },

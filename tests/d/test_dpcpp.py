@@ -105,7 +105,8 @@ class TestPlatforms:
         code = _code(meta.raw_content)
         assert re.search(r'if is_host\("linux"\) then patch_program_rpaths\(dir\) end', code), \
             "the rpath rewrite is not guarded by the host"
-        linux_block = code[code.index("linux = {"):code.index("windows = {")]
+        xpm = code[code.index("    xpm = {"):]
+        linux_block = xpm[xpm.index("linux = {"):xpm.index("windows = {")]
         assert "xim:patchelf" in linux_block, "patchelf is no longer a linux build dep"
         windows_block = code[code.index("windows = {"):]
         assert "patchelf" not in windows_block.split("}")[0], \

@@ -20,6 +20,27 @@ package = {
     categories = {"lib"},
     keywords = {"libbsd", "bsd", "err", "setproctitle", "strlcpy", "queue", "lib"},
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/libbsd/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/libbsd/releases/download/${version}/libbsd-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/libbsd/releases/download/${version}/libbsd-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             deps = { "xim:glibc", "xim:libmd@>=1.2.0" },

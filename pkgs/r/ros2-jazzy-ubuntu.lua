@@ -73,7 +73,7 @@ function install()
     -- 4. install ROS 2 desktop (full)
     log.debug("Installing ros-jazzy-desktop (this may take a while)...")
     system.exec([[sudo apt update]])  -- elevation-ok: this package is the host's apt installing ROS 2
-    system.exec(string.format([[sudo apt install -y ros-%s-desktop]], ROS_DISTRO))  -- elevation-ok: this package is the host's apt installing ROS 2
+    system.exec(string.format([[sudo apt install -y ros-%s-desktop]], ROS_DISTRO))  -- exec-quoting-ok: a ROS distribution name  -- elevation-ok: this package is the host's apt installing ROS 2
 
     -- 5. install dev tools
     log.debug("Installing ros-dev-tools...")
@@ -96,7 +96,7 @@ end
 
 function uninstall()
     log.debug("Removing all ros-jazzy packages...")
-    system.exec(string.format([[sudo apt remove -y '~nros-%s-*']], ROS_DISTRO))  -- elevation-ok: this package is the host's apt installing ROS 2
+    system.exec(string.format([[sudo apt remove -y '~nros-%s-*']], ROS_DISTRO))  -- exec-quoting-ok: a ROS distribution name  -- elevation-ok: this package is the host's apt installing ROS 2
     log.debug("Removing ros2-apt-source...")
     system.exec([[sudo apt remove -y ros2-apt-source]])  -- elevation-ok: this package is the host's apt installing ROS 2
     log.debug("Refreshing package index...")

@@ -27,6 +27,26 @@ package = {
     -- skips files whose extension isn't a recognised compressed format, so
     -- the install_file landing in runtimedir is the binary itself — we just
     -- need to move it into install_dir and chmod +x it on Unix.
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/jqlang/jq/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://github.com/jqlang/jq/releases/download/jq-${version}/jq-linux-arm64",
+                            x86_64 = "https://github.com/jqlang/jq/releases/download/jq-${version}/jq-linux-amd64",
+                        },
+                        macosx = "https://github.com/jqlang/jq/releases/download/jq-${version}/jq-macos-arm64",
+                        windows = "https://github.com/jqlang/jq/releases/download/jq-${version}/jq-windows-amd64.exe",
+                    },
+                    required = true,
+                },
+            },
+            tag = "jq-${version}",
+        },
+    },
+
     xpm = {
         linux = {
             ["latest"] = { ref = "1.8.2" },

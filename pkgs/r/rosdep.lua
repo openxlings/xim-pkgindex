@@ -18,6 +18,8 @@ package = {
     programs = {"rosdep", "rosdep-source"},
     xvm_enable = true,
 
+
+
     xpm = {
         linux = {
             deps = {"xim:python"},

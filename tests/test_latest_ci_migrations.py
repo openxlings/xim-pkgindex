@@ -1,29 +1,34 @@
-"""Regression coverage for packages migrated to the current CI contract."""
-
+"""The legacy update contract is retired; package declarations remain authoritative."""
 from pathlib import Path
 
 import pytest
 
-
 ROOT = Path(__file__).parents[1]
-PACKAGES = ("fish", "griddycode", "nvim", "pnpm")
 
 
 @pytest.mark.static
-@pytest.mark.parametrize("package", PACKAGES)
-def test_package_uses_v2_and_ci_mirror_update(package):
-    path = next((ROOT / "pkgs").glob(f"*/{package}.lua"))
-    text = path.read_text(encoding="utf-8")
-
-    assert 'spec = "2"' in text
-    assert "ci = { mirror = true, update = true }" in text
+@pytest.mark.parametrize('package', ('fish', 'griddycode'))
+def test_existing_mirror_packages_use_the_unified_declaration(package):
+    text = (ROOT / 'pkgs' / package[0] / (package + '.lua')).read_text()
+    assert 'mirror = true' in text
+    assert 'autoupdate = {' in text
+    assert 'update = true' not in text
 
 
 @pytest.mark.static
-@pytest.mark.parametrize("package", PACKAGES)
-def test_package_keeps_update_source_contract(package):
-    path = next((ROOT / "pkgs").glob(f"*/{package}.lua"))
-    text = path.read_text(encoding="utf-8")
+def test_legacy_executable_entry_points_are_removed():
+    for name in ('.github/scripts/version-check.py', '.github/workflows/version-check.yml',
+                 '.github/workflows/version-bump.yml', '.github/xpkg-ci.yml'):
+        assert not (ROOT / name).exists()
+    mirror = (ROOT / 'tools/xpkg_ci.py').read_text()
+    assert 'load_vcheck' not in mirror and 'def cmd_scan' not in mirror and 'def cmd_propose' not in mirror
 
-    assert ("url_template" in text or "source = {" in text)
-    assert ("{version}" in text or "${version}" in text)
+
+@pytest.mark.static
+def test_cn_package_uses_dual_required_targets_and_keeps_publication():
+    text = (ROOT / 'pkgs/p/pnpm.lua').read_text()
+    declaration = text.split('autoupdate = {', 1)[1].split('xpm = {', 1)[0]
+    assert 'GLOBAL = {' in declaration and 'CN = {' in declaration
+    assert declaration.count('required = true') == 2
+    assert 'mirror = true' in text
+    assert 'autoupdate = {' in text

@@ -203,6 +203,49 @@ package = {
     status = "stable", -- dev, stable, deprecated
     categories = {"node", "javascript"},
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/nodejs/node/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://nodejs.org/dist/v${version}/node-v${version}-linux-x64.tar.xz",
+                            aarch64 = "https://nodejs.org/dist/v${version}/node-v${version}-linux-arm64.tar.xz",
+                        },
+                        macosx = {
+                            x86_64 = "https://nodejs.org/dist/v${version}/node-v${version}-darwin-x64.tar.gz",
+                            aarch64 = "https://nodejs.org/dist/v${version}/node-v${version}-darwin-arm64.tar.gz",
+                        },
+                        windows = {
+                            x86_64 = "https://nodejs.org/dist/v${version}/node-v${version}-win-x64.zip",
+                            aarch64 = "https://nodejs.org/dist/v${version}/node-v${version}-win-arm64.zip",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://mirrors.ustc.edu.cn/node/v${version}/node-v${version}-linux-x64.tar.xz",
+                            aarch64 = "https://mirrors.ustc.edu.cn/node/v${version}/node-v${version}-linux-arm64.tar.xz",
+                        },
+                        macosx = {
+                            x86_64 = "https://mirrors.ustc.edu.cn/node/v${version}/node-v${version}-darwin-x64.tar.gz",
+                            aarch64 = "https://mirrors.ustc.edu.cn/node/v${version}/node-v${version}-darwin-arm64.tar.gz",
+                        },
+                        windows = {
+                            x86_64 = "https://mirrors.ustc.edu.cn/node/v${version}/node-v${version}-win-x64.zip",
+                            aarch64 = "https://mirrors.ustc.edu.cn/node/v${version}/node-v${version}-win-arm64.zip",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            latest = "keep",
+        },
+    },
+
     xpm = {
         -- `latest` tracks the ACTIVE LTS line (24.x "Krypton"), not the newest
         -- release: an unpinned `xlings install node` should get the line node

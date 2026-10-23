@@ -20,9 +20,25 @@ package = {
     programs = {"gh", "github-gh"},
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/cli/cli/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/cli/cli/releases/download/v${version}/gh_${version}_linux_amd64.tar.gz",
+                        macosx = "https://github.com/cli/cli/releases/download/v${version}/gh_${version}_macOS_amd64.zip",
+                        windows = "https://github.com/cli/cli/releases/download/v${version}/gh_${version}_windows_amd64.zip",
+                    },
+                    required = true,
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
-            url_template = "https://github.com/cli/cli/releases/download/v{version}/gh_{version}_linux_amd64.tar.gz",
+
             ["latest"] = { ref = "2.92.0" },
             ["2.92.0"] = {
                 url = "https://github.com/cli/cli/releases/download/v2.92.0/gh_2.92.0_linux_amd64.tar.gz",
@@ -39,7 +55,7 @@ package = {
             -- ["2.86.0"] = "XLINGS_RES",
         },
         macosx = {
-            url_template = "https://github.com/cli/cli/releases/download/v{version}/gh_{version}_macOS_amd64.zip",
+
             ["latest"] = { ref = "2.92.0" },
             ["2.92.0"] = {
                 url = "https://github.com/cli/cli/releases/download/v2.92.0/gh_2.92.0_macOS_amd64.zip",
@@ -56,7 +72,7 @@ package = {
             -- ["2.86.0"] = "XLINGS_RES",
         },
         windows = {
-            url_template = "https://github.com/cli/cli/releases/download/v{version}/gh_{version}_windows_amd64.zip",
+
             ["latest"] = { ref = "2.92.0" },
             ["2.92.0"] = {
                 url = "https://github.com/cli/cli/releases/download/v2.92.0/gh_2.92.0_windows_amd64.zip",

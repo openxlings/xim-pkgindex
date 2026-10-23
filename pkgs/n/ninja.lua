@@ -19,6 +19,47 @@ package = {
     -- xvm: xlings version management
     xvm_enable = true,
 
+
+
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/ninja/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://github.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-linux-x86_64.tar.gz",
+                            aarch64 = "https://github.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-linux-aarch64.tar.gz",
+                        },
+                        macosx = {
+                            aarch64 = "https://github.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-macosx-arm64.tar.gz",
+                        },
+                        windows = {
+                            x86_64 = "https://github.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-windows-x86_64.zip",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://gitcode.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-linux-x86_64.tar.gz",
+                            aarch64 = "https://gitcode.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-linux-aarch64.tar.gz",
+                        },
+                        macosx = {
+                            aarch64 = "https://gitcode.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-macosx-arm64.tar.gz",
+                        },
+                        windows = {
+                            x86_64 = "https://gitcode.com/xlings-res/ninja/releases/download/${version}/ninja-${version}-windows-x86_64.zip",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- Self-contained, no runtime deps (mirrors patchelf.lua, the other

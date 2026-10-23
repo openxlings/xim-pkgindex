@@ -237,7 +237,7 @@ def main() -> int:
         )
         record = mod.inspect_package(p)
         assert record["mirror"] is True
-        assert record["update"] is True
+        assert "update" not in record
         assert record["source"] is None
 
         mapped = Path(d) / "mapped.lua"

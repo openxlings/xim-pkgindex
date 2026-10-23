@@ -13,6 +13,29 @@ package = {
     keywords = {"datrie", "trie", "text", "lib"},
     programs = {"trietool"},
     xvm_enable = true,
+
+
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/libdatrie/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/libdatrie/releases/download/${version}/libdatrie-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/libdatrie/releases/download/${version}/libdatrie-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- Here for libthai, which is here for pango. Upstream ships source

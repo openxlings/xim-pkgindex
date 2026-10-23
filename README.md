@@ -36,6 +36,10 @@ Browse every package, its versions and commands at
 2. Add `tests/<first letter>/test_<name>.py`.
 3. Open a pull request — [Adding a package](docs/10-adding-a-package.md) is the whole path.
 
+New packages can opt into [automatic updates](docs/13-ci-mirror-and-update.md)
+with a fixed declaration template. We recommend upstream GitHub repositories with
+at least 50 stars; this is guidance, not a required threshold.
+
 The format is [XPackage V2](docs/specs/xpackage-v2.md); all documentation is in
 [docs/](docs/README.md).
 

@@ -16,6 +16,35 @@ package = {
 
     xvm_enable = true,
 
+
+
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/libcups/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://github.com/xlings-res/libcups/releases/download/${version}/libcups-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://github.com/xlings-res/libcups/releases/download/${version}/libcups-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = {
+                            aarch64 = "https://gitcode.com/xlings-res/libcups/releases/download/${version}/libcups-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://gitcode.com/xlings-res/libcups/releases/download/${version}/libcups-${version}-linux-x86_64.tar.gz",
+                        },
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             -- DT_NEEDED outside the payload (readelf -d): libgssapi_krb5, libkrb5, libk5crypto, libcom_err, libz.

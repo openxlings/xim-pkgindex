@@ -91,7 +91,7 @@ function config()
         -- Use shell cp via system.exec so behavior is consistent with how
         -- other xpkgs stage files into the sysroot (the xpkg sandbox's
         -- builtin os.cp dest-as-dir semantics is unreliable for some hosts).
-        system.exec(string.format("cp -f %s %s", pem_src, pem_dst))
+        system.exec(string.format('cp -f "%s" "%s"', pem_src, pem_dst))
     end
 
     -- The alias below needs its directory either way.
@@ -101,7 +101,7 @@ function config()
     -- toolchains) that look there. Use a relative symlink so the link
     -- stays valid even if the sysroot is later relocated.
     os.tryrm(pem_link)
-    system.exec(string.format("ln -sf certs/%s %s",
+    system.exec(string.format('ln -sf certs/"%s" "%s"',
         _CANONICAL_BUNDLE, pem_link))
 
     log.info("CA bundle installed: %s", pem_dst)

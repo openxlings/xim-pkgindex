@@ -35,6 +35,10 @@ jobs:
       - name: Host dependencies (tools/lint_host_deps.sh)
         run: bash tools/lint_host_deps.sh
 
+      # A value a recipe hands to a shell is quoted (mcpp#832).
+      - name: Exec quoting (tools/lint_exec_quoting.sh)
+        run: bash tools/lint_exec_quoting.sh
+
       - name: Pointer history retention policy
         run: python3 tests/scripts/test_index_pointer_history.py
 

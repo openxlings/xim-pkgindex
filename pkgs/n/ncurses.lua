@@ -44,6 +44,29 @@ package = {
     -- patches/ncurses-6.5-no-config-script-install.patch (the ncurses6-config
     -- script hard-codes host prefixes and is exactly what the payload check
     -- rejects; consumers use the .pc files instead).
+
+
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/xlings-res/ncurses/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/xlings-res/ncurses/releases/download/${version}/ncurses-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/ncurses/releases/download/${version}/ncurses-${version}-linux-x86_64.tar.gz",
+                    },
+                    required = true,
+                },
+            },
+            verify = "sha256-sidecar",
+        },
+    },
+
     xpm = {
         linux = {
             deps = { "xim:glibc" },
