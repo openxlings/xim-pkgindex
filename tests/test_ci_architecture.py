@@ -231,3 +231,20 @@ def test_readme_translation_changes_receive_documentation_validation():
     assert p['flags']['site_check']
     assert p['install_matrix']['include'] == []
     assert module('ci-publication-scope').selected(['README.zh.md'], 'site')
+
+
+def test_a_large_install_plan_is_sharded(monkeypatch):
+    monkeypatch.setattr(planner, 'supported_platforms', lambda src: {'linux'})
+    files = {f'pkgs/p/p{i:03}.lua': pkg() for i in range(planner.INSTALL_SHARD_SIZE * 2 + 1)}
+    p = planner.plan(sorted(files), {}, files, PROFILES)
+    shards = p['install_matrix']['include']
+    assert [s['shard'] for s in shards] == ['1/3', '2/3', '3/3']
+    planned = [f for s in shards for f in s['files'].split()]
+    assert sorted(planned) == sorted(files)
+    assert max(len(s['files'].split()) for s in shards) <= planner.INSTALL_SHARD_SIZE
+
+
+def test_a_small_install_plan_is_one_unnamed_job(monkeypatch):
+    monkeypatch.setattr(planner, 'supported_platforms', lambda src: {'linux'})
+    p = planner.plan(['pkgs/a/a.lua'], {}, {'pkgs/a/a.lua': pkg()}, PROFILES)
+    assert 'shard' not in p['install_matrix']['include'][0]

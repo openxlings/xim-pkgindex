@@ -10,6 +10,10 @@ import subprocess
 from pathlib import Path
 
 PLATFORMS = {'linux': 'ubuntu-latest', 'windows': 'windows-latest', 'macosx': 'macos-latest'}
+# Recipes per install job. A change to glibc plans its reverse closure, about
+# 190 recipes on linux; one job tested 120 of them in its 60-minute limit
+# (openxlings/xim-pkgindex#1044). Forty fit with room to spare.
+INSTALL_SHARD_SIZE = 40
 IMPORT = re.compile(r'\bimport\s*\(\s*["\']xim\.pkgindex\.([^"\']+)["\']')
 STRINGS = re.compile(r'["\']([\w:+.@-]+)["\']')
 
@@ -112,8 +116,12 @@ def plan(changed, before, after, profiles, *, force=False):
     matrix = []
     for platform, runner in PLATFORMS.items():
         files = [p for p in packages if platform in supported_platforms(after[p])]
-        if files:
-            matrix.append({'platform': platform, 'os': runner, 'files': ' '.join(files)})
+        shards = -(-len(files) // INSTALL_SHARD_SIZE)
+        for i in range(shards):
+            entry = {'platform': platform, 'os': runner, 'files': ' '.join(files[i::shards])}
+            if shards > 1:
+                entry['shard'] = f'{i + 1}/{shards}'
+            matrix.append(entry)
     flags = {name: force or matches(changed + packages, config['paths']) for name, config in profiles.items()}
     if framework:
         flags.update(ci_xpkg_test=True, ci_tools=True, eden_smoke=True)

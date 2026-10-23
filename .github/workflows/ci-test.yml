@@ -7,7 +7,7 @@ on:
         required: true
 jobs:
   install:
-    name: install (${{ matrix.platform }})
+    name: install (${{ matrix.platform }}${{ matrix.shard && format(' {0}', matrix.shard) || '' }})
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(inputs.matrix) }}
