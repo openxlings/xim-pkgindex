@@ -39,9 +39,12 @@ class TestStatic:
         assert_no_typos(PKG_FILE)
 
     @pytest.mark.static
-    def test_latest_uses_xlings_res(self, meta):
-        # The latest target must keep the legacy URL sentinel while adding the
-        # complete per-platform architecture checksum set.
+    def test_latest_names_every_architecture(self, meta):
+        # The latest target covers every architecture of its platform with a
+        # checksum. Two spellings occur: the legacy `url = "XLINGS_RES"`
+        # sentinel with a per-architecture sha256 table, and the entry the
+        # unified updater writes (#1027), one table per architecture with its
+        # GLOBAL and CN url and its sha256.
         def platform_block(platform, next_marker):
             start = meta.raw_content.index(f"        {platform} = {{", meta.raw_content.index("    xpm = {"))
             end = meta.raw_content.index(next_marker, start)
@@ -61,13 +64,22 @@ class TestStatic:
             next_entry = re.search(r'\n\s*\["[0-9.]+' + r'"\]\s*=', block[entry_start + 1:])
             entry_end = (entry_start + 1 + next_entry.start()) if next_entry else len(block)
             entry = block[entry_start:entry_end]
-            assert re.search(r'url\s*=\s*"XLINGS_RES"', entry)
-            hashes = {
-                arch: digest.lower()
-                for arch, digest in re.findall(
-                    r'\b(x86_64|aarch64)\s*=\s*"([0-9a-fA-F]{64})"', entry)
-            }
-            assert set(hashes) == expected_arches
+            if re.search(r'url\s*=\s*"XLINGS_RES"', entry):
+                hashes = {
+                    arch: digest.lower()
+                    for arch, digest in re.findall(
+                        r'\b(x86_64|aarch64)\s*=\s*"([0-9a-fA-F]{64})"', entry)
+                }
+                assert set(hashes) == expected_arches, f"{platform}: {latest}"
+                continue
+            arches = re.findall(r'\b(x86_64|aarch64)\s*=\s*\{', entry)
+            assert set(arches) == expected_arches, f"{platform}: {latest}"
+            for arch in expected_arches:
+                part = entry[entry.index(f"{arch} = {{"):]
+                part = part[:part.index("sha256")+80]
+                assert re.search(r'GLOBAL\s*=\s*"https://github\.com/xlings-res/mcpp/releases/download/', part), arch
+                assert re.search(r'CN\s*=\s*"https://gitcode\.com/xlings-res/mcpp/releases/download/', part), arch
+                assert re.search(r'sha256\s*=\s*"[0-9a-f]{64}"', part), arch
 
         assert re.search(r'\bxpm\s*=\s*\{\s*source\s*=\s*"xlings-res"', meta.raw_content)
 
@@ -112,7 +124,9 @@ class TestVerify:
     @pytest.mark.verify
     @skip_if_not('linux')
     def test_mcpp(self):
-        assert_command_output("xlings use mcpp local:0.0.56 >/dev/null && mcpp --version", contains="mcpp 0.0.56")
+        # Whichever version this run installed: the lifecycle job installs
+        # INSTALL_PKG, a candidate job only the candidate.
+        assert_command_output("mcpp --version", regex=r"mcpp \d+(\.\d+)+")
 
     @pytest.mark.verify
     @skip_if_not('linux')
