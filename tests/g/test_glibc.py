@@ -387,3 +387,52 @@ class TestBinaryRelocation:
         # `doc` names the prefix inside a longer relative path, not as one.
         assert re.search(r"1 file\(s\) still name .* own data: ldd\s*$", result.stdout), \
             result.stdout
+
+
+class TestLinkerScriptQuoting:
+    """After relocation the linker scripts name the install directory. Under a
+    directory holding a space each such name is written in double quotes, the
+    one spelling GNU ld and lld read as a single name (mcpp-community/mcpp#832);
+    under any other directory the scripts are left byte for byte."""
+
+    @staticmethod
+    def _payload(root):
+        lib = root / "lib"
+        lib.mkdir(parents=True)
+        (lib / "libm.so").write_text(
+            "/* GNU ld script\n*/\nOUTPUT_FORMAT(elf64-x86-64)\n"
+            f"GROUP ( {root}/lib/libm.so.6  AS_NEEDED ( {root}/lib/libmvec.so.1 ) )\n")
+        (lib / "libc.so").write_text(
+            "/* GNU ld script\n*/\nOUTPUT_FORMAT(elf64-x86-64)\n"
+            f"GROUP ( {root}/lib/libc.so.6 {root}/lib/libc_nonshared.a "
+            f" AS_NEEDED ( {root}/lib/ld-linux-x86-64.so.2 ) )\n")
+        (lib / "libm.a").write_bytes(b"!<arch>\n")
+        return lib
+
+    @needs_lua_relocate
+    @pytest.mark.static
+    def test_a_spaced_directory_is_quoted_once(self, tmp_path):
+        root = tmp_path / "mc probe" / "glibc"
+        lib = self._payload(root)
+        result = _run("quote", root)
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert "QUOTED 2" in result.stdout
+        libm = (lib / "libm.so").read_text()
+        assert f'GROUP ( "{root}/lib/libm.so.6"  AS_NEEDED ( "{root}/lib/libmvec.so.1" ) )' in libm
+        libc = (lib / "libc.so").read_text()
+        assert f'"{root}/lib/libc_nonshared.a"' in libc
+        assert f'( "{root}/lib/ld-linux-x86-64.so.2" )' in libc
+        assert (lib / "libm.a").read_bytes() == b"!<arch>\n"
+        again = _run("quote", root)
+        assert "QUOTED 0" in again.stdout
+        assert (lib / "libm.so").read_text() == libm
+
+    @needs_lua_relocate
+    @pytest.mark.static
+    def test_a_plain_directory_is_left_alone(self, tmp_path):
+        root = tmp_path / "plain" / "glibc"
+        lib = self._payload(root)
+        before = (lib / "libc.so").read_text()
+        result = _run("quote", root)
+        assert "QUOTED 0" in result.stdout, result.stdout + result.stderr
+        assert (lib / "libc.so").read_text() == before

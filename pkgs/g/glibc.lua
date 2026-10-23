@@ -763,6 +763,7 @@ function __relocate()
         for _, marker in ipairs(markers) do
             elfpatch.relocate_build_paths{ marker = marker }
         end
+        __quote_linker_script_paths(dir)
         if relocatable then __assert_no_reserved_prefix(dir, true) end
         return relocatable
     end
@@ -936,6 +937,32 @@ function __replace_file(file, content)
         os.remove(tmp)
         raise("cannot replace " .. file .. ": " .. tostring(err))
     end
+end
+
+-- The linker scripts name this directory once relocation has run:
+-- `GROUP ( <dir>/lib/libc.so.6 … )`. GNU ld and lld split an unquoted name at
+-- whitespace, so under a home whose path holds a space (`/tmp/mc probe/home`)
+-- a link opened `/tmp/mc` and failed (mcpp-community/mcpp#832). Both read a
+-- name in double quotes as one name. A directory without whitespace, and a
+-- script already quoted, are left as they are. Returns the number of scripts
+-- rewritten.
+function __quote_linker_script_paths(dir)
+    if not dir:find("%s") then return 0 end
+    local name = dir:gsub("[%^%$%(%)%%%.%[%]%*%+%-%?]", "%%%0") .. "/[^%s()\"]+"
+    local rewritten = 0
+    for _, f in ipairs({ "lib/libc.so", "lib/libm.so", "lib/libm.a" }) do
+        local file = dir .. "/" .. f
+        local content = __read_file(file)
+        if content and content:sub(1, 16) == "/* GNU ld script"
+                and not content:find('"' .. dir, 1, true) then
+            local quoted, count = content:gsub(name, '"%0"')
+            if count > 0 then
+                __replace_file(file, quoted)
+                rewritten = rewritten + 1
+            end
+        end
+    end
+    return rewritten
 end
 
 -- Overwrite `placeholder` with `dir`, `/`-padded to the same length, in every

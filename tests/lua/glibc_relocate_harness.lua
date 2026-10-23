@@ -2,20 +2,22 @@
 --
 --     lua5.4 glibc_relocate_harness.lua <recipe.lua> relocate <install_dir> <placeholder>
 --     lua5.4 glibc_relocate_harness.lua <recipe.lua> assert   <install_dir>
+--     lua5.4 glibc_relocate_harness.lua <recipe.lua> quote    <install_dir>
 --
 -- `relocate` calls __relocate_binaries(<install_dir>, <placeholder>) and then
 -- __assert_no_reserved_prefix(<install_dir>, false), the binary half of what
--- install() does; `assert` calls __assert_no_reserved_prefix over every file.
+-- install() does; `assert` calls __assert_no_reserved_prefix over every file;
+-- `quote` calls __quote_linker_script_paths(<install_dir>).
 --
 -- The recipe is loaded with stub modules: only log.info is reached by these
 -- functions, and it is printed as `INFO <message>`. The file operations are
 -- the real ones (io.open, os.rename, `find`, `cp -p`), because they are what
--- is under test. Prints `RELOCATED <n>` / `ASSERTED`, or `ERROR <message>`
+-- is under test. Prints `RELOCATED <n>` / `ASSERTED` / `QUOTED <n>`, or `ERROR <message>`
 -- when the function raised.
 
 local recipe, mode, install_dir, placeholder = ...
-assert(recipe and (mode == "relocate" or mode == "assert") and install_dir,
-       "usage: lua glibc_relocate_harness.lua <recipe.lua> relocate|assert <install_dir> [<placeholder>]")
+assert(recipe and (mode == "relocate" or mode == "assert" or mode == "quote") and install_dir,
+       "usage: lua glibc_relocate_harness.lua <recipe.lua> relocate|assert|quote <install_dir> [<placeholder>]")
 
 local proxy
 proxy = setmetatable({}, {
@@ -58,6 +60,8 @@ local ok, err = pcall(function()
         local n = __relocate_binaries(install_dir, placeholder)
         if n > 0 then __assert_no_reserved_prefix(install_dir, false) end
         print("RELOCATED " .. n)
+    elseif mode == "quote" then
+        print("QUOTED " .. __quote_linker_script_paths(install_dir))
     else
         __assert_no_reserved_prefix(install_dir, true)
         print("ASSERTED")
