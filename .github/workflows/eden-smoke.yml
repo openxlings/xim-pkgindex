@@ -1,0 +1,70 @@
+name: Eden smoke
+
+on:
+  pull_request:
+    paths:
+      - 'pkgs/e/eden*.lua'
+      - 'tests/e/test_eden*.py'
+      - '.github/workflows/eden-smoke.yml'
+  workflow_dispatch:
+
+jobs:
+  cli-and-apk:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install xlings (Linux)
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          export XLINGS_NON_INTERACTIVE=1
+          export XLINGS_VERSION=v2026.8.10.1
+          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
+          echo "$HOME/.xlings/bin" >> "$GITHUB_PATH"
+          echo "$HOME/.xlings/subos/default/bin" >> "$GITHUB_PATH"
+      - name: Install xlings (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:XLINGS_NON_INTERACTIVE = '1'
+          $env:XLINGS_VERSION = 'v2026.8.10.1'
+          iex (Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.ps1' -UseBasicParsing).Content
+          "$env:USERPROFILE\.xlings\bin" | Out-File $env:GITHUB_PATH -Append
+          "$env:USERPROFILE\.xlings\subos\default\bin" | Out-File $env:GITHUB_PATH -Append
+      - name: Install, execute CLI, inspect APK and uninstall
+        shell: python
+        run: |
+          import hashlib, os, pathlib, subprocess, zipfile
+          def run(*args):
+              result = subprocess.run(args, check=True, text=True, capture_output=True, timeout=300)
+              print(result.stdout, result.stderr)
+              return result.stdout
+          home = pathlib.Path.home() / '.xlings'
+          exe = home / 'bin' / ('xlings.exe' if os.name == 'nt' else 'xlings')
+          for name in ('eden', 'eden-android'):
+              run(str(exe), 'config', '--add-xpkg', f'pkgs/e/{name}.lua')
+              run(str(exe), 'install', f'local:{name}', '--yes')
+          root = home / 'data/xpkgs'
+          desktop = root / 'local-x-eden/0.2.1'
+          cli = desktop / ('eden-cli.exe' if os.name == 'nt' else 'bin/eden-cli')
+          assert '0.2.1' in run(str(cli), '--version')
+          apk = root / 'local-x-eden-android/0.2.1/eden.apk'
+          assert hashlib.sha256(apk.read_bytes()).hexdigest() == 'befbf70b1a05715811fe092ef9cf71e6f1c1672008a6c5caa31d633e99615668'
+          with zipfile.ZipFile(apk) as z:
+              assert 'AndroidManifest.xml' in z.namelist()
+              assert any(n.startswith('lib/arm64-v8a/') and n.endswith('.so') for n in z.namelist())
+          for name in ('eden', 'eden-android'):
+              run(str(exe), 'remove', f'local:{name}@0.2.1', '--yes')
+              assert not (root / f'local-x-{name}/0.2.1').exists()
+          shim = home / 'subos/default/bin'
+          for name in ('eden', 'eden-cli', 'eden-android'):
+              for suffix in ('', '.exe', '.cmd', '.bat'):
+                  assert not os.path.lexists(shim / (name + suffix)), name + suffix
