@@ -12,6 +12,7 @@ on:
 # Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
 permissions:
   contents: read
+  actions: read
   pages: write
   id-token: write
 
@@ -46,6 +47,13 @@ jobs:
         env:
           EVENT: ${{ github.event_name }}
         run: python3 .github/scripts/ci-publication-scope.py --target site --event "$EVENT" --github-output "$GITHUB_OUTPUT"
+
+      - name: Require successful main CI for this exact source
+        if: steps.scope.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: python3 .github/scripts/ci-verified-source.py --repository "$REPOSITORY"
 
       - name: Set up Python
         if: steps.scope.outputs.changed == 'true'

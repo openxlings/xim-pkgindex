@@ -23,12 +23,26 @@ def snapshot(root, ref):
     return {name: git(root, 'show', f'{ref}:{name}') for name in names if name.endswith('.lua')}
 
 
+# These root fields describe discovery/rendering, not installation. Identity,
+# resources, architecture, dependencies, exports, expressions and hooks stay.
+DISPLAY_FIELDS = {'description', 'homepage', 'repo', 'docs', 'authors',
+                  'maintainers', 'categories', 'keywords', 'licenses', 'status'}
+
+
+def runtime_inputs(signature):
+    node, prefix, suffix = signature
+    kind, fields = node
+    if kind == 'table':
+        node = (kind, {k: v for k, v in fields.items() if k not in DISPLAY_FIELDS})
+    return node, prefix, suffix
+
+
 def runtime_changed(before, after):
     if before is None or after is None:
         return True
     try:
         from xpkgindex_update.manifest import runtime_signature
-        return runtime_signature(before) != runtime_signature(after)
+        return runtime_inputs(runtime_signature(before)) != runtime_inputs(runtime_signature(after))
     except (ImportError, ValueError, RuntimeError):
         # Legacy opaque descriptors are install-tested, never silently dropped.
         return before != after

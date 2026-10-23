@@ -111,6 +111,18 @@ jobs:
           # it the default toolchain.
           set -e
           mkdir -p "$HOME/.mcpp/registry/data/xpkgs"
+          # The compiler's complete installed closure is part of this fixture.
+          # Reusing only LLVM hides sibling UAPI headers from mcpp's probes.
+          for provider in "$HOME/.xlings/data/xpkgs/"*; do
+            [ -d "$provider" ] || continue
+            name=$(basename "$provider")
+            mkdir -p "$HOME/.mcpp/registry/data/xpkgs/$name"
+            for payload in "$provider"/*/; do
+              [ -d "$payload" ] || continue
+              version=$(basename "$payload")
+              ln -sfn "$payload" "$HOME/.mcpp/registry/data/xpkgs/$name/$version"
+            done
+          done
           tool="${{ matrix.tool }}"
           kind="xim-x-$tool"
           src_root="$HOME/.xlings/data/xpkgs/$TOOL_SOURCE-x-$tool"

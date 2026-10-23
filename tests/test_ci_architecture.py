@@ -202,3 +202,25 @@ def test_multicommit_pr_keeps_earlier_package_change(tmp_path):
     result = json.loads((tmp_path / 'ci-plan.json').read_text())
     assert result['packages'] == ['pkgs/a/a.lua']
     assert result['base_sha'] == base and result['head_sha'] == head
+
+
+def test_display_metadata_is_excluded_but_hooks_and_coordinates_stay():
+    a = (('table', {'description': ('string', 'before'), 'name': ('string', 'tool'),
+                    'xpm': ('table', {'resource': 'old'})}), 'prefix', 'install hook')
+    b = (('table', {**a[0][1], 'description': ('string', 'after')}), a[1], a[2])
+    assert planner.runtime_inputs(a) == planner.runtime_inputs(b)
+    c = (('table', {**a[0][1], 'name': ('string', 'other')}), a[1], a[2])
+    assert planner.runtime_inputs(a) != planner.runtime_inputs(c)
+    assert planner.runtime_inputs(a) != planner.runtime_inputs((a[0], a[1], 'changed hook'))
+
+
+@pytest.mark.parametrize('field,value', [('head_sha', 'other'), ('head_branch', 'feature'),
+    ('event', 'pull_request'), ('status', 'in_progress'), ('conclusion', 'failure'),
+    ('head_repository', {'full_name': 'foreign/repo'})])
+def test_publication_cannot_bypass_source_gate(field, value):
+    mod = module('ci-verified-source')
+    run = dict(head_sha='a' * 40, head_branch='main', event='push', status='completed',
+               conclusion='success', head_repository={'full_name': 'acme/index'})
+    assert mod.verified(run, 'acme/index', 'a' * 40)
+    run[field] = value
+    assert not mod.verified(run, 'acme/index', 'a' * 40)

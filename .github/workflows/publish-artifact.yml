@@ -41,6 +41,7 @@ concurrency:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   publish:
@@ -68,6 +69,13 @@ jobs:
         env:
           EVENT: ${{ github.event_name }}
         run: python3 .github/scripts/ci-publication-scope.py --target index --event "$EVENT" --github-output "$GITHUB_OUTPUT"
+
+      - name: Require successful main CI for this exact source
+        if: steps.scope.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: python3 .github/scripts/ci-verified-source.py --repository "$REPOSITORY"
 
       - name: Enable vendored gtc (gitcode-cli)
         run: |

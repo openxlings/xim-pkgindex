@@ -1,3 +1,5 @@
+**English** | [简体中文](../zh/design/ci-workflows.md)
+
 # CI workflow architecture
 
 `CI` (`.github/workflows/ci.yml`) is the PR validation entry point. It also
@@ -93,3 +95,10 @@ platform selection, complete PR comparison, planned-job failure/skip handling,
 resource filtering, compiler selection and source-pinned publication. Existing
 static/isolation/index and specialized integration checks remain the executable
 acceptance criteria.
+
+Expired native Actions artifacts are transport failures, not permission to
+change toolchain inputs. The ARM64 reuse path may recover only the existing
+admitted archive hashes from immutable releases, after source-run, ancestry and
+builder validation; glibc ledger/mirror checks and fresh native admission still
+run. Recovery records its transport provenance. Scheduled/manual index or Pages
+publication also checks successful main CI for its exact source SHA.

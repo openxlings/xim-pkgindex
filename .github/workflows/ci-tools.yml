@@ -22,6 +22,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Lint workflow and action expressions
+        env:
+          TOOLROOT: ${{ runner.temp }}/actionlint
+        run: |
+          mkdir -p "$TOOLROOT"
+          curl -fsSL --retry 3 https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz -o "$TOOLROOT/actionlint.tar.gz"
+          printf '8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  %s\n' "$TOOLROOT/actionlint.tar.gz" | sha256sum -c -
+          tar -xzf "$TOOLROOT/actionlint.tar.gz" -C "$TOOLROOT" actionlint
+          "$TOOLROOT/actionlint" -color
+
       - name: CI architecture regression tests
         run: |
           python3 -m pip install pytest pyyaml # host-dep-ok: CI test harness
