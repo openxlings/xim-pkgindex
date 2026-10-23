@@ -1,0 +1,31 @@
+name: release-owned packages, read by the published xlings
+
+# xlings, luban, luban-os and xim:xdesk are written by xlings' release
+# (tests/test_release_owned.py). A change to one of them is read here the
+# way the client reads it -- installs, `self update`, and xlings' own rootfs
+# self-update test (xlings design 2026-10-23 part 3, U5, U6) -- with the
+# published xlings, against this checkout, on every platform it declares.
+on:
+  pull_request:
+    paths:
+      - 'pkgs/x/xlings.lua'
+      - 'pkgs/luban/luban.lua'
+      - 'pkgs/luban/luban-os.lua'
+      - 'pkgs/x/xdesk.lua'
+      - 'scripts/test-release-owned-client.py'
+      - '.github/workflows/release-owned.yml'
+  workflow_dispatch:
+
+jobs:
+  read:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the published xlings
+        run: |
+          export XLINGS_NON_INTERACTIVE=1
+          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
+          echo "$HOME/.xlings/bin" >> "$GITHUB_PATH"
+      - name: Each package, each platform, as the client reads it
+        run: python3 scripts/test-release-owned-client.py --home "$RUNNER_TEMP/release-owned"
