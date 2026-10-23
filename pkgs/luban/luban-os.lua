@@ -42,44 +42,7 @@ package = {
     -- `run` and `launcher`; a desktop session (luban-os-ci L3) the rest.
     extensions = { luban = { checks = {
         { id = "luban-os-runs", what = "the Luban OS app starts", run = "luban-os --version", timeout = 20 },
-    } },
-
-
-        autoupdate = {
-            source = "https://github.com/xlings-res/luban-os/releases",
-            resources = {
-                GLOBAL = {
-                    url = {
-                        linux = {
-                            x86_64 = "https://github.com/xlings-res/luban-os/releases/download/${version}/luban-os-${version}-linux-x86_64.tar.gz",
-                        },
-                        macosx = {
-                            aarch64 = "https://github.com/xlings-res/luban-os/releases/download/${version}/luban-os-${version}-macosx-aarch64.tar.gz",
-                        },
-                        windows = {
-                            x86_64 = "https://github.com/xlings-res/luban-os/releases/download/${version}/luban-os-${version}-windows-x86_64.zip",
-                        },
-                    },
-                    required = true,
-                },
-                CN = {
-                    url = {
-                        linux = {
-                            x86_64 = "https://gitcode.com/xlings-res/luban-os/releases/download/${version}/luban-os-${version}-linux-x86_64.tar.gz",
-                        },
-                        macosx = {
-                            aarch64 = "https://gitcode.com/xlings-res/luban-os/releases/download/${version}/luban-os-${version}-macosx-aarch64.tar.gz",
-                        },
-                        windows = {
-                            x86_64 = "https://gitcode.com/xlings-res/luban-os/releases/download/${version}/luban-os-${version}-windows-x86_64.zip",
-                        },
-                    },
-                    required = true,
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
+    } } },
 
     xpm = {
         linux = {
@@ -113,7 +76,13 @@ package = {
                 -- 2026.10.19.2, before which nothing uses it).
                 "luban:cursors",
             },
-            ["latest"] = { ref = "2026.10.22.4" },
+            ["latest"] = { ref = "2026.10.23.1" },
+            ["2026.10.23.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "7a99ef30384b8e58dd8f2f6be626abaa13a349b08bdf6d173c7ca0b9b7ece0ff",
+                },
+            },
             ["2026.10.22.4"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -270,7 +239,13 @@ package = {
         },
         macosx = {
             deps = { "xim:luban-fonts", "luban:cursors" },
-            ["latest"] = { ref = "2026.10.22.4" },
+            ["latest"] = { ref = "2026.10.23.1" },
+            ["2026.10.23.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "417a3f76fb3740fafa6f6a0a15420c58625b94ac6f515c27cb8a77cdd9323f5a",
+                },
+            },
             ["2026.10.22.4"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -400,7 +375,13 @@ package = {
         },
         windows = {
             deps = { "xim:luban-fonts", "luban:cursors" },
-            ["latest"] = { ref = "2026.10.22.4" },
+            ["latest"] = { ref = "2026.10.23.1" },
+            ["2026.10.23.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "e86a0813f9e5a14353c5a2af6fbd67daa4debd1964bf792b2f57d7210dcfee5c",
+                },
+            },
             ["2026.10.22.4"] = {
                 url = "XLINGS_RES",
                 sha256 = {

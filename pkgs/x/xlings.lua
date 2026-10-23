@@ -33,52 +33,18 @@ package = {
     -- Recent mirrored releases use XLINGS_RES so downloads can
     -- resolve through the configured multi-mirror resource service.
     -- Historical 0.4.x entries keep their direct GitHub release URLs.
-
-
-    extensions = {
-        autoupdate = {
-            source = "https://github.com/xlings-res/xlings/releases",
-            resources = {
-                GLOBAL = {
-                    url = {
-                        linux = {
-                            aarch64 = "https://github.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-linux-aarch64.tar.gz",
-                            x86_64 = "https://github.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-linux-x86_64.tar.gz",
-                        },
-                        macosx = {
-                            aarch64 = "https://github.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-macosx-arm64.tar.gz",
-                        },
-                        windows = {
-                            x86_64 = "https://github.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-windows-x86_64.zip",
-                        },
-                    },
-                    required = true,
-                },
-                CN = {
-                    url = {
-                        linux = {
-                            aarch64 = "https://gitcode.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-linux-aarch64.tar.gz",
-                            x86_64 = "https://gitcode.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-linux-x86_64.tar.gz",
-                        },
-                        macosx = {
-                            aarch64 = "https://gitcode.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-macosx-arm64.tar.gz",
-                        },
-                        windows = {
-                            x86_64 = "https://gitcode.com/xlings-res/xlings/releases/download/${version}/xlings-${version}-windows-x86_64.zip",
-                        },
-                    },
-                    required = true,
-                },
-            },
-            verify = "sha256-sidecar",
-        },
-    },
-
     xpm = {
         linux = {
             -- res_versioned: version-bump bot tracks openxlings/xlings releases and
             -- appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
-            ["latest"] = { ref = "2026.10.22.4" },
+            ["latest"] = { ref = "2026.10.23.1" },
+            ["2026.10.23.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "2c7fb3618344fccb5996a49c7fd046ebe16a93876109e8812a0031ca59525922",
+                    x86_64 = "30158fc3b04263c7484a3c87a3bb6364e37137de31aa402cae9392d63d651c67",
+                },
+            },
             ["2026.10.22.4"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -1042,7 +1008,13 @@ package = {
         macosx = {
             -- res_versioned: version-bump bot tracks openxlings/xlings releases and
             -- appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
-            ["latest"] = { ref = "2026.10.22.4" },
+            ["latest"] = { ref = "2026.10.23.1" },
+            ["2026.10.23.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "934ef47e0ffd3c77ab690763142f205a2306b8369738679cf6aafc58fcb5ef7d",
+                },
+            },
             ["2026.10.22.4"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -1890,7 +1862,13 @@ package = {
         windows = {
             -- res_versioned: version-bump bot tracks openxlings/xlings releases and
             -- appends new ["x.y.z"] = "XLINGS_RES" entries (see version-check.py).
-            ["latest"] = { ref = "2026.10.22.4" },
+            ["latest"] = { ref = "2026.10.23.1" },
+            ["2026.10.23.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "63cd481606689de5f978828e0962d21b976575444bc45fbe886a75eae3b1e6a8",
+                },
+            },
             ["2026.10.22.4"] = {
                 url = "XLINGS_RES",
                 sha256 = {
