@@ -44,8 +44,9 @@ jobs:
         run: |
           import hashlib, os, pathlib, subprocess, zipfile
           def run(*args):
-              result = subprocess.run(args, check=True, text=True, capture_output=True, timeout=300)
+              result = subprocess.run(args, text=True, capture_output=True, timeout=300)
               print(result.stdout, result.stderr)
+              result.check_returncode()
               return result.stdout
           home = pathlib.Path.home() / '.xlings'
           exe = home / 'bin' / ('xlings.exe' if os.name == 'nt' else 'xlings')
@@ -55,7 +56,15 @@ jobs:
           root = home / 'data/xpkgs'
           desktop = root / 'local-x-eden/0.2.1'
           cli = desktop / ('eden-cli.exe' if os.name == 'nt' else 'bin/eden-cli')
-          assert '0.2.1' in run(str(cli), '--version')
+          version = run(str(cli), '--version')
+          if os.name == 'nt':
+              # Upstream yuzu_cmd/yuzu.cpp reopens stdout/stderr as CONOUT$
+              # after AttachConsole, bypassing subprocess's capture pipes.
+              # Exercise a second, distinct path: no ROM returns -1 from main.
+              probe = subprocess.run([str(cli)], capture_output=True, timeout=30)
+              assert probe.returncode == 0xffffffff, probe.returncode
+          else:
+              assert '0.2.1' in version
           apk = root / 'local-x-eden-android/0.2.1/eden.apk'
           assert hashlib.sha256(apk.read_bytes()).hexdigest() == 'befbf70b1a05715811fe092ef9cf71e6f1c1672008a6c5caa31d633e99615668'
           with zipfile.ZipFile(apk) as z:
