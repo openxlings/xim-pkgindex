@@ -182,3 +182,43 @@ def test_existing_descriptor_upgrade_still_selects_native_jobs(index):
     assert module.candidates(base) == {'include': [
         {'id': 'xim:foo', 'path': 'pkgs/f/foo.lua', 'version': '1.1.0',
          'platform': 'linux', 'arch': 'x86_64', 'os': 'ubuntu-latest'}]}
+
+
+MANUAL = '''package = {
+    name = "foo", archs = {"x86_64"},
+    xpm = { linux = {
+        ["latest"] = { ref = "1.0.0" },
+        ["1.0.0"] = { url = "XLINGS_RES", sha256 = { x86_64 = "''' + 'a' * 64 + '''" } },
+    } },
+}'''
+
+
+def _guarded(index, before, after):
+    import subprocess
+    module, recipe = index
+    subprocess.run(['git', 'init', '-q'], cwd=module.ROOT, check=True)
+    recipe.write_text(before)
+    base = commit_fixture(module.ROOT, 'baseline')
+    recipe.write_text(after)
+    return module, base
+
+
+def test_a_recipe_no_bot_writes_moves_its_latest_by_review(index):
+    """xlings' release writes xlings, luban, luban-os and xdesk (test_release_owned.py)."""
+    after = MANUAL.replace('["latest"] = { ref = "1.0.0" },', '["latest"] = { ref = "1.1.0" },\n'
+                           '        ["1.1.0"] = { url = "XLINGS_RES", sha256 = { x86_64 = "' + 'b' * 64 + '" } },')
+    module, base = _guarded(index, MANUAL, after)
+    assert module.guard(base)['changed'] == [{'path': 'pkgs/f/foo.lua', 'rules': 'preserved'}]
+
+
+def test_a_published_version_is_kept_in_every_recipe(index):
+    module, base = _guarded(index, MANUAL, MANUAL.replace('a' * 64, 'c' * 64))
+    with pytest.raises(module.Invalid, match='existing version changed'):
+        module.guard(base)
+
+
+def test_a_recipe_a_bot_writes_keeps_the_automatic_rules(index):
+    moved = RECIPE.replace('["latest"] = { ref = "1.0.0" }', '["latest"] = { ref = "0.9.0" }')
+    module, base = _guarded(index, RECIPE, moved)
+    with pytest.raises(module.Invalid):
+        module.guard(base)

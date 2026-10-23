@@ -47,7 +47,7 @@ jobs:
         BASE: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
       run: |
         resolved=$(git rev-parse --verify "$BASE^{commit}" 2>/dev/null || git rev-parse --verify "origin/$BASE^{commit}")
-        python -m xpkgindex_update guard --base "$resolved" --output preservation.json
+        python .github/scripts/autoupdate-ci.py guard --base "$resolved" --output preservation.json
     - name: Select added candidate versions from the PR diff
       id: matrix
       env:

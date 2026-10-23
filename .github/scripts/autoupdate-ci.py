@@ -11,7 +11,7 @@ from pathlib import Path
 
 from xpkgindex_update.adapters import xim_pkgindex as xim
 from xpkgindex_update.lua_edit import Invalid, parse, tokens
-from xpkgindex_update.manifest import descriptor_digest, ordered
+from xpkgindex_update.manifest import assert_preserved, descriptor_digest, ordered
 
 ROOT = Path(__file__).resolve().parents[2]
 import sys
@@ -188,9 +188,44 @@ def run_candidate(identity, filename, version, expected_arch=None):
     write('candidate-evidence.json', evidence)
 
 
+def declares_autoupdate(text):
+    ext = parse(text).fields.get('extensions')
+    return bool(ext and ext.fields.get('autoupdate'))
+
+
+def guard(base):
+    """A pull request's recipes against its base. Published versions are kept in
+    every recipe. What an automatic update may change -- latest only by its
+    advance policy, no dependency, metadata or hook -- is checked where one may
+    run: a recipe declaring extensions.autoupdate. One nobody's bot writes (a
+    hand-kept edition, a package xlings' release writes: tests/test_release_owned.py)
+    moves its latest and its hooks by review."""
+    files = git('ls-tree', '-r', '--name-only', base, '--', 'pkgs').splitlines()
+    changed = []
+    for filename in files:
+        if not filename.endswith('.lua'):
+            continue
+        path = ROOT / filename
+        if not path.exists():
+            raise Invalid(f'existing descriptor was removed: {filename}')
+        before = subprocess.check_output(['git', 'show', f'{base}:{filename}'], cwd=ROOT, text=True, encoding='utf-8')
+        after = path.read_text(encoding='utf-8')
+        if before == after:
+            continue
+        try:
+            if declares_autoupdate(after):
+                xim.guard(before, after)
+            else:
+                assert_preserved(before, after)
+        except Invalid as e:
+            raise Invalid(f'{filename}: {e}') from e
+        changed.append({'path': filename, 'rules': 'automatic' if declares_autoupdate(after) else 'preserved'})
+    return {'checked_descriptors': len(files), 'status': 'preserved', 'changed': changed}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['audit', 'matrix', 'candidate'])
+    parser.add_argument('command', choices=['audit', 'matrix', 'candidate', 'guard'])
     parser.add_argument('--base', default='origin/main')
     parser.add_argument('--output', default='autoupdate-report.json')
     parser.add_argument('--package')
@@ -201,7 +236,8 @@ def main():
     if args.command == 'candidate':
         run_candidate(args.package, args.path, args.version, args.arch)
     else:
-        write(args.output, audit() if args.command == 'audit' else candidates(args.base))
+        write(args.output, audit() if args.command == 'audit' else guard(args.base) if args.command == 'guard'
+              else candidates(args.base))
 
 
 if __name__ == '__main__':

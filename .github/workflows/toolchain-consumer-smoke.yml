@@ -93,8 +93,11 @@ jobs:
           # for a musl-gcc bump and died on 'not found').
           TOOL="${{ matrix.tool }}"
           RECIPE="${{ matrix.recipe }}"
+          # local: when add-xpkg registered it -- a recipe this change edits. One
+          # only affected (the plan's files carry those too) is identical to the
+          # index's: nothing was added, and it is installed as published.
           SOURCE=xim
-          if [[ " $CHANGED_FILES " == *" $RECIPE "* ]]; then SOURCE=local; fi
+          if [[ " $CHANGED_FILES " == *" $RECIPE "* && -f "$HOME/.xlings/data/xim-pkgindex-local/$RECIPE" ]]; then SOURCE=local; fi
           xlings install "$SOURCE:$TOOL" -y
           echo "TOOL_SOURCE=$SOURCE" >> "$GITHUB_ENV"
           xlings install mcpp -y
