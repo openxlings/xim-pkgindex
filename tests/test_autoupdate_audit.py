@@ -66,6 +66,44 @@ def test_complete_real_index_is_classified_without_an_inventory(audit_module):
     assert all(r['reason'] for r in report['packages'] if r['status'] == 'manual')
 
 
+def test_chatgpt_official_feed_appends_without_rewriting_helper_history(tmp_path, audit_module):
+    """Exercise the actual mixed helper/explicit recipe through check/apply/verify."""
+    xim = audit_module.xim
+    recipe = tmp_path / 'pkgs/c/chatgpt.lua'
+    recipe.parent.mkdir(parents=True)
+    before = (ROOT / 'pkgs/c/chatgpt.lua').read_text()
+    recipe.write_text(before)
+    info = xim.package_info(recipe, tmp_path)
+    expected = xim.matrix(info)
+    assert {p: set(a) for p, a in expected.items()} == {
+        'linux': {'x86_64'}, 'macosx': {'aarch64'},
+    }
+    newest = max((v for p in info['platforms'].values() for v in p['entries']), key=xim.version_key)
+    candidate = newest + '.1'
+    enclosure = xim.expand(expected['macosx']['aarch64']['GLOBAL'], candidate, candidate)
+
+    class OfficialFeed:
+        def text(self, url, **kwargs):
+            assert url == info['autoupdate']['source']
+            return (f'<rss xmlns:s="http://www.andymatuschak.org/xml-namespaces/sparkle"><channel><item>'
+                    f'<s:shortVersionString>{candidate}</s:shortVersionString><s:version>1</s:version>'
+                    f'<enclosure url="{enclosure}" length="12" /></item></channel></rss>')
+
+        def artifact(self, url):
+            return {'url': url, 'size': 12, 'sha256': 'b' * 64}
+
+    client = OfficialFeed()
+    record = xim.check_package(info, client)
+    assert record['status'] == 'update-ready', record
+    xim.append(tmp_path, record, client)
+    after = xim.package_info(recipe, tmp_path)
+    xim.guard(before, after['text'])
+    assert set(xim.latest_refs(after).values()) == {candidate}
+    assert all(after['platforms'][p]['entries'][candidate].kind == 'table' for p in expected)
+    reports = xim.verify_candidates(after, before, client)
+    assert reports[0]['status'] == 'verified' and len(reports[0]['assets']) == 2
+
+
 def test_unreviewed_cn_is_still_rejected(index):
     module, recipe = index
     recipe.write_text(RECIPE.replace('resources = {', 'resources = { CN = "https://unreviewed.example/${version}.zip",'))

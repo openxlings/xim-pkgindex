@@ -130,6 +130,10 @@ extensions = {
 将仓库和路径替换为真实值，平台/架构矩阵必须与完整包声明一致；上例仅适用于只支持 Linux 双架构的包。
 各平台共用同一资产时可把 GLOBAL 简写为 URL 字符串。`${tag}` 保留原始标签，`${version}` 为提取后的版本；
 普通数字/v 前缀无需 `tag`。不要照搬 `xpm.source` 的 `${os}` / `${arch_alias}` / `${ext}` 运行时占位符。
+官方 Sparkle RSS 可用 `.xml` HTTPS 地址作为 `source`，模板使用 `${version}`，无需 GitHub 仓库或 `tag`；
+数字短版本号对应完整 enclosure，至少一个必需模板须匹配其 URL 和长度，排除增量及 channel 发布。
+例如 ChatGPT 的 Linux/macOS 都是必需平台，只有两者同版本资源齐全才推进，暂不做各平台独立更新；
+保留历史 helper 条目与安装签名/版本检查。厂商官方来源不适用 GitHub star 数建议。详细边界见上述中英文文档。
 没有核实镜像时只声明 GLOBAL；有 USTC、清华等权威镜像也要逐项核实真实路径、完整资产与跨区 SHA256 一致，
 不能根据域名猜路径。每个目标默认 `required = true`；显式设为 false 表示可选，至少一个目标必须必需。
 选择所有必需目标完整可用的最新版本交集；可选目标失败整组省略。`latest = "keep"` 用于 LTS/固定默认版本。

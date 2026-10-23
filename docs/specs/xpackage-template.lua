@@ -21,6 +21,9 @@ package = {
 
     -- Optional automatic updates (docs/13-ci-mirror-and-update.md).
     -- Recommended for upstream GitHub repositories with >= 50 stars; not enforced.
+    -- Official Sparkle feeds can use source = "https://vendor.example/appcast.xml"
+    -- with fixed ${version} templates instead; no GitHub/tag declaration is needed.
+    -- Every required platform must publish the same version before latest advances.
     -- Uncomment after verifying URLs and the complete supported platform/arch matrix.
     -- Merge this into an existing extensions table rather than adding a second one.
     -- extensions = {

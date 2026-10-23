@@ -1,58 +1,47 @@
-# ChatGPT 自动更新评估
+# ChatGPT 自动更新接入
 
-> 2026-10-23 更新：本文旧的 upstream/url 和 GitHub-only 描述已被 [source/resources 当前设计](2026-10-23-xpkgindex-update-multi-mode-design.md) 取代；以当前设计、覆盖审计和 PR 最新提交为准。
+ChatGPT 可以使用统一 `xpkgindex-update` 自动更新，无需 GitHub 镜像或私有脚本。
+[工具 PR #4](https://github.com/openxlings/xpkgindex-update/pull/4) 增加通用 Sparkle RSS 解析，索引 PR 固定工具提交并接入现有三天更新任务。
+合入顺序为工具 PR、索引 PR；索引不能先使用尚未支持的旧工具提交。
 
-## 现有声明来自哪里
+## 配方与策略
 
-`extensions.autoupdate`、tag/version 占位符及平台 URL 映射原本已由
-`xpkgindex-update` 提供。显式 `upstream`、`latest = "advance"/"keep"`、
-平台内架构矩阵和 xim format-2 plan 是本轮在上游 PR #3 中增加的能力。
+完整声明见 `pkgs/c/chatgpt.lua` 的 `extensions.autoupdate`：
 
-当前上游 main 仍为 `6c0bee2941e36132bc2ac3d1f7edbef8b5790320`，只接受
-`{tag, url}`；xim PR #1027 固定使用扩展提交。不是 xim 私有更新脚本，
-但在工具 PR 合入前，也不能称为已发布 main 的既有能力。
+- `source`：[官方 appcast](https://persistent.oaistatic.com/codex-app-prod/appcast.xml)。
+- GLOBAL 必需，包含 Linux x86_64 DEB 与 macOS ARM64 ZIP 的固定 `${version}` 模板。
+- 取所有必需平台都可下载的最新版本交集；不使用持续变化的 latest 下载链接。
+- 默认 `latest = "advance"`，不增加 CN，不修改三天调度，不自动合并更新 PR。
+- `platform_versions_diverge` 保留：历史手工收录的平台版本集可以不同；本次自动更新只推进共同版本，
+  暂不提供各平台独立推进。若未来各平台长期使用不同版本号，需要另扩展明确的平台策略。
 
-## 通用 URL 模板与版本发现
+2026-10-23 实测：macOS 清单最新为 `26.1016.62342`，对应 Linux DEB 返回 404；
+Linux Packages 的当前版本为 `26.1016.61520`，与配方两平台 latest 一致。
+因此启用时应报告等待资源，不凭空添加不存在的共同新版本。
 
-通用 URL 模板支持任意合规 HTTPS 下载源，不限定 GitHub 域名。例如已知版本
-`26.1016.61520` 时，现有展开函数可以直接处理：
+## 校验与保留边界
 
-```text
-https://persistent.oaistatic.com/codex-app-prod/linux/deb/pool/main/c/chatgpt/chatgpt_${version}_amd64.deb
-https://persistent.oaistatic.com/codex-app-prod/ChatGPT-darwin-arm64-${version}.zip
-```
+通用解析器读取数字 `shortVersionString`、build、完整 enclosure，排除 channel、预发布和嵌套 delta。
+重复或等价版本、多 build/架构歧义、异常清单和资源错误显式失败。
+至少一个必需资源必须匹配清单完整 enclosure URL 和长度；其余平台按版本模板完整下载校验。
+404/410 才尝试更旧候选；网络、权限、格式或 hash 错误不伪装成镜像未同步。
 
-`${version}` 是模板输入；模板不会发现最新版本。当前 main 和 PR #3 都通过
-GitHub Releases/tags 发现候选，并绑定上游 tag commit；CLI 也没有可直接替代
-发现流程的通用 `--version` 参数。尚无 Debian/appcast/feed provider。
+固定计划绑定配方、基线、所选清单项元数据摘要、完整矩阵及资源 SHA256；
+apply/propose 复核所选项及资源字节，不追随新发布版本。所选项消失/变化拒绝写入；
+清单新增无关版本不影响原计划。元数据使用无 GitHub 凭据的公开 HTTPS 下载，限制 1 MiB 并共用预算。
+元数据摘要包含 Sparkle 签名，但工具不做 Sparkle 密码学验签；macOS 安装继续检查包版本与 codesign。
+Linux 保留包内 metadata.version 检查和现有隔离加载器/依赖检查。
 
-GitHub-only 是 xim 本期准入策略，不是工具 HTTPS 下载器的域名能力限制。
+旧的 Linux/macOS 版本块、helper、revision、依赖、hooks 及手工补录全部保留，
+新版本写显式 URL/SHA256，不执行任意 Lua。生成的计划、网络证据和全量审计 JSON 只留本地或 Actions artifact。
 
-## ChatGPT 能否接入
+## 复验
 
-技术上可以扩展支持；当前 GitHub-only 范围不包含它：
+使用 workflow 固定的工具运行 `inspect --package xim:chatgpt`、
+`check --package xim:chatgpt --output /tmp/chatgpt-plan.json`，检查等待原因和候选矩阵。
+工具单测覆盖资源不齐等待/回退、共同版本推进、旧条目保留、计划绑定、清单安全、预算及 PR 重试。
+本次元数据接入 PR 执行静态/隔离/注册及工具集成测试，未增加版本，不触发候选原生安装。
+后续新增候选时 CI 执行 Linux/macOS 原生安装卸载；GUI 登录及交互需桌面环境另行验收。
 
-- `pkgs/c/chatgpt.lua` 使用 OpenAI 官方 `persistent.oaistatic.com` 资源，
-  没有可用于当前准入的 GitHub upstream/star 数据。
-- 配方通过 `deb()` / `mac()` helper 生成资源，需要适配静态分析/编辑边界，
-  不能运行任意 Lua 来完成版本发现。
-- Linux 与 macOS 允许独立发布，配方显式声明 `platform_versions_diverge`；
-  当前“全部平台同一 candidate 一起推进”的策略不能直接套用。
-
-若批准官方源例外，应在统一工具上游实现正式 provider：Linux 从官方软件源
-元数据发现固定版本 URL/SHA256，macOS 从官方 appcast 发现资源并校验下载；
-平台候选和 latest 独立，保留全部历史块，并跑现有安装、签名/版本和运行测试。
-具体 feed、校验链和资源形态须另行验证，不能仅猜版本号拼 URL。
-本轮未自动放宽 GitHub-only，也未添加不可执行的 ChatGPT 自动更新声明。
-
-## 通用能力方向
-
-后续采用 [多模式统一设计](2026-10-23-xpkgindex-update-multi-mode-design.md)，
-让每个包选择版本发现、资源、校验、平台与镜像策略。GitHub-only 只属于首批仓库启用策略；
-通用工具覆盖官方源、现成 CN 镜像以及未来的镜像发布能力，不为 ChatGPT 发明私有更新脚本。
-
-## 调度调整
-
-扫描/提案每 3 天运行一次。GitHub Actions 每日 02:17 UTC 检查轻量门禁，
-按 2026-10-23 UTC 起始日期计算三天周期；不使用月末不等间隔的 `*/3` 日期 cron。
-非到期日跳过更新任务，PR 检查和人工触发正常运行。
+其他包可复用 appcast + resources 模板，说明见 `docs/13-ci-mirror-and-update.md`、中文版和建包 skill。
+GitHub 上游建议至少 50 stars 是选包建议，官方厂商清单没有 GitHub star 要求。

@@ -35,9 +35,19 @@ CI 直接校验当前配方，自动生成 `coverage.json` 并上传 Actions art
 
 默认 `latest = "advance"`，每个目标默认 `required = true`；`latest = "keep"` 保留既有指针。
 复杂目标可写 `{ required = true, url = { linux = { x86_64 = "..." } } }`。
-版本来源当前识别 GitHub releases/tags 地址，下载模板可使用任意公开 HTTPS。
+版本来源识别 GitHub releases/tags 和以 `.xml` 结尾的公开 HTTPS Sparkle RSS appcast，下载模板可使用任意公开 HTTPS。
 候选从新到旧检查，取所有必需目标完整平台/架构资源的真实版本交集，并下载校验字节一致。
 包可通过配方声明的 review 显式选择可选目标；本轮接入的 GLOBAL/CN 均默认配置为必需。
+
+官方 appcast 可直接配置 `source = "https://vendor.example/appcast.xml"`，下载模板使用 `${version}`，
+不需要 GitHub 仓库或 `tag` 声明。版本来自 Sparkle 的数字短版本号，排除增量包及带 channel 的发布项。
+至少一个必需模板必须匹配完整 enclosure 的 URL 和长度；所有必需平台资源就绪后才推进 latest。
+ChatGPT 使用此模式，消费官方 Linux x86_64 DEB 和 macOS ARM64 ZIP；只有 macOS 发布时等待 Linux，
+不删平台或改写历史 helper 条目，新版本生成显式 URL/SHA256 表。暂不支持各平台独立推进。
+官方厂商来源不需要虚构 GitHub star 数。计划绑定所选清单项的元数据摘要与资源 hash，
+所选项变化则拒绝应用，清单新增其他版本不影响原计划。
+updater 不验 Sparkle 签名；ChatGPT 安装时仍保留 macOS 包版本及 codesign 检查。
+
 只有 GLOBAL 的包保留单资源。已有 xlings-res 双腿继续消费，合适的大学镜像经项目路径与产物核实后采用。
 CN 跳回 GitHub 不算镜像就绪。当前使用 xlings-res 的包，也可为后续版本采用更新的上游原版资产和已验证的机构镜像。
 同时将 `source` 指向真实上游版本目录，避免旧资源仓库限制发现范围；重打包/拆分包先验证布局和安装契约。

@@ -209,7 +209,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: openxlings/xpkgindex-update
-          ref: c2c4e200205e67aff7e1e00dee0e15023149fb7a
+          ref: 516e15d5f797803743486a7c0ef6e9ccbd2f5978
           path: .updater
           persist-credentials: false
       - name: Select runtime changes structurally
@@ -265,7 +265,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: openxlings/xpkgindex-update
-          ref: c2c4e200205e67aff7e1e00dee0e15023149fb7a
+          ref: 516e15d5f797803743486a7c0ef6e9ccbd2f5978
           path: .updater
           persist-credentials: false
       - name: Select runtime changes structurally
@@ -356,7 +356,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: openxlings/xpkgindex-update
-          ref: c2c4e200205e67aff7e1e00dee0e15023149fb7a
+          ref: 516e15d5f797803743486a7c0ef6e9ccbd2f5978
           path: .updater
           persist-credentials: false
       - name: Select runtime changes structurally

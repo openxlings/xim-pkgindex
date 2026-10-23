@@ -44,10 +44,25 @@ Actions artifact. Generated audit snapshots do not belong in the PR.
 `latest = "advance"` and each resource target's `required = true` are defaults.
 Use `latest = "keep"` for a pinned/LTS default. A target can expand to
 `{ required = true, url = { linux = { x86_64 = "..." } } }`.
-Source URLs currently recognize GitHub releases/tags; download templates can use
+Source URLs recognize GitHub releases/tags and public HTTPS Sparkle RSS appcasts ending in `.xml`; download templates can use
 any public HTTPS source. Select the newest candidate satisfying every required
 region across the complete platform/architecture matrix, using a true intersection.
 Targets can explicitly opt into optional availability through review of the package declaration.
+
+For official appcasts, set `source = "https://vendor.example/appcast.xml"` and use
+`${version}` download templates without a GitHub repository or `tag` declaration.
+The numeric Sparkle short version identifies releases; delta and channel-marked
+entries are excluded. A required template must match the full enclosure URL and
+length. All required platforms must be ready before latest advances. ChatGPT uses
+this mode for official Linux x86_64 DEB and macOS ARM64 ZIP resources: macOS-only
+releases wait for Linux instead of changing the platform matrix. Historical helper
+entries remain intact; new versions use explicit URL/SHA256 tables. Independent
+per-platform advancement is not supported. Vendor sources do not need GitHub stars.
+Plans pin the selected appcast item's metadata digest and artifact hashes; changes
+to that item invalidate the plan, while unrelated new feed entries are allowed.
+Sparkle signatures are not verified by the updater; ChatGPT retains its native
+macOS bundle version and codesign checks during installation.
+
 This migration configures every reviewed target as required by default.
 Existing xlings-res pairs are consumed; institutional mirrors replace them only
 when their paths and artifact identity match. CN redirects to GitHub do not count
