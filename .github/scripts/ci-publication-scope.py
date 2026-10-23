@@ -9,7 +9,7 @@ INDEX = ['pkgs/**', 'libs/**', 'xim-indexrepos.lua', 'index-compat.json', '.xpkg
          'tools/build_xim_index_artifact.sh', 'tools/publish_xim_index.sh',
          'tools/push_index_pointers.sh', '.github/workflows/publish-artifact.yml',
          '.github/scripts/ci-publication-scope.py', '.github/scripts/ci-verified-source.py']
-SITE = ['pkgs/**', 'docs/**', '.xpkgindex/**', '.xpkgindex.json', '.github/workflows/pkgindex-deloy.yml',
+SITE = ['pkgs/**', 'docs/**', 'README.md', 'README.zh.md', '.xpkgindex/**', '.xpkgindex.json', '.github/workflows/pkgindex-deloy.yml',
         '.github/scripts/ci-publication-scope.py', '.github/scripts/ci-verified-source.py']
 
 

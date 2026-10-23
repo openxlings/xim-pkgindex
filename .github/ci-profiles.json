@@ -45,6 +45,8 @@
       ".github/workflows/site-check.yml",
       ".xpkgindex.json",
       ".xpkgindex/**",
+      "README.md",
+      "README.zh.md",
       "docs/**",
       "pkgs/**"
     ]

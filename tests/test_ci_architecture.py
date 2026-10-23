@@ -224,3 +224,10 @@ def test_publication_cannot_bypass_source_gate(field, value):
     assert mod.verified(run, 'acme/index', 'a' * 40)
     run[field] = value
     assert not mod.verified(run, 'acme/index', 'a' * 40)
+
+
+def test_readme_translation_changes_receive_documentation_validation():
+    p = planner.plan(['README.zh.md'], {}, {}, PROFILES)
+    assert p['flags']['site_check']
+    assert p['install_matrix']['include'] == []
+    assert module('ci-publication-scope').selected(['README.zh.md'], 'site')
