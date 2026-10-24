@@ -22,15 +22,10 @@ package = {
     xvm_enable = true,
     xpm = {
         linux = {
-            -- X11/GL/Vulkan discovery and the isolated Linux runtime.
-            deps = { runtime = {
-                "xim:glibc@>=2.39", "xim:gcc-runtime@>=15.1.0", "xim:graphics@>=0.1",
-                -- Direct ELF consumers need direct resolver records; the
-                -- graphics meta-package itself exports no library directory.
-                "xim:libX11", "xim:libXrender", "xim:libXfixes", "xim:libXi",
-                "xim:libxkbcommon", "xim:libglvnd", "xim:libXext",
-                "xim:libICE", "xim:libSM", "xim:libXt",
-            } },
+            -- Keep the upstream host loader. Bundled USD/Python and optional
+            -- CUDA/HIP/Level Zero plugins use the host desktop/driver ABI,
+            -- like dpcpp and the JDKs. A private glibc removes that fallback.
+            -- No private graphics discovery variables are injected either.
             ["latest"] = { ref = "4.5.15" },
             ["4.5.15"] = {
                 x86_64 = asset("linux-x64.tar.xz",
@@ -61,8 +56,6 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
--- Shared graphics discovery API used by the other desktop consumers.
-import("xim.pkgindex.graphics")
 
 local function quote(s)
     return "'" .. s:gsub("'", "'\\''") .. "'"
@@ -120,8 +113,6 @@ function config()
     local dir = pkginfo.install_dir()
     if os.isfile(dir .. "/Blender.app/Contents/MacOS/Blender") then
         xvm.add("blender", { bindir = dir .. "/Blender.app/Contents/MacOS", alias = "Blender" })
-    elseif os.isfile(dir .. "/blender") then
-        xvm.add("blender", { bindir = dir, envs = graphics.consumer_envs() })
     else
         xvm.add("blender", { bindir = dir })
     end

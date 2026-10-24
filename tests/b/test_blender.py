@@ -33,8 +33,7 @@ def test_isolation():
     assert_uses_new_api(PKG_FILE)
     src = Path(PKG_FILE).read_text()
     assert set(re.findall(r'import\("([^"]+)"\)', src)) <= {
-        "xim.libxpkg.pkginfo", "xim.libxpkg.system", "xim.libxpkg.xvm",
-        "xim.pkgindex.graphics"}
+        "xim.libxpkg.pkginfo", "xim.libxpkg.system", "xim.libxpkg.xvm"}
     assert not re.search(r'\b(?:path\.|is_host\(|os\.host\(|raise\()', src)
 
 
