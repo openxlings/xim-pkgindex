@@ -48,7 +48,7 @@ package = {
             -- settings window, the wallpaper and its engine; xim:wl-clipboard:
             -- wl-copy and wl-paste reach the session's clipboard (data-control).
             deps = { "xim:xdesk@2026.10.24.2", "luban:foot", "luban:cursors", "luban:audio", "luban:falkon", "luban:audacious",
-                     "xim:graphics@>=0.1", "xim:wl-clipboard@>=2.3" },
+                     "xim:graphics@>=0.1", "xim:wl-clipboard" },
             ["latest"] = { ref = "2026.10.24.2" },
             -- 1: luban:cursors became a dependency. 2: xdesk 2026.10.19.2.
             -- 3 (and 2026.10.19.2's 1): luban:audio and luban:falkon.
