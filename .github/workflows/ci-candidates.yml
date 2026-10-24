@@ -57,7 +57,6 @@ jobs:
         python .github/scripts/autoupdate-ci.py matrix --base "$resolved" --output matrix.json
         echo "value=$(python -c 'import json; print(json.dumps(json.load(open("matrix.json")),separators=(",",":")))')" >> "$GITHUB_OUTPUT"
     - name: Verify every added candidate resource without discovery
-      if: steps.matrix.outputs.value != '{"include":[]}'
       env:
         GH_TOKEN: ${{ github.token }}
         BASE: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
