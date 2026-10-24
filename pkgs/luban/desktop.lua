@@ -24,7 +24,7 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "2026.10.24.1" },
+            ["latest"] = { ref = "2026.10.24.2" },
             ["2026.10.18.1"] = { min_client = "2026.10.18.1" },
             ["2026.10.19.1"] = { min_client = "2026.10.18.1" },
             ["2026.10.20.1"] = { min_client = "2026.10.20.1" },
@@ -34,6 +34,7 @@ package = {
             ["2026.10.22.2"] = { min_client = "2026.10.20.1" },
             ["2026.10.23.1"] = { min_client = "2026.10.20.1" },
             ["2026.10.24.1"] = { min_client = "2026.10.20.1" },
+            ["2026.10.24.2"] = { min_client = "2026.10.20.1" },
         },
     },
 }
@@ -289,6 +290,41 @@ versions["2026.10.24.1"] = {
         replaces = { "subos:luban-desktop", "subos:luban-desktop-xdesk" },
         abi = { kernel = "linux", libc = "gnu" },
         packages = packages_2026_10_24_1,
+        boot = { virt = "xim:linux-kernel-virt@6.12.112-r3" },
+        luban = { settings = { mode = "machine", enter = "desktop", desktop = desktop_2026_10_22_2.session, login_shell = "/usr/bin/fish" } },
+        workspace = {},
+    },
+}
+-- 2026.10.24.2 (xlings design 2026-10-24): 2026.10.24.1 with xdesk
+-- 2026.10.24.2 (luban:xdesk 2026.10.24.2, wl-clipboard with it), and checks
+-- that every application shows an icon and each everyday program starts and
+-- ends cleanly (§10.3).
+local CHECKS_2026_10_24_2 = [[
+{"checks": [
+  {"id": "desktop-applications", "what": "its launcher lists foot, nvim, the browser and the player", "run": "ls /usr/share/applications | grep -q '^foot' && ls /usr/share/applications | grep -qi nvim && ls /usr/share/applications | grep -qi falkon && ls /usr/share/applications | grep -qi audacious", "timeout": 10},
+  {"id": "desktop-cursors", "what": "the Luban pointer theme is the default", "run": "grep -q '^Inherits=Luban' /usr/share/icons/default/index.theme && test -e /usr/share/icons/Luban/cursors/default", "timeout": 10},
+  {"id": "desktop-terminal", "what": "the default terminal is found", "run": "command -v xdg-terminal-exec >/dev/null || ls /usr/share/xdg-terminals | grep -q foot", "timeout": 10},
+  {"id": "desktop-sound", "what": "its sound has the luban output", "run": "test -e /usr/share/pipewire/pipewire.conf.d/luban.conf && command -v luban-audio >/dev/null", "timeout": 10},
+  {"id": "desktop-music", "what": "a piece to play is there", "run": "test -s /usr/share/luban/samples/music/aria.ogg", "timeout": 10},
+  {"id": "desktop-clipboard", "what": "wl-copy and wl-paste reach the session's clipboard", "run": "command -v wl-copy >/dev/null && command -v wl-paste >/dev/null", "timeout": 10},
+  {"id": "desktop-icons", "what": "every application it lists shows an icon", "run": "missing=''; for f in /usr/share/applications/*.desktop; do grep -q '^NoDisplay=true' \"$f\" && continue; i=$(sed -n 's/^Icon=//p' \"$f\" | head -1); [ -z \"$i\" ] && { missing=\"$missing $(basename $f)\"; continue; }; case \"$i\" in /*) [ -e \"$i\" ] && continue;; esac; ls /usr/share/icons/*/*/apps/\"$i\".* /usr/share/icons/*/scalable/apps/\"$i\".svg /usr/share/pixmaps/\"$i\".* >/dev/null 2>&1 || missing=\"$missing $(basename $f)\"; done; [ -z \"$missing\" ] || { echo \"no icon:$missing\"; exit 1; }", "timeout": 30},
+  {"id": "desktop-exits-clean", "what": "the browser, the terminal and the player start and end cleanly", "run": "QT_QPA_PLATFORM=offscreen falkon --version >/dev/null 2>&1 && foot --version >/dev/null 2>&1 && audacious --version >/dev/null 2>&1", "timeout": 60}
+]}
+]]
+local packages_2026_10_24_2 = {}
+for _, p in ipairs(packages_2026_10_24_1) do
+    table.insert(packages_2026_10_24_2, p == "luban:xdesk@2026.10.22.2" and "luban:xdesk@2026.10.24.2" or p)
+end
+
+versions["2026.10.24.2"] = {
+    files = luban.with(luban_desktop.environment(), luban.checks("desktop", CHECKS_2026_10_24_2)),
+    manifest = {
+        subos_kind = "rootfs",
+        min_client = "2026.10.20.1",
+        from = "luban:core@2026.10.24.1",
+        replaces = { "subos:luban-desktop", "subos:luban-desktop-xdesk" },
+        abi = { kernel = "linux", libc = "gnu" },
+        packages = packages_2026_10_24_2,
         boot = { virt = "xim:linux-kernel-virt@6.12.112-r3" },
         luban = { settings = { mode = "machine", enter = "desktop", desktop = desktop_2026_10_22_2.session, login_shell = "/usr/bin/fish" } },
         workspace = {},

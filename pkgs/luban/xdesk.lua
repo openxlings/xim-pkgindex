@@ -43,9 +43,13 @@ package = {
             -- xdesk 2026.10.22.2: 2026.10.22.1's desktop on the C++ runtime a
             -- Luban system binds (2026.10.22.1 needed GCC 16's, GLIBCXX_3.4.35,
             -- and could not start; xlings design 2026-10-21 J34).
-            deps = { "xim:xdesk@2026.10.22.2", "luban:foot", "luban:cursors", "luban:audio", "luban:falkon", "luban:audacious",
-                     "xim:graphics@>=0.1" },
-            ["latest"] = { ref = "2026.10.22.2" },
+            -- xdesk 2026.10.24.2 (xlings design 2026-10-24): displays on the bus,
+            -- extending displays, images and files on the clipboard, the
+            -- settings window, the wallpaper and its engine; xim:wl-clipboard:
+            -- wl-copy and wl-paste reach the session's clipboard (data-control).
+            deps = { "xim:xdesk@2026.10.24.2", "luban:foot", "luban:cursors", "luban:audio", "luban:falkon", "luban:audacious",
+                     "xim:graphics@>=0.1", "xim:wl-clipboard@>=2.3" },
+            ["latest"] = { ref = "2026.10.24.2" },
             -- 1: luban:cursors became a dependency. 2: xdesk 2026.10.19.2.
             -- 3 (and 2026.10.19.2's 1): luban:audio and luban:falkon.
             -- 4 (2026.10.19.2's 2): xdesk 2026.10.20.1 -- its switchers,
@@ -63,13 +67,15 @@ package = {
             -- 8 (and each one's next): back to xdesk 2026.10.21.3. 9 (and each
             -- one's next): xdesk 2026.10.22.2, which runs on the bound runtime.
             -- A system that has 2026.10.22.1 active moves with the new version.
-            ["2026.10.18.1"] = { revision = 9 },
-            ["2026.10.19.2"] = { revision = 7 },
-            ["2026.10.20.1"] = { revision = 5 },
-            ["2026.10.21.1"] = { revision = 4 },
-            ["2026.10.21.3"] = { revision = 3 },
-            ["2026.10.22.1"] = { revision = 2 },
-            ["2026.10.22.2"] = {},
+            -- 10 (and each one's next): xdesk 2026.10.24.2 and xim:wl-clipboard.
+            ["2026.10.18.1"] = { revision = 10 },
+            ["2026.10.19.2"] = { revision = 8 },
+            ["2026.10.20.1"] = { revision = 6 },
+            ["2026.10.21.1"] = { revision = 5 },
+            ["2026.10.21.3"] = { revision = 4 },
+            ["2026.10.22.1"] = { revision = 3 },
+            ["2026.10.22.2"] = { revision = 1 },
+            ["2026.10.24.2"] = {},
         },
     },
 }

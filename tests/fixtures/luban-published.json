@@ -245,6 +245,32 @@
    "sha256": "1d87b6716e02d3ae62d7e77d50352081a657a1d31c04338f7c47ea03868f50ae"
   }
  },
+ "pkgs/luban/desktop.lua@2026.10.24.2": {
+  ".xlings.json": {
+   "mode": "644",
+   "sha256": "f39d1fab69357bfa491d11b6a15d9fd5b229b26460b5c4816728c495b0b37708"
+  },
+  "usr/share/factory/etc/gitconfig": {
+   "mode": "644",
+   "sha256": "a8864c36e9e1d51f165dde6266fa73c1f9cff09bfc18b25d9ce9eb6e254f30a1"
+  },
+  "usr/share/factory/etc/os-release": {
+   "mode": "644",
+   "sha256": "109be509ba3b288277db24d00377f46d12c699c9a8b068f52d13703d00305144"
+  },
+  "usr/share/factory/etc/profile.d/luban-registries.sh": {
+   "mode": "644",
+   "sha256": "02506ca1c88c5ada1cf59c3172cc99a5dfd87b717b70fde2fe154973ea5d976a"
+  },
+  "usr/share/luban/checks.d/desktop.json": {
+   "mode": "644",
+   "sha256": "de6cb0f868c67255f56bf9e349bbcf313a9b3c2b988e3e16060450895a58ad14"
+  },
+  "usr/share/luban/settings.json": {
+   "mode": "644",
+   "sha256": "1d87b6716e02d3ae62d7e77d50352081a657a1d31c04338f7c47ea03868f50ae"
+  }
+ },
  "pkgs/luban/luban-agent-workspace.lua@2026.10.11.2": {
   ".xlings.json": {
    "mode": "644",
