@@ -90,3 +90,13 @@ def test_package_budget_cannot_consume_the_entire_run_quota():
     policy = yaml.safe_load((ROOT / '.github/xpkgindex-update.yml').read_text())
     assert 0 < policy['package_requests'] < policy['request_budget']
     assert 0 < policy['package_download_bytes'] < policy['download_bytes']
+
+
+def test_interrupted_scan_can_persist_a_checkpoint_without_a_complete_plan():
+    flow = load('xpkgindex-update.yml')
+    progress = next(s for s in flow['jobs']['scan']['steps'] if s.get('id') == 'progress')
+    # Emit checkpoint readiness before plan parsing can fail; persist uses always().
+    assert progress['run'].index("echo 'ready=true'") < progress['run'].index('Path("plan.json")')
+    assert 'always()' in flow['jobs']['persist']['if']
+    assert "needs.scan.result == 'success'" not in flow['jobs']['persist']['if']
+    assert "needs.scan.result == 'success'" in flow['jobs']['propose']['if']

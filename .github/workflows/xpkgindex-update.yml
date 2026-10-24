@@ -111,8 +111,6 @@ jobs:
         env:
           PACKAGE: ${{ inputs.package }}
         run: |
-          python -c 'import json, subprocess; from pathlib import Path; p=json.loads(Path("plan.json").read_text()); assert p["base_commit"] == subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(); assert isinstance(p["candidates"], list)'
-          echo 'plan_ready=true' >> "$GITHUB_OUTPUT"
           if [[ -f .update-state.json ]]; then
             python -c 'from xpkgindex_update.state import load_state; from pathlib import Path; load_state(Path(".update-state.json"))'
             echo 'ready=true' >> "$GITHUB_OUTPUT"
@@ -120,6 +118,8 @@ jobs:
             echo '::error::Full scan did not produce a progress checkpoint'
             exit 1
           fi
+          python -c 'import json, subprocess; from pathlib import Path; p=json.loads(Path("plan.json").read_text()); assert p["base_commit"] == subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(); assert isinstance(p["candidates"], list)'
+          echo 'plan_ready=true' >> "$GITHUB_OUTPUT"
       - name: Select added candidate versions from the PR diff
         id: matrix
         env:
@@ -244,7 +244,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           checkpoint=.scan-progress
-          if [[ -f .proposal-progress/.update-state.json ]]; then checkpoint=.proposal-progress; fi
+          if [[ -f .proposal-progress/.update-state.json && -f .proposal-progress/.update-state-store.json ]]; then checkpoint=.proposal-progress; fi
           python .github/scripts/autoupdate-state.py save --state "$checkpoint/.update-state.json" --metadata "$checkpoint/.update-state-store.json"
   result:
     needs: [cadence, scan, propose, persist]
