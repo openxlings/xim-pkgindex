@@ -222,3 +222,36 @@ def test_a_recipe_a_bot_writes_keeps_the_automatic_rules(index):
     module, base = _guarded(index, RECIPE, moved)
     with pytest.raises(module.Invalid):
         module.guard(base)
+
+
+def test_candidate_verification_receives_the_installed_version(index, monkeypatch):
+    """A clean candidate home contains only the new version, never the old pin."""
+    import json
+    import shutil
+    module, recipe = index
+    home = recipe.parents[2] / 'home'
+    install = home / 'data/xpkgs/local-x-foo/1.1.0'
+    test = recipe.parents[2] / 'tests/f/test_foo.py'
+    test.parent.mkdir(parents=True)
+    test.write_text('# package verification entry point\n')
+    monkeypatch.chdir(recipe.parents[2])
+    monkeypatch.setenv('XLINGS_HOME', str(home))
+    monkeypatch.setenv('XLINGS_TEST_VERSION', '1.0.0')
+    monkeypatch.setattr(module, 'git', lambda *args: 'a' * 40)
+    verified = []
+    def run(command, **kwargs):
+        if command[:2] == ['xlings', 'install']:
+            install.mkdir(parents=True)
+            (install / '.xpkg.lua').write_text('metadata')
+            (install / 'payload').write_text('candidate')
+        elif command[:3] == ['python', '-m', 'pytest']:
+            verified.append(kwargs['env'])
+            assert kwargs['env']['XLINGS_TEST_VERSION'] == '1.1.0'
+            assert kwargs['env']['XLINGS_TEST_SUBOS'] == 'default'
+        elif command[:2] == ['xlings', 'remove']:
+            shutil.rmtree(install)
+    monkeypatch.setattr(module.subprocess, 'run', run)
+    module.run_candidate('xim:foo', 'pkgs/f/foo.lua', '1.1.0')
+    assert len(verified) == 1
+    evidence = json.loads((recipe.parents[2] / 'candidate-evidence.json').read_text())
+    assert evidence['version'] == '1.1.0' and evidence['status'] == 'verified-and-removed'
