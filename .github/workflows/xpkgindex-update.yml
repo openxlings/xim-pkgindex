@@ -132,7 +132,7 @@ jobs:
   propose:
     needs: scan
     if: >-
-      always() && needs.scan.result == 'success' && github.event_name != 'pull_request' && inputs.validation_base == '' &&
+      always() && needs.scan.result == 'success' && needs.scan.outputs.checked == 'success' && github.event_name != 'pull_request' && inputs.validation_base == '' &&
       github.ref_name == github.event.repository.default_branch && !inputs.dry_run
     runs-on: ubuntu-latest
     timeout-minutes: 90

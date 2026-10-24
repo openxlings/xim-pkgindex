@@ -29,6 +29,7 @@ def test_manual_dry_run_does_not_propose_or_change_production_cursor():
     flow = load('xpkgindex-update.yml')
     assert '!inputs.dry_run' in flow['jobs']['propose']['if']
     assert 'github.event.repository.default_branch' in flow['jobs']['propose']['if']
+    assert "needs.scan.outputs.checked == 'success'" in flow['jobs']['propose']['if']
     cache = [s for s in flow['jobs']['scan']['steps'] if s.get('uses', '').startswith('actions/cache/')]
     assert len(cache) == 2
     for step in cache:

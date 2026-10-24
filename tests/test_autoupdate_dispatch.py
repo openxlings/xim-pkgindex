@@ -95,3 +95,17 @@ def test_dispatch_budget_is_shared_by_all_proposals(context, monkeypatch):
     assert len(posts) == 20
     records = json.loads(Path('dispatches.json').read_text())['dispatches']
     assert sum(r['status'] == 'dispatch-deferred' for r in records) == 5
+
+
+def test_retry_does_not_duplicate_an_existing_success_or_active_run(context, monkeypatch):
+    pr, posts = context
+    monkeypatch.setattr('sys.argv', ['dispatch', '--proposals', 'proposals.json', '--base', 'validation', '--retry-failed'])
+    def gh(*args):
+        if args[-1] == 'repos/acme/index/pulls/12':
+            return json.dumps(pr)
+        return json.dumps({'workflow_runs': [
+            {'head_sha': pr['head']['sha'], 'id': 11, 'status': 'completed', 'conclusion': 'failure'},
+            {'head_sha': pr['head']['sha'], 'id': 10, 'status': 'completed', 'conclusion': 'success'}]})
+    monkeypatch.setattr(mod, 'gh', gh)
+    mod.main()
+    assert posts == []

@@ -43,7 +43,9 @@ def main():
             listing = json.loads(gh('api', f'repos/{repo}/actions/workflows/{workflow}/runs?branch={branch}&event=workflow_dispatch&per_page=100'))
             matching = [run for run in listing['workflow_runs'] if run['head_sha'] == sha]
             latest = max(matching, key=lambda run: run.get('id', 0), default=None)
-            retry = (args.retry_failed and latest and latest.get('status') == 'completed'
+            protected = any(run.get('status') != 'completed' or run.get('conclusion') == 'success'
+                            for run in matching)
+            retry = (args.retry_failed and not protected and latest and latest.get('status') == 'completed'
                      and latest.get('conclusion') in ('failure', 'cancelled', 'timed_out', 'startup_failure'))
             if latest and not retry:
                 outcomes.append({'id': record['id'], 'workflow': workflow, 'sha': sha, 'status': 'already-dispatched'})
