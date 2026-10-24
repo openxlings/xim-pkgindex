@@ -27,7 +27,7 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 env:
   PYTHONUTF8: '1'
-  UPDATER_COMMIT: 908776d7d94602ba20d2a1d9c4624c194d964aa8
+  UPDATER_COMMIT: 44b71ec6b25914bb8fcc81c74400b8b24b20b4b5
   XLINGS_VERSION: v2026.10.24.3
 jobs:
   cadence:
@@ -51,6 +51,8 @@ jobs:
     outputs:
       matrix: ${{ steps.matrix.outputs.value }}
       checked: ${{ steps.check.outcome }}
+      state_ready: ${{ steps.progress.outputs.ready }}
+      plan_ready: ${{ steps.progress.outputs.plan_ready }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -86,6 +88,11 @@ jobs:
           path: .update-state.json
           key: unified-update-state-${{ github.run_id }}
           restore-keys: unified-update-state-
+      - name: Load durable progress and candidate queue
+        if: github.ref_name == github.event.repository.default_branch && !inputs.dry_run && inputs.package == '' && inputs.validation_base == ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python .github/scripts/autoupdate-state.py load
       - name: Check real upstream resources once
         id: check
         if: github.event_name != 'pull_request' && inputs.validation_base == ''
@@ -98,11 +105,21 @@ jobs:
           args=()
           if [[ -n "$PACKAGE" ]]; then args+=(--package "$PACKAGE"); fi
           python -m xpkgindex_update check "${args[@]}" --max-batches "$MAX_BATCHES" --state-file .update-state.json --output plan.json
-      - uses: actions/cache/save@v4
-        if: always() && steps.check.outcome != 'skipped' && github.ref_name == github.event.repository.default_branch && !inputs.dry_run && inputs.package == '' && inputs.validation_base == ''
-        with:
-          path: .update-state.json
-          key: unified-update-state-${{ github.run_id }}
+      - name: Validate plan and available checkpoint
+        id: progress
+        if: always() && steps.check.outcome != 'skipped'
+        env:
+          PACKAGE: ${{ inputs.package }}
+        run: |
+          python -c 'import json, subprocess; from pathlib import Path; p=json.loads(Path("plan.json").read_text()); assert p["base_commit"] == subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(); assert isinstance(p["candidates"], list)'
+          echo 'plan_ready=true' >> "$GITHUB_OUTPUT"
+          if [[ -f .update-state.json ]]; then
+            python -c 'from xpkgindex_update.state import load_state; from pathlib import Path; load_state(Path(".update-state.json"))'
+            echo 'ready=true' >> "$GITHUB_OUTPUT"
+          elif [[ -z "$PACKAGE" ]]; then
+            echo '::error::Full scan did not produce a progress checkpoint'
+            exit 1
+          fi
       - name: Select added candidate versions from the PR diff
         id: matrix
         env:
@@ -129,10 +146,13 @@ jobs:
             matrix.json
             preservation.json
             candidate-resources.json
+            .update-state.json
+            .update-state-store.json
+          include-hidden-files: true
   propose:
     needs: scan
     if: >-
-      always() && needs.scan.result == 'success' && needs.scan.outputs.checked == 'success' && github.event_name != 'pull_request' && inputs.validation_base == '' &&
+      always() && needs.scan.result == 'success' && needs.scan.outputs.plan_ready == 'true' && github.event_name != 'pull_request' && inputs.validation_base == '' &&
       github.ref_name == github.event.repository.default_branch && !inputs.dry_run
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -161,13 +181,30 @@ jobs:
           name: unified-update-plan
           path: .update-plan
       - name: Propose from the fixed plan
+        id: proposal
+        continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
           BASE: ${{ github.ref_name }}
         run: |
           git switch -C "$BASE" "$GITHUB_SHA"
-          python -m xpkgindex_update propose --plan .update-plan/plan.json --base "$BASE" --draft --output proposals.json
-          python .github/scripts/autoupdate-dispatch.py --proposals proposals.json --base "$BASE"
+          if [[ -f .update-plan/.update-state.json ]]; then cp .update-plan/.update-state.json .update-state.json; fi
+          if [[ -f .update-plan/.update-state-store.json ]]; then cp .update-plan/.update-state-store.json .update-state-store.json; fi
+          python -m xpkgindex_update propose --plan .update-plan/plan.json --state-file .update-state.json --base "$BASE" --draft --output proposals.json
+      - name: Dispatch successfully created or refreshed PR heads
+        if: always() && steps.proposal.outcome != 'skipped'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE: ${{ github.ref_name }}
+        run: |
+          if [[ -f proposals.json ]]; then
+            python .github/scripts/autoupdate-dispatch.py --proposals proposals.json --base "$BASE"
+          fi
+      - name: Preserve proposal failures in the final gate
+        if: always()
+        env:
+          PROPOSAL: ${{ steps.proposal.outcome }}
+        run: '[[ "$PROPOSAL" == success ]]'
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -175,8 +212,42 @@ jobs:
           path: |
             proposals.json
             dispatches.json
+            .update-state.json
+            .update-state-store.json
+          include-hidden-files: true
+  persist:
+    needs: [scan, propose]
+    if: >-
+      always() && needs.scan.outputs.state_ready == 'true' &&
+      github.ref_name == github.event.repository.default_branch && !inputs.dry_run &&
+      inputs.package == '' && inputs.validation_base == ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: unified-update-plan
+          path: .scan-progress
+      - uses: actions/download-artifact@v4
+        if: needs.propose.result != 'skipped'
+        continue-on-error: true # A failed/cancelled proposal can fall back to the scan checkpoint.
+        with:
+          name: unified-update-proposals
+          path: .proposal-progress
+      - name: Save the newest checkpoint with compare-and-swap
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          checkpoint=.scan-progress
+          if [[ -f .proposal-progress/.update-state.json ]]; then checkpoint=.proposal-progress; fi
+          python .github/scripts/autoupdate-state.py save --state "$checkpoint/.update-state.json" --metadata "$checkpoint/.update-state-store.json"
   result:
-    needs: [cadence, scan, propose]
+    needs: [cadence, scan, propose, persist]
     if: always() && needs.cadence.outputs.due == 'true'
     runs-on: ubuntu-latest
     steps:
@@ -185,7 +256,9 @@ jobs:
           SCAN: ${{ needs.scan.result }}
           CHECK: ${{ needs.scan.outputs.checked }}
           PROPOSE: ${{ needs.propose.result }}
+          PERSIST: ${{ needs.persist.result }}
         run: |
           [[ "$SCAN" == success ]]
           [[ "$CHECK" != failure ]]
           [[ "$PROPOSE" != failure && "$PROPOSE" != cancelled ]]
+          [[ "$PERSIST" != failure && "$PERSIST" != cancelled ]]

@@ -5,3 +5,5 @@ request_budget: 500
 resource_bytes: 4294967296
 download_bytes: 17179869184
 max_packages: 50
+package_requests: 50
+package_download_bytes: 8589934592

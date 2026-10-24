@@ -109,3 +109,53 @@ def test_retry_does_not_duplicate_an_existing_success_or_active_run(context, mon
     monkeypatch.setattr(mod, 'gh', gh)
     mod.main()
     assert posts == []
+
+
+@pytest.mark.parametrize('status', ['created', 'updated', 'pending'])
+def test_fixed_package_branch_dispatches_its_current_head(context, status):
+    pr, posts = context
+    pr['head']['ref'] = 'auto/bump-xim-foo'
+    Path('proposals.json').write_text(json.dumps({'packages': [
+        {'id': 'xim:foo', 'status': status, 'url': 'https://github.com/acme/index/pull/12'}]}))
+    mod.main()
+    assert len(posts) == 1
+    assert posts[0]['ref'] == 'auto/bump-xim-foo'
+    assert posts[0]['inputs']['head_sha'] == pr['head']['sha']
+
+
+def test_refresh_cancels_obsolete_ci_and_dispatches_only_the_new_head(context, monkeypatch):
+    pr, posts = context
+    pr['head']['ref'] = 'auto/bump-xim-foo'
+    cancelled = []
+    def gh(*args):
+        if '/pulls/' in args[-1]:
+            return json.dumps(pr)
+        if args[-1].endswith('/cancel'):
+            cancelled.append(args[-1])
+            return ''
+        assert '&event=' not in args[-1]  # PR-triggered CI counts for idempotency too.
+        return json.dumps({'workflow_runs': [{'id': 99, 'head_sha': 'old', 'status': 'in_progress',
+                                             'event': 'workflow_dispatch'}]})
+    monkeypatch.setattr(mod, 'gh', gh)
+    mod.main()
+    assert cancelled == ['repos/acme/index/actions/runs/99/cancel']
+    assert len(posts) == 1 and posts[0]['inputs']['head_sha'] == 'a' * 40
+
+
+def test_head_race_never_cancels_newer_ci_or_dispatches_a_stale_head(context, monkeypatch):
+    pr, posts = context
+    pr['head']['ref'] = 'auto/bump-xim-foo'
+    reads = []
+    def gh(*args):
+        if '/pulls/' in args[-1]:
+            reads.append(True)
+            value = json.loads(json.dumps(pr))
+            if len(reads) > 1:
+                value['head']['sha'] = 'newer'
+            return json.dumps(value)
+        assert not args[-1].endswith('/cancel')
+        return json.dumps({'workflow_runs': []})
+    monkeypatch.setattr(mod, 'gh', gh)
+    mod.main()
+    assert posts == []
+    assert json.loads(Path('dispatches.json').read_text())['dispatches'][0]['status'] == 'head-moved'

@@ -37,7 +37,7 @@ jobs:
       - name: CI architecture regression tests
         run: |
           python3 -m pip install pytest pyyaml # host-dep-ok: CI test harness
-          python3 -m pytest tests/test_ci_architecture.py tests/test_autoupdate_dispatch.py -q
+          python3 -m pytest tests/test_ci_architecture.py tests/test_autoupdate_dispatch.py tests/test_autoupdate_state.py tests/test_autoupdate_workflow.py -q
 
       - name: Shell scripts parse
         run: |
