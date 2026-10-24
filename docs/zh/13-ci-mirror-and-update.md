@@ -55,12 +55,33 @@ CN 跳回 GitHub 不算镜像就绪。当前使用 xlings-res 的包，也可为
 
 实际扫描/提案每 3 天执行一次，时间为 02:17 UTC / 11:17 JST。每日轻量调度按 UTC 日期门禁，
 以 2026-10-23 为锚点（10 月 23/26/29 日、11 月 1 日等），非到期日跳过扫描/提案，跨月和跨年保持等间隔。
-PR 检查和人工触发不受该门禁限制。到期运行扫描一次，propose 消费同一份固定 plan，不重新发现版本。配方、base、tag commit
+PR 检查和人工触发不受该门禁限制。到期运行连续扫描多个批次，propose 消费同一份固定 plan，不重新发现版本。配方、base、tag commit
 或资源字节变化会拒绝应用。更新不执行 Lua、不改写历史版本、不自动修复冲突、不构建载荷、不自动合并。
 候选版本必须通过相应 runner 上的真实安装、功能验证和卸载。
 
-中央策略位于 `.github/xpkgindex-update.yml`；预算和轮转游标约束扫描，不用多天节流掩盖失败。
-正常升级只追最新稳定版，历史补录独立处理且尚未启用。工具安装后可以运行：
+中央策略位于 `.github/xpkgindex-update.yml`。`max_packages: 50` 是每批扫描数量，
+每轮最多连续扫描 20 批，每个启用包只访问一次；所有批次共用 500 次请求和 16 GiB 下载总预算。
+每完成一批就保存轮转游标；资源检查中途耗尽预算的包留到下轮重试。plan 会报告实际批次数、
+扫描数量和耗尽的具体预算。`max_prs: 20` 独立限制每轮新建的更新 PR 数量；已有 PR 阻止重复提案，
+超出提案上限的候选由后续扫描再次发现。每个候选工作流最多并发 4 个平台任务，
+每轮 updater 最多分发 20 次新 CI。相同 head 已成功或仍在运行的 CI 不会重复分发；
+需要重试失败 head 时显式使用 `autoupdate-dispatch.py --retry-failed`，仍保留 bot、仓库和 base 校验。
+
+人工触发 `xpkgindex-update.yml` 时，可指定 `max_batches`（1..20）、可选的 `package`，
+以及 `dry_run: true`。试运行检查真实上游资源并上传 `unified-update-plan`，不创建 PR、不分发候选 CI。
+试运行、单包扫描和功能分支扫描均不读取或保存生产游标；仅默认分支允许创建提案。
+例如，发布前验证接入分支：
+
+```sh
+gh workflow run xpkgindex-update.yml --ref fix/autoupdate-batching-ci -f dry_run=true -f max_batches=20
+```
+
+候选安装脚本从固定的 xlings release tag 获取。目前 xlings release 没有 macOS Intel 和 Windows ARM64
+资产，这两个平台的原生候选验证仍被阻塞；资源下载或扫描成功不能替代安装验证。
+DPCPP 的 RUNPATH 校验失败也仍是真实升级门禁，相关包 PR 必须解决这些问题后才能合并。
+
+预算和轮转游标约束扫描，不用多天节流掩盖失败。正常升级只追最新稳定版，
+历史补录独立处理且尚未启用。工具安装后可以运行：
 
 ```sh
 xpkgindex-update inspect
