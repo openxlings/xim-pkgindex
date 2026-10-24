@@ -878,7 +878,7 @@ foot)
     mkdir -p "$work/$d/share/terminfo/f"
     ALPINE_IMAGE="$ALPINE_DESKTOP" alpine "apk add -q foot-extra-terminfo && cp /usr/share/terminfo/f/foot* /w/$d/share/terminfo/f/ \
         && cp -r /usr/share/licenses/foot /w/$d/share/licenses/ 2>/dev/null || true"
-    headless "$d" "./bin/foot --version > /w/foot.version"
+    headless "$d" "./bin/foot --version > /w/foot.version && ./bin/foot --check-config -c etc/xdg/foot/foot.ini > /w/foot.config 2>&1"
     grep -q "foot version: $v" "$work/foot.version" || die "foot does not run: $(cat "$work/foot.version")"
     provenance "$d" "luban:foot $version: Alpine 3.24 $(grep -E '^foot-[0-9]' "$work/installed" | tr '\n' ' ')-- with the musl loader and the libraries it links (libexec/foot, private), run through bin/<program>; defaults and the default-terminal entry from xim-pkgindex tools/res/luban/foot; it ran in Debian 12. Sources: https://codeberg.org/dnkl/foot and Alpine's aports (community/foot), unmodified"
     pack "$d" ;;
@@ -1314,13 +1314,16 @@ falkon)
     v="${version%%-r[0-9]*}"; d="falkon-$version-linux-$arch"
     progs="/usr/bin/falkon /usr/lib/qt6/libexec/QtWebEngineProcess"
     carried="falkon qt6-qtwebengine"
+    # What QtWebEngine's NSS opens by name (J59): its recipe declares them.
+    opened="$(python3 "$luban/bundle/dlopen.py" declared pkgs/luban/falkon.lua | tr '\n' ' ')"
+    [[ -n "$opened" ]] || die "falkon: its recipe declares no dlopen libraries (NSS's modules)"
     cp "$luban/qt-runtime/tree.sh" "$luban/qt-runtime/desktop.sh" "$luban/bundle/strip-rpath.sh" "$work/"
     # ICU's whole data (icu-data-full): Blink's line breaker needs it -- the
     # runtime's libicudata is Alpine's stub, and a page's renderer crashed on
     # an empty break iterator (xlings design 2026-10-20 WuXian §14, H23).
     ALPINE_IMAGE="$ALPINE_DESKTOP" alpine "apk add -q $QT_RUNTIME_APKS $carried icu-data-full \
         && apk info -v 2>/dev/null | sort > /w/installed \
-        && sh /w/desktop.sh /w/$d falkon \"$QT_RUNTIME_APKS\" \"$progs\" \"$carried\" \
+        && sh /w/desktop.sh /w/$d falkon \"$QT_RUNTIME_APKS\" \"$progs\" \"$carried\" \"$opened\" \
         && mkdir -p /w/$d/libexec/falkon/share && cp -r /usr/share/icu /w/$d/libexec/falkon/share/ \
         && apk add -q patchelf && sh /w/strip-rpath.sh /w/$d/libexec/falkon /w/$d/lib /w/rt-root/libexec/qt-runtime"
     bundle_upstream falkon "$v"
@@ -1331,6 +1334,8 @@ falkon)
     icu="$(find "$work/$d/libexec/falkon/share/icu" -name 'icudt*l.dat' -size +20M | head -1)"
     [[ -n "$icu" ]] || die "falkon: no whole ICU data in libexec/falkon/share/icu"
     python3 "$luban/bundle/no-interp.py" "$work/$d/libexec/falkon/lib" "$work/$d/libexec/falkon/plugins" >/dev/null
+    # shellcheck disable=SC2086
+    python3 "$luban/bundle/dlopen.py" check "$work/$d/libexec/falkon/lib" "$work/$d" $opened || die "falkon: a declared dlopen library is missing"
     sed -e "s/@NAME@/falkon/g" -e "s/@PROG@/falkon/g" "$luban/bundle/run-direct.in" > "$work/$d/bin/falkon"
     chmod 755 "$work/$d/bin/falkon"
     log "falkon: $(ls "$work/$d/libexec/falkon/lib" | wc -l) libraries of its own, $(du -sh "$work/$d" | cut -f1)"
@@ -1341,8 +1346,15 @@ falkon)
     headless "test/$d" "apt-get -qq update && apt-get -qq install -y patchelf >/dev/null \
         && for p in libexec/falkon/bin/*; do patchelf --set-interpreter \$PWD/libexec/falkon/lib/ld-musl-$arch.so.1 \
              --set-rpath \$PWD/libexec/falkon/lib:/w/rt-root/libexec/qt-runtime/lib \$p; done \
-        && QT_QPA_PLATFORM=offscreen ./bin/falkon --version > /w/falkon.version 2>&1"
+        && QT_QPA_PLATFORM=offscreen ./bin/falkon --version > /w/falkon.version 2>&1 \
+        && apt-get -qq install -y python3 openssl >/dev/null \
+        && openssl req -x509 -newkey rsa:2048 -nodes -subj /CN=127.0.0.1 -keyout /tmp/k.pem -out /tmp/c.pem -days 1 2>/dev/null \
+        && (cd /tmp && python3 -c \"import http.server, ssl; s = http.server.HTTPServer(('127.0.0.1', 8443), http.server.SimpleHTTPRequestHandler); c = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER); c.load_cert_chain('/tmp/c.pem', '/tmp/k.pem'); s.socket = c.wrap_socket(s.socket, server_side=True); s.serve_forever()\" > /w/https.log 2>&1 &) \
+        && sleep 1 && rc=0 && QT_QPA_PLATFORM=offscreen QTWEBENGINE_CHROMIUM_FLAGS=--disable-gpu timeout 40 ./bin/falkon --private-browsing https://127.0.0.1:8443/ > /w/falkon-https.log 2>&1 || rc=\$? ; echo \$rc > /w/falkon-https.rc"
     grep -qi "^falkon [0-9]" "$work/falkon.version" || die "falkon does not start: $(cat "$work/falkon.version")"
+    # An https page (NSS's first use) does not end it (J59): still running when the time is up.
+    [[ "$(cat "$work/falkon-https.rc")" == 124 ]] || die "falkon ended on an https page ($(cat "$work/falkon-https.rc")): $(tail -20 "$work/falkon-https.log")"
+    grep -q "GET / " "$work/https.log" || die "falkon did not ask for the https page: $(tail -5 "$work/https.log")"
     provenance "$d" "luban:falkon $version: Alpine 3.24 $(grep -E '^(falkon|qt6-qtwebengine)-[0-9]' "$work/installed" | tr '\n' ' ')-- on luban:qt-runtime $QT_RUNTIME (the same Qt); the libraries beyond the runtime's and the musl loader private (libexec/falkon); the defaults from xim-pkgindex tools/res/luban/falkon. Sources: https://invent.kde.org/network/falkon, https://code.qt.io/qt/qtwebengine and Alpine's aports, unmodified"
     pack "$d" ;;
 kde)

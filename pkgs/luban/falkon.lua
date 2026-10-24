@@ -37,7 +37,13 @@ package = {
         { id = "falkon-runs", what = "it starts", run = "QT_QPA_PLATFORM=offscreen falkon --version", timeout = 30 },
         { id = "falkon-listed", what = "the launcher lists it", launcher = "org.kde.falkon" },
         { id = "falkon-window", what = "it opens a page", gui = "falkon about:blank", timeout = 60 },
-    } } },
+    },
+    -- What it opens by name at run time (xlings design 2026-10-24 §10.2):
+    -- QtWebEngine's NSS loads its soft token, its freebl and the trust
+    -- module with dlopen -- not in ldd's list; without them the first https
+    -- page ended it (J59). tools/res/build.sh carries what is declared.
+    bundle = { dlopen = { "libsoftokn3.so", "libfreeblpriv3.so", "libfreebl3.so", "libnssckbi.so" } },
+    } },
 
     xpm = {
         linux = {
