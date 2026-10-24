@@ -67,14 +67,15 @@ package = {
             -- 8 (and each one's next): back to xdesk 2026.10.21.3. 9 (and each
             -- one's next): xdesk 2026.10.22.2, which runs on the bound runtime.
             -- A system that has 2026.10.22.1 active moves with the new version.
-            -- 10 (and each one's next): xdesk 2026.10.24.2 and xim:wl-clipboard.
-            ["2026.10.18.1"] = { revision = 10 },
-            ["2026.10.19.2"] = { revision = 8 },
-            ["2026.10.20.1"] = { revision = 6 },
-            ["2026.10.21.1"] = { revision = 5 },
-            ["2026.10.21.3"] = { revision = 4 },
-            ["2026.10.22.1"] = { revision = 3 },
-            ["2026.10.22.2"] = { revision = 1 },
+            -- The published versions stay as they are (the index's guard): a
+            -- system moves by 2026.10.24.2, which an edition names.
+            ["2026.10.18.1"] = { revision = 9 },
+            ["2026.10.19.2"] = { revision = 7 },
+            ["2026.10.20.1"] = { revision = 5 },
+            ["2026.10.21.1"] = { revision = 4 },
+            ["2026.10.21.3"] = { revision = 3 },
+            ["2026.10.22.1"] = { revision = 2 },
+            ["2026.10.22.2"] = {},
             ["2026.10.24.2"] = {},
         },
     },
