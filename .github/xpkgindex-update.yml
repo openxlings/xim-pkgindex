@@ -1,6 +1,6 @@
 version: 1
 adapter: xim-pkgindex
-max_prs: 3
+max_prs: 20
 request_budget: 500
 resource_bytes: 4294967296
 download_bytes: 17179869184

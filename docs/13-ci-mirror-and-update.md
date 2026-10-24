@@ -75,11 +75,41 @@ validation before such a migration. Historical resources, manual entries and hoo
 The workflow scans every three days at 02:17 UTC / 11:17 JST. A lightweight daily
 trigger checks UTC days from 2026-10-23 and skips scheduled scans between due dates,
 including across month/year boundaries. PR checks and manual triggers bypass this
-cadence gate. A due run scans once and proposes from the same fixed plan. It never executes Lua,
+cadence gate. A due run scans sequential batches and proposes from the same fixed plan. It never executes Lua,
 rewrites published versions, repairs conflicting historical entries, builds payloads, or merges PRs.
 A candidate must pass actual installation, verification and removal on its supported runners.
-The central configuration is `.github/xpkgindex-update.yml`; scan limits and a rotating cursor
-prevent request exhaustion without a multi-day failure throttle. Ordinary updates select the newest
+The central configuration is `.github/xpkgindex-update.yml`. `max_packages: 50` is the
+scan batch size; it does not limit upgrades. Each run processes up to 20 batches,
+visiting each eligible package once, while sharing the same 500-request / 16 GiB
+download budgets. The cursor is checkpointed after each batch; resource budget
+exhaustion leaves the unfinished package for the next run. The plan reports the
+actual batch count and limiting budget. `max_prs: 20` independently caps newly
+created update PRs per run. Existing open PRs prevent duplicates; later scans
+rediscover candidates beyond the proposal cap. Candidate CI runs at most four
+platform jobs concurrently per workflow, and proposal dispatch is capped at 20
+new workflow runs per updater invocation. Successful or active CI for the same
+head is never dispatched again. `autoupdate-dispatch.py --retry-failed` explicitly
+retries failed heads when requested, after retaining the bot/repository/base checks.
+
+A manual `xpkgindex-update.yml` run accepts `max_batches` (1..20), an optional
+`package`, and `dry_run: true`. Dry runs scan real upstream resources and upload
+`unified-update-plan`, but create no PRs and dispatch no candidate CI. Dry runs,
+single-package scans and feature-branch scans neither restore nor save the
+production cursor. Proposal creation remains restricted to the default branch.
+For example, validate an integration branch before rollout:
+
+```sh
+gh workflow run xpkgindex-update.yml --ref fix/autoupdate-batching-ci -f dry_run=true -f max_batches=20
+```
+
+Candidate installers are fetched from the pinned xlings release tag, rather than
+mutable `main`. Release support still matters: current xlings releases have no
+macOS Intel or Windows ARM64 assets. Those native candidate jobs remain blocked;
+a successful resource download or a scan does not count as native installation
+validation. DPCPP's RUNPATH verification likewise remains a real upgrade gate.
+These failures must be resolved before the affected package PRs merge.
+
+Scan limits and a rotating cursor prevent request exhaustion without a multi-day failure throttle. Ordinary updates select the newest
 stable release. Historical backfill is separate and is not enabled.
 
 With the workflow's pinned tool installed:

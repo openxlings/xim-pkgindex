@@ -66,3 +66,32 @@ def test_resumes_only_missing_dispatches(context, monkeypatch):
     mod.main()
     assert posts == []
     assert all(r['status'] == 'already-dispatched' for r in json.loads(Path('dispatches.json').read_text())['dispatches'])
+
+
+@pytest.mark.parametrize('status,conclusion,expected', [
+    ('completed', 'failure', 1), ('completed', 'timed_out', 1),
+    ('completed', 'success', 0), ('in_progress', None, 0), ('queued', None, 0),
+])
+def test_explicit_retry_keeps_successful_and_active_heads(context, monkeypatch, status, conclusion, expected):
+    pr, posts = context
+    monkeypatch.setattr('sys.argv', ['dispatch', '--proposals', 'proposals.json', '--base', 'validation', '--retry-failed'])
+    def gh(*args):
+        if args[-1] == 'repos/acme/index/pulls/12':
+            return json.dumps(pr)
+        return json.dumps({'workflow_runs': [{'head_sha': pr['head']['sha'], 'id': 10,
+                                             'status': status, 'conclusion': conclusion}]})
+    monkeypatch.setattr(mod, 'gh', gh)
+    mod.main()
+    assert len(posts) == expected
+
+
+def test_dispatch_budget_is_shared_by_all_proposals(context, monkeypatch):
+    pr, posts = context
+    Path('proposals.json').write_text(json.dumps({'packages': [
+        {'id': 'xim:foo', 'status': 'pending', 'url': f'https://github.com/acme/index/pull/{n}'}
+        for n in range(12, 37)]}))
+    monkeypatch.setattr(mod, 'gh', lambda *args: json.dumps(pr if '/pulls/' in args[-1] else {'workflow_runs': []}))
+    mod.main()
+    assert len(posts) == 20
+    records = json.loads(Path('dispatches.json').read_text())['dispatches']
+    assert sum(r['status'] == 'dispatch-deferred' for r in records) == 5
