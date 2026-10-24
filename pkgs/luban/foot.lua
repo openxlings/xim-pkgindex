@@ -28,7 +28,16 @@ package = {
     xpm = {
         linux = {
             deps = { "xim:luban-fonts" },
-            ["latest"] = { ref = "1.27.0-r1" },
+            ["latest"] = { ref = "1.27.0-r2" },
+            -- r2: the right button pastes the clipboard, Ctrl+right extends a
+            -- selection (etc/xdg/foot/foot.ini; xlings design 2026-10-24 §8.3).
+            ["1.27.0-r2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "bc49da4ad308ae7795b3c5013e5aa95b6019a0fa5c734b903165ecf800669dbc",
+                    aarch64 = "0e37040d28f4dc4556bc9e609c70cc9f747d1804fe71cf4522641c952921b3d9",
+                },
+            },
             ["1.27.0-r1"] = {
                 -- 1: its loader searches only its tree (xlings design 2026-10-21 J12).
                 revision = 1,

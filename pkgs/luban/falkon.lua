@@ -48,7 +48,17 @@ package = {
     xpm = {
         linux = {
             deps = { "luban:qt-runtime@6.11.1-r2", "xim:luban-fonts", "xim:patchelf" },
-            ["latest"] = { ref = "26.04.2-r1" },
+            ["latest"] = { ref = "26.04.2-r2" },
+            -- r2: what NSS opens by name carried (bundle.dlopen above): the
+            -- first https page ended r1 (xlings design 2026-10-24 J59); its
+            -- build opens one. The same Falkon.
+            ["26.04.2-r2"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "066f81463b757f3c6217c85ce9d579f64f8beab03e6d5bc557ff32bcff2d6c78",
+                    aarch64 = "83cb795840cab1fa3f12d59a5f902880cc522f775998a5d7cb324fa61b7b5d68",
+                },
+            },
             -- r1: ICU's data carried (Qt's ICU found none: pages and its
             -- settings failed), the GPU used when the system has a render
             -- node, and what it says when there is no desktop (xlings

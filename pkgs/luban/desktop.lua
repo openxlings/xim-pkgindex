@@ -24,7 +24,7 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "2026.10.23.1" },
+            ["latest"] = { ref = "2026.10.24.1" },
             ["2026.10.18.1"] = { min_client = "2026.10.18.1" },
             ["2026.10.19.1"] = { min_client = "2026.10.18.1" },
             ["2026.10.20.1"] = { min_client = "2026.10.20.1" },
@@ -33,6 +33,7 @@ package = {
             ["2026.10.22.1"] = { min_client = "2026.10.20.1" },
             ["2026.10.22.2"] = { min_client = "2026.10.20.1" },
             ["2026.10.23.1"] = { min_client = "2026.10.20.1" },
+            ["2026.10.24.1"] = { min_client = "2026.10.20.1" },
         },
     },
 }
@@ -265,6 +266,30 @@ versions["2026.10.23.1"] = {
         replaces = { "subos:luban-desktop", "subos:luban-desktop-xdesk" },
         abi = { kernel = "linux", libc = "gnu" },
         packages = packages_2026_10_22_2,
+        luban = { settings = { mode = "machine", enter = "desktop", desktop = desktop_2026_10_22_2.session, login_shell = "/usr/bin/fish" } },
+        workspace = {},
+    },
+}
+-- 2026.10.24.1 (xlings design 2026-10-24): 2026.10.23.1 with the browser that
+-- opens https pages (luban:falkon 26.04.2-r2, J59), the terminal whose right
+-- button pastes (luban:foot 1.27.0-r2, §8.3), on core 2026.10.24.1, carrying
+-- the kernel it boots as a machine (boot.virt, §7.1).
+local packages_2026_10_24_1 = {}
+for _, p in ipairs(packages_2026_10_22_2) do
+    table.insert(packages_2026_10_24_1, p == "luban:foot@1.27.0-r1" and "luban:foot@1.27.0-r2" or p)
+end
+table.insert(packages_2026_10_24_1, 2, "luban:falkon@26.04.2-r2")
+
+versions["2026.10.24.1"] = {
+    files = luban.with(luban_desktop.environment(), luban.checks("desktop", CHECKS_2026_10_22)),
+    manifest = {
+        subos_kind = "rootfs",
+        min_client = "2026.10.20.1",
+        from = "luban:core@2026.10.24.1",
+        replaces = { "subos:luban-desktop", "subos:luban-desktop-xdesk" },
+        abi = { kernel = "linux", libc = "gnu" },
+        packages = packages_2026_10_24_1,
+        boot = { virt = "xim:linux-kernel-virt@6.12.112-r3" },
         luban = { settings = { mode = "machine", enter = "desktop", desktop = desktop_2026_10_22_2.session, login_shell = "/usr/bin/fish" } },
         workspace = {},
     },
