@@ -88,9 +88,10 @@ PR 检查和人工触发不受该门禁限制。到期运行连续扫描多个�
 gh workflow run xpkgindex-update.yml --ref fix/autoupdate-batching-ci -f dry_run=true -f max_batches=20
 ```
 
-候选安装脚本从固定的 xlings release tag 获取。目前 xlings release 没有 macOS Intel 和 Windows ARM64
-资产，这两个平台的原生候选验证仍被阻塞；资源下载或扫描成功不能替代安装验证。
-DPCPP 的 RUNPATH 校验失败也仍是真实升级门禁，相关包 PR 必须解决这些问题后才能合并。
+候选安装脚本从固定的 xlings release tag 获取。原生安装任务仅覆盖 Linux x86_64/ARM64、
+macOS ARM64 和 Windows x86_64。macOS Intel 和 Windows ARM64 仅校验资源：新增资源仍全部校验，
+但不创建安装任务。任务摘要和 `coverage.json` 明确报告此边界，资源校验不算安装验证。
+未知平台仍会被准入检查拒绝。DPCPP 的 RUNPATH 校验仍是真实升级门禁。
 
 预算和轮转游标约束扫描，不用多天节流掩盖失败。正常升级只追最新稳定版，
 历史补录独立处理且尚未启用。工具安装后可以运行：

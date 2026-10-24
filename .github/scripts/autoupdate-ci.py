@@ -58,14 +58,18 @@ def audit():
             reason = rollout_reason({}, info['autoupdate'])
             if reason:
                 raise Invalid(f'{path}: {reason}')
+            installation_targets, resource_only_targets = set(), set()
             for platform, arches in xim.matrix(info).items():
                 for arch in arches:
                     hosts = shared_arches(info, info['platforms'][platform]['entries'][xim.latest_refs(info)[platform]], next(iter(arches[arch].values()))) if arch == 'shared' else {arch}
                     for host in hosts:
-                        native_runner(platform, host)
+                        targets = installation_targets if native_runner(platform, host) else resource_only_targets
+                        targets.add(f'{platform}/{host}')
             enabled.append(info['id'])
             rows.append({**row, 'id': info['id'], 'status': 'enabled',
-                         'targets': list(info['autoupdate']['resources'])})
+                         'targets': list(info['autoupdate']['resources']),
+                         'installation_targets': sorted(installation_targets),
+                         'resource_only_targets': sorted(resource_only_targets)})
         else:
             rows.append({**row, 'status': 'manual', 'reason': 'no extensions.autoupdate declaration'})
     return {'total': len(files), 'enabled': enabled, 'manual': len(files) - len(enabled),
@@ -73,9 +77,13 @@ def audit():
 
 
 def native_runner(platform, arch):
+    # Upstream assets do not imply xlings release support. These known targets
+    # retain resource verification, but must not create native installation jobs.
+    if (platform, arch) in {('macosx', 'x86_64'), ('windows', 'aarch64')}:
+        return None
     runner = {'linux': {'x86_64': 'ubuntu-latest', 'aarch64': 'ubuntu-24.04-arm'},
-              'macosx': {'x86_64': 'macos-15-intel', 'aarch64': 'macos-latest'},
-              'windows': {'x86_64': 'windows-latest', 'aarch64': 'windows-11-arm'}}.get(platform, {}).get(arch)
+              'macosx': {'aarch64': 'macos-latest'},
+              'windows': {'x86_64': 'windows-latest'}}.get(platform, {}).get(arch)
     if not runner:
         raise Invalid(f'no validated xlings execution environment for {platform}/{arch}')
     return runner
@@ -127,9 +135,28 @@ def candidates(base):
                     arches = shared_arches(info, entry)
                 for arch in sorted(arches):
                     runner = native_runner(platform, arch)
+                    if runner is None:
+                        continue
                     jobs.append({'id': info['id'], 'path': filename, 'version': version,
                                  'platform': platform, 'arch': arch, 'os': runner})
     return {'include': jobs}
+
+
+def summarize_coverage(report):
+    """Make the installation boundary visible alongside the full JSON audit."""
+    summary = os.environ.get('GITHUB_STEP_SUMMARY')
+    if not summary:
+        return
+    enabled = [row for row in report['packages'] if row['status'] == 'enabled']
+    native = sorted({target for row in enabled for target in row['installation_targets']})
+    resource_only = sorted({target for row in enabled for target in row['resource_only_targets']})
+    with Path(summary).open('a', encoding='utf-8') as output:
+        output.write('### Automatic update validation coverage\n\n')
+        output.write('Native installation targets: ' + ', '.join(native) + '.\n\n')
+        output.write('Resource verification only (no installation validation): '
+                     + (', '.join(resource_only) or 'none') + '.\n\n')
+        output.write('Every added candidate resource is verified independently of the native job matrix. '
+                     'See coverage.json for each package and candidate-evidence.json for actual installations.\n')
 
 
 def run_candidate(identity, filename, version, expected_arch=None):
@@ -235,8 +262,12 @@ def main():
     args = parser.parse_args()
     if args.command == 'candidate':
         run_candidate(args.package, args.path, args.version, args.arch)
+    elif args.command == 'audit':
+        report = audit()
+        write(args.output, report)
+        summarize_coverage(report)
     else:
-        write(args.output, audit() if args.command == 'audit' else guard(args.base) if args.command == 'guard'
+        write(args.output, guard(args.base) if args.command == 'guard'
               else candidates(args.base))
 
 

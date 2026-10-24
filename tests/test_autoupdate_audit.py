@@ -141,6 +141,21 @@ def test_unsupported_runner_is_still_rejected(index):
         module.audit()
 
 
+@pytest.mark.parametrize('platform,arch', [('macosx', 'x86_64'), ('windows', 'aarch64')])
+def test_resource_only_target_is_reported_without_an_installation(index, platform, arch, monkeypatch):
+    module, recipe = index
+    recipe.write_text(RECIPE.replace('linux', platform).replace('x86_64', arch))
+    report = module.audit()
+    row = report['packages'][0]
+    assert row['installation_targets'] == []
+    assert row['resource_only_targets'] == [f'{platform}/{arch}']
+    summary = recipe.parents[2] / 'summary.md'
+    monkeypatch.setenv('GITHUB_STEP_SUMMARY', str(summary))
+    module.summarize_coverage(report)
+    assert 'no installation validation' in summary.read_text()
+    assert f'{platform}/{arch}' in summary.read_text()
+
+
 @pytest.mark.parametrize('legacy', [
     'ci = { update = true }',
     'xpm = { linux = { url_template = "https://example.com/${version}" } }',
@@ -182,6 +197,54 @@ def test_existing_descriptor_upgrade_still_selects_native_jobs(index):
     assert module.candidates(base) == {'include': [
         {'id': 'xim:foo', 'path': 'pkgs/f/foo.lua', 'version': '1.1.0',
          'platform': 'linux', 'arch': 'x86_64', 'os': 'ubuntu-latest'}]}
+
+
+@pytest.mark.parametrize('bad_asset', [None, 'omp-darwin-x64', 'omp-windows-arm64.exe'])
+def test_six_resource_upgrade_verifies_every_asset_but_installs_four(index, bad_asset):
+    """Exercise the real recipe and verifier, including excluded-target hash failures."""
+    import subprocess
+    module, recipe = index
+    before = (ROOT / 'pkgs/o/oh-my-pi.lua').read_text()
+    recipe.write_text(before)
+    subprocess.run(['git', 'init', '-q'], cwd=module.ROOT, check=True)
+    base = commit_fixture(module.ROOT, 'six upstream resources')
+    info = module.xim.package_info(recipe, module.ROOT)
+    expected = module.xim.matrix(info)
+    newest = max((v for p in info['platforms'].values() for v in p['entries']), key=module.xim.version_key)
+    version = newest + '.1'
+    edits = []
+    for platform, arches in expected.items():
+        values = {arch: {'url': module.xim.expand(templates['GLOBAL'], version, version),
+                         'sha256': 'b' * 64} for arch, templates in arches.items()}
+        node = info['platforms'][platform]['node'].definition()
+        edits.append((node.end - 1, '\n["' + version + '"] = ' + module.xim.literal(values) + ',\n'))
+    after = before
+    for position, insertion in sorted(edits, reverse=True):
+        after = after[:position] + insertion + after[position:]
+    recipe.write_text(after)
+    commit_fixture(module.ROOT, 'add all six candidate resources')
+    jobs = module.candidates(base)['include']
+    assert {(j['platform'], j['arch'], j['os']) for j in jobs} == {
+        ('linux', 'x86_64', 'ubuntu-latest'), ('linux', 'aarch64', 'ubuntu-24.04-arm'),
+        ('macosx', 'aarch64', 'macos-latest'), ('windows', 'x86_64', 'windows-latest'),
+    }
+    assert len(jobs) == 4
+    assert module.audit()['packages'][0]['resource_only_targets'] == ['macosx/x86_64', 'windows/aarch64']
+    checked = []
+    class Assets:
+        def artifact(self, url):
+            checked.append(url)
+            return {'url': url, 'size': 12, 'sha256': ('c' if url.endswith(bad_asset or '\0') else 'b') * 64}
+    candidate = module.xim.package_info(recipe, module.ROOT)
+    if bad_asset:
+        with pytest.raises(module.Invalid, match='SHA256 mismatch'):
+            module.xim.verify_candidates(candidate, before, Assets())
+        assert any(url.endswith(bad_asset) for url in checked)
+    else:
+        reports = module.xim.verify_candidates(candidate, before, Assets())
+        assert len(reports) == 1 and len(reports[0]['assets']) == len(checked) == 6
+        assert reports[0]['status'] == 'verified'
+    assert module.xim.matrix(candidate) == expected
 
 
 MANUAL = '''package = {

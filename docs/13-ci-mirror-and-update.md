@@ -118,12 +118,13 @@ For example, validate an integration branch before rollout:
 gh workflow run xpkgindex-update.yml --ref fix/autoupdate-batching-ci -f dry_run=true -f max_batches=20
 ```
 
-Candidate installers are fetched from the pinned xlings release tag, rather than
-mutable `main`. Release support still matters: current xlings releases have no
-macOS Intel or Windows ARM64 assets. Those native candidate jobs remain blocked;
-a successful resource download or a scan does not count as native installation
-validation. DPCPP's RUNPATH verification likewise remains a real upgrade gate.
-These failures must be resolved before the affected package PRs merge.
+Candidate installers are fetched from the pinned xlings release tag. Native
+installation jobs cover Linux x86_64/ARM64, macOS ARM64 and Windows x86_64.
+macOS Intel and Windows ARM64 are resource-only targets: every added resource is
+still verified, but no installation job is created. The job summary and
+`coverage.json` explicitly report this boundary; resource verification does not
+count as installation validation. Unknown targets still fail admission.
+DPCPP's RUNPATH verification remains a real upgrade gate.
 
 Scan limits and a rotating cursor prevent request exhaustion without a multi-day failure throttle. Ordinary updates select the newest
 stable release. Historical backfill is separate and is not enabled.

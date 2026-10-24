@@ -69,6 +69,16 @@ def test_candidate_bootstrap_uses_its_release_version_and_bounded_concurrency():
     assert all('/main/' not in s['run'] for s in installers)
 
 
+@pytest.mark.parametrize('workflow', ['ci-candidates.yml', 'xpkgindex-update.yml'])
+def test_resource_verification_is_independent_of_native_runner_support(workflow):
+    steps = load(workflow)['jobs']['scan']['steps']
+    verify = next(s for s in steps if 'xpkgindex_update verify ' in s.get('run', ''))
+    assert 'if' not in verify
+    upload = next(s for s in steps if s.get('uses', '').startswith('actions/upload-artifact'))
+    assert 'candidate-resources.json' in upload['with']['path']
+    assert 'coverage.json' in upload['with']['path']
+
+
 def test_queue_is_preserved_after_partial_proposal_failure_and_persistence_is_gated():
     flow = load('xpkgindex-update.yml')
     proposal = flow['jobs']['propose']
