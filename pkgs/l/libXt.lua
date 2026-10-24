@@ -13,7 +13,7 @@ package = {
     xvm_enable = true,
     xpm = {
         linux = {
-            deps = { runtime = { "xim:glibc", "xim:gcc-runtime", "libICE", "libSM", "xim:libX11" } },
+            deps = { runtime = { "xim:glibc", "xim:gcc-runtime", "xim:libICE", "xim:libSM", "xim:libX11" } },
             exports = { runtime = { libdirs = {"lib"} } },
             ["latest"] = { ref = "1.2.1" },
             ["1.2.1"] = {

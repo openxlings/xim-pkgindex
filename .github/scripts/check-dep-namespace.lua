@@ -72,16 +72,6 @@ local ROOT = "."
 -- which is why the list carries the PR that added it, and why it is expected
 -- to be empty most of the time.
 local EXEMPT = {
-    ["pkgs/b/blender.lua"] = {
-        ["libICE"] = "#1078, remove once published",
-        ["libSM"] = "#1078, remove once published",
-        ["libXt"] = "#1078, remove once published",
-    },
-    ["pkgs/l/libSM.lua"] = { ["libICE"] = "#1078, remove once published" },
-    ["pkgs/l/libXt.lua"] = {
-        ["libICE"] = "#1078, remove once published",
-        ["libSM"] = "#1078, remove once published",
-    },
     -- ["pkgs/g/godot.lua"] = { ["graphics"] = "#540, remove once published" },
 }
 

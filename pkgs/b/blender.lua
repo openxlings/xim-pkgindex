@@ -29,8 +29,7 @@ package = {
                 -- graphics meta-package itself exports no library directory.
                 "xim:libX11", "xim:libXrender", "xim:libXfixes", "xim:libXi",
                 "xim:libxkbcommon", "xim:libglvnd", "xim:libXext",
-                -- New in this PR: bare names resolve the local CI namespace.
-                "libICE", "libSM", "libXt",
+                "xim:libICE", "xim:libSM", "xim:libXt",
             } },
             ["latest"] = { ref = "4.5.15" },
             ["4.5.15"] = {
