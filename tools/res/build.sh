@@ -1350,7 +1350,7 @@ falkon)
         && apt-get -qq install -y python3 openssl >/dev/null \
         && openssl req -x509 -newkey rsa:2048 -nodes -subj /CN=127.0.0.1 -keyout /tmp/k.pem -out /tmp/c.pem -days 1 2>/dev/null \
         && (cd /tmp && python3 -c \"import http.server, ssl; s = http.server.HTTPServer(('127.0.0.1', 8443), http.server.SimpleHTTPRequestHandler); c = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER); c.load_cert_chain('/tmp/c.pem', '/tmp/k.pem'); s.socket = c.wrap_socket(s.socket, server_side=True); s.serve_forever()\" > /w/https.log 2>&1 &) \
-        && sleep 1 && rc=0 && QT_QPA_PLATFORM=offscreen QTWEBENGINE_CHROMIUM_FLAGS=--disable-gpu timeout 40 ./bin/falkon --private-browsing https://127.0.0.1:8443/ > /w/falkon-https.log 2>&1 || rc=\$? ; echo \$rc > /w/falkon-https.rc"
+        && sleep 1 && rc=0 && QT_QPA_PLATFORM=offscreen QTWEBENGINE_CHROMIUM_FLAGS=\"--disable-gpu --ignore-certificate-errors\" timeout 40 ./bin/falkon --private-browsing https://127.0.0.1:8443/ > /w/falkon-https.log 2>&1 || rc=\$? ; echo \$rc > /w/falkon-https.rc"
     grep -qi "^falkon [0-9]" "$work/falkon.version" || die "falkon does not start: $(cat "$work/falkon.version")"
     # An https page (NSS's first use) does not end it (J59): still running when the time is up.
     [[ "$(cat "$work/falkon-https.rc")" == 124 ]] || die "falkon ended on an https page ($(cat "$work/falkon-https.rc")): $(tail -20 "$work/falkon-https.log")"

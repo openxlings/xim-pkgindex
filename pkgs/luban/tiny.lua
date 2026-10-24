@@ -24,8 +24,9 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "2026.10.18.1" },
+            ["latest"] = { ref = "2026.10.24.1" },
             ["2026.10.18.1"] = { min_client = "2026.10.18.1" },
+            ["2026.10.24.1"] = { min_client = "2026.10.18.1" },
         },
     },
 }
@@ -53,6 +54,26 @@ local versions = {
             luban = { settings = { enter = "console", login_shell = "/bin/sh" } },
             workspace = {},
         },
+    },
+}
+
+-- 2026.10.24.1 (xlings design 2026-10-24 §7.1): 2026.10.18.1, carrying the kernel
+-- it boots as a machine (boot.virt) -- a system's own, moved by luban upgrade
+-- and back by luban rollback; a client before it reads nothing new.
+versions["2026.10.24.1"] = {
+    files = versions["2026.10.18.1"].files,
+    manifest = {
+        subos_kind = "rootfs",
+        min_client = "2026.10.18.1",
+        from = "luban:nano@2026.10.18.1",
+        replaces = "subos:luban-tiny",
+        abi = { kernel = "linux", libc = "gnu" },
+        packages = { "xim:busybox@1.35.0", "xim:glibc@2.44.3", "xim:patchelf@0.18.0", "xim:ca-certificates@2026.03.19",
+                     "xim:terminfo@6.6.20261010" },
+        boot = { init = "/sbin/init", profile = "xim:luban-boot-generic@2026.10.11.1",
+                 kernel = "xim:linux-kernel@6.8.0-71", kernel_min = "5.10", virt = "xim:linux-kernel-virt@6.12.112-r3" },
+        luban = { settings = { enter = "console", login_shell = "/bin/sh" } },
+        workspace = {},
     },
 }
 
