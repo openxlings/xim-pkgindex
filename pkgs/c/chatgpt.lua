@@ -84,7 +84,7 @@ package = {
                 },
                 build = { "xim:7zip@26.02" },
             },
-            ["latest"] = { ref = "26.1016.61520" },
+            ["latest"] = { ref = "26.1021.22027" },
             ["26.1016.61520"] = {
                 x86_64 = deb("26.1016.61520", "amd64", "9add622916c5fa3861afd95081af77e25488c108ca9c543e1f67560b390d28d4"),
             },
@@ -133,9 +133,15 @@ package = {
             ["26.803.81509"] = {
                 x86_64 = deb("26.803.81509", "amd64", "a9bf91a368f9f7c4eea38082a9fb8fb46b8d005b719a6d7715d2e5a1982c38eb"),
             },
+            ["26.1021.22027"] = {
+                x86_64 = {
+                    url = "https://persistent.oaistatic.com/codex-app-prod/linux/deb/pool/main/c/chatgpt/chatgpt_26.1021.22027_amd64.deb",
+                    sha256 = "eb0831c734f154f93f8ebcf0e17d118da0dea7dc1737dc61a1e71444375bf190",
+                },
+            },
         },
         macosx = {
-            ["latest"] = { ref = "26.1016.61520" },
+            ["latest"] = { ref = "26.1021.22027" },
             ["26.1016.61520"] = mac("26.1016.61520", "ad716ab23102cf9ccce5cc17efc8d130385f4fb8a98c71024544cbb043fc98f1"),
             ["26.1016.51333"] = mac("26.1016.51333", "225d979942d8bc6923399885676e235ad5283154f2f3ceb69bb59d8986732f68"),
             ["26.1013.40934"] = mac("26.1013.40934", "14389c9e9bd7871a31e380089f8bc54e07c627050f676ecdaa567b26929f7a1b"),
@@ -153,6 +159,12 @@ package = {
             ["26.803.41515"] = mac("26.803.41515", "8abd46bf063bc27cbadcbc2863007ac44365b13a23ede17ceaee81fb9eeaeb9a"),
             ["26.730.61639"] = mac("26.730.61639", "da88c8a15eab1ddc8efdf50182d4aca7468d995193d952c344a4d10d38c45871"),
             ["26.727.51351"] = mac("26.727.51351", "8f3fc87e634332fddc711e5221eb2af554f5f6ecb04e6a69b3d10e01f4f196c8"),
+            ["26.1021.22027"] = {
+                aarch64 = {
+                    url = "https://persistent.oaistatic.com/codex-app-prod/ChatGPT-darwin-arm64-26.1021.22027.zip",
+                    sha256 = "cee1af5279d701c947dfe06d27eaf180e217a4392d117eb86f2f11a8141ce60e",
+                },
+            },
         },
     },
 }

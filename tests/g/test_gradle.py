@@ -87,12 +87,16 @@ class TestStatic:
         urls = re.findall(r'GLOBAL = "([^"]+)"', code)
         mirrors = re.findall(r'CN = "([^"]+)"', code)
         digests = re.findall(r'sha256 = "([0-9a-f]{64})"', code)
-        assert len(urls) == 3 and len(set(urls)) == 1, urls
-        assert len(mirrors) == 3 and len(set(mirrors)) == 1, mirrors
-        assert len(digests) == 3 and len(set(digests)) == 1, digests
-        assert urls[0] == f"https://services.gradle.org/distributions/{ARCHIVE}"
-        assert mirrors[0] == f"https://mirrors.cloud.tencent.com/gradle/{ARCHIVE}"
-        assert digests[0] == SHA256
+        expected = {
+            "9.7.1": "acd53f1edaf02f1a8ff99879f8a34b302661a057d9b063ae9e35b552f804d20a",
+            "9.8.2": "21bd5da2de49b642904077f38c0efdc7778e92b3ed0889392dca61b97e389607",
+        }
+        assert len(urls) == len(mirrors) == len(digests) == 3 * len(expected)
+        for version, digest in expected.items():
+            archive = f"gradle-{version}-bin.zip"
+            assert urls.count(f"https://services.gradle.org/distributions/{archive}") == 3
+            assert mirrors.count(f"https://mirrors.cloud.tencent.com/gradle/{archive}") == 3
+            assert digests.count(digest) == 3
 
     @pytest.mark.static
     def test_the_jdk_is_pinned_to_its_exact_store_key(self, code):

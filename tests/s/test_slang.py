@@ -14,7 +14,7 @@ from tests.lib.platform_utils import skip_if_not
 
 PKG = "slang"
 PKG_FILE = "pkgs/s/slang.lua"
-VERSION = "2026.14.1"
+VERSION = "2026.20"
 
 # 每个平台的资源 URL 都由 platform-scope `source` 模板展开。三平台各有一处
 # 不规则，所以三个模板都要断言，而不是只测宿主平台那一个：
@@ -82,13 +82,13 @@ class TestResources:
         # spec=2 要求每个架构都有校验和：缺一个就是 fail-closed 的安装失败，
         # 而不是静默装上另一个架构的二进制（正是 V2 要消灭的 V1 缺陷）。
         digests = re.findall(r'(x86_64|aarch64)\s*=\s*"([0-9a-f]{64})"', content)
-        assert len(digests) == len(EXPECTED_SOURCES) * len(EXPECTED_ARCHES), (
-            f"期望 {len(EXPECTED_SOURCES) * len(EXPECTED_ARCHES)} 个 per-arch 摘要，"
+        assert len(digests) == 2 * len(EXPECTED_SOURCES) * len(EXPECTED_ARCHES), (
+            f"期望 {2 * len(EXPECTED_SOURCES) * len(EXPECTED_ARCHES)} 个 per-arch 摘要，"
             f"实得 {len(digests)}"
         )
         for arch in EXPECTED_ARCHES:
             got = [d for a, d in digests if a == arch]
-            assert len(got) == len(EXPECTED_SOURCES), f"{arch} 缺少某个平台的摘要"
+            assert len(got) == 2 * len(EXPECTED_SOURCES), f"{arch} 缺少某个平台的摘要"
             assert len(set(got)) == len(got), (
                 f"{arch} 在不同平台上出现了重复摘要——多半是复制粘贴错误"
             )

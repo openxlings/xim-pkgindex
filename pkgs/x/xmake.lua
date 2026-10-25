@@ -126,7 +126,7 @@ package = {
                 GLOBAL = "https://github.com/xmake-io/xmake/releases/download/v${version}/xmake-bundle-v${version}.linux.x86_64",
                 CN = "https://gitcode.com/xlings-res/xmake/releases/download/${version}/xmake-bundle-v${version}.linux.x86_64",
             },
-            ["latest"] = { ref = "3.1.1" },
+            ["latest"] = { ref = "3.1.2" },
             ["3.1.1"] = {
                 sha256 = "fe1da8861a5ee5845d4f6c84e499f6f9c6bf5b5a69c9b7b130930ee28355a6d5",
             },
@@ -143,13 +143,17 @@ package = {
             ["3.0.7"] = {
                 sha256 = "59371d344722fd7f2883d1d5ce347a3bac0493d3e80e85a8e438603eaee9b958",
             },
+            ["3.1.2"] = {
+                url = "https://github.com/xmake-io/xmake/releases/download/v3.1.2/xmake-bundle-v3.1.2.linux.x86_64",
+                sha256 = "ac216aa71f4954cc1129aabf1099571d618211c1ef8db8fba871377ec5fb47cd",
+            },
         },
         macosx = {
             source = {
                 GLOBAL = "https://github.com/xmake-io/xmake/releases/download/v${version}/xmake-bundle-v${version}.macos.arm64",
                 CN = "https://gitcode.com/xlings-res/xmake/releases/download/${version}/xmake-bundle-v${version}.macos.arm64",
             },
-            ["latest"] = { ref = "3.1.1" },
+            ["latest"] = { ref = "3.1.2" },
             ["3.1.1"] = {
                 sha256 = "a614dedc4dd765209949350ce4a0449638542df8147837fb1ba1ce4e9a0ff8ac",
             },
@@ -159,13 +163,17 @@ package = {
             ["3.0.7"] = {
                 sha256 = "999093c3455d3537d6012a5d51a05d736275d55dfb43e59a4b84d519f3e97966",
             },
+            ["3.1.2"] = {
+                url = "https://github.com/xmake-io/xmake/releases/download/v3.1.2/xmake-bundle-v3.1.2.macos.arm64",
+                sha256 = "e719121c56cd34f5f0c0731954a154c1df1b0915f303e5c82dfb6c6cb9e3ef9e",
+            },
         },
         windows = {
             source = {
                 GLOBAL = "https://github.com/xmake-io/xmake/releases/download/v${version}/xmake-bundle-v${version}.win64.exe",
                 CN = "https://gitcode.com/xlings-res/xmake/releases/download/${version}/xmake-bundle-v${version}.win64.exe",
             },
-            ["latest"] = { ref = "3.1.1" },
+            ["latest"] = { ref = "3.1.2" },
             ["3.1.1"] = {
                 sha256 = "5de3d5167a8b5e8ad95af2fba9ab5a62a626d7e789350d0affc33af450c4a9ad",
             },
@@ -174,6 +182,10 @@ package = {
             },
             ["3.0.7"] = {
                 sha256 = "beb282f889357c7a6125ccf334c2476aebf26119a12e0cb86cf4e7d272192f68",
+            },
+            ["3.1.2"] = {
+                url = "https://github.com/xmake-io/xmake/releases/download/v3.1.2/xmake-bundle-v3.1.2.win64.exe",
+                sha256 = "4c4da899972a431e9d340d3d2fe70bf760a5459bc1f859f5e7ef0f01700b84c9",
             },
         },
     },

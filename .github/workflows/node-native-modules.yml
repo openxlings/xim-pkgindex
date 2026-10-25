@@ -30,6 +30,8 @@ jobs:
         # into. The host-loader branch of the hook is covered by the forged
         # payload tests instead.
         os: [ubuntu-24.04, macos-15]
+        # Keep the LTS default and exercise the newly appended Current release.
+        version: ["", "26.12.1"]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     steps:
@@ -53,13 +55,27 @@ jobs:
 
       - name: Install node from this checkout
         timeout-minutes: 15
-        run: bash .github/scripts/program-checks/install-recipe.sh pkgs/n/node.lua node NODE
+        env:
+          NODE_VERSION: ${{ matrix.version }}
+        run: bash .github/scripts/program-checks/install-recipe.sh pkgs/n/node.lua node NODE "$NODE_VERSION"
 
       - name: node loads native modules
         timeout-minutes: 15
         run: bash .github/scripts/program-checks/node.sh
 
+      - name: Remove the tested node version
+        env:
+          NODE_VERSION: ${{ matrix.version }}
+        run: |
+          spec="local:node"
+          if [ -n "$NODE_VERSION" ]; then spec="$spec@$NODE_VERSION"; fi
+          xlings remove "$spec" -y
+
   windows:
+    strategy:
+      fail-fast: false
+      matrix:
+        version: ["", "26.12.1"]
     runs-on: windows-2022
     timeout-minutes: 45
     steps:
@@ -88,10 +104,14 @@ jobs:
 
       - name: Install node from this checkout
         timeout-minutes: 15
+        env:
+          NODE_VERSION: ${{ matrix.version }}
         shell: pwsh
         run: |
           xlings config --add-xpkg pkgs/n/node.lua
-          xlings install local:node -y
+          $spec = "local:node"
+          if ($env:NODE_VERSION) { $spec += "@$env:NODE_VERSION" }
+          xlings install $spec -y
           if ($LASTEXITCODE -ne 0) { throw "xlings install local:node exited $LASTEXITCODE" }
 
       - name: node runs, and sharp encodes a PNG
@@ -118,3 +138,13 @@ jobs:
           $out = (& $node png.js 2>&1) -join " "
           Write-Host "READING sharp encodes a PNG: exit=$LASTEXITCODE $out"
           if ($LASTEXITCODE -ne 0 -or $out -notmatch "PNG \d+") { Write-Host "::error::sharp did not load or encode: $out"; exit 1 }
+
+      - name: Remove the tested node version
+        shell: pwsh
+        env:
+          NODE_VERSION: ${{ matrix.version }}
+        run: |
+          $spec = "local:node"
+          if ($env:NODE_VERSION) { $spec += "@$env:NODE_VERSION" }
+          xlings remove $spec -y
+          if ($LASTEXITCODE -ne 0) { throw "node removal failed" }
