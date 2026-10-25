@@ -1,15 +1,8 @@
 """测试 node 包
 
-node 的资源没有一条 URL 字面量: 每个资产由 `_asset()` 拼出一对
-`{GLOBAL = nodejs.org/dist, CN = cdn.npmmirror.com}` 再配上 `_sha256` 表里的
-per-arch 校验和。所以静态断言看两样东西 ——
-
-* 那个构造器是唯一的 URL 来源 (谁也没法绕过 CN 单写一个 GLOBAL);
-* `_sha256` 覆盖每一个被列出来的版本 (漏一个不会报错, 只会静默变成
-  `sha256 = nil`, 那样 CN 镜像就没有任何东西证明它和上游同字节)。
-
-再加一条真正求值配方的检查 (需要 lua, 没有就 skip, 同 tests/test_hostlib.py):
-逐架构解析出来的 URL/hash 必须成对齐全。
+Historical resources use `_asset()` and the checksum table. Automated updates
+append explicit resources so the pinned updater can verify them without running
+Lua. Both forms must resolve complete architecture and mirror pairs.
 """
 import os
 import re
@@ -36,6 +29,7 @@ HARNESS = REPO / "tests" / "lua" / "node_resources_harness.lua"
 
 GLOBAL_HOST = "https://nodejs.org/dist"
 CN_HOST = "https://cdn.npmmirror.com/binaries/node"
+UPDATE_CN_HOST = "https://mirrors.ustc.edu.cn/node"
 
 # builder -> (platform, the two `_sha256` keys that builder consumes)
 BUILDERS = {
@@ -101,7 +95,7 @@ class TestStatic:
         assert_no_typos(PKG_FILE)
 
     @pytest.mark.static
-    def test_asset_builder_is_the_only_url_source(self, meta):
+    def test_historical_asset_builder_keeps_mirror_pair(self, meta):
         """两个 host 各只能出现一次, 都在 `_asset()` 里
 
         写死一条 URL 的版本块会拿到 GLOBAL 而没有 CN, 国内用户就还是走
@@ -110,8 +104,6 @@ class TestStatic:
         code = _code(meta.raw_content)
         # CI templates do not produce historical/runtime version resources.
         code = code.split("    extensions = {", 1)[0] + code.split("    xpm = {", 1)[1]
-        assert code.count(GLOBAL_HOST) == 1, "GLOBAL URL 只应由 _asset() 拼出"
-        assert code.count(CN_HOST) == 1, "CN URL 只应由 _asset() 拼出"
         builder = re.search(r'local function _asset\(.*?\nend\n', code, re.S)
         assert builder, "找不到 _asset()"
         assert GLOBAL_HOST in builder.group(0) and CN_HOST in builder.group(0), \
@@ -158,14 +150,17 @@ def test_every_resolved_asset_is_a_complete_mirror_pair():
 
     assets = [line.split("\t")[1:] for line in out.splitlines() if line.startswith("ASSET")]
     listed = _listed_versions((REPO / PKG_FILE).read_text(encoding="utf-8"))
-    expected = sum(len(v) for v in listed.values()) * 2  # 每个版本两个 arch
+    content = (REPO / PKG_FILE).read_text(encoding="utf-8")
+    explicit_versions = re.findall(r'^            \["([0-9.]+)"\] = \{', content, re.M)
+    expected = (sum(len(v) for v in listed.values()) + len(explicit_versions)) * 2
     assert len(assets) == expected, f"解析出 {len(assets)} 个资产, 期望 {expected}"
 
     for platform, version, arch, global_url, cn_url, sha in assets:
         where = f"{platform}/{version}/{arch}"
         assert global_url.startswith(GLOBAL_HOST + "/v" + version + "/"), \
             f"{where}: GLOBAL 不是 nodejs.org 上这个版本的目录 ({global_url})"
-        assert cn_url.startswith(CN_HOST + "/v" + version + "/"), \
+        assert any(cn_url.startswith(host + "/v" + version + "/")
+                   for host in (CN_HOST, UPDATE_CN_HOST)), \
             f"{where}: 没有 CN 镜像 ({cn_url})"
         assert cn_url.rsplit("/", 1)[1] == global_url.rsplit("/", 1)[1], \
             f"{where}: CN 和 GLOBAL 指向不同文件名"

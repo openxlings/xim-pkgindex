@@ -8,14 +8,6 @@
 -- Every version listed in `xpm` must appear here (windows-only keys are absent
 -- for versions no windows section lists; 18.20.8 has no win-arm64 build at all).
 local _sha256 = {
-    ["26.12.1"] = {
-        win_x64       = "b3efd5c70cba3308ed46e7e699a9b8aac075bbc6b027fcb39c84c31acc25e2b4",
-        win_arm64     = "34567581ee63967b37afb6b7a0cc63a2d550a43d5d838adb75982d7e356f2e2c",
-        linux_x64     = "6170b2d474e1c626f43cff3adc118df9fe3b573258a4fc3d850c8dbc6b079bbd",
-        linux_arm64   = "42aa04922591ee5d4dbc7740d452621acf28508239daa512f5ee8c47ee224fdb",
-        darwin_x64    = "b85c2ea4420ad0bc4abf2dc6cf1f55130ed681f1cabf60cf3f526e4c9e2712ff",
-        darwin_arm64  = "1901d539912c02afa10d1cc126943a8855a7eedebe830119463470db5e6c59e8",
-    },
     ["24.21.0"] = {
         linux_x64     = "fd8e59d5a511510f6a298afb548f18c7d2b1be404d8b4a27d94fbe49f56cb2d6",
         linux_arm64   = "6ad1325edbdb5649c379b75a237147a666c95d4f9ae8d340fef2d1575d289ad2",
@@ -275,7 +267,22 @@ package = {
             -- was a bare x86_64 url+sha256; the builder keeps that same asset
             -- and hash and adds the win-arm64 half this version does publish.
             ["22.12.0"] = _win_url("22.12.0"),
-            ["26.12.1"] = _win_url("26.12.1"),
+            ["26.12.1"] = {
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://nodejs.org/dist/v26.12.1/node-v26.12.1-win-x64.zip",
+                        CN = "https://mirrors.ustc.edu.cn/node/v26.12.1/node-v26.12.1-win-x64.zip",
+                    },
+                    sha256 = "b3efd5c70cba3308ed46e7e699a9b8aac075bbc6b027fcb39c84c31acc25e2b4",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://nodejs.org/dist/v26.12.1/node-v26.12.1-win-arm64.zip",
+                        CN = "https://mirrors.ustc.edu.cn/node/v26.12.1/node-v26.12.1-win-arm64.zip",
+                    },
+                    sha256 = "34567581ee63967b37afb6b7a0cc63a2d550a43d5d838adb75982d7e356f2e2c",
+                },
+            },
         },
         linux = {
             -- Runtime deps. The upstream node prebuilt is dynamically linked
@@ -309,7 +316,22 @@ package = {
             ["22.12.0"] = _linux_url("22.12.0"),
             ["20.19.0"] = _linux_url("20.19.0"),
             ["18.20.8"] = _linux_url("18.20.8"),
-            ["26.12.1"] = _linux_url("26.12.1"),
+            ["26.12.1"] = {
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://nodejs.org/dist/v26.12.1/node-v26.12.1-linux-x64.tar.xz",
+                        CN = "https://mirrors.ustc.edu.cn/node/v26.12.1/node-v26.12.1-linux-x64.tar.xz",
+                    },
+                    sha256 = "6170b2d474e1c626f43cff3adc118df9fe3b573258a4fc3d850c8dbc6b079bbd",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://nodejs.org/dist/v26.12.1/node-v26.12.1-linux-arm64.tar.xz",
+                        CN = "https://mirrors.ustc.edu.cn/node/v26.12.1/node-v26.12.1-linux-arm64.tar.xz",
+                    },
+                    sha256 = "42aa04922591ee5d4dbc7740d452621acf28508239daa512f5ee8c47ee224fdb",
+                },
+            },
         },
         macosx = {
             ["latest"] = { ref = "24.20.0" },
@@ -328,7 +350,22 @@ package = {
             ["22.12.0"] = _mac_url("22.12.0"),
             ["20.19.0"] = _mac_url("20.19.0"),
             ["18.20.8"] = _mac_url("18.20.8"),
-            ["26.12.1"] = _mac_url("26.12.1"),
+            ["26.12.1"] = {
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://nodejs.org/dist/v26.12.1/node-v26.12.1-darwin-x64.tar.gz",
+                        CN = "https://mirrors.ustc.edu.cn/node/v26.12.1/node-v26.12.1-darwin-x64.tar.gz",
+                    },
+                    sha256 = "b85c2ea4420ad0bc4abf2dc6cf1f55130ed681f1cabf60cf3f526e4c9e2712ff",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://nodejs.org/dist/v26.12.1/node-v26.12.1-darwin-arm64.tar.gz",
+                        CN = "https://mirrors.ustc.edu.cn/node/v26.12.1/node-v26.12.1-darwin-arm64.tar.gz",
+                    },
+                    sha256 = "1901d539912c02afa10d1cc126943a8855a7eedebe830119463470db5e6c59e8",
+                },
+            },
         },
     },
 }
