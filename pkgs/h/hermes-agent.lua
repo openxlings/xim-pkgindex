@@ -36,7 +36,7 @@ package = {
     xpm = {
         linux = {
             deps = {"xim:python"},
-            ["latest"] = { ref = "2026.9.24" },
+            ["latest"] = { ref = "2026.4.23" },
             ["2026.4.23"] = {
                 url = "https://github.com/NousResearch/hermes-agent/archive/refs/tags/v2026.4.23.tar.gz",
                 sha256 = "1ee1be80a2112b7edc581770cee8858e725ba110cc423979cd7102492504bc6b",
@@ -44,16 +44,12 @@ package = {
             ["2026.4.16"] = {
                 url = "https://github.com/NousResearch/hermes-agent/archive/refs/tags/v2026.4.16.tar.gz",
                 sha256 = "ef999b93b487532c50f8ed42c3ac0141a52d128052ba0a0d0e90c6edc02e97fe",
-            },
-            ["2026.9.24"] = {
-                url = "https://github.com/NousResearch/hermes-agent/archive/refs/tags/v2026.9.24.tar.gz",
-                sha256 = "15b15ce4e6ec8ea424a081823709d1e17f0943e7b42b59597d24ebb94cbd1742",
             },
         },
         macosx = {
             -- No python dep on macOS: xim:python has no macosx section, so this
             -- resolves to nothing. macOS ships python3 in the CLT / system.
-            ["latest"] = { ref = "2026.9.24" },
+            ["latest"] = { ref = "2026.4.23" },
             ["2026.4.23"] = {
                 url = "https://github.com/NousResearch/hermes-agent/archive/refs/tags/v2026.4.23.tar.gz",
                 sha256 = "1ee1be80a2112b7edc581770cee8858e725ba110cc423979cd7102492504bc6b",
@@ -61,10 +57,6 @@ package = {
             ["2026.4.16"] = {
                 url = "https://github.com/NousResearch/hermes-agent/archive/refs/tags/v2026.4.16.tar.gz",
                 sha256 = "ef999b93b487532c50f8ed42c3ac0141a52d128052ba0a0d0e90c6edc02e97fe",
-            },
-            ["2026.9.24"] = {
-                url = "https://github.com/NousResearch/hermes-agent/archive/refs/tags/v2026.9.24.tar.gz",
-                sha256 = "15b15ce4e6ec8ea424a081823709d1e17f0943e7b42b59597d24ebb94cbd1742",
             },
         },
     },

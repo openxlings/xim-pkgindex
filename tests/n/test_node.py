@@ -368,8 +368,10 @@ class TestLifecycle:
 class TestVerify:
     @pytest.mark.verify
     @skip_if_not('linux')
-    def test_node_version(self):
-        assert_command_output("node --version", contains="v24.19.0")
+    def test_node_version(self, meta):
+        version = os.environ.get("XLINGS_TEST_VERSION") or re.search(
+            r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"([^"]+)"', meta.raw_content)[1]
+        assert_command_output("node --version", regex=rf"^v{re.escape(version)}\s*$")
 
     @pytest.mark.verify
     @skip_if_not('linux')

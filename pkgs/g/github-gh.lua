@@ -39,7 +39,7 @@ package = {
     xpm = {
         linux = {
 
-            ["latest"] = { ref = "2.103.2" },
+            ["latest"] = { ref = "2.92.0" },
             ["2.92.0"] = {
                 url = "https://github.com/cli/cli/releases/download/v2.92.0/gh_2.92.0_linux_amd64.tar.gz",
                 sha256 = "b57848131bdf0c229cd35e1f2a51aa718199858b2e728410b37e89a428943ec4",
@@ -53,14 +53,10 @@ package = {
                 sha256 = nil,
             },
             -- ["2.86.0"] = "XLINGS_RES",
-            ["2.103.2"] = {
-                url = "https://github.com/cli/cli/releases/download/v2.103.2/gh_2.103.2_linux_amd64.tar.gz",
-                sha256 = "62ccf747115ddc61237efffdde66a3c8f70ba249433dc64f70801089b59c59c8",
-            },
         },
         macosx = {
 
-            ["latest"] = { ref = "2.103.2" },
+            ["latest"] = { ref = "2.92.0" },
             ["2.92.0"] = {
                 url = "https://github.com/cli/cli/releases/download/v2.92.0/gh_2.92.0_macOS_amd64.zip",
                 sha256 = "ae9bb327ab0d91071bdada79f8f14034a2a0f19b0e001835a782eafa519d2af0",
@@ -74,14 +70,10 @@ package = {
                 sha256 = nil,
             },
             -- ["2.86.0"] = "XLINGS_RES",
-            ["2.103.2"] = {
-                url = "https://github.com/cli/cli/releases/download/v2.103.2/gh_2.103.2_macOS_amd64.zip",
-                sha256 = "2dc7f1fc4761f96732995f6e4f4c6b4d705f2635da4126620c8b30eaa67b9c98",
-            },
         },
         windows = {
 
-            ["latest"] = { ref = "2.103.2" },
+            ["latest"] = { ref = "2.92.0" },
             ["2.92.0"] = {
                 url = "https://github.com/cli/cli/releases/download/v2.92.0/gh_2.92.0_windows_amd64.zip",
                 sha256 = "b6a8df3c8c6b9c80f290906387673bc4d272840f3789c5650e0e4e6e75522785",
@@ -95,10 +87,6 @@ package = {
                 sha256 = nil,
             },
             -- ["2.86.0"] = "XLINGS_RES",
-            ["2.103.2"] = {
-                url = "https://github.com/cli/cli/releases/download/v2.103.2/gh_2.103.2_windows_amd64.zip",
-                sha256 = "fef9fcdd8fdabd0501ab8b3d99eac976f504ab55d01bef9e8ef428a5d900ddda",
-            },
         },
     },
 }

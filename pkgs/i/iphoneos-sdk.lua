@@ -175,27 +175,19 @@ package = {
         -- is a first-class consumer of this package. A macOS host that has
         -- Xcode should reach tier 3 instead and install nothing.
         linux = {
-            ["latest"] = { ref = "27.1" },
+            ["latest"] = { ref = "26.5" },
             ["26.5"] = {
                 -- ONE REGION, NO MIRROR. See the header: a `CN` entry would
                 -- make this index a redistributor of Apple's SDK.
                 url = "https://github.com/xybp888/iOS-SDKs/releases/download/iOS26.5-SDKs/iPhoneOS26.5.sdk.zip",
                 sha256 = "bed0f155d84e98ad8273b3bd57a0816ae5e772e1aa8539e6d79476221ce33173",
             },
-            ["27.1"] = {
-                url = "https://github.com/xybp888/iOS-SDKs/releases/download/iOS27.1-SDKs/iPhoneOS27.1.sdk.zip",
-                sha256 = "5a690bc568f057906b25bfc18dfe784b41586f362e3507e32826fe526869d486",
-            },
         },
         macosx = {
-            ["latest"] = { ref = "27.1" },
+            ["latest"] = { ref = "26.5" },
             ["26.5"] = {
                 url = "https://github.com/xybp888/iOS-SDKs/releases/download/iOS26.5-SDKs/iPhoneOS26.5.sdk.zip",
                 sha256 = "bed0f155d84e98ad8273b3bd57a0816ae5e772e1aa8539e6d79476221ce33173",
-            },
-            ["27.1"] = {
-                url = "https://github.com/xybp888/iOS-SDKs/releases/download/iOS27.1-SDKs/iPhoneOS27.1.sdk.zip",
-                sha256 = "5a690bc568f057906b25bfc18dfe784b41586f362e3507e32826fe526869d486",
             },
         },
     },

@@ -84,16 +84,10 @@ package = {
             -- the reason godot.lua and libglvnd.lua declare it the same way.
             build = { "xim:patchelf@0.18.0" },
             source = "https://github.com/intel/llvm/releases/download/v${version}/sycl_linux.tar.gz",
-            ["latest"] = { ref = "7.2.0" },
+            ["latest"] = { ref = "7.1.0" },
             ["7.1.0"] = {
                 sha256 = {
                     x86_64 = "992de12d5c68ba8fd630446b1a97487361b38807b33140769e4c818795f0fcab",
-                },
-            },
-            ["7.2.0"] = {
-                x86_64 = {
-                    url = "https://github.com/intel/llvm/releases/download/v7.2.0/sycl_linux.tar.gz",
-                    sha256 = "385586a25e75ac727883f0be5e442dec0ee81b3c20f9a29037a79921ad2f1728",
                 },
             },
         },
@@ -103,16 +97,10 @@ package = {
         -- looks beside the executable, which is where this payload's DLLs are.
         windows = {
             source = "https://github.com/intel/llvm/releases/download/v${version}/sycl_windows.tar.gz",
-            ["latest"] = { ref = "7.2.0" },
+            ["latest"] = { ref = "7.1.0" },
             ["7.1.0"] = {
                 sha256 = {
                     x86_64 = "8337faf4e1cdfb7a66e383927e19803b89d3241566bffa9b2feace761d539544",
-                },
-            },
-            ["7.2.0"] = {
-                x86_64 = {
-                    url = "https://github.com/intel/llvm/releases/download/v7.2.0/sycl_windows.tar.gz",
-                    sha256 = "9d8964878a68e6d4ca3edced4fc1093fa6f4f51fd44698808e244870caa77bad",
                 },
             },
         },
