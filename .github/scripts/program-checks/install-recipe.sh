@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# install-recipe.sh <recipe> <program> <variable> [version]
+# install-recipe.sh <recipe> <program> <variable>
 #
 # Registers the recipe from this checkout under `local:`, installs it, and
 # publishes the installed program's path as <variable> to the following
@@ -12,9 +12,7 @@ name="$(basename "$recipe" .lua)"
 xlings="$HOME/.xlings/bin/xlings"
 
 "$xlings" config --add-xpkg "$recipe"
-spec="local:$name"
-if [ -n "${4:-}" ]; then spec="$spec@$4"; fi
-"$xlings" install "$spec" -y
+"$xlings" install "local:$name" -y
 
 found=()
 for f in "$HOME/.xlings/data/xpkgs/local-x-$name"/*/bin/"$program"; do
