@@ -302,12 +302,22 @@ def test_candidate_verification_receives_the_installed_version(index, monkeypatc
     monkeypatch.setenv('XLINGS_TEST_VERSION', '1.0.0')
     monkeypatch.setattr(module, 'git', lambda *args: 'a' * 40)
     verified = []
+    runner_python = module.sys.executable
     def run(command, **kwargs):
         if command[:2] == ['xlings', 'install']:
             install.mkdir(parents=True)
             (install / '.xpkg.lua').write_text('metadata')
             (install / 'payload').write_text('candidate')
-        elif command[:3] == ['python', '-m', 'pytest']:
+            # Installing a Python dependency can shadow the runner interpreter.
+            bindir = home / 'subos/default/bin'
+            bindir.mkdir(parents=True)
+            shadow = bindir / 'python'
+            shadow.write_text('#!/bin/sh\nexit 99\n')
+            shadow.chmod(0o755)
+            monkeypatch.setenv('PATH', str(bindir) + __import__('os').pathsep + __import__('os').environ['PATH'])
+        elif command[1:3] == ['-m', 'pytest']:
+            assert shutil.which('python') == str(home / 'subos/default/bin/python')
+            assert command[0] == runner_python
             verified.append(kwargs['env'])
             assert kwargs['env']['XLINGS_TEST_VERSION'] == '1.1.0'
             assert kwargs['env']['XLINGS_TEST_SUBOS'] == 'default'
