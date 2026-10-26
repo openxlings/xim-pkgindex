@@ -92,7 +92,7 @@ package = {
             -- res_versioned: version-bump bot tracks mcpp-community/mcpp releases
             -- and appends checked XLINGS_RES entries (see version-check.py).
 
-            ["latest"] = { ref = "2026.10.24.1" },
+            ["latest"] = { ref = "2026.10.26.1" },
             ["2026.10.21.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -1409,12 +1409,28 @@ package = {
                     sha256 = "b9daf773d0a29825cba7234eafd07bd17e1a9408db731742ea56b3ee12f582a8",
                 },
             },
+            ["2026.10.26.1"] = {
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/mcpp/releases/download/2026.10.26.1/mcpp-2026.10.26.1-linux-aarch64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/mcpp/releases/download/2026.10.26.1/mcpp-2026.10.26.1-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "e860109f54e2ee00282d392f7edbdd8d884571ccb6414ebb9f088038dfe46379",
+                },
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/mcpp/releases/download/2026.10.26.1/mcpp-2026.10.26.1-linux-x86_64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/mcpp/releases/download/2026.10.26.1/mcpp-2026.10.26.1-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "e07461d4d77f0db07405c8c9bda9b1d307d66b72c48d1f3caba2af12633c390a",
+                },
+            },
         },
         macosx = {
             -- res_versioned: version-bump bot tracks mcpp-community/mcpp releases
             -- and appends checked XLINGS_RES entries (see version-check.py).
 
-            ["latest"] = { ref = "2026.10.24.1" },
+            ["latest"] = { ref = "2026.10.26.1" },
             ["2026.10.21.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -2535,12 +2551,21 @@ package = {
                     sha256 = "2c1ff6d186797815ccbafbdbfd85cbca8b247e17845f331db670636b80269e74",
                 },
             },
+            ["2026.10.26.1"] = {
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/mcpp/releases/download/2026.10.26.1/mcpp-2026.10.26.1-macosx-arm64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/mcpp/releases/download/2026.10.26.1/mcpp-2026.10.26.1-macosx-arm64.tar.gz",
+                    },
+                    sha256 = "2c1076219fae17f4bedd83e9d563335dad2f88ab77df790df85382a5865c0dc2",
+                },
+            },
         },
         windows = {
             -- res_versioned: version-bump bot tracks mcpp-community/mcpp releases
             -- and appends checked XLINGS_RES entries (see version-check.py).
 
-            ["latest"] = { ref = "2026.10.24.1" },
+            ["latest"] = { ref = "2026.10.26.1" },
             ["2026.10.21.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -3658,6 +3683,15 @@ package = {
                         CN = "https://gitcode.com/xlings-res/mcpp/releases/download/2026.10.24.1/mcpp-2026.10.24.1-windows-x86_64.zip",
                     },
                     sha256 = "ac4f0402fdd49db8b62677f240bb9888031a7f35f4790ce96061da5b0887a8e6",
+                },
+            },
+            ["2026.10.26.1"] = {
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/mcpp/releases/download/2026.10.26.1/mcpp-2026.10.26.1-windows-x86_64.zip",
+                        CN = "https://gitcode.com/xlings-res/mcpp/releases/download/2026.10.26.1/mcpp-2026.10.26.1-windows-x86_64.zip",
+                    },
+                    sha256 = "cb23ddd765570cd94db31407ab56951f175c67fe38b5f40e62522f518b42e989",
                 },
             },
         },
