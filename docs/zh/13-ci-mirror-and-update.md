@@ -88,6 +88,15 @@ PR 检查和人工触发不受该门禁限制。到期运行连续扫描多个�
 gh workflow run xpkgindex-update.yml --ref fix/autoupdate-batching-ci -f dry_run=true -f max_batches=20
 ```
 
+项目发布时以类型为 `xpkgindex-update`、`client_payload.package = "xim:<name>"` 的 `repository_dispatch`
+请求提出其新版本；对本仓库有 Contents: write 的令牌即可发送。`xpkgindex-update-request.yml` 以本仓库的令牌
+把它转为上面的单包 `workflow_dispatch`（默认分支），项目的令牌在此不需要 Actions 权限。
+
+```sh
+gh api -X POST repos/openxlings/xim-pkgindex/dispatches \
+  -f event_type=xpkgindex-update -f 'client_payload[package]=xim:mcpp'
+```
+
 候选安装脚本从固定的 xlings release tag 获取。原生安装任务仅覆盖 Linux x86_64/ARM64、
 macOS ARM64 和 Windows x86_64。macOS Intel 和 Windows ARM64 仅校验资源：新增资源仍全部校验，
 但不创建安装任务。任务摘要和 `coverage.json` 明确报告此边界，资源校验不算安装验证。
