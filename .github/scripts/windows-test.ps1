@@ -125,8 +125,10 @@ if ((Test-Path (Join-Path $WorkspaceRoot "libs")) -and (Test-Path $indexDir -Pat
 
 # Every changed recipe is placed before any is installed, so a dependency the
 # PR adds resolves whichever order -- and whichever shard -- the files are tested in.
-$overlayFiles = if ($OverlayFiles) { $OverlayFiles -split '\s+' | Where-Object { $_ -and $_.Trim() -ne "" } } else { $files }
-foreach ($f in $overlayFiles) {
+# (A name of its own: PowerShell's names ignore case, and $OverlayFiles is a [string] parameter, so
+# the list assigned to it would be joined back into one string.)
+$placedFirst = if ($OverlayFiles) { @($OverlayFiles -split '\s+' | Where-Object { $_ -and $_.Trim() -ne "" }) } else { $files }
+foreach ($f in $placedFirst) {
     $rel = $f -replace '/', '\'
     if (-not (Test-Path (Join-Path $WorkspaceRoot $rel))) { continue }
     if (Add-RecipeOverlay $rel) {
