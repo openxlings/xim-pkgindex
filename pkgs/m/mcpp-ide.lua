@@ -40,7 +40,7 @@ package = {
                     GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v0.1.1/mcpp-ide-0.1.1-openkal.tar.gz",
                     CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v0.1.1/mcpp-ide-0.1.1-openkal.tar.gz",
                 },
-                sha256 = "SHA256-PENDING",
+                sha256 = "c7182badc3fc944c8192b482ced1e6514eb02fc8e592eaad5c48acdfdd5c2c21",
             },
             ["0.1.0"] = {
                 url = {
@@ -58,7 +58,7 @@ package = {
                         GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v0.1.1/mcpp-ide-0.1.1-openkal.tar.gz",
                         CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v0.1.1/mcpp-ide-0.1.1-openkal.tar.gz",
                     },
-                    sha256 = "SHA256-PENDING",
+                    sha256 = "c7182badc3fc944c8192b482ced1e6514eb02fc8e592eaad5c48acdfdd5c2c21",
                 },
             },
             ["0.1.0"] = {
@@ -79,7 +79,7 @@ package = {
                         GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v0.1.1/mcpp-ide-0.1.1-openkal.tar.gz",
                         CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v0.1.1/mcpp-ide-0.1.1-openkal.tar.gz",
                     },
-                    sha256 = "SHA256-PENDING",
+                    sha256 = "c7182badc3fc944c8192b482ced1e6514eb02fc8e592eaad5c48acdfdd5c2c21",
                 },
             },
             ["0.1.0"] = {
