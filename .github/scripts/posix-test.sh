@@ -327,7 +327,7 @@ overlay_recipe() {
     # New name: the cache is what the resolver reads, so it has to be rebuilt.
     rm -f "$INDEX_DIR/.xlings-index-cache.json"
     local pkg_name; pkg_name="$(basename "$rel_file" .lua)"
-    if "$XLINGS_CMD" search "$pkg_name" 2>/dev/null | grep -q "xim:$pkg_name"; then
+    if "$XLINGS_CMD" search "$pkg_name" 2>/dev/null | grep -qE "xim:${pkg_name}([^A-Za-z0-9._+-]|\$)"; then
         return 0
     fi
     # Could not make it resolve under xim: — leave it to --add-xpkg / local:.

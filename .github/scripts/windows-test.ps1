@@ -110,7 +110,7 @@ function Add-RecipeOverlay([string]$relFile) {
     if (-not $isNew) { return $true }
     Remove-Item -Force -ErrorAction SilentlyContinue (Join-Path $indexDir ".xlings-index-cache.json")
     $name = [System.IO.Path]::GetFileNameWithoutExtension($relFile)
-    $found = (& $xlingsCmd search $name 2>$null | Out-String) -match "xim:$([regex]::Escape($name))\b"
+    $found = (& $xlingsCmd search $name 2>$null | Out-String) -match "xim:$([regex]::Escape($name))([^A-Za-z0-9._+-]|$)"
     if ($found) { return $true }
     Remove-Item -Force -ErrorAction SilentlyContinue $dst
     return $false
