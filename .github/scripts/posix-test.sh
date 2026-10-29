@@ -348,7 +348,10 @@ fi
 for rel_file in "${overlay_files[@]}"; do
     [[ -n "$rel_file" ]] || continue
     [[ -f "$WORKSPACE_ROOT/$rel_file" ]] || continue
-    if ! overlay_recipe "$rel_file"; then
+    if overlay_recipe "$rel_file"; then
+        echo "  placed in the index: $rel_file"
+    else
+        echo "  placed through --add-xpkg (it did not resolve under xim:): $rel_file"
         "$XLINGS_CMD" config --add-xpkg "$WORKSPACE_ROOT/$rel_file" >/dev/null 2>&1 || true
     fi
 done

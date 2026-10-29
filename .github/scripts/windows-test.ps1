@@ -129,7 +129,10 @@ $overlayFiles = if ($OverlayFiles) { $OverlayFiles -split '\s+' | Where-Object {
 foreach ($f in $overlayFiles) {
     $rel = $f -replace '/', '\'
     if (-not (Test-Path (Join-Path $WorkspaceRoot $rel))) { continue }
-    if (-not (Add-RecipeOverlay $rel)) {
+    if (Add-RecipeOverlay $rel) {
+        Write-Host "  placed in the index: $rel"
+    } else {
+        Write-Host "  placed through --add-xpkg (it did not resolve under xim:): $rel"
         & $xlingsCmd config --add-xpkg (Join-Path $WorkspaceRoot $rel) 2>&1 | Out-Null
     }
 }
