@@ -242,6 +242,8 @@ def test_a_large_install_plan_is_sharded(monkeypatch):
     planned = [f for s in shards for f in s['files'].split()]
     assert sorted(planned) == sorted(files)
     assert max(len(s['files'].split()) for s in shards) <= planner.INSTALL_SHARD_SIZE
+    # every shard places the whole plan first: a dependency may be another shard's
+    assert all(sorted(s['overlay'].split()) == sorted(files) for s in shards)
 
 
 def test_a_small_install_plan_is_one_unnamed_job(monkeypatch):

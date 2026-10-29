@@ -15,6 +15,9 @@ set -o pipefail
 CHANGED_FILES="${1:-}"
 WORKSPACE_ROOT="${2:-}"
 HOST_OS="${3:-}"
+# The recipes placed in the index before any is installed: the whole plan for this platform when
+# the plan is sharded (a dependency the PR changes may be another shard's), else these files.
+OVERLAY_FILES="${4:-$CHANGED_FILES}"
 
 if [[ -z "$WORKSPACE_ROOT" || -z "$HOST_OS" ]]; then
     echo "usage: posix-test.sh <changed-files> <workspace-root> <host-os>" >&2
@@ -169,6 +172,7 @@ run_bounded() {
 }
 
 read -r -a files <<< "$CHANGED_FILES"
+read -r -a overlay_files <<< "$OVERLAY_FILES"
 if [[ "${#files[@]}" -eq 0 ]]; then
     echo "No changed .lua files. Nothing to test."
     exit 0
@@ -341,7 +345,7 @@ if [[ -d "$WORKSPACE_ROOT/libs" && -d "$INDEX_DIR" && ! -L "$INDEX_DIR" ]]; then
     cp "$WORKSPACE_ROOT/libs/"*.lua "$INDEX_DIR/libs/" 2>/dev/null || true
 fi
 
-for rel_file in "${files[@]}"; do
+for rel_file in "${overlay_files[@]}"; do
     [[ -n "$rel_file" ]] || continue
     [[ -f "$WORKSPACE_ROOT/$rel_file" ]] || continue
     if ! overlay_recipe "$rel_file"; then

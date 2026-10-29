@@ -33,15 +33,17 @@ jobs:
         shell: bash
         env:
           FILES: ${{ matrix.files }}
+          OVERLAY: ${{ matrix.overlay || matrix.files }}
           PLATFORM: ${{ matrix.platform }}
         run: |
           chmod +x .github/scripts/posix-test.sh .github/scripts/dep-closure-check.sh
-          .github/scripts/posix-test.sh "$FILES" "$GITHUB_WORKSPACE" "$PLATFORM"
+          .github/scripts/posix-test.sh "$FILES" "$GITHUB_WORKSPACE" "$PLATFORM" "$OVERLAY"
       - name: Install and remove planned packages (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         env:
           FILES: ${{ matrix.files }}
+          OVERLAY: ${{ matrix.overlay || matrix.files }}
         run: |
-          & .github/scripts/windows-test.ps1 -ChangedFiles $env:FILES -WorkspaceRoot $env:GITHUB_WORKSPACE
+          & .github/scripts/windows-test.ps1 -ChangedFiles $env:FILES -WorkspaceRoot $env:GITHUB_WORKSPACE -OverlayFiles $env:OVERLAY
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

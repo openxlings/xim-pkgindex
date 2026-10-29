@@ -118,7 +118,10 @@ def plan(changed, before, after, profiles, *, force=False):
         files = [p for p in packages if platform in supported_platforms(after[p])]
         shards = -(-len(files) // INSTALL_SHARD_SIZE)
         for i in range(shards):
-            entry = {'platform': platform, 'os': runner, 'files': ' '.join(files[i::shards])}
+            # Each shard installs its own files, and places all of the platform's first: a
+            # dependency the PR changes or adds may sit in another shard.
+            entry = {'platform': platform, 'os': runner, 'files': ' '.join(files[i::shards]),
+                     'overlay': ' '.join(files)}
             if shards > 1:
                 entry['shard'] = f'{i + 1}/{shards}'
             matrix.append(entry)

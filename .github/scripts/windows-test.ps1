@@ -13,7 +13,11 @@ param(
     [string]$ChangedFiles,
 
     [Parameter(Mandatory=$true)]
-    [string]$WorkspaceRoot
+    [string]$WorkspaceRoot,
+
+    # The recipes placed in the index before any is installed: the whole plan for this platform
+    # when the plan is sharded (a dependency the PR changes may be another shard's).
+    [string]$OverlayFiles = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -120,8 +124,9 @@ if ((Test-Path (Join-Path $WorkspaceRoot "libs")) -and (Test-Path $indexDir -Pat
 }
 
 # Every changed recipe is placed before any is installed, so a dependency the
-# PR adds resolves whichever order the files are tested in.
-foreach ($f in $files) {
+# PR adds resolves whichever order -- and whichever shard -- the files are tested in.
+$overlayFiles = if ($OverlayFiles) { $OverlayFiles -split '\s+' | Where-Object { $_ -and $_.Trim() -ne "" } } else { $files }
+foreach ($f in $overlayFiles) {
     $rel = $f -replace '/', '\'
     if (-not (Test-Path (Join-Path $WorkspaceRoot $rel))) { continue }
     if (-not (Add-RecipeOverlay $rel)) {
