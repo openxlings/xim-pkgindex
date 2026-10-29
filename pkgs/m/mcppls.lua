@@ -72,8 +72,8 @@ package = {
             ["0.0.19"] = {
                 arch_alias = { x86_64 = "x64", aarch64 = "arm64" },
                 sha256 = {
-                    x86_64 = "SHA256-PENDING",
-                    aarch64 = "SHA256-PENDING",
+                    x86_64 = "8f74d532662ba1783d931c35b08764e02e58eb097445b15a5d95bdf2bebd1b53",
+                    aarch64 = "5c4903299a04c409d8dd08743b6e39e90e48cc66026250898d18e0e014dcee71",
                 },
             },
             ["0.0.18"] = {
@@ -115,7 +115,7 @@ package = {
             ["0.0.19"] = {
                 arch_alias = { aarch64 = "arm64" },
                 sha256 = {
-                    aarch64 = "SHA256-PENDING",
+                    aarch64 = "2a9cdf17ae609d2bce4d1943f83400f0e490c33bf80e8f2e83486a9b44294f39",
                 },
             },
             ["0.0.18"] = {
@@ -153,7 +153,7 @@ package = {
             ["0.0.19"] = {
                 arch_alias = { x86_64 = "x64" },
                 sha256 = {
-                    x86_64 = "SHA256-PENDING",
+                    x86_64 = "f29ab7e737cf40cb109b80718883a3752b2d8dd33c319c6b9d7299fc95f3c21f",
                 },
             },
             ["0.0.18"] = {

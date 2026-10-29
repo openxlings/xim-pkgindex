@@ -51,8 +51,8 @@ package = {
             ["latest"] = { ref = "0.0.19" },
             ["0.0.19"] = {
                 sha256 = {
-                    x86_64 = "SHA256-PENDING",
-                    aarch64 = "SHA256-PENDING",
+                    x86_64 = "395ccb478ca4d50b94fd0164d506578252c9be47f0fc4b16cd32400c4350a19d",
+                    aarch64 = "395ccb478ca4d50b94fd0164d506578252c9be47f0fc4b16cd32400c4350a19d",
                 },
             },
             ["0.0.11"] = {
@@ -71,7 +71,7 @@ package = {
             ["latest"] = { ref = "0.0.19" },
             ["0.0.19"] = {
                 sha256 = {
-                    aarch64 = "SHA256-PENDING",
+                    aarch64 = "395ccb478ca4d50b94fd0164d506578252c9be47f0fc4b16cd32400c4350a19d",
                 },
             },
             ["0.0.11"] = {
@@ -89,7 +89,7 @@ package = {
             ["latest"] = { ref = "0.0.19" },
             ["0.0.19"] = {
                 sha256 = {
-                    x86_64 = "SHA256-PENDING",
+                    x86_64 = "395ccb478ca4d50b94fd0164d506578252c9be47f0fc4b16cd32400c4350a19d",
                 },
             },
             ["0.0.11"] = {
