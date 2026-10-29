@@ -1,4 +1,4 @@
--- Written by `mcpp emit xpkg --package` from the four okrun-0.1.3-<os>-<arch>.zip
+-- Written by `mcpp emit xpkg --package` from the four okrun-<version>-<os>-<arch>.zip
 -- that openkal-image's `release binaries` workflow attaches to its release
 -- (each `mcpp pack` of the tool over openkal-platform's hosted arrangement:
 -- static on Linux, no SDK on macOS, no MSVC run-time on Windows), with the
@@ -33,7 +33,13 @@ package = {
                 GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/${version}/okrun-${version}-linux-${arch}.zip",
                 CN = "https://gitcode.com/xlings-res/okrun/releases/download/${version}/okrun-${version}-linux-${arch}.zip",
             },
-            ["latest"] = { ref = "0.1.3" },
+            ["latest"] = { ref = "0.1.4" },
+            ["0.1.4"] = {
+                sha256 = {
+                    ["aarch64"] = "d85a3c80f4af8b04694dc94efce5a2e01d3b8432d588092f557bed11874c0f07",
+                    ["x86_64"] = "3c1a0367b8462d7721daacaae5054e1c49fe38706f0bee46dd18b796a659ea42",
+                },
+            },
             ["0.1.3"] = {
                 sha256 = {
                     ["aarch64"] = "09a0ff3174f62a4410000149814f4cd75a726aba0623ee8addf21263d2da417e",
@@ -46,7 +52,12 @@ package = {
                 GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/${version}/okrun-${version}-macos-${arch}.zip",
                 CN = "https://gitcode.com/xlings-res/okrun/releases/download/${version}/okrun-${version}-macos-${arch}.zip",
             },
-            ["latest"] = { ref = "0.1.3" },
+            ["latest"] = { ref = "0.1.4" },
+            ["0.1.4"] = {
+                sha256 = {
+                    ["aarch64"] = "851a89983888ca3a3e313cccdc28edea3926dd994f2c68ed3ce6d21d202fbe4c",
+                },
+            },
             ["0.1.3"] = {
                 sha256 = {
                     ["aarch64"] = "e15ace24913b697b583ca8b172e9701b68288500f3744f36ec6d764bd4e091d7",
@@ -58,7 +69,12 @@ package = {
                 GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/${version}/okrun-${version}-windows-${arch}.zip",
                 CN = "https://gitcode.com/xlings-res/okrun/releases/download/${version}/okrun-${version}-windows-${arch}.zip",
             },
-            ["latest"] = { ref = "0.1.3" },
+            ["latest"] = { ref = "0.1.4" },
+            ["0.1.4"] = {
+                sha256 = {
+                    ["x86_64"] = "978e39f9c715a5bf21067ef2f28c46442402b2a96d47ff696c6ea822e789653d",
+                },
+            },
             ["0.1.3"] = {
                 sha256 = {
                     ["x86_64"] = "738c17d4d8b95b6db956a247f246d68f87a73532ddddfcd8437b594538336125",
