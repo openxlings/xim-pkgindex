@@ -10,8 +10,9 @@
 -- It carries okrun for linux-x86_64, linux-aarch64, macos-aarch64 and
 -- windows-x86_64, the systems okrun is built for (pkgs/o/okrun.lua); the
 -- launcher falls back to okrun on PATH, which no other system has, so from
--- 0.1.1 macOS names aarch64 alone and Windows x86_64 alone (a published
--- version's entry stays as it was published).
+-- 0.1.1 each version names its architectures by its sha256 table: macOS
+-- aarch64 alone, Windows x86_64 alone. A published version's entry stays as
+-- it was published.
 -- GLOBAL is the upstream release; CN is the same bytes at
 -- gitcode.com/xlings-res/mcpp-ide (uploaded with `gtc release upload` and
 -- verified by download), so one sha256 serves both.
@@ -41,7 +42,10 @@ package = {
                     GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v0.1.1/mcpp-ide-0.1.1-openkal.tar.gz",
                     CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v0.1.1/mcpp-ide-0.1.1-openkal.tar.gz",
                 },
-                sha256 = "c7182badc3fc944c8192b482ced1e6514eb02fc8e592eaad5c48acdfdd5c2c21",
+                sha256 = {
+                    x86_64 = "c7182badc3fc944c8192b482ced1e6514eb02fc8e592eaad5c48acdfdd5c2c21",
+                    aarch64 = "c7182badc3fc944c8192b482ced1e6514eb02fc8e592eaad5c48acdfdd5c2c21",
+                },
             },
             ["0.1.0"] = {
                 url = {
@@ -54,12 +58,12 @@ package = {
         macosx = {
             ["latest"] = { ref = "0.1.1" },
             ["0.1.1"] = {
-                aarch64 = {
-                    url = {
-                        GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v0.1.1/mcpp-ide-0.1.1-openkal.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v0.1.1/mcpp-ide-0.1.1-openkal.tar.gz",
-                    },
-                    sha256 = "c7182badc3fc944c8192b482ced1e6514eb02fc8e592eaad5c48acdfdd5c2c21",
+                url = {
+                    GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v0.1.1/mcpp-ide-0.1.1-openkal.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v0.1.1/mcpp-ide-0.1.1-openkal.tar.gz",
+                },
+                sha256 = {
+                    aarch64 = "c7182badc3fc944c8192b482ced1e6514eb02fc8e592eaad5c48acdfdd5c2c21",
                 },
             },
             ["0.1.0"] = {
@@ -73,12 +77,12 @@ package = {
         windows = {
             ["latest"] = { ref = "0.1.1" },
             ["0.1.1"] = {
-                x86_64 = {
-                    url = {
-                        GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v0.1.1/mcpp-ide-0.1.1-openkal.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v0.1.1/mcpp-ide-0.1.1-openkal.tar.gz",
-                    },
-                    sha256 = "c7182badc3fc944c8192b482ced1e6514eb02fc8e592eaad5c48acdfdd5c2c21",
+                url = {
+                    GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v0.1.1/mcpp-ide-0.1.1-openkal.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v0.1.1/mcpp-ide-0.1.1-openkal.tar.gz",
+                },
+                sha256 = {
+                    x86_64 = "c7182badc3fc944c8192b482ced1e6514eb02fc8e592eaad5c48acdfdd5c2c21",
                 },
             },
             ["0.1.0"] = {
