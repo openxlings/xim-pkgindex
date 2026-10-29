@@ -44,7 +44,8 @@ package = {
     --   payload/payload.json       — build/manifest record
     --
     -- v0.0.16 uses upstream directly; its ecosystem mirrors are not published.
-    -- v0.0.18 and older versions take the regional sources below.
+    -- Every other version (v0.0.19, v0.0.18, v0.0.15, v0.0.11) takes the
+    -- regional sources below.
     -- GLOBAL points at upstream releases; CN is the byte-identical mirror at
     -- gitcode.com/xlings-res/mcppls (uploaded with `gtc release upload` and
     -- verified by re-download), so the same sha256 serves both legs. The URL
@@ -67,7 +68,14 @@ package = {
                 GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/releases/download/v${version}/payload-linux-${arch_alias}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v${version}/payload-linux-${arch_alias}.tar.gz",
             },
-            ["latest"] = { ref = "0.0.18" },
+            ["latest"] = { ref = "0.0.19" },
+            ["0.0.19"] = {
+                arch_alias = { x86_64 = "x64", aarch64 = "arm64" },
+                sha256 = {
+                    x86_64 = "SHA256-PENDING",
+                    aarch64 = "SHA256-PENDING",
+                },
+            },
             ["0.0.18"] = {
                 arch_alias = { x86_64 = "x64", aarch64 = "arm64" },
                 sha256 = {
@@ -103,7 +111,13 @@ package = {
                 GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/releases/download/v${version}/payload-darwin-${arch_alias}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v${version}/payload-darwin-${arch_alias}.tar.gz",
             },
-            ["latest"] = { ref = "0.0.18" },
+            ["latest"] = { ref = "0.0.19" },
+            ["0.0.19"] = {
+                arch_alias = { aarch64 = "arm64" },
+                sha256 = {
+                    aarch64 = "SHA256-PENDING",
+                },
+            },
             ["0.0.18"] = {
                 arch_alias = { aarch64 = "arm64" },
                 sha256 = {
@@ -135,7 +149,13 @@ package = {
                 GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/releases/download/v${version}/payload-win32-${arch_alias}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v${version}/payload-win32-${arch_alias}.tar.gz",
             },
-            ["latest"] = { ref = "0.0.18" },
+            ["latest"] = { ref = "0.0.19" },
+            ["0.0.19"] = {
+                arch_alias = { x86_64 = "x64" },
+                sha256 = {
+                    x86_64 = "SHA256-PENDING",
+                },
+            },
             ["0.0.18"] = {
                 arch_alias = { x86_64 = "x64" },
                 sha256 = {

@@ -48,7 +48,13 @@ package = {
                 GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/archive/refs/tags/v${version}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v${version}/src-${version}.tar.gz",
             },
-            ["latest"] = { ref = "0.0.11" },
+            ["latest"] = { ref = "0.0.19" },
+            ["0.0.19"] = {
+                sha256 = {
+                    x86_64 = "SHA256-PENDING",
+                    aarch64 = "SHA256-PENDING",
+                },
+            },
             ["0.0.11"] = {
                 sha256 = {
                     x86_64 = "e7b6b8494e067da09227f35023f2a7378d2349ae7fed1814aeec2980c9f83797",
@@ -62,7 +68,12 @@ package = {
                 GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/archive/refs/tags/v${version}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v${version}/src-${version}.tar.gz",
             },
-            ["latest"] = { ref = "0.0.11" },
+            ["latest"] = { ref = "0.0.19" },
+            ["0.0.19"] = {
+                sha256 = {
+                    aarch64 = "SHA256-PENDING",
+                },
+            },
             ["0.0.11"] = {
                 sha256 = {
                     aarch64 = "e7b6b8494e067da09227f35023f2a7378d2349ae7fed1814aeec2980c9f83797",
@@ -75,7 +86,12 @@ package = {
                 GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/archive/refs/tags/v${version}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v${version}/src-${version}.tar.gz",
             },
-            ["latest"] = { ref = "0.0.11" },
+            ["latest"] = { ref = "0.0.19" },
+            ["0.0.19"] = {
+                sha256 = {
+                    x86_64 = "SHA256-PENDING",
+                },
+            },
             ["0.0.11"] = {
                 sha256 = {
                     x86_64 = "e7b6b8494e067da09227f35023f2a7378d2349ae7fed1814aeec2980c9f83797",

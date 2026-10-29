@@ -182,7 +182,7 @@ class TestVerify:
             f'PATH="{SUBOS_BIN}:$PATH" nvim --version | head -1', contains="NVIM"
         )
         assert_command_output(
-            f'PATH="{SUBOS_BIN}:$PATH" mcppls --version', contains="0.0.11"
+            f'PATH="{SUBOS_BIN}:$PATH" mcppls --version', contains="0.0.19"
         )
 
     @pytest.mark.verify
