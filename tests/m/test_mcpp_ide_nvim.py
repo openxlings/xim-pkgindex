@@ -86,11 +86,20 @@ class TestStatic:
                 f"Neovim and mcppls-nvim must not be deps: {deps}"
 
     @pytest.mark.static
-    def test_both_arches_on_every_system(self, meta):
-        # pure Lua over a universal backend (xim:mcpp-ide holds both arches
-        # for every system), so every system section lists both checksums
+    def test_arches_are_where_the_backend_runs(self, meta):
+        # pure Lua, declared where xim:mcpp-ide runs, which is where okrun is
+        # built (pkgs/o/okrun.lua): Linux on both arches, macOS on aarch64,
+        # Windows on x86_64
+        import re
         c = meta.raw_content
-        assert c.count('aarch64 = "') == 3 and c.count('x86_64 = "') == 3
+
+        def arches(system):
+            block = re.search(r'\n        ' + system + r' = \{(.*?)\n        \},', c, re.S).group(1)
+            return set(re.findall(r'(aarch64|x86_64) = "', block))
+
+        assert arches('linux') == {'aarch64', 'x86_64'}
+        assert arches('macosx') == {'aarch64'}
+        assert arches('windows') == {'x86_64'}
 
     @pytest.mark.static
     def test_recipe_uses_the_lib(self, meta):

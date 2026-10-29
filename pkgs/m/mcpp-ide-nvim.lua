@@ -13,10 +13,10 @@ package = {
 
     -- xim pkg info
     type = "package",
-    -- The plugin is pure Lua — arch-independent. Both arches are declared on
-    -- every system, where its dependency (xim:mcpp-ide, one universal
-    -- package) exists; the source archive is the same file for all of them,
-    -- hence the identical sha256.
+    -- The plugin is pure Lua — arch-independent. The systems and arches
+    -- declared are where its dependency (xim:mcpp-ide) runs: Linux on both,
+    -- macOS on aarch64, Windows on x86_64, as okrun; the source archive is
+    -- the same file for all of them, hence the identical sha256.
     archs = {"aarch64", "x86_64"},
     status = "dev", -- 0.x
     categories = {"cpp", "ide", "mcpp", "nvim"},
@@ -68,7 +68,6 @@ package = {
             ["0.1.1"] = {
                 sha256 = {
                     aarch64 = "SHA256-PENDING",
-                    x86_64 = "SHA256-PENDING",
                 },
             },
         },
@@ -82,7 +81,6 @@ package = {
             ["0.1.1"] = {
                 sha256 = {
                     x86_64 = "SHA256-PENDING",
-                    aarch64 = "SHA256-PENDING",
                 },
             },
         },

@@ -7,6 +7,10 @@
 -- One asset serves every system: the package holds the x86_64 and aarch64
 -- images, the launchers bin/mcpp-ide and bin/mcpp-ide.cmd, and okrun for each
 -- system it names (libexec/okrun/<os>-<arch>/), so it depends on nothing.
+-- It carries okrun for linux-x86_64, linux-aarch64, macos-aarch64 and
+-- windows-x86_64, the systems okrun is built for (pkgs/o/okrun.lua); the
+-- launcher falls back to okrun on PATH, which no other system has, so macOS
+-- names aarch64 alone and Windows x86_64 alone.
 -- GLOBAL is the upstream release; CN is the same bytes at
 -- gitcode.com/xlings-res/mcpp-ide (uploaded with `gtc release upload` and
 -- verified by download), so one sha256 serves both.
@@ -49,35 +53,43 @@ package = {
         macosx = {
             ["latest"] = { ref = "0.1.1" },
             ["0.1.1"] = {
-                url = {
-                    GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v0.1.1/mcpp-ide-0.1.1-openkal.tar.gz",
-                    CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v0.1.1/mcpp-ide-0.1.1-openkal.tar.gz",
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v0.1.1/mcpp-ide-0.1.1-openkal.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v0.1.1/mcpp-ide-0.1.1-openkal.tar.gz",
+                    },
+                    sha256 = "SHA256-PENDING",
                 },
-                sha256 = "SHA256-PENDING",
             },
             ["0.1.0"] = {
-                url = {
-                    GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v0.1.0/mcpp-ide-0.1.0-openkal.tar.gz",
-                    CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v0.1.0/mcpp-ide-0.1.0-openkal.tar.gz",
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v0.1.0/mcpp-ide-0.1.0-openkal.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v0.1.0/mcpp-ide-0.1.0-openkal.tar.gz",
+                    },
+                    sha256 = "4c033c3decaabb90fc87786dc6b0e1ba01becddf457f1eb1f1c3a28066256149",
                 },
-                sha256 = "4c033c3decaabb90fc87786dc6b0e1ba01becddf457f1eb1f1c3a28066256149",
             },
         },
         windows = {
             ["latest"] = { ref = "0.1.1" },
             ["0.1.1"] = {
-                url = {
-                    GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v0.1.1/mcpp-ide-0.1.1-openkal.tar.gz",
-                    CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v0.1.1/mcpp-ide-0.1.1-openkal.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v0.1.1/mcpp-ide-0.1.1-openkal.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v0.1.1/mcpp-ide-0.1.1-openkal.tar.gz",
+                    },
+                    sha256 = "SHA256-PENDING",
                 },
-                sha256 = "SHA256-PENDING",
             },
             ["0.1.0"] = {
-                url = {
-                    GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v0.1.0/mcpp-ide-0.1.0-openkal.tar.gz",
-                    CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v0.1.0/mcpp-ide-0.1.0-openkal.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v0.1.0/mcpp-ide-0.1.0-openkal.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v0.1.0/mcpp-ide-0.1.0-openkal.tar.gz",
+                    },
+                    sha256 = "4c033c3decaabb90fc87786dc6b0e1ba01becddf457f1eb1f1c3a28066256149",
                 },
-                sha256 = "4c033c3decaabb90fc87786dc6b0e1ba01becddf457f1eb1f1c3a28066256149",
             },
         },
     },

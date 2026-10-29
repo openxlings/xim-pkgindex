@@ -29,8 +29,9 @@ local MINIMUM = "0.10.0"
 -- `pack/<name>/start/<plugin>` is on every Neovim's runtimepath with no
 -- plugin manager involved. `:h base-directories`: the root is
 -- $XDG_DATA_HOME on every host when it is set, else `~/.local/share` on Unix
--- (macOS included) and `~/AppData/Local` (%LOCALAPPDATA%) on Windows, where
--- Neovim's directory under it is `nvim-data`, not `nvim`.
+-- (macOS included) and `~/AppData/Local` (%LOCALAPPDATA%) on Windows; under
+-- it, Neovim's directory is $NVIM_APPNAME (`:h $NVIM_APPNAME`, default
+-- `nvim`), with `-data` appended on Windows.
 function nvim_plugin.site_dir()
     local windows = os.host() == "windows"
     local data_home = os.getenv("XDG_DATA_HOME")
@@ -41,7 +42,11 @@ function nvim_plugin.site_dir()
             data_home = path.join(os.getenv("HOME") or "", ".local", "share")
         end
     end
-    return path.join(data_home, windows and "nvim-data" or "nvim", "site")
+    local app = os.getenv("NVIM_APPNAME")
+    if not app or app == "" then
+        app = "nvim"
+    end
+    return path.join(data_home, windows and (app .. "-data") or app, "site")
 end
 
 -- Where copy_to_pack() puts plugin NAME, and remove_from_pack() removes it.
