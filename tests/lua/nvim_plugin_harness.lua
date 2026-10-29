@@ -120,10 +120,15 @@ case("linux", { XDG_DATA_HOME = "", HOME = "/home/u" })
 check("linux, XDG_DATA_HOME empty", nvim_plugin.site_dir(), "/home/u/.local/share/nvim/site")
 case("linux", { HOME = "/home/u" })
 check("linux, HOME only", nvim_plugin.site_dir(), "/home/u/.local/share/nvim/site")
+-- macOS is Unix to Neovim: not ~/Library/Application Support.
 case("macosx", { HOME = "/Users/u" })
-check("macosx, HOME", nvim_plugin.site_dir(), "/Users/u/Library/Application Support/nvim/site")
+check("macosx, HOME", nvim_plugin.site_dir(), "/Users/u/.local/share/nvim/site")
+case("macosx", { XDG_DATA_HOME = "/x/data", HOME = "/Users/u" })
+check("macosx, XDG_DATA_HOME", nvim_plugin.site_dir(), "/x/data/nvim/site")
 case("windows", { LOCALAPPDATA = "C:/Users/u/AppData/Local" })
 check("windows, LOCALAPPDATA", nvim_plugin.site_dir(), "C:/Users/u/AppData/Local/nvim-data/site")
+case("windows", { XDG_DATA_HOME = "D:/data", LOCALAPPDATA = "C:/Users/u/AppData/Local" })
+check("windows, XDG_DATA_HOME", nvim_plugin.site_dir(), "D:/data/nvim-data/site")
 
 print("== 3. the pack dir is pack/xim/start/<name> under the site dir ==")
 case("linux", { XDG_DATA_HOME = "/x/data" })
@@ -188,6 +193,19 @@ nvim_plugin.remove_from_pack("demo")
 check("the copy is gone", isdir(pack), false)
 check("a sibling stays", isdir(ROOT .. "/data/nvim/site/pack/xim/start/other"), true)
 check("the plugin's install dir stays", os.isfile(src .. "/lua/demo/init.lua"), true)
+
+print("== 8. macOS: the copy an earlier recipe left in ~/Library is taken away ==")
+local home = ROOT .. "/home"
+local stale = home .. "/Library/Application Support/nvim/site/pack/xim/start/demo"
+case("macosx", { HOME = home })
+os.mkdir(stale)
+check("copy: the pack dir", nvim_plugin.copy_to_pack(src, "demo", "lua/demo/init.lua"),
+      home .. "/.local/share/nvim/site/pack/xim/start/demo")
+check("copy: the stale copy is gone", isdir(stale), false)
+os.mkdir(stale)
+nvim_plugin.remove_from_pack("demo")
+check("remove: the stale copy is gone", isdir(stale), false)
+check("remove: the copy is gone", isdir(home .. "/.local/share/nvim/site/pack/xim/start/demo"), false)
 
 print()
 if fail_count == 0 then

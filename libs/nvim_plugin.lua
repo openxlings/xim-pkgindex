@@ -27,18 +27,21 @@ local MINIMUM = "0.10.0"
 
 -- Neovim's user data root (`:h stdpath("data")`) + `site`, where
 -- `pack/<name>/start/<plugin>` is on every Neovim's runtimepath with no
--- plugin manager involved.
+-- plugin manager involved. `:h base-directories`: the root is
+-- $XDG_DATA_HOME on every host when it is set, else `~/.local/share` on Unix
+-- (macOS included) and `~/AppData/Local` (%LOCALAPPDATA%) on Windows, where
+-- Neovim's directory under it is `nvim-data`, not `nvim`.
 function nvim_plugin.site_dir()
-    if os.host() == "windows" then
-        return path.join(os.getenv("LOCALAPPDATA") or "", "nvim-data", "site")
-    elseif os.host() == "macosx" then
-        return path.join(os.getenv("HOME") or "", "Library", "Application Support", "nvim", "site")
-    end
+    local windows = os.host() == "windows"
     local data_home = os.getenv("XDG_DATA_HOME")
     if not data_home or data_home == "" then
-        data_home = path.join(os.getenv("HOME") or "", ".local", "share")
+        if windows then
+            data_home = os.getenv("LOCALAPPDATA") or ""
+        else
+            data_home = path.join(os.getenv("HOME") or "", ".local", "share")
+        end
     end
-    return path.join(data_home, "nvim", "site")
+    return path.join(data_home, windows and "nvim-data" or "nvim", "site")
 end
 
 -- Where copy_to_pack() puts plugin NAME, and remove_from_pack() removes it.
@@ -46,6 +49,17 @@ end
 -- user's Neovim setup.
 function nvim_plugin.pack_dir(name)
     return path.join(nvim_plugin.site_dir(), "pack", "xim", "start", name)
+end
+
+-- Where mcppls-nvim's recipe put its copy on macOS before this module,
+-- `~/Library/Application Support/nvim/site`: a directory Neovim does not
+-- read. copy_to_pack() and remove_from_pack() take a copy left there away.
+local function stale_pack_dir(name)
+    if os.host() ~= "macosx" then
+        return nil
+    end
+    return path.join(os.getenv("HOME") or "", "Library", "Application Support",
+        "nvim", "site", "pack", "xim", "start", name)
 end
 
 -- The Neovim the plugin will drive, detected at install time rather than
@@ -124,6 +138,10 @@ end
 -- the copy failed.
 function nvim_plugin.copy_to_pack(install_dir, name, landed)
     local pack_dir = nvim_plugin.pack_dir(name)
+    local stale = stale_pack_dir(name)
+    if stale and stale ~= pack_dir then
+        os.tryrm(stale)
+    end
     -- os.cp semantics: if the target path already exists, the source lands
     -- INSIDE it (`cp -r src dst`). So create the parents, remove the empty
     -- leaf, and only then copy — pack_dir becomes the plugin root itself.
@@ -142,6 +160,10 @@ end
 -- own Neovim config.
 function nvim_plugin.remove_from_pack(name)
     os.tryrm(nvim_plugin.pack_dir(name))
+    local stale = stale_pack_dir(name)
+    if stale then
+        os.tryrm(stale)
+    end
     return true
 end
 
