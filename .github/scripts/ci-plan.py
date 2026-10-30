@@ -15,7 +15,6 @@ PLATFORMS = {'linux': 'ubuntu-latest', 'windows': 'windows-latest', 'macosx': 'm
 # (openxlings/xim-pkgindex#1044). Forty fit with room to spare.
 INSTALL_SHARD_SIZE = 40
 IMPORT = re.compile(r'\bimport\s*\(\s*["\']xim\.pkgindex\.([^"\']+)["\']')
-STRINGS = re.compile(r'["\']([\w:+.@-]+)["\']')
 
 
 def git(root, *args):
@@ -66,30 +65,115 @@ def supported_platforms(source):
     return set(PLATFORMS)
 
 
+# A dependency is named by its coordinate, `<namespace>:<name>[@<version or range>]`, anywhere in a
+# recipe (a `deps` table, or an expression such as pkginfo.dep_install_dir("xim:jdk")); a bare name
+# is one only inside a `deps` table. Other bare strings -- keywords, categories, program names,
+# paths -- are not dependencies: "desktop" or "luban" in a keyword list planned seventy packages for
+# one version of mcpp (openxlings/xim-pkgindex#1094).
+COORDINATE = re.compile(r'["\']([\w+.-]+):([\w+.-]+)(?:@([^"\']*))?["\']')
+DEPS_TABLE = re.compile(r'\bdeps\s*=\s*\{(.*?)\}', re.S)
+BARE = re.compile(r'["\']([\w+.-]+)(?:@([^"\']*))?["\']')
+EXACT = re.compile(r'^[\w.+-]+$')
+VERSION_KEY = re.compile(r'\[\s*["\']([^"\']+)["\']\s*\]\s*=\s*\{')
+
+
+def references(source):
+    """The (name, exact version or None) a recipe depends on."""
+    found = {(name, version if version and EXACT.match(version) else None)
+             for _, name, version in COORDINATE.findall(source)}
+    for table in DEPS_TABLE.findall(source):
+        found |= {(name, version if version and EXACT.match(version) else None)
+                  for name, version in BARE.findall(table) if ':' not in name}
+    return found
+
+
+def _block_end(source, start):
+    """The index after the brace that closes the one opened at `start`, strings and comments skipped."""
+    depth, i, n = 0, start, len(source)
+    while i < n:
+        c = source[i]
+        if c in '"\'':
+            i += 1
+            while i < n and source[i] != c:
+                i += 2 if source[i] == '\\' else 1
+        elif source.startswith('--', i):
+            i = source.find('\n', i)
+            if i < 0:
+                return n
+        elif c == '{':
+            depth += 1
+        elif c == '}':
+            depth -= 1
+            if depth == 0:
+                return i + 1
+        i += 1
+    return n
+
+
+def version_entries(source):
+    """Each version entry's text by its version (every platform's, joined), and the recipe without them."""
+    entries, rest, last = {}, [], 0
+    for m in VERSION_KEY.finditer(source or ''):
+        if m.start() < last:
+            continue
+        end = _block_end(source, m.end() - 1)
+        entries.setdefault(m.group(1), []).append(source[m.start():end])
+        separator = re.match(r'\s*,', source[end:])   # the entry's own separator
+        if separator:
+            end += separator.end()
+        rest.append(source[last:m.start()])
+        last = end
+    rest.append((source or '')[last:])
+    return {k: '\n'.join(v) for k, v in entries.items()}, ''.join(rest)
+
+
+def changed_versions(before, after):
+    """None when the recipe changed outside its version entries (every version is affected), else
+    the versions whose entries changed. `latest` is a version entry: it moves unpinned consumers."""
+    if before is None or after is None:
+        return None
+    b, b_rest = version_entries(before)
+    a, a_rest = version_entries(after)
+    if b_rest.split() != a_rest.split():   # layout aside
+        return None
+    return {v for v in b.keys() | a.keys() if b.get(v) != a.get(v)}
+
+
 def affected(changed, before, after):
     """Reverse imports (including libs -> libs) and package dependencies.
 
     Read both trees so removing/renaming an import or provider cannot hide
-    consumers. Literal package coordinates also cover legacy expression-based
-    deps; an extra match is safe, whereas a missing consumer is not.
+    consumers. A consumer pinned to an exact version is affected only when that
+    version's entry changed or the recipe changed outside its entries; one that
+    names a range or no version is affected by any change. A consumer reached
+    through another counts as wholly changed.
     """
     sources = {k: '\n'.join(d[k] for d in (before, after) if k in d) for k in before.keys() | after.keys()}
-    names = {Path(p).stem: p for p in sources if p.startswith('pkgs/')}
+    # A name can be two recipes' (xim:xdesk and luban:xdesk), and a namespace's directory is not its
+    # name (subos:luban-core is pkgs/luban/): a reference reaches every recipe of its name.
+    names = {}
+    for p in sources:
+        if p.startswith('pkgs/'):
+            names.setdefault(Path(p).stem, set()).add(p)
     reverse = {}
     for path, source in sources.items():
         for module in IMPORT.findall(source):
-            reverse.setdefault('libs/' + module.replace('.', '/') + '.lua', set()).add(path)
+            reverse.setdefault('libs/' + module.replace('.', '/') + '.lua', set()).add((path, None))
         if path.startswith('pkgs/'):
-            for token in STRINGS.findall(source):
-                name = token.split(':')[-1].split('@')[0]
-                if name in names and names[name] != path:
-                    reverse.setdefault(names[name], set()).add(path)
+            for name, version in references(source):
+                for provider in names.get(name, ()):
+                    if provider != path:
+                        reverse.setdefault(provider, set()).add((path, version))
+    versions = {p: changed_versions(before.get(p), after.get(p)) for p in changed if p.startswith('pkgs/')}
     visited, todo = set(changed), list(changed)
     while todo:
-        for consumer in reverse.get(todo.pop(), ()):
-            if consumer not in visited:
-                visited.add(consumer)
-                todo.append(consumer)
+        provider = todo.pop()
+        touched = versions.get(provider)
+        for consumer, pin in reverse.get(provider, ()):
+            if consumer in visited or (pin is not None and touched is not None and pin not in touched):
+                continue
+            visited.add(consumer)
+            todo.append(consumer)
     return sorted(p for p in visited if p.startswith('pkgs/') and p in after)
 
 
