@@ -22,19 +22,12 @@ package = {
     keywords = {"cpp", "c++", "modules", "lsp", "clangd", "mcpp", "nvim", "neovim", "plugin"},
 
     -- Neovim itself is deliberately NOT a declared dep: the plugin drives
-    -- whatever Neovim >= 0.10 the machine already has — xim's, the distro's,
-    -- Homebrew's, Scoop's. The config target below is Neovim's own user site
-    -- pack (`:h stdpath("data")`-based), the same directory for every install
-    -- source, so the configuration is unified, not per-source. install()
-    -- detects `nvim` on PATH and only when it is absent asks xlings itself
-    -- for the index's editor package (`xim:nvim`) — the equivalent-dep,
-    -- deferred: `pkgmanager.install` reports nothing a recipe can read
-    -- (cuda-nvcc.lua's warning) and the bare spelling resolves to nothing
-    -- while this recipe is registered as a local overlay (how CI tests a
-    -- changed package), so both spellings are tried and the outcome is
-    -- re-detected and reported honestly. A distro Neovim older than 0.10 is
-    -- a platform fact to warn about, not an install failure. The server the
-    -- plugin drives is a hard dep and comes from this index.
+    -- whatever Neovim >= 0.10 the machine already has, detected on PATH at
+    -- install time, and is configured through Neovim's own user site pack;
+    -- the index's editor package (`xim:nvim`) is installed only when no
+    -- Neovim answers. libs/nvim_plugin.lua (`xim.pkgindex.nvim_plugin`)
+    -- holds that handling and the facts it rests on. The server the plugin
+    -- drives is a hard dep and comes from this index.
     --
     -- The plugin is the `editors/nvim` directory of the mcpp-language-server
     -- source tree at the matching tag (README: "The plugin is the
@@ -55,7 +48,13 @@ package = {
                 GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/archive/refs/tags/v${version}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v${version}/src-${version}.tar.gz",
             },
-            ["latest"] = { ref = "0.0.11" },
+            ["latest"] = { ref = "0.0.19" },
+            ["0.0.19"] = {
+                sha256 = {
+                    x86_64 = "395ccb478ca4d50b94fd0164d506578252c9be47f0fc4b16cd32400c4350a19d",
+                    aarch64 = "395ccb478ca4d50b94fd0164d506578252c9be47f0fc4b16cd32400c4350a19d",
+                },
+            },
             ["0.0.11"] = {
                 sha256 = {
                     x86_64 = "e7b6b8494e067da09227f35023f2a7378d2349ae7fed1814aeec2980c9f83797",
@@ -69,7 +68,12 @@ package = {
                 GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/archive/refs/tags/v${version}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v${version}/src-${version}.tar.gz",
             },
-            ["latest"] = { ref = "0.0.11" },
+            ["latest"] = { ref = "0.0.19" },
+            ["0.0.19"] = {
+                sha256 = {
+                    aarch64 = "395ccb478ca4d50b94fd0164d506578252c9be47f0fc4b16cd32400c4350a19d",
+                },
+            },
             ["0.0.11"] = {
                 sha256 = {
                     aarch64 = "e7b6b8494e067da09227f35023f2a7378d2349ae7fed1814aeec2980c9f83797",
@@ -82,7 +86,12 @@ package = {
                 GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/archive/refs/tags/v${version}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v${version}/src-${version}.tar.gz",
             },
-            ["latest"] = { ref = "0.0.11" },
+            ["latest"] = { ref = "0.0.19" },
+            ["0.0.19"] = {
+                sha256 = {
+                    x86_64 = "395ccb478ca4d50b94fd0164d506578252c9be47f0fc4b16cd32400c4350a19d",
+                },
+            },
             ["0.0.11"] = {
                 sha256 = {
                     x86_64 = "e7b6b8494e067da09227f35023f2a7378d2349ae7fed1814aeec2980c9f83797",
@@ -94,8 +103,8 @@ package = {
 
 import("xim.libxpkg.log")
 import("xim.libxpkg.pkginfo")
-import("xim.libxpkg.pkgmanager")
 import("xim.libxpkg.xvm")
+import("xim.pkgindex.nvim_plugin")
 
 -- The plugin root files: `lua/` carries the module (require('mcppls')),
 -- `lsp/` the nvim-0.11+ built-in config for vim.lsp.enable('mcppls'),
@@ -153,100 +162,11 @@ function installed()
     return true
 end
 
--- Neovim's user data root (`:h stdpath("data")`) + `site`, where
--- `pack/<name>/start/<plugin>` is on every Neovim's runtimepath with no
--- plugin manager involved. Only namespaced under `pack/xim/`: uninstall
--- removes exactly this one directory and touches nothing else of the
--- user's Neovim setup.
-function __nvim_site_dir()
-    if os.host() == "windows" then
-        return path.join(os.getenv("LOCALAPPDATA") or "", "nvim-data", "site")
-    elseif os.host() == "macosx" then
-        return path.join(os.getenv("HOME") or "", "Library", "Application Support", "nvim", "site")
-    end
-    local data_home = os.getenv("XDG_DATA_HOME")
-    if not data_home or data_home == "" then
-        data_home = path.join(os.getenv("HOME") or "", ".local", "share")
-    end
-    return path.join(data_home, "nvim", "site")
-end
-
--- Where config() installs the plugin copy, and uninstall() removes it.
-function __pack_dir()
-    return path.join(__nvim_site_dir(), "pack", "xim", "start", "mcppls")
-end
-
--- The Neovim the plugin will drive, detected at install time rather than
--- declared as a dep: whatever `nvim` is on PATH — xim's shim, a distro
--- package, Homebrew, Scoop — drives the same site-pack config. Returns the
--- parsed "x.y.z" or nil when Neovim is not runnable from PATH.
-function __nvim_version()
-    local candidates = { "nvim --version" }
-    if os.host() == "windows" then
-        table.insert(candidates, "nvim.exe --version")
-    end
-    for _, cmd in ipairs(candidates) do
-        local ok, out = pcall(os.iorun, cmd)
-        if ok and type(out) == "string" then
-            local v = out:match("NVIM v(%d+%.%d+%.%d+)")
-            if v then
-                return v
-            end
-        end
-    end
-    return nil
-end
-
-function __version_at_least(v, minimum)
-    local vi, mi = {}, {}
-    for n in v:gmatch("%d+") do vi[#vi + 1] = tonumber(n) end
-    for n in minimum:gmatch("%d+") do mi[#mi + 1] = tonumber(n) end
-    for i = 1, math.max(#vi, #mi) do
-        local a, b = vi[i] or 0, mi[i] or 0
-        if a ~= b then
-            return a > b
-        end
-    end
-    return true
-end
-
--- Make sure some Neovim >= 0.10 is available: use the machine's own first,
--- and only when there is none on PATH ask xlings itself for the index's
--- editor package. Both spellings, because `pkgmanager.install` reports
--- nothing a recipe can read AND the bare name resolves to nothing while
--- this recipe is a local overlay (cuda-nvcc.lua measured both); each
--- attempt is followed by a fresh probe, and the final outcome is reported
--- honestly — the plugin stays installed either way and activates the
--- moment an adequate Neovim is on PATH.
-function __provision_nvim()
-    local ver = __nvim_version()
-    if ver then
-        log.info("Neovim %s detected on PATH", ver)
-        if not __version_at_least(ver, "0.10.0") then
-            log.warn("Neovim %s on PATH is older than the 0.10 the plugin requires; "
-                .. "upgrade it — the plugin activates automatically once you do", ver)
-        end
-        return ver
-    end
-    for _, coord in ipairs({ "xim:nvim", "nvim" }) do
-        log.info("no Neovim on PATH — installing the index's editor package %s", coord)
-        pcall(pkgmanager.install, coord)
-        ver = __nvim_version()
-        if ver then
-            log.info("Neovim %s available after installing %s", ver, coord)
-            return ver
-        end
-    end
-    log.warn("Neovim is still not available on PATH; install Neovim >= 0.10 "
-        .. "(any source works) and the plugin activates automatically")
-    return nil
-end
-
 function install()
     os.tryrm(pkginfo.install_dir())
     os.mv(path.join("mcpp-language-server-" .. pkginfo.version(), "editors", "nvim"),
         pkginfo.install_dir())
-    __provision_nvim()
+    nvim_plugin.provision()
     -- The out-of-the-box auto-start shim (upstream ships no plugin/ dir, so
     -- the directory and the file are entirely ours).
     os.mkdir(path.join(pkginfo.install_dir(), "plugin"))
@@ -275,19 +195,12 @@ function config()
     xvm.add(package.name, { type = "group" })
 
     -- Put the plugin on Neovim's runtimepath (a copy under the user's nvim
-    -- site pack, `pack/xim/start/mcppls`). This only makes `require('mcppls')`
-    -- and `vim.lsp.enable('mcppls')` resolvable — it does not start the LSP
-    -- anywhere until the user asks for it in their init.lua.
-    local pack_dir = __pack_dir()
-    -- os.cp semantics: if the target path already exists, the source lands
-    -- INSIDE it (`cp -r src dst`). So create the parents, remove the empty
-    -- leaf, and only then copy — pack_dir becomes the plugin root itself.
-    os.tryrm(pack_dir)
-    os.mkdir(pack_dir)
-    os.tryrm(pack_dir)
-    os.cp(pkginfo.install_dir(), pack_dir)
-    if not os.isfile(path.join(pack_dir, "lua", "mcppls", "init.lua")) then
-        log.error("failed to install the plugin into %s", pack_dir)
+    -- site pack, `pack/xim/start/mcppls`): `require('mcppls')` and
+    -- `vim.lsp.enable('mcppls')` resolve, and plugin/xim-mcppls-auto.lua
+    -- starts the server unless the user opted out.
+    local pack_dir = nvim_plugin.copy_to_pack(pkginfo.install_dir(), "mcppls",
+        path.join("lua", "mcppls", "init.lua"))
+    if not pack_dir then
         return false
     end
 
@@ -303,7 +216,7 @@ end
 
 function uninstall()
     -- Only the copy this package made — never the user's own nvim config.
-    os.tryrm(__pack_dir())
+    nvim_plugin.remove_from_pack("mcppls")
     xvm.remove(package.name)
     return true
 end
