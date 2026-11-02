@@ -1,4 +1,4 @@
--- Written by `mcpp emit xpkg --package` from the four okld-0.1.3-<os>-<arch>.zip
+-- Written by `mcpp emit xpkg --package` from the four okld-<version>-<os>-<arch>.zip
 -- that openkal-image's `release binaries` workflow attaches to its release
 -- (each `mcpp pack` of the tool over openkal-platform's hosted arrangement:
 -- static on Linux, no SDK on macOS, no MSVC run-time on Windows), with the
@@ -33,7 +33,13 @@ package = {
                 GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/${version}/okld-${version}-linux-${arch}.zip",
                 CN = "https://gitcode.com/xlings-res/okld/releases/download/${version}/okld-${version}-linux-${arch}.zip",
             },
-            ["latest"] = { ref = "0.1.3" },
+            ["latest"] = { ref = "0.3.0" },
+            ["0.3.0"] = {
+                sha256 = {
+                    ["aarch64"] = "0c2b37391976476190c67fc6c7bfed1b87c9688e8e6b9621b08d0d741b76566e",
+                    ["x86_64"] = "db9caaa24423d38c8e7d702b56a6279a7392f5854a59092a87e3f65913251396",
+                },
+            },
             ["0.1.3"] = {
                 sha256 = {
                     ["aarch64"] = "f52be058ebf3b1af8151633ac5a05ae209f699e363373ea53e6d62e16d0f6366",
@@ -46,7 +52,12 @@ package = {
                 GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/${version}/okld-${version}-macos-${arch}.zip",
                 CN = "https://gitcode.com/xlings-res/okld/releases/download/${version}/okld-${version}-macos-${arch}.zip",
             },
-            ["latest"] = { ref = "0.1.3" },
+            ["latest"] = { ref = "0.3.0" },
+            ["0.3.0"] = {
+                sha256 = {
+                    ["aarch64"] = "c07a5e92c40310514ee08cc903cdf68fd4c38574506840f3d15a487316122766",
+                },
+            },
             ["0.1.3"] = {
                 sha256 = {
                     ["aarch64"] = "f392b94a9398a604f668cca9868324961db98823cb30c1c72a1e9c5e4d463534",
@@ -58,7 +69,12 @@ package = {
                 GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/${version}/okld-${version}-windows-${arch}.zip",
                 CN = "https://gitcode.com/xlings-res/okld/releases/download/${version}/okld-${version}-windows-${arch}.zip",
             },
-            ["latest"] = { ref = "0.1.3" },
+            ["latest"] = { ref = "0.3.0" },
+            ["0.3.0"] = {
+                sha256 = {
+                    ["x86_64"] = "3ef0b3ce424b695be0edeae003bd1c161c2b74578dee5a9ffb966068b4bdf016",
+                },
+            },
             ["0.1.3"] = {
                 sha256 = {
                     ["x86_64"] = "bd8a58922655a7fe0f6852729552a5112ca90af4b808507593adcc30b993c2dd",
