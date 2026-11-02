@@ -33,7 +33,13 @@ package = {
                 GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/${version}/okrun-${version}-linux-${arch}.zip",
                 CN = "https://gitcode.com/xlings-res/okrun/releases/download/${version}/okrun-${version}-linux-${arch}.zip",
             },
-            ["latest"] = { ref = "0.3.0" },
+            ["latest"] = { ref = "0.3.1" },
+            ["0.3.1"] = {
+                sha256 = {
+                    ["aarch64"] = "1f3c9ae5e49e24b149d6a41ffca7326ee17783ed3152139a9ffa1e60f8ae7c4b",
+                    ["x86_64"] = "3103b2aac055fe6e174aba9dd7192d0e027770a5710aff935f6804fff027323c",
+                },
+            },
             ["0.3.0"] = {
                 sha256 = {
                     ["aarch64"] = "f1ff25ea8ea6cecd8e9d7d212bd2de42ba0d5950db6da157ed83120b72528d74",
@@ -88,7 +94,12 @@ package = {
                 GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/${version}/okrun-${version}-macos-${arch}.zip",
                 CN = "https://gitcode.com/xlings-res/okrun/releases/download/${version}/okrun-${version}-macos-${arch}.zip",
             },
-            ["latest"] = { ref = "0.3.0" },
+            ["latest"] = { ref = "0.3.1" },
+            ["0.3.1"] = {
+                sha256 = {
+                    ["aarch64"] = "95fb1374cd5333ea94e0ed947275312be38ec3d53699ae7ce859c6a9b2b76873",
+                },
+            },
             ["0.3.0"] = {
                 sha256 = {
                     ["aarch64"] = "f2c031737084146023f2f7f61367bec36ac9beae7cee83d215c0c05e23edd78d",
@@ -135,7 +146,12 @@ package = {
                 GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/${version}/okrun-${version}-windows-${arch}.zip",
                 CN = "https://gitcode.com/xlings-res/okrun/releases/download/${version}/okrun-${version}-windows-${arch}.zip",
             },
-            ["latest"] = { ref = "0.3.0" },
+            ["latest"] = { ref = "0.3.1" },
+            ["0.3.1"] = {
+                sha256 = {
+                    ["x86_64"] = "ee233584eb9c8d3e248117e9915eaa3616ae7823a982c6194ddf3824af835b87",
+                },
+            },
             ["0.3.0"] = {
                 sha256 = {
                     ["x86_64"] = "6a500781d62dc3822fa092d8f26bfb39174065e37c945365fd014dd270966017",
