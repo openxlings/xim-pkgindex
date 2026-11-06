@@ -27,13 +27,25 @@ package = {
     archs = {"aarch64", "x86_64"},
     programs = {"okprof"},
     xvm_enable = true,
+    -- 0.5.0 selects the immutable jit1 asset revision. Its package version is
+    -- unchanged; the runner retains debugger registration symbols when packed.
     xpm = {
         linux = {
             source = {
                 GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/${version}/okprof-${version}-linux-${arch}.zip",
                 CN = "https://gitcode.com/xlings-res/okprof/releases/download/${version}/okprof-${version}-linux-${arch}.zip",
             },
-            ["latest"] = { ref = "0.4.4" },
+            ["latest"] = { ref = "0.5.0" },
+            ["0.5.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/0.5.0/okprof-0.5.0-jit1-linux-${arch}.zip",
+                    CN = "https://gitcode.com/xlings-res/okprof/releases/download/0.5.0/okprof-0.5.0-jit1-linux-${arch}.zip",
+                },
+                sha256 = {
+                    ["aarch64"] = "f8557eca1716527ba600b37f59c2afccb61fb25cc86e57a9fca9bc006f4a2bc5",
+                    ["x86_64"] = "37fc6d9e0c0344be1bb804568318cffa5d20bce123b9ee2c952656a30c86e990",
+                },
+            },
             ["0.4.4"] = {
                 sha256 = {
                     ["aarch64"] = "d41b50d91b69c3618f4862f826fcfbac38bbb89e0e89c6e8a5d9c73571bf9721",
@@ -58,7 +70,16 @@ package = {
                 GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/${version}/okprof-${version}-macos-${arch}.zip",
                 CN = "https://gitcode.com/xlings-res/okprof/releases/download/${version}/okprof-${version}-macos-${arch}.zip",
             },
-            ["latest"] = { ref = "0.4.4" },
+            ["latest"] = { ref = "0.5.0" },
+            ["0.5.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/0.5.0/okprof-0.5.0-jit1-macos-${arch}.zip",
+                    CN = "https://gitcode.com/xlings-res/okprof/releases/download/0.5.0/okprof-0.5.0-jit1-macos-${arch}.zip",
+                },
+                sha256 = {
+                    ["aarch64"] = "3919d20de41bafb7cec4a2af16bd7ff80c32962b3df585663df0b0ff7d30b076",
+                },
+            },
             ["0.4.4"] = {
                 sha256 = {
                     ["aarch64"] = "0bfc6ef381dd4000d9d525218afbf2e23aee804ea2386d96dbd100aa3ed92fac",
@@ -80,7 +101,16 @@ package = {
                 GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/${version}/okprof-${version}-windows-${arch}.zip",
                 CN = "https://gitcode.com/xlings-res/okprof/releases/download/${version}/okprof-${version}-windows-${arch}.zip",
             },
-            ["latest"] = { ref = "0.4.4" },
+            ["latest"] = { ref = "0.5.0" },
+            ["0.5.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/0.5.0/okprof-0.5.0-jit1-windows-${arch}.zip",
+                    CN = "https://gitcode.com/xlings-res/okprof/releases/download/0.5.0/okprof-0.5.0-jit1-windows-${arch}.zip",
+                },
+                sha256 = {
+                    ["x86_64"] = "545633dfa5d0815dacaab45efe318dc4596b50fbb621a75d545857485f68ce04",
+                },
+            },
             ["0.4.4"] = {
                 sha256 = {
                     ["x86_64"] = "de47049762d9e979cb8e65aa9560eec0e9c82e3e2d59ace7606ca4e0ad1331f9",
