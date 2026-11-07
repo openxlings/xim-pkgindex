@@ -23,5 +23,6 @@ xlings 的官方包索引：它包含什么、怎样使用、怎样向它添加�
 - [11 — 官方资源](11-official-resources.md)
 - [12 — Luban 的包](12-luban-packages.md)
 - [13 — CI：镜像与自动更新](13-ci-mirror-and-update.md)
+- [14 — openkal 程序](14-openkal-programs.md)
 - [20 — 测试](20-testing.md)
 - [规范（英文）](../specs/README.md)

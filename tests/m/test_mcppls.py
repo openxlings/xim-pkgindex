@@ -89,7 +89,7 @@ class TestVerify:
     @skip_if_not('linux')
     def test_mcppls_version(self):
         assert_command_output(
-            f'PATH="{SUBOS_BIN}:$PATH" mcppls --version', contains="0.0.16"
+            f'PATH="{SUBOS_BIN}:$PATH" mcppls --version', contains="0.0.19"
         )
 
     @pytest.mark.verify
@@ -100,14 +100,15 @@ class TestVerify:
     @pytest.mark.verify
     @skip_if_not('linux')
     def test_payload_complete(self):
-        # one file per payload inside the tarball: server / clangd / kit
+        # one file per payload inside the tarball: server (from 0.0.18 the
+        # okb and the okrun that starts it) / clangd / kit
         import glob
         import os
         from tests.lib.platform_utils import xpkgs_dir
-        hits = glob.glob(os.path.join(xpkgs_dir(), "*-x-mcppls", "*"))
-        assert hits, "mcppls install dir not found under xpkgs"
+        hits = glob.glob(os.path.join(xpkgs_dir(), "*-x-mcppls", "0.0.19"))
+        assert hits, "mcppls 0.0.19 install dir not found under xpkgs"
         d = hits[0]
-        for rel in ("bin/mcppls", "clangd/bin/clangd", "kit/kit.json"):
+        for rel in ("bin/mcppls.okb", "bin/okrun", "clangd/bin/clangd", "kit/kit.json"):
             assert os.path.isfile(os.path.join(d, rel)), f"payload file missing: {rel}"
 
 
