@@ -50,7 +50,13 @@ package = {
                 GLOBAL = "https://github.com/mcpp-community/mcpp-ide/archive/refs/tags/v${version}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v${version}/src-${version}.tar.gz",
             },
-            ["latest"] = { ref = "0.1.1" },
+            ["latest"] = { ref = "0.2.1" },
+            ["0.2.1"] = {
+                sha256 = {
+                    x86_64 = "d71cba94e97856732da578c731dff927e90be0eab4fed1bb09964fa2d423c8db",
+                    aarch64 = "d71cba94e97856732da578c731dff927e90be0eab4fed1bb09964fa2d423c8db",
+                },
+            },
             ["0.1.1"] = {
                 sha256 = {
                     x86_64 = "96529fd063cbb586d6c09c5830a84d74fbffedf37526481f2a6ea8b60faf8d82",
@@ -64,7 +70,12 @@ package = {
                 GLOBAL = "https://github.com/mcpp-community/mcpp-ide/archive/refs/tags/v${version}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v${version}/src-${version}.tar.gz",
             },
-            ["latest"] = { ref = "0.1.1" },
+            ["latest"] = { ref = "0.2.1" },
+            ["0.2.1"] = {
+                sha256 = {
+                    aarch64 = "d71cba94e97856732da578c731dff927e90be0eab4fed1bb09964fa2d423c8db",
+                },
+            },
             ["0.1.1"] = {
                 sha256 = {
                     aarch64 = "96529fd063cbb586d6c09c5830a84d74fbffedf37526481f2a6ea8b60faf8d82",
@@ -77,7 +88,12 @@ package = {
                 GLOBAL = "https://github.com/mcpp-community/mcpp-ide/archive/refs/tags/v${version}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v${version}/src-${version}.tar.gz",
             },
-            ["latest"] = { ref = "0.1.1" },
+            ["latest"] = { ref = "0.2.1" },
+            ["0.2.1"] = {
+                sha256 = {
+                    x86_64 = "d71cba94e97856732da578c731dff927e90be0eab4fed1bb09964fa2d423c8db",
+                },
+            },
             ["0.1.1"] = {
                 sha256 = {
                     x86_64 = "96529fd063cbb586d6c09c5830a84d74fbffedf37526481f2a6ea8b60faf8d82",
