@@ -52,8 +52,8 @@
 --          same filenames (tag drops the `rust-v` prefix), so mainland
 --          China installs don't go through github.com. Only the version
 --          `latest` points at gets a new mirror — the six assets run
---          ~120-155 MB each. Previously mirrored versions keep their CN
---          entry (the assets stay up), so 0.146.1 still resolves through
+--          ~165-200 MB each. Previously mirrored versions keep their CN
+--          entry (the assets stay up), so 0.160.1 still resolves through
 --          the mirror too.
 
 local _CODEX_GH = "https://github.com/openai/codex/releases/download"
@@ -134,7 +134,10 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "0.160.1" },
+            ["latest"] = { ref = "0.166.0" },
+            ["0.166.0"] = _linux("0.166.0",
+                "1d44b28bc4ac9937d7d3532264baa68a507ce364956a0d4ebb856f331cdee254",
+                "7821b77dda2e6283fb1f63f3165177a271da8833e857cf673c6ca1c9db3bfcc6", true),
             ["0.160.1"] = _linux("0.160.1",
                 "340801565906a7028f6baaa9ab6853addaef221f0016a1417a7c1ffdd96c21f0",
                 "dff0954438fa455c2197ddb1f421d8d68625d98de610f76bedb6e5bc837ea35b", true),
@@ -156,7 +159,10 @@ package = {
                 "7a77d416f9ce16f18e09fdc57622a15aab6ad131c34e078ab9d55a13bb3d9b05"),
         },
         macosx = {
-            ["latest"] = { ref = "0.160.1" },
+            ["latest"] = { ref = "0.166.0" },
+            ["0.166.0"] = _macosx("0.166.0",
+                "1cb65690230be5982c654ba2655e3a3b594dce9c55b780e78bfdfeff829d7ad9",
+                "55a440cb579f970abe7c79ab181e54b0ea4c419be99f333bbd868eebac9c21f0", true),
             ["0.160.1"] = _macosx("0.160.1",
                 "a98f330c9b1652cef2edc7bc2ee4c47a0fe19fa098b686381be3c8842abf0ac0",
                 "f73527ee09c6db869acbb37b709866b339ea74ef91d2de255e9c74ec960c6314", true),
@@ -177,7 +183,10 @@ package = {
                 "7da572ce5631deccb8b05c4cb4bbb608d65d5b3197f5e2c79fa7a156c02fc6d6"),
         },
         windows = {
-            ["latest"] = { ref = "0.160.1" },
+            ["latest"] = { ref = "0.166.0" },
+            ["0.166.0"] = _windows("0.166.0",
+                "d559bb88e74d471265857b93b7f19bc250dae527673b9191b33534478093f6bc",
+                "9383152a72f97bb5dd148493c8214e4fed38d805aa2c3297cb3739f7f130becf", true),
             ["0.160.1"] = _windows("0.160.1",
                 "25c6fe4e46d5bff939312fc46de67ace37561f6f1f89b409af63fd8cc6098425",
                 "844e17c492175ec62f8c11890ed89ef208d3502d2c79622c3be9876d2755f085", true),

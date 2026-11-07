@@ -1,0 +1,40 @@
+name: xpkgindex-update request
+
+# A project's release asks the updater to propose its new version (mcpp's
+# .github/tools/bump_index.sh): a repository_dispatch of type
+# `xpkgindex-update` with `client_payload.package` = `xim:<name>`. A token with
+# Contents: write on this repository may send it; starting xpkgindex-update.yml
+# directly is a workflow_dispatch, which needs Actions: write, and a project's
+# release token holds no more than it needs to propose a PR (measured with
+# mcpp's XIM_PKGINDEX_TOKEN: repository_dispatch 204, workflow_dispatch 403).
+# This workflow passes the request on as a workflow_dispatch of the default
+# branch with this repository's own token, so one updater, the same as a
+# manual run, writes the proposal.
+
+on:
+  repository_dispatch:
+    types: [xpkgindex-update]
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  relay:
+    runs-on: ubuntu-latest
+    steps:
+      - name: The named package, passed to xpkgindex-update.yml
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PACKAGE: ${{ github.event.client_payload.package }}
+          BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          # One package of this index, by its identity: a request names
+          # nothing else and is never a scan of every package.
+          if ! [[ "$PACKAGE" =~ ^xim:[A-Za-z0-9][A-Za-z0-9._+-]*$ ]]; then
+            echo "::error::client_payload.package names one package as xim:<name> (got '$PACKAGE')"
+            exit 1
+          fi
+          gh workflow run xpkgindex-update.yml -R "$GITHUB_REPOSITORY" --ref "$BRANCH" -f "package=$PACKAGE"
+          echo "requested an update proposal of $PACKAGE on $BRANCH"

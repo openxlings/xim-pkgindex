@@ -19,6 +19,8 @@ from tests.lib.platform_utils import skip_if_not, xlings_home
 
 PKG = "mcppls-nvim"
 PKG_FILE = "pkgs/m/mcppls-nvim.lua"
+# The Neovim handling (site pack, probe, provisioning) the recipe imports.
+LIB_FILE = "libs/nvim_plugin.lua"
 
 # 同 test_mcppls.py：钉住 subos bin，宿主机上自带的旧 mcppls/nvim 不得应答
 SUBOS_BIN = '$HOME/.xlings/subos/current/bin'
@@ -36,6 +38,13 @@ def nvim_pack_copy() -> str:
 @pytest.fixture(scope='module')
 def meta():
     return parse_xpkg(PKG_FILE)
+
+
+@pytest.fixture(scope='module')
+def lib():
+    from tests.lib.platform_utils import project_root
+    with open(os.path.join(project_root(), LIB_FILE), encoding="utf-8") as f:
+        return f.read()
 
 
 class TestStatic:
@@ -79,18 +88,32 @@ class TestStatic:
                 f"Neovim must stay a detected runtime, not a dep: {deps}"
 
     @pytest.mark.static
-    def test_nvim_detected_not_depended(self, meta):
-        # the contract the recipe implements: probe `nvim --version`, fall
-        # back to the system package manager only when nothing answers, and
-        # never trust that fallback — re-probe afterwards
+    def test_recipe_uses_the_lib(self, meta):
+        # depend, never copy: the Neovim handling is libs/nvim_plugin.lua's,
+        # shared by the Neovim plugin packages; the recipe calls it and keeps
+        # none of it
         c = meta.raw_content
-        assert 'function __nvim_version()' in c, "missing the nvim detection helper"
-        assert 'nvim --version' in c, "missing the version probe"
-        assert 'pcall(pkgmanager.install' in c, "missing the pkgmanager fallback"
-        detect = c.index('function __nvim_version()')
-        fallback = c.index('pcall(pkgmanager.install')
-        assert detect < fallback, "detect FIRST, install only on absence"
-        assert c.rindex('__nvim_version()') > fallback, \
+        assert 'import("xim.pkgindex.nvim_plugin")' in c, "the recipe must import the lib"
+        assert 'nvim_plugin.provision()' in c, "install() provisions Neovim through the lib"
+        assert 'nvim_plugin.copy_to_pack(' in c, "config() copies through the lib"
+        assert 'nvim_plugin.remove_from_pack("mcppls")' in c, "uninstall() removes through the lib"
+        assert 'pkgmanager.install' not in c and 'nvim --version' not in c, \
+            "the probe and the fallback live in the lib, not in a recipe copy"
+
+    @pytest.mark.static
+    def test_nvim_detected_not_depended(self, lib):
+        # the contract the lib implements: probe `nvim --version`, fall back
+        # to xlings' editor package only when nothing answers, and never
+        # trust that fallback — re-probe afterwards
+        assert 'function nvim_plugin.version()' in lib, "missing the nvim detection helper"
+        assert 'nvim --version' in lib, "missing the version probe"
+        assert 'pcall(pkgmanager.install' in lib, "missing the pkgmanager fallback"
+        body = lib[lib.index('function nvim_plugin.provision()'):]
+        body = body[:body.index('\nend\n')]
+        fallback = body.index('pcall(pkgmanager.install')
+        assert body.index('nvim_plugin.version()') < fallback, \
+            "detect FIRST, install only on absence"
+        assert body.rindex('nvim_plugin.version()') > fallback, \
             "re-probe after the fallback attempt (never trust the install)"
 
     @pytest.mark.static
@@ -106,11 +129,11 @@ class TestStatic:
         assert 'mcppls_auto_complete' not in active
 
     @pytest.mark.static
-    def test_version_gate(self, meta):
-        # the plugin needs Neovim >= 0.10; the recipe must compare, not assume
-        c = meta.raw_content
-        assert '__version_at_least' in c
-        assert '0.10.0' in c
+    def test_version_gate(self, lib):
+        # the plugin needs Neovim >= 0.10; the lib must compare, not assume
+        assert 'function nvim_plugin.version_at_least(' in lib
+        assert 'nvim_plugin.version_at_least(ver, MINIMUM)' in lib
+        assert 'MINIMUM = "0.10.0"' in lib
 
 
 class TestIndex:
@@ -159,7 +182,7 @@ class TestVerify:
             f'PATH="{SUBOS_BIN}:$PATH" nvim --version | head -1', contains="NVIM"
         )
         assert_command_output(
-            f'PATH="{SUBOS_BIN}:$PATH" mcppls --version', contains="0.0.11"
+            f'PATH="{SUBOS_BIN}:$PATH" mcppls --version', contains="0.0.19"
         )
 
     @pytest.mark.verify
