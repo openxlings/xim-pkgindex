@@ -118,6 +118,18 @@ For example, validate an integration branch before rollout:
 gh workflow run xpkgindex-update.yml --ref fix/autoupdate-batching-ci -f dry_run=true -f max_batches=20
 ```
 
+A project's release requests the proposal of its new version with a
+`repository_dispatch` of type `xpkgindex-update` and
+`client_payload.package = "xim:<name>"`, which a token with Contents: write on
+this repository may send. `xpkgindex-update-request.yml` passes it on as the
+single-package `workflow_dispatch` above, on the default branch, with this
+repository's token; a project's token needs no Actions permission here.
+
+```sh
+gh api -X POST repos/openxlings/xim-pkgindex/dispatches \
+  -f event_type=xpkgindex-update -f 'client_payload[package]=xim:mcpp'
+```
+
 Candidate installers are fetched from the pinned xlings release tag. Native
 installation jobs cover Linux x86_64/ARM64, macOS ARM64 and Windows x86_64.
 macOS Intel and Windows ARM64 are resource-only targets: every added resource is

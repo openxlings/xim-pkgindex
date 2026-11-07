@@ -48,7 +48,7 @@ package = {
 
     xpm = {
         windows = {
-            ["latest"] = { ref = "0.5.2" },
+            ["latest"] = { ref = "0.5.4" },
             ["0.5.2"] = {
                 url = "https://github.com/rust-lang/mdBook/releases/download/v0.5.2/mdbook-v0.5.2-x86_64-pc-windows-msvc.zip",
                 sha256 = nil
@@ -60,6 +60,10 @@ package = {
             ["0.4.40"] = {
                 url = "https://gitee.com/sunrisepeak/xlings-pkg/releases/download/mdbook/mdbook-v0.4.40-x86_64-pc-windows-msvc.zip",
                 sha256 = nil
+            },
+            ["0.5.4"] = {
+                url = "https://github.com/rust-lang/mdBook/releases/download/v0.5.4/mdbook-v0.5.4-x86_64-pc-windows-msvc.zip",
+                sha256 = "8a6b2421aa522de06d746871d2b8fff9c8d71773467e310a4516d2566e7f2de4",
             },
         },
         linux = {
@@ -73,7 +77,7 @@ package = {
             -- and declared deps on xim:glibc + xim:gcc-runtime
             -- (PR #117). Switching the artifact source eliminates
             -- both deps.
-            ["latest"] = { ref = "0.5.2" },
+            ["latest"] = { ref = "0.5.4" },
             ["0.5.2"] = {
                 url = "https://github.com/rust-lang/mdBook/releases/download/v0.5.2/mdbook-v0.5.2-x86_64-unknown-linux-musl.tar.gz",
                 sha256 = nil
@@ -86,14 +90,22 @@ package = {
                 url = "https://github.com/rust-lang/mdBook/releases/download/v0.4.40/mdbook-v0.4.40-x86_64-unknown-linux-musl.tar.gz",
                 sha256 = nil
             },
+            ["0.5.4"] = {
+                url = "https://github.com/rust-lang/mdBook/releases/download/v0.5.4/mdbook-v0.5.4-x86_64-unknown-linux-musl.tar.gz",
+                sha256 = "5222beabd3e37dc5be0d18ff99b79058469354db5c220153a1b92db5ba12be89",
+            },
         },
         macosx = {
-            ["latest"] = { ref = "0.5.2" },
+            ["latest"] = { ref = "0.5.4" },
             ["0.5.2"] = {
                 url = "https://github.com/rust-lang/mdBook/releases/download/v0.5.2/mdbook-v0.5.2-aarch64-apple-darwin.tar.gz",
                 sha256 = nil
             },
             ["0.4.43"] = "XLINGS_RES",
+            ["0.5.4"] = {
+                url = "https://github.com/rust-lang/mdBook/releases/download/v0.5.4/mdbook-v0.5.4-aarch64-apple-darwin.tar.gz",
+                sha256 = "03e8a6d8b13a2971e0b3280affd03b388373c1485e26f73407c3a76b0b1838df",
+            },
         },
     },
 }

@@ -24,7 +24,7 @@ from tests.lib.assertions import (
     assert_no_typos, assert_no_exec_xvm, assert_no_bashrc_modification,
     assert_no_direct_path_modification, assert_uses_new_api,
     assert_xim_add_succeeds, assert_install_succeeds,
-    assert_command_output, assert_xvm_registered,
+    assert_command_output, assert_xvm_shim_exists,
 )
 from tests.lib.platform_utils import skip_if_not
 
@@ -53,12 +53,21 @@ def _code(content: str) -> str:
 
 
 def _listed_versions(content: str) -> dict:
-    """{platform: {version, ...}}, 读的是 `["24.19.0"] = _linux_url("24.19.0")` 这种行"""
+    """{platform: {version, ...}}，兼容历史 builder 行和新增的字面资源块"""
     listed = {plat: set() for plat, _ in BUILDERS.values()}
-    for key, builder, arg in re.findall(
-            r'\["([^"]+)"\]\s*=\s*(_\w+_url)\("([^"]+)"\)', _code(content)):
-        assert key == arg, f"版本键 {key} 用的却是 {builder}({arg}) 的资源"
-        listed[BUILDERS[builder][0]].add(key)
+    platform = None
+    for line in _code(content).splitlines():
+        plat = re.match(r'\s*(windows|linux|macosx)\s*=\s*\{', line)
+        if plat:
+            platform = plat.group(1)
+            continue
+        for key, builder, arg in re.findall(
+                r'\["([^"]+)"\]\s*=\s*(_\w+_url)\("([^"]+)"\)', line):
+            assert key == arg, f"版本键 {key} 用的却是 {builder}({arg}) 的资源"
+            listed[BUILDERS[builder][0]].add(key)
+        literal = re.match(r'\s*\["([0-9][^"]*)"\]\s*=\s*\{', line)
+        if literal and platform in listed:
+            listed[platform].add(literal.group(1))
     return listed
 
 
@@ -101,21 +110,28 @@ class TestStatic:
         assert_no_typos(PKG_FILE)
 
     @pytest.mark.static
-    def test_asset_builder_is_the_only_url_source(self, meta):
-        """两个 host 各只能出现一次, 都在 `_asset()` 里
+    def test_asset_builder_and_literal_candidate_are_the_only_url_sources(self, meta):
+        """历史版本由 `_asset()` 成对拼 URL；新增候选必须是字面资源块
 
-        写死一条 URL 的版本块会拿到 GLOBAL 而没有 CN, 国内用户就还是走
-        nodejs.org —— 而且这种块不会报错, 只是安静地少一个镜像。
+        xpkgindex-update 会读取 PR 新增候选的显式 URL/hash，不接受
+        `_linux_url("26.13.0")` 这类动态表达式。这里允许 26.13.0 这个字面
+        候选出现，同时继续禁止其他绕开 `_asset()` 的写死 URL。
         """
         code = _code(meta.raw_content)
         # CI templates do not produce historical/runtime version resources.
         code = code.split("    extensions = {", 1)[0] + code.split("    xpm = {", 1)[1]
-        assert code.count(GLOBAL_HOST) == 1, "GLOBAL URL 只应由 _asset() 拼出"
-        assert code.count(CN_HOST) == 1, "CN URL 只应由 _asset() 拼出"
         builder = re.search(r'local function _asset\(.*?\nend\n', code, re.S)
         assert builder, "找不到 _asset()"
+        code_without_builder = code.replace(builder.group(0), "")
+        global_lines = [line for line in code_without_builder.splitlines() if GLOBAL_HOST in line]
+        cn_lines = [line for line in code_without_builder.splitlines() if CN_HOST in line]
+        assert len(global_lines) == 6, "GLOBAL URL 只能来自 26.13.0 字面候选"
+        assert len(cn_lines) == 6, "CN URL 只能来自 26.13.0 字面候选"
+        for line in global_lines + cn_lines:
+            assert "v26.13.0/node-v26.13.0-" in line, \
+                "除 26.13.0 新增候选外，历史版本 URL 必须由 _asset() 拼出"
         assert GLOBAL_HOST in builder.group(0) and CN_HOST in builder.group(0), \
-            "两个 host 必须都在 _asset() 里, 才能保证每个资产成对"
+            "两个 host 必须都在 _asset() 里, 才能保证历史资产成对"
 
     @pytest.mark.static
     def test_sha256_covers_every_listed_version(self, meta):
@@ -374,7 +390,7 @@ class TestVerify:
     @pytest.mark.verify
     @skip_if_not('linux')
     def test_node_version(self):
-        assert_command_output("node --version", contains="v24.19.0")
+        assert_command_output("node --version", contains="v26.13.0")
 
     @pytest.mark.verify
     @skip_if_not('linux')
@@ -384,4 +400,6 @@ class TestVerify:
     @pytest.mark.verify
     @skip_if_not('linux')
     def test_xvm_node(self):
-        assert_xvm_registered("node")
+        # `xvm info` prints runtime tips and exits 0 for any target on current
+        # xlings, so assert the real shim landed instead (same as test_nvm.py).
+        assert_xvm_shim_exists("node")

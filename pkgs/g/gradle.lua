@@ -79,18 +79,25 @@ package = {
     xpm = {
         linux = {
             deps = { runtime = { "xim:jdk-temurin@25.0.4+7" } },
-            ["latest"] = { ref = "9.7.1" },
+            ["latest"] = { ref = "9.8.2" },
             ["9.7.1"] = {
                 url = {
                     GLOBAL = "https://services.gradle.org/distributions/gradle-9.7.1-bin.zip",
                     CN = "https://mirrors.cloud.tencent.com/gradle/gradle-9.7.1-bin.zip",
                 },
                 sha256 = "acd53f1edaf02f1a8ff99879f8a34b302661a057d9b063ae9e35b552f804d20a",
+            },
+            ["9.8.2"] = {
+                url = {
+                    GLOBAL = "https://services.gradle.org/distributions/gradle-9.8.2-bin.zip",
+                    CN = "https://mirrors.cloud.tencent.com/gradle/gradle-9.8.2-bin.zip",
+                },
+                sha256 = "21bd5da2de49b642904077f38c0efdc7778e92b3ed0889392dca61b97e389607",
             },
         },
         macosx = {
             deps = { runtime = { "xim:jdk-temurin@25.0.4+7" } },
-            ["latest"] = { ref = "9.7.1" },
+            ["latest"] = { ref = "9.8.2" },
             ["9.7.1"] = {
                 url = {
                     GLOBAL = "https://services.gradle.org/distributions/gradle-9.7.1-bin.zip",
@@ -98,16 +105,30 @@ package = {
                 },
                 sha256 = "acd53f1edaf02f1a8ff99879f8a34b302661a057d9b063ae9e35b552f804d20a",
             },
+            ["9.8.2"] = {
+                url = {
+                    GLOBAL = "https://services.gradle.org/distributions/gradle-9.8.2-bin.zip",
+                    CN = "https://mirrors.cloud.tencent.com/gradle/gradle-9.8.2-bin.zip",
+                },
+                sha256 = "21bd5da2de49b642904077f38c0efdc7778e92b3ed0889392dca61b97e389607",
+            },
         },
         windows = {
             deps = { runtime = { "xim:jdk-temurin@25.0.4+7" } },
-            ["latest"] = { ref = "9.7.1" },
+            ["latest"] = { ref = "9.8.2" },
             ["9.7.1"] = {
                 url = {
                     GLOBAL = "https://services.gradle.org/distributions/gradle-9.7.1-bin.zip",
                     CN = "https://mirrors.cloud.tencent.com/gradle/gradle-9.7.1-bin.zip",
                 },
                 sha256 = "acd53f1edaf02f1a8ff99879f8a34b302661a057d9b063ae9e35b552f804d20a",
+            },
+            ["9.8.2"] = {
+                url = {
+                    GLOBAL = "https://services.gradle.org/distributions/gradle-9.8.2-bin.zip",
+                    CN = "https://mirrors.cloud.tencent.com/gradle/gradle-9.8.2-bin.zip",
+                },
+                sha256 = "21bd5da2de49b642904077f38c0efdc7778e92b3ed0889392dca61b97e389607",
             },
         },
     },

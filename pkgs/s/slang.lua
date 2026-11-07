@@ -81,31 +81,61 @@ package = {
             deps = { "xim:glibc@>=2.38", "xim:gcc-runtime@>=13",
                      "xim:zlib@>=1.3", "xim:libX11@>=1.8" },
             source = "https://github.com/shader-slang/slang/releases/download/v${version}/slang-${version}-linux-${arch}.${ext}",
-            ["latest"] = { ref = "2026.14.1" },
+            ["latest"] = { ref = "2026.20" },
             ["2026.14.1"] = {
                 sha256 = {
                     x86_64  = "21f2d7847385a770e569fb61b1507a7794d742d97850bce0432bff0032ca005f",
                     aarch64 = "438325c6529ba658f571614d9d551cdff09e730836d29c26c290afc8ed996985",
                 },
             },
+            ["2026.20"] = {
+                x86_64 = {
+                    url = "https://github.com/shader-slang/slang/releases/download/v2026.20/slang-2026.20-linux-x86_64.tar.gz",
+                    sha256 = "e863e568c204810d6e8bc31852f056aef6763c55ea9925db2db7affa060347c9",
+                },
+                aarch64 = {
+                    url = "https://github.com/shader-slang/slang/releases/download/v2026.20/slang-2026.20-linux-aarch64.tar.gz",
+                    sha256 = "b0345743e2153d8c2bd33f56fb5696bcef63fc03513f054a1ae1b8d3dd0152a9",
+                },
+            },
         },
         macosx = {
             source = "https://github.com/shader-slang/slang/releases/download/v${version}/slang-${version}-macos-${arch}.${ext}",
-            ["latest"] = { ref = "2026.14.1" },
+            ["latest"] = { ref = "2026.20" },
             ["2026.14.1"] = {
                 sha256 = {
                     aarch64 = "92da7ab6226dd951037cd85397f830ae78fe40fbbb8928882e0b2654e468fdd4",
                     x86_64  = "adc5e179f5584ca572293e93612df9f0b6be8a46dcb53622238efc7a62b1da2f",
                 },
             },
+            ["2026.20"] = {
+                aarch64 = {
+                    url = "https://github.com/shader-slang/slang/releases/download/v2026.20/slang-2026.20-macos-aarch64.tar.gz",
+                    sha256 = "07fa8833fdbb343c3674c84fdd885910f495f3daaaa0c732b32980151e8b58c4",
+                },
+                x86_64 = {
+                    url = "https://github.com/shader-slang/slang/releases/download/v2026.20/slang-2026.20-macos-x86_64.tar.gz",
+                    sha256 = "b4f01f615dc625f60c593d7d0a4bbd38e05dfa2a34bfd3973017c309d866feaa",
+                },
+            },
         },
         windows = {
             source = "https://github.com/shader-slang/slang/releases/download/v${version}/slang-${version}-windows-${arch}.${ext}",
-            ["latest"] = { ref = "2026.14.1" },
+            ["latest"] = { ref = "2026.20" },
             ["2026.14.1"] = {
                 sha256 = {
                     x86_64  = "5ed0a59d650a0af0aca45d5db4e083b3d8fb5cea05748747dd95dfbe9c580658",
                     aarch64 = "5067047bb35ae5675b06a3467d0b302d9816727450a803cb3770660bef684f37",
+                },
+            },
+            ["2026.20"] = {
+                x86_64 = {
+                    url = "https://github.com/shader-slang/slang/releases/download/v2026.20/slang-2026.20-windows-x86_64.zip",
+                    sha256 = "e6dd32bbddf1720ebb4e679d55e9635ce792865a5bd84f3d2cd9af28647c0174",
+                },
+                aarch64 = {
+                    url = "https://github.com/shader-slang/slang/releases/download/v2026.20/slang-2026.20-windows-aarch64.zip",
+                    sha256 = "4f18a7e76a59969bc9bf6ea596bd9e496a3c689af173990ae028b18f03e1ac1a",
                 },
             },
         },
