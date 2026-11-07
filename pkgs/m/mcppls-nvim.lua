@@ -48,7 +48,13 @@ package = {
                 GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/archive/refs/tags/v${version}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v${version}/src-${version}.tar.gz",
             },
-            ["latest"] = { ref = "0.0.19" },
+            ["latest"] = { ref = "0.0.20" },
+            ["0.0.20"] = {
+                sha256 = {
+                    x86_64 = "2e33ea1c63e9eb488519d71e6794951cf99392e0fb5d7e5ce067b11d730fae75",
+                    aarch64 = "2e33ea1c63e9eb488519d71e6794951cf99392e0fb5d7e5ce067b11d730fae75",
+                },
+            },
             ["0.0.19"] = {
                 sha256 = {
                     x86_64 = "395ccb478ca4d50b94fd0164d506578252c9be47f0fc4b16cd32400c4350a19d",
@@ -68,7 +74,12 @@ package = {
                 GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/archive/refs/tags/v${version}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v${version}/src-${version}.tar.gz",
             },
-            ["latest"] = { ref = "0.0.19" },
+            ["latest"] = { ref = "0.0.20" },
+            ["0.0.20"] = {
+                sha256 = {
+                    aarch64 = "2e33ea1c63e9eb488519d71e6794951cf99392e0fb5d7e5ce067b11d730fae75",
+                },
+            },
             ["0.0.19"] = {
                 sha256 = {
                     aarch64 = "395ccb478ca4d50b94fd0164d506578252c9be47f0fc4b16cd32400c4350a19d",
@@ -86,7 +97,12 @@ package = {
                 GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/archive/refs/tags/v${version}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v${version}/src-${version}.tar.gz",
             },
-            ["latest"] = { ref = "0.0.19" },
+            ["latest"] = { ref = "0.0.20" },
+            ["0.0.20"] = {
+                sha256 = {
+                    x86_64 = "2e33ea1c63e9eb488519d71e6794951cf99392e0fb5d7e5ce067b11d730fae75",
+                },
+            },
             ["0.0.19"] = {
                 sha256 = {
                     x86_64 = "395ccb478ca4d50b94fd0164d506578252c9be47f0fc4b16cd32400c4350a19d",
