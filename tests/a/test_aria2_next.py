@@ -72,7 +72,7 @@ class TestVerify:
     @pytest.mark.verify
     @skip_if_not('linux')
     def test_version(self):
-        assert_command_output("aria2-next --version", contains="Aria2 Next version")
+        assert_command_output("aria2-next --version", regex=r"(?i)aria2[ -]next version \d+\.\d+\.\d+")
 
     @pytest.mark.verify
     @skip_if_not('linux')

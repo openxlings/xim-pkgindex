@@ -46,7 +46,7 @@ package = {
     xpm = {
         linux = {
 
-            ["latest"] = { ref = "4.8.1" },
+            ["latest"] = { ref = "4.9.3" },
             ["4.8.1"] = {
                 x86_64 = {
                     url = "https://github.com/fish-shell/fish-shell/releases/download/4.8.1/fish-4.8.1-linux-x86_64.tar.xz",
@@ -64,6 +64,16 @@ package = {
             ["4.6.0"] = {
                 url = "https://github.com/fish-shell/fish-shell/releases/download/4.6.0/fish-4.6.0-linux-x86_64.tar.xz",
                 sha256 = "497c9c4e3fb3c006fe9d2c9a5a5447c1c90490b6b4ce6bfaf75e53b495c82f36",
+            },
+            ["4.9.3"] = {
+                aarch64 = {
+                    url = "https://github.com/fish-shell/fish-shell/releases/download/4.9.3/fish-4.9.3-linux-aarch64.tar.xz",
+                    sha256 = "57349f0111728c64b703a84e611aa97ff4d1fa8466385d64e67bd5bc3ffa49fc",
+                },
+                x86_64 = {
+                    url = "https://github.com/fish-shell/fish-shell/releases/download/4.9.3/fish-4.9.3-linux-x86_64.tar.xz",
+                    sha256 = "8f643d10ad1abb0ef7072764c01ceb5cf61b2d373fda400cf60f0bad69b7e095",
+                },
             },
         },
     },
