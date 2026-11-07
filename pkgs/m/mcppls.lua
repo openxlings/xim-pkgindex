@@ -14,13 +14,15 @@ package = {
 
     -- xim pkg info
     type = "package",
-    -- From 0.0.18 the server is one okb (bin/mcppls.okb, the ok images of
-    -- x86_64 and aarch64) started by the payload's okrun (bin/okrun), as the
-    -- payload's payload.json `server` states; before it, a static program
-    -- per platform (bin/mcppls). The bundled clangd is glibc-dynamic on Linux
-    -- (no libstdc++/libgcc_s) and self-contained on Windows/macOS, so the
-    -- payload stays one archive per platform. macOS upstream builds are
-    -- arm64-only; Linux supports x86_64/aarch64; Windows is x86_64-only.
+    -- From 0.0.20 (payload manifest version 5) one archive serves every
+    -- system: the server (bin/mcppls.okb) and the engine
+    -- (clangd/openkal/bin/clangd.okb) are ok images, started by the runner of
+    -- each system (libexec/okrun/<system>-<arch>/okrun), which payload.json
+    -- names per platform. 0.0.18 and 0.0.19 (version 4) are one archive per
+    -- platform: the server's okb started by bin/okrun, and a native clangd
+    -- (glibc-dynamic on Linux, self-contained on Windows/macOS); before them a
+    -- static program per platform (bin/mcppls). macOS is arm64-only; Linux
+    -- supports x86_64/aarch64; Windows is x86_64-only.
     archs = {"x86_64", "aarch64"},
     status = "dev", -- 0.0.x: upstream is pre-1.0, expect breaking changes
     categories = {"cpp", "language-server", "lsp"},
@@ -36,16 +38,20 @@ package = {
     xvm_enable = true,
 
     -- Release assets, verbatim from upstream `SHA256SUMS` (per release):
+    --   payload/libexec/okrun/<system>-<arch>/okrun[.exe] — the runners from
+    --                                0.0.20 (`okrun mcppls.okb serve`)
+    --   payload/clangd/openkal/bin/clangd.okb — the engine from 0.0.20
     --   payload/bin/mcppls.okb + payload/bin/okrun[.exe] — the server from
     --                                0.0.18 (`okrun mcppls.okb serve`)
     --   payload/bin/mcppls[.exe]   — the server before 0.0.18; `mcppls serve` speaks LSP over stdio
-    --   payload/clangd/bin/clangd[.exe] — the pinned clangd (23.1.0) it drives
+    --   payload/clangd/bin/clangd[.exe] — the pinned clangd (23.1.0) it drives,
+    --                                before 0.0.20
     --   payload/kit/               — the semantic kit (libc++ headers/sysroot)
     --   payload/payload.json       — build/manifest record
     --
     -- v0.0.16 uses upstream directly; its ecosystem mirrors are not published.
-    -- Every other version (v0.0.19, v0.0.18, v0.0.15, v0.0.11) takes the
-    -- regional sources below.
+    -- 0.0.20 names its one archive per version (`url`); every other version
+    -- (v0.0.19, v0.0.18, v0.0.15, v0.0.11) takes the regional sources below.
     -- GLOBAL points at upstream releases; CN is the byte-identical mirror at
     -- gitcode.com/xlings-res/mcppls (uploaded with `gtc release upload` and
     -- verified by re-download), so the same sha256 serves both legs. The URL
@@ -68,7 +74,17 @@ package = {
                 GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/releases/download/v${version}/payload-linux-${arch_alias}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v${version}/payload-linux-${arch_alias}.tar.gz",
             },
-            ["latest"] = { ref = "0.0.19" },
+            ["latest"] = { ref = "0.0.20" },
+            ["0.0.20"] = {
+                url = {
+                    GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/releases/download/v0.0.20/mcppls-payload-0.0.20.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v0.0.20/mcppls-payload-0.0.20.tar.gz",
+                },
+                sha256 = {
+                    x86_64 = "c0519f2badb0ed2d40ab817b72c51759866273deb7a0b4692e50edb02f1cec2d",
+                    aarch64 = "c0519f2badb0ed2d40ab817b72c51759866273deb7a0b4692e50edb02f1cec2d",
+                },
+            },
             ["0.0.19"] = {
                 arch_alias = { x86_64 = "x64", aarch64 = "arm64" },
                 sha256 = {
@@ -111,7 +127,16 @@ package = {
                 GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/releases/download/v${version}/payload-darwin-${arch_alias}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v${version}/payload-darwin-${arch_alias}.tar.gz",
             },
-            ["latest"] = { ref = "0.0.19" },
+            ["latest"] = { ref = "0.0.20" },
+            ["0.0.20"] = {
+                url = {
+                    GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/releases/download/v0.0.20/mcppls-payload-0.0.20.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v0.0.20/mcppls-payload-0.0.20.tar.gz",
+                },
+                sha256 = {
+                    aarch64 = "c0519f2badb0ed2d40ab817b72c51759866273deb7a0b4692e50edb02f1cec2d",
+                },
+            },
             ["0.0.19"] = {
                 arch_alias = { aarch64 = "arm64" },
                 sha256 = {
@@ -149,7 +174,16 @@ package = {
                 GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/releases/download/v${version}/payload-win32-${arch_alias}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v${version}/payload-win32-${arch_alias}.tar.gz",
             },
-            ["latest"] = { ref = "0.0.19" },
+            ["latest"] = { ref = "0.0.20" },
+            ["0.0.20"] = {
+                url = {
+                    GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/releases/download/v0.0.20/mcppls-payload-0.0.20.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v0.0.20/mcppls-payload-0.0.20.tar.gz",
+                },
+                sha256 = {
+                    x86_64 = "c0519f2badb0ed2d40ab817b72c51759866273deb7a0b4692e50edb02f1cec2d",
+                },
+            },
             ["0.0.19"] = {
                 arch_alias = { x86_64 = "x64" },
                 sha256 = {
@@ -189,6 +223,24 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.log")
 import("xim.libxpkg.xvm")
 
+-- The runner of this system in a payload of manifest version 5 (0.0.20 on):
+-- libexec/okrun/<system>-<arch>/, as the payload's payload.json names it for
+-- each platform. macOS and Windows have one; on Linux the machine is read
+-- from `uname -m`, because `os.arch()` is not bound in the hook runtime
+-- (libs/qtsdk.lua). An unknown machine has no runner, and `installed()`
+-- then answers no rather than guessing.
+function __runner_dir()
+    local runners = path.join(pkginfo.install_dir(), "libexec", "okrun")
+    local host = os.host()
+    if host == "windows" then return path.join(runners, "windows-x86_64") end
+    if host == "macosx" then return path.join(runners, "macos-aarch64") end
+    local ok, out = pcall(os.iorun, "uname -m")
+    local m = ok and (out or ""):gsub("%s+$", "") or ""
+    if m == "aarch64" or m == "arm64" then return path.join(runners, "linux-aarch64") end
+    if m == "x86_64" then return path.join(runners, "linux-x86_64") end
+    return nil
+end
+
 -- One assertion per payload component, and each file is provided by exactly
 -- one of the three payloads inside the tarball (server / clangd / kit): if a
 -- component did not land, `installed()` names it instead of answering a bare
@@ -196,15 +248,27 @@ import("xim.libxpkg.xvm")
 function __required_files()
     local d = pkginfo.install_dir()
     local win = os.host() == "windows"
+    local okrun = win and "okrun.exe" or "okrun"
+    if os.isdir(path.join(d, "libexec", "okrun")) then
+        -- 0.0.20 on: one payload for every system; the engine is an okb
+        -- started by the same runner as the server.
+        local runner = __runner_dir()
+        return {
+            path.join(d, "bin", "mcppls.okb"),
+            runner and path.join(runner, okrun) or path.join(d, "libexec", "okrun", "<unknown machine>", okrun),
+            path.join(d, "clangd", "openkal", "bin", "clangd.okb"),
+            path.join(d, "kit", "kit.json"),
+        }
+    end
     local clangd = win and "clangd.exe" or "clangd"
     local files = {
         path.join(d, "clangd", "bin", clangd),          -- pinned clangd payload
         path.join(d, "kit", "kit.json"),                -- semantic kit payload
     }
     if os.isfile(path.join(d, "bin", "mcppls.okb")) then
-        -- 0.0.18 on: the server's okb and the runner that starts it
+        -- 0.0.18 and 0.0.19: the server's okb and the runner that starts it
         table.insert(files, path.join(d, "bin", "mcppls.okb"))
-        table.insert(files, path.join(d, "bin", win and "okrun.exe" or "okrun"))
+        table.insert(files, path.join(d, "bin", okrun))
     else
         table.insert(files, path.join(d, "bin", win and "mcppls.exe" or "mcppls"))
     end
@@ -245,10 +309,13 @@ end
 function config()
     local bindir = path.join(pkginfo.install_dir(), "bin")
     local okb = path.join(bindir, "mcppls.okb")
-    if os.isfile(okb) then
-        -- 0.0.18 on: `mcppls` is the payload's okrun starting the okb (the
-        -- shim puts bindir first on PATH); the server finds the rest of its
-        -- payload around its image.
+    if os.isdir(path.join(pkginfo.install_dir(), "libexec", "okrun")) then
+        -- 0.0.20 on: `mcppls` is this system's runner starting the okb (the
+        -- shim puts the runner's directory first on PATH).
+        xvm.add("mcppls", { bindir = __runner_dir(), alias = 'okrun "' .. okb .. '"' })
+    elseif os.isfile(okb) then
+        -- 0.0.18 and 0.0.19: the payload's okrun beside the okb; the server
+        -- finds the rest of its payload around its image.
         xvm.add("mcppls", { bindir = bindir, alias = 'okrun "' .. okb .. '"' })
     else
         xvm.add("mcppls", { bindir = bindir })
