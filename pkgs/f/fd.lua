@@ -38,7 +38,7 @@ package = {
     xpm = {
         linux = {
 
-            ["latest"] = { ref = "10.5.0" },
+            ["latest"] = { ref = "10.5.2" },
             ["10.5.0"] = {
                 url = "https://github.com/sharkdp/fd/releases/download/v10.5.0/fd-v10.5.0-x86_64-unknown-linux-musl.tar.gz",
                 sha256 = "761c72dc8e120d85b22292063be8a796e2eeb20eb3e4f38b8fa2343ccf3514a7",
@@ -47,10 +47,14 @@ package = {
                 url = "https://github.com/sharkdp/fd/releases/download/v10.4.2/fd-v10.4.2-x86_64-unknown-linux-musl.tar.gz",
                 sha256 = "e3257d48e29a6be965187dbd24ce9af564e0fe67b3e73c9bdcd180f4ec11bdde",
             },
+            ["10.5.2"] = {
+                url = "https://github.com/sharkdp/fd/releases/download/v10.5.2/fd-v10.5.2-x86_64-unknown-linux-musl.tar.gz",
+                sha256 = "7e2d07fa2b8807642aaec67b7e2972a9fbe4db26fcb340a7372392db42b26694",
+            },
         },
         macosx = {
 
-            ["latest"] = { ref = "10.5.0" },
+            ["latest"] = { ref = "10.5.2" },
             ["10.5.0"] = {
                 url = "https://github.com/sharkdp/fd/releases/download/v10.5.0/fd-v10.5.0-aarch64-apple-darwin.tar.gz",
                 sha256 = "b67e1836c468e42e411984b56e52fa7abec08c2bd22c867398e7cc134aac5e12",
@@ -59,10 +63,14 @@ package = {
                 url = "https://github.com/sharkdp/fd/releases/download/v10.4.2/fd-v10.4.2-aarch64-apple-darwin.tar.gz",
                 sha256 = "623dc0afc81b92e4d4606b380d7bc91916ba7b97814263e554d50923a39e480a",
             },
+            ["10.5.2"] = {
+                url = "https://github.com/sharkdp/fd/releases/download/v10.5.2/fd-v10.5.2-aarch64-apple-darwin.tar.gz",
+                sha256 = "81bf98a16d3d7230e4a9123fcede243d71ea31a577113476ed43f1cdf4773162",
+            },
         },
         windows = {
 
-            ["latest"] = { ref = "10.5.0" },
+            ["latest"] = { ref = "10.5.2" },
             ["10.5.0"] = {
                 url = "https://github.com/sharkdp/fd/releases/download/v10.5.0/fd-v10.5.0-x86_64-pc-windows-msvc.zip",
                 sha256 = "a227701b8551c35a9931d9f6da75503cf86d88e182d71fb849a70864c5d57cd7",
@@ -70,6 +78,10 @@ package = {
             ["10.4.2"] = {
                 url = "https://github.com/sharkdp/fd/releases/download/v10.4.2/fd-v10.4.2-x86_64-pc-windows-msvc.zip",
                 sha256 = "b2816e506390a89941c63c9187d58a3cc10e9a55f2ef0685f9ea0eccaf7c98c8",
+            },
+            ["10.5.2"] = {
+                url = "https://github.com/sharkdp/fd/releases/download/v10.5.2/fd-v10.5.2-x86_64-pc-windows-msvc.zip",
+                sha256 = "7edac75ef96b7e9a01ebb251a21ee86ea365a09adcfb865f1ec3346a906153b6",
             },
         },
     },
