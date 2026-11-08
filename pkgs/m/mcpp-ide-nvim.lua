@@ -18,7 +18,7 @@ package = {
     -- macOS on aarch64, Windows on x86_64, as okrun; the source archive is
     -- the same file for all of them, hence the identical sha256.
     archs = {"aarch64", "x86_64"},
-    status = "dev", -- 0.x
+    status = "dev",
     categories = {"cpp", "ide", "mcpp", "nvim"},
     keywords = {"cpp", "c++", "modules", "mcpp", "ide", "nvim", "neovim", "plugin"},
 
@@ -50,7 +50,13 @@ package = {
                 GLOBAL = "https://github.com/mcpp-community/mcpp-ide/archive/refs/tags/v${version}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v${version}/src-${version}.tar.gz",
             },
-            ["latest"] = { ref = "0.2.1" },
+            ["latest"] = { ref = "1.2.0" },
+            ["1.2.0"] = {
+                sha256 = {
+                    x86_64 = "5d8530145cc475e8285b77f507c1d42a4443d0253e1af89b4a18e0ed4792c90b",
+                    aarch64 = "5d8530145cc475e8285b77f507c1d42a4443d0253e1af89b4a18e0ed4792c90b",
+                },
+            },
             ["0.2.1"] = {
                 sha256 = {
                     x86_64 = "d71cba94e97856732da578c731dff927e90be0eab4fed1bb09964fa2d423c8db",
@@ -70,7 +76,12 @@ package = {
                 GLOBAL = "https://github.com/mcpp-community/mcpp-ide/archive/refs/tags/v${version}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v${version}/src-${version}.tar.gz",
             },
-            ["latest"] = { ref = "0.2.1" },
+            ["latest"] = { ref = "1.2.0" },
+            ["1.2.0"] = {
+                sha256 = {
+                    aarch64 = "5d8530145cc475e8285b77f507c1d42a4443d0253e1af89b4a18e0ed4792c90b",
+                },
+            },
             ["0.2.1"] = {
                 sha256 = {
                     aarch64 = "d71cba94e97856732da578c731dff927e90be0eab4fed1bb09964fa2d423c8db",
@@ -88,7 +99,12 @@ package = {
                 GLOBAL = "https://github.com/mcpp-community/mcpp-ide/archive/refs/tags/v${version}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v${version}/src-${version}.tar.gz",
             },
-            ["latest"] = { ref = "0.2.1" },
+            ["latest"] = { ref = "1.2.0" },
+            ["1.2.0"] = {
+                sha256 = {
+                    x86_64 = "5d8530145cc475e8285b77f507c1d42a4443d0253e1af89b4a18e0ed4792c90b",
+                },
+            },
             ["0.2.1"] = {
                 sha256 = {
                     x86_64 = "d71cba94e97856732da578c731dff927e90be0eab4fed1bb09964fa2d423c8db",
