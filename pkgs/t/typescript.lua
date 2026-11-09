@@ -155,10 +155,16 @@ end
 
 function config()
     xvm.add("tsc", { bindir = path.join(pkginfo.install_dir(), "lib") })
+    -- The program is `tsc`, the package `typescript`: a group placeholder
+    -- under the package's name, as ripgrep.lua registers `ripgrep` beside
+    -- `rg`, so install detection (`xvm info typescript`) and `xlings remove`
+    -- find the package without a shim of that name.
+    xvm.add("typescript", { type = "group" })
     return true
 end
 
 function uninstall()
     xvm.remove("tsc")
+    xvm.remove("typescript")
     return true
 end
