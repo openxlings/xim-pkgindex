@@ -14,7 +14,11 @@ package = {
     -- Host arches, not target ones: the payload is target code and one archive
     -- serves every host.
     archs = {"x86_64", "aarch64"},
-    status = "stable",
+    -- SUPERSEDED by one package per identity, x86_64-freebsd-sysroot and
+    -- aarch64-freebsd-sysroot: this archive carries an earlier manifest form
+    -- (a `[base]` table) that no mcpp release reads. Kept, as every published
+    -- descriptor is.
+    status = "deprecated",
     categories = {"library", "sysroot", "libc"},
     keywords = {"freebsd", "sysroot", "libc", "libc++", "cross"},
 

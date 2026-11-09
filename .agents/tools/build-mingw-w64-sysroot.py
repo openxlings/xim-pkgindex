@@ -9,7 +9,7 @@ program of the release's host is kept, so one archive serves every host.
 Layout (the sysroot is the package's top directory; clang's MinGW driver reads
 `<sysroot>/include` and `<sysroot>/<arch>-w64-mingw32/lib`):
 
-    mcpp.toml                          the base statement (design 2026-11-10 E5, E9)
+    mcpp.toml                          the package manifest of a base package (design 2026-11-10 E5)
     PROVENANCE.md, LICENSE.TXT
     include/                           generic-w64-mingw32/include (headers, c++/v1)
     <arch>-w64-mingw32/lib/            crt objects, import libraries, libc++, libunwind
@@ -17,10 +17,10 @@ Layout (the sysroot is the package's top directory; clang's MinGW driver reads
     compiler-rt/lib/windows/           libclang_rt.*-<arch>.a
     share/libc++/v1/                   std.cppm, std.compat.cppm and their std/*.inc
 
-usage: build-mingw-w64-sysroot.py <llvm-mingw-<v>-ucrt-<host>.tar.xz> <out-dir> <version>
+usage: build-mingw-w64-sysroot.py <llvm-mingw-<v>-ucrt-<host>.tar.xz> <out-dir> <version>[-<revision>]
 
-The archives published before this script entered the index name it by its
-working name, `mingw_w64_sysroot.py`, in their PROVENANCE.md; the content is the same.
+The archives 20261104 and 20261104-1 name this script by its working name,
+`mingw_w64_sysroot.py`, in their PROVENANCE.md; the content is the same.
 """
 import hashlib, os, shutil, subprocess, sys, tarfile, tempfile
 from pathlib import Path
@@ -39,6 +39,7 @@ def sha256(p: Path) -> str:
 
 def main() -> int:
     src, out, version = Path(sys.argv[1]).resolve(), Path(sys.argv[2]).resolve(), sys.argv[3]
+    upstream = version.split("-")[0]   # a packaging revision (`-1`) is not llvm-mingw's
     out.mkdir(parents=True, exist_ok=True)
     name = f"mingw-w64-sysroot-{version}"
     with tempfile.TemporaryDirectory(dir=out) as tmp:
@@ -64,28 +65,29 @@ def main() -> int:
         shutil.copytree(rel / "share" / "libc++", dst / "share" / "libc++", symlinks=False)
         shutil.copy2(rel / "LICENSE.TXT", dst / "LICENSE.TXT")
         llvm = rtdir.name
-        roots = ", ".join(f'{a} = "."' for a in ARCHES)
-        (dst / "mcpp.toml").write_text(f'''[package]
+        (dst / "mcpp.toml").write_text(f'''# A base package (mcpp design 2026-11-10 E5): the package root is the sysroot of
+# x86_64-windows-gnu and aarch64-windows-gnu; clang's MinGW driver finds each
+# architecture's libraries under <root>/<arch>-w64-mingw32/lib.
+[package]
 name        = "mingw-w64-sysroot"
 version     = "{version}"
-description = "The target side of llvm-mingw {version}: MinGW-w64 (UCRT), libc++, libunwind, compiler-rt"
+description = "The target side of llvm-mingw {upstream}: MinGW-w64 (UCRT), libc++, libunwind, compiler-rt"
 license     = "ZPL-2.1 AND Apache-2.0 WITH LLVM-exception"
 provides    = ["mcpp:c-abi=mingw-w64", "mcpp:c++-abi=libc++", "mcpp:compiler-runtime=compiler-rt",
                "hosted-standard-library"]
 
-[base]
-roots                = {{ {roots} }}
-include-dirs         = ["include/c++/v1"]
-libs                 = {{ dynamic = ["c++"], static = ["c++", "unwind"] }}
+[build]
+include_dirs         = ["include/c++/v1"]
+ldflags              = ["-lc++", "-lunwind"]
 std-module           = "share/libc++/v1/std.cppm"
 std-compat-module    = "share/libc++/v1/std.compat.cppm"
-compiler-runtime-dir = "compiler-rt"
+compiler_runtime_dir = "compiler-rt"
 ''')
         srcsum = sha256(src)
         (dst / "PROVENANCE.md").write_text(f'''# Provenance
 
 Assembled by `build-mingw-w64-sysroot.py` from the official llvm-mingw release
-{version} (https://github.com/mstorsjo/llvm-mingw/releases/tag/{version}):
+{upstream} (https://github.com/mstorsjo/llvm-mingw/releases/tag/{upstream}):
 
     {src.name}
     sha256 {srcsum}

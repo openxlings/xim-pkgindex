@@ -27,11 +27,12 @@ package = {
     -- `<arch>-w64-mingw32/{lib,bin}`, the compiler-rt runtime as
     -- `compiler-rt/lib/windows` and libc++'s std module sources as
     -- `share/libc++/v1`, taken without modification by
-    -- `.agents/tools/build-mingw-w64-sysroot.py`. `mcpp.toml` at the top is the
-    -- base statement mcpp reads (provides, `[base]` roots and layers).
+    -- `.agents/tools/build-mingw-w64-sysroot.py`. The package root is the sysroot
+    -- of x86_64-windows-gnu and aarch64-windows-gnu; `mcpp.toml` at the root is
+    -- the package manifest mcpp reads (provides, [build]).
     --
     -- Named `-sysroot` because `mingw-w64` is the winlibs toolchain on Windows
-    -- hosts. The version is llvm-mingw's.
+    -- hosts. The version is llvm-mingw's; `-<n>` is a packaging revision.
     -- No `ci` block: `mirror` would point the mirror at xlings-res itself, and a
     -- version bump re-runs the assembly script against a new upstream release,
     -- which is a human step.
@@ -42,15 +43,21 @@ package = {
             CN = "https://gitcode.com/xlings-res/mingw-w64-sysroot/releases/download/${version}/mingw-w64-sysroot-${version}.tar.xz",
         },
         linux = {
-            ["latest"] = { ref = "20261104" },
+            ["latest"] = { ref = "20261104-1" },
+            ["20261104-1"] = { sha256 = "9fe4af80676911cc8e23a612a0e3c449bda710a17e2c6424b05a8ee02d561d8f" },
+            -- An earlier manifest form no mcpp release reads; kept as published.
             ["20261104"] = { sha256 = "66ca0c7c0f65a44e13ab7a28f6741dea5408250869adb02eaf92a01e96244f05" },
         },
         macosx = {
-            ["latest"] = { ref = "20261104" },
+            ["latest"] = { ref = "20261104-1" },
+            ["20261104-1"] = { sha256 = "9fe4af80676911cc8e23a612a0e3c449bda710a17e2c6424b05a8ee02d561d8f" },
+            -- An earlier manifest form no mcpp release reads; kept as published.
             ["20261104"] = { sha256 = "66ca0c7c0f65a44e13ab7a28f6741dea5408250869adb02eaf92a01e96244f05" },
         },
         windows = {
-            ["latest"] = { ref = "20261104" },
+            ["latest"] = { ref = "20261104-1" },
+            ["20261104-1"] = { sha256 = "9fe4af80676911cc8e23a612a0e3c449bda710a17e2c6424b05a8ee02d561d8f" },
+            -- An earlier manifest form no mcpp release reads; kept as published.
             ["20261104"] = { sha256 = "66ca0c7c0f65a44e13ab7a28f6741dea5408250869adb02eaf92a01e96244f05" },
         },
     },
@@ -90,7 +97,7 @@ end
 function config()
     -- Umbrella node only. These are TARGET headers and libraries: published
     -- into the subos sysroot they would shadow the host's C library. A consumer
-    -- (mcpp, through the base statement in `mcpp.toml`) names this directory.
+    -- (mcpp, as the sysroot a manifest at its root describes) names this directory.
     xvm.add(package.name)
     return true
 end
