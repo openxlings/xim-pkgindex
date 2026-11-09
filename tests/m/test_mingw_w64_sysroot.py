@@ -14,8 +14,6 @@ from tests.lib.platform_utils import skip_if_not, project_root, xpkgs_dir
 
 PKG = "mingw-w64-sysroot"
 PKG_FILE = "pkgs/m/mingw-w64-sysroot.lua"
-# Architecture (mcpp's word) -> the sysroot directory `[base] roots` names.
-ROOTS = {"x86_64": ".", "aarch64": "."}
 REQUIRED = [
     "mcpp.toml", "PROVENANCE.md", "include/windows.h", "include/c++/v1/__config_site",
     "x86_64-w64-mingw32/lib/crt2.o", "x86_64-w64-mingw32/lib/libc++.a",
@@ -120,14 +118,15 @@ class TestVerify:
 
     @pytest.mark.verify
     @skip_if_not("linux")
-    def test_the_base_statement_names_every_root(self):
-        """mcpp reads `[base] roots`; a root it names must be a directory."""
+    def test_the_manifest_states_the_layers(self):
+        """The package root is the sysroot; mcpp reads `provides` and `[build]`, paths from the root."""
         import tomllib
-        with open(os.path.join(_root(), "mcpp.toml"), "rb") as f:
+        root = _root()
+        with open(os.path.join(root, "mcpp.toml"), "rb") as f:
             doc = tomllib.load(f)
-        assert doc["base"]["roots"] == ROOTS
-        for arch, rel in ROOTS.items():
-            sysroot = os.path.join(_root(), rel)
-            assert os.path.isdir(sysroot), f"{arch}: {rel} is not a directory"
-            for key in ("std-module", "std-compat-module"):
-                assert os.path.isfile(os.path.join(sysroot, doc["base"][key])), f"{arch}: no {key}"
+        assert any(p.startswith("mcpp:c-abi=") for p in doc["package"]["provides"])
+        build = doc["build"]
+        for key in ("std-module", "std-compat-module"):
+            assert os.path.isfile(os.path.join(root, build[key])), f"no {key}"
+        for d in build["include_dirs"]:
+            assert os.path.isdir(os.path.join(root, d)), f"no include dir {d}"

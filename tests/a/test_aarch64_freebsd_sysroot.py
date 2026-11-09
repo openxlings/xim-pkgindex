@@ -1,4 +1,4 @@
-"""Tests for the freebsd-sysroot package: FreeBSD's base system for compiling and linking, as an mcpp base package."""
+"""Tests for the aarch64-freebsd-sysroot package: FreeBSD's base system for aarch64-freebsd as an mcpp base package."""
 import os
 import re
 
@@ -12,15 +12,11 @@ from tests.lib.assertions import (
 )
 from tests.lib.platform_utils import skip_if_not, project_root, xpkgs_dir
 
-PKG = "freebsd-sysroot"
-PKG_FILE = "pkgs/f/freebsd-sysroot.lua"
-# Architecture (mcpp's word) -> the sysroot directory `[base] roots` names.
-ROOTS = {"x86_64": "amd64", "aarch64": "arm64"}
+PKG = "aarch64-freebsd-sysroot"
+PKG_FILE = "pkgs/a/aarch64-freebsd-sysroot.lua"
 REQUIRED = [
-    "mcpp.toml", "PROVENANCE.md",
-    *(f"{m}/{f}" for m in ("amd64", "arm64") for f in (
-        "usr/include/stdio.h", "usr/lib/crt1.o", "lib/libc.so.7", "usr/lib/libc.a",
-        "usr/lib/libc++.a", "usr/lib/libcxxrt.a", "libexec/ld-elf.so.1")),
+    "mcpp.toml", "PROVENANCE.md", "usr/include/stdio.h", "usr/lib/crt1.o", "lib/libc.so.7",
+    "usr/lib/libc.a", "usr/lib/libc++.a", "usr/lib/libcxxrt.a", "libexec/ld-elf.so.1",
 ]
 
 
@@ -119,14 +115,15 @@ class TestVerify:
 
     @pytest.mark.verify
     @skip_if_not("linux")
-    def test_the_base_statement_names_every_root(self):
-        """mcpp reads `[base] roots`; a root it names must be a directory."""
+    def test_the_manifest_states_the_layers(self):
+        """The package root is the sysroot; mcpp reads `provides` and `[build]`, paths from the root."""
         import tomllib
-        with open(os.path.join(_root(), "mcpp.toml"), "rb") as f:
+        root = _root()
+        with open(os.path.join(root, "mcpp.toml"), "rb") as f:
             doc = tomllib.load(f)
-        assert doc["base"]["roots"] == ROOTS
-        for arch, rel in ROOTS.items():
-            sysroot = os.path.join(_root(), rel)
-            assert os.path.isdir(sysroot), f"{arch}: {rel} is not a directory"
-            for key in ("std-module", "std-compat-module"):
-                assert os.path.isfile(os.path.join(sysroot, doc["base"][key])), f"{arch}: no {key}"
+        assert any(p.startswith("mcpp:c-abi=") for p in doc["package"]["provides"])
+        build = doc["build"]
+        for key in ("std-module", "std-compat-module"):
+            assert os.path.isfile(os.path.join(root, build[key])), f"no {key}"
+        for d in build["include_dirs"]:
+            assert os.path.isdir(os.path.join(root, d)), f"no include dir {d}"
