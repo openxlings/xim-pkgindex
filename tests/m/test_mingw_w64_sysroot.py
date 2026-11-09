@@ -54,9 +54,10 @@ class TestStatic:
     @pytest.mark.static
     def test_one_hash_for_every_host(self, source_text):
         """The payload is target code: every host takes the same archive."""
-        hashes = set(re.findall(r'sha256 = "([0-9a-f]{64})"', source_text))
-        assert len(hashes) == 1, f"one sha256 for every host expected, found {len(hashes)}"
-        assert source_text.count("sha256 =") == 3, "one entry each for linux, macosx, windows"
+        for version in re.findall(r'\["([0-9][^"]*)"\] = \{ sha256', source_text):
+            hashes = set(re.findall(r'\["%s"\] = \{ sha256 = "([0-9a-f]{64})"' % re.escape(version), source_text))
+            assert len(hashes) == 1, f"{version}: one sha256 for every host expected, found {len(hashes)}"
+            assert source_text.count(f'["{version}"] = {{ sha256') == 3, f"{version}: one entry per host"
 
     @pytest.mark.static
     def test_target_files_do_not_enter_the_host_sysroot(self, source_text):

@@ -45,14 +45,20 @@ package = {
         linux = {
             ["latest"] = { ref = "20261104-1" },
             ["20261104-1"] = { sha256 = "9fe4af80676911cc8e23a612a0e3c449bda710a17e2c6424b05a8ee02d561d8f" },
+            -- An earlier manifest form no mcpp release reads; kept as published.
+            ["20261104"] = { sha256 = "66ca0c7c0f65a44e13ab7a28f6741dea5408250869adb02eaf92a01e96244f05" },
         },
         macosx = {
             ["latest"] = { ref = "20261104-1" },
             ["20261104-1"] = { sha256 = "9fe4af80676911cc8e23a612a0e3c449bda710a17e2c6424b05a8ee02d561d8f" },
+            -- An earlier manifest form no mcpp release reads; kept as published.
+            ["20261104"] = { sha256 = "66ca0c7c0f65a44e13ab7a28f6741dea5408250869adb02eaf92a01e96244f05" },
         },
         windows = {
             ["latest"] = { ref = "20261104-1" },
             ["20261104-1"] = { sha256 = "9fe4af80676911cc8e23a612a0e3c449bda710a17e2c6424b05a8ee02d561d8f" },
+            -- An earlier manifest form no mcpp release reads; kept as published.
+            ["20261104"] = { sha256 = "66ca0c7c0f65a44e13ab7a28f6741dea5408250869adb02eaf92a01e96244f05" },
         },
     },
 }
