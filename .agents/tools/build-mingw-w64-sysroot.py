@@ -19,7 +19,7 @@ Layout (the sysroot is the package's top directory; clang's MinGW driver reads
 
 usage: build-mingw-w64-sysroot.py <llvm-mingw-<v>-ucrt-<host>.tar.xz> <out-dir> <version>[-<revision>]
 
-The archives 20261104 and 20261104-1 name this script by its working name,
+The archives 20261104, 20261104-1 and 20261104-2 name this script by its working name,
 `mingw_w64_sysroot.py`, in their PROVENANCE.md; the content is the same.
 """
 import hashlib, os, shutil, subprocess, sys, tarfile, tempfile
@@ -73,7 +73,7 @@ name        = "mingw-w64-sysroot"
 version     = "{version}"
 description = "The target side of llvm-mingw {upstream}: MinGW-w64 (UCRT), libc++, libunwind, compiler-rt"
 license     = "ZPL-2.1 AND Apache-2.0 WITH LLVM-exception"
-provides    = ["mcpp:c-abi=mingw-w64", "mcpp:c++-abi=libc++", "mcpp:compiler-runtime=compiler-rt",
+provides    = ["mcpp:c-abi=ucrt", "mcpp:c++-abi=libc++", "mcpp:compiler-runtime=compiler-rt",
                "hosted-standard-library"]
 
 [build]

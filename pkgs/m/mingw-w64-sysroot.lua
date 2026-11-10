@@ -43,19 +43,22 @@ package = {
             CN = "https://gitcode.com/xlings-res/mingw-w64-sysroot/releases/download/${version}/mingw-w64-sysroot-${version}.tar.xz",
         },
         linux = {
-            ["latest"] = { ref = "20261104-1" },
+            ["latest"] = { ref = "20261104-2" },
+            ["20261104-2"] = { sha256 = "7bafe4815bb7b0dfd31f9d82d36f92fe5c5e0658eb58f48bf0a1f80c273ff065" },
             ["20261104-1"] = { sha256 = "9fe4af80676911cc8e23a612a0e3c449bda710a17e2c6424b05a8ee02d561d8f" },
             -- An earlier manifest form no mcpp release reads; kept as published.
             ["20261104"] = { sha256 = "66ca0c7c0f65a44e13ab7a28f6741dea5408250869adb02eaf92a01e96244f05" },
         },
         macosx = {
-            ["latest"] = { ref = "20261104-1" },
+            ["latest"] = { ref = "20261104-2" },
+            ["20261104-2"] = { sha256 = "7bafe4815bb7b0dfd31f9d82d36f92fe5c5e0658eb58f48bf0a1f80c273ff065" },
             ["20261104-1"] = { sha256 = "9fe4af80676911cc8e23a612a0e3c449bda710a17e2c6424b05a8ee02d561d8f" },
             -- An earlier manifest form no mcpp release reads; kept as published.
             ["20261104"] = { sha256 = "66ca0c7c0f65a44e13ab7a28f6741dea5408250869adb02eaf92a01e96244f05" },
         },
         windows = {
-            ["latest"] = { ref = "20261104-1" },
+            ["latest"] = { ref = "20261104-2" },
+            ["20261104-2"] = { sha256 = "7bafe4815bb7b0dfd31f9d82d36f92fe5c5e0658eb58f48bf0a1f80c273ff065" },
             ["20261104-1"] = { sha256 = "9fe4af80676911cc8e23a612a0e3c449bda710a17e2c6424b05a8ee02d561d8f" },
             -- An earlier manifest form no mcpp release reads; kept as published.
             ["20261104"] = { sha256 = "66ca0c7c0f65a44e13ab7a28f6741dea5408250869adb02eaf92a01e96244f05" },
