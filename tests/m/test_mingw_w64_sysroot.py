@@ -125,7 +125,9 @@ class TestVerify:
         root = _root()
         with open(os.path.join(root, "mcpp.toml"), "rb") as f:
             doc = tomllib.load(f)
-        assert any(p.startswith("mcpp:c-abi=") for p in doc["package"]["provides"])
+        # The Windows C library by mcpp's name for it (docs/22), as the MinGW-w64
+        # payload answers: one requirement is met by either.
+        assert "mcpp:c-abi=ucrt" in doc["package"]["provides"]
         build = doc["build"]
         for key in ("std-module", "std-compat-module"):
             assert os.path.isfile(os.path.join(root, build[key])), f"no {key}"
