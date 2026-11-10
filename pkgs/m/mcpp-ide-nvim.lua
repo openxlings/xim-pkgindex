@@ -50,7 +50,13 @@ package = {
                 GLOBAL = "https://github.com/mcpp-community/mcpp-ide/archive/refs/tags/v${version}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v${version}/src-${version}.tar.gz",
             },
-            ["latest"] = { ref = "1.3.0" },
+            ["latest"] = { ref = "1.5.0" },
+            ["1.5.0"] = {
+                sha256 = {
+                    x86_64 = "41a85455eaadef7ec4c39f5a51e38cf66c337e74a90d1d1cf618ce56f62c91b1",
+                    aarch64 = "41a85455eaadef7ec4c39f5a51e38cf66c337e74a90d1d1cf618ce56f62c91b1",
+                },
+            },
             ["1.3.0"] = {
                 sha256 = {
                     x86_64 = "0e033869643ef2b41f193f0ca3fe10b5201d48c1d92ce1d3ee1268ac4759e507",
@@ -82,7 +88,12 @@ package = {
                 GLOBAL = "https://github.com/mcpp-community/mcpp-ide/archive/refs/tags/v${version}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v${version}/src-${version}.tar.gz",
             },
-            ["latest"] = { ref = "1.3.0" },
+            ["latest"] = { ref = "1.5.0" },
+            ["1.5.0"] = {
+                sha256 = {
+                    aarch64 = "41a85455eaadef7ec4c39f5a51e38cf66c337e74a90d1d1cf618ce56f62c91b1",
+                },
+            },
             ["1.3.0"] = {
                 sha256 = {
                     aarch64 = "0e033869643ef2b41f193f0ca3fe10b5201d48c1d92ce1d3ee1268ac4759e507",
@@ -110,7 +121,12 @@ package = {
                 GLOBAL = "https://github.com/mcpp-community/mcpp-ide/archive/refs/tags/v${version}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v${version}/src-${version}.tar.gz",
             },
-            ["latest"] = { ref = "1.3.0" },
+            ["latest"] = { ref = "1.5.0" },
+            ["1.5.0"] = {
+                sha256 = {
+                    x86_64 = "41a85455eaadef7ec4c39f5a51e38cf66c337e74a90d1d1cf618ce56f62c91b1",
+                },
+            },
             ["1.3.0"] = {
                 sha256 = {
                     x86_64 = "0e033869643ef2b41f193f0ca3fe10b5201d48c1d92ce1d3ee1268ac4759e507",
