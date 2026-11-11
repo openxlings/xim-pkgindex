@@ -67,7 +67,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: openxlings/xpkgindex-update
-          ref: 187425fb2eb53ea872af67124f2ceb5123db18f5
+          ref: 83b7c9565bf4169992960ddb907fa37b7da6ae46
           path: .updater
           persist-credentials: false
       - name: Plan validations from the complete comparison
