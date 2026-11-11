@@ -467,6 +467,85 @@ package = {
                 sha256 = "3c3a70dcffe8c162984ec190fc3388bf237b241b3ba80bf7aa5c86e130d8f59b",
             },
         },
+        -- The image bytes are a property of the GUEST, not of the host:
+        -- one zip, one sha, on every host that can extract it. The
+        -- extraction tool (7zz) is published for this host (pkgs/7/7zip.lua
+        -- carries the macosx asset), and the runner that consumes the
+        -- extracted payload (pkgs/m/mcpp-android-runner.lua) is a POSIX
+        -- session on this host too. Measured by this index's own CI,
+        -- whose macosx leg installs, checks and removes the package.
+        -- Windows stays absent the way the runner's row does: the
+        -- session that drives the emulator is a POSIX one, and an
+        -- absence stated is worth a row that cannot run.
+        macosx = {            -- THE EXTRACTION TOOL COMES FROM THE ECOSYSTEM, AND IT IS NOT
+            -- THE OBVIOUS ONE.
+            --
+            -- `system.img` is a raw ext4 filesystem (measured -- see "A
+            -- SECOND, INDEPENDENT PATH" above), and reading four files out of
+            -- it needs a program that can open ext4. The obvious answer is
+            -- `debugfs` from `xim:e2fsprogs`, and that is what this declared;
+            -- the measured answer is that the payload's `debugfs` is a broken
+            -- static build which SIGFPEs on every filesystem-opening command
+            -- while dumpe2fs, e2fsck and tune2fs from the SAME payload work
+            -- (pkgs/e/e2fsprogs.lua records the measurements). So declaring it
+            -- produced a package that installed and could not serve the one
+            -- route the arm64-v8a key exists for.
+            --
+            -- `xim:7zip` reads ext4. Measured 2026-09-11 against this exact
+            -- image:
+            --
+            --   7zz l system.img            Type = Ext, Label = system
+            --   7zz x system.img -o<dir> \
+            --     bin/linker64 lib64/libc.so lib64/libdl.so lib64/libm.so
+            --                               Everything is Ok / Files: 4
+            --
+            -- One command instead of four, the in-image paths carry no
+            -- leading slash, and the directory layout is preserved -- which is
+            -- exactly the `<root>/system/{bin,lib64}` shape qemu-user needs,
+            -- so the extraction writes it directly instead of composing it.
+            --
+            -- THE OTHER PACKAGE'S DEFECT IS NOT FIXED BY THIS, and it is not
+            -- worked around either: nothing else in the index depends on that
+            -- `debugfs`, so the repin belongs to e2fsprogs and this recipe
+            -- simply stops being the only consumer of a program that does not
+            -- work.
+            --
+            -- Declared for every key rather than only the non-x86_64 ones:
+            -- `deps` is a property of the descriptor and the arm64-v8a key is
+            -- the reason this package can answer for `aarch64-linux-android`
+            -- at all. One extra small payload on an x86_64-only install is a
+            -- better trade than an extraction step whose availability depends
+            -- on the host.
+            deps = { "xim:7zip" },
+            -- No `latest` key -- see the header: these versions are not
+            -- totally ordered, so there is no single unambiguous newest.
+            ["24-default-x86_64"] = {
+                -- Measured 2026-09-11 against
+                -- https://dl.google.com/android/repository/sys-img/android/
+                -- sys-img2-3.xml: size and sha1 both matched exactly.
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/sys-img/android/x86_64-24_r08.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-system-image/releases/download/24-default-x86_64/x86_64-24_r08.zip",
+                },
+                sha256 = "c122b69f70a229186314ec9a6f7abedcc7a6ff7ed52cb6fdce0d4f1585c09f92",
+            },
+            ["24-default-arm64-v8a"] = {
+                -- Same manifest, same measurement. Downloads and extracts
+                -- correctly (verified); does not BOOT on an x86_64 host --
+                -- see android-emulator.lua's header for why that is a
+                -- property of the engine, not of this image. The default
+                -- (dynamic) configuration DOES run on an x86_64 host
+                -- through a different mechanism that does not boot
+                -- anything -- see "A SECOND, INDEPENDENT PATH" above,
+                -- which is why install() below extracts a qemu-user-root
+                -- for this abi.
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/sys-img/android/arm64-v8a-24_r09.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-system-image/releases/download/24-default-arm64-v8a/arm64-v8a-24_r09.zip",
+                },
+                sha256 = "3c3a70dcffe8c162984ec190fc3388bf237b241b3ba80bf7aa5c86e130d8f59b",
+            },
+        },
     },
 }
 
