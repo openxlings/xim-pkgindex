@@ -98,18 +98,34 @@ package = {
             -- its LLVM line to it. Its shared libraries ship with $ORIGIN
             -- RUNPATH (set by the carve), so the archive is self-contained
             -- without the install-time rpath rewrite.
-            --
-            -- Revision 2 (tag 23.1.3-r2): the resource directory also
-            -- carries the MinGW cross builtins, aarch64-w64-windows-gnu and
+            ["23.1.3"] = {
+                revision = 1,
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3/llvm-23.1.3-linux-x86_64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3/llvm-23.1.3-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "08dfe7d3b297e352117c2c9929fa223ede5970741f98dff09e5ad71494f57443",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3/llvm-23.1.3-linux-aarch64.tar.gz",
+                        CN = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3/llvm-23.1.3-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "8a4697b6f22703c1fb8d808a0ef6022f3a9e9111a70e7a02009b7814bdbe46a9",
+                },
+            },
+            -- 23.1.3-r2: the same carve plus the MinGW cross builtins in the
+            -- resource directory, aarch64-w64-windows-gnu and
             -- x86_64-w64-windows-gnu, repacked from the llvm-mingw archive
             -- the mingw-w64-sysroot payload ships (same ABI; PROVENANCE in
             -- the release notes). MEASURED: with them a plain C link for
-            -- aarch64-windows-gnu succeeds where it before asked the
-            -- driver's own resource directory for a file the carve never
-            -- carried. The revision-1 archives stay published; every URL
-            -- below names its -r2 asset.
-            ["23.1.3"] = {
-                revision = 2,
+            -- aarch64-windows-gnu succeeds where the r1 carve answered the
+            -- driver's resource-directory request with a missing file. A
+            -- separate version key, not an edit of the one above: the
+            -- autoupdate guard refuses changing an existing version's entry,
+            -- and the r1 archives stay what "23.1.3" names.
+            ["23.1.3-r2"] = {
                 x86_64 = {
                     url = {
                         GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3-r2/llvm-23.1.3-r2-linux-x86_64.tar.gz",
@@ -148,15 +164,22 @@ package = {
                 sha256 = nil,
             },
             ["23.1.3"] = {
-                revision = 2,
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3/llvm-23.1.3-macosx-arm64.tar.xz",
+                    CN = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3/llvm-23.1.3-macosx-arm64.tar.xz",
+                },
+                -- Fixed by content (SPEC-006 §4.6); new entries no longer ship
+                -- with sha256 = nil (xim-pkgindex#27 covers backfilling the
+                -- old ones).
+                sha256 = "05a73afb2c64847a16bf8cdc32f23251cb124555b4f5806b6f53d295739b3e82",
+            },
+            -- 23.1.3-r2: the r1 carve plus the MinGW cross builtins; see the
+            -- linux section's note.
+            ["23.1.3-r2"] = {
                 url = {
                     GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3-r2/llvm-23.1.3-r2-macosx-arm64.tar.xz",
                     CN = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3-r2/llvm-23.1.3-r2-macosx-arm64.tar.xz",
                 },
-                -- Fixed by content (SPEC-006 §4.6); new entries no longer ship
-                -- with sha256 = nil (xim-pkgindex#27 covers backfilling the
-                -- old ones). r2 carries the MinGW cross builtins; see the
-                -- linux section's revision-2 note.
                 sha256 = "bc77a03ecc9f8108e5fb41a1cd1b9f3ddec454de9d8a4d0d326fb43b3998b819",
             },
         },
@@ -164,10 +187,10 @@ package = {
             ["latest"] = { ref = "22.1.8" },
             ["20.1.7"] = "XLINGS_RES",
             ["22.1.8"] = "XLINGS_RES",
-            -- Explicit since r2: the autoupdate template would keep naming
-            -- the revision-1 archive (see the linux section's note).
-            ["23.1.3"] = {
-                revision = 2,
+            -- 23.1.3-r2: the r1 carve plus the MinGW cross builtins; see the
+            -- linux section's note. Explicit, because the autoupdate
+            -- template would keep naming the revision-1 archive.
+            ["23.1.3-r2"] = {
                 url = {
                     GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3-r2/llvm-23.1.3-r2-windows-x86_64.zip",
                     CN = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3-r2/llvm-23.1.3-r2-windows-x86_64.zip",
