@@ -44,7 +44,13 @@ SOURCES = [
      "*/include"),
     ("llvm-23.1.3-linux-aarch64.tar.gz",
      "8a4697b6f22703c1fb8d808a0ef6022f3a9e9111a70e7a02009b7814bdbe46a9",
-     "*/include/c++ */lib/aarch64-unknown-linux-gnu */lib/clang/23/lib/"
+     # `include/aarch64-unknown-linux-gnu` is the per-target directory
+     # without whose `c++/v1/__config_site` every libc++ include -- and so
+     # every C compile, which reaches libc++'s stdio.h first through
+     # [build] include_dirs -- dies at `__config_site` not found (the r1
+     # payload missed it; revision 2 adds it).
+     "*/include/c++ */include/aarch64-unknown-linux-gnu "
+     "*/lib/aarch64-unknown-linux-gnu */lib/clang/23/lib/"
      "aarch64-unknown-linux-gnu */share/libc++"),
 ]
 
@@ -77,9 +83,14 @@ provides    = ["mcpp:c-abi=glibc", "mcpp:c++-abi=libc++", "mcpp:compiler-runtime
                "hosted-standard-library"]
 
 [build]
-include_dirs      = ["include/c++/v1"]
+include_dirs      = ["include/aarch64-unknown-linux-gnu/c++/v1", "include/c++/v1"]
 ldflags           = ["-lc++", "-lc++abi"]
-std-module        = "share/libc++/v1/std.cppm"
+# Where clang's link finds this sysroot's own run-times: the llvm-aarch64
+# carve's compiler-rt, laid out as a resource directory (lib/<triple>/
+# libclang_rt.builtins.a inside). Without it the link's --rtlib=compiler-rt
+# reads the x86_64 llvm payload's resource directory and finds no aarch64
+# builtins there (the r1 payload missed this; revision 2 adds it).
+compiler_runtime_dir = "lib/clang/23/lib"
 std-compat-module = "share/libc++/v1/std.compat.cppm"
 """
 
