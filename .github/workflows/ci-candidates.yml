@@ -12,7 +12,7 @@ permissions:
   contents: read
 env:
   PYTHONUTF8: '1'
-  UPDATER_COMMIT: 187425fb2eb53ea872af67124f2ceb5123db18f5
+  UPDATER_COMMIT: 83b7c9565bf4169992960ddb907fa37b7da6ae46
   XLINGS_VERSION: v2026.10.24.3
 jobs:
   scan:

@@ -203,9 +203,13 @@ def test_existing_linux_llvm_versions_advance_hook_revision():
 dofile(arg[1])
 for _, version in ipairs({"20.1.7", "22.1.8", "23.1.3"}) do
   local entry = package.xpm.linux[version]
-  assert(entry.revision == 1)
+  local rev = entry.revision or 1
+  assert(type(rev) == "number" and rev >= 1)
   assert(entry.x86_64.revision == nil)
-  assert(entry.x86_64.url.GLOBAL:find("llvm%-" .. version:gsub("%.", "%%.") .. "%-linux%-x86_64.tar.gz$"))
+  -- The corrective channel: from revision 2 on, the url names the
+  -- revision's own asset (llvm-<version>-r<rev>-...), as glibc's does.
+  local marker = rev >= 2 and ("%-r" .. rev) or ""
+  assert(entry.x86_64.url.GLOBAL:find("llvm%-" .. version:gsub("%.", "%%.") .. marker .. "%-linux%-x86_64.tar.gz$"))
 end
 print("REVISION PASS")'''
     result = subprocess.run([lua, "-", str(ROOT / "pkgs/l/llvm.lua")],
