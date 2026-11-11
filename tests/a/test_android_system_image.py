@@ -172,8 +172,14 @@ class TestPinnedFacts:
 
     @pytest.mark.static
     def test_two_sha256_present_and_64_hex(self, source_text):
+        # Two images, stated on every host row that carries them: the bytes
+        # are a property of the guest, so each host block repeats the same
+        # hashes, and the count is per-block, not per-file.
         hashes = re.findall(r'sha256\s*=\s*"([0-9a-fA-F]{64})"', source_text)
-        assert len(hashes) == 2, f"expected 2 sha256 entries, found {len(hashes)}"
+        blocks = len(re.findall(r"^        (?:linux|macosx|windows) = \{", source_text, re.M))
+        assert blocks >= 1, "no host block found"
+        assert len(hashes) == 2 * blocks, \
+            f"expected {2 * blocks} sha256 entries ({blocks} blocks x 2 images), found {len(hashes)}"
         assert len(set(hashes)) == 2, "the two system images must not share a hash"
 
     @pytest.mark.static
