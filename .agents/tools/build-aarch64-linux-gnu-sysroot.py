@@ -90,7 +90,7 @@ ldflags           = ["-lc++", "-lc++abi"]
 # libclang_rt.builtins.a inside). Without it the link's --rtlib=compiler-rt
 # reads the x86_64 llvm payload's resource directory and finds no aarch64
 # builtins there (the r1 payload missed this; revision 2 adds it).
-compiler_runtime_dir = "lib/clang/23/lib"
+compiler_runtime_dir = "lib/clang/23"
 std-compat-module = "share/libc++/v1/std.compat.cppm"
 """
 
@@ -200,6 +200,21 @@ def main():
         "OUTPUT_FORMAT(elf64-littleaarch64)\n"
         "GROUP ( /lib/libm.so.6 /lib/libm.a )\n")
 
+
+    # The C++ run-time archives live in llvm's per-target directory; the
+    # engine's gnu-sysroot link renders `-B/-L <payload>/lib64` and the
+    # driver resolves `-l:libunwind.a`/`-lc++`/`-lc++abi` through plain -L
+    # directories only, so the archives are named at the lib root too --
+    # symlinks into the one copy, `lib64 -> lib` beside them (the r1 payload
+    # kept llvm's layout alone and a C++ link could not find libunwind;
+    # revision 2 adds these).
+    triple_lib = libdir / "aarch64-unknown-linux-gnu"
+    for name in ("libc++.a", "libc++.so", "libc++abi.a", "libc++abi.so",
+                 "libunwind.a", "libunwind.so",
+                 "libatomic.a", "libatomic.so"):
+        src = triple_lib / name
+        if src.exists():
+            (libdir / name).symlink_to(f"aarch64-unknown-linux-gnu/{name}")
     # glibc's payload carries its own PROVENANCE/ELF-MANIFEST/LICENSE files at
     # the root; the assembly keeps them (each name is distinct from the two
     # files this script adds).
