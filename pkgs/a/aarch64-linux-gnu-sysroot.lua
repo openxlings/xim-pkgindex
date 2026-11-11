@@ -40,6 +40,19 @@ package = {
     -- --sysroot=<payload> -static-libgcc links, and the program runs under
     -- qemu-aarch64 -L <payload> with its exit code intact.
     --
+    -- Revision 2 (same version key, new asset, the glibc 2.44.3 form):
+    -- r1 compiled but could not link a program -- its manifest named no
+    -- compiler_runtime_dir (so clang's link read the llvm payload's resource
+    -- directory and found no aarch64 builtins there), its llvm carve lacked
+    -- the per-target include directory (whose __config_site every libc++
+    -- include reaches first), and its run-time archives sat only in llvm's
+    -- triple directory where the link's -B/-L words do not look. Revision 2
+    -- adds the three; MEASURED end to end with the engine that declares the
+    -- row: a plain C program builds for aarch64-linux-gnu as a dynamic ELF
+    -- and runs under qemu-aarch64 -L <payload> with its exit code (7)
+    -- intact. The r1 assets stay published unchanged; a client that
+    -- implements revision reinstalls and says why.
+    --
     -- The version is glibc's; the asset name carries -r<N> for corrective
     -- repacks of the same inputs (the first published 2.44.3 archive named
     -- its manifest wrongly; -r1 is the correction, and the recipe pins the
@@ -54,31 +67,34 @@ package = {
         linux = {
             ["latest"] = { ref = "2.44.3" },
             ["2.44.3"] = {
+                revision = 2,
                 url = {
-                    GLOBAL = "https://github.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3/aarch64-linux-gnu-sysroot-2.44.3-r1.tar.xz",
-                    CN = "https://gitcode.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3/aarch64-linux-gnu-sysroot-2.44.3-r1.tar.xz",
+                    GLOBAL = "https://github.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r2/aarch64-linux-gnu-sysroot-2.44.3-r2.tar.xz",
+                    CN = "https://gitcode.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r2/aarch64-linux-gnu-sysroot-2.44.3-r2.tar.xz",
                 },
-                sha256 = "238017f88ee0fc880ccbbdd72bb6b44cc5a8e48d39e5cc1c0064cf8155a366cb",
+                sha256 = "de7ab59692aff52a5ab118c6862e8929957fb3119fb59d5586c13b5e59bf70b4",
             },
         },
         macosx = {
             ["latest"] = { ref = "2.44.3" },
             ["2.44.3"] = {
+                revision = 2,
                 url = {
-                    GLOBAL = "https://github.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3/aarch64-linux-gnu-sysroot-2.44.3-r1.tar.xz",
-                    CN = "https://gitcode.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3/aarch64-linux-gnu-sysroot-2.44.3-r1.tar.xz",
+                    GLOBAL = "https://github.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r2/aarch64-linux-gnu-sysroot-2.44.3-r2.tar.xz",
+                    CN = "https://gitcode.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r2/aarch64-linux-gnu-sysroot-2.44.3-r2.tar.xz",
                 },
-                sha256 = "238017f88ee0fc880ccbbdd72bb6b44cc5a8e48d39e5cc1c0064cf8155a366cb",
+                sha256 = "de7ab59692aff52a5ab118c6862e8929957fb3119fb59d5586c13b5e59bf70b4",
             },
         },
         windows = {
             ["latest"] = { ref = "2.44.3" },
             ["2.44.3"] = {
+                revision = 2,
                 url = {
-                    GLOBAL = "https://github.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3/aarch64-linux-gnu-sysroot-2.44.3-r1.tar.xz",
-                    CN = "https://gitcode.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3/aarch64-linux-gnu-sysroot-2.44.3-r1.tar.xz",
+                    GLOBAL = "https://github.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r2/aarch64-linux-gnu-sysroot-2.44.3-r2.tar.xz",
+                    CN = "https://gitcode.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r2/aarch64-linux-gnu-sysroot-2.44.3-r2.tar.xz",
                 },
-                sha256 = "238017f88ee0fc880ccbbdd72bb6b44cc5a8e48d39e5cc1c0064cf8155a366cb",
+                sha256 = "de7ab59692aff52a5ab118c6862e8929957fb3119fb59d5586c13b5e59bf70b4",
             },
         },
     },
