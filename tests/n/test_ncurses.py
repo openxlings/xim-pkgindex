@@ -13,7 +13,7 @@ from tests.lib.assertions import (
     assert_no_direct_path_modification, assert_uses_new_api,
     assert_xim_add_succeeds, assert_install_succeeds,
 )
-from tests.lib.platform_utils import skip_if_not, xlings_home, xpkgs_dir
+from tests.lib.platform_utils import skip_if_not, xlings_home, xpkgs_dir, under_test
 
 PKG = "ncurses"
 PKG_FILE = "pkgs/n/ncurses.lua"
@@ -123,15 +123,12 @@ class TestLifecycle:
     @pytest.mark.lifecycle
     @skip_if_not('linux')
     def test_install(self):
-        # 显式 local:, 不用裸名也不用 xim: —— 三个口径里唯一在「发布前后」
-        # 都成立的一个:
-        #   * 裸名 "ncurses" 在 scode:ncurses (from-source 子索引) 并存时
-        #     歧义, 一旦 local: 注册过更是必歧义;
-        #   * xim:ncurses 在索引发布前不存在, 而新名字无法被 overlay 进
-        #     编译好的 catalog (解析 miss 还会触发自动 refresh 盖掉 overlay);
-        # 跑本测试前先 `xlings config --add-xpkg pkgs/n/ncurses.lua`
-        # (closure-lifecycle job 就是这么做的)。
-        assert_install_succeeds(f"local:{PKG}")
+        # 带命名空间的名字,由 under_test 从家目录读出,不写死在模块里:
+        #   * 裸名 "ncurses" 在 scode:ncurses (from-source 子索引) 并存时歧义;
+        #   * 配方尚未发布、经 `xlings config --add-xpkg` 注册时它是 local:;
+        #   * 配方已发布、安装步骤把改动覆盖到索引里时它是 xim:
+        #     (此时 local: 下没有它 —— 与已发布内容相同的配方注册不进去)。
+        assert_install_succeeds(under_test(PKG))
 
 
 # ── L4 helpers — 都直接读盘/跑载荷, 不经 shim ───────────────────────────
