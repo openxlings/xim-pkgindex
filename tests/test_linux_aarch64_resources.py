@@ -10,7 +10,7 @@ REPORT = json.loads((ROOT / '.agents/docs/2026-10-08-llvm-2313-aarch64-resource-
 pytestmark = pytest.mark.static
 
 ROUTES = [
-    ('l/llvm', '23.1.3', 'llvm-23.1.3-r2'),
+    ('l/llvm', '23.1.3', 'llvm-23.1.3-r3'),
     ('l/llvm-tools', '23.1.3', 'llvm-tools-23.1.3'),
     ('g/glibc', '2.44.3', 'glibc-2.44.3-r4'),
     ('g/gcc-runtime', '15.1.0', 'gcc-runtime-15.1.0'),
@@ -44,7 +44,7 @@ print(e.sha256)
     if recipe == 'g/glibc':
         report = json.loads((ROOT / '.agents/docs/2026-10-10-glibc-r4-resource-admission.json').read_text())
     if recipe == 'l/llvm':
-        report = json.loads((ROOT / '.agents/docs/2026-11-11-llvm-2313-r2-resource-admission.json').read_text())
+        report = json.loads((ROOT / '.agents/docs/2026-11-12-llvm-2313-r3-resource-admission.json').read_text())
     published = next(a for a in report['global_api_resources'] if a['archive'] == name)
     assert global_url == published['url']
     assert cn_url == global_url.replace('https://github.com/', 'https://gitcode.com/')
