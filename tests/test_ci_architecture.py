@@ -176,7 +176,10 @@ def test_publication_follows_build_inputs_too():
         assert on['workflow_run']['workflows'] == ['CI']
         assert on['workflow_run']['branches'] == ['main']
         assert 'pull_request' not in on
-        assert any('${{ github.event.workflow_run.head_sha || github.sha }}' == step.get('with', {}).get('ref')
+        # The workflow_run head_sha must stay in the checkout chain: a manual
+        # dispatch may prepend its own ref (publish-artifact.yml's `ref`
+        # input), but the CI-verified fallback can never be dropped.
+        assert any('github.event.workflow_run.head_sha || github.sha' in (step.get('with', {}).get('ref') or '')
                    for job in d['jobs'].values() for step in job.get('steps', []))
 
 
@@ -292,3 +295,23 @@ def test_a_name_of_two_recipes_reaches_the_consumers_of_both():
     files = {'pkgs/x/xdesk.lua': pkg(), 'pkgs/luban/xdesk.lua': pkg(), 'pkgs/c/c.lua': pkg('"xim:xdesk"')}
     assert planner.affected(['pkgs/x/xdesk.lua'], files, files) == ['pkgs/c/c.lua', 'pkgs/x/xdesk.lua']
     assert planner.affected(['pkgs/luban/xdesk.lua'], files, files) == ['pkgs/c/c.lua', 'pkgs/luban/xdesk.lua']
+
+
+def test_direct_only_profile_ignores_dependency_expansion(monkeypatch):
+    # #1144: one claude version bump planned the luban acceptance suite
+    # (40min workspace + 2x60min editions) because luban recipes depend on
+    # claude. direct_only fires on the directly edited files only; the
+    # deliberate publication route is the workflow's workflow_dispatch.
+    monkeypatch.setattr(planner, 'supported_platforms', lambda src: set())
+    files = {'pkgs/c/claude.lua': versioned({'latest': 'ref = "2"', '2': 'sha256 = "y"'}),
+             'pkgs/luban/agent-workspace.lua': pkg('"xim:claude"')}
+    p = planner.plan(['pkgs/c/claude.lua'], {}, files, PROFILES)
+    assert 'pkgs/luban/agent-workspace.lua' in p['packages']
+    assert not p['flags']['luban_agent_workspace']
+    p = planner.plan(['pkgs/luban/agent-workspace.lua'], {}, files, PROFILES)
+    assert p['flags']['luban_agent_workspace']
+
+
+def test_direct_only_profile_keeps_manual_dispatch():
+    d, on = workflow(PROFILES['luban_agent_workspace']['workflow'])
+    assert 'workflow_dispatch' in on

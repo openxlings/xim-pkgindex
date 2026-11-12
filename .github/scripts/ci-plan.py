@@ -209,7 +209,16 @@ def plan(changed, before, after, profiles, *, force=False):
             if shards > 1:
                 entry['shard'] = f'{i + 1}/{shards}'
             matrix.append(entry)
-    flags = {name: force or matches(changed + packages, config['paths']) for name, config in profiles.items()}
+    flags = {}
+    for name, config in profiles.items():
+        # direct_only: the profile fires on directly edited files only. Its
+        # path set names heavyweight acceptance suites (luban: 40min workspace
+        # + 2x60min editions) whose recipes are common dependencies (gcc, musl,
+        # git, vim...) — matching the reverse dependency closure too planned
+        # the suite for nearly every package PR (#1144: one claude version
+        # bump). Deliberate publication stays possible via workflow_dispatch.
+        subjects = changed if config.get('direct_only') else changed + packages
+        flags[name] = force or matches(subjects, config['paths'])
     if framework:
         flags.update(ci_xpkg_test=True, ci_tools=True, eden_smoke=True)
     if '.github/ci-profiles.json' in changed:
