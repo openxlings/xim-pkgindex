@@ -23,11 +23,11 @@
 ## 该类配方声明什么
 
 ```lua
--- <system>-disk-image.lua —— 资产包:只安装,不上 PATH
+-- <system>-disk-image.lua — an asset package: install only, nothing on PATH
 package = {
     spec = "2",
     name = "<system>-disk-image",
-    description = "<Publisher> 官方 <version> 介质,装配为带串口控制台的可引导磁盘镜像,供模拟器 runner 使用",
+    description = "The <Publisher> official <version> media, assembled into a bootable disk image with a serial console, for emulator runners",
     licenses = { "<publisher license>" },
     repo = "<publisher source>",
     type = "package",
@@ -44,7 +44,8 @@ package = {
         },
     },
 }
--- install():镜像落在包根下;config()/uninstall():无。消费者是命名镜像路径的 runner 声明。
+-- install(): the image lands under the package root; config()/uninstall():
+-- none. A consumer is a runner declaration that names the image's path.
 ```
 
 ## 矫正变更
