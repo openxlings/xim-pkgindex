@@ -55,7 +55,10 @@ package = {
     --
     -- Revision 3 (same version key, new asset, the same inputs): revision 2
     -- linked a C program and nothing else. Its archive's top directory was
-    -- not the asset's file name without the extension; libm.a kept the
+    -- `<name>-<version>`, which the client's default unwrapping installs,
+    -- and not the asset's file name without the extension, which the other
+    -- base packages install by (this recipe now does, in install() below);
+    -- libm.a kept the
     -- install-time placeholder of the host glibc package, and libm.so had
     -- been rewritten to name it, so no C++ link and no static link resolved
     -- libm; llvm's per-target library directory was named at the library
