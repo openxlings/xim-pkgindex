@@ -107,25 +107,33 @@ package = {
             -- `aarch64-w64-windows-gnu` and `x86_64-w64-windows-gnu`
             -- builtins beside clang's own (source payload and per-file
             -- hashes: .agents/tools/ of the xim-pkgindex tree that published
-            -- it), nothing else in the archive differs. The r1 assets stay
-            -- published unchanged, so a client with a cached index still gets
-            -- the bytes its hash names; a client that implements revision
-            -- reinstalls and says why.
+            -- it), nothing else in the archive differs.
+            --
+            -- Revision 3: the r2 archives broke the index-wide install
+            -- convention — the archive's top-level directory must equal the
+            -- asset file name minus its extension (install() derives the
+            -- extracted directory that way) — by keeping the r1 inner
+            -- directory name, so every install of r2 moved nothing and the
+            -- config hook found an empty bin. r3 renames the inner directory
+            -- to carry -r3; the payload bytes are otherwise the r2 injection,
+            -- unchanged. The r2 assets stay published, so a cached index
+            -- still gets the bytes its hash names; r1/r2 pins likewise stay
+            -- installable.
             ["23.1.3"] = {
-                revision = 2,
+                revision = 3,
                 x86_64 = {
                     url = {
-                        GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3-r2/llvm-23.1.3-r2-linux-x86_64.tar.gz",
-                        CN     = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3-r2/llvm-23.1.3-r2-linux-x86_64.tar.gz",
+                        GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3-r3/llvm-23.1.3-r3-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3-r3/llvm-23.1.3-r3-linux-x86_64.tar.gz",
                     },
-                    sha256 = "00191eb352d8f1dac6b14e16f7dde159449182f6fca2dae2bfdc8efe5808be7c",
+                    sha256 = "7fe4389e2a376d1a82bd6ecf225cbaf8c0a5af8accf96a4f091cb643aacaa08c",
                 },
                 aarch64 = {
                     url = {
-                        GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3-r2/llvm-23.1.3-r2-linux-aarch64.tar.gz",
-                        CN     = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3-r2/llvm-23.1.3-r2-linux-aarch64.tar.gz",
+                        GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3-r3/llvm-23.1.3-r3-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3-r3/llvm-23.1.3-r3-linux-aarch64.tar.gz",
                     },
-                    sha256 = "4fc769d8fa3bbe112425d4cc33c065a6eda7b538e4d0df10cdc6563c6f1ddad2",
+                    sha256 = "14e3ff7785a0862f92411a43fc552ad9333ce700a92030fef696a4dfef703ec4",
                 },
             },
         },
@@ -152,17 +160,21 @@ package = {
             },
             -- Revision 2 (same version key, new asset): the MinGW-w64
             -- builtins injection of the Linux r2 payload, same rationale as
-            -- the linux section's note.
+            -- the linux section's note. Revision 3: the r2 archive broke the
+            -- install convention the index-wide install() relies on (the
+            -- top-level directory must equal the asset file name minus its
+            -- extension); r3 renames the inner directory, payload otherwise
+            -- unchanged — same rationale as the linux section's note.
             ["23.1.3"] = {
-                revision = 2,
+                revision = 3,
                 url = {
-                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3-r2/llvm-23.1.3-r2-macosx-arm64.tar.xz",
-                    CN     = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3-r2/llvm-23.1.3-r2-macosx-arm64.tar.xz",
+                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3-r3/llvm-23.1.3-r3-macosx-arm64.tar.xz",
+                    CN     = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3-r3/llvm-23.1.3-r3-macosx-arm64.tar.xz",
                 },
                 -- Fixed by content (SPEC-006 §4.6); new entries no longer ship
                 -- with sha256 = nil (xim-pkgindex#27 covers backfilling the
                 -- old ones).
-                sha256 = "bc77a03ecc9f8108e5fb41a1cd1b9f3ddec454de9d8a4d0d326fb43b3998b819",
+                sha256 = "80a3df1d3dbbaa33ba18ef371edc220d59f1dffdedeefd3c552059a24458879e",
             },
         },
         windows = {
@@ -171,15 +183,17 @@ package = {
             ["22.1.8"] = "XLINGS_RES",
             -- Revision 2 leaves the shared template (a corrective asset
             -- lives under its own release tag, which no template spelling
-            -- reaches) for the explicit r2 asset, same rationale as the
-            -- linux section's note.
+            -- reaches) for the explicit asset, same rationale as the linux
+            -- section's note. Revision 3 restores the top-level-directory
+            -- convention the r2 zip broke, same rationale as the linux
+            -- section's note.
             ["23.1.3"] = {
-                revision = 2,
+                revision = 3,
                 url = {
-                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3-r2/llvm-23.1.3-r2-windows-x86_64.zip",
-                    CN     = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3-r2/llvm-23.1.3-r2-windows-x86_64.zip",
+                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3-r3/llvm-23.1.3-r3-windows-x86_64.zip",
+                    CN     = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3-r3/llvm-23.1.3-r3-windows-x86_64.zip",
                 },
-                sha256 = "5163d273b713ae9ce54854c4a09413af73b225bc7a7295feaf6a5c5ad9716b57",
+                sha256 = "65dded778a0426a742c967e0e0d977a008e6a887c1ef590ff957433e83658f25",
             },
         },
     },
