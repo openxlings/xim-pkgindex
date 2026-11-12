@@ -25,13 +25,16 @@ Usage:
 
     build-aarch64-linux-gnu-sysroot.py [--work DIR] [--out FILE]
 
-The output is one tar.xz whose single top directory is
-aarch64-linux-gnu-sysroot-<version>. The version is glibc's.
+The output is one tar.xz whose single top directory is the asset's file name
+without its extension, aarch64-linux-gnu-sysroot-<version>-r<revision>: the
+installer takes the top directory by that name. The version is glibc's; the
+revision counts the corrective repacks of the same inputs.
 """
 
 import argparse
 import hashlib
 import pathlib
+import re
 import shutil
 import sys
 import tarfile
@@ -71,6 +74,8 @@ LIBGCC = {
 }
 
 VERSION = "2.44.3"
+REVISION = 3
+STEM = f"aarch64-linux-gnu-sysroot-{VERSION}-r{REVISION}"
 
 MANIFEST = """# A base package (mcpp design 2026-11-10 E5): the package root is the sysroot
 # of aarch64-linux-gnu. One archive serves every host.
@@ -79,19 +84,23 @@ name        = "aarch64-linux-gnu-sysroot"
 version     = "{version}"
 description = "glibc {version} for aarch64-linux-gnu with the 5.11 kernel headers, libc++ with its std modules, and compiler-rt's builtins, for compiling and linking"
 license     = "LGPL-2.1-or-later AND Apache-2.0 WITH LLVM-exception"
-provides    = ["mcpp:c-abi=glibc", "mcpp:c++-abi=libc++", "mcpp:compiler-runtime=libgcc",
+# The compiler run-time a link over this sysroot takes is compiler-rt's
+# builtins (`compiler_runtime_dir`); gcc's libgcc archives and crt objects are
+# carried beside it for a link that names them.
+provides    = ["mcpp:c-abi=glibc", "mcpp:c++-abi=libc++", "mcpp:compiler-runtime=compiler-rt",
                "hosted-standard-library"]
 
 [build]
-include_dirs      = ["include/aarch64-unknown-linux-gnu/c++/v1", "include/c++/v1"]
-ldflags           = ["-lc++", "-lc++abi"]
+include_dirs         = ["include/aarch64-unknown-linux-gnu/c++/v1", "include/c++/v1"]
+ldflags              = ["-lc++", "-lc++abi"]
 # Where clang's link finds this sysroot's own run-times: the llvm-aarch64
 # carve's compiler-rt, laid out as a resource directory (lib/<triple>/
 # libclang_rt.builtins.a inside). Without it the link's --rtlib=compiler-rt
 # reads the x86_64 llvm payload's resource directory and finds no aarch64
-# builtins there (the r1 payload missed this; revision 2 adds it).
+# builtins there.
 compiler_runtime_dir = "lib/clang/23"
-std-compat-module = "share/libc++/v1/std.compat.cppm"
+std-module           = "share/libc++/v1/std.cppm"
+std-compat-module    = "share/libc++/v1/std.compat.cppm"
 """
 
 PROVENANCE = """# Provenance
@@ -117,6 +126,16 @@ payloads, each taken without modification:
       (compiler-rt builtins), share/libc++/v1 (the std module sources).
 
 Added: `mcpp.toml` and this file. The version is glibc's.
+
+Revision 3 corrects revision 2 in five places, from the same inputs: the
+archive's top directory is the asset's file name without its extension; the
+install-time placeholder is removed from every ld script of the library
+directory (libm.a's had been left, and libm.so named it); every file of llvm's
+per-target library directory -- the shared objects and their
+sonames as well as the archives -- is named at the library root, so
+`libc++.so`'s `INPUT(libc++.so.1 ...)` resolves and a dynamic C++ program
+loads; the manifest states `std-module`; and `provides` names the compiler
+run-time the link takes (compiler-rt).
 """
 
 
@@ -131,7 +150,7 @@ def sha256(path):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--work", default=".assembler-work")
-    ap.add_argument("--out", default=f"aarch64-linux-gnu-sysroot-{VERSION}.tar.xz")
+    ap.add_argument("--out", default=f"{STEM}.tar.xz")
     ap.add_argument("--libgcc-src", required=True,
                     help="directory holding gcc's aarch64 libgcc/crt objects "
                          "(the installed xim:aarch64-linux-musl-gcc payload's "
@@ -140,7 +159,7 @@ def main():
 
     work = pathlib.Path(args.work).resolve()
     work.mkdir(parents=True, exist_ok=True)
-    root = work / f"aarch64-linux-gnu-sysroot-{VERSION}"
+    root = work / STEM
     if root.exists():
         shutil.rmtree(root)
     root.mkdir()
@@ -153,10 +172,12 @@ def main():
         if got != digest:
             sys.exit(f"digest mismatch for {name}: {got} != {digest}")
 
+    newest = 0
     for name, _, take in SOURCES:
         archive = work / name
         with tarfile.open(archive) as tf:
             members = tf.getmembers()
+            newest = max(newest, max(int(m.mtime) for m in members))
             top = members[0].name.split("/")[0]
             for m in members:
                 if not m.name.startswith(top + "/"):
@@ -181,49 +202,62 @@ def main():
             sys.exit(f"digest mismatch for {f}: {got} != {digest}")
         shutil.copy2(src, root / "lib" / f)
 
-    # glibc's payload ships libc.so and libm.so as GNU ld scripts whose GROUP
-    # paths are a 255-byte placeholder the host package relocates at install
-    # time. A sysroot package needs no relocation: the scripts are rewritten
-    # sysroot-relative, which is the form a --sysroot link resolves. MEASURED:
-    # clang --target=aarch64-unknown-linux-gnu --sysroot=<payload> links and
-    # the program runs under qemu-aarch64 with its exit code intact.
+    # glibc's payload ships some library names as GNU ld scripts -- libc.so,
+    # libm.so and the static libm.a -- whose GROUP paths begin with a 255-byte
+    # placeholder the host package relocates at install time. A sysroot
+    # package needs no relocation: the placeholder is removed from every such
+    # script, which leaves the sysroot-relative form (`/lib/libc.so.6`) a
+    # --sysroot link resolves. One rule for every script of the directory:
+    # revision 2 rewrote two of them by hand and missed libm.a, which every
+    # C++ link and every static link reads.
     libdir = root / "lib"
-    (libdir / "libc.so").write_text(
-        "/* GNU ld script\n"
-        "   Use the shared library, but some functions are only in\n"
-        "   the static library, so try that secondarily.  */\n"
-        "OUTPUT_FORMAT(elf64-littleaarch64)\n"
-        "GROUP ( /lib/libc.so.6 /lib/libc_nonshared.a"
-        "  AS_NEEDED ( /lib/ld-linux-aarch64.so.1 ) )\n")
-    (libdir / "libm.so").write_text(
-        "/* GNU ld script */\n"
-        "OUTPUT_FORMAT(elf64-littleaarch64)\n"
-        "GROUP ( /lib/libm.so.6 /lib/libm.a )\n")
+    pad = re.compile(rb"/nonexistent/xlings-use-rpath-not-default-search/[^\s/]*")
+    for f in sorted(libdir.iterdir()):
+        if f.is_symlink() or not f.is_file() or f.stat().st_size > 4096:
+            continue
+        data = f.read_bytes()
+        if not data.startswith(b"/* GNU ld script"):
+            continue
+        fixed = pad.sub(b"", data)
+        if b"/nonexistent/" in fixed:
+            sys.exit(f"{f.name}: a path of the script is not the relocation placeholder's")
+        f.write_bytes(fixed)
 
-
-    # The C++ run-time archives live in llvm's per-target directory; the
-    # engine's gnu-sysroot link renders `-B/-L <payload>/lib64` and the
-    # driver resolves `-l:libunwind.a`/`-lc++`/`-lc++abi` through plain -L
-    # directories only, so the archives are named at the lib root too --
-    # symlinks into the one copy, `lib64 -> lib` beside them (the r1 payload
-    # kept llvm's layout alone and a C++ link could not find libunwind;
-    # revision 2 adds these).
+    # The C++ run-time lives in llvm's per-target directory, where neither a
+    # --sysroot link nor the target's loader looks. Every library file of it
+    # is named at the library root -- symlinks into the one copy -- so the
+    # archives, the linker script `libc++.so` and the sonames its
+    # `INPUT(libc++.so.1 ...)` and a program's DT_NEEDED name all resolve
+    # there (revision 2 named the archives and the `.so` names alone, and a
+    # dynamic C++ link stopped at `unable to find libc++.so.1`).
     triple_lib = libdir / "aarch64-unknown-linux-gnu"
-    for name in ("libc++.a", "libc++.so", "libc++abi.a", "libc++abi.so",
-                 "libunwind.a", "libunwind.so",
-                 "libatomic.a", "libatomic.so"):
-        src = triple_lib / name
-        if src.exists():
-            (libdir / name).symlink_to(f"aarch64-unknown-linux-gnu/{name}")
+    for src in sorted(triple_lib.iterdir()):
+        name = src.name
+        if not (name.startswith("lib") and (name.endswith(".a") or ".so" in name)):
+            continue
+        link = libdir / name
+        if link.exists() or link.is_symlink():
+            sys.exit(f"{name} exists at the library root and in {triple_lib.name}")
+        link.symlink_to(f"aarch64-unknown-linux-gnu/{name}")
     # glibc's payload carries its own PROVENANCE/ELF-MANIFEST/LICENSE files at
     # the root; the assembly keeps them (each name is distinct from the two
     # files this script adds).
     (root / "mcpp.toml").write_text(MANIFEST.format(version=VERSION))
     (root / "PROVENANCE.md").write_text(PROVENANCE)
 
+    # The archive is a function of its inputs: members in name order (tarfile
+    # sorts each directory), no owner, and no time later than the newest
+    # member of the source archives -- the files this script writes take that
+    # time. Two runs over the same inputs give the same bytes.
+    def member(info):
+        info.uid = info.gid = 0
+        info.uname = info.gname = ""
+        info.mtime = min(int(info.mtime), newest)
+        return info
+
     out = pathlib.Path(args.out).resolve()
     with tarfile.open(out, "w:xz") as tf:
-        tf.add(root, arcname=root.name)
+        tf.add(root, arcname=root.name, filter=member)
     print(f"{out}  sha256 {sha256(out)}")
 
 

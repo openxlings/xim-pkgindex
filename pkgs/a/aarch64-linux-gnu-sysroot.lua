@@ -3,7 +3,7 @@ package = {
     homepage = "https://www.gnu.org/software/libc/",
 
     name = "aarch64-linux-gnu-sysroot",
-    description = "glibc 2.44.3 sysroot for aarch64-linux-gnu (arm64) for compiling and linking, with the kernel headers, libc++ and its std module sources, and gcc's libgcc",
+    description = "glibc 2.44.3 sysroot for aarch64-linux-gnu (arm64) for compiling and linking, with the kernel headers, libc++ and its std module sources, compiler-rt's builtins and gcc's libgcc",
 
     maintainers = {"https://github.com/xlings-res/aarch64-linux-gnu-sysroot"},
     licenses = {"LGPL-2.1-or-later", "Apache-2.0 WITH LLVM-exception"},
@@ -53,6 +53,27 @@ package = {
     -- intact. The r1 assets stay published unchanged; a client that
     -- implements revision reinstalls and says why.
     --
+    -- Revision 3 (same version key, new asset, the same inputs): revision 2
+    -- linked a C program and nothing else. Its archive's top directory was
+    -- `<name>-<version>`, which the client's default unwrapping installs,
+    -- and not the asset's file name without the extension, which the other
+    -- base packages install by (this recipe now does, in install() below);
+    -- libm.a kept the
+    -- install-time placeholder of the host glibc package, and libm.so had
+    -- been rewritten to name it, so no C++ link and no static link resolved
+    -- libm; llvm's per-target library directory was named at the library
+    -- root for the archives and the `.so` names alone, so libc++.so's
+    -- INPUT(libc++.so.1 ...) found nothing; the manifest stated no
+    -- std-module; and `provides` named libgcc where the link takes
+    -- compiler-rt. Revision 3 corrects the five, and the assembly is
+    -- reproducible (two runs give the same bytes). MEASURED with the engine
+    -- that declares the row's cross provider, on linux-x86_64: a C program, a
+    -- C++ program over the headers and one that imports std each build for
+    -- aarch64-linux-gnu dynamically and statically, name
+    -- /lib/ld-linux-aarch64.so.1 as their interpreter, carry no RUNPATH and no
+    -- path of the build machine, and run under qemu-aarch64 -L <payload>
+    -- with their exit status.
+    --
     -- The version is glibc's; the asset name carries -r<N> for corrective
     -- repacks of the same inputs (the first published 2.44.3 archive named
     -- its manifest wrongly; -r1 is the correction, and the recipe pins the
@@ -67,34 +88,34 @@ package = {
         linux = {
             ["latest"] = { ref = "2.44.3" },
             ["2.44.3"] = {
-                revision = 2,
+                revision = 3,
                 url = {
-                    GLOBAL = "https://github.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r2/aarch64-linux-gnu-sysroot-2.44.3-r2.tar.xz",
-                    CN = "https://gitcode.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r2/aarch64-linux-gnu-sysroot-2.44.3-r2.tar.xz",
+                    GLOBAL = "https://github.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r3/aarch64-linux-gnu-sysroot-2.44.3-r3.tar.xz",
+                    CN = "https://gitcode.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r3/aarch64-linux-gnu-sysroot-2.44.3-r3.tar.xz",
                 },
-                sha256 = "de7ab59692aff52a5ab118c6862e8929957fb3119fb59d5586c13b5e59bf70b4",
+                sha256 = "4202782881a8349c78951259b3191d92964ffa62419d9912895ce2a8d4c6f9c1",
             },
         },
         macosx = {
             ["latest"] = { ref = "2.44.3" },
             ["2.44.3"] = {
-                revision = 2,
+                revision = 3,
                 url = {
-                    GLOBAL = "https://github.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r2/aarch64-linux-gnu-sysroot-2.44.3-r2.tar.xz",
-                    CN = "https://gitcode.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r2/aarch64-linux-gnu-sysroot-2.44.3-r2.tar.xz",
+                    GLOBAL = "https://github.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r3/aarch64-linux-gnu-sysroot-2.44.3-r3.tar.xz",
+                    CN = "https://gitcode.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r3/aarch64-linux-gnu-sysroot-2.44.3-r3.tar.xz",
                 },
-                sha256 = "de7ab59692aff52a5ab118c6862e8929957fb3119fb59d5586c13b5e59bf70b4",
+                sha256 = "4202782881a8349c78951259b3191d92964ffa62419d9912895ce2a8d4c6f9c1",
             },
         },
         windows = {
             ["latest"] = { ref = "2.44.3" },
             ["2.44.3"] = {
-                revision = 2,
+                revision = 3,
                 url = {
-                    GLOBAL = "https://github.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r2/aarch64-linux-gnu-sysroot-2.44.3-r2.tar.xz",
-                    CN = "https://gitcode.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r2/aarch64-linux-gnu-sysroot-2.44.3-r2.tar.xz",
+                    GLOBAL = "https://github.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r3/aarch64-linux-gnu-sysroot-2.44.3-r3.tar.xz",
+                    CN = "https://gitcode.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r3/aarch64-linux-gnu-sysroot-2.44.3-r3.tar.xz",
                 },
-                sha256 = "de7ab59692aff52a5ab118c6862e8929957fb3119fb59d5586c13b5e59bf70b4",
+                sha256 = "4202782881a8349c78951259b3191d92964ffa62419d9912895ce2a8d4c6f9c1",
             },
         },
     },
@@ -102,6 +123,42 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+
+-- What a C link, a C++ link and `import std` each read first, by the names
+-- that are files of the archive on every host (the names beside them at the
+-- library root are links). A payload without one of them is not this
+-- package, whatever its digest says.
+local required = {
+    "mcpp.toml",
+    "lib/crt1.o", "lib/libc.so.6", "lib/libm.a", "lib/ld-linux-aarch64.so.1",
+    "lib/aarch64-unknown-linux-gnu/libc++.a", "lib/aarch64-unknown-linux-gnu/libc++.so.1.0",
+    "lib/aarch64-unknown-linux-gnu/libunwind.a",
+    "lib/clang/23/lib/aarch64-unknown-linux-gnu/libclang_rt.builtins.a",
+    "include/aarch64-unknown-linux-gnu/c++/v1/__config_site",
+    "share/libc++/v1/std.cppm",
+}
+
+-- The archive's top directory is the asset's file name without its extension;
+-- it becomes the install directory, so the package root is the sysroot. Said
+-- here and not left to the client's default unwrapping, which recognises
+-- `<name>-<version>` and nests a revision's directory inside the install
+-- directory (measured in CI: revision 3 installed "successfully" one level
+-- too deep, and only the recipe's own verify tests said so).
+function install()
+    local dir = pkginfo.install_dir()
+    os.tryrm(dir)
+    local extracted = pkginfo.install_file():replace(".tar.xz", "")
+    if not os.isdir(extracted) then
+        raise("aarch64-linux-gnu-sysroot payload not found at " .. extracted)
+    end
+    os.mv(extracted, dir)
+    for _, f in ipairs(required) do
+        if not os.isfile(path.join(dir, f)) then
+            raise("aarch64-linux-gnu-sysroot payload is missing " .. f)
+        end
+    end
+    return true
+end
 
 function config()
     xvm.add(package.name)

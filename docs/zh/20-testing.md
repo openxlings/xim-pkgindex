@@ -132,6 +132,7 @@ class TestVerify:
 | `tests/lib/xvm_client.py` | `XvmClient.info()`、`.is_registered()`、`.shim_exists()` |
 | `tests/lib/xlings_client.py` | `XlingsClient.install()`、`.remove()`、`.xim_add_xpkg()` |
 | `tests/lib/platform_utils.py` | `current_platform()`、`skip_if_not()`、`xlings_home()` |
+| `tests/lib/base_package.py` | `assert_base_package()`：根目录带 `mcpp.toml` 的 sysroot 的布局契约 |
 
 ## 全仓库的检查
 
@@ -154,11 +155,23 @@ class TestVerify:
 | Workflow | 何时 | 运行 |
 |---|---|---|
 | `ci-xpkg-test.yml` | `pkgs/`、`libs/`、`tests/` 有改动 | 对所有配方跑 L0 和 L2，然后 L1 |
-| `ci-test.yml` | `pkgs/` 或 `libs/` 有改动 | 在 Linux、macOS、Windows 上安装改动涉及的包 |
+| `ci-test.yml` | `pkgs/` 或 `libs/` 有改动 | 在 Linux、macOS、Windows 上安装并移除改动涉及的包；然后对改动直接编辑的每个配方运行它的 L3 和 L4 测试（`recipe-tests.py`） |
 | `ci-tools.yml` | `tools/`、`scripts/` 或 workflow 有改动 | 工具自己的测试与仓库 lint |
 | `ci-sweep.yml` | 每周 | 按 ISO 周次安装所有配方中的一片 |
 | `luban-agent-workspace.yml` | Luban 的配方或它们锁定的包有改动 | 在 x86_64 和 aarch64 上构建并启动 edition |
 | `site-check.yml` | `pkgs/`、`docs/` 或站点配置有改动 | 以 strict 模式构建站点 |
 
 L3 和 L4 在 CI 中只针对改动涉及的包运行，以及在每周轮转中运行：每次推送都在每个平台上
-安装全部配方，超出了预算。
+安装全部配方，超出了预算。改动直接编辑的配方，在安装作业的每个宿主上运行它自己模块的 L3 和
+L4 测试；改动只经依赖波及的配方，被安装并移除。因此，一个模块在 L4 断言的内容，就是它的配方
+接纳新版本或新修订的条件：摘要相符、安装成功的载荷仍可能不可用，这一点由模块陈述。
+
+### 基座包
+
+根目录带 `mcpp.toml` 的 sysroot 是 mcpp 的基座包。它的模块调用
+`assert_base_package(<安装根目录>)`，核对其准入中仅凭目录树即可回答的部分：
+
+- 清单可解析，它所指的每个路径都存在；
+- 提供 `mcpp:c++-abi` 的包写出 std 模块的源码；
+- 构建会读取的链接（库、目标文件、头文件）在包内可解析；
+- GNU ld 脚本所指的路径按 sysroot 相对读取时在根下存在，且不含安装期占位符。
