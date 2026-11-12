@@ -176,7 +176,10 @@ def test_publication_follows_build_inputs_too():
         assert on['workflow_run']['workflows'] == ['CI']
         assert on['workflow_run']['branches'] == ['main']
         assert 'pull_request' not in on
-        assert any('${{ github.event.workflow_run.head_sha || github.sha }}' == step.get('with', {}).get('ref')
+        # The workflow_run head_sha must stay in the checkout chain: a manual
+        # dispatch may prepend its own ref (publish-artifact.yml's `ref`
+        # input), but the CI-verified fallback can never be dropped.
+        assert any('github.event.workflow_run.head_sha || github.sha' in (step.get('with', {}).get('ref') or '')
                    for job in d['jobs'].values() for step in job.get('steps', []))
 
 
@@ -246,6 +249,17 @@ def test_a_large_install_plan_is_sharded(monkeypatch):
     assert all(sorted(s['overlay'].split()) == sorted(files) for s in shards)
 
 
+def test_the_edited_recipes_are_named_once_for_their_own_tests(monkeypatch):
+    """A recipe the change edits runs its lifecycle and verify tests; one it only reaches does not."""
+    monkeypatch.setattr(planner, 'supported_platforms', lambda src: {'linux'})
+    before = {'pkgs/a/a.lua': pkg(), 'pkgs/b/b.lua': 'package = { name = "b", deps = {"a"} }'}
+    after = dict(before, **{'pkgs/a/a.lua': pkg() + '\n-- changed\nfunction install() return true end\n'})
+    p = planner.plan(['pkgs/a/a.lua'], before, after, PROFILES)
+    entries = p['install_matrix']['include']
+    assert [e['edited'] for e in entries] == ['pkgs/a/a.lua']
+    assert sorted(entries[0]['files'].split()) == ['pkgs/a/a.lua', 'pkgs/b/b.lua']
+
+
 def test_a_small_install_plan_is_one_unnamed_job(monkeypatch):
     monkeypatch.setattr(planner, 'supported_platforms', lambda src: {'linux'})
     p = planner.plan(['pkgs/a/a.lua'], {}, {'pkgs/a/a.lua': pkg()}, PROFILES)
@@ -292,3 +306,23 @@ def test_a_name_of_two_recipes_reaches_the_consumers_of_both():
     files = {'pkgs/x/xdesk.lua': pkg(), 'pkgs/luban/xdesk.lua': pkg(), 'pkgs/c/c.lua': pkg('"xim:xdesk"')}
     assert planner.affected(['pkgs/x/xdesk.lua'], files, files) == ['pkgs/c/c.lua', 'pkgs/x/xdesk.lua']
     assert planner.affected(['pkgs/luban/xdesk.lua'], files, files) == ['pkgs/c/c.lua', 'pkgs/luban/xdesk.lua']
+
+
+def test_direct_only_profile_ignores_dependency_expansion(monkeypatch):
+    # #1144: one claude version bump planned the luban acceptance suite
+    # (40min workspace + 2x60min editions) because luban recipes depend on
+    # claude. direct_only fires on the directly edited files only; the
+    # deliberate publication route is the workflow's workflow_dispatch.
+    monkeypatch.setattr(planner, 'supported_platforms', lambda src: set())
+    files = {'pkgs/c/claude.lua': versioned({'latest': 'ref = "2"', '2': 'sha256 = "y"'}),
+             'pkgs/luban/agent-workspace.lua': pkg('"xim:claude"')}
+    p = planner.plan(['pkgs/c/claude.lua'], {}, files, PROFILES)
+    assert 'pkgs/luban/agent-workspace.lua' in p['packages']
+    assert not p['flags']['luban_agent_workspace']
+    p = planner.plan(['pkgs/luban/agent-workspace.lua'], {}, files, PROFILES)
+    assert p['flags']['luban_agent_workspace']
+
+
+def test_direct_only_profile_keeps_manual_dispatch():
+    d, on = workflow(PROFILES['luban_agent_workspace']['workflow'])
+    assert 'workflow_dispatch' in on

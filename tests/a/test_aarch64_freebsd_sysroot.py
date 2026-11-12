@@ -10,6 +10,7 @@ from tests.lib.assertions import (
     assert_no_direct_path_modification, assert_uses_new_api,
     assert_xim_add_succeeds, assert_install_succeeds,
 )
+from tests.lib.base_package import assert_base_package
 from tests.lib.platform_utils import skip_if_not, project_root, xpkgs_dir
 
 PKG = "aarch64-freebsd-sysroot"
@@ -127,3 +128,8 @@ class TestVerify:
             assert os.path.isfile(os.path.join(root, build[key])), f"no {key}"
         for d in build["include_dirs"]:
             assert os.path.isdir(os.path.join(root, d)), f"no include dir {d}"
+
+    @pytest.mark.verify
+    @skip_if_not("linux")
+    def test_the_layout_contract_of_a_base_package(self):
+        assert_base_package(_root())
