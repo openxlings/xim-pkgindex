@@ -1,0 +1,10 @@
+[package]
+name    = "base-cxx"
+version = "0.1.0"
+
+[build]
+target = "aarch64-linux-gnu"
+
+[targets.base-cxx]
+kind = "bin"
+main = "src/main.cpp"
