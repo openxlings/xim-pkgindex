@@ -3,7 +3,7 @@ package = {
     homepage = "https://www.gnu.org/software/libc/",
 
     name = "aarch64-linux-gnu-sysroot",
-    description = "glibc 2.44.3 sysroot for aarch64-linux-gnu (arm64) for compiling and linking, with the kernel headers, libc++ and its std module sources, and gcc's libgcc",
+    description = "glibc 2.44.3 sysroot for aarch64-linux-gnu (arm64) for compiling and linking, with the kernel headers, libc++ and its std module sources, compiler-rt's builtins and gcc's libgcc",
 
     maintainers = {"https://github.com/xlings-res/aarch64-linux-gnu-sysroot"},
     licenses = {"LGPL-2.1-or-later", "Apache-2.0 WITH LLVM-exception"},
@@ -53,6 +53,24 @@ package = {
     -- intact. The r1 assets stay published unchanged; a client that
     -- implements revision reinstalls and says why.
     --
+    -- Revision 3 (same version key, new asset, the same inputs): revision 2
+    -- linked a C program and nothing else. Its archive's top directory was
+    -- not the asset's file name without the extension; libm.a kept the
+    -- install-time placeholder of the host glibc package, and libm.so had
+    -- been rewritten to name it, so no C++ link and no static link resolved
+    -- libm; llvm's per-target library directory was named at the library
+    -- root for the archives and the `.so` names alone, so libc++.so's
+    -- INPUT(libc++.so.1 ...) found nothing; the manifest stated no
+    -- std-module; and `provides` named libgcc where the link takes
+    -- compiler-rt. Revision 3 corrects the five, and the assembly is
+    -- reproducible (two runs give the same bytes). MEASURED with the engine
+    -- that declares the row's cross provider, on linux-x86_64: a C program, a
+    -- C++ program over the headers and one that imports std each build for
+    -- aarch64-linux-gnu dynamically and statically, name
+    -- /lib/ld-linux-aarch64.so.1 as their interpreter, carry no RUNPATH and no
+    -- path of the build machine, and run under qemu-aarch64 -L <payload>
+    -- with their exit status.
+    --
     -- The version is glibc's; the asset name carries -r<N> for corrective
     -- repacks of the same inputs (the first published 2.44.3 archive named
     -- its manifest wrongly; -r1 is the correction, and the recipe pins the
@@ -67,34 +85,34 @@ package = {
         linux = {
             ["latest"] = { ref = "2.44.3" },
             ["2.44.3"] = {
-                revision = 2,
+                revision = 3,
                 url = {
-                    GLOBAL = "https://github.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r2/aarch64-linux-gnu-sysroot-2.44.3-r2.tar.xz",
-                    CN = "https://gitcode.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r2/aarch64-linux-gnu-sysroot-2.44.3-r2.tar.xz",
+                    GLOBAL = "https://github.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r3/aarch64-linux-gnu-sysroot-2.44.3-r3.tar.xz",
+                    CN = "https://gitcode.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r3/aarch64-linux-gnu-sysroot-2.44.3-r3.tar.xz",
                 },
-                sha256 = "de7ab59692aff52a5ab118c6862e8929957fb3119fb59d5586c13b5e59bf70b4",
+                sha256 = "4202782881a8349c78951259b3191d92964ffa62419d9912895ce2a8d4c6f9c1",
             },
         },
         macosx = {
             ["latest"] = { ref = "2.44.3" },
             ["2.44.3"] = {
-                revision = 2,
+                revision = 3,
                 url = {
-                    GLOBAL = "https://github.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r2/aarch64-linux-gnu-sysroot-2.44.3-r2.tar.xz",
-                    CN = "https://gitcode.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r2/aarch64-linux-gnu-sysroot-2.44.3-r2.tar.xz",
+                    GLOBAL = "https://github.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r3/aarch64-linux-gnu-sysroot-2.44.3-r3.tar.xz",
+                    CN = "https://gitcode.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r3/aarch64-linux-gnu-sysroot-2.44.3-r3.tar.xz",
                 },
-                sha256 = "de7ab59692aff52a5ab118c6862e8929957fb3119fb59d5586c13b5e59bf70b4",
+                sha256 = "4202782881a8349c78951259b3191d92964ffa62419d9912895ce2a8d4c6f9c1",
             },
         },
         windows = {
             ["latest"] = { ref = "2.44.3" },
             ["2.44.3"] = {
-                revision = 2,
+                revision = 3,
                 url = {
-                    GLOBAL = "https://github.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r2/aarch64-linux-gnu-sysroot-2.44.3-r2.tar.xz",
-                    CN = "https://gitcode.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r2/aarch64-linux-gnu-sysroot-2.44.3-r2.tar.xz",
+                    GLOBAL = "https://github.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r3/aarch64-linux-gnu-sysroot-2.44.3-r3.tar.xz",
+                    CN = "https://gitcode.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r3/aarch64-linux-gnu-sysroot-2.44.3-r3.tar.xz",
                 },
-                sha256 = "de7ab59692aff52a5ab118c6862e8929957fb3119fb59d5586c13b5e59bf70b4",
+                sha256 = "4202782881a8349c78951259b3191d92964ffa62419d9912895ce2a8d4c6f9c1",
             },
         },
     },

@@ -1,0 +1,45 @@
+{
+  "scope": "Revision 3 of aarch64-linux-gnu-sysroot 2.44.3: assembled from the inputs of revision 2 by .agents/tools/build-aarch64-linux-gnu-sysroot.py; two runs of the script over the same inputs give the same bytes; GLOBAL/CN complete GET byte identities passed",
+  "revision": 3,
+  "derived_from": {
+    "revision": 2,
+    "release": "2.44.3-r2",
+    "change": "the archive's top directory is the asset file name without its extension; the install-time placeholder is removed from every ld script of lib/ (libm.a kept it and libm.so had been rewritten to name libm.a, so no C++ link and no static link resolved libm); every file of llvm's per-target library directory, the sonames included, is named at the library root; the manifest states std-module; provides names compiler-rt as the compiler run-time. Why: revision 2 linked a C program and nothing else (mcpp-community/mcpp#924 audit, 2026-11-12)"
+  },
+  "inputs": {
+    "glibc-2.44.3-r4-linux-aarch64.tar.gz": "bd480264223d887de03fefeda34d0ee75566cb4bf4042e481818251fb463bfce",
+    "linux-headers-5.11.1-linux-aarch64.tar.gz": "ffb294cc183e9ddb87af3411364ba09c9724390494c2f271a81e98a3d6ccfbd7",
+    "llvm-23.1.3-linux-aarch64.tar.gz": "8a4697b6f22703c1fb8d808a0ef6022f3a9e9111a70e7a02009b7814bdbe46a9"
+  },
+  "archives": {
+    "aarch64-linux-gnu-sysroot-2.44.3-r3.tar.xz": "4202782881a8349c78951259b3191d92964ffa62419d9912895ce2a8d4c6f9c1"
+  },
+  "status": "mirrors-passed",
+  "global_release_id": 442610262,
+  "global_api_resources": [
+    {
+      "archive": "aarch64-linux-gnu-sysroot-2.44.3-r3.tar.xz",
+      "sha256": "4202782881a8349c78951259b3191d92964ffa62419d9912895ce2a8d4c6f9c1",
+      "size": 29303720,
+      "api_digest": "sha256:4202782881a8349c78951259b3191d92964ffa62419d9912895ce2a8d4c6f9c1",
+      "url": "https://github.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r3/aarch64-linux-gnu-sysroot-2.44.3-r3.tar.xz"
+    }
+  ],
+  "mirror_checks": [
+    {
+      "archive": "aarch64-linux-gnu-sysroot-2.44.3-r3.tar.xz",
+      "mirror": "CN",
+      "sha256": "4202782881a8349c78951259b3191d92964ffa62419d9912895ce2a8d4c6f9c1",
+      "url": "https://gitcode.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r3/aarch64-linux-gnu-sysroot-2.44.3-r3.tar.xz"
+    }
+  ],
+  "measured": {
+    "engine": "mcpp built from mcpp-community/mcpp#924 (2026-11-12), linux-x86_64, no KVM",
+    "programs": ["C89 hello", "C++ <print>", "import std"],
+    "linkage": ["dynamic", "static (import std)"],
+    "interpreter": "/lib/ld-linux-aarch64.so.1",
+    "runpath": "none",
+    "build_machine_paths_in_artifact": 0,
+    "run": "qemu-aarch64 -L <payload>, exit status 42 passed through"
+  }
+}
