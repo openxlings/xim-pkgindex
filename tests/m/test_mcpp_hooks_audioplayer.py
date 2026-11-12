@@ -16,11 +16,11 @@ from tests.lib.assertions import (
     assert_xim_add_succeeds,
     assert_xvm_shim_exists,
 )
-from tests.lib.platform_utils import skip_if_not
+from tests.lib.platform_utils import skip_if_not, under_test
 from tests.lib.xpkg_parser import parse_xpkg
 
 PKG = "mcpp-hooks-audioplayer"
-INSTALL_PKG = "local:mcpp-hooks-audioplayer@0.0.3"
+INSTALL_VERSION = "0.0.3"
 PKG_FILE = "pkgs/m/mcpp-hooks-audioplayer.lua"
 
 
@@ -57,7 +57,7 @@ class TestLifecycle:
     @pytest.mark.lifecycle
     @skip_if_not("linux")
     def test_install(self):
-        assert_install_succeeds(INSTALL_PKG)
+        assert_install_succeeds(under_test(PKG, INSTALL_VERSION))
 
 
 class TestVerify:
