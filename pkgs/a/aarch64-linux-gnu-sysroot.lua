@@ -121,6 +121,42 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 
+-- What a C link, a C++ link and `import std` each read first, by the names
+-- that are files of the archive on every host (the names beside them at the
+-- library root are links). A payload without one of them is not this
+-- package, whatever its digest says.
+local required = {
+    "mcpp.toml",
+    "lib/crt1.o", "lib/libc.so.6", "lib/libm.a", "lib/ld-linux-aarch64.so.1",
+    "lib/aarch64-unknown-linux-gnu/libc++.a", "lib/aarch64-unknown-linux-gnu/libc++.so.1.0",
+    "lib/aarch64-unknown-linux-gnu/libunwind.a",
+    "lib/clang/23/lib/aarch64-unknown-linux-gnu/libclang_rt.builtins.a",
+    "include/aarch64-unknown-linux-gnu/c++/v1/__config_site",
+    "share/libc++/v1/std.cppm",
+}
+
+-- The archive's top directory is the asset's file name without its extension;
+-- it becomes the install directory, so the package root is the sysroot. Said
+-- here and not left to the client's default unwrapping, which recognises
+-- `<name>-<version>` and nests a revision's directory inside the install
+-- directory (measured in CI: revision 3 installed "successfully" one level
+-- too deep, and only the recipe's own verify tests said so).
+function install()
+    local dir = pkginfo.install_dir()
+    os.tryrm(dir)
+    local extracted = pkginfo.install_file():replace(".tar.xz", "")
+    if not os.isdir(extracted) then
+        raise("aarch64-linux-gnu-sysroot payload not found at " .. extracted)
+    end
+    os.mv(extracted, dir)
+    for _, f in ipairs(required) do
+        if not os.isfile(path.join(dir, f)) then
+            raise("aarch64-linux-gnu-sysroot payload is missing " .. f)
+        end
+    end
+    return true
+end
+
 function config()
     xvm.add(package.name)
     return true
