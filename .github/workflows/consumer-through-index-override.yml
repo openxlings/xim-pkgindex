@@ -25,7 +25,7 @@ on:
   workflow_dispatch: null
 
 env:
-  MCPP_VERSION: 2026.9.14.1
+  MCPP_VERSION: 2026.11.12.1
 
 jobs:
   consumers:

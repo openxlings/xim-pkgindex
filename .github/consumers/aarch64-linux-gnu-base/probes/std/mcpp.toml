@@ -1,0 +1,10 @@
+[package]
+name    = "base-std"
+version = "0.1.0"
+
+[build]
+target = "aarch64-linux-gnu"
+
+[targets.base-std]
+kind = "bin"
+main = "src/main.cpp"

@@ -119,6 +119,15 @@ class TestVerify:
         assert_xvm_registered("mypackage")
 ```
 
+- A lifecycle test names what it installs with `under_test(PKG)` or
+  `under_test(PKG, version)` (`tests/lib/platform_utils.py`). The recipe a
+  change edits is in the home once: written over its published copy, where it
+  answers as `xim:`, or registered beside the index (`xlings config
+  --add-xpkg`) when the index has no copy of it, where it answers as `local:`.
+  The function reads which, when the test runs. A namespace written into a
+  module is right in one of the two states: `local:<pkg>` does not name a
+  published recipe, because registering a recipe identical to the published
+  one adds nothing.
 - An alias package (`ref`) asserts `meta.is_ref` and little else.
 - A platform-specific test is marked `@skip_if_not("windows")`.
 - A known problem is `@pytest.mark.xfail(reason=...)`, which does not block CI.

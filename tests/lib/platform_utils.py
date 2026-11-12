@@ -27,6 +27,27 @@ def xpkgs_dir() -> str:
     return os.path.join(xlings_home(), "data", "xpkgs")
 
 
+def under_test(pkg: str, version: str = "") -> str:
+    """The name that installs the recipe under test: `<namespace>:<pkg>[@<version>]`.
+
+    A recipe a change edits is in the home once. The install step writes it over
+    its published copy, where it answers as `xim:`; a recipe the index has no
+    copy of is registered beside it (`xlings config --add-xpkg`) and answers as
+    `local:`. Registering a recipe identical to the published one adds nothing,
+    so `local:` does not name a published recipe that nobody registered.
+
+    The namespace is therefore read from the home, when the test runs. A module
+    states the package and, where it pins one, the version; a namespace written
+    into a module is right in one of the two states only. The name is always
+    qualified: a bare name is ambiguous where a sub-index carries the package
+    too (scode:ncurses).
+    """
+    registered = os.path.join(xlings_home(), "data", "xim-pkgindex-local",
+                              "pkgs", pkg[0], pkg + ".lua")
+    name = ("local:" if os.path.isfile(registered) else "xim:") + pkg
+    return f"{name}@{version}" if version else name
+
+
 def pkgindex_dir() -> str:
     root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     return os.path.join(root, "pkgs")
