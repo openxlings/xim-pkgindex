@@ -47,3 +47,13 @@ jobs:
         run: |
           & .github/scripts/windows-test.ps1 -ChangedFiles $env:FILES -WorkspaceRoot $env:GITHUB_WORKSPACE -OverlayFiles $env:OVERLAY
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      # The statement a recipe's own test module makes about its installed
+      # payload, checked on this host for each recipe the change edits.
+      - name: The edited recipes' lifecycle and verify tests
+        if: matrix.edited != ''
+        shell: bash
+        env:
+          EDITED: ${{ matrix.edited }}
+        run: |
+          python -m pip install -q pytest pyyaml
+          python .github/scripts/recipe-tests.py $EDITED

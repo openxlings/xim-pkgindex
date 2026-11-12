@@ -249,6 +249,17 @@ def test_a_large_install_plan_is_sharded(monkeypatch):
     assert all(sorted(s['overlay'].split()) == sorted(files) for s in shards)
 
 
+def test_the_edited_recipes_are_named_once_for_their_own_tests(monkeypatch):
+    """A recipe the change edits runs its lifecycle and verify tests; one it only reaches does not."""
+    monkeypatch.setattr(planner, 'supported_platforms', lambda src: {'linux'})
+    before = {'pkgs/a/a.lua': pkg(), 'pkgs/b/b.lua': 'package = { name = "b", deps = {"a"} }'}
+    after = dict(before, **{'pkgs/a/a.lua': pkg() + '\n-- changed\nfunction install() return true end\n'})
+    p = planner.plan(['pkgs/a/a.lua'], before, after, PROFILES)
+    entries = p['install_matrix']['include']
+    assert [e['edited'] for e in entries] == ['pkgs/a/a.lua']
+    assert sorted(entries[0]['files'].split()) == ['pkgs/a/a.lua', 'pkgs/b/b.lua']
+
+
 def test_a_small_install_plan_is_one_unnamed_job(monkeypatch):
     monkeypatch.setattr(planner, 'supported_platforms', lambda src: {'linux'})
     p = planner.plan(['pkgs/a/a.lua'], {}, {'pkgs/a/a.lua': pkg()}, PROFILES)
