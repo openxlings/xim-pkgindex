@@ -97,6 +97,8 @@ env     = "env {assignments} "
 quote   = "posix"
 begin   = "@@BEGIN@@"
 status  = "@@STATUS=(\\d+)@@"
+line-max = 200            # a longer line is written to the files disk and run from there
+script   = "sh {script}"
 
 [files]
 mount = ["mkdir -p /mnt/dirun", "mount -r -t msdosfs /dev/vtbd1s1 /mnt/dirun"]
