@@ -5,8 +5,8 @@
 -- One asset serves every system: the package holds the x86_64 and aarch64 images, the launchers
 -- bin/dirun and bin/dirun.exe, and okrun for each system it names (libexec/okrun/<os>-<arch>/), so
 -- it depends on nothing. GLOBAL is the upstream release; CN is the same bytes at
--- gitcode.com/xlings-res/dirun, so one sha256 serves both. The emulator (qemu-system-<arch>,
--- qemu-img) is the runner's to name: a platform's runner requires the package that provides it.
+-- gitcode.com/xlings-res/dirun, so one sha256 serves both. The emulator (qemu-system-<arch>;
+-- qemu-img before 0.3.1) is the runner's to name: a platform's runner requires the package that provides it.
 package = {
     spec = "2",
     name = "dirun",
