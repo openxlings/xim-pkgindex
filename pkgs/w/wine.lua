@@ -53,20 +53,20 @@ end
 
 function config()
     local bindir = path.join(pkginfo.install_dir(), "bin")
-    -- The package name anchors the release (Spec D1); the programs bind to it, so
-    -- `xlings use wine@<v>` moves them together.
-    xvm.add(package.name)
+    -- wine, the package's own name, anchors the release (Spec D1); the other programs
+    -- bind to it, so `xlings use wine@<v>` moves them together.
+    xvm.add("wine", { bindir = bindir })
     local binding = package.name .. "@" .. pkginfo.version()
-    for _, prog in ipairs({"wine", "wineserver", "wineboot"}) do
+    for _, prog in ipairs({"wineserver", "wineboot"}) do
         xvm.add(prog, { bindir = bindir, binding = binding })
     end
     return true
 end
 
 function uninstall()
-    for _, prog in ipairs({"wine", "wineserver", "wineboot"}) do
+    for _, prog in ipairs({"wineserver", "wineboot"}) do
         xvm.remove(prog)
     end
-    xvm.remove(package.name)
+    xvm.remove("wine")
     return true
 end
