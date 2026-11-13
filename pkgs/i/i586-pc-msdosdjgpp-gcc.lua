@@ -76,8 +76,10 @@ end
 
 function config()
     local bindir = path.join(pkginfo.install_dir(), "bin")
+    -- The package name anchors the release (Spec D1); the programs bind to it.
+    xvm.add(package.name)
     for _, prog in ipairs(package.programs) do
-        local opts = { bindir = bindir }
+        local opts = { bindir = bindir, binding = package.name .. "@" .. pkginfo.version() }
         if os.host() == "windows" then opts.alias = prog .. ".exe" end
         xvm.add(prog, opts)
     end
@@ -88,5 +90,6 @@ function uninstall()
     for _, prog in ipairs(package.programs) do
         xvm.remove(prog)
     end
+    xvm.remove(package.name)
     return true
 end

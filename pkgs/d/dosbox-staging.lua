@@ -75,7 +75,10 @@ end
 
 function config()
     local dir = path.join(pkginfo.install_dir(), "dosbox")
-    local opts = { bindir = dir }
+    -- The package name anchors the release (Spec D1); the emulator binds to it, so
+    -- `xlings use dosbox-staging@<v>` moves it.
+    xvm.add(package.name)
+    local opts = { bindir = dir, binding = package.name .. "@" .. pkginfo.version() }
     if os.host() == "windows" then
         opts.alias = "dosbox.exe"
     elseif os.host() == "macosx" then
@@ -87,5 +90,6 @@ end
 
 function uninstall()
     xvm.remove("dosbox")
+    xvm.remove(package.name)
     return true
 end

@@ -47,6 +47,7 @@ package = {
 }
 
 import("xim.libxpkg.pkginfo")
+import("xim.libxpkg.xvm")
 
 -- How this image boots and runs a command (dirun's profile format).
 local profile = [=[
@@ -123,4 +124,16 @@ function install()
     end
     io.writefile(path.join(dir, "dirun.toml"), profile)
     return os.isfile(image)
+end
+
+-- Data, not a program: the package name is registered (Spec D1, D3) so a home
+-- knows it has it; a runner names the files under its root.
+function config()
+    xvm.add(package.name)
+    return true
+end
+
+function uninstall()
+    xvm.remove(package.name)
+    return true
 end
