@@ -56,3 +56,7 @@ wlroots 0.20.2 972c7ac44b17828f4702bfae7cd8347346a3fb5b2c1076cfa2c3fcedac5ec343
 # luban:labwc as published: the compositor a Qt desktop's factory session runs on.
 luban-labwc-x86_64 0.20.0-r1 576a0d7d256a39c672af86ca501b82b14e6a6779065b8abee842cc072a0fed61
 luban-labwc-aarch64 0.20.0-r1 e23f15ca7e913f23f4b226003de950b3639157a9151c9ca0dc3fcc880c86f292
+dosbox-staging-linux-x86_64 0.83.0 d3a94f7f1c3e68a47ec88d61145506c7904452adb0c9c5928cb8cfe2331d6c5c
+dosbox-staging-macos 0.83.0 d8a771adfb8010fa6b5f7fb5351abfba659273ad01c89f03675a92bdbdae8167
+dosbox-staging-windows-x64 0.83.0 725b915e325a6d410ce30a10989fd492fdad07f6611fff40ff77f160478810f4
+csdpmi 7b deacda0488e1cdd7c4a9f32fab45662b34c0ed6b2d7d4d13bc07041b62004a8c

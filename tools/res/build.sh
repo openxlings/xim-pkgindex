@@ -26,6 +26,7 @@
 #   wl-clipboard  static wl-copy / wl-paste (musl; libwayland built static)
 #   xsel          a static xsel (musl; libX11/xcb static)
 #   edk2-firmware the UEFI firmware qemu ships, decompressed (no build)
+#   dosbox-staging DOSBox Staging for each system, with CWSDPMI and its dirun profile (no build)
 #   qemu-system   static qemu-system-x86_64 and -aarch64 (musl; user networking)
 #   qemu-system-gl qemu-system-x86_64 with OpenGL (virglrenderer, egl-headless; glibc, dynamic)
 #   labwc-desktop the labwc desktop session, relocatable (musl loader and libraries inside)
@@ -715,6 +716,41 @@ edk2-firmware)
     done
     provenance "$d" "UEFI firmware (EDK II) as qemu $version ships it in pc-bios/, decompressed; digests of the .bz2 inputs in tools/res/inputs.txt"
     pack "$d" ;;
+dosbox-staging)
+    # DOSBox Staging as its project releases it for each system, with CWSDPMI (the DPMI host a
+    # DJGPP program needs, DJGPP's v2misc) and the dirun profile that runs a DOS program by it,
+    # beside it: one archive per system, its one directory dosbox-staging-<version>. No build.
+    base="https://github.com/dosbox-staging/dosbox-staging/releases/download/v$version"
+    source_of csdpmi 7b "http://www.delorie.com/pub/djgpp/current/v2misc/csdpmi7b.zip" "$work/csdpmi7b.zip"
+    unzip -q -o "$work/csdpmi7b.zip" bin/CWSDPMI.EXE -d "$work/cws"
+    for sys in linux-x86_64 macosx-universal windows-x86_64; do
+        d="dosbox-staging-$version"
+        rm -rf "${work:?}/$d" "$work/unpack"; mkdir -p "$work/$d/dosbox" "$work/unpack"
+        case "$sys" in
+            linux-x86_64)
+                source_of dosbox-staging-linux-x86_64 "$version" "$base/dosbox-staging-linux-x86_64-v$version.tar.xz" "$work/in.tar.xz"
+                tar -xJf "$work/in.tar.xz" -C "$work/unpack"
+                cp -R "$work"/unpack/*/. "$work/$d/dosbox/"
+                emulator="dosbox/dosbox" ;;
+            macosx-universal)
+                source_of dosbox-staging-macos "$version" "$base/dosbox-staging-macOS-v$version.dmg" "$work/in.dmg"
+                7z x -y -o"$work/unpack" "$work/in.dmg" "DOSBox Staging.app/*" >/dev/null
+                cp -R "$work/unpack/DOSBox Staging.app" "$work/$d/dosbox/"
+                emulator="dosbox/DOSBox Staging.app/Contents/MacOS/dosbox" ;;
+            windows-x86_64)
+                source_of dosbox-staging-windows-x64 "$version" "$base/dosbox-staging-windows-x64-v$version.zip" "$work/in.zip"
+                unzip -q -o "$work/in.zip" -d "$work/unpack"
+                cp -R "$work"/unpack/*/. "$work/$d/dosbox/"
+                emulator="dosbox/dosbox.exe" ;;
+        esac
+        [[ -f "$work/$d/$emulator" ]] || die "$sys: no emulator at $emulator"
+        cp "$work/cws/bin/CWSDPMI.EXE" "$work/$d/"
+        sed "s|@EMULATOR@|$emulator|" "$here/dosbox-staging/dirun.toml.in" > "$work/$d/dirun.toml"
+        provenance "$d" "DOSBox Staging $version as its project releases it for $sys (github.com/dosbox-staging/dosbox-staging, GPL-2.0-or-later), CWSDPMI r7 (www.delorie.com/pub/djgpp/current/v2misc/csdpmi7b.zip, its own license: free redistribution with notice), and dirun.toml, the dirun profile that runs a DOS program by it; input digests in tools/res/inputs.txt"
+        file="$out/$what-$version-$sys.tar.gz"
+        tar --owner=0 --group=0 --numeric-owner --hard-dereference -czf "$file" -C "$work" "$d"
+        seal "$file"
+    done ;;
 bash|coreutils|openssl|binutils)
     v="${version%%-r[0-9]*}"   # <upstream>-rN: this index's Nth build of it; the payload keeps the name
     case "$what" in

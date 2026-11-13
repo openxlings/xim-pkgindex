@@ -92,7 +92,7 @@ expect = "# |\\$ "
 
 [command]
 prepare = ["stty -echo"]
-line    = "echo @@BEGIN@@; {env}{argv}; echo @@STATUS=$?@@"
+line    = "echo @@BEGIN@@; {env}{argv} < /dev/null; echo @@STATUS=$?@@"
 env     = "env {assignments} "
 quote   = "posix"
 begin   = "@@BEGIN@@"
