@@ -81,6 +81,45 @@ package = {
                     sha256 = "887f50f2d34e547cffa7c7ba42d77d37980de67d9033ddb114086a1dd833fc1c",
                 },
             },
+            -- 16.2.0: the GNU release (signature checked), built as 16.1.0 is
+            -- (tools/res/build.sh gcc). `latest` stays 16.1.0.
+            ["16.2.0"] = {
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/gcc/releases/download/16.2.0/gcc-16.2.0-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/gcc/releases/download/16.2.0/gcc-16.2.0-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "f54819f4a2b2bcb332558f4ed4c053711ea34e1e48d3f181edf65299afa8c619",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/gcc/releases/download/16.2.0/gcc-16.2.0-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/gcc/releases/download/16.2.0/gcc-16.2.0-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "65ff0ee95616fb38c99b0af7a42dd4a2e088640ca5eb555e77c8257759feabac",
+                },
+            },
+            -- 17.0.0-20261108: a GCC trunk snapshot (gcc.gnu.org/pub/gcc/snapshots/
+            -- 17-20261108; upstream does not sign snapshots, the digest is the one
+            -- measured when it was added). Experimental. The date is a prerelease
+            -- part, so `gcc@17` does not select it: it is chosen only by writing
+            -- the whole version. One snapshot is kept; a newer one replaces it.
+            ["17.0.0-20261108"] = {
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/gcc/releases/download/17.0.0-20261108/gcc-17.0.0-20261108-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/gcc/releases/download/17.0.0-20261108/gcc-17.0.0-20261108-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "9705b3e5a448ffc24baa2b2ea4e335791d24c23f549cd6310b1a41ebe07c112b",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/gcc/releases/download/17.0.0-20261108/gcc-17.0.0-20261108-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/gcc/releases/download/17.0.0-20261108/gcc-17.0.0-20261108-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "71bde27ffa5566bf91e49bf0f93296d52f82c73d5ccf4072f9225bc6533dfb3f",
+                },
+            },
             ["15.1.0"] = "XLINGS_RES",
             ["13.3.0"] = "XLINGS_RES",
             ["11.5.0"] = "XLINGS_RES",
