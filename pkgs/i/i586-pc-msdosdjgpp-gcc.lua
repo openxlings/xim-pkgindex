@@ -1,10 +1,11 @@
 -- i586-pc-msdosdjgpp-gcc: DJGPP, the GNU toolchain for 32-bit DOS programs (GCC 12.2.0, binutils,
--- the DJGPP 2.05 C library), as github.com/andrewwutw/build-djgpp v3.4 builds it for each system.
+-- the DJGPP 2.05 C library), as github.com/andrewwutw/build-djgpp v3.4 builds it for each system,
+-- repacked without hard links (tools/res/build.sh i586-pc-msdosdjgpp-gcc).
 -- The name is mcpp's for a cross GCC payload, `<target>-gcc`: a row that states this target
 -- (`i586-pc-msdosdjgpp`) takes it as its toolchain's payload, and its frontends are
 -- `bin/i586-pc-msdosdjgpp-gcc` and `-g++`. A program it builds is a go32 DOS executable (MZ with
 -- COFF) that needs a DPMI host to run, which the package dosbox-staging carries with DOSBox.
--- GLOBAL is the upstream release; CN is the same bytes at gitcode.com/xlings-res.
+-- GLOBAL is github.com/xlings-res/i586-pc-msdosdjgpp-gcc; CN is the same bytes at gitcode.com/xlings-res.
 package = {
     spec = "2",
     homepage = "https://www.delorie.com/djgpp/",
@@ -33,30 +34,30 @@ package = {
             ["latest"] = { ref = "12.2.0" },
             ["12.2.0"] = {
                 url = {
-                    GLOBAL = "https://github.com/andrewwutw/build-djgpp/releases/download/v3.4/djgpp-linux64-gcc1220.tar.bz2",
-                    CN = "https://gitcode.com/xlings-res/i586-pc-msdosdjgpp-gcc/releases/download/12.2.0/djgpp-linux64-gcc1220.tar.bz2",
+                    GLOBAL = "https://github.com/xlings-res/i586-pc-msdosdjgpp-gcc/releases/download/12.2.0/i586-pc-msdosdjgpp-gcc-12.2.0-linux-x86_64.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/i586-pc-msdosdjgpp-gcc/releases/download/12.2.0/i586-pc-msdosdjgpp-gcc-12.2.0-linux-x86_64.tar.gz",
                 },
-                sha256 = "8464f17017d6ab1b2bb2df4ed82357b5bf692e6e2b7fee37e315638f3d505f00",
+                sha256 = "897ef56d2d2acc42f7196f1af60ac5eaa05679cb1e3da2b09017b276582ae6e6",
             },
         },
         macosx = {
             ["latest"] = { ref = "12.2.0" },
             ["12.2.0"] = {
                 url = {
-                    GLOBAL = "https://github.com/andrewwutw/build-djgpp/releases/download/v3.4/djgpp-osx-gcc1220.tar.bz2",
-                    CN = "https://gitcode.com/xlings-res/i586-pc-msdosdjgpp-gcc/releases/download/12.2.0/djgpp-osx-gcc1220.tar.bz2",
+                    GLOBAL = "https://github.com/xlings-res/i586-pc-msdosdjgpp-gcc/releases/download/12.2.0/i586-pc-msdosdjgpp-gcc-12.2.0-macosx-x86_64.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/i586-pc-msdosdjgpp-gcc/releases/download/12.2.0/i586-pc-msdosdjgpp-gcc-12.2.0-macosx-x86_64.tar.gz",
                 },
-                sha256 = "cf605786efe14166d32aede89c37e41bf1272178ae73a624e7e84761cca38549",
+                sha256 = "3cf5c02ce7efa31fa144c79f3e40a83b61c002530ce76b5a48f4d7e575c7d33e",
             },
         },
         windows = {
             ["latest"] = { ref = "12.2.0" },
             ["12.2.0"] = {
                 url = {
-                    GLOBAL = "https://github.com/andrewwutw/build-djgpp/releases/download/v3.4/djgpp-mingw-gcc1220-standalone.zip",
-                    CN = "https://gitcode.com/xlings-res/i586-pc-msdosdjgpp-gcc/releases/download/12.2.0/djgpp-mingw-gcc1220-standalone.zip",
+                    GLOBAL = "https://github.com/xlings-res/i586-pc-msdosdjgpp-gcc/releases/download/12.2.0/i586-pc-msdosdjgpp-gcc-12.2.0-windows-x86_64.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/i586-pc-msdosdjgpp-gcc/releases/download/12.2.0/i586-pc-msdosdjgpp-gcc-12.2.0-windows-x86_64.tar.gz",
                 },
-                sha256 = "6f88b531d216f4d92668c960b5cde9a829b5611e06d2c3e431041e33f01c1a52",
+                sha256 = "fd13d2ac306a326b731a6079e3465fbe0cbfce0dc13e04cd23ee40058b1b8f1a",
             },
         },
     },
@@ -76,12 +77,14 @@ end
 
 function config()
     local bindir = path.join(pkginfo.install_dir(), "bin")
-    -- The package name anchors the release (Spec D1); the programs bind to it.
-    xvm.add(package.name)
+    local release = package.name .. "@" .. pkginfo.version()
+    local exe = os.host() == "windows" and ".exe" or ""
+    -- The package's name is its C compiler (Spec D1); the other programs bind to it.
+    xvm.add(package.name, { bindir = bindir, alias = package.name .. exe })
     for _, prog in ipairs(package.programs) do
-        local opts = { bindir = bindir, binding = package.name .. "@" .. pkginfo.version() }
-        if os.host() == "windows" then opts.alias = prog .. ".exe" end
-        xvm.add(prog, opts)
+        if prog ~= package.name then
+            xvm.add(prog, { bindir = bindir, alias = prog .. exe, binding = release })
+        end
     end
     return true
 end
@@ -90,6 +93,5 @@ function uninstall()
     for _, prog in ipairs(package.programs) do
         xvm.remove(prog)
     end
-    xvm.remove(package.name)
     return true
 end

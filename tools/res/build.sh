@@ -27,6 +27,7 @@
 #   xsel          a static xsel (musl; libX11/xcb static)
 #   edk2-firmware the UEFI firmware qemu ships, decompressed (no build)
 #   dosbox-staging DOSBox Staging for each system, with CWSDPMI and its dirun profile (no build)
+#   i586-pc-msdosdjgpp-gcc DJGPP for each system, repacked without hard links (no build)
 #   qemu-system   static qemu-system-x86_64 and -aarch64 (musl; user networking)
 #   qemu-system-gl qemu-system-x86_64 with OpenGL (virglrenderer, egl-headless; glibc, dynamic)
 #   labwc-desktop the labwc desktop session, relocatable (musl loader and libraries inside)
@@ -750,6 +751,33 @@ dosbox-staging)
         file="$out/$what-$version-$sys.tar.gz"
         tar --owner=0 --group=0 --numeric-owner --hard-dereference -czf "$file" -C "$work" "$d"
         seal "$file"
+    done ;;
+i586-pc-msdosdjgpp-gcc)
+    # DJGPP (GCC, binutils, the DJGPP C library) as github.com/andrewwutw/build-djgpp
+    # builds it for each system, repacked: its archives hold hard links, which an
+    # xlings extraction makes with link(2). No build. The version is GCC's.
+    base="https://github.com/andrewwutw/build-djgpp/releases/download/v3.4"
+    for sys in linux-x86_64 macosx-x86_64 windows-x86_64; do
+        rm -rf "${work:?}/unpack"; mkdir -p "$work/unpack"
+        case "$sys" in
+            linux-x86_64)
+                source_of djgpp-linux64 "$version" "$base/djgpp-linux64-gcc${version//./}.tar.bz2" "$work/in.tar.bz2"
+                tar -xjf "$work/in.tar.bz2" -C "$work/unpack" ;;
+            macosx-x86_64)
+                source_of djgpp-osx "$version" "$base/djgpp-osx-gcc${version//./}.tar.bz2" "$work/in.tar.bz2"
+                tar -xjf "$work/in.tar.bz2" -C "$work/unpack" ;;
+            windows-x86_64)
+                source_of djgpp-mingw-standalone "$version" "$base/djgpp-mingw-gcc${version//./}-standalone.zip" "$work/in.zip"
+                unzip -q -o "$work/in.zip" -d "$work/unpack" ;;
+        esac
+        [[ -d "$work/unpack/djgpp/bin" ]] || die "$sys: no djgpp/bin"
+        printf '%s\n' "DJGPP as github.com/andrewwutw/build-djgpp v3.4 builds it for $sys (GCC $version, binutils, DJGPP 2.05), repacked without hard links; input digests in tools/res/inputs.txt" \
+            > "$work/unpack/djgpp/README.provenance"
+        file="$out/$what-$version-$sys.tar.gz"
+        tar --owner=0 --group=0 --numeric-owner --hard-dereference -czf "$file" -C "$work/unpack" djgpp
+        seal "$file"
+        python3 -c 'import sys, tarfile; sys.exit(any(m.islnk() for m in tarfile.open(sys.argv[1])))' "$file" \
+            || die "$file holds a hard link"
     done ;;
 bash|coreutils|openssl|binutils)
     v="${version%%-r[0-9]*}"   # <upstream>-rN: this index's Nth build of it; the payload keeps the name
