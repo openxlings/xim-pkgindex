@@ -3,7 +3,7 @@ package = {
     homepage = "https://www.freebsd.org/",
 
     name = "freebsd-disk",
-    description = "FreeBSD 14.5-RELEASE boot disk (x86_64 qcow2, zstd-compressed clusters, serial console) that a virtual-machine runner boots to run x86_64-freebsd artifacts",
+    description = "FreeBSD 14.5-RELEASE boot disk (x86_64 qcow2, zstd-compressed clusters, serial console) that a virtual-machine runner boots to run x86_64-freebsd artifacts (superseded by freebsd-disk-image, which carries the same image with its runner profile; this name remains for one cycle)",
 
     maintainers = {"https://github.com/xlings-res/freebsd-disk"},
     licenses = {"BSD-2-Clause", "BSD-3-Clause"},
