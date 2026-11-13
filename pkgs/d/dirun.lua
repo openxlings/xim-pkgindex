@@ -27,7 +27,17 @@ package = {
     xvm_enable = true,
     xpm = {
         linux = {
-            ["latest"] = { ref = "0.3.1" },
+            ["latest"] = { ref = "0.3.2" },
+            ["0.3.2"] = {
+                url = {
+                    GLOBAL = "https://github.com/Sunrisepeak/dirun/releases/download/v0.3.2/dirun-0.3.2-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/dirun/releases/download/v0.3.2/dirun-0.3.2-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    ["aarch64"] = "f0040e570248eb48e303d63e7ac85e7f7ca0ad96b0e35cd3824627fc1724005d",
+                    ["x86_64"] = "f0040e570248eb48e303d63e7ac85e7f7ca0ad96b0e35cd3824627fc1724005d",
+                },
+            },
             ["0.3.1"] = {
                 url = {
                     GLOBAL = "https://github.com/Sunrisepeak/dirun/releases/download/v0.3.1/dirun-0.3.1-openkal-bundle-all.tar.gz",
@@ -50,7 +60,17 @@ package = {
             },
         },
         macosx = {
-            ["latest"] = { ref = "0.3.1" },
+            ["latest"] = { ref = "0.3.2" },
+            ["0.3.2"] = {
+                url = {
+                    GLOBAL = "https://github.com/Sunrisepeak/dirun/releases/download/v0.3.2/dirun-0.3.2-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/dirun/releases/download/v0.3.2/dirun-0.3.2-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    ["aarch64"] = "f0040e570248eb48e303d63e7ac85e7f7ca0ad96b0e35cd3824627fc1724005d",
+                    ["x86_64"] = "f0040e570248eb48e303d63e7ac85e7f7ca0ad96b0e35cd3824627fc1724005d",
+                },
+            },
             ["0.3.1"] = {
                 url = {
                     GLOBAL = "https://github.com/Sunrisepeak/dirun/releases/download/v0.3.1/dirun-0.3.1-openkal-bundle-all.tar.gz",
@@ -73,7 +93,17 @@ package = {
             },
         },
         windows = {
-            ["latest"] = { ref = "0.3.1" },
+            ["latest"] = { ref = "0.3.2" },
+            ["0.3.2"] = {
+                url = {
+                    GLOBAL = "https://github.com/Sunrisepeak/dirun/releases/download/v0.3.2/dirun-0.3.2-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/dirun/releases/download/v0.3.2/dirun-0.3.2-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    ["aarch64"] = "f0040e570248eb48e303d63e7ac85e7f7ca0ad96b0e35cd3824627fc1724005d",
+                    ["x86_64"] = "f0040e570248eb48e303d63e7ac85e7f7ca0ad96b0e35cd3824627fc1724005d",
+                },
+            },
             ["0.3.1"] = {
                 url = {
                     GLOBAL = "https://github.com/Sunrisepeak/dirun/releases/download/v0.3.1/dirun-0.3.1-openkal-bundle-all.tar.gz",
