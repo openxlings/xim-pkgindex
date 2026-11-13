@@ -112,9 +112,11 @@ after  = "BdsDxe: starting [^\n]*\n"
 
 function install()
     local dir = pkginfo.install_dir()
-    -- The archive's one directory, edk2-firmware-<upstream version>, is the package.
-    local payload = os.dirs(path.join(path.directory(pkginfo.install_file()), "edk2-firmware-*"))[1]
-    if payload then
+    -- The archive's one directory, edk2-firmware-<upstream version>, is the package; a
+    -- revision (`-1') is the recipe's, not the archive's.
+    local upstream = pkginfo.version():gsub("%-%d+$", "")
+    local payload = path.join(path.directory(pkginfo.install_file()), "edk2-firmware-" .. upstream)
+    if os.isdir(payload) then
         os.tryrm(dir)
         os.mv(payload, dir)
     end
