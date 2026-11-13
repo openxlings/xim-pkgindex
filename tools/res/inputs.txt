@@ -27,6 +27,7 @@ openssl 3.1.5 6ae015467dabf0469b139ada93319327be24b98251ffaeceda0221848dc09262
 binutils 2.42 f6e4d41fd5fc778b06b7891457b3620da5ecea1006c6a4a41ae998109f85a800
 gcc 16.1.0 50efb4d94c3397aff3b0d61a5abd748b4dd31d9d3f2ab7be05b171d36a510f79
 gcc 16.2.0 e6738e29597f733270731aa90600f37ffdc045079dfc27ec7e8192cc81085c3e
+gcc 17.0.0-20261108 9cdb6db806b2c82a121c6e055e014de587c8c80ad08b1a85c50a9d06d95e208d
 # The sysroot gcc is configured against (what the x86_64 payload's was, at
 # the index's aarch64 glibc).
 gcc-sysroot-glibc 2.44.3

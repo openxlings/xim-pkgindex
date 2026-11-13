@@ -826,7 +826,21 @@ gcc)
     # with the same configure, against a sysroot xlings itself makes from the
     # index (glibc + linux-headers). The stage-0 compiler is the pinned
     # factory's; what ships is gcc built by it, verified below.
-    source_of gcc "$version" "https://ftpmirror.gnu.org/gnu/gcc/gcc-$version/gcc-$version.tar.xz" "$work/gcc.tar.xz"
+    # A RELEASE (16.2.0) is GNU's signed tarball; A TRUNK SNAPSHOT is written
+    # `<major>.0.0-<YYYYMMDD>` (17.0.0-20261108), which is what the snapshot's
+    # compiler reports of itself (`17.0.0 20261108 (experimental)`) and sorts
+    # below the major's first release (17.1.0). Upstream signs no snapshot: its
+    # digest in inputs.txt is the one measured when it was added.
+    if [[ "$version" =~ ^([0-9]+)\.0\.0-([0-9]{8})$ ]]; then
+        src="gcc-${BASH_REMATCH[1]}-${BASH_REMATCH[2]}"
+        url="https://gcc.gnu.org/pub/gcc/snapshots/${BASH_REMATCH[1]}-${BASH_REMATCH[2]}/$src.tar.xz"
+        reports="${version%-*} ${version#*-}"
+    else
+        src="gcc-$version"
+        url="https://ftpmirror.gnu.org/gnu/gcc/gcc-$version/gcc-$version.tar.xz"
+        reports="$version"
+    fi
+    source_of gcc "$version" "$url" "$work/gcc.tar.xz"
     xl="xlings-$XLINGS_CLIENT-linux-$arch.tar.gz"
     curl -fsSL --retry 3 -o "$work/$xl" "https://github.com/openxlings/xlings/releases/download/v$XLINGS_CLIENT/$xl"
     curl -fsSL --retry 3 -o "$work/$xl.sha256" "https://github.com/openxlings/xlings/releases/download/v$XLINGS_CLIENT/$xl.sha256"
@@ -843,11 +857,11 @@ gcc)
         && test -f \$S/usr/include/stdio.h && test -d \$S/usr/include/linux \
         && { [ -e \$S/lib64 ] || ln -s lib \$S/lib64; } && mkdir -p \$S/usr \
         && { [ -e \$S/usr/lib ] || ln -s ../lib \$S/usr/lib; } && { [ -e \$S/usr/lib64 ] || ln -s ../lib \$S/usr/lib64; } \
-        && tar -xJf gcc.tar.xz && cd gcc-$version \
+        && tar -xJf gcc.tar.xz && cd $src \
         && sed -i 's/--no-verbose/ /; s#ftp://gcc.gnu.org#https://gcc.gnu.org#' contrib/download_prerequisites \
         && ./contrib/download_prerequisites >/w/prereq.log 2>&1 \
         && mkdir /w/build && cd /w/build \
-        && /w/gcc-$version/configure --with-pkgversion=xlings-fromsource \
+        && /w/$src/configure --with-pkgversion=xlings-fromsource \
              --with-build-sysroot=\$S --with-sysroot=\$S --prefix=/w/$d \
              --enable-languages=c,c++ --disable-multilib --disable-bootstrap \
              --disable-werror --disable-lto --enable-threads=posix \
@@ -863,11 +877,11 @@ gcc)
       || { for f in xlings-install sysroot prereq configure make install; do
                [[ -f "$work/$f.log" ]] && { log "--- $f.log"; tail -40 "$work/$f.log" >&2; }; done; die "gcc build failed"; }
     grep -q "c++23 ok 10" "$work/cxx.out" || die "the C++23 check did not print what it should"
-    "$work/$d/bin/gcc" --version | head -1 | grep -q "$version" || die "gcc does not report $version"
+    "$work/$d/bin/gcc" --version | head -1 | grep -qF "$reports" || die "gcc does not report $reports"
     [[ -d "$work/$d/lib64" && -f "$work/$d/lib64/libstdc++.so.6" ]] || die "no lib64/libstdc++.so.6"
     GLIBC_ELFS="$(find "$work/$d/bin" "$work/$d/libexec" -type f -exec sh -c 'file -b "$1" | grep -q "^ELF.*dynamically linked" && echo "$1"' _ {} \;)"
     glibc_only libstdc++.so.6 libgcc_s.so.1 libzstd.so.1 libz.so.1
-    provenance "$d" "gcc $version (ftpmirror.gnu.org, sha256 $(input gcc "$version")) configured as fromsource:gcc (c,c++; no multilib, no bootstrap, no LTO; libsanitizer), $triple, against a sysroot of xim:glibc@$glibc_v + xim:linux-headers@$headers_v made by xlings $XLINGS_CLIENT; stage 0 is Debian 12's gcc; a C program and a C++23 program using import std built and ran"
+    provenance "$d" "gcc $version (${url%%/gcc-*}, sha256 $(input gcc "$version")) configured as fromsource:gcc (c,c++; no multilib, no bootstrap, no LTO; libsanitizer), $triple, against a sysroot of xim:glibc@$glibc_v + xim:linux-headers@$headers_v made by xlings $XLINGS_CLIENT; stage 0 is Debian 12's gcc; a C program and a C++23 program using import std built and ran"
     pack "$d" ;;
 labwc-desktop)
     # The traditional Luban desktop (xlings: Luban OS architecture design
