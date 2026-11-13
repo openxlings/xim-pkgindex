@@ -12,9 +12,12 @@ these names; the class serves any consumer that boots an image.
 A disk-image package carries **the bytes of a system, prepared for an
 emulator**: the publisher's official media, assembled into a bootable image
 with a serial console, published on both resource servers with one sha for
-both. It is an asset, not a mechanism: the emulator, the console
-conversation and the exit-code convention belong to the runner that boots
-it, never to the package.
+both. It is an asset, not a mechanism: the emulator and the exit-code convention
+belong to the runner that boots it, never to the package. What the image
+itself answers --- its prompts, its shell's quoting, where a disk of files is
+mounted --- is a fact of the image, and the package may carry it as the runner's
+data: `dirun.toml` beside the image, the profile dirun boots it by
+(`dirun --profile {pkg:<system>-disk-image}/dirun.toml -- {}`).
 
 ## Naming
 

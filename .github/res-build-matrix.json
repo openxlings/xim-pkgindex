@@ -35,6 +35,26 @@
     "arch": "aarch64"
   },
   {
+    "what": "gcc",
+    "version": "16.2.0",
+    "arch": "x86_64"
+  },
+  {
+    "what": "gcc",
+    "version": "16.2.0",
+    "arch": "aarch64"
+  },
+  {
+    "what": "gcc",
+    "version": "17.0.0-20261108",
+    "arch": "x86_64"
+  },
+  {
+    "what": "gcc",
+    "version": "17.0.0-20261108",
+    "arch": "aarch64"
+  },
+  {
     "what": "binutils",
     "version": "2.42",
     "arch": "aarch64"

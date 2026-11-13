@@ -3,7 +3,7 @@ package = {
     homepage = "https://www.freebsd.org/",
 
     name = "freebsd-vm",
-    description = "FreeBSD 14.5-RELEASE base VM image (x86_64, qcow2 with zstd-compressed clusters, serial console) for running x86_64-freebsd artifacts under qemu",
+    description = "FreeBSD 14.5-RELEASE base VM image (x86_64, qcow2 with zstd-compressed clusters, serial console) for running x86_64-freebsd artifacts under qemu (superseded by freebsd-disk-image, which carries the same image with its runner profile; this name remains for one cycle)",
 
     maintainers = {"https://github.com/xlings-res/freebsd-vm"},
     licenses = {"BSD-2-Clause", "BSD-3-Clause"},

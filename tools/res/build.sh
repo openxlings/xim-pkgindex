@@ -26,6 +26,8 @@
 #   wl-clipboard  static wl-copy / wl-paste (musl; libwayland built static)
 #   xsel          a static xsel (musl; libX11/xcb static)
 #   edk2-firmware the UEFI firmware qemu ships, decompressed (no build)
+#   dosbox-staging DOSBox Staging for each system, with CWSDPMI and its dirun profile (no build)
+#   i586-pc-msdosdjgpp-gcc DJGPP for each system, repacked without hard links (no build)
 #   qemu-system   static qemu-system-x86_64 and -aarch64 (musl; user networking)
 #   qemu-system-gl qemu-system-x86_64 with OpenGL (virglrenderer, egl-headless; glibc, dynamic)
 #   labwc-desktop the labwc desktop session, relocatable (musl loader and libraries inside)
@@ -715,6 +717,68 @@ edk2-firmware)
     done
     provenance "$d" "UEFI firmware (EDK II) as qemu $version ships it in pc-bios/, decompressed; digests of the .bz2 inputs in tools/res/inputs.txt"
     pack "$d" ;;
+dosbox-staging)
+    # DOSBox Staging as its project releases it for each system, with CWSDPMI (the DPMI host a
+    # DJGPP program needs, DJGPP's v2misc) and the dirun profile that runs a DOS program by it,
+    # beside it: one archive per system, its one directory dosbox-staging-<version>. No build.
+    base="https://github.com/dosbox-staging/dosbox-staging/releases/download/v$version"
+    source_of csdpmi 7b "http://www.delorie.com/pub/djgpp/current/v2misc/csdpmi7b.zip" "$work/csdpmi7b.zip"
+    unzip -q -o "$work/csdpmi7b.zip" bin/CWSDPMI.EXE -d "$work/cws"
+    for sys in linux-x86_64 macosx-universal windows-x86_64; do
+        d="dosbox-staging-$version"
+        rm -rf "${work:?}/$d" "$work/unpack"; mkdir -p "$work/$d/dosbox" "$work/unpack"
+        case "$sys" in
+            linux-x86_64)
+                source_of dosbox-staging-linux-x86_64 "$version" "$base/dosbox-staging-linux-x86_64-v$version.tar.xz" "$work/in.tar.xz"
+                tar -xJf "$work/in.tar.xz" -C "$work/unpack"
+                cp -R "$work"/unpack/*/. "$work/$d/dosbox/"
+                emulator="dosbox/dosbox" ;;
+            macosx-universal)
+                source_of dosbox-staging-macos "$version" "$base/dosbox-staging-macOS-v$version.dmg" "$work/in.dmg"
+                7z x -y -o"$work/unpack" "$work/in.dmg" "DOSBox Staging.app/*" >/dev/null
+                cp -R "$work/unpack/DOSBox Staging.app" "$work/$d/dosbox/"
+                emulator="dosbox/DOSBox Staging.app/Contents/MacOS/dosbox" ;;
+            windows-x86_64)
+                source_of dosbox-staging-windows-x64 "$version" "$base/dosbox-staging-windows-x64-v$version.zip" "$work/in.zip"
+                unzip -q -o "$work/in.zip" -d "$work/unpack"
+                cp -R "$work"/unpack/*/. "$work/$d/dosbox/"
+                emulator="dosbox/dosbox.exe" ;;
+        esac
+        [[ -f "$work/$d/$emulator" ]] || die "$sys: no emulator at $emulator"
+        cp "$work/cws/bin/CWSDPMI.EXE" "$work/$d/"
+        sed "s|@EMULATOR@|$emulator|" "$here/dosbox-staging/dirun.toml.in" > "$work/$d/dirun.toml"
+        provenance "$d" "DOSBox Staging $version as its project releases it for $sys (github.com/dosbox-staging/dosbox-staging, GPL-2.0-or-later), CWSDPMI r7 (www.delorie.com/pub/djgpp/current/v2misc/csdpmi7b.zip, its own license: free redistribution with notice), and dirun.toml, the dirun profile that runs a DOS program by it; input digests in tools/res/inputs.txt"
+        file="$out/$what-$version-$sys.tar.gz"
+        tar --owner=0 --group=0 --numeric-owner --hard-dereference -czf "$file" -C "$work" "$d"
+        seal "$file"
+    done ;;
+i586-pc-msdosdjgpp-gcc)
+    # DJGPP (GCC, binutils, the DJGPP C library) as github.com/andrewwutw/build-djgpp
+    # builds it for each system, repacked: its archives hold hard links, which an
+    # xlings extraction makes with link(2). No build. The version is GCC's.
+    base="https://github.com/andrewwutw/build-djgpp/releases/download/v3.4"
+    for sys in linux-x86_64 macosx-x86_64 windows-x86_64; do
+        rm -rf "${work:?}/unpack"; mkdir -p "$work/unpack"
+        case "$sys" in
+            linux-x86_64)
+                source_of djgpp-linux64 "$version" "$base/djgpp-linux64-gcc${version//./}.tar.bz2" "$work/in.tar.bz2"
+                tar -xjf "$work/in.tar.bz2" -C "$work/unpack" ;;
+            macosx-x86_64)
+                source_of djgpp-osx "$version" "$base/djgpp-osx-gcc${version//./}.tar.bz2" "$work/in.tar.bz2"
+                tar -xjf "$work/in.tar.bz2" -C "$work/unpack" ;;
+            windows-x86_64)
+                source_of djgpp-mingw-standalone "$version" "$base/djgpp-mingw-gcc${version//./}-standalone.zip" "$work/in.zip"
+                unzip -q -o "$work/in.zip" -d "$work/unpack" ;;
+        esac
+        [[ -d "$work/unpack/djgpp/bin" ]] || die "$sys: no djgpp/bin"
+        printf '%s\n' "DJGPP as github.com/andrewwutw/build-djgpp v3.4 builds it for $sys (GCC $version, binutils, DJGPP 2.05), repacked without hard links; input digests in tools/res/inputs.txt" \
+            > "$work/unpack/djgpp/README.provenance"
+        file="$out/$what-$version-$sys.tar.gz"
+        tar --owner=0 --group=0 --numeric-owner --hard-dereference -czf "$file" -C "$work/unpack" djgpp
+        seal "$file"
+        python3 -c 'import sys, tarfile; sys.exit(any(m.islnk() for m in tarfile.open(sys.argv[1])))' "$file" \
+            || die "$file holds a hard link"
+    done ;;
 bash|coreutils|openssl|binutils)
     v="${version%%-r[0-9]*}"   # <upstream>-rN: this index's Nth build of it; the payload keeps the name
     case "$what" in
@@ -762,7 +826,21 @@ gcc)
     # with the same configure, against a sysroot xlings itself makes from the
     # index (glibc + linux-headers). The stage-0 compiler is the pinned
     # factory's; what ships is gcc built by it, verified below.
-    source_of gcc "$version" "https://ftpmirror.gnu.org/gnu/gcc/gcc-$version/gcc-$version.tar.xz" "$work/gcc.tar.xz"
+    # A RELEASE (16.2.0) is GNU's signed tarball; A TRUNK SNAPSHOT is written
+    # `<major>.0.0-<YYYYMMDD>` (17.0.0-20261108), which is what the snapshot's
+    # compiler reports of itself (`17.0.0 20261108 (experimental)`) and sorts
+    # below the major's first release (17.1.0). Upstream signs no snapshot: its
+    # digest in inputs.txt is the one measured when it was added.
+    if [[ "$version" =~ ^([0-9]+)\.0\.0-([0-9]{8})$ ]]; then
+        src="gcc-${BASH_REMATCH[1]}-${BASH_REMATCH[2]}"
+        url="https://gcc.gnu.org/pub/gcc/snapshots/${BASH_REMATCH[1]}-${BASH_REMATCH[2]}/$src.tar.xz"
+        reports="${version%-*} ${version#*-}"
+    else
+        src="gcc-$version"
+        url="https://ftpmirror.gnu.org/gnu/gcc/gcc-$version/gcc-$version.tar.xz"
+        reports="$version"
+    fi
+    source_of gcc "$version" "$url" "$work/gcc.tar.xz"
     xl="xlings-$XLINGS_CLIENT-linux-$arch.tar.gz"
     curl -fsSL --retry 3 -o "$work/$xl" "https://github.com/openxlings/xlings/releases/download/v$XLINGS_CLIENT/$xl"
     curl -fsSL --retry 3 -o "$work/$xl.sha256" "https://github.com/openxlings/xlings/releases/download/v$XLINGS_CLIENT/$xl.sha256"
@@ -779,11 +857,11 @@ gcc)
         && test -f \$S/usr/include/stdio.h && test -d \$S/usr/include/linux \
         && { [ -e \$S/lib64 ] || ln -s lib \$S/lib64; } && mkdir -p \$S/usr \
         && { [ -e \$S/usr/lib ] || ln -s ../lib \$S/usr/lib; } && { [ -e \$S/usr/lib64 ] || ln -s ../lib \$S/usr/lib64; } \
-        && tar -xJf gcc.tar.xz && cd gcc-$version \
+        && tar -xJf gcc.tar.xz && cd $src \
         && sed -i 's/--no-verbose/ /; s#ftp://gcc.gnu.org#https://gcc.gnu.org#' contrib/download_prerequisites \
         && ./contrib/download_prerequisites >/w/prereq.log 2>&1 \
         && mkdir /w/build && cd /w/build \
-        && /w/gcc-$version/configure --with-pkgversion=xlings-fromsource \
+        && /w/$src/configure --with-pkgversion=xlings-fromsource \
              --with-build-sysroot=\$S --with-sysroot=\$S --prefix=/w/$d \
              --enable-languages=c,c++ --disable-multilib --disable-bootstrap \
              --disable-werror --disable-lto --enable-threads=posix \
@@ -799,11 +877,11 @@ gcc)
       || { for f in xlings-install sysroot prereq configure make install; do
                [[ -f "$work/$f.log" ]] && { log "--- $f.log"; tail -40 "$work/$f.log" >&2; }; done; die "gcc build failed"; }
     grep -q "c++23 ok 10" "$work/cxx.out" || die "the C++23 check did not print what it should"
-    "$work/$d/bin/gcc" --version | head -1 | grep -q "$version" || die "gcc does not report $version"
+    "$work/$d/bin/gcc" --version | head -1 | grep -qF "$reports" || die "gcc does not report $reports"
     [[ -d "$work/$d/lib64" && -f "$work/$d/lib64/libstdc++.so.6" ]] || die "no lib64/libstdc++.so.6"
     GLIBC_ELFS="$(find "$work/$d/bin" "$work/$d/libexec" -type f -exec sh -c 'file -b "$1" | grep -q "^ELF.*dynamically linked" && echo "$1"' _ {} \;)"
     glibc_only libstdc++.so.6 libgcc_s.so.1 libzstd.so.1 libz.so.1
-    provenance "$d" "gcc $version (ftpmirror.gnu.org, sha256 $(input gcc "$version")) configured as fromsource:gcc (c,c++; no multilib, no bootstrap, no LTO; libsanitizer), $triple, against a sysroot of xim:glibc@$glibc_v + xim:linux-headers@$headers_v made by xlings $XLINGS_CLIENT; stage 0 is Debian 12's gcc; a C program and a C++23 program using import std built and ran"
+    provenance "$d" "gcc $version (${url%%/gcc-*}, sha256 $(input gcc "$version")) configured as fromsource:gcc (c,c++; no multilib, no bootstrap, no LTO; libsanitizer), $triple, against a sysroot of xim:glibc@$glibc_v + xim:linux-headers@$headers_v made by xlings $XLINGS_CLIENT; stage 0 is Debian 12's gcc; a C program and a C++23 program using import std built and ran"
     pack "$d" ;;
 labwc-desktop)
     # The traditional Luban desktop (xlings: Luban OS architecture design
