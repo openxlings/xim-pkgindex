@@ -191,10 +191,24 @@ function install()
             end
             os.mv(src, path.join(dir, entry))
         end
+        -- ⚠️ AND `lib` WHERE THE ARCHIVE HAS ONE. The darwin archives bundle
+        -- eighteen libraries there, reached through `@loader_path/../lib`
+        -- (see the macosx table). Moving only `bin` and `share` left the
+        -- emulator without them, and it ended at load on every macOS install:
+        --     Library not loaded: @loader_path/../lib/libgnutls.30.dylib
+        -- (measured 2026-11-14, openkal-uefi-platform CI on macos-15).
+        local lib = path.join(from, "lib")
+        if os.isdir(lib) then
+            os.mv(lib, path.join(dir, "lib"))
+        end
     end
 
     if not os.isfile(path.join(dir, "bin", exe_name())) then
         raise("qemu-x86 payload is missing bin/" .. exe_name())
+    end
+    if is_host("macosx") and not os.isdir(path.join(dir, "lib")) then
+        raise("qemu-x86 payload is missing lib/ -- the emulator links its bundled libraries "
+              .. "through @loader_path/../lib")
     end
 
     -- ⚠️ ASSERT THE FIRMWARE, NOT JUST THE EXECUTABLE, AND ASSERT IT HERE.
