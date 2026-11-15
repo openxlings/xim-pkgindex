@@ -1,9 +1,11 @@
 # A DOS program run by DOSBox Staging with no display (dirun's payload form). The package
-# dosbox-staging installs this file beside the emulator and CWSDPMI, the DPMI host a DJGPP program
-# needs. The program is placed as C:\PROG.EXE beside the DPMI host; a launcher runs it with its
-# arguments and writes its output and its status into the directory, because the emulator's own
-# status is not the program's and its command interpreter does not expand %ERRORLEVEL%: the status
-# is read back one decimal digit at a time with `if errorlevel', each test below 256.
+# dosbox-staging installs this file beside the emulator, CWSDPMI (the DPMI host a DJGPP program
+# needs) and REDIR. The program is placed as C:\PROG.EXE beside them; a launcher runs it with its
+# arguments through REDIR, which writes its output and its standard error to two files of the
+# directory (the command interpreter has no `2>'; dirun 0.4.0 reads `stderr-file'), and writes its
+# status there too, because the emulator's own status is not the program's and its command
+# interpreter does not expand %ERRORLEVEL%: the status is read back one decimal digit at a time with
+# `if errorlevel', each test below 256. REDIR exits with the program's status (measured: 213).
 name = "dosbox-staging"
 
 [payload]
@@ -13,13 +15,14 @@ place       = "PROG.EXE"
 status      = "file"
 status-file = "RC.TXT"
 output-file = "OUT.TXT"
+stderr-file = "ERR.TXT"
 env         = { SDL_VIDEODRIVER = "dummy", SDL_AUDIODRIVER = "dummy" }
 emulator    = "@EMULATOR@"
-beside      = ["CWSDPMI.EXE"]
+beside      = ["CWSDPMI.EXE", "REDIR.EXE"]
 
 [payload.files]
 "RUN.BAT" = """@echo off\r
-PROG.EXE {args} > OUT.TXT\r
+REDIR.EXE -o OUT.TXT -e ERR.TXT PROG.EXE {args}\r
 set H=\r
 set T=\r
 set U=0\r

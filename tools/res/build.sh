@@ -719,35 +719,42 @@ edk2-firmware)
     pack "$d" ;;
 dosbox-staging)
     # DOSBox Staging as its project releases it for each system, with CWSDPMI (the DPMI host a
-    # DJGPP program needs, DJGPP's v2misc) and the dirun profile that runs a DOS program by it,
-    # beside it: one archive per system, its one directory dosbox-staging-<version>. No build.
-    base="https://github.com/dosbox-staging/dosbox-staging/releases/download/v$version"
+    # DJGPP program needs, DJGPP's v2misc), REDIR (DJGPP's djdev: a program's output and its
+    # standard error to two files, its status kept; the emulator's command interpreter has no
+    # `2>') and the dirun profile that runs a DOS program by them, beside it: one archive per
+    # system, its one directory dosbox-staging-<version>. No build. A revision (`-2') is the
+    # archive's; the emulator is the upstream version's.
+    upstream=${version%%-*}
+    base="https://github.com/dosbox-staging/dosbox-staging/releases/download/v$upstream"
     source_of csdpmi 7b "http://www.delorie.com/pub/djgpp/current/v2misc/csdpmi7b.zip" "$work/csdpmi7b.zip"
     unzip -q -o "$work/csdpmi7b.zip" bin/CWSDPMI.EXE -d "$work/cws"
+    source_of djdev 2.05 "http://www.delorie.com/pub/djgpp/current/v2/djdev205.zip" "$work/djdev205.zip"
+    unzip -q -o "$work/djdev205.zip" bin/redir.exe -d "$work/djdev"
     for sys in linux-x86_64 macosx-universal windows-x86_64; do
         d="dosbox-staging-$version"
         rm -rf "${work:?}/$d" "$work/unpack"; mkdir -p "$work/$d/dosbox" "$work/unpack"
         case "$sys" in
             linux-x86_64)
-                source_of dosbox-staging-linux-x86_64 "$version" "$base/dosbox-staging-linux-x86_64-v$version.tar.xz" "$work/in.tar.xz"
+                source_of dosbox-staging-linux-x86_64 "$upstream" "$base/dosbox-staging-linux-x86_64-v$upstream.tar.xz" "$work/in.tar.xz"
                 tar -xJf "$work/in.tar.xz" -C "$work/unpack"
                 cp -R "$work"/unpack/*/. "$work/$d/dosbox/"
                 emulator="dosbox/dosbox" ;;
             macosx-universal)
-                source_of dosbox-staging-macos "$version" "$base/dosbox-staging-macOS-v$version.dmg" "$work/in.dmg"
+                source_of dosbox-staging-macos "$upstream" "$base/dosbox-staging-macOS-v$upstream.dmg" "$work/in.dmg"
                 7z x -y -o"$work/unpack" "$work/in.dmg" "DOSBox Staging.app/*" >/dev/null
                 cp -R "$work/unpack/DOSBox Staging.app" "$work/$d/dosbox/"
                 emulator="dosbox/DOSBox Staging.app/Contents/MacOS/dosbox" ;;
             windows-x86_64)
-                source_of dosbox-staging-windows-x64 "$version" "$base/dosbox-staging-windows-x64-v$version.zip" "$work/in.zip"
+                source_of dosbox-staging-windows-x64 "$upstream" "$base/dosbox-staging-windows-x64-v$upstream.zip" "$work/in.zip"
                 unzip -q -o "$work/in.zip" -d "$work/unpack"
                 cp -R "$work"/unpack/*/. "$work/$d/dosbox/"
                 emulator="dosbox/dosbox.exe" ;;
         esac
         [[ -f "$work/$d/$emulator" ]] || die "$sys: no emulator at $emulator"
         cp "$work/cws/bin/CWSDPMI.EXE" "$work/$d/"
+        cp "$work/djdev/bin/redir.exe" "$work/$d/REDIR.EXE"
         sed "s|@EMULATOR@|$emulator|" "$here/dosbox-staging/dirun.toml.in" > "$work/$d/dirun.toml"
-        provenance "$d" "DOSBox Staging $version as its project releases it for $sys (github.com/dosbox-staging/dosbox-staging, GPL-2.0-or-later), CWSDPMI r7 (www.delorie.com/pub/djgpp/current/v2misc/csdpmi7b.zip, its own license: free redistribution with notice), and dirun.toml, the dirun profile that runs a DOS program by it; input digests in tools/res/inputs.txt"
+        provenance "$d" "DOSBox Staging $upstream as its project releases it for $sys (github.com/dosbox-staging/dosbox-staging, GPL-2.0-or-later), CWSDPMI r7 (www.delorie.com/pub/djgpp/current/v2misc/csdpmi7b.zip, its own license: free redistribution with notice), REDIR of DJGPP 2.05 (www.delorie.com/pub/djgpp/current/v2/djdev205.zip, GPL-2.0-or-later with DJGPP's exception), and dirun.toml, the dirun profile that runs a DOS program by them; input digests in tools/res/inputs.txt"
         file="$out/$what-$version-$sys.tar.gz"
         tar --owner=0 --group=0 --numeric-owner --hard-dereference -czf "$file" -C "$work" "$d"
         seal "$file"
