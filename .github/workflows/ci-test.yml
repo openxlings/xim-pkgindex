@@ -54,6 +54,9 @@ jobs:
         shell: bash
         env:
           EDITED: ${{ matrix.edited }}
+          # A registration is read from the SubOS the job installed into, as
+          # autoupdate-ci does (#1034): a fresh home has no xvm CLI.
+          XLINGS_TEST_SUBOS: default
         run: |
           python -m pip install -q pytest pyyaml
           python .github/scripts/recipe-tests.py $EDITED
