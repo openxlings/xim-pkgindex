@@ -37,7 +37,14 @@ package = {
         linux = {
             -- Written by xlings' release (openxlings/xlings tools/bump_index.py):
             -- each version an XLINGS_RES entry with its sha256, and latest.
-            ["latest"] = { ref = "2026.10.26.1" },
+            ["latest"] = { ref = "2026.11.16.1" },
+            ["2026.11.16.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "fc43864dc797e77c7b660b03c2e3aefbff442720e131a84e733a132bf4e19b0b",
+                    x86_64 = "7978b3285b39c349caec386a7b2c35582883815217113415985e52df02aecb32",
+                },
+            },
             ["2026.10.26.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -1043,7 +1050,13 @@ package = {
         macosx = {
             -- Written by xlings' release (openxlings/xlings tools/bump_index.py):
             -- each version an XLINGS_RES entry with its sha256, and latest.
-            ["latest"] = { ref = "2026.10.26.1" },
+            ["latest"] = { ref = "2026.11.16.1" },
+            ["2026.11.16.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "73110ee8d71f9c9625b7e9e61a00e98a7af283003e736782b2c7245c54cf2154",
+                },
+            },
             ["2026.10.26.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -1927,7 +1940,13 @@ package = {
         windows = {
             -- Written by xlings' release (openxlings/xlings tools/bump_index.py):
             -- each version an XLINGS_RES entry with its sha256, and latest.
-            ["latest"] = { ref = "2026.10.26.1" },
+            ["latest"] = { ref = "2026.11.16.1" },
+            ["2026.11.16.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "97931ec3b274c76fcf1013accfe751ffd3bbe4fd38188ec01f8564611205174b",
+                },
+            },
             ["2026.10.26.1"] = {
                 url = "XLINGS_RES",
                 sha256 = {
