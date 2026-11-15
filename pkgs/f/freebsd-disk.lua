@@ -14,7 +14,10 @@ package = {
     -- Host arches, not target ones: the disk boots under qemu-system-x86_64
     -- wherever that runs.
     archs = {"x86_64", "aarch64"},
-    status = "stable",
+    -- Deprecated (2026-11-15): freebsd-disk-image carries the same image with
+    -- the profile its runner boots it by, and this name remained for one cycle.
+    -- Kept, as every published descriptor is.
+    status = "deprecated",
     categories = {"runner", "freebsd"},
     keywords = {"freebsd", "disk", "qcow2", "runner", "mcpp"},
 

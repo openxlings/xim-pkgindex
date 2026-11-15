@@ -3,8 +3,8 @@
 --
 -- The image is the bytes of the earlier package `freebsd-disk` (The FreeBSD
 -- Project's 14.5-RELEASE, installed from the official installer disc, qcow2
--- with zstd-compressed clusters), the same archive and sha; `freebsd-disk` and
--- `freebsd-vm` remain for one cycle and name this package as their successor.
+-- with zstd-compressed clusters), the same archive and sha. `freebsd-disk` and
+-- `freebsd-vm`, which remained for one cycle, are deprecated (2026-11-15).
 --
 -- The profile (`dirun.toml`, beside the image) is the image's description as
 -- data: the loader's menu is left for its prompt and the console moved to the
@@ -14,8 +14,10 @@
 --
 --     dirun --profile {pkg:freebsd-disk-image}/dirun.toml -- {}
 --
--- The image is of the host's architecture, which boots it with the host's
--- acceleration (KVM, HVF); x86_64 is published.
+-- The image is the x86_64 guest, booted by qemu-system-x86_64 with the host's
+-- acceleration where the host is x86_64. The arm64 guest is the package
+-- aarch64-freebsd-disk-image, named by the guest's architecture as the
+-- sysroots are.
 package = {
     spec = "2",
     homepage = "https://www.freebsd.org/",
