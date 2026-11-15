@@ -295,13 +295,6 @@ class TestRegistrations:
         assert revisions and min(revisions) >= 2
 
 
-class TestLifecycle:
-    @pytest.mark.lifecycle
-    @skip_if_not('linux')
-    def test_install(self):
-        assert_install_succeeds(PKG)
-
-
 def _subos_dir():
     base = Path(xlings_home()) / "subos"
     for name in (os.environ.get("XLINGS_TEST_SUBOS"), "current", "default"):
@@ -317,25 +310,28 @@ int main(int c, char** v) { printf("%ld\n", strtol(c > 1 ? v[1] : "42", 0, 10));
 """
 
 
-class TestCoexistsWithGlibc:
-    """glibc's gcc and musl in one home, musl's group activated last: `cc`
-    still links against glibc, and musl's files are where a musl build reads
-    them."""
+@pytest.fixture(scope="module")
+def subos():
+    """gcc (glibc) first, then musl, as the failure was reported; then musl's
+    group activated explicitly, which is what installing musl does."""
+    ok, out = XlingsClient.install("xim:gcc", timeout=1800)
+    assert ok, f"gcc 安装失败: {out[-400:]}"
+    ok, out = XlingsClient.install(under_test(PKG), timeout=600)
+    assert ok, f"musl 安装失败: {out[-400:]}"
+    subos = _subos_dir()
+    workspace = json.loads((subos / ".xlings.json").read_text())["workspace"]
+    version = workspace["musl"]["active"]
+    code = subprocess.call(["bash", "-l", "-c", f"xlings use musl {version}"],
+                           stdin=subprocess.DEVNULL)
+    assert code == 0, f"xlings use musl {version} failed"
+    return subos
 
-    @pytest.fixture(scope="class")
-    def subos(self):
-        ok, out = XlingsClient.install("xim:gcc", timeout=1800)
-        assert ok, f"gcc 安装失败: {out[-400:]}"
-        ok, out = XlingsClient.install(under_test(PKG), timeout=600)
-        assert ok, f"musl 安装失败: {out[-400:]}"
-        subos = _subos_dir()
-        workspace = json.loads((subos / ".xlings.json").read_text())["workspace"]
-        version = workspace["musl"]["active"]
-        # What `xlings install musl` does after glibc is there, explicitly.
-        code = subprocess.call(["bash", "-l", "-c", f"xlings use musl {version}"],
-                               stdin=subprocess.DEVNULL)
-        assert code == 0, f"xlings use musl {version} failed"
-        return subos
+
+class TestCoexistsWithGlibc:
+    """glibc's gcc and musl in one home: `cc` still links against glibc, and
+    musl's files are where a musl build reads them.
+
+    Before TestLifecycle on purpose: gcc goes into a home without musl."""
 
     @staticmethod
     def _run(subos, tmp_path, *args):
@@ -388,3 +384,10 @@ class TestCoexistsWithGlibc:
             assert r.returncode == 0, f"{exe}: " + r.stdout + r.stderr
             r = self._run(subos, tmp_path, f"./{exe}", "9")
             assert r.returncode == 0 and r.stdout.strip() == "9", f"{exe}: " + r.stdout + r.stderr
+
+
+class TestLifecycle:
+    @pytest.mark.lifecycle
+    @skip_if_not('linux')
+    def test_install(self):
+        assert_install_succeeds(PKG)
