@@ -32,13 +32,21 @@ package = {
     -- 0.5.3 enters an image in its convention's floating-point state
     -- (openkal SPEC 12.2; on Windows a thread began with the x87 at double
     -- precision, under which an image's C library read decimal numbers otherwise).
+    -- 0.6.4 names a target by its uname and normalises an image's path (`//`,
+    -- `..`), the version openkal-platform 0.28.1 pins.
     xpm = {
         linux = {
             source = {
                 GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/${version}/okrun-${version}-linux-${arch}.zip",
                 CN = "https://gitcode.com/xlings-res/okrun/releases/download/${version}/okrun-${version}-linux-${arch}.zip",
             },
-            ["latest"] = { ref = "0.6.2" },
+            ["latest"] = { ref = "0.6.4" },
+            ["0.6.4"] = {
+                sha256 = {
+                    ["aarch64"] = "d6f66be8684d59e217673fdeb981181525115d49750a3ec1a76a13c47b8f5b9f",
+                    ["x86_64"] = "a1d7f166410a04b9cccebd37970c0b213a350abe4d7293cdcdf57dbb01929de9",
+                },
+            },
             ["0.6.2"] = {
                 url = {
                     GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/0.6.2/okrun-0.6.2-linux-${arch}.zip",
@@ -143,7 +151,12 @@ package = {
                 GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/${version}/okrun-${version}-macos-${arch}.zip",
                 CN = "https://gitcode.com/xlings-res/okrun/releases/download/${version}/okrun-${version}-macos-${arch}.zip",
             },
-            ["latest"] = { ref = "0.6.2" },
+            ["latest"] = { ref = "0.6.4" },
+            ["0.6.4"] = {
+                sha256 = {
+                    ["aarch64"] = "898681454ae1bff3ddb91a1e8f16f636e42a7078eb02e690cb4d38cc80ef2f57",
+                },
+            },
             ["0.6.2"] = {
                 url = {
                     GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/0.6.2/okrun-0.6.2-macos-${arch}.zip",
@@ -233,7 +246,12 @@ package = {
                 GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/${version}/okrun-${version}-windows-${arch}.zip",
                 CN = "https://gitcode.com/xlings-res/okrun/releases/download/${version}/okrun-${version}-windows-${arch}.zip",
             },
-            ["latest"] = { ref = "0.6.2" },
+            ["latest"] = { ref = "0.6.4" },
+            ["0.6.4"] = {
+                sha256 = {
+                    ["x86_64"] = "f43477b46b83436af7850d7c4505b542b1cc643a5193de8353f64d1fd619926a",
+                },
+            },
             ["0.6.2"] = {
                 url = {
                     GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/0.6.2/okrun-0.6.2-windows-${arch}.zip",
