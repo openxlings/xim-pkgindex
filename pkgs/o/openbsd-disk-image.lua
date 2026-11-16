@@ -37,22 +37,30 @@ package = {
             CN = "https://gitcode.com/xlings-res/openbsd-disk-image/releases/download/${version}/openbsd-disk-image-${version}.tar.xz",
         },
         linux = {
-            ["latest"] = { ref = "8.0" },
-            ["8.0"] = {
-                -- r1: the profile is TOML (its two patterns escape `\`); r0's did not parse,
-                -- so an installed r0 is below the floor and is replaced.
-                revision = 1, floor = 1,
+            ["latest"] = { ref = "8.0-1" },
+            ["8.0-1"] = {
+                -- r1: the profile is TOML (its two patterns escape `\`); 8.0's did not parse.
+                revision = 1,
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/openbsd-disk-image/releases/download/8.0/openbsd-disk-image-8.0.tar.xz",
+                    CN     = "https://gitcode.com/xlings-res/openbsd-disk-image/releases/download/8.0/openbsd-disk-image-8.0.tar.xz",
+                },
                 sha256 = "35b60e66672f086369d7d1bc2d6f88fb6a635bf7b249f3490b43182f8edc75ba",
             },
+            ["8.0"] = { sha256 = "35b60e66672f086369d7d1bc2d6f88fb6a635bf7b249f3490b43182f8edc75ba" },
         },
         macosx = {
-            ["latest"] = { ref = "8.0" },
-            ["8.0"] = {
-                -- r1: the profile is TOML (its two patterns escape `\`); r0's did not parse,
-                -- so an installed r0 is below the floor and is replaced.
-                revision = 1, floor = 1,
+            ["latest"] = { ref = "8.0-1" },
+            ["8.0-1"] = {
+                -- r1: the profile is TOML (its two patterns escape `\`); 8.0's did not parse.
+                revision = 1,
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/openbsd-disk-image/releases/download/8.0/openbsd-disk-image-8.0.tar.xz",
+                    CN     = "https://gitcode.com/xlings-res/openbsd-disk-image/releases/download/8.0/openbsd-disk-image-8.0.tar.xz",
+                },
                 sha256 = "35b60e66672f086369d7d1bc2d6f88fb6a635bf7b249f3490b43182f8edc75ba",
             },
+            ["8.0"] = { sha256 = "35b60e66672f086369d7d1bc2d6f88fb6a635bf7b249f3490b43182f8edc75ba" },
         },
     },
 }
