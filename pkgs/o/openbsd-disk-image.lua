@@ -39,7 +39,7 @@ package = {
         linux = {
             ["latest"] = { ref = "8.0-1" },
             ["8.0-1"] = {
-                -- r1: the profile is TOML (its two patterns escape `\`); 8.0's did not parse.
+                -- r1: the profile is TOML (its two patterns escape `\`; 8.0's did not parse), and the command runs in /tmp/dirun.
                 revision = 1,
                 url = {
                     GLOBAL = "https://github.com/xlings-res/openbsd-disk-image/releases/download/8.0/openbsd-disk-image-8.0.tar.xz",
@@ -52,7 +52,7 @@ package = {
         macosx = {
             ["latest"] = { ref = "8.0-1" },
             ["8.0-1"] = {
-                -- r1: the profile is TOML (its two patterns escape `\`); 8.0's did not parse.
+                -- r1: the profile is TOML (its two patterns escape `\`; 8.0's did not parse), and the command runs in /tmp/dirun.
                 revision = 1,
                 url = {
                     GLOBAL = "https://github.com/xlings-res/openbsd-disk-image/releases/download/8.0/openbsd-disk-image-8.0.tar.xz",
@@ -103,7 +103,7 @@ line-max = 200            # a longer line is written to the files disk and run f
 script   = "sh {script}"
 
 [files]
-mount = ["mkdir -p /mnt/fat /tmp/dirun", "mount -r -t msdos /dev/sd1i /mnt/fat", "cp -R /mnt/fat/. /tmp/dirun/", "chmod -R a+x /tmp/dirun", "umount /mnt/fat"]
+mount = ["mkdir -p /mnt/fat /tmp/dirun", "mount -r -t msdos /dev/sd1i /mnt/fat", "cp -R /mnt/fat/. /tmp/dirun/", "chmod -R a+x /tmp/dirun", "umount /mnt/fat", "cd /tmp/dirun"]
 at    = "/tmp/dirun"
 
 [relay]

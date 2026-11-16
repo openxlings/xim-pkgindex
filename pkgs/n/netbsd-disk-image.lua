@@ -10,8 +10,8 @@
 -- digests and the change.
 --
 -- The profile (`dirun.toml`, beside the image): root logs in without a password, the disk of
--- files is mounted read-only at /mnt/dirun, a test runner's events are written to a file the
--- runner reads back. A runner statement names the package's root:
+-- files is copied to /tmp/dirun, where the command runs, a test runner's events are written to
+-- a file the runner reads back. A runner statement names the package's root:
 --
 --     dirun --profile {pkg:netbsd-disk-image}/dirun.toml -- {}
 --
@@ -37,11 +37,29 @@ package = {
             CN = "https://gitcode.com/xlings-res/netbsd-disk-image/releases/download/${version}/netbsd-disk-image-${version}.tar.xz",
         },
         linux = {
-            ["latest"] = { ref = "10.2" },
+            ["latest"] = { ref = "10.2-1" },
+            ["10.2-1"] = {
+                -- r1: the files are copied to a writable /tmp/dirun, where the command runs (its working directory).
+                revision = 1,
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/netbsd-disk-image/releases/download/10.2/netbsd-disk-image-10.2.tar.xz",
+                    CN     = "https://gitcode.com/xlings-res/netbsd-disk-image/releases/download/10.2/netbsd-disk-image-10.2.tar.xz",
+                },
+                sha256 = "474d0b5be9e14002e4cb3f6399c63c2fe20c6b4a82413f176ecda6a5f96f0a6a",
+            },
             ["10.2"] = { sha256 = "474d0b5be9e14002e4cb3f6399c63c2fe20c6b4a82413f176ecda6a5f96f0a6a" },
         },
         macosx = {
-            ["latest"] = { ref = "10.2" },
+            ["latest"] = { ref = "10.2-1" },
+            ["10.2-1"] = {
+                -- r1: the files are copied to a writable /tmp/dirun, where the command runs (its working directory).
+                revision = 1,
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/netbsd-disk-image/releases/download/10.2/netbsd-disk-image-10.2.tar.xz",
+                    CN     = "https://gitcode.com/xlings-res/netbsd-disk-image/releases/download/10.2/netbsd-disk-image-10.2.tar.xz",
+                },
+                sha256 = "474d0b5be9e14002e4cb3f6399c63c2fe20c6b4a82413f176ecda6a5f96f0a6a",
+            },
             ["10.2"] = { sha256 = "474d0b5be9e14002e4cb3f6399c63c2fe20c6b4a82413f176ecda6a5f96f0a6a" },
         },
     },
@@ -86,8 +104,8 @@ line-max = 200            # a longer line is written to the files disk and run f
 script   = "sh {script}"
 
 [files]
-mount = ["mkdir -p /mnt/dirun", "mount -r -t msdos /dev/ld1e /mnt/dirun"]
-at    = "/mnt/dirun"
+mount = ["mkdir -p /mnt/fat /tmp/dirun", "mount -r -t msdos /dev/ld1e /mnt/fat", "cp -R /mnt/fat/. /tmp/dirun/", "umount /mnt/fat", "cd /tmp/dirun"]
+at    = "/tmp/dirun"
 
 [relay]
 report = "/tmp/dirun-mtest.ndjson"

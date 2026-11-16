@@ -31,3 +31,16 @@ def _profiles():
 @pytest.mark.parametrize("profile", list(_profiles()))
 def test_a_dirun_profile_parses(profile):
     tomllib.loads(profile)
+
+
+@pytest.mark.static
+@pytest.mark.parametrize("profile", list(_profiles()))
+def test_a_console_guest_runs_the_command_where_its_files_are(profile):
+    """The files a run delivers are its working directory's (mcpp SPEC-002 §6.2.1):
+    a profile that mounts them ends its mount steps in `[files] at`, so a relative
+    path in the command names a delivered file."""
+    files = tomllib.loads(profile).get("files")
+    if not files or not files.get("mount"):
+        return
+    assert files["mount"][-1] == f"cd {files['at']}", (
+        f"the last mount step is {files['mount'][-1]!r}, not `cd {files['at']}`")

@@ -19,6 +19,12 @@ mounted --- is a fact of the image, and the package may carry it as the runner's
 data: `dirun.toml` beside the image, the profile dirun boots it by
 (`dirun --profile {pkg:<system>-disk-image}/dirun.toml -- {}`).
 
+A profile that receives a disk of files (`[files]`) copies them to a writable
+directory, its `at`, and its last mount step enters it (`cd <at>`): the files a
+run delivers are its working directory's (mcpp SPEC-002 §6.2.1), so a relative
+path in the command names a delivered file, and the program may write beside
+it. `tests/test_dirun_profiles.py` parses every profile and holds this rule.
+
 ## Naming
 
 | Rule | Statement |
@@ -69,3 +75,4 @@ package = {
 | The image bytes must change, the version must not | same key, raised packaging revision; the updater channel enforces the raise is total |
 | A format changes | the asset name carries it; the package name never does |
 | The media's publisher changes | a new version entry with its own attribution |
+| The profile must change, the bytes must not | a new key `<version>-<n>` with `revision = n` and the URL of the same asset; a published entry stays as published, and a runner names the new key |
