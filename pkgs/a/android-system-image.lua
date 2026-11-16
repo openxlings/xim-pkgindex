@@ -361,6 +361,36 @@
 -- follows from the same argument, not from having been run.
 --
 -- ═══════════════════════════════════════════════════════════════════════
+-- API 34, AND THE PROFILE THAT BOOTS THE IMAGE (2026-11-16)
+-- ═══════════════════════════════════════════════════════════════════════
+--
+-- `34-default-x86_64` and `34-default-arm64-v8a` (x86_64-34_r04.zip, sha1
+-- 5f6a249f9bc3b1b4c459b13ce2eb646c9680bed1; arm64-v8a-34_r04.zip, sha1
+-- d9f2011131919abe952814e041f16f317242c3fa, both as sys-img2-3.xml states
+-- them). Their system.img is a partitioned disk (GPT: vbmeta and a dynamic
+-- `super' partition, measured with `7zz l'), not a raw ext4 filesystem, so the
+-- qemu-user root below is the API 24 arm64-v8a image's only: for these keys
+-- the emulator is the route.
+--
+-- Every key installs `dirun.toml' and `start-avd.sh' beside the image: a
+-- profile of dirun (>= 0.4.0) that boots the image in the Android Emulator and
+-- reaches the device through adb, so a build tool runs a program in it with
+--
+--     dirun --profile <install_dir>/dirun.toml \
+--           --var emulator=<android-emulator>/emulator \
+--           --var adb=<android-platform-tools>/adb -- ./program
+--
+-- The script writes the device by hand (as above, without avdmanager) into a
+-- directory of its own, starts it with -sysdir naming this image and console
+-- port 5580, and removes the directory when the emulator ends. The emulator
+-- also needs an SDK root holding `platform-tools': with none it ends with
+-- SIGSEGV after reading -sysdir (37.1.11, measured), so the script gives it an
+-- empty one. Measured on Linux x86_64 with KVM: the x86_64 key, a dynamic
+-- x86_64-linux-android program run through dirun 0.4.0, 19 s from start to the
+-- program's status (7), its arguments (`a b', `q"x&y') and standard error
+-- intact, no emulator and no device directory left after it.
+--
+-- ═══════════════════════════════════════════════════════════════════════
 -- INSTALLED LAYOUT
 -- ═══════════════════════════════════════════════════════════════════════
 --
@@ -372,9 +402,11 @@
 --       renamed to this package's install directory, unmodified beyond
 --       that), matching this package's "no SDK-root nesting invented"
 --       stance above.
+--   <install_dir>/dirun.toml, start-avd.sh
+--       every key: the profile above and the script its [start] runs.
 --   <install_dir>/qemu-user-root/system/bin/linker64
 --   <install_dir>/qemu-user-root/system/lib64/{libc,libdl,libm}.so
---       ARM64-V8A VERSION KEYS ONLY. Added to, not replacing, the flat
+--       THE API 24 ARM64-V8A KEY ONLY (a raw ext4 system.img). Added to, not replacing, the flat
 --       layout above -- see "A SECOND, INDEPENDENT PATH" for why this
 --       exists and what it is for (a qemu-user `-L`/`QEMU_LD_PREFIX`
 --       target). Not produced for x86_64 keys: nothing consumes it there.
@@ -440,6 +472,113 @@ package = {
             deps = { "xim:7zip" },
             -- No `latest` key -- see the header: these versions are not
             -- totally ordered, so there is no single unambiguous newest.
+            ["34-default-x86_64"] = {
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/sys-img/android/x86_64-34_r04.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-system-image/releases/download/34-default-x86_64/x86_64-34_r04.zip",
+                },
+                sha256 = "b57f6386af25b0fe5488e77196b43c03778c6760e6f4311611d090391b9cb2b3",
+            },
+            ["34-default-arm64-v8a"] = {
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/sys-img/android/arm64-v8a-34_r04.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-system-image/releases/download/34-default-arm64-v8a/arm64-v8a-34_r04.zip",
+                },
+                sha256 = "1447958a4c6747c44390ac5f5f4c894be6d1dfce93868a0385a95c5f0ae4c339",
+            },
+            ["24-default-x86_64"] = {
+                -- Measured 2026-09-11 against
+                -- https://dl.google.com/android/repository/sys-img/android/
+                -- sys-img2-3.xml: size and sha1 both matched exactly.
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/sys-img/android/x86_64-24_r08.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-system-image/releases/download/24-default-x86_64/x86_64-24_r08.zip",
+                },
+                sha256 = "c122b69f70a229186314ec9a6f7abedcc7a6ff7ed52cb6fdce0d4f1585c09f92",
+            },
+            ["24-default-arm64-v8a"] = {
+                -- Same manifest, same measurement. Downloads and extracts
+                -- correctly (verified); does not BOOT on an x86_64 host --
+                -- see android-emulator.lua's header for why that is a
+                -- property of the engine, not of this image. The default
+                -- (dynamic) configuration DOES run on an x86_64 host
+                -- through a different mechanism that does not boot
+                -- anything -- see "A SECOND, INDEPENDENT PATH" above,
+                -- which is why install() below extracts a qemu-user-root
+                -- for this abi.
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/sys-img/android/arm64-v8a-24_r09.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-system-image/releases/download/24-default-arm64-v8a/arm64-v8a-24_r09.zip",
+                },
+                sha256 = "3c3a70dcffe8c162984ec190fc3388bf237b241b3ba80bf7aa5c86e130d8f59b",
+            },
+        },
+        -- The image bytes are a property of the GUEST, not of the host:
+        -- one zip, one sha, on every host that can extract it. The
+        -- extraction tool (7zz) is published for this host (pkgs/7/7zip.lua
+        -- carries the macosx asset), and the runner that consumes the
+        -- extracted payload (pkgs/m/mcpp-android-runner.lua) is a POSIX
+        -- session on this host too. Measured by this index's own CI,
+        -- whose macosx leg installs, checks and removes the package.
+        -- Windows stays absent the way the runner's row does: the
+        -- session that drives the emulator is a POSIX one, and an
+        -- absence stated is worth a row that cannot run.
+        macosx = {            -- THE EXTRACTION TOOL COMES FROM THE ECOSYSTEM, AND IT IS NOT
+            -- THE OBVIOUS ONE.
+            --
+            -- `system.img` is a raw ext4 filesystem (measured -- see "A
+            -- SECOND, INDEPENDENT PATH" above), and reading four files out of
+            -- it needs a program that can open ext4. The obvious answer is
+            -- `debugfs` from `xim:e2fsprogs`, and that is what this declared;
+            -- the measured answer is that the payload's `debugfs` is a broken
+            -- static build which SIGFPEs on every filesystem-opening command
+            -- while dumpe2fs, e2fsck and tune2fs from the SAME payload work
+            -- (pkgs/e/e2fsprogs.lua records the measurements). So declaring it
+            -- produced a package that installed and could not serve the one
+            -- route the arm64-v8a key exists for.
+            --
+            -- `xim:7zip` reads ext4. Measured 2026-09-11 against this exact
+            -- image:
+            --
+            --   7zz l system.img            Type = Ext, Label = system
+            --   7zz x system.img -o<dir> \
+            --     bin/linker64 lib64/libc.so lib64/libdl.so lib64/libm.so
+            --                               Everything is Ok / Files: 4
+            --
+            -- One command instead of four, the in-image paths carry no
+            -- leading slash, and the directory layout is preserved -- which is
+            -- exactly the `<root>/system/{bin,lib64}` shape qemu-user needs,
+            -- so the extraction writes it directly instead of composing it.
+            --
+            -- THE OTHER PACKAGE'S DEFECT IS NOT FIXED BY THIS, and it is not
+            -- worked around either: nothing else in the index depends on that
+            -- `debugfs`, so the repin belongs to e2fsprogs and this recipe
+            -- simply stops being the only consumer of a program that does not
+            -- work.
+            --
+            -- Declared for every key rather than only the non-x86_64 ones:
+            -- `deps` is a property of the descriptor and the arm64-v8a key is
+            -- the reason this package can answer for `aarch64-linux-android`
+            -- at all. One extra small payload on an x86_64-only install is a
+            -- better trade than an extraction step whose availability depends
+            -- on the host.
+            deps = { "xim:7zip" },
+            -- No `latest` key -- see the header: these versions are not
+            -- totally ordered, so there is no single unambiguous newest.
+            ["34-default-x86_64"] = {
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/sys-img/android/x86_64-34_r04.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-system-image/releases/download/34-default-x86_64/x86_64-34_r04.zip",
+                },
+                sha256 = "b57f6386af25b0fe5488e77196b43c03778c6760e6f4311611d090391b9cb2b3",
+            },
+            ["34-default-arm64-v8a"] = {
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/sys-img/android/arm64-v8a-34_r04.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-system-image/releases/download/34-default-arm64-v8a/arm64-v8a-34_r04.zip",
+                },
+                sha256 = "1447958a4c6747c44390ac5f5f4c894be6d1dfce93868a0385a95c5f0ae4c339",
+            },
             ["24-default-x86_64"] = {
                 -- Measured 2026-09-11 against
                 -- https://dl.google.com/android/repository/sys-img/android/
@@ -482,6 +621,85 @@ import("xim.libxpkg.log")
 -- mismatch, applied here to abi instead of release name. A future third
 -- entry (a different tag, or a new ABI) extends this list, not the logic.
 local KNOWN_ABI_DIRS = {"x86_64", "arm64-v8a"}
+
+-- The profile of dirun and the script its [start] runs (header: "API 34, AND
+-- THE PROFILE THAT BOOTS THE IMAGE").
+local DIRUN_PROFILE = [==[
+# The Android Emulator booting this system image, reached through adb (dirun >= 0.4.0). The image
+# package carries it; the emulator and adb are separate packages, named by the caller:
+#
+#     dirun --profile <this file> --var emulator=<android-emulator>/emulator \
+#           --var adb=<android-platform-tools>/adb -- ./program
+#
+# The device's console port is 5580 (adb: emulator-5580); a run starts a fresh device and ends it.
+name = "android-emulator"
+
+[command]
+prepare = ["mkdir -p /data/local/tmp/dirun"]
+line    = "echo @@BEGIN@@; cd /data/local/tmp/dirun && {env}{argv} < /dev/null; echo @@STATUS=$?@@"
+env     = "env {assignments} "
+quote   = "posix"
+begin   = "@@BEGIN@@"
+status  = '@@STATUS=(\d+)@@'
+
+[reach]
+shell = ["{adb}", "-s", "emulator-5580", "shell", "{line}"]
+push  = ["{adb}", "-s", "emulator-5580", "push", "{host}", "{guest}"]
+at    = "/data/local/tmp/dirun"
+
+[start]
+command       = ["/bin/sh", "{profile-dir}/start-avd.sh", "{emulator}", "5580"]
+ready         = ["{adb}", "-s", "emulator-5580", "shell", "getprop sys.boot_completed | grep -q 1"]
+ready-timeout = 600
+stop          = ["{adb}", "-s", "emulator-5580", "emu", "kill"]
+]==]
+
+local START_AVD = [==[
+#!/bin/sh
+# Boots the system image beside this file for dirun (`[start]` of dirun.toml):
+#
+#     start-avd.sh EMULATOR PORT
+#
+# The virtual device is written by hand into a directory of its own (the configuration avdmanager
+# would write, without the JDK it needs), started with -sysdir naming this image, and removed when
+# the emulator ends: no state of a run outlives it, and nothing is written to the user's
+# ~/.android. The emulator's console port is PORT; adb names the device emulator-PORT. The emulator
+# also asks for an SDK root holding `platform-tools' (it ends with SIGSEGV after reading -sysdir
+# without one, measured with 37.1.11): an empty one in the same directory answers it.
+set -eu
+emulator=$1
+port=$2
+here=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+abi=$(sed -n 's/^SystemImage.Abi=//p' "$here/source.properties")
+api=$(sed -n 's/^AndroidVersion.ApiLevel=//p' "$here/source.properties")
+case $abi in
+    arm64-v8a) arch=arm64 ;;
+    *) arch=$abi ;;
+esac
+home=$(mktemp -d "${TMPDIR:-/tmp}/dirun-avd.XXXXXX")
+pid=
+finish() {
+    if [ -n "$pid" ]; then kill "$pid" 2>/dev/null || true; wait "$pid" 2>/dev/null || true; fi
+    case $home in */dirun-avd.*) rm -rf -- "$home" ;; esac
+}
+trap finish EXIT
+trap 'exit 143' TERM INT HUP
+avd=$home/avd/dirun.avd
+mkdir -p "$avd" "$home/sdk/platform-tools"
+printf 'avd.ini.encoding=UTF-8\npath=%s\ntarget=android-%s\n' "$avd" "$api" > "$home/avd/dirun.ini"
+printf '%s\n' \
+    "avd.ini.encoding=UTF-8" "AvdId=dirun" "PlayStore.enabled=false" \
+    "abi.type=$abi" "hw.cpu.arch=$arch" "hw.ramSize=2048" \
+    "hw.gpu.enabled=yes" "hw.gpu.mode=swiftshader_indirect" "hw.sdCard=no" \
+    "disk.dataPartition.size=2G" > "$avd/config.ini"
+cp "$here/userdata.img" "$avd/userdata.img"
+ANDROID_SDK_ROOT=$home/sdk ANDROID_HOME=$home/sdk ANDROID_AVD_HOME=$home/avd ANDROID_EMULATOR_HOME=$home \
+ANDROID_USER_HOME=$home ANDROID_SDK_HOME=$home \
+    "$emulator" -avd dirun -sysdir "$here" -port "$port" -no-window -no-audio -no-boot-anim \
+    -no-snapshot -gpu swiftshader_indirect &
+pid=$!
+wait "$pid"
+]==]
 
 function install()
     local dir = pkginfo.install_dir()
@@ -578,7 +796,10 @@ function install()
         local probe = try { function()
             return os.iorun(string.format('"%s" l "%s"', zbin, system_img))
         end }
-        if not probe or not tostring(probe):find("Type = Ext", 1, true) then
+        -- A PARTITIONED IMAGE (GPT: the API 34 keys) holds no filesystem 7-Zip
+        -- extracts the four files from, and the emulator boots it: no root.
+        local partitioned = probe and tostring(probe):find("Type = GPT", 1, true)
+        if not partitioned and (not probe or not tostring(probe):find("Type = Ext", 1, true)) then
             raise("android-system-image: the 7-Zip at " .. zbin
                   .. " cannot open " .. system_img .. " as a filesystem "
                   .. "(`l` did not report `Type = Ext`), so the four bionic "
@@ -590,7 +811,7 @@ function install()
                   .. "and therefore no extraction.")
         end
 
-        do
+        if not partitioned then
             -- ONE COMMAND, AND THE LAYOUT COMES OUT RIGHT BY ITSELF.
             --
             -- qemu-user needs `<root>/system/bin/linker64` and the three core
@@ -634,6 +855,12 @@ function install()
             system.exec("chmod +x " .. path.join(qroot, "bin", "linker64"))
         end
     end
+
+    -- THE PROFILE THAT BOOTS THIS IMAGE (see the header): written for every
+    -- key, since the emulator, not the ABI, decides where an image boots.
+    io.writefile(path.join(dir, "dirun.toml"), DIRUN_PROFILE)
+    io.writefile(path.join(dir, "start-avd.sh"), START_AVD)
+    system.exec("chmod +x " .. path.join(dir, "start-avd.sh"))
 
     return true
 end

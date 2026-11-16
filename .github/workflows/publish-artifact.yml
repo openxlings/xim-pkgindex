@@ -31,6 +31,16 @@ on:
     branches: [main]
     types: [completed]
   workflow_dispatch:
+    inputs:
+      ref:
+        description: 'git ref to publish the index from (default: the default branch HEAD)'
+        required: false
+        default: ''
+      bypass_main:
+        description: 'publish without requiring a successful main CI run for the exact source sha (explicit operator override)'
+        type: boolean
+        required: false
+        default: false
   schedule:
     - cron: '0 18 * * *'   # nightly catch-all / mirror re-sync
 
@@ -61,7 +71,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          # workflow_run: the exact main push that just passed CI.
+          # dispatch: the requested ref, else the default branch HEAD.
+          ref: ${{ inputs.ref || github.event.workflow_run.head_sha || github.sha }}
           fetch-depth: 0   # need HEAD short-sha for content-hash artifact name
 
       - name: Publication scope
@@ -71,11 +83,17 @@ jobs:
         run: python3 .github/scripts/ci-publication-scope.py --target index --event "$EVENT" --github-output "$GITHUB_OUTPUT"
 
       - name: Require successful main CI for this exact source
-        if: steps.scope.outputs.changed == 'true'
+        if: steps.scope.outputs.changed == 'true' && inputs.bypass_main != true
         env:
           GH_TOKEN: ${{ github.token }}
           REPOSITORY: ${{ github.repository }}
         run: python3 .github/scripts/ci-verified-source.py --repository "$REPOSITORY"
+
+      - name: Main-CI source gate bypassed (explicit dispatch override)
+        if: steps.scope.outputs.changed == 'true' && inputs.bypass_main == true
+        run: |
+          echo "bypass_main=true (dispatch override): publishing $(git rev-parse HEAD)" \
+               "from ref '${{ inputs.ref || github.ref_name }}' without the main-CI source gate."
 
       - name: Enable vendored gtc (gitcode-cli)
         run: |

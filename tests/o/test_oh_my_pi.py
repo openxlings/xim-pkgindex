@@ -20,11 +20,11 @@ from tests.lib.assertions import (
     assert_valid_xvm_node_kinds,
     assert_xim_add_succeeds,
 )
-from tests.lib.platform_utils import skip_if_not
+from tests.lib.platform_utils import skip_if_not, under_test
 from tests.lib.xpkg_parser import parse_xpkg
 
 PKG_FILE = "pkgs/o/oh-my-pi.lua"
-INSTALL_PKG = "local:oh-my-pi@18.11.3"
+PKG = "oh-my-pi"
 RELEASE_VERSION = "18.11.3"
 
 
@@ -170,7 +170,7 @@ class TestLifecycle:
     @pytest.mark.lifecycle
     @skip_if_not("linux")
     def test_install(self):
-        assert_install_succeeds(INSTALL_PKG, timeout=600)
+        assert_install_succeeds(under_test(PKG, RELEASE_VERSION), timeout=600)
 
 
 class TestVerify:

@@ -16,7 +16,7 @@ from tests.lib.platform_utils import skip_if_not, xpkgs_dir
 
 PKG = "android-system-image"
 PKG_FILE = "pkgs/a/android-system-image.lua"
-VERSIONS = ["24-default-x86_64", "24-default-arm64-v8a"]
+VERSIONS = ["34-default-x86_64", "34-default-arm64-v8a", "24-default-x86_64", "24-default-arm64-v8a"]
 
 
 @pytest.fixture(scope='module')
@@ -171,10 +171,39 @@ class TestPinnedFacts:
             assert f'["{v}"]' in source_text, f"missing version key {v}"
 
     @pytest.mark.static
-    def test_two_sha256_present_and_64_hex(self, source_text):
+    def test_one_sha256_per_image_and_64_hex(self, source_text):
+        # Two images, stated on every host row that carries them: the bytes
+        # are a property of the guest, so each host block repeats the same
+        # hashes, and the count is per-block, not per-file.
         hashes = re.findall(r'sha256\s*=\s*"([0-9a-fA-F]{64})"', source_text)
-        assert len(hashes) == 2, f"expected 2 sha256 entries, found {len(hashes)}"
-        assert len(set(hashes)) == 2, "the two system images must not share a hash"
+        blocks = len(re.findall(r"^        (?:linux|macosx|windows) = \{", source_text, re.M))
+        n = len(VERSIONS)
+        assert blocks >= 1, "no host block found"
+        assert len(hashes) == n * blocks, \
+            f"expected {n * blocks} sha256 entries ({blocks} blocks x {n} images), found {len(hashes)}"
+        assert len(set(hashes)) == n, "two system images must not share a hash"
+
+    @pytest.mark.static
+    def test_every_key_installs_the_dirun_profile(self, source_text):
+        # The profile and the script its [start] runs are written for every
+        # key (header: "API 34, AND THE PROFILE THAT BOOTS THE IMAGE").
+        install = source_text.split("function install()", 1)[1].split("\nfunction config()", 1)[0]
+        assert 'path.join(dir, "dirun.toml"), DIRUN_PROFILE' in install
+        assert 'path.join(dir, "start-avd.sh"), START_AVD' in install
+        profile = source_text.split("local DIRUN_PROFILE = [==[", 1)[1].split("]==]", 1)[0]
+        for part in ("[command]", "[reach]", "[start]", "{profile-dir}/start-avd.sh", "emulator-5580"):
+            assert part in profile, f"the profile lacks {part}"
+        script = source_text.split("local START_AVD = [==[", 1)[1].split("]==]", 1)[0]
+        assert "-sysdir" in script and "platform-tools" in script
+
+    @pytest.mark.static
+    def test_a_partitioned_image_has_no_qemu_user_root(self, source_text):
+        # API 34's system.img is GPT (vbmeta + super), measured: the root of
+        # four bionic files is the raw ext4 image's only, and a GPT image is
+        # not refused.
+        code = re.sub(r'--.*', '', source_text)
+        assert '"Type = GPT"' in code
+        assert "if not partitioned then" in code
 
     @pytest.mark.static
     def test_no_latest_key(self, source_text):
@@ -276,6 +305,15 @@ class TestVerify:
         for name in ("system.img", "ramdisk.img", "userdata.img",
                       "build.prop", "source.properties"):
             assert os.path.isfile(os.path.join(d, name)), f"missing {name} under {d}"
+
+    @pytest.mark.verify
+    @skip_if_not('linux')
+    @pytest.mark.parametrize("version", VERSIONS)
+    def test_installed_profile(self, version):
+        d = self._installed_dir(version)
+        assert os.path.isfile(os.path.join(d, "dirun.toml")), f"no dirun.toml under {d}"
+        script = os.path.join(d, "start-avd.sh")
+        assert os.path.isfile(script) and os.access(script, os.X_OK), f"no executable start-avd.sh under {d}"
 
     @pytest.mark.verify
     @skip_if_not('linux')

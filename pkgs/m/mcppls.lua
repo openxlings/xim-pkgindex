@@ -14,8 +14,8 @@ package = {
 
     -- xim pkg info
     type = "package",
-    -- From 0.0.20 (payload manifest version 5) one archive serves every
-    -- system: the server (bin/mcppls.okb) and the engine
+    -- From 0.0.20 (payload manifest version 5, kept by the 0.21 series) one
+    -- archive serves every system: the server (bin/mcppls.okb) and the engine
     -- (clangd/openkal/bin/clangd.okb) are ok images, started by the runner of
     -- each system (libexec/okrun/<system>-<arch>/okrun), which payload.json
     -- names per platform. 0.0.18 and 0.0.19 (version 4) are one archive per
@@ -24,7 +24,7 @@ package = {
     -- static program per platform (bin/mcppls). macOS is arm64-only; Linux
     -- supports x86_64/aarch64; Windows is x86_64-only.
     archs = {"x86_64", "aarch64"},
-    status = "dev", -- 0.0.x: upstream is pre-1.0, expect breaking changes
+    status = "dev", -- upstream is pre-1.0, expect breaking changes
     categories = {"cpp", "language-server", "lsp"},
     keywords = {"cpp", "c++", "modules", "lsp", "clangd", "mcpp", "language-server"},
 
@@ -50,8 +50,9 @@ package = {
     --   payload/payload.json       — build/manifest record
     --
     -- v0.0.16 uses upstream directly; its ecosystem mirrors are not published.
-    -- 0.0.20 names its one archive per version (`url`); every other version
-    -- (v0.0.19, v0.0.18, v0.0.15, v0.0.11) takes the regional sources below.
+    -- 0.0.20 and later name their one archive per version (`url`); every
+    -- other version (v0.0.19, v0.0.18, v0.0.15, v0.0.11) takes the regional
+    -- sources below.
     -- GLOBAL points at upstream releases; CN is the byte-identical mirror at
     -- gitcode.com/xlings-res/mcppls (uploaded with `gtc release upload` and
     -- verified by re-download), so the same sha256 serves both legs. The URL
@@ -74,7 +75,17 @@ package = {
                 GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/releases/download/v${version}/payload-linux-${arch_alias}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v${version}/payload-linux-${arch_alias}.tar.gz",
             },
-            ["latest"] = { ref = "0.0.20" },
+            ["latest"] = { ref = "0.21.0" },
+            ["0.21.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/releases/download/v0.21.0/mcppls-payload-0.21.0.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v0.21.0/mcppls-payload-0.21.0.tar.gz",
+                },
+                sha256 = {
+                    x86_64 = "02d64836806b4fb365a2737d9122de22325d89e69a9a1b44052b1e4c30f27f25",
+                    aarch64 = "02d64836806b4fb365a2737d9122de22325d89e69a9a1b44052b1e4c30f27f25",
+                },
+            },
             ["0.0.20"] = {
                 url = {
                     GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/releases/download/v0.0.20/mcppls-payload-0.0.20.tar.gz",
@@ -127,7 +138,16 @@ package = {
                 GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/releases/download/v${version}/payload-darwin-${arch_alias}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v${version}/payload-darwin-${arch_alias}.tar.gz",
             },
-            ["latest"] = { ref = "0.0.20" },
+            ["latest"] = { ref = "0.21.0" },
+            ["0.21.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/releases/download/v0.21.0/mcppls-payload-0.21.0.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v0.21.0/mcppls-payload-0.21.0.tar.gz",
+                },
+                sha256 = {
+                    aarch64 = "02d64836806b4fb365a2737d9122de22325d89e69a9a1b44052b1e4c30f27f25",
+                },
+            },
             ["0.0.20"] = {
                 url = {
                     GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/releases/download/v0.0.20/mcppls-payload-0.0.20.tar.gz",
@@ -174,7 +194,16 @@ package = {
                 GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/releases/download/v${version}/payload-win32-${arch_alias}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v${version}/payload-win32-${arch_alias}.tar.gz",
             },
-            ["latest"] = { ref = "0.0.20" },
+            ["latest"] = { ref = "0.21.0" },
+            ["0.21.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/releases/download/v0.21.0/mcppls-payload-0.21.0.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v0.21.0/mcppls-payload-0.21.0.tar.gz",
+                },
+                sha256 = {
+                    x86_64 = "02d64836806b4fb365a2737d9122de22325d89e69a9a1b44052b1e4c30f27f25",
+                },
+            },
             ["0.0.20"] = {
                 url = {
                     GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/releases/download/v0.0.20/mcppls-payload-0.0.20.tar.gz",
