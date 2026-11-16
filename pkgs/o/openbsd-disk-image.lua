@@ -37,11 +37,29 @@ package = {
             CN = "https://gitcode.com/xlings-res/openbsd-disk-image/releases/download/${version}/openbsd-disk-image-${version}.tar.xz",
         },
         linux = {
-            ["latest"] = { ref = "8.0" },
+            ["latest"] = { ref = "8.0-1" },
+            ["8.0-1"] = {
+                -- r1: the profile is TOML (its two patterns escape `\`; 8.0's did not parse), and the command runs in /tmp/dirun.
+                revision = 1,
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/openbsd-disk-image/releases/download/8.0/openbsd-disk-image-8.0.tar.xz",
+                    CN     = "https://gitcode.com/xlings-res/openbsd-disk-image/releases/download/8.0/openbsd-disk-image-8.0.tar.xz",
+                },
+                sha256 = "35b60e66672f086369d7d1bc2d6f88fb6a635bf7b249f3490b43182f8edc75ba",
+            },
             ["8.0"] = { sha256 = "35b60e66672f086369d7d1bc2d6f88fb6a635bf7b249f3490b43182f8edc75ba" },
         },
         macosx = {
-            ["latest"] = { ref = "8.0" },
+            ["latest"] = { ref = "8.0-1" },
+            ["8.0-1"] = {
+                -- r1: the profile is TOML (its two patterns escape `\`; 8.0's did not parse), and the command runs in /tmp/dirun.
+                revision = 1,
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/openbsd-disk-image/releases/download/8.0/openbsd-disk-image-8.0.tar.xz",
+                    CN     = "https://gitcode.com/xlings-res/openbsd-disk-image/releases/download/8.0/openbsd-disk-image-8.0.tar.xz",
+                },
+                sha256 = "35b60e66672f086369d7d1bc2d6f88fb6a635bf7b249f3490b43182f8edc75ba",
+            },
             ["8.0"] = { sha256 = "35b60e66672f086369d7d1bc2d6f88fb6a635bf7b249f3490b43182f8edc75ba" },
         },
     },
@@ -72,7 +90,7 @@ expect = "Password:"
 send   = "root"
 
 [[boot]]
-expect = "# |\$ "
+expect = "# |\\$ "
 
 [command]
 prepare = ["stty -echo"]
@@ -80,12 +98,12 @@ line    = "echo @@BEGIN@@; {env}{argv} < /dev/null; echo @@STATUS=$?@@"
 env     = "env {assignments} "
 quote   = "posix"
 begin   = "@@BEGIN@@"
-status  = "@@STATUS=(\d+)@@"
+status  = "@@STATUS=(\\d+)@@"
 line-max = 200            # a longer line is written to the files disk and run from there
 script   = "sh {script}"
 
 [files]
-mount = ["mkdir -p /mnt/fat /tmp/dirun", "mount -r -t msdos /dev/sd1i /mnt/fat", "cp -R /mnt/fat/. /tmp/dirun/", "chmod -R a+x /tmp/dirun", "umount /mnt/fat"]
+mount = ["mkdir -p /mnt/fat /tmp/dirun", "mount -r -t msdos /dev/sd1i /mnt/fat", "cp -R /mnt/fat/. /tmp/dirun/", "chmod -R a+x /tmp/dirun", "umount /mnt/fat", "cd /tmp/dirun"]
 at    = "/tmp/dirun"
 
 [relay]

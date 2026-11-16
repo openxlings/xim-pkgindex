@@ -8,9 +8,9 @@
 --
 -- The profile (`dirun.toml`, beside the image) is the image's description as
 -- data: the loader's menu is left for its prompt and the console moved to the
--- serial line, root logs in, a read-only FAT disk of files is mounted at
--- /mnt/dirun, and a test runner's events are written to a file the runner
--- reads back. A runner statement names the package's root:
+-- serial line, root logs in, the read-only FAT disk of files is copied to
+-- /tmp/dirun, where the command runs, and a test runner's events are written
+-- to a file the runner reads back. A runner statement names the package's root:
 --
 --     dirun --profile {pkg:freebsd-disk-image}/dirun.toml -- {}
 --
@@ -38,11 +38,29 @@ package = {
             CN = "https://gitcode.com/xlings-res/freebsd-disk/releases/download/${version}/freebsd-disk-${version}.tar.xz",
         },
         linux = {
-            ["latest"] = { ref = "14.5" },
+            ["latest"] = { ref = "14.5-1" },
+            ["14.5-1"] = {
+                -- r1: the files are copied to a writable /tmp/dirun, where the command runs (its working directory).
+                revision = 1,
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/freebsd-disk/releases/download/14.5/freebsd-disk-14.5.tar.xz",
+                    CN     = "https://gitcode.com/xlings-res/freebsd-disk/releases/download/14.5/freebsd-disk-14.5.tar.xz",
+                },
+                sha256 = "7844bcb147fc988c26193d6c91b5db9077edae5d64d63f523e97c9d681f58a49",
+            },
             ["14.5"] = { sha256 = "7844bcb147fc988c26193d6c91b5db9077edae5d64d63f523e97c9d681f58a49" },
         },
         macosx = {
-            ["latest"] = { ref = "14.5" },
+            ["latest"] = { ref = "14.5-1" },
+            ["14.5-1"] = {
+                -- r1: the files are copied to a writable /tmp/dirun, where the command runs (its working directory).
+                revision = 1,
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/freebsd-disk/releases/download/14.5/freebsd-disk-14.5.tar.xz",
+                    CN     = "https://gitcode.com/xlings-res/freebsd-disk/releases/download/14.5/freebsd-disk-14.5.tar.xz",
+                },
+                sha256 = "7844bcb147fc988c26193d6c91b5db9077edae5d64d63f523e97c9d681f58a49",
+            },
             ["14.5"] = { sha256 = "7844bcb147fc988c26193d6c91b5db9077edae5d64d63f523e97c9d681f58a49" },
         },
     },
@@ -104,8 +122,8 @@ line-max = 200            # a longer line is written to the files disk and run f
 script   = "sh {script}"
 
 [files]
-mount = ["mkdir -p /mnt/dirun", "mount -r -t msdosfs /dev/vtbd1s1 /mnt/dirun"]
-at    = "/mnt/dirun"
+mount = ["mkdir -p /mnt/fat /tmp/dirun", "mount -r -t msdosfs /dev/vtbd1s1 /mnt/fat", "cp -R /mnt/fat/. /tmp/dirun/", "umount /mnt/fat", "cd /tmp/dirun"]
+at    = "/tmp/dirun"
 
 [relay]
 report = "/tmp/dirun-mtest.ndjson"
@@ -113,10 +131,12 @@ report = "/tmp/dirun-mtest.ndjson"
 
 function install()
     local dir = pkginfo.install_dir()
+    -- The release the asset is of: a packaging revision (`14.5-1`) names the same asset.
+    local release = pkginfo.version():match("^[^-]+")
     local image = path.join(dir, "freebsd-14.5.qcow2")
     for _, from in ipairs({
-        path.join(path.directory(pkginfo.install_file()), "freebsd-disk-" .. pkginfo.version() .. ".qcow2"),
-        path.join(dir, "freebsd-disk-" .. pkginfo.version() .. ".qcow2"),
+        path.join(path.directory(pkginfo.install_file()), "freebsd-disk-" .. release .. ".qcow2"),
+        path.join(dir, "freebsd-disk-" .. release .. ".qcow2"),
     }) do
         if os.isfile(from) and from ~= image then
             os.mkdir(dir)

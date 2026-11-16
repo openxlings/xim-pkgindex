@@ -153,6 +153,7 @@ Some rules span every recipe, and each has its own test or script:
 |---|---|
 | dependency coordinates and the split `deps` form | `tests/test_dep_query_coordinates.py`, `tests/test_deps_shape.py` |
 | no compiler runtime in a library payload | `tests/test_no_compiler_runtime_in_payloads.py` |
+| a dirun profile a recipe writes parses as TOML | `tests/test_dirun_profiles.py` |
 | a published Luban version's output never changes | `tests/test_luban_published.py` |
 | a changed resource raises `revision` | `.github/scripts/check-revision.lua` |
 | `floor` is an integer within `0 ≤ floor ≤ revision`, on the version entry | `.github/scripts/check-revision.lua` |
