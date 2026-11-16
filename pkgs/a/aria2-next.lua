@@ -53,7 +53,7 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "3.0.10" },
+            ["latest"] = { ref = "3.1.0" },
             ["2.5.5"] = {
                 x86_64 = {
                     url = "https://github.com/AnInsomniacy/aria2-next/releases/download/v2.5.5/aria2-next-2.5.5-linux-x86_64",
@@ -74,19 +74,19 @@ package = {
                     sha256 = "ca0bfc952f15d5aa79afa73189f6665694a61b6ed0f55d44009389f8f08cc6db",
                 },
             },
-            ["3.0.10"] = {
+            ["3.1.0"] = {
                 aarch64 = {
-                    url = "https://github.com/AnInsomniacy/aria2-next/releases/download/v3.0.10/aria2-next-3.0.10-linux-aarch64",
-                    sha256 = "b9066d5197f2c4ca4082961a904f20f5f8fc0e9be3dd44b7c71e1cd245e78e41",
+                    url = "https://github.com/AnInsomniacy/aria2-next/releases/download/v3.1.0/aria2-next-3.1.0-linux-aarch64",
+                    sha256 = "38019a34ac5edd4dc7443fd7214842dc2c29b38202a1a65a6271c5e994fbd0d0",
                 },
                 x86_64 = {
-                    url = "https://github.com/AnInsomniacy/aria2-next/releases/download/v3.0.10/aria2-next-3.0.10-linux-x86_64",
-                    sha256 = "f678627620e6da2917252c9e2b34f84e8b902e2de457f77551361e62e8d8eed0",
+                    url = "https://github.com/AnInsomniacy/aria2-next/releases/download/v3.1.0/aria2-next-3.1.0-linux-x86_64",
+                    sha256 = "5a264fc39312cc1abc6d12cfd2d96464d27f0349fd7cb5e0cbf1ee5bd686e890",
                 },
             },
         },
         macosx = {
-            ["latest"] = { ref = "3.0.10" },
+            ["latest"] = { ref = "3.1.0" },
             ["2.5.5"] = {
                 x86_64 = {
                     url = "https://github.com/AnInsomniacy/aria2-next/releases/download/v2.5.5/aria2-next-2.5.5-macos-x86_64",
@@ -107,19 +107,19 @@ package = {
                     sha256 = "68b4c64c338b27b2bf929b9110393420908f79de4e33e6037973b38577b715a5",
                 },
             },
-            ["3.0.10"] = {
+            ["3.1.0"] = {
                 aarch64 = {
-                    url = "https://github.com/AnInsomniacy/aria2-next/releases/download/v3.0.10/aria2-next-3.0.10-macos-arm64",
-                    sha256 = "ba93b34c2ba831ecf9236684b9627a56d4b02a99377fa49d965548fdca549563",
+                    url = "https://github.com/AnInsomniacy/aria2-next/releases/download/v3.1.0/aria2-next-3.1.0-macos-arm64",
+                    sha256 = "328964a77fbf6ef958d5f828a9c20eb6c8cab01ae0a1864128c6af42bf144078",
                 },
                 x86_64 = {
-                    url = "https://github.com/AnInsomniacy/aria2-next/releases/download/v3.0.10/aria2-next-3.0.10-macos-x86_64",
-                    sha256 = "4fe1624cb36c4d985ea17bc5895bfa458b8861ec943fd1bccd511f05bb2b2b7f",
+                    url = "https://github.com/AnInsomniacy/aria2-next/releases/download/v3.1.0/aria2-next-3.1.0-macos-x86_64",
+                    sha256 = "d918ae011599cd3ebe967e721961a52c185306c965ea025357f9dca11613b989",
                 },
             },
         },
         windows = {
-            ["latest"] = { ref = "3.0.10" },
+            ["latest"] = { ref = "3.1.0" },
             ["2.5.5"] = {
                 x86_64 = {
                     url = "https://github.com/AnInsomniacy/aria2-next/releases/download/v2.5.5/aria2-next-2.5.5-windows-x86_64.exe",
@@ -140,14 +140,14 @@ package = {
                     sha256 = "e74899ce4a39815a509bc663d29aca5028f9bdd6b390fe33141eb11d478d1c13",
                 },
             },
-            ["3.0.10"] = {
+            ["3.1.0"] = {
                 aarch64 = {
-                    url = "https://github.com/AnInsomniacy/aria2-next/releases/download/v3.0.10/aria2-next-3.0.10-windows-arm64.exe",
-                    sha256 = "5d4c75eab1cf5a33fedcb9c0c876a9a8e0c53951dab614bbe72a065937613572",
+                    url = "https://github.com/AnInsomniacy/aria2-next/releases/download/v3.1.0/aria2-next-3.1.0-windows-arm64.exe",
+                    sha256 = "4e3b653c0c5b9f7213d55dfde4329b49cf9fa310bd7c6d75f9ae92d8a7dd4c9f",
                 },
                 x86_64 = {
-                    url = "https://github.com/AnInsomniacy/aria2-next/releases/download/v3.0.10/aria2-next-3.0.10-windows-x86_64.exe",
-                    sha256 = "a966ff4402c432ff03a3e1391c5412bc8b38422d6cf458b0dfad147679356f15",
+                    url = "https://github.com/AnInsomniacy/aria2-next/releases/download/v3.1.0/aria2-next-3.1.0-windows-x86_64.exe",
+                    sha256 = "12bbd48dfd2c86f55419bf92b196dd3aedd6983116b5ce10c85d27a5a76c2baa",
                 },
             },
         },

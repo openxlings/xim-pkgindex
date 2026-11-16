@@ -186,6 +186,7 @@
   },
   "luban_agent_workspace": {
     "workflow": "luban-agent-workspace.yml",
+    "direct_only": true,
     "paths": [
       ".github/workflows/luban-agent-workspace.yml",
       "libs/luban*.lua",
