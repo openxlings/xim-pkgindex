@@ -29,13 +29,40 @@ package = {
     xvm_enable = true,
     -- 0.5.0 selects the immutable jit1 asset revision. Its package version is
     -- unchanged; the runner retains debugger registration symbols when packed.
+    -- 0.5.3 enters an image in its convention's floating-point state
+    -- (openkal SPEC 12.2; on Windows a thread began with the x87 at double
+    -- precision, under which an image's C library read decimal numbers otherwise).
+    -- 0.6.4 names a target by its uname and normalises an image's path (`//`,
+    -- `..`), the version openkal-platform 0.28.1 pins.
     xpm = {
         linux = {
             source = {
                 GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/${version}/okrun-${version}-linux-${arch}.zip",
                 CN = "https://gitcode.com/xlings-res/okrun/releases/download/${version}/okrun-${version}-linux-${arch}.zip",
             },
-            ["latest"] = { ref = "0.5.0" },
+            ["latest"] = { ref = "0.6.4" },
+            ["0.6.4"] = {
+                sha256 = {
+                    ["aarch64"] = "d6f66be8684d59e217673fdeb981181525115d49750a3ec1a76a13c47b8f5b9f",
+                    ["x86_64"] = "a1d7f166410a04b9cccebd37970c0b213a350abe4d7293cdcdf57dbb01929de9",
+                },
+            },
+            ["0.6.2"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/0.6.2/okrun-0.6.2-linux-${arch}.zip",
+                    CN = "https://gitcode.com/xlings-res/okrun/releases/download/0.6.2/okrun-0.6.2-linux-${arch}.zip",
+                },
+                sha256 = {
+                    ["aarch64"] = "d8b73bbe3b0db07506fb32c55ef0aac283236d43aa62b28692373806cbbb1af3",
+                    ["x86_64"] = "03fa591f6b04b127a893d90d1239aafcb4460c30896d9997f3319db5b251c792",
+                },
+            },
+            ["0.5.3"] = {
+                sha256 = {
+                    ["aarch64"] = "736292232282a1bb89d2d2d540405a5af59dacaf3a1cf901fe47b432c876cc90",
+                    ["x86_64"] = "1f82ca4c1215b8feec6a0598599abaa42fc037a60df6dbb0c6f915871a9e96b0",
+                },
+            },
             ["0.5.0"] = {
                 url = {
                     GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/0.5.0/okrun-0.5.0-jit1-linux-${arch}.zip",
@@ -124,7 +151,26 @@ package = {
                 GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/${version}/okrun-${version}-macos-${arch}.zip",
                 CN = "https://gitcode.com/xlings-res/okrun/releases/download/${version}/okrun-${version}-macos-${arch}.zip",
             },
-            ["latest"] = { ref = "0.5.0" },
+            ["latest"] = { ref = "0.6.4" },
+            ["0.6.4"] = {
+                sha256 = {
+                    ["aarch64"] = "898681454ae1bff3ddb91a1e8f16f636e42a7078eb02e690cb4d38cc80ef2f57",
+                },
+            },
+            ["0.6.2"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/0.6.2/okrun-0.6.2-macos-${arch}.zip",
+                    CN = "https://gitcode.com/xlings-res/okrun/releases/download/0.6.2/okrun-0.6.2-macos-${arch}.zip",
+                },
+                sha256 = {
+                    ["aarch64"] = "07a39938d2dde06c4deca3045b962abcfbe6d945bbb988f981ae33bedf1d3132",
+                },
+            },
+            ["0.5.3"] = {
+                sha256 = {
+                    ["aarch64"] = "e3249e8505f9733e6f6970842098887edc0695adf142dca20c190fb12ed5f056",
+                },
+            },
             ["0.5.0"] = {
                 url = {
                     GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/0.5.0/okrun-0.5.0-jit1-macos-${arch}.zip",
@@ -200,7 +246,26 @@ package = {
                 GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/${version}/okrun-${version}-windows-${arch}.zip",
                 CN = "https://gitcode.com/xlings-res/okrun/releases/download/${version}/okrun-${version}-windows-${arch}.zip",
             },
-            ["latest"] = { ref = "0.5.0" },
+            ["latest"] = { ref = "0.6.4" },
+            ["0.6.4"] = {
+                sha256 = {
+                    ["x86_64"] = "f43477b46b83436af7850d7c4505b542b1cc643a5193de8353f64d1fd619926a",
+                },
+            },
+            ["0.6.2"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/0.6.2/okrun-0.6.2-windows-${arch}.zip",
+                    CN = "https://gitcode.com/xlings-res/okrun/releases/download/0.6.2/okrun-0.6.2-windows-${arch}.zip",
+                },
+                sha256 = {
+                    ["x86_64"] = "e24f1035fab5c095a26b46fbbdb52cbc8e8c19dd687d2c9ca968a07e3b1d8901",
+                },
+            },
+            ["0.5.3"] = {
+                sha256 = {
+                    ["x86_64"] = "00b57b29131edb9b131d6f9b03e28b9b93ff19945770b054efdcd057e6691151",
+                },
+            },
             ["0.5.0"] = {
                 url = {
                     GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/0.5.0/okrun-0.5.0-jit1-windows-${arch}.zip",

@@ -17,7 +17,7 @@ package = {
     -- the package tracks where its dependency (xim:mcppls) exists; the
     -- source archive is the same file for both, hence the identical sha256.
     archs = {"x86_64", "aarch64"},
-    status = "dev", -- 0.0.x: upstream is pre-1.0, expect breaking changes
+    status = "dev", -- upstream is pre-1.0, expect breaking changes
     categories = {"cpp", "language-server", "lsp", "nvim"},
     keywords = {"cpp", "c++", "modules", "lsp", "clangd", "mcpp", "nvim", "neovim", "plugin"},
 
@@ -48,7 +48,13 @@ package = {
                 GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/archive/refs/tags/v${version}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v${version}/src-${version}.tar.gz",
             },
-            ["latest"] = { ref = "0.0.20" },
+            ["latest"] = { ref = "0.21.0" },
+            ["0.21.0"] = {
+                sha256 = {
+                    x86_64 = "0d276456a2ba7d047913e6c41e9a6f36f1083b5823dde6534518310a83170e8d",
+                    aarch64 = "0d276456a2ba7d047913e6c41e9a6f36f1083b5823dde6534518310a83170e8d",
+                },
+            },
             ["0.0.20"] = {
                 sha256 = {
                     x86_64 = "2e33ea1c63e9eb488519d71e6794951cf99392e0fb5d7e5ce067b11d730fae75",
@@ -74,7 +80,12 @@ package = {
                 GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/archive/refs/tags/v${version}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v${version}/src-${version}.tar.gz",
             },
-            ["latest"] = { ref = "0.0.20" },
+            ["latest"] = { ref = "0.21.0" },
+            ["0.21.0"] = {
+                sha256 = {
+                    aarch64 = "0d276456a2ba7d047913e6c41e9a6f36f1083b5823dde6534518310a83170e8d",
+                },
+            },
             ["0.0.20"] = {
                 sha256 = {
                     aarch64 = "2e33ea1c63e9eb488519d71e6794951cf99392e0fb5d7e5ce067b11d730fae75",
@@ -97,7 +108,12 @@ package = {
                 GLOBAL = "https://github.com/Sunrisepeak/mcpp-language-server/archive/refs/tags/v${version}.tar.gz",
                 CN = "https://gitcode.com/xlings-res/mcppls/releases/download/v${version}/src-${version}.tar.gz",
             },
-            ["latest"] = { ref = "0.0.20" },
+            ["latest"] = { ref = "0.21.0" },
+            ["0.21.0"] = {
+                sha256 = {
+                    x86_64 = "0d276456a2ba7d047913e6c41e9a6f36f1083b5823dde6534518310a83170e8d",
+                },
+            },
             ["0.0.20"] = {
                 sha256 = {
                     x86_64 = "2e33ea1c63e9eb488519d71e6794951cf99392e0fb5d7e5ce067b11d730fae75",
