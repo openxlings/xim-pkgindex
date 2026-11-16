@@ -142,6 +142,7 @@ class TestVerify:
 |---|---|
 | 依赖坐标与分离的 `deps` 写法 | `tests/test_dep_query_coordinates.py`、`tests/test_deps_shape.py` |
 | 库载荷中没有编译器运行时 | `tests/test_no_compiler_runtime_in_payloads.py` |
+| 配方写出的 dirun 配置可按 TOML 解析 | `tests/test_dirun_profiles.py` |
 | 已发布的 Luban 版本输出不变 | `tests/test_luban_published.py` |
 | 资源变化时提高 `revision` | `.github/scripts/check-revision.lua` |
 | `floor` 是 `0 ≤ floor ≤ revision` 的整数，写在版本项上 | `.github/scripts/check-revision.lua` |

@@ -38,11 +38,21 @@ package = {
         },
         linux = {
             ["latest"] = { ref = "8.0" },
-            ["8.0"] = { sha256 = "35b60e66672f086369d7d1bc2d6f88fb6a635bf7b249f3490b43182f8edc75ba" },
+            ["8.0"] = {
+                -- r1: the profile is TOML (its two patterns escape `\`); r0's did not parse,
+                -- so an installed r0 is below the floor and is replaced.
+                revision = 1, floor = 1,
+                sha256 = "35b60e66672f086369d7d1bc2d6f88fb6a635bf7b249f3490b43182f8edc75ba",
+            },
         },
         macosx = {
             ["latest"] = { ref = "8.0" },
-            ["8.0"] = { sha256 = "35b60e66672f086369d7d1bc2d6f88fb6a635bf7b249f3490b43182f8edc75ba" },
+            ["8.0"] = {
+                -- r1: the profile is TOML (its two patterns escape `\`); r0's did not parse,
+                -- so an installed r0 is below the floor and is replaced.
+                revision = 1, floor = 1,
+                sha256 = "35b60e66672f086369d7d1bc2d6f88fb6a635bf7b249f3490b43182f8edc75ba",
+            },
         },
     },
 }
@@ -72,7 +82,7 @@ expect = "Password:"
 send   = "root"
 
 [[boot]]
-expect = "# |\$ "
+expect = "# |\\$ "
 
 [command]
 prepare = ["stty -echo"]
@@ -80,7 +90,7 @@ line    = "echo @@BEGIN@@; {env}{argv} < /dev/null; echo @@STATUS=$?@@"
 env     = "env {assignments} "
 quote   = "posix"
 begin   = "@@BEGIN@@"
-status  = "@@STATUS=(\d+)@@"
+status  = "@@STATUS=(\\d+)@@"
 line-max = 200            # a longer line is written to the files disk and run from there
 script   = "sh {script}"
 
