@@ -17,10 +17,18 @@ still receive static, registration, site and candidate-declaration checks.
 
 The planner follows `xim.pkgindex.*` imports through shared modules and then
 reverse package references using both source trees. It passes that expanded
-file set to consumer fixtures. Literal coordinates in legacy dependency
-expressions are deliberately conservative: an extra consumer is preferable to
-missing a dependency. Dynamically computed platform tables fall back to the
-existing platform readers rather than claiming unsupported precision.
+file set to consumer fixtures. A reference is a package coordinate
+(`<namespace>:<name>[@<version or range>]`) anywhere in a recipe, which covers
+dependency expressions, or a bare name inside a `deps` table; other bare strings
+(keywords, categories, program names, paths) are not references. A name reaches
+every recipe of that name. A consumer pinned to an exact version is affected only
+when that version's entry changed or the recipe changed outside its version
+entries; one that names a range or no version is affected by any change, and one
+reached through another consumer counts as wholly changed. An appended version
+therefore plans the package and its unpinned consumers: an mcpp bump plans 4
+packages, where bare words planned 71 (#1094). Dynamically computed platform
+tables fall back to the existing platform readers rather than claiming
+unsupported precision.
 
 Platform lifecycle jobs only exist when there are files to install. Their
 native hosts remain Linux/Windows x86_64 and Apple Silicon macOS; automatic

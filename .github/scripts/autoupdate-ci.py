@@ -201,7 +201,7 @@ def run_candidate(identity, filename, version, expected_arch=None):
             outputs[program] = probe.stdout.strip()
     test_file = ROOT / 'tests' / path.parent.name / ('test_' + name.replace('-', '_').replace('.', '_') + '.py')
     if test_file.exists():
-        subprocess.run(['python', '-m', 'pytest', str(test_file), '-m', 'verify', '-q'], check=True,
+        subprocess.run([sys.executable, '-m', 'pytest', str(test_file), '-m', 'verify', '-q'], check=True,
                        env={**os.environ, 'XLINGS_TEST_SUBOS': 'default', 'XLINGS_TEST_VERSION': version})
     evidence = {'id': identity, 'version': version, 'descriptor': filename,
                 'descriptor_sha256': descriptor_digest(path.read_bytes().decode('utf-8')),

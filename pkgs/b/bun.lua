@@ -19,29 +19,29 @@ package = {
 
     xpm = {
         linux = {
-            -- node/npm are needed at install time only (the install
-            -- hook calls `npm install bun@<ver>`); after install the
-            -- bun native binary is self-contained. glibc is the actual
-            -- runtime dep — bun's prebuilt is dynamically linked
-            -- (NEEDED libc.so.6 / libdl.so.2 / libm.so.6 /
-            -- libpthread.so.0; no libgcc_s/libstdc++).
+            -- node is needed at install time only (it also provides npm);
+            -- after install the selected bun native binary is self-contained.
+            -- glibc is the actual runtime dep. Bun's npm package keeps
+            -- @oven/* optional platform payloads, including musl variants;
+            -- install() removes them after postinstall has copied the selected
+            -- binary, because CI scans every ELF in the payload.
             deps = {
                 runtime = { "xim:glibc@>=2.39" },
-                build   = { "xim:node", "xim:npm" },
+                build   = { "xim:node" },
             },
             ["latest"] = { ref = "1.3.11" },
             ["1.3.11"] = { ref = "1.3.11" },
         },
         macosx = {
             deps = {
-                build = { "xim:node", "xim:npm" },
+                build = { "xim:node" },
             },
             ["latest"] = { ref = "1.3.11" },
             ["1.3.11"] = { ref = "1.3.11" },
         },
         windows = {
             deps = {
-                build = { "xim:node", "xim:npm" },
+                build = { "xim:node" },
             },
             ["latest"] = { ref = "1.3.11" },
             ["1.3.11"] = { ref = "1.3.11" },
@@ -63,6 +63,11 @@ function install()
     )
     os.exec(npm_install)
 
+    local selected = path.join(pkginfo.install_dir(), "node_modules", "bun", "bin", "bun.exe")
+    if not os.isfile(selected) then
+        return false
+    end
+    os.tryrm(path.join(pkginfo.install_dir(), "node_modules", "@oven"))
     return true
 end
 

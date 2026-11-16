@@ -6,7 +6,11 @@ from pathlib import Path
 
 
 def select(entries, only):
-    selected = [e for e in entries if not only or e['what'] == only]
+    # `what`, or `what@version`: one version of a resource, so a new one is
+    # built without rebuilding the ones already published.
+    what, _, version = only.partition('@')
+    selected = [e for e in entries
+                if not only or (e['what'] == what and (not version or e['version'] == version))]
     if not selected:
         raise ValueError('Unknown resource: ' + only)
     return {'include': selected}

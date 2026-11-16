@@ -76,7 +76,19 @@ package = {
                 -- 2026.10.19.2, before which nothing uses it).
                 "luban:cursors",
             },
-            ["latest"] = { ref = "2026.10.24.3" },
+            ["latest"] = { ref = "2026.11.16.1" },
+            ["2026.11.16.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "505609e74af547d00976c9e1996afa07f793e8b626c87f4c99c2f70e60cc67e8",
+                },
+            },
+            ["2026.10.26.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "1a6a3fb6f1c93fc9b1db557a4d3c31ea36ae81678e161444ae5831ef82127d98",
+                },
+            },
             ["2026.10.24.3"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -263,7 +275,19 @@ package = {
         },
         macosx = {
             deps = { "xim:luban-fonts", "luban:cursors" },
-            ["latest"] = { ref = "2026.10.24.3" },
+            ["latest"] = { ref = "2026.11.16.1" },
+            ["2026.11.16.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "fa1b5c0169df3a2f69ae2537f221dc4f166d620df2bb43d60b2550d3202dc12d",
+                },
+            },
+            ["2026.10.26.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "091dd7985fbca7c5dd01045b2fd12c1b6f995cc74311926c8e5b6cb7db75628a",
+                },
+            },
             ["2026.10.24.3"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -423,7 +447,19 @@ package = {
         },
         windows = {
             deps = { "xim:luban-fonts", "luban:cursors" },
-            ["latest"] = { ref = "2026.10.24.3" },
+            ["latest"] = { ref = "2026.11.16.1" },
+            ["2026.11.16.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "639977967e28e96b02d2ceb646738fcfc44cd04af9e2fd64bb1c15ed377d1e66",
+                },
+            },
+            ["2026.10.26.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "e11524db39e0233b682e666d3e24276bfa5ce27cce987b9461c576d0692a1b8f",
+                },
+            },
             ["2026.10.24.3"] = {
                 url = "XLINGS_RES",
                 sha256 = {

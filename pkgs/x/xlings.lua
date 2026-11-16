@@ -37,7 +37,21 @@ package = {
         linux = {
             -- Written by xlings' release (openxlings/xlings tools/bump_index.py):
             -- each version an XLINGS_RES entry with its sha256, and latest.
-            ["latest"] = { ref = "2026.10.24.3" },
+            ["latest"] = { ref = "2026.11.16.1" },
+            ["2026.11.16.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "fc43864dc797e77c7b660b03c2e3aefbff442720e131a84e733a132bf4e19b0b",
+                    x86_64 = "7978b3285b39c349caec386a7b2c35582883815217113415985e52df02aecb32",
+                },
+            },
+            ["2026.10.26.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "b68822885f1c8c2452bd9c2f0ac9b5728a0cbd29f451f9c46cdc6dee4796b430",
+                    x86_64 = "5c6e85a9c2b419e3ab8a35348b1a37abce93dafeba7b8d461970ec97d8c41a64",
+                },
+            },
             ["2026.10.24.3"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -1036,7 +1050,19 @@ package = {
         macosx = {
             -- Written by xlings' release (openxlings/xlings tools/bump_index.py):
             -- each version an XLINGS_RES entry with its sha256, and latest.
-            ["latest"] = { ref = "2026.10.24.3" },
+            ["latest"] = { ref = "2026.11.16.1" },
+            ["2026.11.16.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "73110ee8d71f9c9625b7e9e61a00e98a7af283003e736782b2c7245c54cf2154",
+                },
+            },
+            ["2026.10.26.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "8d30a1a2a059c6006494ab2435f3fa0a37be92b9a7f403c369ce903f6e3e3f38",
+                },
+            },
             ["2026.10.24.3"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -1914,7 +1940,19 @@ package = {
         windows = {
             -- Written by xlings' release (openxlings/xlings tools/bump_index.py):
             -- each version an XLINGS_RES entry with its sha256, and latest.
-            ["latest"] = { ref = "2026.10.24.3" },
+            ["latest"] = { ref = "2026.11.16.1" },
+            ["2026.11.16.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "97931ec3b274c76fcf1013accfe751ffd3bbe4fd38188ec01f8564611205174b",
+                },
+            },
+            ["2026.10.26.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "d87d93b44f61014dde18952afe7d55f6c1889bfd1d7bf35b3412a1ceff6421bb",
+                },
+            },
             ["2026.10.24.3"] = {
                 url = "XLINGS_RES",
                 sha256 = {

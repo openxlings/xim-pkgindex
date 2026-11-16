@@ -24,5 +24,6 @@ add to it. Using xlings itself is in
 - [11 — Official Resources](11-official-resources.md)
 - [12 — Luban Packages](12-luban-packages.md)
 - [13 — CI: Mirror and Update](13-ci-mirror-and-update.md)
+- [14 — openkal Programs](14-openkal-programs.md)
 - [20 — Testing](20-testing.md)
 - [Specifications](specs/README.md)

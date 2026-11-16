@@ -16,7 +16,7 @@ on:
   workflow_dispatch:
     inputs:
       only:
-        description: "build only this resource (empty: all)"
+        description: "build only this resource, or one version of it (`what` or `what@version`; empty: all)"
         required: false
         default: ""
       publish_runs:
