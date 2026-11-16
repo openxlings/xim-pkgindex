@@ -922,6 +922,7 @@ arm-none-eabi-gcc)
     printf 'int f(int a, int b) { return a / b; }\n' > "$work/t.c"
     "$g" -mcpu=cortex-m0 -mthumb -nostdlib -Wl,-e,f "$work/t.c" -lgcc -o "$work/t.elf" || die "a freestanding link with libgcc failed"
     GLIBC_ELFS="$(find "$work/$d/bin" "$work/$d/libexec" "$work/$d/arm-none-eabi/bin" -type f -exec sh -c 'file -b "$1" | grep -q "^ELF.*dynamically linked" && echo "$1"' _ {} \;)"
+    [[ -n "$GLIBC_ELFS" ]] || die "$what: no dynamically linked ELF in the payload"
     glibc_only
     provenance "$d" "arm-none-eabi-gcc $version: gcc $v (sha256 $(input gcc "$v")) and binutils $bv (sha256 $(input binutils "$bv")), built by tools/res/arm-none-eabi/gcc.sh in Debian 12 (c,c++; --with-multilib-list=rmprofile; no C library, libgcc built with inhibit_libc; sysroot <prefix>/arm-none-eabi, relocatable); stage 0 is Debian 12's gcc"
     pack "$d" ;;
