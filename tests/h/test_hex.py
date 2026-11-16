@@ -6,7 +6,7 @@ from tests.lib.assertions import (
     assert_no_typos, assert_no_exec_xvm, assert_no_bashrc_modification,
     assert_no_direct_path_modification, assert_uses_new_api,
     assert_xim_add_succeeds, assert_install_succeeds,
-    assert_uninstall_succeeds, assert_command_output, assert_xvm_shim_exists,
+    assert_command_output, assert_xvm_shim_exists,
 )
 from tests.lib.platform_utils import skip_if_not
 
@@ -76,15 +76,15 @@ class TestIsolation:
 
 
 class TestLifecycle:
+    # No uninstall test here on purpose: the install job's posix-test.sh
+    # already proves install → uninstall → shim-leak cleanliness for this
+    # recipe, and recipe-tests.py runs this module AFTER that uninstall —
+    # a test_uninstall here would leave nothing on PATH for TestVerify
+    # (this is the shape test_aria2_next.py runs with).
     @pytest.mark.lifecycle
     @skip_if_not('linux')
     def test_install(self):
         assert_install_succeeds(PKG)
-
-    @pytest.mark.lifecycle
-    @skip_if_not('linux')
-    def test_uninstall(self):
-        assert_uninstall_succeeds(PKG)
 
 
 class TestVerify:
