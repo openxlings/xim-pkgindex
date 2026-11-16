@@ -22,6 +22,8 @@ package = {
     -- EFI/BOOT/BOOTX64.EFI, so the firmware starts its internal Shell; the Shell runs the
     -- disk's startup.nsh, which runs `APP.EFI <arguments>' (after a five-second countdown the
     -- Shell itself waits), so the application receives its arguments as a Shell command's.
+    -- r3: the profile states `quote = "uefi-shell"' (dirun 0.5.0): the Shell splits the line at
+    -- blanks outside double quotes, so an argument with a blank was received as two.
     -- r1 placed it as BOOTX64.EFI, which the firmware starts with no arguments. Its status
     -- is the one it writes to the isa-debug-exit port (0xf4); what precedes the Shell's echo
     -- of the command line is boot noise, and `reset -s' ends a run whose application returned
@@ -33,7 +35,16 @@ package = {
     -- automatically; this recipe is kept by hand.
     xpm = {
         linux = {
-            ["latest"] = { ref = "9.2.4-2" },
+            ["latest"] = { ref = "9.2.4-3" },
+            ["9.2.4-3"] = {
+                -- r3: the profile quotes the arguments for the Shell (dirun 0.5.0, [payload] quote).
+                revision = 3,
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/edk2-firmware/releases/download/9.2.4/edk2-firmware-9.2.4-linux-x86_64.tar.gz",
+                    CN     = "https://gitcode.com/xlings-res/edk2-firmware/releases/download/9.2.4/edk2-firmware-9.2.4-linux-x86_64.tar.gz",
+                },
+                sha256 = "fa9e47e33e5a2f554bfde81831797dbdaf9110423f34cf2254e1f3ee5f4498c4",
+            },
             ["9.2.4-2"] = {
                 -- r2: the profile starts the application from the firmware's Shell, with its arguments.
                 revision = 2,
@@ -61,7 +72,16 @@ package = {
             },
         },
         macosx = {
-            ["latest"] = { ref = "9.2.4-2" },
+            ["latest"] = { ref = "9.2.4-3" },
+            ["9.2.4-3"] = {
+                -- r3: the profile quotes the arguments for the Shell (dirun 0.5.0, [payload] quote).
+                revision = 3,
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/edk2-firmware/releases/download/9.2.4/edk2-firmware-9.2.4-linux-x86_64.tar.gz",
+                    CN     = "https://gitcode.com/xlings-res/edk2-firmware/releases/download/9.2.4/edk2-firmware-9.2.4-linux-x86_64.tar.gz",
+                },
+                sha256 = "fa9e47e33e5a2f554bfde81831797dbdaf9110423f34cf2254e1f3ee5f4498c4",
+            },
             ["9.2.4-2"] = {
                 -- r2: the profile starts the application from the firmware's Shell, with its arguments.
                 revision = 2,
@@ -89,7 +109,16 @@ package = {
             },
         },
         windows = {
-            ["latest"] = { ref = "9.2.4-2" },
+            ["latest"] = { ref = "9.2.4-3" },
+            ["9.2.4-3"] = {
+                -- r3: the profile quotes the arguments for the Shell (dirun 0.5.0, [payload] quote).
+                revision = 3,
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/edk2-firmware/releases/download/9.2.4/edk2-firmware-9.2.4-linux-x86_64.tar.gz",
+                    CN     = "https://gitcode.com/xlings-res/edk2-firmware/releases/download/9.2.4/edk2-firmware-9.2.4-linux-x86_64.tar.gz",
+                },
+                sha256 = "fa9e47e33e5a2f554bfde81831797dbdaf9110423f34cf2254e1f3ee5f4498c4",
+            },
             ["9.2.4-2"] = {
                 -- r2: the profile starts the application from the firmware's Shell, with its arguments.
                 revision = 2,
@@ -124,7 +153,8 @@ import("xim.libxpkg.xvm")
 
 -- The profile names the firmware beside it ({profile-dir}, dirun 0.3.2), so the
 -- installed file holds no path of this machine. Each revision installs its own profile: r1's
--- boots the application as BOOTX64.EFI; r2's (below) from the Shell, with its arguments.
+-- boots the application as BOOTX64.EFI; r2's from the Shell, with its arguments; r3's (below)
+-- quotes those arguments for the Shell, a key dirun reads from 0.5.0.
 local profile_r1 = [[
 # A UEFI application booted by OVMF in QEMU (dirun's payload form). The package ovmf
 # installs this file at its root; the emulator is named by the runner (--emulator).
@@ -143,7 +173,7 @@ status = "debug-exit"
 after  = "BdsDxe: starting [^\n]*\n"
 ]]
 
-local profile = [[
+local profile_r2 = [[
 # A UEFI application run by the Shell of OVMF in QEMU (dirun's payload form). The package ovmf
 # installs this file at its root; the emulator is named by the runner (--emulator). The disk holds
 # APP.EFI and no EFI/BOOT/BOOTX64.EFI, so the firmware starts its internal Shell, and the Shell runs
@@ -164,6 +194,29 @@ status = "debug-exit"
 after  = "APP\\.EFI[^\n]*\n"
 ]]
 
+local profile = [[
+# A UEFI application run by the Shell of OVMF in QEMU (dirun's payload form). The package ovmf
+# installs this file at its root; the emulator is named by the runner (--emulator). The disk holds
+# APP.EFI and no EFI/BOOT/BOOTX64.EFI, so the firmware starts its internal Shell, and the Shell runs
+# startup.nsh: the application is a Shell command and receives its arguments, each quoted for the
+# Shell (quote, dirun 0.5.0): one with a blank stays one.
+name = "ovmf-x86_64"
+
+[machine]
+arch = "x86_64"
+type = "q35"
+
+[payload]
+args   = ["-drive", "if=pflash,format=raw,readonly=on,file={profile-dir}/share/edk2/edk2-x86_64-code.fd",
+          "-drive", "if=virtio,format=raw,readonly=on,file=fat:{dir}",
+          "-device", "isa-debug-exit,iobase=0xf4,iosize=0x04"]
+place  = "APP.EFI"
+files  = { "startup.nsh" = "fs0:\r\nAPP.EFI {args}\r\nreset -s\r\n" }
+quote  = "uefi-shell"
+status = "debug-exit"
+after  = "APP\\.EFI[^\n]*\n"
+]]
+
 function install()
     local dir = pkginfo.install_dir()
     -- The archive's one directory, edk2-firmware-<upstream version>, is the package; a
@@ -175,7 +228,8 @@ function install()
         os.mv(payload, dir)
     end
     local revision = tonumber(pkginfo.version():match("%-(%d+)$") or "0")
-    io.writefile(path.join(dir, "dirun.toml"), revision >= 2 and profile or profile_r1)
+    io.writefile(path.join(dir, "dirun.toml"),
+                 revision >= 3 and profile or revision == 2 and profile_r2 or profile_r1)
     return os.isfile(path.join(dir, "share", "edk2", "edk2-x86_64-code.fd"))
 end
 
