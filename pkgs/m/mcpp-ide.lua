@@ -1,0 +1,296 @@
+-- Written by `mcpp emit xpkg --package` from mcpp-ide's universal package
+-- (from 0.2.0: mcpp-ide-<version>-openkal-bundle-all.tar.gz, `mcpp pack --mode self-contained
+-- --systems linux,macos,windows` of the backend's ok images over
+-- openkal-platform), with the index's own parts added: description, authors,
+-- license, the CN mirror, the version history.
+--
+-- One asset serves every system: the package holds the x86_64 and aarch64
+-- images, the launchers bin/mcpp-ide and bin/mcpp-ide.exe (.cmd in older packages), and okrun for each
+-- system it names (libexec/okrun/<os>-<arch>/), so it depends on nothing.
+-- It carries okrun for linux-x86_64, linux-aarch64, macos-aarch64 and
+-- windows-x86_64, the systems okrun is built for (pkgs/o/okrun.lua); the
+-- launcher falls back to okrun on PATH, which no other system has, so from
+-- 0.1.1 each version names its architectures by its sha256 table: macOS
+-- aarch64 alone, Windows x86_64 alone. A published version's entry stays as
+-- it was published.
+-- GLOBAL is the upstream release; CN is the same bytes at
+-- gitcode.com/xlings-res/mcpp-ide (uploaded with `gtc release upload` and
+-- verified by download), so one sha256 serves both.
+package = {
+    spec = "2",
+    name = "mcpp-ide",
+    description = "The IDE backend for mcpp: sessions, jobs, records and view models over mcpp's control contract, served as JSON-RPC by `mcpp-ide serve` (one ok-image package for every system)",
+
+    authors = {"mcpp-community"},
+    maintainers = {"https://github.com/mcpp-community/mcpp-ide/graphs/contributors"},
+    licenses = {"Apache-2.0"},
+    repo = "https://github.com/mcpp-community/mcpp-ide",
+    docs = "https://github.com/mcpp-community/mcpp-ide#readme",
+    homepage = "https://github.com/mcpp-community/mcpp-ide",
+    type = "package",
+    status = "dev",
+    categories = {"cpp", "ide", "mcpp"},
+    keywords = {"cpp", "c++", "modules", "mcpp", "ide", "json-rpc", "openkal"},
+    archs = {"aarch64", "x86_64"},
+    programs = {"mcpp-ide"},
+    xvm_enable = true,
+    xpm = {
+        linux = {
+            ["latest"] = { ref = "1.5.0" },
+            ["1.5.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v1.5.0/mcpp-ide-1.5.0-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v1.5.0/mcpp-ide-1.5.0-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    x86_64 = "86ffee3a6fe95a250b6d06537d40fcfae1e3a76fe09fd92b7eaf352697a24a0b",
+                    aarch64 = "86ffee3a6fe95a250b6d06537d40fcfae1e3a76fe09fd92b7eaf352697a24a0b",
+                },
+            },
+            ["1.3.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v1.3.0/mcpp-ide-1.3.0-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v1.3.0/mcpp-ide-1.3.0-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    x86_64 = "dab0c0adbda44b28208b955ff98c818214cbfcaae0e80f019915fd4eaf22eabb",
+                    aarch64 = "dab0c0adbda44b28208b955ff98c818214cbfcaae0e80f019915fd4eaf22eabb",
+                },
+            },
+            ["1.2.1"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/backend-v1.2.1/mcpp-ide-1.2.1-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/backend-v1.2.1/mcpp-ide-1.2.1-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    x86_64 = "b5dd2cd9d5435f8125a95b9154556c293b3e4b8b3e7ed9b129013f3eb1322342",
+                    aarch64 = "b5dd2cd9d5435f8125a95b9154556c293b3e4b8b3e7ed9b129013f3eb1322342",
+                },
+            },
+            ["1.2.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v1.2.0/mcpp-ide-1.2.0-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v1.2.0/mcpp-ide-1.2.0-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    x86_64 = "4b105674b59cd3539a74432d973937802e126b87d9d9f14801c9fdc7dc4f7e9d",
+                    aarch64 = "4b105674b59cd3539a74432d973937802e126b87d9d9f14801c9fdc7dc4f7e9d",
+                },
+            },
+            ["0.2.1"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v0.2.1/mcpp-ide-0.2.1-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v0.2.1/mcpp-ide-0.2.1-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    x86_64 = "f9e3c6d663e4afb244f747c9cc9424304e409044b9519843ae7fe24ef60ce674",
+                    aarch64 = "f9e3c6d663e4afb244f747c9cc9424304e409044b9519843ae7fe24ef60ce674",
+                },
+            },
+            ["0.2.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v0.2.0/mcpp-ide-0.2.0-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v0.2.0/mcpp-ide-0.2.0-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    x86_64 = "3d692b433f85588327b7aa06e158e97db61490498870af84ace731a633c1ebe0",
+                    aarch64 = "3d692b433f85588327b7aa06e158e97db61490498870af84ace731a633c1ebe0",
+                },
+            },
+            ["0.1.1"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v0.1.1/mcpp-ide-0.1.1-openkal.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v0.1.1/mcpp-ide-0.1.1-openkal.tar.gz",
+                },
+                sha256 = {
+                    x86_64 = "c7182badc3fc944c8192b482ced1e6514eb02fc8e592eaad5c48acdfdd5c2c21",
+                    aarch64 = "c7182badc3fc944c8192b482ced1e6514eb02fc8e592eaad5c48acdfdd5c2c21",
+                },
+            },
+            ["0.1.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v0.1.0/mcpp-ide-0.1.0-openkal.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v0.1.0/mcpp-ide-0.1.0-openkal.tar.gz",
+                },
+                sha256 = "4c033c3decaabb90fc87786dc6b0e1ba01becddf457f1eb1f1c3a28066256149",
+            },
+        },
+        macosx = {
+            ["latest"] = { ref = "1.5.0" },
+            ["1.5.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v1.5.0/mcpp-ide-1.5.0-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v1.5.0/mcpp-ide-1.5.0-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    aarch64 = "86ffee3a6fe95a250b6d06537d40fcfae1e3a76fe09fd92b7eaf352697a24a0b",
+                },
+            },
+            ["1.3.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v1.3.0/mcpp-ide-1.3.0-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v1.3.0/mcpp-ide-1.3.0-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    aarch64 = "dab0c0adbda44b28208b955ff98c818214cbfcaae0e80f019915fd4eaf22eabb",
+                },
+            },
+            ["1.2.1"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/backend-v1.2.1/mcpp-ide-1.2.1-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/backend-v1.2.1/mcpp-ide-1.2.1-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    aarch64 = "b5dd2cd9d5435f8125a95b9154556c293b3e4b8b3e7ed9b129013f3eb1322342",
+                },
+            },
+            ["1.2.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v1.2.0/mcpp-ide-1.2.0-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v1.2.0/mcpp-ide-1.2.0-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    aarch64 = "4b105674b59cd3539a74432d973937802e126b87d9d9f14801c9fdc7dc4f7e9d",
+                },
+            },
+            ["0.2.1"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v0.2.1/mcpp-ide-0.2.1-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v0.2.1/mcpp-ide-0.2.1-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    aarch64 = "f9e3c6d663e4afb244f747c9cc9424304e409044b9519843ae7fe24ef60ce674",
+                },
+            },
+            ["0.2.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v0.2.0/mcpp-ide-0.2.0-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v0.2.0/mcpp-ide-0.2.0-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    aarch64 = "3d692b433f85588327b7aa06e158e97db61490498870af84ace731a633c1ebe0",
+                },
+            },
+            ["0.1.1"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v0.1.1/mcpp-ide-0.1.1-openkal.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v0.1.1/mcpp-ide-0.1.1-openkal.tar.gz",
+                },
+                sha256 = {
+                    aarch64 = "c7182badc3fc944c8192b482ced1e6514eb02fc8e592eaad5c48acdfdd5c2c21",
+                },
+            },
+            ["0.1.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v0.1.0/mcpp-ide-0.1.0-openkal.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v0.1.0/mcpp-ide-0.1.0-openkal.tar.gz",
+                },
+                sha256 = "4c033c3decaabb90fc87786dc6b0e1ba01becddf457f1eb1f1c3a28066256149",
+            },
+        },
+        windows = {
+            ["latest"] = { ref = "1.5.0" },
+            ["1.5.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v1.5.0/mcpp-ide-1.5.0-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v1.5.0/mcpp-ide-1.5.0-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    x86_64 = "86ffee3a6fe95a250b6d06537d40fcfae1e3a76fe09fd92b7eaf352697a24a0b",
+                },
+            },
+            ["1.3.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v1.3.0/mcpp-ide-1.3.0-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v1.3.0/mcpp-ide-1.3.0-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    x86_64 = "dab0c0adbda44b28208b955ff98c818214cbfcaae0e80f019915fd4eaf22eabb",
+                },
+            },
+            ["1.2.1"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/backend-v1.2.1/mcpp-ide-1.2.1-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/backend-v1.2.1/mcpp-ide-1.2.1-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    x86_64 = "b5dd2cd9d5435f8125a95b9154556c293b3e4b8b3e7ed9b129013f3eb1322342",
+                },
+            },
+            ["1.2.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v1.2.0/mcpp-ide-1.2.0-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v1.2.0/mcpp-ide-1.2.0-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    x86_64 = "4b105674b59cd3539a74432d973937802e126b87d9d9f14801c9fdc7dc4f7e9d",
+                },
+            },
+            ["0.2.1"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v0.2.1/mcpp-ide-0.2.1-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v0.2.1/mcpp-ide-0.2.1-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    x86_64 = "f9e3c6d663e4afb244f747c9cc9424304e409044b9519843ae7fe24ef60ce674",
+                },
+            },
+            ["0.2.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v0.2.0/mcpp-ide-0.2.0-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v0.2.0/mcpp-ide-0.2.0-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    x86_64 = "3d692b433f85588327b7aa06e158e97db61490498870af84ace731a633c1ebe0",
+                },
+            },
+            ["0.1.1"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v0.1.1/mcpp-ide-0.1.1-openkal.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v0.1.1/mcpp-ide-0.1.1-openkal.tar.gz",
+                },
+                sha256 = {
+                    x86_64 = "c7182badc3fc944c8192b482ced1e6514eb02fc8e592eaad5c48acdfdd5c2c21",
+                },
+            },
+            ["0.1.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v0.1.0/mcpp-ide-0.1.0-openkal.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v0.1.0/mcpp-ide-0.1.0-openkal.tar.gz",
+                },
+                sha256 = "4c033c3decaabb90fc87786dc6b0e1ba01becddf457f1eb1f1c3a28066256149",
+            },
+        },
+    },
+}
+
+import("xim.libxpkg.pkginfo")
+import("xim.libxpkg.xvm")
+
+function install()
+    -- The archive's one top-level directory is the package; it is named
+    -- after the archive, which xim unpacks beside it.
+    local top = pkginfo.install_file()
+    for _, ext in ipairs({ ".tar.gz" }) do
+        if top:sub(-#ext) == ext then top = top:sub(1, #top - #ext) break end
+    end
+    if not os.isdir(top) then return false end
+    os.tryrm(pkginfo.install_dir())
+    os.mv(top, pkginfo.install_dir())
+    return os.isdir(pkginfo.install_dir())
+end
+
+function config()
+    local opts = { bindir = path.join(pkginfo.install_dir(), "bin") }
+    if os.host() == "windows" then
+        opts.alias = os.isfile(path.join(opts.bindir, "mcpp-ide.exe"))
+            and "mcpp-ide.exe" or "mcpp-ide.cmd"
+    end
+    xvm.add("mcpp-ide", opts)
+    return true
+end
+
+function uninstall()
+    xvm.remove("mcpp-ide")
+    return true
+end

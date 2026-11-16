@@ -47,25 +47,46 @@ package = {
 
     xpm = {
         windows = {
-            ["latest"] = { ref = "1.28.2" },
+            ["latest"] = { ref = "1.29.2" },
             ["1.28.2"] = {
                 url = string.format(_rustup_tpl, "1.28.2", "x86_64-pc-windows-msvc") .. ".exe",
                 sha256 = nil,
-            }
+            },
+            ["1.29.2"] = {
+                url = {
+                    GLOBAL = "https://static.rust-lang.org/rustup/archive/1.29.2/x86_64-pc-windows-msvc/rustup-init.exe",
+                    CN = "https://mirrors.ustc.edu.cn/rust-static/rustup/archive/1.29.2/x86_64-pc-windows-msvc/rustup-init.exe",
+                },
+                sha256 = "00f139da614dced87d3c3d4121c43eebdac3c1bf8a5ee86b9d80dfd71c8d70fd",
+            },
         },
         linux = {
-            ["latest"] = { ref = "1.28.2" },
+            ["latest"] = { ref = "1.29.2" },
             ["1.28.2"] = {
                 url = string.format(_rustup_tpl, "1.28.2", "x86_64-unknown-linux-gnu"),
                 sha256 = nil,
-            }
+            },
+            ["1.29.2"] = {
+                url = {
+                    GLOBAL = "https://static.rust-lang.org/rustup/archive/1.29.2/x86_64-unknown-linux-gnu/rustup-init",
+                    CN = "https://mirrors.ustc.edu.cn/rust-static/rustup/archive/1.29.2/x86_64-unknown-linux-gnu/rustup-init",
+                },
+                sha256 = "5be191e8c70a5007074254cb74d78dbfdd25cd5a61c27de7b8e5410122ec24f4",
+            },
         },
         macosx = {
-            ["latest"] = { ref = "1.28.2" },
+            ["latest"] = { ref = "1.29.2" },
             ["1.28.2"] = {
                 url = string.format(_rustup_tpl, "1.28.2", "x86_64-apple-darwin"),
                 sha256 = nil,
-            }
+            },
+            ["1.29.2"] = {
+                url = {
+                    GLOBAL = "https://static.rust-lang.org/rustup/archive/1.29.2/x86_64-apple-darwin/rustup-init",
+                    CN = "https://mirrors.ustc.edu.cn/rust-static/rustup/archive/1.29.2/x86_64-apple-darwin/rustup-init",
+                },
+                sha256 = "b9610730ddeef52765723847866fd1e3540b2bf7d5ab0c324aa143a5edf25ba0",
+            },
         },
     },
 }

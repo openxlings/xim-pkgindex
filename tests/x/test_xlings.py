@@ -9,10 +9,10 @@ from tests.lib.assertions import (
     assert_xim_add_succeeds, assert_install_succeeds,
     assert_command_output, assert_xvm_registered,
 )
-from tests.lib.platform_utils import skip_if_not
+from tests.lib.platform_utils import skip_if_not, under_test
 
 PKG = "xlings"
-INSTALL_PKG = "local:xlings@0.4.51"
+INSTALL_VERSION = "0.4.51"
 PKG_FILE = "pkgs/x/xlings.lua"
 
 
@@ -104,7 +104,7 @@ class TestLifecycle:
     @pytest.mark.lifecycle
     @skip_if_not('linux')
     def test_install(self):
-        assert_install_succeeds(INSTALL_PKG)
+        assert_install_succeeds(under_test(PKG, INSTALL_VERSION))
 
 
 class TestVerify:

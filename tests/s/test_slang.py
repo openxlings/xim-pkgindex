@@ -14,7 +14,7 @@ from tests.lib.platform_utils import skip_if_not
 
 PKG = "slang"
 PKG_FILE = "pkgs/s/slang.lua"
-VERSION = "2026.14.1"
+VERSION = "2026.20"
 
 # 每个平台的资源 URL 都由 platform-scope `source` 模板展开。三平台各有一处
 # 不规则，所以三个模板都要断言，而不是只测宿主平台那一个：
