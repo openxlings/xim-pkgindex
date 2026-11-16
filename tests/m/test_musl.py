@@ -1,5 +1,11 @@
 """测试 musl 包"""
+import json
+import os
+import platform
 import re
+import shutil
+import subprocess
+from pathlib import Path
 
 import pytest
 from tests.lib.xpkg_parser import parse_xpkg
@@ -9,7 +15,8 @@ from tests.lib.assertions import (
     assert_no_direct_path_modification, assert_uses_new_api,
     assert_xim_add_succeeds, assert_install_succeeds,
 )
-from tests.lib.platform_utils import skip_if_not
+from tests.lib.platform_utils import skip_if_not, under_test, xlings_home
+from tests.lib.xlings_client import XlingsClient
 
 PKG = "musl"
 PKG_FILE = "pkgs/m/musl.lua"
@@ -121,34 +128,10 @@ class TestDesign:
         assert not re.search(r'programs\s*=\s*\{[^}]*musl-gcc', code)
 
     @pytest.mark.static
-    def test_shared_libc_names_are_listed_separately(self):
-        """和 glibc 撞名的部分必须单独列出
-
-        这 11 个名字是对着 glibc.lua 的 glibc_libs 和 payload 里真实的
-        lib/ 算出来的交集,不是眼估的。单独成表是为了让"哪些名字危险"
-        在配方里是显式的。
-        """
-        code = lua_code()
-        m = re.search(r'local SHARED_LIBS = \{(.*?)\}', code, re.S)
-        assert m, "缺少 SHARED_LIBS 列表"
-        shared = set(re.findall(r'"([^"]+)"', m.group(1)))
-        assert shared == {
-            "Scrt1.o", "crt1.o", "crti.o", "crtn.o",
-            "libc.a", "libc.so", "libdl.a", "libm.a",
-            "libpthread.a", "librt.a", "libutil.a",
-        }, f"SHARED_LIBS 和实测的 glibc 交集不一致: {sorted(shared)}"
-
-    @pytest.mark.static
     def test_libs_register_under_flavor_tagged_version(self):
-        """撞名的 lib 必须挂在带 musl 标识的版本号上
+        """登记进 lib/ 的 loader 挂在带 musl 标识的版本号上
 
-        用平版本号注册会让每个名字变成双 owner:
-
-            crt1.o = {"active": "glibc-2.39",
-                      "installed": ["glibc-2.39", "musl-1.2.5"]}
-
-        一次 xvm use 选到 musl 那侧,该 subos 里所有 glibc C 链接就静默挂掉。
-        用 `<version>-musl` 与 jdk-temurin 的 `<version>-temurin`、
+        `<version>-musl` 与 jdk-temurin 的 `<version>-temurin`、
         musl-gcc 的 `16.1.0-musl` 是同一个 idiom。
         """
         code = lua_code()
@@ -213,6 +196,194 @@ class TestDesign:
         code = lua_code()
         assert '"usr/include/musl"' in code
         assert not re.search(r'declare_headers\([^)]*"usr/include"\s*,', code)
+
+
+REPO = Path(__file__).resolve().parent.parent.parent
+HARNESS = REPO / "tests" / "lua" / "musl_config_harness.lua"
+LOADER = {"x86_64": "ld-musl-x86_64.so.1", "aarch64": "ld-musl-aarch64.so.1"}
+
+# The published payload's lib/ (1.2.5 and 1.2.6), besides the loader link.
+PAYLOAD_LIB = [
+    "Scrt1.o", "crt1.o", "crti.o", "crtn.o", "rcrt1.o",
+    "libc.a", "libc.so", "libcrypt.a", "libdl.a", "libm.a", "libpthread.a",
+    "libresolv.a", "librt.a", "libutil.a", "libxnet.a",
+]
+
+
+def _lua():
+    return shutil.which("lua5.4") or shutil.which("lua")
+
+
+def glibc_names():
+    """The names glibc.lua registers into the subos's lib/: its list and its loaders."""
+    code = lua_code("pkgs/g/glibc.lua")
+    m = re.search(r'local glibc_libs = \{(.*?)\n\}', code, re.S)
+    assert m, "glibc.lua 没有 glibc_libs 列表"
+    return set(re.findall(r'"([^"]+)"', m.group(1))) | {"ld-linux-x86-64.so.2", "ld-linux-aarch64.so.1"}
+
+
+def run_hook(tmp_path, arch, mode, store="xim-x-musl", registered=()):
+    payload = tmp_path / store / "1.2.5"
+    (payload / "lib").mkdir(parents=True)
+    (payload / "include").mkdir()
+    for name in PAYLOAD_LIB:
+        (payload / "lib" / name).write_bytes(b"")
+    (payload / "lib" / LOADER[arch]).symlink_to("libc.so")
+    result = subprocess.run([_lua(), str(HARNESS), str(REPO / PKG_FILE), arch, mode, str(payload),
+                             ",".join(registered)], capture_output=True, text=True)
+    assert result.returncode == 0, result.stdout + result.stderr
+    return [line.split() for line in result.stdout.splitlines()]
+
+
+needs_lua = pytest.mark.skipif(_lua() is None, reason="no lua interpreter")
+
+
+class TestRegistrations:
+    """What config() asks of xlings, run on a payload fixture through
+    tests/lua/musl_config_harness.lua.
+
+    The subos's lib/ is glibc's: installing musl, which activates its group,
+    once made `cc` link musl's crt1.o and libc.so (`undefined reference to
+    '__isoc23_strtol'`). musl puts its loader there and nothing else; its link
+    files go to usr/lib/musl and its headers to usr/include/musl.
+    """
+
+    @needs_lua
+    @pytest.mark.static
+    @pytest.mark.parametrize("arch", ["x86_64", "aarch64"])
+    def test_only_the_loader_goes_into_lib(self, tmp_path, arch):
+        ops = run_hook(tmp_path, arch, "config")
+        libs = {op[1] for op in ops if op[0] == "add" and op[2] == "lib"}
+        assert libs == {LOADER[arch]}
+        assert libs.isdisjoint(glibc_names())
+        assert {op[1] for op in ops if op[0] == "add"} == {LOADER[arch], "musl"}
+
+    @needs_lua
+    @pytest.mark.static
+    def test_link_files_and_headers_have_their_own_directories(self, tmp_path):
+        ops = run_hook(tmp_path, "x86_64", "config")
+        files = {(op[1], op[2], op[3]) for op in ops if op[0] == "files"}
+        assert files == {("lib", "usr/lib/musl", "musl@1.2.5"),
+                         ("include", "usr/include/musl", "musl@1.2.5")}
+
+    @needs_lua
+    @pytest.mark.static
+    def test_a_fresh_scope_removes_nothing(self, tmp_path):
+        """A client refuses to remove a version it does not know
+        (`xvm-remove-version-unknown`), and fails the install."""
+        assert [op for op in run_hook(tmp_path, "x86_64", "config") if op[0] == "remove"] == []
+
+    @needs_lua
+    @pytest.mark.static
+    @pytest.mark.parametrize("store,key", [("xim-x-musl", "1.2.5-musl"),
+                                           ("local-x-musl", "local:1.2.5-musl")])
+    def test_reconfigure_takes_lib_back_from_revision_1(self, tmp_path, store, key):
+        """A scope configured at revision 1 holds the link files in lib/; the
+        revision-2 config() removes every one of them, under the key it was
+        stored with."""
+        old = PAYLOAD_LIB
+        ops = run_hook(tmp_path, "x86_64", "config", store, [f"{n}@{key}" for n in old])
+        removed = {(op[1], op[2]) for op in ops if op[0] == "remove"}
+        assert removed == {(n, key) for n in old}
+        assert {op[1] for op in ops if op[0] == "add" and op[2] == "lib"} == {"ld-musl-x86_64.so.1"}
+
+    @pytest.mark.static
+    def test_revision_moves_with_the_registrations(self, meta):
+        """config() changed, so every version entry's revision did too."""
+        code = lua_code()
+        revisions = [int(r) for r in re.findall(r'revision\s*=\s*(\d+)', code)]
+        assert revisions and min(revisions) >= 2
+
+
+def _subos_dir():
+    base = Path(xlings_home()) / "subos"
+    for name in (os.environ.get("XLINGS_TEST_SUBOS"), "current", "default"):
+        if name and (base / name).is_dir():
+            return base / name
+    pytest.fail(f"no subos under {base}")
+
+
+HELLO = r"""
+#include <stdio.h>
+#include <stdlib.h>
+int main(int c, char** v) { printf("%ld\n", strtol(c > 1 ? v[1] : "42", 0, 10)); return 0; }
+"""
+
+
+@pytest.fixture(scope="module")
+def subos():
+    """gcc (glibc) first, then musl, as the failure was reported; then musl's
+    group activated explicitly, which is what installing musl does."""
+    ok, out = XlingsClient.install("xim:gcc", timeout=1800)
+    assert ok, f"gcc 安装失败: {out[-400:]}"
+    ok, out = XlingsClient.install(under_test(PKG), timeout=600)
+    assert ok, f"musl 安装失败: {out[-400:]}"
+    subos = _subos_dir()
+    workspace = json.loads((subos / ".xlings.json").read_text())["workspace"]
+    version = workspace["musl"]["active"]
+    code = subprocess.call(["bash", "-l", "-c", f"xlings use musl {version}"],
+                           stdin=subprocess.DEVNULL)
+    assert code == 0, f"xlings use musl {version} failed"
+    return subos
+
+
+class TestCoexistsWithGlibc:
+    """glibc's gcc and musl in one home: `cc` still links against glibc, and
+    musl's files are where a musl build reads them.
+
+    Before TestLifecycle on purpose: gcc goes into a home without musl."""
+
+    @staticmethod
+    def _run(subos, tmp_path, *args):
+        env = {**os.environ, "PATH": f"{subos / 'bin'}{os.pathsep}{os.environ.get('PATH', '')}"}
+        return subprocess.run(list(args), cwd=tmp_path, env=env, capture_output=True, text=True, timeout=120)
+
+    @staticmethod
+    def _payload_of(link):
+        return Path(os.path.realpath(link)).as_posix()
+
+    @pytest.mark.lifecycle
+    @skip_if_not('linux')
+    def test_cc_links_against_glibc(self, subos, tmp_path):
+        for name in ("crt1.o", "Scrt1.o", "crti.o", "libc.so"):
+            assert "-x-glibc/" in self._payload_of(subos / "lib" / name), \
+                f"lib/{name} -> {self._payload_of(subos / 'lib' / name)}"
+        (tmp_path / "h.c").write_text(HELLO)
+        r = self._run(subos, tmp_path, "cc", "h.c", "-o", "h")
+        assert r.returncode == 0, r.stdout + r.stderr
+        r = self._run(subos, tmp_path, "./h", "7")
+        assert r.returncode == 0 and r.stdout.strip() == "7", r.stdout + r.stderr
+
+    @pytest.mark.lifecycle
+    @skip_if_not('linux')
+    def test_musl_files_are_in_their_own_directories(self, subos):
+        loader = subos / "lib" / LOADER[platform.machine()]
+        assert "-x-musl/" in self._payload_of(loader), f"{loader} -> {self._payload_of(loader)}"
+        for name in ("crt1.o", "Scrt1.o", "crti.o", "crtn.o", "libc.so", "libc.a"):
+            target = self._payload_of(subos / "usr" / "lib" / "musl" / name)
+            assert "-x-musl/" in target and os.path.isfile(target), f"usr/lib/musl/{name} -> {target}"
+        assert os.path.isfile(subos / "usr" / "include" / "musl" / "stdio.h")
+
+    @pytest.mark.verify
+    @skip_if_not('linux')
+    def test_a_musl_build_reads_them(self, subos, tmp_path):
+        """Static and dynamic, from usr/lib/musl and usr/include/musl, the
+        dynamic one run by the loader in lib/."""
+        lib, inc = subos / "usr" / "lib" / "musl", subos / "usr" / "include" / "musl"
+        loader = subos / "lib" / LOADER[platform.machine()]
+        (tmp_path / "h.c").write_text(HELLO)
+        common = ["-nostdinc", "-isystem", str(inc), "-nostdlib"]
+        builds = {
+            "h_static": ["cc", "-static", *common, f"{lib}/crt1.o", f"{lib}/crti.o", "h.c",
+                         f"{lib}/libc.a", "-lgcc", f"{lib}/crtn.o", "-o", "h_static"],
+            "h_dynamic": ["cc", *common, f"{lib}/Scrt1.o", f"{lib}/crti.o", "h.c", f"-L{lib}", "-lc",
+                          "-lgcc", f"{lib}/crtn.o", f"-Wl,--dynamic-linker={loader}", "-o", "h_dynamic"],
+        }
+        for exe, cmd in builds.items():
+            r = self._run(subos, tmp_path, *cmd)
+            assert r.returncode == 0, f"{exe}: " + r.stdout + r.stderr
+            r = self._run(subos, tmp_path, f"./{exe}", "9")
+            assert r.returncode == 0 and r.stdout.strip() == "9", f"{exe}: " + r.stdout + r.stderr
 
 
 class TestLifecycle:

@@ -200,16 +200,30 @@ def plan(changed, before, after, profiles, *, force=False):
     matrix = []
     for platform, runner in PLATFORMS.items():
         files = [p for p in packages if platform in supported_platforms(after[p])]
+        # The recipes this change edits itself, as opposed to the ones it reaches: each runs its
+        # own lifecycle and verify tests after the install (recipe-tests.py). The reverse closure
+        # is installed and removed, which is what a consumer of the change does.
+        edited = [p for p in files if p in runtime]
         shards = -(-len(files) // INSTALL_SHARD_SIZE)
         for i in range(shards):
             # Each shard installs its own files, and places all of the platform's first: a
             # dependency the PR changes or adds may sit in another shard.
             entry = {'platform': platform, 'os': runner, 'files': ' '.join(files[i::shards]),
-                     'overlay': ' '.join(files)}
+                     'overlay': ' '.join(files),
+                     'edited': ' '.join(p for p in files[i::shards] if p in edited)}
             if shards > 1:
                 entry['shard'] = f'{i + 1}/{shards}'
             matrix.append(entry)
-    flags = {name: force or matches(changed + packages, config['paths']) for name, config in profiles.items()}
+    flags = {}
+    for name, config in profiles.items():
+        # direct_only: the profile fires on directly edited files only. Its
+        # path set names heavyweight acceptance suites (luban: 40min workspace
+        # + 2x60min editions) whose recipes are common dependencies (gcc, musl,
+        # git, vim...) — matching the reverse dependency closure too planned
+        # the suite for nearly every package PR (#1144: one claude version
+        # bump). Deliberate publication stays possible via workflow_dispatch.
+        subjects = changed if config.get('direct_only') else changed + packages
+        flags[name] = force or matches(subjects, config['paths'])
     if framework:
         flags.update(ci_xpkg_test=True, ci_tools=True, eden_smoke=True)
     if '.github/ci-profiles.json' in changed:

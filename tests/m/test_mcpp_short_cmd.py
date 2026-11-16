@@ -10,10 +10,10 @@ from tests.lib.assertions import (
     assert_xim_add_succeeds, assert_install_succeeds,
     assert_command_output, assert_xvm_shim_exists,
 )
-from tests.lib.platform_utils import skip_if_not
+from tests.lib.platform_utils import skip_if_not, under_test
 
 PKG = "mcpp-short-cmd"
-INSTALL_PKG = "local:mcpp-short-cmd@0.0.1"
+INSTALL_VERSION = "0.0.1"
 PKG_FILE = "pkgs/m/mcpp-short-cmd.lua"
 
 # The contract this package exists for: short name -> the mcpp command line it
@@ -168,7 +168,7 @@ class TestLifecycle:
     @pytest.mark.lifecycle
     @skip_if_not('linux')
     def test_install(self):
-        assert_install_succeeds(INSTALL_PKG, timeout=420)
+        assert_install_succeeds(under_test(PKG, INSTALL_VERSION), timeout=420)
 
 
 class TestVerify:

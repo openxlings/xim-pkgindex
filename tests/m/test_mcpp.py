@@ -9,10 +9,10 @@ from tests.lib.assertions import (
     assert_xim_add_succeeds, assert_install_succeeds,
     assert_command_output, assert_xvm_shim_exists,
 )
-from tests.lib.platform_utils import skip_if_not
+from tests.lib.platform_utils import skip_if_not, under_test
 
 PKG = "mcpp"
-INSTALL_PKG = "local:mcpp@0.0.56"
+INSTALL_VERSION = "0.0.56"
 PKG_FILE = "pkgs/m/mcpp.lua"
 
 
@@ -117,7 +117,7 @@ class TestLifecycle:
     @pytest.mark.lifecycle
     @skip_if_not('linux')
     def test_install(self):
-        assert_install_succeeds(INSTALL_PKG, timeout=420)
+        assert_install_succeeds(under_test(PKG, INSTALL_VERSION), timeout=420)
 
 
 class TestVerify:
@@ -125,7 +125,7 @@ class TestVerify:
     @skip_if_not('linux')
     def test_mcpp(self):
         # Whichever version this run installed: the lifecycle job installs
-        # INSTALL_PKG, a candidate job only the candidate.
+        # the version this module pins, a candidate job only the candidate.
         assert_command_output("mcpp --version", regex=r"mcpp \d+(\.\d+)+")
 
     @pytest.mark.verify

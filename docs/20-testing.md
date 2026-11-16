@@ -119,6 +119,15 @@ class TestVerify:
         assert_xvm_registered("mypackage")
 ```
 
+- A lifecycle test names what it installs with `under_test(PKG)` or
+  `under_test(PKG, version)` (`tests/lib/platform_utils.py`). The recipe a
+  change edits is in the home once: written over its published copy, where it
+  answers as `xim:`, or registered beside the index (`xlings config
+  --add-xpkg`) when the index has no copy of it, where it answers as `local:`.
+  The function reads which, when the test runs. A namespace written into a
+  module is right in one of the two states: `local:<pkg>` does not name a
+  published recipe, because registering a recipe identical to the published
+  one adds nothing.
 - An alias package (`ref`) asserts `meta.is_ref` and little else.
 - A platform-specific test is marked `@skip_if_not("windows")`.
 - A known problem is `@pytest.mark.xfail(reason=...)`, which does not block CI.
@@ -134,6 +143,7 @@ class TestVerify:
 | `tests/lib/xvm_client.py` | `XvmClient.info()`, `.is_registered()`, `.shim_exists()` |
 | `tests/lib/xlings_client.py` | `XlingsClient.install()`, `.remove()`, `.xim_add_xpkg()` |
 | `tests/lib/platform_utils.py` | `current_platform()`, `skip_if_not()`, `xlings_home()` |
+| `tests/lib/base_package.py` | `assert_base_package()`: the layout contract of a sysroot that carries `mcpp.toml` |
 
 ## Repository-wide checks
 
@@ -156,11 +166,29 @@ Some rules span every recipe, and each has its own test or script:
 | Workflow | When | Runs |
 |---|---|---|
 | `ci-xpkg-test.yml` | a change to `pkgs/`, `libs/`, `tests/` | L0 and L2 on every recipe, then L1 |
-| `ci-test.yml` | a change to `pkgs/` or `libs/` | installs what the change touched, on Linux, macOS and Windows |
+| `ci-test.yml` | a change to `pkgs/` or `libs/` | installs and removes what the change touched, on Linux, macOS and Windows; then runs the L3 and L4 tests of each recipe the change edits (`recipe-tests.py`) |
 | `ci-tools.yml` | a change to `tools/`, `scripts/` or workflows | the tools' own tests and the repository lints |
 | `ci-sweep.yml` | weekly | installs one slice of every recipe, by ISO week |
 | `luban-agent-workspace.yml` | a change to Luban's recipes or what they pin | builds and boots the editions on x86_64 and aarch64 |
 | `site-check.yml` | a change to `pkgs/`, `docs/` or the site config | builds the site in strict mode |
 
 L3 and L4 run in CI only for what a change touched and in the weekly sweep: a
-full install of every recipe on every platform is not a per-push budget.
+full install of every recipe on every platform is not a per-push budget. A
+recipe the change edits runs its own module's L3 and L4 tests on each host of
+the install job; a recipe the change only reaches, through a dependency, is
+installed and removed. What a module asserts at L4 is therefore what admits a
+new version or revision of its recipe: a payload whose digest matches and
+whose install succeeds can still be unusable, and the module is where that is
+stated.
+
+### Base packages
+
+A sysroot that carries `mcpp.toml` at its root is an mcpp base package. Its
+module calls `assert_base_package(<installed root>)`, which holds the part of
+its admission that the tree answers alone:
+
+- the manifest parses, and every path it names exists;
+- a package that provides `mcpp:c++-abi` names the std module's source;
+- a link a build reads (a library, an object, a header) resolves inside the package;
+- a GNU ld script names paths that exist under the root, read sysroot-relative,
+  and carries no install-time placeholder.
