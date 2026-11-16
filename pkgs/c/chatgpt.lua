@@ -33,8 +33,9 @@ package = {
     extensions = {
         autoupdate = {
             source = "https://persistent.oaistatic.com/codex-app-prod/appcast.xml",
-            -- Advance only when BOTH platforms publish the same full version.
-            -- Platform-specific historical versions remain untouched.
+            -- Upstream numbers Linux deb-pool and macOS appcast releases
+            -- independently; latest and PR additions are per platform.
+            divergence = "platform",
             resources = {
                 GLOBAL = { url = {
                     linux = {
@@ -84,7 +85,37 @@ package = {
                 },
                 build = { "xim:7zip@26.02" },
             },
-            ["latest"] = { ref = "26.1021.22027" },
+            ["latest"] = { ref = "26.1103.32239" },
+            ["26.1103.31037"] = {
+                x86_64 = {
+                    url = "https://persistent.oaistatic.com/codex-app-prod/linux/deb/pool/main/c/chatgpt/chatgpt_26.1103.31037_amd64.deb",
+                    sha256 = "32fed80ad3f8caf666e5860022361e9709d64aa318cfb19f548e8b458d4f6793",
+                },
+            },
+            ["26.1029.61003"] = {
+                x86_64 = {
+                    url = "https://persistent.oaistatic.com/codex-app-prod/linux/deb/pool/main/c/chatgpt/chatgpt_26.1029.61003_amd64.deb",
+                    sha256 = "f3af8afec5d25c228eb6f4dbd9cfde0fea7ca5e4b42aff0145a1ded273d01b2d",
+                },
+            },
+            ["26.1103.32239"] = {
+                x86_64 = {
+                    url = "https://persistent.oaistatic.com/codex-app-prod/linux/deb/pool/main/c/chatgpt/chatgpt_26.1103.32239_amd64.deb",
+                    sha256 = "18c108808ea2c52fb8dbf92d3362d27741e3382c5891bd4ae903a9b5781364ef",
+                },
+            },
+            ["26.1023.51421"] = {
+                x86_64 = {
+                    url = "https://persistent.oaistatic.com/codex-app-prod/linux/deb/pool/main/c/chatgpt/chatgpt_26.1023.51421_amd64.deb",
+                    sha256 = "4484dc2b54fc0978beb23b8d8d717494e4e0b4fbeab0a876739105e50b44de5a",
+                },
+            },
+            ["26.1023.50603"] = {
+                x86_64 = {
+                    url = "https://persistent.oaistatic.com/codex-app-prod/linux/deb/pool/main/c/chatgpt/chatgpt_26.1023.50603_amd64.deb",
+                    sha256 = "f5c9bf2f0a3d50c13917af61185a791f520e5839909fea822d886be35b121b26",
+                },
+            },
             ["26.1016.61520"] = {
                 x86_64 = deb("26.1016.61520", "amd64", "9add622916c5fa3861afd95081af77e25488c108ca9c543e1f67560b390d28d4"),
             },
@@ -141,7 +172,61 @@ package = {
             },
         },
         macosx = {
-            ["latest"] = { ref = "26.1021.22027" },
+            ["latest"] = { ref = "26.1103.41825" },
+            ["26.1103.41825"] = {
+                aarch64 = {
+                    url = "https://persistent.oaistatic.com/codex-app-prod/ChatGPT-darwin-arm64-26.1103.41825.zip",
+                    sha256 = "0b30ce5cac787893bf574b549b1d32cf363f21302935538acd369c668df2fd1f",
+                },
+            },
+            ["26.1103.32239"] = {
+                aarch64 = {
+                    url = "https://persistent.oaistatic.com/codex-app-prod/ChatGPT-darwin-arm64-26.1103.32239.zip",
+                    sha256 = "68dabcb2dfee91d245e570c5cc45552c96f3eb719dedc98c907efa64197fa40d",
+                },
+            },
+            ["26.1103.31037"] = {
+                aarch64 = {
+                    url = "https://persistent.oaistatic.com/codex-app-prod/ChatGPT-darwin-arm64-26.1103.31037.zip",
+                    sha256 = "7bad147d40446192757dbfdd71e26529146823ade2bcc52b3d6e6525de816613",
+                },
+            },
+            ["26.1029.70936"] = {
+                aarch64 = {
+                    url = "https://persistent.oaistatic.com/codex-app-prod/ChatGPT-darwin-arm64-26.1029.70936.zip",
+                    sha256 = "2ccff80372ef1ff2afdb2c145b709b94bd5e3dfceb79a8439e1c9a7586573730",
+                },
+            },
+            ["26.1029.61003"] = {
+                aarch64 = {
+                    url = "https://persistent.oaistatic.com/codex-app-prod/ChatGPT-darwin-arm64-26.1029.61003.zip",
+                    sha256 = "43def98099e94837f07b976be98138251859ae58831d057d5483e8b20906a9a4",
+                },
+            },
+            ["26.1023.51421"] = {
+                aarch64 = {
+                    url = "https://persistent.oaistatic.com/codex-app-prod/ChatGPT-darwin-arm64-26.1023.51421.zip",
+                    sha256 = "7642b2ac2a7a0742f9a1800abba15eef83f77e69d893be79d6467cf21e5e1110",
+                },
+            },
+            ["26.1023.50603"] = {
+                aarch64 = {
+                    url = "https://persistent.oaistatic.com/codex-app-prod/ChatGPT-darwin-arm64-26.1023.50603.zip",
+                    sha256 = "abaef00360f1ac78b920e51d681feb030209663da3f2ed60a461fd227f5a6211",
+                },
+            },
+            ["26.1021.31345"] = {
+                aarch64 = {
+                    url = "https://persistent.oaistatic.com/codex-app-prod/ChatGPT-darwin-arm64-26.1021.31345.zip",
+                    sha256 = "2afcd58e0484a76479cca23174e085127a9d9e63466b75739eb6825a5ff613f4",
+                },
+            },
+            ["26.1016.62342"] = {
+                aarch64 = {
+                    url = "https://persistent.oaistatic.com/codex-app-prod/ChatGPT-darwin-arm64-26.1016.62342.zip",
+                    sha256 = "b3e8d80bb5ad4f6234216f81e615dbbf043bd9af3774e9fca8be58ee4d0df317",
+                },
+            },
             ["26.1016.61520"] = mac("26.1016.61520", "ad716ab23102cf9ccce5cc17efc8d130385f4fb8a98c71024544cbb043fc98f1"),
             ["26.1016.51333"] = mac("26.1016.51333", "225d979942d8bc6923399885676e235ad5283154f2f3ceb69bb59d8986732f68"),
             ["26.1013.40934"] = mac("26.1013.40934", "14389c9e9bd7871a31e380089f8bc54e07c627050f676ecdaa567b26929f7a1b"),

@@ -98,21 +98,42 @@ package = {
             -- its LLVM line to it. Its shared libraries ship with $ORIGIN
             -- RUNPATH (set by the carve), so the archive is self-contained
             -- without the install-time rpath rewrite.
+            --
+            -- Revision 2 (same version key, new asset, the glibc 2.44.3
+            -- form): the r1 payload linked a plain C program for
+            -- aarch64-windows-gnu with clang's own `libclang_rt.builtins.a`
+            -- nowhere in its archive, so the link failed on every Linux host
+            -- that declared the row. r2 injects the MinGW-w64 sysroot's
+            -- `aarch64-w64-windows-gnu` and `x86_64-w64-windows-gnu`
+            -- builtins beside clang's own (source payload and per-file
+            -- hashes: .agents/tools/ of the xim-pkgindex tree that published
+            -- it), nothing else in the archive differs.
+            --
+            -- Revision 3: the r2 archives broke the index-wide install
+            -- convention — the archive's top-level directory must equal the
+            -- asset file name minus its extension (install() derives the
+            -- extracted directory that way) — by keeping the r1 inner
+            -- directory name, so every install of r2 moved nothing and the
+            -- config hook found an empty bin. r3 renames the inner directory
+            -- to carry -r3; the payload bytes are otherwise the r2 injection,
+            -- unchanged. The r2 assets stay published, so a cached index
+            -- still gets the bytes its hash names; r1/r2 pins likewise stay
+            -- installable.
             ["23.1.3"] = {
-                revision = 1,
+                revision = 3,
                 x86_64 = {
                     url = {
-                        GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3/llvm-23.1.3-linux-x86_64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3/llvm-23.1.3-linux-x86_64.tar.gz",
+                        GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3-r3/llvm-23.1.3-r3-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3-r3/llvm-23.1.3-r3-linux-x86_64.tar.gz",
                     },
-                    sha256 = "08dfe7d3b297e352117c2c9929fa223ede5970741f98dff09e5ad71494f57443",
+                    sha256 = "7fe4389e2a376d1a82bd6ecf225cbaf8c0a5af8accf96a4f091cb643aacaa08c",
                 },
                 aarch64 = {
                     url = {
-                        GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3/llvm-23.1.3-linux-aarch64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3/llvm-23.1.3-linux-aarch64.tar.gz",
+                        GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3-r3/llvm-23.1.3-r3-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3-r3/llvm-23.1.3-r3-linux-aarch64.tar.gz",
                     },
-                    sha256 = "8a4697b6f22703c1fb8d808a0ef6022f3a9e9111a70e7a02009b7814bdbe46a9",
+                    sha256 = "14e3ff7785a0862f92411a43fc552ad9333ce700a92030fef696a4dfef703ec4",
                 },
             },
         },
@@ -137,22 +158,43 @@ package = {
                 },
                 sha256 = nil,
             },
+            -- Revision 2 (same version key, new asset): the MinGW-w64
+            -- builtins injection of the Linux r2 payload, same rationale as
+            -- the linux section's note. Revision 3: the r2 archive broke the
+            -- install convention the index-wide install() relies on (the
+            -- top-level directory must equal the asset file name minus its
+            -- extension); r3 renames the inner directory, payload otherwise
+            -- unchanged — same rationale as the linux section's note.
             ["23.1.3"] = {
+                revision = 3,
                 url = {
-                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3/llvm-23.1.3-macosx-arm64.tar.xz",
-                    CN = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3/llvm-23.1.3-macosx-arm64.tar.xz",
+                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3-r3/llvm-23.1.3-r3-macosx-arm64.tar.xz",
+                    CN     = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3-r3/llvm-23.1.3-r3-macosx-arm64.tar.xz",
                 },
                 -- Fixed by content (SPEC-006 §4.6); new entries no longer ship
                 -- with sha256 = nil (xim-pkgindex#27 covers backfilling the
                 -- old ones).
-                sha256 = "05a73afb2c64847a16bf8cdc32f23251cb124555b4f5806b6f53d295739b3e82",
+                sha256 = "80a3df1d3dbbaa33ba18ef371edc220d59f1dffdedeefd3c552059a24458879e",
             },
         },
         windows = {
             ["latest"] = { ref = "22.1.8" },
             ["20.1.7"] = "XLINGS_RES",
             ["22.1.8"] = "XLINGS_RES",
-            ["23.1.3"] = "XLINGS_RES",
+            -- Revision 2 leaves the shared template (a corrective asset
+            -- lives under its own release tag, which no template spelling
+            -- reaches) for the explicit asset, same rationale as the linux
+            -- section's note. Revision 3 restores the top-level-directory
+            -- convention the r2 zip broke, same rationale as the linux
+            -- section's note.
+            ["23.1.3"] = {
+                revision = 3,
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3-r3/llvm-23.1.3-r3-windows-x86_64.zip",
+                    CN     = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3-r3/llvm-23.1.3-r3-windows-x86_64.zip",
+                },
+                sha256 = "65dded778a0426a742c967e0e0d977a008e6a887c1ef590ff957433e83658f25",
+            },
         },
     },
 }

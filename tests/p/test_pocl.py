@@ -16,7 +16,7 @@ from tests.lib.assertions import (
     assert_no_direct_path_modification, assert_uses_new_api,
     assert_xim_add_succeeds, assert_install_succeeds,
 )
-from tests.lib.platform_utils import skip_if_not, xlings_home, xpkgs_dir
+from tests.lib.platform_utils import skip_if_not, xlings_home, xpkgs_dir, under_test
 
 PKG = "pocl"
 PKG_FILE = "pkgs/p/pocl.lua"
@@ -163,10 +163,10 @@ class TestLifecycle:
     @pytest.mark.lifecycle
     @skip_if_not('linux')
     def test_install(self):
-        # Explicit local:, for the same reason ncurses's lifecycle test uses
-        # it: the only spelling that is correct both before and after this
-        # package is published to the index.
-        assert_install_succeeds(f"local:{PKG}")
+        # A qualified name read from the home, for the reason ncurses's
+        # lifecycle test states: `local:` before the package is published and
+        # registered by hand, `xim:` once the install step overlays the change.
+        assert_install_succeeds(under_test(PKG))
 
 
 # -- L4 helpers -- read the installed payload and the subos state directly,
