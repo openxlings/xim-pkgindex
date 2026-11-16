@@ -66,7 +66,7 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "26.05" },
+            ["latest"] = { ref = "26.06" },
             ["26.02"] = {
                 x86_64 = {
                     url = "https://github.com/ip7z/7zip/releases/download/26.02/7z2602-linux-x64.tar.xz",
@@ -87,9 +87,19 @@ package = {
                     sha256 = "22cf82fcc6eb7474f1d5bb4f02c0f8ebd573a718089d6833dc30f8350a3b232e",
                 },
             },
+            ["26.06"] = {
+                aarch64 = {
+                    url = "https://github.com/ip7z/7zip/releases/download/26.06/7z2606-linux-arm64.tar.xz",
+                    sha256 = "edcc408aacce77da5223728f2eceb5e9f6dc713b8a9df934ad21e2a7f7560627",
+                },
+                x86_64 = {
+                    url = "https://github.com/ip7z/7zip/releases/download/26.06/7z2606-linux-x64.tar.xz",
+                    sha256 = "2b539cf067b2ad48e1baa5093dbaa8818b73542d1222a0ffde9dc5f2922ea62e",
+                },
+            },
         },
         macosx = {
-            ["latest"] = { ref = "26.05" },
+            ["latest"] = { ref = "26.06" },
             ["26.02"] = {
                 -- universal binary serves both x86_64 and aarch64
                 url = "https://github.com/ip7z/7zip/releases/download/26.02/7z2602-mac.tar.xz",
@@ -99,9 +109,13 @@ package = {
                 url = "https://github.com/ip7z/7zip/releases/download/26.05/7z2605-mac.tar.xz",
                 sha256 = "12ef6830317743cfd3f0ab1724bde43fcc270d8b6d8564f8c12c2a2b7f993570",
             },
+            ["26.06"] = {
+                url = "https://github.com/ip7z/7zip/releases/download/26.06/7z2606-mac.tar.xz",
+                sha256 = "b6f17920b4240940461dac8ef4009891881ac44d2a5ead625ede2ec8472185dd",
+            },
         },
         windows = {
-            ["latest"] = { ref = "26.05" },
+            ["latest"] = { ref = "26.06" },
             ["26.02"] = {
                 x86_64 = {
                     url = "https://github.com/ip7z/7zip/releases/download/26.02/7z2602-x64.exe",
@@ -120,6 +134,16 @@ package = {
                 x86_64 = {
                     url = "https://github.com/ip7z/7zip/releases/download/26.05/7z2605-x64.exe",
                     sha256 = "fd99e86f57d8f429ef5ed045bf98315af962e2309b0f1ba87a147a44c71647d0",
+                },
+            },
+            ["26.06"] = {
+                aarch64 = {
+                    url = "https://github.com/ip7z/7zip/releases/download/26.06/7z2606-arm64.exe",
+                    sha256 = "036a00d478ef81f4b4b85fb37b0f934d558341f3f51aa7d36d2a26454740e625",
+                },
+                x86_64 = {
+                    url = "https://github.com/ip7z/7zip/releases/download/26.06/7z2606-x64.exe",
+                    sha256 = "9b697f65ecc2d9b0152f5ee96d72dde522a7827690349d9307935dacf40f42ec",
                 },
             },
         },
