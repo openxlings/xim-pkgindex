@@ -95,9 +95,9 @@ package = {
             },
             ["latest"] = { ref = "4.5.0" },
             ["4.5.0"] = {
-                url = "https://github.com/Kitware/CMake/releases/download/v4.5.0/cmake-4.5.0-linux-x86_64.tar.gz",
-                sha256 = {
-                    x86_64 = "81f0d5b0960fb6adc8197030ffc827fba937640d51e73e39e0e9e40d88c66f6f",
+                x86_64 = {
+                    url = "https://github.com/Kitware/CMake/releases/download/v4.5.0/cmake-4.5.0-linux-x86_64.tar.gz",
+                    sha256 = "81f0d5b0960fb6adc8197030ffc827fba937640d51e73e39e0e9e40d88c66f6f",
                 },
             },
             ["4.4.2"] = {
@@ -111,9 +111,9 @@ package = {
         macosx = {
             ["latest"] = { ref = "4.5.0" },
             ["4.5.0"] = {
-                url = "https://github.com/Kitware/CMake/releases/download/v4.5.0/cmake-4.5.0-macos-universal.tar.gz",
-                sha256 = {
-                    aarch64 = "a645d69fd21e521759cc0c64e7c60462d43faf0c7214ac05f75c80f7c5037dde",
+                aarch64 = {
+                    url = "https://github.com/Kitware/CMake/releases/download/v4.5.0/cmake-4.5.0-macos-universal.tar.gz",
+                    sha256 = "a645d69fd21e521759cc0c64e7c60462d43faf0c7214ac05f75c80f7c5037dde",
                 },
             },
             ["4.4.2"] = {
@@ -127,9 +127,9 @@ package = {
         windows = {
             ["latest"] = { ref = "4.5.0" },
             ["4.5.0"] = {
-                url = "https://github.com/Kitware/CMake/releases/download/v4.5.0/cmake-4.5.0-windows-x86_64.zip",
-                sha256 = {
-                    x86_64 = "301b1728317ccd84e984b02e366a8293735bc5ac618757d3d8f58b578f062411",
+                x86_64 = {
+                    url = "https://github.com/Kitware/CMake/releases/download/v4.5.0/cmake-4.5.0-windows-x86_64.zip",
+                    sha256 = "301b1728317ccd84e984b02e366a8293735bc5ac618757d3d8f58b578f062411",
                 },
             },
             ["4.4.2"] = {
