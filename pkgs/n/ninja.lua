@@ -106,10 +106,19 @@ package = {
             -- stays. `ninja --version` answers 1.12.1-mcpp.1. The key ends
             -- when an upstream release carries the correction.
             ["1.12.1-mcpp.1"] = {
-                url = "XLINGS_RES",
-                sha256 = {
-                    x86_64  = "248ef3a655137b4668003886faf3b3f0e0d0f5bcf90b34d4dabcae37a4889058",
-                    aarch64 = "d5a1b08eb56f0c0222e9925e572fcc65cfca863be85ce3046403f6b7387ac9bc",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/ninja/releases/download/1.12.1-mcpp.1/ninja-1.12.1-mcpp.1-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/ninja/releases/download/1.12.1-mcpp.1/ninja-1.12.1-mcpp.1-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "248ef3a655137b4668003886faf3b3f0e0d0f5bcf90b34d4dabcae37a4889058",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/ninja/releases/download/1.12.1-mcpp.1/ninja-1.12.1-mcpp.1-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/ninja/releases/download/1.12.1-mcpp.1/ninja-1.12.1-mcpp.1-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "d5a1b08eb56f0c0222e9925e572fcc65cfca863be85ce3046403f6b7387ac9bc",
                 },
             },
         },
@@ -122,9 +131,12 @@ package = {
                 },
             },
             ["1.12.1-mcpp.1"] = {
-                url = "XLINGS_RES",
-                sha256 = {
-                    aarch64 = "3b419ec5380a7341d33ac9950a2939e7a0345d569397879fad4af537d4289d34",
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/ninja/releases/download/1.12.1-mcpp.1/ninja-1.12.1-mcpp.1-macosx-arm64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/ninja/releases/download/1.12.1-mcpp.1/ninja-1.12.1-mcpp.1-macosx-arm64.tar.gz",
+                    },
+                    sha256 = "3b419ec5380a7341d33ac9950a2939e7a0345d569397879fad4af537d4289d34",
                 },
             },
         },
@@ -137,9 +149,12 @@ package = {
                 },
             },
             ["1.12.1-mcpp.1"] = {
-                url = "XLINGS_RES",
-                sha256 = {
-                    x86_64 = "4e85b62c5732ca80682358a10430a6edc18b8c52a74e601ceb03f7605501baf8",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/ninja/releases/download/1.12.1-mcpp.1/ninja-1.12.1-mcpp.1-windows-x86_64.zip",
+                        CN     = "https://gitcode.com/xlings-res/ninja/releases/download/1.12.1-mcpp.1/ninja-1.12.1-mcpp.1-windows-x86_64.zip",
+                    },
+                    sha256 = "4e85b62c5732ca80682358a10430a6edc18b8c52a74e601ceb03f7605501baf8",
                 },
             },
         },
