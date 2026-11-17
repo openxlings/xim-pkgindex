@@ -28,6 +28,14 @@ binutils 2.42 f6e4d41fd5fc778b06b7891457b3620da5ecea1006c6a4a41ae998109f85a800
 gcc 16.1.0 50efb4d94c3397aff3b0d61a5abd748b4dd31d9d3f2ab7be05b171d36a510f79
 gcc 16.2.0 e6738e29597f733270731aa90600f37ffdc045079dfc27ec7e8192cc81085c3e
 gcc 17.0.0-20261108 9cdb6db806b2c82a121c6e055e014de587c8c80ad08b1a85c50a9d06d95e208d
+gcc 14.2.0 a7b39bc69cbf9e25826c5a60ab26477001f7c08d85cec04bc0e29cabed6f3cc9
+binutils 2.43.1 13f74202a3c4c51118b797a39ea4200d3f6cfbe224da6d1d95bb938480132dfd
+# arm-none-eabi-gcc: the binutils it is built with (gcc and binutils above are
+# checked against GNU's signatures). newlib-arm-none-eabi: its source (upstream
+# publishes sha512.sum; this is the sha256 of the tarball matching it) and the
+# published compiler it is built by, one line per runner architecture.
+arm-none-eabi-binutils 2.43.1
+newlib 4.5.0.20241231 33f12605e0054965996c25c1382b3e463b0af91799001f5bb8c0630f2ec8c852
 # The sysroot gcc is configured against (what the x86_64 payload's was, at
 # the index's aarch64 glibc).
 gcc-sysroot-glibc 2.44.3

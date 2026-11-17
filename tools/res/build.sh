@@ -46,8 +46,12 @@
 #   binutils      binutils on glibc
 #   gcc           gcc on glibc, configured as x86_64's (fromsource:gcc),
 #                 against a sysroot xlings makes (glibc + linux-headers)
+#   arm-none-eabi-gcc  binutils + GCC for arm-none-eabi on glibc, no C library
+#                 (libgcc only; tools/res/arm-none-eabi/gcc.sh)
 #
 # Data, the same on every architecture (built once, <name>-<version>.tar.gz):
+#   newlib-arm-none-eabi  newlib + newlib-nano for every multilib of the
+#                 published arm-none-eabi-gcc (tools/res/arm-none-eabi/newlib.sh)
 #   terminfo        the terminal descriptions (ncurses' terminfo.src, compiled)
 #   adwaita-cursors GNOME's Adwaita cursor theme, and the default theme naming it
 #   luban-fonts     the fonts the Luban OS window ships with
@@ -890,6 +894,60 @@ gcc)
     glibc_only libstdc++.so.6 libgcc_s.so.1 libzstd.so.1 libz.so.1
     provenance "$d" "gcc $version (${url%%/gcc-*}, sha256 $(input gcc "$version")) configured as fromsource:gcc (c,c++; no multilib, no bootstrap, no LTO; libsanitizer), $triple, against a sysroot of xim:glibc@$glibc_v + xim:linux-headers@$headers_v made by xlings $XLINGS_CLIENT; stage 0 is Debian 12's gcc; a C program and a C++23 program using import std built and ran"
     pack "$d" ;;
+arm-none-eabi-gcc)
+    # binutils + GCC (C, C++) for arm-none-eabi with no C library: libgcc is
+    # its only target library. The C library is a package of its own
+    # (newlib-arm-none-eabi, below), and libstdc++ too
+    # (libstdcxx-<libc>-arm-none-eabi@<this version>). tools/res/arm-none-eabi/
+    # gcc.sh is the build and says why each configure flag is there. The
+    # version is GCC's; binutils' is the one inputs.txt pins for it.
+    v="${version%%-r[0-9]*}"
+    bv="$(input_version arm-none-eabi-binutils)"
+    mkdir -p "$work/src"
+    source_of gcc "$v" "https://ftpmirror.gnu.org/gnu/gcc/gcc-$v/gcc-$v.tar.xz" "$work/src/gcc-$v.tar.xz"
+    source_of binutils "$bv" "https://ftpmirror.gnu.org/gnu/binutils/binutils-$bv.tar.xz" "$work/src/binutils-$bv.tar.xz"
+    cp -r "$here/arm-none-eabi" "$work/scripts"
+    d="$what-$version-linux-$arch"
+    debian "apt-get -qq update && apt-get -qq install -y build-essential texinfo xz-utils bzip2 curl ca-certificates file >/dev/null \
+        && bash /w/scripts/gcc.sh $v $bv /w/src /w/$d /w/build" \
+      || { for f in prereq binutils-configure binutils-make binutils-install gcc-configure gcc-make gcc-install; do
+               [[ -f "$work/build/$f.log" ]] && { log "--- $f.log"; tail -40 "$work/build/$f.log" >&2; }; done; die "arm-none-eabi-gcc build failed"; }
+    g="$work/$d/bin/arm-none-eabi-gcc"
+    "$g" --version | head -1 | grep -qF "$v" || die "arm-none-eabi-gcc does not report $v"
+    "$work/$d/bin/arm-none-eabi-ld" --version | head -1 | grep -qF "$bv" || die "arm-none-eabi-ld does not report $bv"
+    # Built at /w/<d>, run here: the sysroot follows the payload, so it is relocatable.
+    [[ "$("$g" -print-sysroot)" -ef "$work/$d/arm-none-eabi" ]] || die "the sysroot is not relocatable: $("$g" -print-sysroot)"
+    "$g" -print-multi-lib | grep -q '^thumb/v7e-m+fp/hard;' || die "no rmprofile multilibs: $("$g" -print-multi-lib | tr '\n' ' ')"
+    [[ -z "$(find "$work/$d/arm-none-eabi/include" -type f 2>/dev/null)" ]] || die "a C library's headers are in the compiler's payload"
+    printf 'int f(int a, int b) { return a / b; }\n' > "$work/t.c"
+    "$g" -mcpu=cortex-m0 -mthumb -nostdlib -Wl,-e,f "$work/t.c" -lgcc -o "$work/t.elf" || die "a freestanding link with libgcc failed"
+    GLIBC_ELFS="$(find "$work/$d/bin" "$work/$d/libexec" "$work/$d/arm-none-eabi/bin" -type f -exec sh -c 'file -b "$1" | grep -q "^ELF.*dynamically linked" && echo "$1"' _ {} \;)"
+    [[ -n "$GLIBC_ELFS" ]] || die "$what: no dynamically linked ELF in the payload"
+    glibc_only
+    provenance "$d" "arm-none-eabi-gcc $version: gcc $v (sha256 $(input gcc "$v")) and binutils $bv (sha256 $(input binutils "$bv")), built by tools/res/arm-none-eabi/gcc.sh in Debian 12 (c,c++; --with-multilib-list=rmprofile; no C library, libgcc built with inhibit_libc; sysroot <prefix>/arm-none-eabi, relocatable); stage 0 is Debian 12's gcc"
+    pack "$d" ;;
+newlib-arm-none-eabi)
+    # newlib and newlib-nano, built by the arm-none-eabi-gcc users install --
+    # the published payload, pinned in inputs.txt -- so the multilib
+    # directories are that compiler's own. Target code: one archive serves
+    # every host, built once (on x86_64). tools/res/arm-none-eabi/newlib.sh is
+    # the build and its checks (CubeMX-style links, qemu runs).
+    [[ "$arch" == x86_64 ]] || die "$what is target code, built once on x86_64"
+    gv="$(input_version "arm-none-eabi-gcc-$arch")"
+    gd="arm-none-eabi-gcc-$gv-linux-$arch"
+    fetch "https://github.com/xlings-res/arm-none-eabi-gcc/releases/download/$gv/$gd.tar.gz" "$(input "arm-none-eabi-gcc-$arch" "$gv")" "$work/gcc.tar.gz"
+    tar -xzf "$work/gcc.tar.gz" -C "$work"
+    mkdir -p "$work/src"
+    source_of newlib "$version" "https://sourceware.org/pub/newlib/newlib-$version.tar.gz" "$work/src/newlib-$version.tar.gz"
+    cp -r "$here/arm-none-eabi" "$work/scripts"
+    d="$what-$version"
+    debian "apt-get -qq update && apt-get -qq install -y build-essential texinfo qemu-system-arm file >/dev/null \
+        && REQUIRE_QEMU=1 bash /w/scripts/newlib.sh $version /w/src /w/$gd /w/$d /w/build" \
+      || { for f in newlib-configure newlib-make newlib-install nano-configure nano-make nano-install; do
+               [[ -f "$work/build/$f.log" ]] && { log "--- $f.log"; tail -40 "$work/build/$f.log" >&2; }; done; die "newlib build failed"; }
+    [[ -f "$work/build/qemu.ok" ]] || die "the qemu run check did not run"
+    provenance "$d" "newlib $version (sha256 $(input newlib "$version")) and newlib-nano, Arm GNU Toolchain's configure for each, built by xim:arm-none-eabi-gcc@$gv (sha256 $(input "arm-none-eabi-gcc-$arch" "$gv")) with tools/res/arm-none-eabi/newlib.sh in Debian 12; multilibs: $(tr '\n' ' ' < <("$work/$gd/bin/arm-none-eabi-gcc" -print-multi-lib | sed 's/;.*//')); linked as STM32CubeMX links (--specs=nano.specs --specs=nosys.specs) for cortex-m0/m3/m4-hard, and run under qemu mps2-an385/an386"
+    pack_data "$d" ;;
 labwc-desktop)
     # The traditional Luban desktop (xlings: Luban OS architecture design
     # §9.3): labwc and the session around it -- a panel (yambar), a launcher
