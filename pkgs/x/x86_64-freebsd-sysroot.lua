@@ -35,6 +35,14 @@ package = {
     -- No `ci` block: `mirror` would point the mirror at xlings-res itself, and a
     -- version bump re-runs the assembly script against a new upstream release,
     -- which is a human step.
+    --
+    -- Revision 2 (same version key, new asset, the same release): the crt
+    -- objects and static archives of `usr/lib` have their debug sections
+    -- decompressed. FreeBSD compresses them with zlib, and a linker built
+    -- without zlib reads no such section: every link against this base on a
+    -- Windows host stopped at `crtend.o` ("is compressed with
+    -- ELFCOMPRESS_ZLIB, but lld is not built with zlib support"). The
+    -- sections' contents are those of the release; PROVENANCE.md states it.
 
     xpm = {
         source = {
@@ -43,15 +51,36 @@ package = {
         },
         linux = {
             ["latest"] = { ref = "14.5" },
-            ["14.5"] = { sha256 = "346158d8ee810d6d2bf735f513d6a7bc92ae54d18e7718146be6308a7e7fc6e8" },
+            ["14.5"] = {
+                revision = 2,
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/x86_64-freebsd-sysroot/releases/download/14.5-r2/x86_64-freebsd-sysroot-14.5-r2.tar.xz",
+                    CN = "https://gitcode.com/xlings-res/x86_64-freebsd-sysroot/releases/download/14.5-r2/x86_64-freebsd-sysroot-14.5-r2.tar.xz",
+                },
+                sha256 = "d92c39ddb83e5dac77cfdb9accdbe220b52936cf25a0df4380fc56e0729b6ec6",
+            },
         },
         macosx = {
             ["latest"] = { ref = "14.5" },
-            ["14.5"] = { sha256 = "346158d8ee810d6d2bf735f513d6a7bc92ae54d18e7718146be6308a7e7fc6e8" },
+            ["14.5"] = {
+                revision = 2,
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/x86_64-freebsd-sysroot/releases/download/14.5-r2/x86_64-freebsd-sysroot-14.5-r2.tar.xz",
+                    CN = "https://gitcode.com/xlings-res/x86_64-freebsd-sysroot/releases/download/14.5-r2/x86_64-freebsd-sysroot-14.5-r2.tar.xz",
+                },
+                sha256 = "d92c39ddb83e5dac77cfdb9accdbe220b52936cf25a0df4380fc56e0729b6ec6",
+            },
         },
         windows = {
             ["latest"] = { ref = "14.5" },
-            ["14.5"] = { sha256 = "346158d8ee810d6d2bf735f513d6a7bc92ae54d18e7718146be6308a7e7fc6e8" },
+            ["14.5"] = {
+                revision = 2,
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/x86_64-freebsd-sysroot/releases/download/14.5-r2/x86_64-freebsd-sysroot-14.5-r2.tar.xz",
+                    CN = "https://gitcode.com/xlings-res/x86_64-freebsd-sysroot/releases/download/14.5-r2/x86_64-freebsd-sysroot-14.5-r2.tar.xz",
+                },
+                sha256 = "d92c39ddb83e5dac77cfdb9accdbe220b52936cf25a0df4380fc56e0729b6ec6",
+            },
         },
     },
 }
