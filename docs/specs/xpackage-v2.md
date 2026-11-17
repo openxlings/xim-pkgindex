@@ -420,6 +420,13 @@ payload directory name is the binding consumers hold, so a new key moved every
 binding with it, and a range dependency resolved to whichever key sorted
 highest (openxlings/xlings#620).
 
+A build from another source tree is another version, not a revision: an
+upstream version with a correction upstream has not released, built from a
+fork, takes a key of its own with a prerelease marker (`ninja` 1.12.1-mcpp.1).
+The marker orders it below the upstream version, an exact request for the
+upstream version does not select it, and `latest` does not name it. `revision`
+would replace what every consumer of the upstream version installs.
+
 A published url and its sha256 are immutable. A client holding a cached index
 still has the old hash, and new bytes behind the old url fail its integrity
 check. So a new asset gets a new url — for xlings-res, a release tag and asset
