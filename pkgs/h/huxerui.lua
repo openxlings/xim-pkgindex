@@ -68,16 +68,18 @@ package = {
         -- has always supported.
         --
         -- The DT_NEEDED closure of bin/huxerui + lib/libhuxerui.so, enumerated
-        -- from the 0.3.0 linux-x86_64 artifact with readelf (unchanged from
-        -- 0.2.0; re-measured at the bump by verify-huxerui-closure.sh, which
-        -- walked 63 objects and resolved all 230 edges inside data/xpkgs):
+        -- from the 0.4.0 linux-x86_64 artifact with readelf and re-measured at
+        -- the bump by verify-huxerui-closure.sh, which walked the installed
+        -- payload and resolved every edge inside data/xpkgs:
         --   glibc/gcc-runtime half:  libc.so.6, libm.so.6, libdl.so,
         --                            libstdc++.so.6, libgcc_s.so.1
         --   GTK4 desktop stack:      libgtk-4.so.1, libgdk_pixbuf-2.0.so.0,
         --                            libsoup-3.0.so.0, libgio-2.0.so.0,
         --                            libgobject-2.0.so.0, libglib-2.0.so.0,
         --                            libpango-1.0.so.0, libpangocairo-1.0.so.0,
-        --                            libcairo.so.2
+        --                            libpangoft2-1.0.so.0, libcairo.so.2,
+        --                            libgraphene-1.0.so.0, libfontconfig.so.1,
+        --                            libepoxy.so.0
         --   (plus libc++_shared.so from the bundled Android runtime payload)
         --
         -- Every soname above now has a package, so the closure is complete.
@@ -88,6 +90,13 @@ package = {
             deps = {
                 "xim:cmake",
                 "xim:mcpp",
+
+                -- The SDK is C++: bin/huxerui and lib/libhuxerui.so both name
+                -- libstdc++.so.6 and libgcc_s.so.1, and neither arrives through
+                -- the GTK stack. Measured in a fresh XLINGS_HOME, without this
+                -- the closure walk stopped on exactly those two sonames; with
+                -- it, all 228 edges resolve inside data/xpkgs.
+                "xim:gcc-runtime@>=15",
 
                 -- DIRECT dependencies only. These are exactly the four
                 -- modules the SDK's own cmake asks pkg-config for
@@ -110,7 +119,13 @@ package = {
                 "xim:libsoup@>=3.0",     -- cmake: libsoup-3.0>=3.0
             },
             source = "https://github.com/HuxerUI/HuxerUI/releases/download/v${version}/huxerui-sdk-${version}-linux-${arch}.${ext}",
-            ["latest"] = { ref = "0.3.0" },
+            ["latest"] = { ref = "0.4.0" },
+            ["0.4.0"] = {
+                sha256 = {
+                    x86_64  = "86837f3e872fe6716464d1804c10d894957742a6616a8d2977ea93e630799583",
+                    aarch64 = "85a6a893015aecf4e548763ea94796c5cf12dd766256639f015d104acb68b658",
+                },
+            },
             ["0.3.0"] = {
                 sha256 = {
                     x86_64  = "5413ccd9d35d0ad50c08c67045d73cb9faff23c04005a554af0faa7a914eb916",
@@ -140,7 +155,14 @@ package = {
             -- `${arch}` template alone would 404 on Apple Silicon. `arch_alias`
             -- maps the canonical key to upstream's spelling for this platform.
             source = "https://github.com/HuxerUI/HuxerUI/releases/download/v${version}/huxerui-sdk-${version}-macos-${arch_alias}.${ext}",
-            ["latest"] = { ref = "0.3.0" },
+            ["latest"] = { ref = "0.4.0" },
+            ["0.4.0"] = {
+                arch_alias = { x86_64 = "x86_64", aarch64 = "arm64" },
+                sha256 = {
+                    x86_64  = "f8052aa997e680dde3677733211d237599404d46479ac1172486ca1c9e186a4d",
+                    aarch64 = "fe1f6b8832e39c4434ed4a60f7ae510c12b6ae1ea2968b90f0826cd5a7acb123",
+                },
+            },
             ["0.3.0"] = {
                 arch_alias = { x86_64 = "x86_64", aarch64 = "arm64" },
                 sha256 = {
@@ -166,7 +188,12 @@ package = {
             },
             -- windows asset is a .zip; ${ext} resolves to `zip` on windows.
             source = "https://github.com/HuxerUI/HuxerUI/releases/download/v${version}/huxerui-sdk-${version}-windows-${arch}.${ext}",
-            ["latest"] = { ref = "0.3.0" },
+            ["latest"] = { ref = "0.4.0" },
+            ["0.4.0"] = {
+                sha256 = {
+                    x86_64 = "5eb4deaf2bdbccf9be8f198e915c2eb176f2287088c169adb687baf40fd69fee",
+                },
+            },
             ["0.3.0"] = {
                 sha256 = {
                     x86_64 = "d1aca11de979070f950f16d319492d3f9fc0355d1ddbcb9bb926d79872bc2ef4",
