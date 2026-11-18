@@ -600,6 +600,13 @@ local function selftest_std_module(install_dir)
     local cmd = string.format(
         '"%s" --target=aarch64-linux-android24 -std=c++23 -D__BIONIC_CTYPE_INLINE= --precompile "%s" -o "%s" 2>&1',
         clangxx, stdcppm, pcm)
+    -- A Windows hook runs the command without a shell, so `2>&1` reached
+    -- clang as an argument and the output was lost; `cmd /c` reads it, and
+    -- `exit /b 0` keeps a failed compile's output for the diagnostic below,
+    -- whose verdict is the BMI's size (pkgs/w/windows-sdk.lua does the same).
+    if is_host("windows") then
+        cmd = 'cmd /c "' .. cmd .. ' & exit /b 0"'
+    end
     local out = try { function() return os.iorun(cmd) end }
 
     -- THE SIZE IS READ IN-PROCESS, AND THE SUBPROCESS THAT USED TO DO IT WAS
