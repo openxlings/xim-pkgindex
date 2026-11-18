@@ -123,7 +123,7 @@ def probe(sources: list[str]) -> int:
     return 0
 
 
-def extract(version: str, with_sources: str, without: str, out: str) -> int:
+def extract(version: str, with_sources: str, without: str, out: str, *also: str) -> int:
     a, b = Release(with_sources), Release(without)
     for r in (a, b):
         if r.revision() != version:
@@ -138,6 +138,15 @@ def extract(version: str, with_sources: str, without: str, out: str) -> int:
         raise SystemExit(f"{a.source} carries no module sources under {SURFACE}")
     if b.under(SURFACE):
         raise SystemExit(f"{b.source} carries its own module sources; this package is not needed for it")
+    for source in also:
+        c = Release(source)
+        if c.revision() != version or c.clang() != a.clang():
+            raise SystemExit(f"{source} is not Pkg.Revision {version} with the same clang revision")
+        theirs = {n: (i.CRC, i.file_size) for n, i in c.under(SURFACE).items()}
+        ours = {n: (i.CRC, i.file_size) for n, i in surface.items()}
+        if theirs != ours:
+            differ = sorted(n for n in set(theirs) | set(ours) if theirs.get(n) != ours.get(n))
+            raise SystemExit(f"{source}'s module sources differ: {', '.join(differ[:10])}")
     target = Path(out)
     manifest = []
     for name in sorted(surface):
@@ -151,13 +160,14 @@ def extract(version: str, with_sources: str, without: str, out: str) -> int:
     licenses = target / "share/licenses/android-ndk-libcxx-modules"
     licenses.mkdir(parents=True, exist_ok=True)
     (licenses / "NOTICE.toolchain").write_text(a.text("NOTICE.toolchain"))
-    print(f"{len(manifest)} files, clang {a.clang().splitlines()[0]}, {len(a.under(HEADERS))} identical libc++ headers")
+    print(f"{len(manifest)} files, clang {a.clang().splitlines()[0]}, {len(a.under(HEADERS))} identical libc++ headers, "
+          f"the same module sources in {len(also)} more archive(s)")
     return 0
 
 
 if __name__ == "__main__":
     if len(sys.argv) >= 3 and sys.argv[1] == "probe":
         sys.exit(probe(sys.argv[2:]))
-    if len(sys.argv) == 6 and sys.argv[1] == "extract":
+    if len(sys.argv) >= 6 and sys.argv[1] == "extract":
         sys.exit(extract(*sys.argv[2:]))
     sys.exit(__doc__)

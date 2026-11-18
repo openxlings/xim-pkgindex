@@ -207,25 +207,23 @@ class TestPinnedFacts:
         )
 
     @pytest.mark.static
-    def test_every_entry_takes_the_module_sources_of_its_release(self, source_text):
-        """One place for the module sources, on every host, at the NDK's own
-        version: Windows installs them, Linux and macOS check their copy
-        against them. A version entry without the dependency, or naming
-        another release's sources, would install unverified sources."""
+    def test_only_the_archive_without_module_sources_takes_them(self, meta, source_text):
+        """The Windows archive ships no share/libc++/v1, so its entry takes
+        xim:android-ndk-libcxx-modules at its own version; the linux and macosx
+        entries ship the same files themselves and keep their published form,
+        which the index's guard requires of an existing version entry."""
         code = re.sub(r'--.*', '', source_text)
-        head = code.split('\nimport(', 1)[0]
-        entries = re.findall(r'\["(\d+(?:\.\d+)+)"\]\s*=\s*\{(.*?)\n            \},', head, re.S)
-        assert len(entries) == 3, f"expected one version entry per host, found {len(entries)}"
-        for version, body in entries:
-            assert re.search(
-                r'deps\s*=\s*\{\s*build\s*=\s*\{\s*"xim:android-ndk-libcxx-modules@'
-                + re.escape(version) + r'"\s*\}\s*\}', body), (
-                f"version {version} does not take xim:android-ndk-libcxx-modules@{version} "
-                f"as its build dependency")
+        windows = code.split("windows = {", 1)[1]
+        version = re.search(r'\["(\d+(?:\.\d+)+)"\]', windows).group(1)
+        assert re.search(
+            r'deps\s*=\s*\{\s*build\s*=\s*\{\s*"xim:android-ndk-libcxx-modules@'
+            + re.escape(version) + r'"\s*\}\s*\}', windows), (
+            f"the windows entry does not take xim:android-ndk-libcxx-modules@{version}")
+        assert code.count("xim:android-ndk-libcxx-modules@") == 1, (
+            "only the windows entry depends on the module sources")
         install_body = code.split("function install()", 1)[1]
         assert "module_sources(toolchain)" in install_body
         assert 'pkginfo.build_dep("android-ndk-libcxx-modules")' in code
-        assert "ls -1" not in code, "a directory listing through `ls` does not exist on Windows"
 
     @pytest.mark.static
     def test_arch_scope_is_stated_per_platform(self, source_text):

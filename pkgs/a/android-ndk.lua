@@ -67,10 +67,10 @@
 --
 -- CONSEQUENCE FOR THIS RECIPE. The Linux and macOS archives' share/libc++/v1/
 -- is used as-is, in place, exactly where upstream put it. The Windows archive
--- has none (see the `windows` table below), so the module sources come from
--- xim:android-ndk-libcxx-modules -- the Linux archive's files, unmodified --
--- which Windows installs into its toolchain and the other hosts check their
--- own copy against. What this recipe adds beyond unpacking is verification (assert the
+-- has none (see the `windows` table below), so there the module sources come
+-- from xim:android-ndk-libcxx-modules -- the Linux archive's files, unmodified,
+-- which its derivation checks are the darwin archive's too. What this recipe
+-- adds beyond unpacking is verification (assert the
 -- surface exists and actually precompiles) and a version guard (refuse if a
 -- future re-pin's `_LIBCPP_VERSION` no longer matches the constant this file
 -- was measured against), so that a mismatch fails a human's install rather
@@ -207,10 +207,11 @@ package = {
     --       mcpp::xpkg_dir, which is a path and not a PATH entry").
     xvm_enable = true,
 
-    -- One BUILD dependency per version entry, xim:android-ndk-libcxx-modules:
-    -- the module sources install() checks or installs (module_sources()
-    -- below). A build dependency exists only while install() runs and never
-    -- enters the RPATH closure, so what follows about runtime `deps` holds.
+    -- The `windows` entry has one BUILD dependency,
+    -- xim:android-ndk-libcxx-modules: the module sources its archive lacks
+    -- (module_sources() below). A build dependency exists only while install()
+    -- runs and never enters the RPATH closure, so what follows about runtime
+    -- `deps` holds.
     --
     -- No runtime `deps`. Measured on this payload's own bin/clang-21 (`readelf -d`):
     -- interpreter /lib64/ld-linux-x86-64.so.2 (the HOST's own, unmodified)
@@ -258,7 +259,6 @@ package = {
                     CN     = "https://gitcode.com/xlings-res/android-ndk/releases/download/30.0.16248370/android-ndk-r30-linux.zip",
                 },
                 sha256 = "753611f410d002cfcd3f3dc2ef49aad532089d3180b436c060a90bf0fcb64df2",
-                deps = { build = { "xim:android-ndk-libcxx-modules@30.0.16248370" } },
             },
         },
         -- macOS AND WINDOWS. Upstream publishes an NDK for every host this
@@ -285,7 +285,6 @@ package = {
                     CN     = "https://gitcode.com/xlings-res/android-ndk/releases/download/30.0.16248370/android-ndk-r30-darwin.zip",
                 },
                 sha256 = "d125634de97b26deb1e1bb1a562f9d839aa5803d1784a1e414485f5ccbe6739f",
-                deps = { build = { "xim:android-ndk-libcxx-modules@30.0.16248370" } },
             },
         },
         -- WINDOWS, AND THE ONE THING ITS ARCHIVE DOES NOT CARRY.
@@ -301,11 +300,12 @@ package = {
         --
         -- The sources describe the TARGET's libc++, not the host's, and the
         -- Windows archive is the same release built from the same clang
-        -- revision with byte-identical libc++ headers. So they come from
-        -- xim:android-ndk-libcxx-modules, the Linux archive's copy, on every
-        -- host -- see module_sources() below and
-        -- docs/android-ndk-libcxx-modules.md for why the Windows archive
-        -- lacks them and how the package is made.
+        -- revision with byte-identical libc++ headers. So this entry takes
+        -- them from xim:android-ndk-libcxx-modules, the Linux archive's copy,
+        -- which its derivation checks is the darwin archive's as well -- see
+        -- module_sources() below and docs/15-android-ndk-libcxx-modules.md.
+        -- The linux and macosx entries keep their published form: they ship
+        -- the same files themselves.
         windows = {
             ["latest"] = { ref = "30.0.16248370" },
             ["30.0.16248370"] = {
@@ -366,6 +366,23 @@ local function toolchain_dir(install_dir)
     return path.join(install_dir, "toolchains", "llvm", "prebuilt", host_tag())
 end
 
+-- Count files in `dir` whose name ends in `suffix`, via `ls` (matching
+-- llvm.lua's collect_bin_apps: `os.dirs`' glob shells out to `ls` too, and
+-- is not guaranteed on the hook PATH in the C++ xim runtime, so this goes
+-- through io.popen directly rather than through that glob). Reached only for
+-- an archive that ships its own module sources, which no Windows archive does.
+local function count_files(dir, suffix)
+    local n = 0
+    local f = io.popen('ls -1 "' .. dir .. '" 2>/dev/null')
+    if f then
+        for line in f:lines() do
+            if line:sub(-#suffix) == suffix then n = n + 1 end
+        end
+        f:close()
+    end
+    return n
+end
+
 local function read_bytes(file)
     local f = io.open(file, "rb")
     if not f then return nil end
@@ -374,28 +391,32 @@ local function read_bytes(file)
     return data
 end
 
--- THE MODULE SOURCES, FROM ONE PLACE ON EVERY HOST.
+-- THE MODULE SOURCES: THE ARCHIVE'S OWN, OR THE ONES IT LACKS.
 --
--- xim:android-ndk-libcxx-modules (this version entry's build dependency) is
--- the Linux archive's share/libc++/v1, with a MANIFEST of `<sha256>  <path>`
--- lines. Driven by that list rather than a directory listing: the listing
--- used to come from `ls`, which a Windows hook does not have.
---
--- A host whose archive ships the sources (Linux, macOS) must already hold
--- every listed file with exactly these bytes; a host whose archive ships none
--- (Windows) receives them. A mix of the two is refused: it would mean an
--- archive that carries part of the sources, which no release has done.
--- Returns the number of std/*.inc and std.compat/*.inc partitions.
+-- An archive that ships share/libc++/v1 (Linux, macOS) is used as it is. The
+-- Windows archive ships none, so its entry's build dependency,
+-- xim:android-ndk-libcxx-modules, supplies the Linux archive's files: its
+-- MANIFEST of `<sha256>  <path>` lines drives the copy -- not a directory
+-- listing, which used to come from `ls`, absent from a Windows hook -- and each
+-- copied file is compared with its source. When that package is present
+-- beside an archive that ships its own sources, every listed file must
+-- already be there with the same bytes. Returns the number of std/*.inc and
+-- std.compat/*.inc partitions.
 local function module_sources(toolchain)
+    local sharev1 = path.join(toolchain, "share", "libc++", "v1")
+    local vendored = os.isfile(path.join(sharev1, "std.cppm"))
     local dep = pkginfo.build_dep("android-ndk-libcxx-modules")
     local root = dep and dep.path
     local manifest = root and io.open(path.join(root, "MANIFEST"), "r")
     if not manifest then
-        raise("android-ndk: the build dependency xim:android-ndk-libcxx-modules "
-              .. "is not available (" .. tostring(root) .. "), so the libc++ "
-              .. "module sources cannot be checked or installed")
+        if not vendored then
+            raise("android-ndk: this archive ships no libc++ module sources under " .. sharev1
+                  .. " and its build dependency xim:android-ndk-libcxx-modules is not available ("
+                  .. tostring(root) .. ")")
+        end
+        return count_files(path.join(sharev1, "std"), ".inc"),
+               count_files(path.join(sharev1, "std.compat"), ".inc")
     end
-    local vendored = os.isfile(path.join(toolchain, "share", "libc++", "v1", "std.cppm"))
     local n_std, n_compat, installed = 0, 0, 0
     for line in manifest:lines() do
         local listed = line:match("^%x+%s+(%S+)$")

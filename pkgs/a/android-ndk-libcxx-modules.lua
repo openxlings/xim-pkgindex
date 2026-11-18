@@ -16,10 +16,10 @@
 -- ONE PAYLOAD FOR EVERY HOST. tools/res/build.sh android-ndk-libcxx-modules
 -- <version> takes the files out of the Linux archive unmodified, after
 -- checking those facts on both archives; MANIFEST lists each file with its
--- sha256. xim:android-ndk depends on it on every host: Windows installs the
--- files into its toolchain, Linux and macOS check that their own copy is
--- these bytes, so a release where the two disagree fails an install rather
--- than a consumer's build.
+-- sha256. The derivation also checks that the darwin archive's sources are
+-- these files, so one payload is what every host's archive carries or lacks.
+-- xim:android-ndk's `windows` entry depends on it and installs the files into
+-- its toolchain; the linux and macosx entries use their archives' own copy.
 --
 -- No `ci`: a new NDK release is assessed with
 -- `tools/res/android-ndk/libcxx_modules.py probe <urls>` and built by hand,

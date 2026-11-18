@@ -5,8 +5,8 @@
 `import std;` precompiles libc++'s module sources: `std.cppm`,
 `std.compat.cppm` and their `std/*.inc`, `std.compat/*.inc` partitions, under
 `share/libc++/v1`. Google's Linux and macOS NDK archives carry them; the
-Windows archive does not. `xim:android-ndk-libcxx-modules` supplies them, and
-`xim:android-ndk` takes them from it on every host.
+Windows archive does not. `xim:android-ndk-libcxx-modules` supplies them to
+`xim:android-ndk` on Windows.
 
 ## What is missing, measured
 
@@ -52,7 +52,9 @@ it. `build.sh` downloads both archives, checks them against the digests in
 `tools/res/inputs.txt`, and runs `libcxx_modules.py extract`, which refuses
 unless both archives are the requested `Pkg.Revision`, share one clang
 revision, have byte-identical libc++ headers, and only the first has module
-sources. The payload is the Linux archive's `share/libc++/v1`, unmodified, plus
+sources; it also reads the darwin archive's central directory with range
+requests and refuses unless its module sources are the same files (CRC-32 and
+size). The payload is the Linux archive's `share/libc++/v1`, unmodified, plus
 `MANIFEST` (`<sha256>  <path>` per file), the release's `NOTICE.toolchain` and
 `README.provenance`. It is packed as a data resource: sorted, owner 0, mtime 0,
 so a rebuild produces the same bytes. The `res-build` workflow builds and
@@ -60,14 +62,13 @@ publishes it like every other resource ([Official Resources](11-official-resourc
 
 ## How `xim:android-ndk` uses it
 
-Each `xim:android-ndk` version entry declares
-`xim:android-ndk-libcxx-modules@<the same version>` as a build dependency, and
-`install()` walks `MANIFEST`:
-
-- on Windows, each file is installed into
-  `toolchains/llvm/prebuilt/windows-x86_64/share/libc++/v1`;
-- on Linux and macOS, each file must already be in the archive with the same
-  bytes, otherwise the install fails.
+The `windows` entry of `xim:android-ndk` declares
+`xim:android-ndk-libcxx-modules@<the same version>` as a build dependency.
+`install()` walks `MANIFEST`, installs each file into
+`toolchains/llvm/prebuilt/windows-x86_64/share/libc++/v1`, and compares it with
+its source. The `linux` and `macosx` entries use the files their archives ship;
+an existing version entry keeps its published form, and the derivation has
+already checked that those files are the payload's.
 
 The install's self-test then precompiles `std.cppm` for
 `aarch64-linux-android24` on every host.
@@ -75,10 +76,11 @@ The install's self-test then precompiles `std.cppm` for
 ## A new NDK release
 
 1. Run `probe` on the new release's archives. If the Windows archive carries
-   `share/libc++/v1`, the new `xim:android-ndk` entry needs no module-sources
-   dependency on that host.
+   `share/libc++/v1`, the new `windows` entry needs no module-sources
+   dependency.
 2. Otherwise add the release name to the `android-ndk-libcxx-modules` case of
    `tools/res/build.sh`, the two archive digests to `tools/res/inputs.txt` and
    the version to `.github/res-build-matrix.json`, then build and publish.
-3. Add the version to both recipes in one change;
+3. Add the version to both recipes in one change, the dependency on the new
+   `windows` entry only;
    `tests/a/test_android_ndk_libcxx_modules.py` checks that they agree.

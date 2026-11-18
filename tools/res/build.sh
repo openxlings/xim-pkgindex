@@ -1249,7 +1249,10 @@ android-ndk-libcxx-modules)
             "https://dl.google.com/android/repository/android-ndk-$release-$host.zip" "$work/$host.zip"
     done
     d="android-ndk-libcxx-modules-$version"
+    # The darwin archive ships its own sources; they are compared by CRC-32 and size through
+    # its central directory, read with range requests, so the one payload is every host's.
     python3 -I "$here/android-ndk/libcxx_modules.py" extract "$version" "$work/linux.zip" "$work/windows.zip" "$work/$d" \
+        "https://dl.google.com/android/repository/android-ndk-$release-darwin.zip" \
         || die "the NDK archives do not support taking one host's module sources for another"
     rm -f "$work/linux.zip" "$work/windows.zip"
     [[ -f "$work/$d/share/libc++/v1/std.cppm" && -f "$work/$d/share/libc++/v1/std.compat.cppm" ]] || die "no std.cppm or std.compat.cppm"
