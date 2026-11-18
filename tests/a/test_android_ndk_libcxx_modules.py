@@ -14,7 +14,7 @@ from tests.lib.assertions import (
     assert_no_direct_path_modification, assert_uses_new_api,
     assert_xim_add_succeeds, assert_install_succeeds,
 )
-from tests.lib.platform_utils import project_root
+from tests.lib.platform_utils import project_root, skip_if_not
 
 PKG = "android-ndk-libcxx-modules"
 PKG_FILE = "pkgs/a/android-ndk-libcxx-modules.lua"
@@ -171,5 +171,6 @@ class TestScript:
 
 class TestLifecycle:
     @pytest.mark.lifecycle
+    @skip_if_not('linux')
     def test_install(self):
         assert_install_succeeds(PKG)
