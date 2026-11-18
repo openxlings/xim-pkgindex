@@ -12,8 +12,8 @@ system itself: the image is booted once in QEMU, its Terminal is opened from the
     a shell on the first serial line                ~/config/settings/boot/UserBootscript: SHELL below
 
 The serial port's driver gives the port to one opener, so the shell has it as one
-descriptor, read and written. The system is then shut down and booted again, without
-keeping what that boot writes, to see the shell's prompt on the serial line before the
+descriptor, read and written. The system is then shut down and booted again, from an
+overlay that is dropped, to see the shell's prompt on the serial line before the
 disk is kept. Nothing is written into the image from outside. The disk is then
 converted to qcow2, and the archive compresses it.
 
@@ -93,13 +93,17 @@ def main() -> int:
             m.p.wait(timeout=180)
         finally:
             m.stop()
-        check_file = tmp / "check.log"
-        m = Machine(machine + ["-drive", f"file={raw},format=raw,if=ide,snapshot=on", "-serial", f"file:{check_file}"])
+        # The second boot is of an overlay, which is then dropped: the disk stays as the
+        # system left it at its shutdown.
+        check_file, overlay = tmp / "check.log", tmp / "check.qcow2"
+        subprocess.run([qemu_img, "create", "-q", "-f", "qcow2", "-b", str(raw), "-F", "raw", str(overlay)], check=True)
+        m = Machine(machine + ["-drive", f"file={overlay},format=qcow2,if=ide", "-serial", f"file:{check_file}"])
         try:
             if not said(check_file, PROMPT, 300):
                 raise SystemExit("the prepared system gave no shell on its serial line")
         finally:
             m.stop()
+        overlay.unlink()
         root = tmp / name
         root.mkdir()
         subprocess.run([qemu_img, "convert", "-c", "-O", "qcow2", str(raw), str(root / "haiku-x86_64.qcow2")], check=True)
