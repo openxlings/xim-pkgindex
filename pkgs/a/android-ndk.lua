@@ -37,9 +37,9 @@
 --   design note measured and this recipe does not carry forward, per its own
 --   instruction to re-verify rather than trust the record). Whatever changed
 --   between r27 and r30 upstream, the CURRENT release needs no separate
---   fetch of `libcxx/modules/` from any llvmorg tag, and no second asset
---   published by this index: the module surface is already part of the one
---   archive this recipe downloads. Sections 2 and 4 of the task this recipe
+--   fetch of `libcxx/modules/` from any llvmorg tag: the module surface is
+--   already part of the Linux and macOS archives (the Windows archive is
+--   the exception, handled below). Sections 2 and 4 of the task this recipe
 --   was written against both assumed the vendor still omitted it; that
 --   premise is false for r30, and the simpler recipe below is the correct
 --   response to that measurement, not a shortcut around it.
@@ -65,10 +65,12 @@
 --   below, which exercise this for real at install time rather than assert
 --   it from a comment.
 --
--- CONSEQUENCE FOR THIS RECIPE. There is no generated-surface asset to build,
--- publish, or fetch at install time beyond the one archive below: the
--- vendored share/libc++/v1/ is used as-is, in place, exactly where upstream
--- put it. What this recipe adds beyond unpacking is verification (assert the
+-- CONSEQUENCE FOR THIS RECIPE. The Linux and macOS archives' share/libc++/v1/
+-- is used as-is, in place, exactly where upstream put it. The Windows archive
+-- has none (see the `windows` table below), so the module sources come from
+-- xim:android-ndk-libcxx-modules -- the Linux archive's files, unmodified --
+-- which Windows installs into its toolchain and the other hosts check their
+-- own copy against. What this recipe adds beyond unpacking is verification (assert the
 -- surface exists and actually precompiles) and a version guard (refuse if a
 -- future re-pin's `_LIBCPP_VERSION` no longer matches the constant this file
 -- was measured against), so that a mismatch fails a human's install rather
@@ -205,7 +207,12 @@ package = {
     --       mcpp::xpkg_dir, which is a path and not a PATH entry").
     xvm_enable = true,
 
-    -- No `deps`. Measured on this payload's own bin/clang-21 (`readelf -d`):
+    -- One BUILD dependency per version entry, xim:android-ndk-libcxx-modules:
+    -- the module sources install() checks or installs (module_sources()
+    -- below). A build dependency exists only while install() runs and never
+    -- enters the RPATH closure, so what follows about runtime `deps` holds.
+    --
+    -- No runtime `deps`. Measured on this payload's own bin/clang-21 (`readelf -d`):
     -- interpreter /lib64/ld-linux-x86-64.so.2 (the HOST's own, unmodified)
     -- and a RUNPATH of `$ORIGIN:$ORIGIN/../lib/x86_64-unknown-linux-gnu:
     -- $ORIGIN/../lib` -- the toolchain bundles its own libc++/libc++abi/
@@ -251,6 +258,7 @@ package = {
                     CN     = "https://gitcode.com/xlings-res/android-ndk/releases/download/30.0.16248370/android-ndk-r30-linux.zip",
                 },
                 sha256 = "753611f410d002cfcd3f3dc2ef49aad532089d3180b436c060a90bf0fcb64df2",
+                deps = { build = { "xim:android-ndk-libcxx-modules@30.0.16248370" } },
             },
         },
         -- macOS AND WINDOWS. Upstream publishes an NDK for every host this
@@ -277,38 +285,40 @@ package = {
                     CN     = "https://gitcode.com/xlings-res/android-ndk/releases/download/30.0.16248370/android-ndk-r30-darwin.zip",
                 },
                 sha256 = "d125634de97b26deb1e1bb1a562f9d839aa5803d1784a1e414485f5ccbe6739f",
+                deps = { build = { "xim:android-ndk-libcxx-modules@30.0.16248370" } },
             },
         },
-        -- NO `windows` TABLE, AND IT IS A MEASURED UPSTREAM FACT RATHER THAN
-        -- AN OMISSION.
+        -- WINDOWS, AND THE ONE THING ITS ARCHIVE DOES NOT CARRY.
         --
-        -- Google does publish `android-ndk-r30-windows.zip`, it downloads, and
-        -- its layout is the one this recipe expects (`prebuilt/windows-x86_64`,
-        -- `bin/clang++.exe`). What it does not contain is the libc++ MODULE
-        -- SURFACE, which is the whole reason this package exists here.
-        -- Measured by reading each archive's central directory:
+        -- Google's Windows archive has the layout this recipe expects
+        -- (`prebuilt/windows-x86_64`, `bin/clang++.exe`) but no libc++ module
+        -- sources. Measured by reading each archive's central directory:
         --
         --   archive   entries   share/libc++/v1/std.cppm   std/*.inc
-        --   linux      ~10000   present                    110
-        --   darwin      10024   present                    110
-        --   windows      9108   ABSENT                       0
+        --   linux      10134    present                    110
+        --   darwin     10024    present                    110
+        --   windows     9108    ABSENT                       0
         --
-        -- mcpp is module-first, so a payload that cannot compile a module
-        -- interface unit is worse than its absence: the install would succeed,
-        -- the self-test would fail on a file that is not there, and a user who
-        -- forced past it would get a toolchain that cannot build any mcpp
-        -- project. An entry that can never serve is worse than none, which is
-        -- the same rule that kept the emsdk Windows CN asset out of
-        -- pkgs/e/emsdk.lua after its upload would not land.
-        --
-        -- Declaring it and refusing in install() was considered and rejected:
-        -- it makes a Windows user download 695 MB to be told no. The refusal
-        -- they get instead is xim's own "no payload for this platform", before
-        -- anything is fetched.
-        --
-        -- The hook code is host-general anyway (`host_tag()`, the `.exe`
-        -- suffix), so if a future NDK ships the surface on Windows this becomes
-        -- a url table and nothing else.
+        -- The sources describe the TARGET's libc++, not the host's, and the
+        -- Windows archive is the same release built from the same clang
+        -- revision with byte-identical libc++ headers. So they come from
+        -- xim:android-ndk-libcxx-modules, the Linux archive's copy, on every
+        -- host -- see module_sources() below and
+        -- docs/android-ndk-libcxx-modules.md for why the Windows archive
+        -- lacks them and how the package is made.
+        windows = {
+            ["latest"] = { ref = "30.0.16248370" },
+            ["30.0.16248370"] = {
+                -- Downloaded and hashed locally; upstream publishes a SHA1 only,
+                -- and it matched (9bf167a1985fa7d4a036186b78f702eab9179408, 727980788 bytes).
+                url = {
+                    GLOBAL = "https://dl.google.com/android/repository/android-ndk-r30-windows.zip",
+                    CN     = "https://gitcode.com/xlings-res/android-ndk/releases/download/30.0.16248370/android-ndk-r30-windows.zip",
+                },
+                sha256 = "b830098aaf18b67a42eb831c404e15e5f2990a474f054ac145b0bc957ac6d729",
+                deps = { build = { "xim:android-ndk-libcxx-modules@30.0.16248370" } },
+            },
+        },
     },
 }
 
@@ -356,20 +366,70 @@ local function toolchain_dir(install_dir)
     return path.join(install_dir, "toolchains", "llvm", "prebuilt", host_tag())
 end
 
--- Count files in `dir` whose name ends in `suffix`, via `ls` (matching
--- llvm.lua's collect_bin_apps: `os.dirs`' glob shells out to `ls` too, and
--- is not guaranteed on the hook PATH in the C++ xim runtime, so this goes
--- through io.popen directly rather than through that glob).
-local function count_files(dir, suffix)
-    local n = 0
-    local f = io.popen('ls -1 "' .. dir .. '" 2>/dev/null')
-    if f then
-        for line in f:lines() do
-            if line:sub(-#suffix) == suffix then n = n + 1 end
-        end
-        f:close()
+local function read_bytes(file)
+    local f = io.open(file, "rb")
+    if not f then return nil end
+    local data = f:read("*a")
+    f:close()
+    return data
+end
+
+-- THE MODULE SOURCES, FROM ONE PLACE ON EVERY HOST.
+--
+-- xim:android-ndk-libcxx-modules (this version entry's build dependency) is
+-- the Linux archive's share/libc++/v1, with a MANIFEST of `<sha256>  <path>`
+-- lines. Driven by that list rather than a directory listing: the listing
+-- used to come from `ls`, which a Windows hook does not have.
+--
+-- A host whose archive ships the sources (Linux, macOS) must already hold
+-- every listed file with exactly these bytes; a host whose archive ships none
+-- (Windows) receives them. A mix of the two is refused: it would mean an
+-- archive that carries part of the sources, which no release has done.
+-- Returns the number of std/*.inc and std.compat/*.inc partitions.
+local function module_sources(toolchain)
+    local dep = pkginfo.build_dep("android-ndk-libcxx-modules")
+    local root = dep and dep.path
+    local manifest = root and io.open(path.join(root, "MANIFEST"), "r")
+    if not manifest then
+        raise("android-ndk: the build dependency xim:android-ndk-libcxx-modules "
+              .. "is not available (" .. tostring(root) .. "), so the libc++ "
+              .. "module sources cannot be checked or installed")
     end
-    return n
+    local vendored = os.isfile(path.join(toolchain, "share", "libc++", "v1", "std.cppm"))
+    local n_std, n_compat, installed = 0, 0, 0
+    for line in manifest:lines() do
+        local listed = line:match("^%x+%s+(%S+)$")
+        if listed then
+            -- Forward slashes, as MANIFEST spells them; Windows file APIs take them.
+            local src = path.join(root, listed)
+            local dst = path.join(toolchain, listed)
+            local want = read_bytes(src)
+            if not want then
+                raise("android-ndk: xim:android-ndk-libcxx-modules lists " .. listed
+                      .. " and does not hold it")
+            end
+            if not os.isfile(dst) then
+                if vendored then
+                    raise("android-ndk: this archive ships module sources but not " .. listed
+                          .. "; it is not the release xim:android-ndk-libcxx-modules was made from")
+                end
+                os.mkdir(path.directory(dst))
+                os.cp(src, dst)
+                installed = installed + 1
+            end
+            if read_bytes(dst) ~= want then
+                raise("android-ndk: " .. dst .. " differs from xim:android-ndk-libcxx-modules' "
+                      .. listed .. " -- the two describe different libc++ releases")
+            end
+            if listed:match("/v1/std/[^/]+%.inc$") then n_std = n_std + 1 end
+            if listed:match("/v1/std%.compat/[^/]+%.inc$") then n_compat = n_compat + 1 end
+        end
+    end
+    manifest:close()
+    log.debug("android-ndk: module sources %s (%d std, %d std.compat partitions)",
+              vendored and "match the archive's" or ("installed, " .. installed .. " files"),
+              n_std, n_compat)
+    return n_std, n_compat
 end
 
 -- Read `_LIBCPP_VERSION` out of the installed libc++ headers. Returns nil if
@@ -506,7 +566,7 @@ end
 -- written and reported.
 local function selftest_std_module(install_dir)
     local toolchain = toolchain_dir(install_dir)
-    local clangxx = path.join(toolchain, "bin", "clang++")
+    local clangxx = path.join(toolchain, "bin", "clang++" .. (is_host("windows") and ".exe" or ""))
     local stdcppm = path.join(toolchain, "share", "libc++", "v1", "std.cppm")
     local scratch = path.join(install_dir, ".install-selftest")
     os.tryrm(scratch)
@@ -634,30 +694,19 @@ function install()
     end
     log.debug("android-ndk: _LIBCPP_VERSION %s (matches recipe)", actual_version)
 
-    -- Module surface present. Both the two top files and a floor on each
-    -- partition directory's file count (not an exact count: a future point
-    -- release adding one header is not the failure this guards against --
-    -- the vendor omitting the whole surface again, as happened somewhere
-    -- between r27 and r30's predecessor, is).
-    local sharev1 = path.join(toolchain, "share", "libc++", "v1")
-    local std_cppm = path.join(sharev1, "std.cppm")
-    local std_compat_cppm = path.join(sharev1, "std.compat.cppm")
-    if not os.isfile(std_cppm) or not os.isfile(std_compat_cppm) then
-        raise("android-ndk: payload is missing the module surface ("
-              .. "std.cppm / std.compat.cppm) under " .. sharev1
-              .. " -- this vendor release no longer ships what this recipe "
-              .. "was written against, and this recipe does not implement "
-              .. "the generate-from-llvmorg fallback (see the header "
-              .. "comment: it was not needed for r30, so it was not built)")
-    end
-    local n_std = count_files(path.join(sharev1, "std"), ".inc")
-    local n_compat = count_files(path.join(sharev1, "std.compat"), ".inc")
+    -- Module surface present: checked against, or installed from,
+    -- xim:android-ndk-libcxx-modules (module_sources() above), then a floor on
+    -- each partition count (not an exact count: a future point release adding
+    -- one header is not the failure this guards against -- the vendor omitting
+    -- the whole surface again, as happened somewhere between r27 and r30's
+    -- predecessor, is).
+    local n_std, n_compat = module_sources(toolchain)
     if n_std < 100 or n_compat < 15 then
         raise(string.format(
             "android-ndk: module-surface partition count looks wrong "
             .. "(std/*.inc=%d, expected >=100; std.compat/*.inc=%d, "
-            .. "expected >=15) under %s -- the payload may be truncated",
-            n_std, n_compat, sharev1))
+            .. "expected >=15) -- the module sources may be truncated",
+            n_std, n_compat))
     end
 
     -- The functional self-test: actually precompile the vendored std.cppm.

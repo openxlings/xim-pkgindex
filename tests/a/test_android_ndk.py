@@ -184,37 +184,48 @@ class TestPinnedFacts:
 
     @pytest.mark.static
     def test_the_hosts_that_can_actually_serve_this_package(self, meta):
-        """REVERSED TWICE, and the second reversal is the interesting one.
+        """REVERSED THREE TIMES, and each time on a measurement.
 
         It first pinned `linux` only, which was true of the recipe and not of
-        upstream: Google publishes android-ndk for every host this index
-        serves. So it was widened to all three -- and `windows` is wrong for a
-        reason no url table can express.
+        upstream. Widened to all three, then `windows` was withdrawn: Google's
+        Windows archive has the layout this recipe expects but no libc++
+        module sources, which `import std;` needs.
 
-        Google's Windows archive downloads and has the layout this recipe
-        expects, and it does NOT contain the libc++ module surface. Measured by
-        reading each archive's central directory:
+        It is back because those sources now come from
+        xim:android-ndk-libcxx-modules on every host: the Linux archive's
+        share/libc++/v1, valid for Windows because both archives are one
+        release from one clang revision with byte-identical libc++ headers
+        (tools/res/android-ndk/libcxx_modules.py checks exactly that).
 
-            archive   entries   share/libc++/v1/std.cppm   std/*.inc
-            linux      ~10000   present                    110
-            darwin      10024   present                    110
-            windows      9108   ABSENT                       0
-
-        mcpp is module-first, so that payload cannot serve: the install would
-        succeed and the self-test would fail on a file that is not there. An
-        entry that can never serve is worse than none -- the same rule that
-        kept the emsdk Windows CN asset out after its upload would not land.
-
-        Asserted as an EXACT SET, not as "at least these". A future addition
-        has to come with its own measurement rather than slipping in, and a
-        future REMOVAL cannot pass either.
+        Asserted as an EXACT SET, not as "at least these".
         """
         declared = {h for h in ("linux", "macosx", "windows")
                     if meta.platforms.get(h)}
-        assert declared == {"linux", "macosx"}, (
-            f"declared {sorted(declared)}; windows is deliberately absent "
-            f"because its archive ships no libc++ module surface"
+        assert declared == {"linux", "macosx", "windows"}, (
+            f"declared {sorted(declared)}; upstream publishes an NDK for each "
+            f"host and the module sources come from their own package"
         )
+
+    @pytest.mark.static
+    def test_every_entry_takes_the_module_sources_of_its_release(self, source_text):
+        """One place for the module sources, on every host, at the NDK's own
+        version: Windows installs them, Linux and macOS check their copy
+        against them. A version entry without the dependency, or naming
+        another release's sources, would install unverified sources."""
+        code = re.sub(r'--.*', '', source_text)
+        head = code.split('\nimport(', 1)[0]
+        entries = re.findall(r'\["(\d+(?:\.\d+)+)"\]\s*=\s*\{(.*?)\n            \},', head, re.S)
+        assert len(entries) == 3, f"expected one version entry per host, found {len(entries)}"
+        for version, body in entries:
+            assert re.search(
+                r'deps\s*=\s*\{\s*build\s*=\s*\{\s*"xim:android-ndk-libcxx-modules@'
+                + re.escape(version) + r'"\s*\}\s*\}', body), (
+                f"version {version} does not take xim:android-ndk-libcxx-modules@{version} "
+                f"as its build dependency")
+        install_body = code.split("function install()", 1)[1]
+        assert "module_sources(toolchain)" in install_body
+        assert 'pkginfo.build_dep("android-ndk-libcxx-modules")' in code
+        assert "ls -1" not in code, "a directory listing through `ls` does not exist on Windows"
 
     @pytest.mark.static
     def test_arch_scope_is_stated_per_platform(self, source_text):
@@ -327,12 +338,15 @@ class TestPinnedFacts:
         assert not re.search(r'\bci\s*=\s*\{', code)
 
     @pytest.mark.static
-    def test_no_deps_declared(self, source_text):
+    def test_no_runtime_deps_declared(self, source_text):
         # Self-contained payload (bundled libc++/libc++abi/libunwind, only
         # core host glibc crossed) -- see contributing.md section 5.1 and
-        # the header comment for the measurement this rests on.
+        # the header comment for the measurement this rests on. The one
+        # dependency is a BUILD one, which never enters the RPATH closure.
         code = re.sub(r'--.*', '', source_text)
-        assert not re.search(r'\bdeps\s*=', code)
+        assert not re.search(r'\bruntime\s*=', code)
+        for deps in re.findall(r'\bdeps\s*=\s*(\{[^\n]*\})', code):
+            assert re.fullmatch(r'\{\s*build\s*=\s*\{[^{}]*\}\s*\}', deps), deps
 
     @pytest.mark.static
     def test_no_bare_clang_shim_registered(self, source_text):

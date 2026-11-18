@@ -338,5 +338,10 @@
     "what": "sample-music",
     "version": "2026.10.22",
     "arch": "x86_64"
+  },
+  {
+    "what": "android-ndk-libcxx-modules",
+    "version": "30.0.16248370",
+    "arch": "x86_64"
   }
 ]

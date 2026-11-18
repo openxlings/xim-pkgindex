@@ -51,6 +51,7 @@
 #   terminfo        the terminal descriptions (ncurses' terminfo.src, compiled)
 #   adwaita-cursors GNOME's Adwaita cursor theme, and the default theme naming it
 #   luban-fonts     the fonts the Luban OS window ships with
+#   android-ndk-libcxx-modules  an NDK release's libc++ module sources, for its Windows archive
 #   sample-music    luban:sample-music, a piece to play (the Open Goldberg Variations' Aria, CC0)
 #
 # Runs on the machine of the target architecture (CI: ubuntu-24.04 and
@@ -1233,6 +1234,29 @@ luban-fonts)
     cp "$work/noto.LICENSE" "$l/NotoSansCJK-OFL.txt"
     for x in "$f"/*; do file -b "$x" | grep -Eq "TrueType|OpenType" || die "$(basename "$x") is not a font: $(file -b "$x")"; done
     provenance "$d" "luban-fonts $version: JetBrains Mono 2.304 (Regular, Bold), Inter 4.1 (Regular), Sarasa Mono SC 1.0.42 (Regular, Bold), Noto Sans SC 2.004 (Regular, subset OTF), Fusion Pixel 12px proportional zh_hans 2026.09.25 -- from their GitHub releases, digests in tools/res/inputs.txt; licenses in share/licenses/luban-fonts"
+    pack_data "$d" ;;
+android-ndk-libcxx-modules)
+    # The libc++ module sources (share/libc++/v1) of an NDK release, which its
+    # Windows archive omits (docs/android-ndk-libcxx-modules.md). Taken from
+    # the same release's Linux archive after checking both are that release,
+    # built from one clang revision, with byte-identical libc++ headers.
+    case "$version" in
+        30.0.16248370) release=r30 ;;
+        *) die "android-ndk-libcxx-modules: no release name recorded for $version" ;;
+    esac
+    for host in linux windows; do
+        source_of "android-ndk-$host" "$version" \
+            "https://dl.google.com/android/repository/android-ndk-$release-$host.zip" "$work/$host.zip"
+    done
+    d="android-ndk-libcxx-modules-$version"
+    python3 -I "$here/android-ndk/libcxx_modules.py" extract "$version" "$work/linux.zip" "$work/windows.zip" "$work/$d" \
+        || die "the NDK archives do not support taking one host's module sources for another"
+    rm -f "$work/linux.zip" "$work/windows.zip"
+    [[ -f "$work/$d/share/libc++/v1/std.cppm" && -f "$work/$d/share/libc++/v1/std.compat.cppm" ]] || die "no std.cppm or std.compat.cppm"
+    (cd "$work/$d" && sha256sum -c --quiet MANIFEST) || die "MANIFEST does not describe the files"
+    provenance "$d" "android-ndk-libcxx-modules $version: share/libc++/v1 of android-ndk-$release-linux.zip (dl.google.com, sha256 $(input android-ndk-linux "$version")), unmodified; android-ndk-$release-windows.zip (sha256 $(input android-ndk-windows "$version")) checked to be the same Pkg.Revision and clang revision with byte-identical sysroot/usr/include/c++/v1 and no share/libc++/v1; licence: NOTICE.toolchain of that release"
+    # Modes from no umask, so every machine packs the same bytes.
+    chmod -R u=rwX,go=rX "$work/$d"
     pack_data "$d" ;;
 qt-runtime)
     # luban:qt-runtime: what LXQt and KDE share (design 2026-10-18 §13.5) --
