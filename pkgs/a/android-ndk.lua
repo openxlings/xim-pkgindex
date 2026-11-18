@@ -307,6 +307,10 @@ package = {
         -- The linux and macosx entries keep their published form: they ship
         -- the same files themselves.
         windows = {
+            -- A build dependency belongs to the platform table, where xlings
+            -- resolves it; its version is the NDK version this table serves,
+            -- and a new NDK version moves it (tests/a/test_android_ndk_libcxx_modules.py).
+            deps = { build = { "xim:android-ndk-libcxx-modules@30.0.16248370" } },
             ["latest"] = { ref = "30.0.16248370" },
             ["30.0.16248370"] = {
                 -- Downloaded and hashed locally; upstream publishes a SHA1 only,
@@ -316,7 +320,6 @@ package = {
                     CN     = "https://gitcode.com/xlings-res/android-ndk/releases/download/30.0.16248370/android-ndk-r30-windows.zip",
                 },
                 sha256 = "b830098aaf18b67a42eb831c404e15e5f2990a474f054ac145b0bc957ac6d729",
-                deps = { build = { "xim:android-ndk-libcxx-modules@30.0.16248370" } },
             },
         },
     },

@@ -208,13 +208,14 @@ class TestPinnedFacts:
 
     @pytest.mark.static
     def test_only_the_archive_without_module_sources_takes_them(self, meta, source_text):
-        """The Windows archive ships no share/libc++/v1, so its entry takes
-        xim:android-ndk-libcxx-modules at its own version; the linux and macosx
+        """The Windows archive ships no share/libc++/v1, so its platform table
+        takes xim:android-ndk-libcxx-modules at the NDK's version, as a build
+        dependency where xlings resolves one; the linux and macosx
         entries ship the same files themselves and keep their published form,
         which the index's guard requires of an existing version entry."""
         code = re.sub(r'--.*', '', source_text)
         windows = code.split("windows = {", 1)[1]
-        version = re.search(r'\["(\d+(?:\.\d+)+)"\]', windows).group(1)
+        version = re.search(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"([^"]+)"', windows).group(1)
         assert re.search(
             r'deps\s*=\s*\{\s*build\s*=\s*\{\s*"xim:android-ndk-libcxx-modules@'
             + re.escape(version) + r'"\s*\}\s*\}', windows), (
