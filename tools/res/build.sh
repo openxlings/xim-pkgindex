@@ -556,7 +556,12 @@ gdb)
     # for in /usr/lib/debug. The terminfo of the terminals it meets in
     # share/terminfo, which the recipe names in TERMINFO_DIRS. The manual is
     # not built (MAKEINFO=true): the build tree's GDBvn.texi is newer than
-    # the release's gdb.info, and the payload carries no manual.
+    # the release's gdb.info, and the payload carries no manual. gdb links
+    # through libtool, for which -static keeps only libtool's own libraries
+    # static (the first build's gdb named the musl loader): it is linked again
+    # with -all-static. gdbserver links with the compiler, which reads
+    # LDFLAGS=-static; so do the configure scripts the build runs, which is
+    # why -all-static is not the build's LDFLAGS.
     source_of gdb "$version" "https://ftpmirror.gnu.org/gnu/gdb/gdb-$version.tar.xz" "$work/src.tar.xz"
     d="gdb-$version-linux-$arch"
     libs="gmp-dev mpfr-dev expat-static zlib-static zstd-static xz-static ncurses-static"
@@ -574,6 +579,7 @@ gdb)
              --without-python --without-guile --without-debuginfod --without-intel-pt --without-xxhash \
              CFLAGS=-O2 CXXFLAGS=-O2 LDFLAGS=-static > /w/configure.log 2>&1 \
         && make -j\$(nproc) MAKEINFO=true all-gdb all-gdbserver > /w/make.log 2>&1 \
+        && rm gdb/gdb && make -C gdb MAKEINFO=true LDFLAGS=-all-static gdb >> /w/make.log 2>&1 \
         && make -C gdb/data-directory install DESTDIR=/w/stage > /w/install.log 2>&1 \
         && mkdir -p /w/$d/bin /w/$d/share/terminfo && cp gdb/gdb gdbserver/gdbserver /w/$d/bin/ && strip /w/$d/bin/* \
         && cp -a /w/stage/usr/share/gdb /w/$d/share/ \
