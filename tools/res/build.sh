@@ -616,7 +616,7 @@ gdb)
     done
     out="$(session -ex "target remote | $work/$d/bin/gdbserver - $work/t" -ex 'break add' -ex continue -ex bt -ex continue "$work/t")" \
         || die "gdb through gdbserver: $out"
-    seen "gdb through gdbserver" "$out" 'Remote debugging using |' 'Breakpoint 1, add (a=40, b=2) at t.c:1' 'exited with code 07'
+    seen "gdb through gdbserver" "$out" 'Remote debugging using stdio' 'Breakpoint 1, add (a=40, b=2) at t.c:1' 'exited with code 07'
     # A program of the runner's, linked against its glibc: its libraries are
     # read and the system call it ends with is caught by name. A static gdb
     # cannot load the program's libthread_db; what it says of that is logged.
