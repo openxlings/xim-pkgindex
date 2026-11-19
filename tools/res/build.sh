@@ -23,6 +23,7 @@
 #   htop          a static htop (musl; ncurses) and the terminfo it needs
 #   procps-ng     static ps, top, free, pgrep, pkill, pidof, uptime, vmstat, watch (musl; ncurses) and terminfo
 #   sudo          a static sudo and visudo (musl; no PAM, sudoers built in)
+#   gdb           static gdb and gdbserver (musl; GMP, MPFR, expat, zlib, zstd, xz, ncurses: the TUI) and terminfo
 #   wl-clipboard  static wl-copy / wl-paste (musl; libwayland built static)
 #   xsel          a static xsel (musl; libX11/xcb static)
 #   edk2-firmware the UEFI firmware qemu ships, decompressed (no build)
@@ -541,6 +542,89 @@ sudo)
     printf 'root ALL=(ALL:ALL) ALL\n%%wheel ALL=(ALL:ALL) ALL\n' > "$work/sudoers.check"
     "$work/$d/sbin/visudo" -c -q -f "$work/sudoers.check" || die "visudo does not accept a plain sudoers"
     provenance "$d" "sudo $version (www.sudo.ws, sha256 $(input sudo "$version")): static (musl), no PAM (shadow), sudoers built in; Alpine 3.20"
+    pack "$d" ;;
+gdb)
+    # The GNU debugger and its remote server, static (musl): it runs on any
+    # Linux of the architecture and debugs what runs there. Alpine 3.20's
+    # static archives: GMP and MPFR (gdb requires both), expat (XML target
+    # descriptions, the system call tables), zlib, zstd and xz (compressed
+    # debug sections, MiniDebugInfo), ncursesw (the TUI). No Python, Guile,
+    # debuginfod, source-highlight, NLS or simulator; no in-process agent (a
+    # shared library). gdb relocates a directory under its prefix to where its
+    # own binary is: share/gdb is found beside bin/gdb wherever the payload
+    # is, and, as no lib/debug is beside it, separate debug files are looked
+    # for in /usr/lib/debug. The terminfo of the terminals it meets in
+    # share/terminfo, which the recipe names in TERMINFO_DIRS. The manual is
+    # not built (MAKEINFO=true): the build tree's GDBvn.texi is newer than
+    # the release's gdb.info, and the payload carries no manual.
+    source_of gdb "$version" "https://ftpmirror.gnu.org/gnu/gdb/gdb-$version.tar.xz" "$work/src.tar.xz"
+    d="gdb-$version-linux-$arch"
+    libs="gmp-dev mpfr-dev expat-static zlib-static zstd-static xz-static ncurses-static"
+    terms="xterm xterm-256color screen screen-256color tmux tmux-256color foot foot-direct linux vt100 vt220 dumb"
+    # What it debugs below: a static program, its DWARF as written (t) and
+    # compressed with zstd (tz).
+    printf 'int add(int a, int b) { return a + b; }\nint main(void) { return add(40, 2) == 42 ? 7 : 1; }\n' > "$work/t.c"
+    alpine "apk add -q $APK_STATIC xz pkgconf $libs expat-dev zlib-dev zstd-dev xz-dev ncurses-dev \
+            ncurses-terminfo-base ncurses-terminfo \
+        && apk info -v 2>/dev/null | sort > /w/installed \
+        && tar -xJf src.tar.xz && mkdir build && cd build \
+        && ../gdb-$version/configure --prefix=/usr --disable-nls --disable-werror --disable-shared --disable-sim \
+             --disable-inprocess-agent --disable-source-highlight --enable-tui --with-system-zlib --with-zstd \
+             --with-expat --with-libexpat-type=static --with-lzma --with-liblzma-type=static \
+             --without-python --without-guile --without-debuginfod --without-intel-pt --without-xxhash \
+             CFLAGS=-O2 CXXFLAGS=-O2 LDFLAGS=-static > /w/configure.log 2>&1 \
+        && make -j\$(nproc) MAKEINFO=true all-gdb all-gdbserver > /w/make.log 2>&1 \
+        && make -C gdb/data-directory install DESTDIR=/w/stage > /w/install.log 2>&1 \
+        && mkdir -p /w/$d/bin /w/$d/share/terminfo && cp gdb/gdb gdbserver/gdbserver /w/$d/bin/ && strip /w/$d/bin/* \
+        && cp -a /w/stage/usr/share/gdb /w/$d/share/ \
+        && for t in $terms; do f=\$(find /usr/share/terminfo /etc/terminfo -name \"\$t\" 2>/dev/null | head -1); \
+             [ -n \"\$f\" ] || { echo \"no terminfo for \$t\" >&2; exit 1; }; \
+             mkdir -p /w/$d/share/terminfo/\$(basename \$(dirname \$f)); cp \"\$f\" /w/$d/share/terminfo/\$(basename \$(dirname \$f))/; done \
+        && cd /w && gcc -g -O0 -static -o t t.c && objcopy --compress-debug-sections=zstd t tz && readelf -t tz | grep -q ZSTD" \
+      || { for f in configure make install; do [[ -f "$work/$f.log" ]] && { log "--- $f.log"; tail -40 "$work/$f.log" >&2; }; done; die "gdb build failed"; }
+    static_only "$work/$d/bin/gdb" "$work/$d/bin/gdbserver"
+    g="$work/$d/bin/gdb"
+    v="$("$g" --version)"; grep -qF "GNU gdb (GDB) $version" <<< "$v" || die "gdb does not report $version: $v"
+    v="$("$work/$d/bin/gdbserver" --version)"; grep -qF "GNU gdbserver (GDB) $version" <<< "$v" || die "gdbserver does not report $version: $v"
+    conf="$("$g" --configuration)"
+    for want in --with-expat --with-lzma --with-curses --enable-tui --without-python --without-guile \
+                --without-debuginfod '--with-gdb-datadir=/usr/share/gdb (relocatable)'; do
+        grep -qF -- "$want" <<< "$conf" || die "gdb is not configured $want: $conf"
+    done
+    [[ -f "$work/$d/share/terminfo/x/xterm-256color" ]] || die "no xterm-256color terminfo"
+    seen() {    # what, a session's output, the lines it must hold (each logged)
+        local what="$1" out="$2" want; shift 2
+        for want in "$@"; do
+            grep -qF -- "$want" <<< "$out" || die "$what: no '$want' in: $out"
+            log "$what: $(grep -F -m1 -- "$want" <<< "$out")"
+        done
+    }
+    session() { timeout 120 "$g" -nx -batch "$@" 2>&1; }
+    # It debugs, on the runner (a container may refuse ptrace): the program
+    # stops at a breakpoint, its stack and a value are read, it exits with
+    # its status -- from DWARF as written, compressed with zstd, and through
+    # gdbserver, whose target description gdb reads as XML.
+    for p in t tz; do
+        out="$(session -ex 'break add' -ex run -ex bt -ex 'print a * b' -ex continue "$work/$p")" || die "gdb on $p: $out"
+        seen "gdb on $p" "$out" 'Breakpoint 1, add (a=40, b=2) at t.c:1' 'in main () at t.c:2' '$1 = 80' 'exited with code 07'
+    done
+    out="$(session -ex "target remote | $work/$d/bin/gdbserver - $work/t" -ex 'break add' -ex continue -ex bt -ex continue "$work/t")" \
+        || die "gdb through gdbserver: $out"
+    seen "gdb through gdbserver" "$out" 'Remote debugging using |' 'Breakpoint 1, add (a=40, b=2) at t.c:1' 'exited with code 07'
+    # A program of the runner's, linked against its glibc: its libraries are
+    # read and the system call it ends with is caught by name. A static gdb
+    # cannot load the program's libthread_db; what it says of that is logged.
+    out="$(session -ex 'catch syscall exit_group' -ex run -ex 'info sharedlibrary' /bin/true)" || die "gdb on /bin/true: $out"
+    seen "gdb on the runner's /bin/true" "$out" 'Catchpoint 1 (call to syscall exit_group)' 'libc.so.6'
+    log "gdb on the runner's /bin/true: $(grep -F -m1 libthread_db <<< "$out" || echo 'nothing of libthread_db')"
+    # Moved elsewhere, it finds its data directory beside it and reads the
+    # system call tables there.
+    mkdir "$work/moved" && mv "$work/$d" "$work/moved/"
+    out="$(timeout 120 "$work/moved/$d/bin/gdb" -nx -batch -ex 'show data-directory' -ex 'show debug-file-directory' \
+            -ex 'catch syscall write' "$work/t" 2>&1)" || die "gdb, moved: $out"
+    mv "$work/moved/$d" "$work/"
+    seen "gdb, moved" "$out" "\"$(realpath "$work/moved")/$d/share/gdb\"" '"/usr/lib/debug"' "Catchpoint 1 (syscall 'write' ["
+    provenance "$d" "GNU gdb $version (ftpmirror.gnu.org, sha256 $(input gdb "$version")): gdb and gdbserver, static, built in Alpine 3.20 (musl) with $(grep -E "^(${libs// /|})-[0-9]" "$work/installed" | tr '\n' ' ')(Alpine's static archives); the TUI; no Python, Guile, debuginfod, source-highlight, NLS, simulator or in-process agent; share/gdb found beside bin/gdb; terminfo for: $terms. Checked where it was built: a static program debugged from its DWARF as written and compressed with zstd, and through gdbserver; a program linked against that machine's glibc"
     pack "$d" ;;
 wl-clipboard)
     source_of wl-clipboard "$version" "https://github.com/bugaevc/wl-clipboard/archive/refs/tags/v$version.tar.gz" "$work/src.tar.gz"

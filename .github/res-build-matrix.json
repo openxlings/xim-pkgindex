@@ -358,5 +358,15 @@
     "what": "aarch64-freebsd-sysroot",
     "version": "14.5-r3",
     "arch": "x86_64"
+  },
+  {
+    "what": "gdb",
+    "version": "18.1",
+    "arch": "x86_64"
+  },
+  {
+    "what": "gdb",
+    "version": "18.1",
+    "arch": "aarch64"
   }
 ]
