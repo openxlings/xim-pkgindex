@@ -58,7 +58,8 @@ A corrective revision whose change is confined to the archive (its directory
 renamed, a file added) is derived from the published archive of the revision
 before it, by `tools/res/revision.py`: every file it does not name is that
 archive's, byte for byte, and a zip comes out as the same bytes on every run.
-The Windows payload of `llvm` 23.1.3-r4 is made this way.
+The Windows payload of `llvm` 23.1.3-r4 and the FreeBSD bases 14.5-r3 are made
+this way.
 
 **Self-hosting is the direction, not yet the state.** Inside the factory's
 containers, build tools come from the distribution's package manager (Alpine's

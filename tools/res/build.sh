@@ -57,6 +57,7 @@
 # Corrective revisions of a published archive, derived from the archive of the
 # revision before (revision.py; no build):
 #   llvm            the llvm payload for Windows x86_64, with the lld names clang's driver runs
+#   x86_64-freebsd-sysroot, aarch64-freebsd-sysroot  a FreeBSD base, an earlier revision's files
 #
 # Runs on the machine of the target architecture (CI: ubuntu-24.04 and
 # ubuntu-24.04-arm). What it needs runs in a pinned container: the runner
@@ -830,6 +831,29 @@ llvm)
         --same bin/lld-link.exe=bin/wasm-ld.exe --add "README.provenance=$work/README.provenance" \
         || die "llvm $version: the derived archive is not llvm $from with the lld names"
     seal "$out/$d.zip" ;;
+x86_64-freebsd-sysroot|aarch64-freebsd-sysroot)
+    # A FreeBSD base at a corrective revision: the archive of an earlier
+    # revision, its directory renamed, every file that archive's. 14.5-r3 is
+    # revision 1's files -- the crt objects and static archives as FreeBSD's
+    # release ships them, their debug sections zlib-compressed. Revision 2 had
+    # decompressed them for a Windows host whose link ran an lld without zlib;
+    # the llvm payload's own ld.lld reads them (llvm 23.1.3-r4). How the base
+    # is assembled from the release: .agents/tools/build-freebsd-sysroot.py.
+    case "$version" in
+        14.5-r3) from=14.5 ;;
+        *) die "$what: no derivation recorded for $version" ;;
+    esac
+    d="$what-$version"
+    source_of "$what" "$from" \
+        "https://github.com/xlings-res/$what/releases/download/$from/$what-$from.tar.xz" "$work/from.tar.xz"
+    printf '%s\n' "$what $version: the archive of $what $from (xlings-res/$what, sha256 $(input "$what" "$from")), its directory renamed; every other file is that archive's, assembled from FreeBSD's release as its PROVENANCE.md states, the link inputs as the release ships them." \
+        > "$work/README.provenance"
+    python3 -I "$here/revision.py" tar "$work/from.tar.xz" "$out/$d.tar.xz" "$what-$from" "$d" \
+        --add "README.provenance=$work/README.provenance" \
+        || die "$what $version: the derived archive is not $what $from renamed"
+    python3 -c 'import sys, tarfile; sys.exit(any(m.islnk() for m in tarfile.open(sys.argv[1])))' "$out/$d.tar.xz" \
+        || die "$d holds a hard link"
+    seal "$out/$d.tar.xz" ;;
 bash|coreutils|openssl|binutils)
     v="${version%%-r[0-9]*}"   # <upstream>-rN: this index's Nth build of it; the payload keeps the name
     case "$what" in
