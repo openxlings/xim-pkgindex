@@ -2,7 +2,7 @@ package = {
     spec = "2",
     homepage = "https://github.com/Sunrisepeak/svr4-386-src",
     name = "svr4-disk-image",
-    description = "EXPERIMENTAL, technical verification only: the floppy set of AT&T UNIX System V/386 Release 4.0 Version 3.0 as a third party publishes it (proprietary, not mirrored), with a program that installs it in QEMU and runs a command on it",
+    description = "EXPERIMENTAL, technical verification only: the floppy set of AT&T UNIX System V/386 Release 4.0 Version 3.0 as a third party publishes it (proprietary, mirrored unchanged), with a program that installs it in QEMU and runs a command on it",
 
     maintainers = {"https://github.com/Sunrisepeak"},
     licenses = {"LicenseRef-proprietary-not-redistributed"},
@@ -22,11 +22,9 @@ package = {
     -- repeated: a program of `i686-svr4-musl` (openkal-svr4) on a System V kernel. It may be
     -- disabled or removed at any time, and `config` says so each time it is installed.
     --
-    -- It is not mirrored. The bytes are fetched from the one place the recipe names and are
-    -- not copied to xlings-res. THE ADDRESS BELOW IS A PLACEHOLDER: this recipe records the
-    -- repository used (`repo`, Sunrisepeak/svr4-386-src) and the digest of the file, and the
-    -- maintainer supplies the address of `pkgs.tar.gz` when the package is enabled. Until
-    -- then an install stops at the download.
+    -- It is mirrored unchanged. The bytes come from the repository this recipe records (`repo`,
+    -- Sunrisepeak/svr4-386-src), which states no licence for them; xlings re-hosts the file byte
+    -- for byte, with the digest below, from GitHub for the world and GitCode in China.
     --
     -- It is not an image. No prepared image is published, so what is installed is the floppy
     -- set, a program (svr4.py) that installs the system from it in QEMU on the user's machine
@@ -37,8 +35,8 @@ package = {
             ["latest"] = { ref = "4.0.3-20261119" },
             ["4.0.3-20261119"] = {
                 url = {
-                    GLOBAL = "https://example.invalid/SVR4-386-FLOPPY-SET/pkgs.tar.gz",
-                    CN = "https://example.invalid/SVR4-386-FLOPPY-SET/pkgs.tar.gz",
+                    GLOBAL = "https://github.com/xlings-res/svr4-disk-image/releases/download/4.0.3-20261119/svr4-disk-image-4.0.3-20261119.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/svr4-disk-image/releases/download/4.0.3-20261119/svr4-disk-image-4.0.3-20261119.tar.gz",
                 },
                 sha256 = "59d301d9a403f358740cb2945e9f6c83df495dcf2de2f31fd85dff7bc9463b9b",
             },
@@ -60,9 +58,9 @@ a System V kernel, and for nothing else.
 
 ## What this is not
 
-- **Not free software, and not ours.** The system is proprietary. The floppy set is fetched from
-  where it is published and is not mirrored by xlings; the repository recorded below states no
-  licence for it. Nothing here grants a right to use it: whether you may is for
+- **Not free software, and not ours.** The system is proprietary. The floppy set is re-hosted by
+  xlings unchanged (the digest below is of the file as published), and the repository recorded
+  below states no licence for it. Nothing here grants a right to use it: whether you may is for
   you to settle. This package may be disabled or removed at any time.
 - **Not a supported package.** It is not a disk-image asset of this index's class: no prepared
   image is published, so the image is built on your machine, from the floppies, in about a quarter
@@ -74,7 +72,7 @@ a System V kernel, and for nothing else.
 | | |
 |---|---|
 | Repository | <https://github.com/Sunrisepeak/svr4-386-src> |
-| File | `pkgs.tar.gz`, the floppy set; its address is the recipe's, which the index's maintainer supplies |
+| File | `pkgs.tar.gz`, the floppy set; the recipe's address serves it from xlings's mirror (GitHub for the world, GitCode in China) |
 | sha256 | `59d301d9a403f358740cb2945e9f6c83df495dcf2de2f31fd85dff7bc9463b9b` |
 | Contents | 27 floppy images of 1.44 MB: `base1` .. `base12` (used here), and `nsu`, `inet`, `ed`, `scde`, `compat`, `termcap`, `xcp`, `license` (not used) |
 
@@ -587,9 +585,9 @@ function config()
     xvm.add(package.name)
     local dir = pkginfo.install_dir()
     log.warn("svr4-disk-image: EXPERIMENTAL, TECHNICAL VERIFICATION ONLY.")
-    log.warn("  AT&T UNIX System V/386 Release 4.0 is proprietary software. Its floppy set was fetched")
-    log.warn("  from a third party's repository, which states no licence; xlings does not mirror it")
-    log.warn("  and grants no right to use it. This package may be disabled or removed at any time.")
+    log.warn("  AT&T UNIX System V/386 Release 4.0 is proprietary software. Its floppy set is re-hosted")
+    log.warn("  unchanged by xlings from a third party's repository, which states no licence; xlings")
+    log.warn("  grants no right to use it. This package may be disabled or removed at any time.")
     log.warn("  How to build the image and repeat the measurement: %s", path.join(dir, "README.md"))
     return true
 end
