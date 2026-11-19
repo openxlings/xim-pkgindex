@@ -30,15 +30,48 @@ package = {
         },
         linux = {
             ["latest"] = { ref = "hrev60431" },
-            ["hrev60431"] = { sha256 = "f418cddd5cf050b30046afe1664c9264a7aa6c4bedc7b04e337ad1afe1a47bb3" },
+            ["hrev60431"] = {
+                -- r1: the std module (GCC's sources, libstdc++'s include directories), libstdc++
+                -- linked by name, and <fenv.h>'s seven functions with external linkage in C++
+                -- (PROVENANCE.md). An r0 payload has no std module: floor 1.
+                revision = 1,
+                floor = 1,
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/x86_64-haiku-sysroot/releases/download/hrev60431-r1/x86_64-haiku-sysroot-hrev60431-r1.tar.xz",
+                    CN = "https://gitcode.com/xlings-res/x86_64-haiku-sysroot/releases/download/hrev60431-r1/x86_64-haiku-sysroot-hrev60431-r1.tar.xz",
+                },
+                sha256 = "4c72ec4137d95cb82e5b8f9d2bf1ef8967dc41f1a72f7e7814f42215bab102e2",
+            },
         },
         macosx = {
             ["latest"] = { ref = "hrev60431" },
-            ["hrev60431"] = { sha256 = "f418cddd5cf050b30046afe1664c9264a7aa6c4bedc7b04e337ad1afe1a47bb3" },
+            ["hrev60431"] = {
+                -- r1: the std module (GCC's sources, libstdc++'s include directories), libstdc++
+                -- linked by name, and <fenv.h>'s seven functions with external linkage in C++
+                -- (PROVENANCE.md). An r0 payload has no std module: floor 1.
+                revision = 1,
+                floor = 1,
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/x86_64-haiku-sysroot/releases/download/hrev60431-r1/x86_64-haiku-sysroot-hrev60431-r1.tar.xz",
+                    CN = "https://gitcode.com/xlings-res/x86_64-haiku-sysroot/releases/download/hrev60431-r1/x86_64-haiku-sysroot-hrev60431-r1.tar.xz",
+                },
+                sha256 = "4c72ec4137d95cb82e5b8f9d2bf1ef8967dc41f1a72f7e7814f42215bab102e2",
+            },
         },
         windows = {
             ["latest"] = { ref = "hrev60431" },
-            ["hrev60431"] = { sha256 = "f418cddd5cf050b30046afe1664c9264a7aa6c4bedc7b04e337ad1afe1a47bb3" },
+            ["hrev60431"] = {
+                -- r1: the std module (GCC's sources, libstdc++'s include directories), libstdc++
+                -- linked by name, and <fenv.h>'s seven functions with external linkage in C++
+                -- (PROVENANCE.md). An r0 payload has no std module: floor 1.
+                revision = 1,
+                floor = 1,
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/x86_64-haiku-sysroot/releases/download/hrev60431-r1/x86_64-haiku-sysroot-hrev60431-r1.tar.xz",
+                    CN = "https://gitcode.com/xlings-res/x86_64-haiku-sysroot/releases/download/hrev60431-r1/x86_64-haiku-sysroot-hrev60431-r1.tar.xz",
+                },
+                sha256 = "4c72ec4137d95cb82e5b8f9d2bf1ef8967dc41f1a72f7e7814f42215bab102e2",
+            },
         },
     },
 }

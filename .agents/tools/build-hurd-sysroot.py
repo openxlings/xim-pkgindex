@@ -7,6 +7,13 @@ libstdc++, as Debian's `hurd-amd64` port builds them. The packages are the ones 
 below, each held to its sha256; a `.deb` is read here (an `ar` archive holding
 `data.tar.*`), so no tool of Debian's is needed.
 
+The versions are the ones Debian's pre-installed image of the same date has
+(hurd-disk-image), taken from the archive's snapshot of that date: a program is built
+against the libraries it runs with. (20261118 was assembled from `sid` of its day; its
+libstdc++, GCC 16's, is newer than the image's, and a C++ program built against it did
+not start there: `GLIBCXX_3.4.36' not found.) The manifest states GCC's std module
+sources, so the row compiles `import std`.
+
 Debian is a merged-/usr system: `lib` is a link to `usr/lib`, and the loader a program
 names (`/lib/ld-x86-64.so.1`) is found through it.
 
@@ -22,37 +29,40 @@ usage: build-hurd-sysroot.py <out-dir> <version> [<directory of the .deb files>]
 import hashlib, io, subprocess, sys, tarfile, tempfile, urllib.request
 from pathlib import Path
 
-MIRROR = "http://deb.debian.org/debian-ports/"
-# name, version, path beneath the mirror, sha256
+MIRROR = "https://snapshot.debian.org/archive/debian-ports/20260314T000000Z/"
+GCC = "15"
+# name, version, path beneath the mirror, sha256: the versions hurd-disk-image@20260314 has
+# (dpkg-query in that image; libcrypt-dev, not installed there, is libcrypt1's source version).
 PACKAGES = [
-    ("gnumach-dev", "2:1.8+git20261028-2", "pool-hurd-amd64/main/g/gnumach/gnumach-dev_1.8+git20261028-2_hurd-amd64.deb",
-     "fdc97ea53c74d8d0439044b5c9afef25171234b217ba671a95b770749a5d5f13"),
-    ("hurd-dev", "1:0.9.git20261028-4", "pool-hurd-amd64/main/h/hurd/hurd-dev_0.9.git20261028-4_hurd-amd64.deb",
-     "12d304ca12c194fa1c073bc2cdde996ea14bf8f409e52a1530c976a375d6093d"),
-    ("hurd-libs0.3", "1:0.9.git20261028-4", "pool-hurd-amd64/main/h/hurd/hurd-libs0.3_0.9.git20261028-4_hurd-amd64.deb",
-     "84907a4b41f57113a456055b3155728a0e7a205b613479b866fc2ec1f1c0dc2b"),
-    ("libc0.3-dev", "2.43-7", "pool-hurd-amd64/main/g/glibc/libc0.3-dev_2.43-7_hurd-amd64.deb",
-     "6be6dd60aff4ff99776b45d4ae4b4eeafe8f0539ba12c6386d85d152e34a456b"),
-    ("libc0.3", "2.43-7", "pool-hurd-amd64/main/g/glibc/libc0.3_2.43-7_hurd-amd64.deb",
-     "d014aab99750f218b41e5e9d9dfe836cda307f57728055b0c0a1575caeefad65"),
-    ("libcrypt-dev", "1:4.5.2+20251210-1", "pool-hurd-amd64/main/libx/libxcrypt/libcrypt-dev_4.5.2+20251210-1_hurd-amd64.deb",
-     "a38d77512a5ec4cf38b2e230227d3a240a0a3ef753c96761b8cd9fac39a2bcd4"),
-    ("libcrypt1", "1:4.5.2+20251210-1", "pool-hurd-amd64/main/libx/libxcrypt/libcrypt1_4.5.2+20251210-1_hurd-amd64.deb",
-     "a864034aed39a349e4f5e753ea55679706883a83e47cbdc1e4cc1e349210a104"),
-    ("libgcc-16-dev", "16.2.0-4", "pool-hurd-amd64/main/g/gcc-16/libgcc-16-dev_16.2.0-4_hurd-amd64.deb",
-     "4cad3e41d09e8d289c31e463c265258f9faa0cd45cf956c4762604312a4d32bd"),
-    ("libgcc-s1", "16.2.0-4", "pool-hurd-amd64/main/g/gcc-16/libgcc-s1_16.2.0-4_hurd-amd64.deb",
-     "f7343a0e36d49a73b79b29c162f5d9b31f55ef2c9d77d812334bc454144f9b36"),
-    ("libstdc++-16-dev", "16.2.0-4", "pool-hurd-amd64/main/g/gcc-16/libstdc++-16-dev_16.2.0-4_hurd-amd64.deb",
-     "9154af9923602b49025ac838c0d9855e168d3b468e9713039b03b97bc49b0e46"),
-    ("libstdc++6", "16.2.0-4", "pool-hurd-amd64/main/g/gcc-16/libstdc++6_16.2.0-4_hurd-amd64.deb",
-     "d8e1049e7f68bb048758c739ce3006daf645367fbef2a987bb76027060e6aec7"),
+    ("gnumach-dev", "2:1.8+git20260224-4", "pool-hurd-amd64/main/g/gnumach/gnumach-dev_1.8+git20260224-4_hurd-amd64.deb",
+     "5fb6f71d0486f50bf932eeb23c7c52a87e1b65c7cd7df325f2406eff62ad597c"),
+    ("hurd-dev", "1:0.9.git20251029-7", "pool-hurd-amd64/main/h/hurd/hurd-dev_0.9.git20251029-7_hurd-amd64.deb",
+     "ce0cc062a151c608b7f289b83035e606ec77ead31b7e2e768ba29b14fbc4695d"),
+    ("hurd-libs0.3", "1:0.9.git20251029-7", "pool-hurd-amd64/main/h/hurd/hurd-libs0.3_0.9.git20251029-7_hurd-amd64.deb",
+     "c5bcfaa517def94f03ca39f7e6b5f250669f7ebf493e254db36402f16afa61f0"),
+    ("libc0.3-dev", "2.42-14~hurd.1", "pool-hurd-amd64/main/g/glibc/libc0.3-dev_2.42-14~hurd.1_hurd-amd64.deb",
+     "4d4eb4ac5d530056509d9738eaad2df18c18e0f315585e3f98d7f8815a0e2392"),
+    ("libc0.3", "2.42-14~hurd.1", "pool-hurd-amd64/main/g/glibc/libc0.3_2.42-14~hurd.1_hurd-amd64.deb",
+     "a7b0c3095efd24f2c100eed169275e851bb64f052d8c2ef93b2ffa40243b6960"),
+    ("libcrypt-dev", "1:4.5.1-1", "pool-hurd-amd64/main/libx/libxcrypt/libcrypt-dev_4.5.1-1_hurd-amd64.deb",
+     "a2cae06cc99cdf724c2980ea51d7134c52aa833f5102a480d9a3026ff7923da7"),
+    ("libcrypt1", "1:4.5.1-1", "pool-hurd-amd64/main/libx/libxcrypt/libcrypt1_4.5.1-1_hurd-amd64.deb",
+     "745cf9dd1f2806d0f125a75650faa8dc0a9c6bbc3f46042ebd91f6f6f45867c7"),
+    ("libgcc-15-dev", "15.2.0-12", "pool-hurd-amd64/main/g/gcc-15/libgcc-15-dev_15.2.0-12_hurd-amd64.deb",
+     "402337603873aab595197346aef3e03426b861a0b30758a6e51178ae9ac9f53b"),
+    ("libgcc-s1", "15.2.0-12", "pool-hurd-amd64/main/g/gcc-15/libgcc-s1_15.2.0-12_hurd-amd64.deb",
+     "cd131ef7302f5c4c75281287d8703bdb5a44c701b169469dff379beba60581c6"),
+    ("libstdc++-15-dev", "15.2.0-12", "pool-hurd-amd64/main/g/gcc-15/libstdc++-15-dev_15.2.0-12_hurd-amd64.deb",
+     "ba63f503fe8cb8f3d20f11de065ea0503aeb36b3055afe6245ea97cdb2081000"),
+    ("libstdc++6", "15.2.0-12", "pool-hurd-amd64/main/g/gcc-15/libstdc++6_15.2.0-12_hurd-amd64.deb",
+     "2845c5fac510243c8ea68c729d58b74823fcf961b0f1f2f24941e049de5b6523"),
 ]
 KEEP = ("usr/include/", "usr/lib/")
 DROP = ("usr/lib/x86_64-gnu/gconv/", "usr/lib/x86_64-gnu/audit/", "usr/lib/locale/", "usr/lib/debug/")
 REQUIRED = ("usr/include/stdio.h", "usr/include/hurd.h", "usr/include/mach.h", "usr/lib/x86_64-gnu/crt1.o",
             "usr/lib/x86_64-gnu/libc.so", "usr/lib/x86_64-gnu/libc.so.0.3", "usr/lib/x86_64-gnu/ld-x86-64.so.1",
-            "usr/lib/gcc/x86_64-gnu/16/libgcc.a", "usr/lib/gcc/x86_64-gnu/16/crtbegin.o")
+            f"usr/lib/gcc/x86_64-gnu/{GCC}/libgcc.a", f"usr/lib/gcc/x86_64-gnu/{GCC}/crtbegin.o",
+            f"usr/include/c++/{GCC}/bits/std.cc", f"usr/include/x86_64-gnu/c++/{GCC}/bits/c++config.h")
 
 
 def sha256(data: bytes) -> str:
@@ -116,21 +126,30 @@ provides    = ["mcpp:c-abi=glibc", "mcpp:c++-abi=libstdc++", "mcpp:compiler-runt
 
 [build]
 # The compiler's own run-time is not built for this system: the base's is taken,
-# libgcc and its unwinder, with GCC's libstdc++.
+# libgcc and its unwinder, with GCC's libstdc++, which is linked by name: the link
+# is the compiler's, given no `-stdlib`.
 cxxflags = ["-stdlib=libstdc++"]
-ldflags  = ["-rtlib=libgcc", "--unwindlib=libgcc"]
+ldflags  = ["-rtlib=libgcc", "--unwindlib=libgcc", "-lstdc++"]
+# GCC's std module sources (GCC 15 and later), compiled with libstdc++'s headers:
+# `import std` on this row.
+include_dirs      = ["usr/include/c++/{GCC}", "usr/include/x86_64-gnu/c++/{GCC}", "usr/include/c++/{GCC}/backward"]
+std-module        = "usr/include/c++/{GCC}/bits/std.cc"
+std-compat-module = "usr/include/c++/{GCC}/bits/std.compat.cc"
 ''')
         listed = "\n".join(f"    {p} {v}\n        {MIRROR}{path}\n        sha256 {d}" for p, v, path, d in PACKAGES)
         (root / "PROVENANCE.md").write_text(f'''# Provenance
 
 Assembled by `build-hurd-sysroot.py` from the packages of Debian GNU/Hurd's `hurd-amd64` port
-(debian-ports, `sid`), each checked against the digest the script states:
+(debian-ports), at the versions Debian's pre-installed image of {version} has, from the
+archive's snapshot of that date; each checked against the digest the script states:
 
 {listed}
 
 Taken without modification: `usr/include` and `usr/lib` of each package, without the
 C library's character-set modules (`gconv`), its audit modules and locale data. Added:
-the link `lib -> usr/lib` (Debian's merged /usr), `mcpp.toml` and this file.
+the link `lib -> usr/lib` (Debian's merged /usr), `mcpp.toml` and this file. The manifest
+states libstdc++'s include directories and GCC's std module sources (`bits/std.cc`,
+`bits/std.compat.cc`), as the package ships them, and links libstdc++ by name.
 ''')
         archive = out / f"{name}.tar.xz"
         subprocess.run(["tar", "-C", tmp, "--owner=0", "--group=0", "--numeric-owner", "--sort=name",
