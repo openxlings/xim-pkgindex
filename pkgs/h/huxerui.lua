@@ -119,7 +119,13 @@ package = {
                 "xim:libsoup@>=3.0",     -- cmake: libsoup-3.0>=3.0
             },
             source = "https://github.com/HuxerUI/HuxerUI/releases/download/v${version}/huxerui-sdk-${version}-linux-${arch}.${ext}",
-            ["latest"] = { ref = "0.4.0" },
+            ["latest"] = { ref = "0.5.0" },
+            ["0.5.0"] = {
+                sha256 = {
+                    x86_64  = "25a5b98d5877131e523ff6fd7181dbe07194d22f3538b47e8737ff3310397361",
+                    aarch64 = "1a82966a3d824cbaf126606d9e867825e9ee1402e53f17627a77cdcbf28a822d",
+                },
+            },
             ["0.4.0"] = {
                 sha256 = {
                     x86_64  = "86837f3e872fe6716464d1804c10d894957742a6616a8d2977ea93e630799583",
@@ -155,7 +161,14 @@ package = {
             -- `${arch}` template alone would 404 on Apple Silicon. `arch_alias`
             -- maps the canonical key to upstream's spelling for this platform.
             source = "https://github.com/HuxerUI/HuxerUI/releases/download/v${version}/huxerui-sdk-${version}-macos-${arch_alias}.${ext}",
-            ["latest"] = { ref = "0.4.0" },
+            ["latest"] = { ref = "0.5.0" },
+            ["0.5.0"] = {
+                arch_alias = { x86_64 = "x86_64", aarch64 = "arm64" },
+                sha256 = {
+                    x86_64  = "fade0e1c027d5844b7a27d7c3d48d94a98b50cd7ad95430dfe4ac552ba0ff05c",
+                    aarch64 = "f91183f2488452f2888c438f94d484a0b890e7d9636d4ae0cdfb149cb041183c",
+                },
+            },
             ["0.4.0"] = {
                 arch_alias = { x86_64 = "x86_64", aarch64 = "arm64" },
                 sha256 = {
@@ -188,7 +201,12 @@ package = {
             },
             -- windows asset is a .zip; ${ext} resolves to `zip` on windows.
             source = "https://github.com/HuxerUI/HuxerUI/releases/download/v${version}/huxerui-sdk-${version}-windows-${arch}.${ext}",
-            ["latest"] = { ref = "0.4.0" },
+            ["latest"] = { ref = "0.5.0" },
+            ["0.5.0"] = {
+                sha256 = {
+                    x86_64 = "70b58c4c6bfa17c34c3e36a21c2ac47f509a7d5a33e7319c41b5f06fa91cdf76",
+                },
+            },
             ["0.4.0"] = {
                 sha256 = {
                     x86_64 = "5eb4deaf2bdbccf9be8f198e915c2eb176f2287088c169adb687baf40fd69fee",
