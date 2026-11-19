@@ -43,6 +43,14 @@ package = {
     -- Windows host stopped at `crtend.o` ("is compressed with
     -- ELFCOMPRESS_ZLIB, but lld is not built with zlib support"). The
     -- sections' contents are those of the release; PROVENANCE.md states it.
+    --
+    -- Revision 3 (same version key, new asset): the release's link inputs
+    -- again. The Windows link that stopped at `crtend.o` ran the ld.lld of
+    -- the host's PATH, since the llvm payload for Windows shipped none; the
+    -- payload's own lld reads zlib (llvm 23.1.3 revision 4 ships ld.lld.exe).
+    -- The archive is revision 1's, its directory renamed, with a
+    -- README.provenance (tools/res/build.sh, `x86_64-freebsd-sysroot
+    -- 14.5-r3`).
 
     xpm = {
         source = {
@@ -52,34 +60,34 @@ package = {
         linux = {
             ["latest"] = { ref = "14.5" },
             ["14.5"] = {
-                revision = 2,
+                revision = 3,
                 url = {
-                    GLOBAL = "https://github.com/xlings-res/x86_64-freebsd-sysroot/releases/download/14.5-r2/x86_64-freebsd-sysroot-14.5-r2.tar.xz",
-                    CN = "https://gitcode.com/xlings-res/x86_64-freebsd-sysroot/releases/download/14.5-r2/x86_64-freebsd-sysroot-14.5-r2.tar.xz",
+                    GLOBAL = "https://github.com/xlings-res/x86_64-freebsd-sysroot/releases/download/14.5-r3/x86_64-freebsd-sysroot-14.5-r3.tar.xz",
+                    CN = "https://gitcode.com/xlings-res/x86_64-freebsd-sysroot/releases/download/14.5-r3/x86_64-freebsd-sysroot-14.5-r3.tar.xz",
                 },
-                sha256 = "d92c39ddb83e5dac77cfdb9accdbe220b52936cf25a0df4380fc56e0729b6ec6",
+                sha256 = "727dea1fba0c77cde4c1ccf70802d83aa0b413a22142cb2fe14fa43c24f9b8fd",
             },
         },
         macosx = {
             ["latest"] = { ref = "14.5" },
             ["14.5"] = {
-                revision = 2,
+                revision = 3,
                 url = {
-                    GLOBAL = "https://github.com/xlings-res/x86_64-freebsd-sysroot/releases/download/14.5-r2/x86_64-freebsd-sysroot-14.5-r2.tar.xz",
-                    CN = "https://gitcode.com/xlings-res/x86_64-freebsd-sysroot/releases/download/14.5-r2/x86_64-freebsd-sysroot-14.5-r2.tar.xz",
+                    GLOBAL = "https://github.com/xlings-res/x86_64-freebsd-sysroot/releases/download/14.5-r3/x86_64-freebsd-sysroot-14.5-r3.tar.xz",
+                    CN = "https://gitcode.com/xlings-res/x86_64-freebsd-sysroot/releases/download/14.5-r3/x86_64-freebsd-sysroot-14.5-r3.tar.xz",
                 },
-                sha256 = "d92c39ddb83e5dac77cfdb9accdbe220b52936cf25a0df4380fc56e0729b6ec6",
+                sha256 = "727dea1fba0c77cde4c1ccf70802d83aa0b413a22142cb2fe14fa43c24f9b8fd",
             },
         },
         windows = {
             ["latest"] = { ref = "14.5" },
             ["14.5"] = {
-                revision = 2,
+                revision = 3,
                 url = {
-                    GLOBAL = "https://github.com/xlings-res/x86_64-freebsd-sysroot/releases/download/14.5-r2/x86_64-freebsd-sysroot-14.5-r2.tar.xz",
-                    CN = "https://gitcode.com/xlings-res/x86_64-freebsd-sysroot/releases/download/14.5-r2/x86_64-freebsd-sysroot-14.5-r2.tar.xz",
+                    GLOBAL = "https://github.com/xlings-res/x86_64-freebsd-sysroot/releases/download/14.5-r3/x86_64-freebsd-sysroot-14.5-r3.tar.xz",
+                    CN = "https://gitcode.com/xlings-res/x86_64-freebsd-sysroot/releases/download/14.5-r3/x86_64-freebsd-sysroot-14.5-r3.tar.xz",
                 },
-                sha256 = "d92c39ddb83e5dac77cfdb9accdbe220b52936cf25a0df4380fc56e0729b6ec6",
+                sha256 = "727dea1fba0c77cde4c1ccf70802d83aa0b413a22142cb2fe14fa43c24f9b8fd",
             },
         },
     },

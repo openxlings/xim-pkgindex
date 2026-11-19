@@ -160,6 +160,7 @@ class TestVerify:
 | `ci-tools.yml` | `tools/`、`scripts/` 或 workflow 有改动 | 工具自己的测试与仓库 lint |
 | `ci-sweep.yml` | 每周 | 按 ISO 周次安装所有配方中的一片 |
 | `luban-agent-workspace.yml` | Luban 的配方或它们锁定的包有改动 | 在 x86_64 和 aarch64 上构建并启动 edition |
+| `llvm-payload.yml` | `pkgs/l/llvm.lua` 或该检查本身有改动 | 在改动的 llvm 版本所服务的每个宿主上（Linux x86_64 与 aarch64、macOS arm64、Windows x86_64），配方所指的归档以它自己的 clang 编译一个调试段为 zlib 压缩、一个为 zstd 压缩的对象，并以该 clang 旁边的 `ld.lld` 各链接一次；本索引自制的归档先构建 |
 | `site-check.yml` | `pkgs/`、`docs/` 或站点配置有改动 | 以 strict 模式构建站点 |
 
 L3 和 L4 在 CI 中只针对改动涉及的包运行，以及在每周轮转中运行：每次推送都在每个平台上

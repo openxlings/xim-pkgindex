@@ -54,6 +54,11 @@
 #   android-ndk-libcxx-modules  an NDK release's libc++ module sources, for its Windows archive
 #   sample-music    luban:sample-music, a piece to play (the Open Goldberg Variations' Aria, CC0)
 #
+# Corrective revisions of a published archive, derived from the archive of the
+# revision before (revision.py; no build):
+#   llvm            the llvm payload for Windows x86_64, with the lld names clang's driver runs
+#   x86_64-freebsd-sysroot, aarch64-freebsd-sysroot  a FreeBSD base, an earlier revision's files
+#
 # Runs on the machine of the target architecture (CI: ubuntu-24.04 and
 # ubuntu-24.04-arm). What it needs runs in a pinned container: the runner
 # needs docker and nothing else. Static builds use Alpine (musl); what is
@@ -787,6 +792,68 @@ i586-pc-msdosdjgpp-gcc)
         python3 -c 'import sys, tarfile; sys.exit(any(m.islnk() for m in tarfile.open(sys.argv[1])))' "$file" \
             || die "$file holds a hard link"
     done ;;
+llvm)
+    # The llvm payload for Windows x86_64 at a corrective revision: the archive
+    # of the revision before, its directory renamed, with ld.lld.exe,
+    # ld64.lld.exe and wasm-ld.exe added -- the files of these names in
+    # upstream's release, each the program the archive already ships as
+    # lld-link.exe (checked here, byte for byte). clang's driver links an ELF
+    # target with ld.lld, Mach-O with ld64.lld and WebAssembly with wasm-ld,
+    # looking beside itself first and then on PATH; the archive carried none of
+    # them, so a link for x86_64-freebsd on a Windows host ran the ld.lld of the
+    # host's PATH, which reads no zlib-compressed section (mcpp-platforms run
+    # 44123489011), while the archive's own lld reads zlib and zstd.
+    upstream="${version%%-r*}"
+    case "$version" in
+        23.1.3-r4) from=23.1.3-r3 ;;
+        *) die "llvm: no derivation recorded for $version" ;;
+    esac
+    command -v zstd >/dev/null || die "llvm: no zstd to read upstream's .tar.zst"
+    d="llvm-$version-windows-x86_64"
+    up="clang+llvm-$upstream-x86_64-pc-windows-msvc"
+    source_of llvm-windows-x86_64 "$from" \
+        "https://github.com/xlings-res/llvm/releases/download/$from/llvm-$from-windows-x86_64.zip" "$work/from.zip"
+    source_of clang+llvm-x86_64-pc-windows-msvc "$upstream" \
+        "https://github.com/llvm/llvm-project/releases/download/llvmorg-$upstream/$up.tar.zst" "$work/upstream.tar.zst"
+    lld="$(python3 -I "$here/revision.py" digest "$work/from.zip" "llvm-$from-windows-x86_64/bin/lld-link.exe")"
+    # Upstream's archive is zstd with a 1 GiB window.
+    zstd -dc --long=31 "$work/upstream.tar.zst" \
+        | python3 -I "$here/revision.py" tar-digests bin/lld-link.exe bin/lld.exe bin/ld.lld.exe bin/ld64.lld.exe bin/wasm-ld.exe \
+        > "$work/upstream.sha256"
+    rm -f "$work/upstream.tar.zst"
+    while read -r sha name; do
+        [[ "$sha" == "$lld" ]] || die "upstream's $name ($sha) is not the lld-link.exe of llvm $from ($lld)"
+    done < "$work/upstream.sha256"
+    printf '%s\n' "llvm $version for Windows x86_64: the archive of llvm $from (xlings-res/llvm, sha256 $(input llvm-windows-x86_64 "$from")), its directory renamed, with bin/ld.lld.exe, bin/ld64.lld.exe and bin/wasm-ld.exe added -- the files of these names in $up.tar.zst (github.com/llvm/llvm-project, release llvmorg-$upstream, sha256 $(input clang+llvm-x86_64-pc-windows-msvc "$upstream")), each byte-identical to that release's bin/lld-link.exe and to the archive's own (sha256 $lld); no other file changed. clang's driver links an ELF target with ld.lld, Mach-O with ld64.lld and WebAssembly with wasm-ld, found beside it." \
+        > "$work/README.provenance"
+    python3 -I "$here/revision.py" zip "$work/from.zip" "$out/$d.zip" "llvm-$from-windows-x86_64" "$d" \
+        --same bin/lld-link.exe=bin/ld.lld.exe --same bin/lld-link.exe=bin/ld64.lld.exe \
+        --same bin/lld-link.exe=bin/wasm-ld.exe --add "README.provenance=$work/README.provenance" \
+        || die "llvm $version: the derived archive is not llvm $from with the lld names"
+    seal "$out/$d.zip" ;;
+x86_64-freebsd-sysroot|aarch64-freebsd-sysroot)
+    # A FreeBSD base at a corrective revision: the archive of an earlier
+    # revision, its directory renamed, every file that archive's. 14.5-r3 is
+    # revision 1's files -- the crt objects and static archives as FreeBSD's
+    # release ships them, their debug sections zlib-compressed. Revision 2 had
+    # decompressed them for a Windows host whose link ran an lld without zlib;
+    # the llvm payload's own ld.lld reads them (llvm 23.1.3-r4). How the base
+    # is assembled from the release: .agents/tools/build-freebsd-sysroot.py.
+    case "$version" in
+        14.5-r3) from=14.5 ;;
+        *) die "$what: no derivation recorded for $version" ;;
+    esac
+    d="$what-$version"
+    source_of "$what" "$from" \
+        "https://github.com/xlings-res/$what/releases/download/$from/$what-$from.tar.xz" "$work/from.tar.xz"
+    printf '%s\n' "$what $version: the archive of $what $from (xlings-res/$what, sha256 $(input "$what" "$from")), its directory renamed; every other file is that archive's, assembled from FreeBSD's release as its PROVENANCE.md states, the link inputs as the release ships them." \
+        > "$work/README.provenance"
+    python3 -I "$here/revision.py" tar "$work/from.tar.xz" "$out/$d.tar.xz" "$what-$from" "$d" \
+        --add "README.provenance=$work/README.provenance" \
+        || die "$what $version: the derived archive is not $what $from renamed"
+    python3 -c 'import sys, tarfile; sys.exit(any(m.islnk() for m in tarfile.open(sys.argv[1])))' "$out/$d.tar.xz" \
+        || die "$d holds a hard link"
+    seal "$out/$d.tar.xz" ;;
 bash|coreutils|openssl|binutils)
     v="${version%%-r[0-9]*}"   # <upstream>-rN: this index's Nth build of it; the payload keeps the name
     case "$what" in
