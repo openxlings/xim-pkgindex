@@ -33,7 +33,19 @@ package = {
     -- or later boots it (`bus = "ide"`, `form = "tar"`).
     xpm = {
         linux = {
-            ["latest"] = { ref = "25.5-20261118" },
+            ["latest"] = { ref = "25.5-20261118-1" },
+            -- r1: the files disk is found as the one disk without slices. The system numbers its two
+            -- disks in either order from one boot to the next (measured: rdisk1 was the image's in one
+            -- boot of three), and 25.5-20261118 read rdisk1, so a run sometimes found no program
+            -- (status 127 from the shell). The image is the same bytes.
+            ["25.5-20261118-1"] = {
+                revision = 1,
+                url = {
+                    GLOBAL = "https://internal.lab004.dev/private/images/puredarwin-25.5-minimal.img",
+                    CN = "https://internal.lab004.dev/private/images/puredarwin-25.5-minimal.img",
+                },
+                sha256 = "522bfca10026b83dcf5d5232f143fbe65f0001771d4e2668386bb3f13613267a",
+            },
             ["25.5-20261118"] = {
                 url = {
                     GLOBAL = "https://internal.lab004.dev/private/images/puredarwin-25.5-minimal.img",
@@ -51,7 +63,8 @@ import("xim.libxpkg.xvm")
 local profile = [=[
 # PureDarwin, x86_64 (the package puredarwin-disk-image): the project's minimal developer-preview
 # image, as published. It boots by UEFI to a root shell on the serial line. The disks are behind
-# the machine's AHCI controller. The files are a tar archive on the second disk, unpacked into
+# the machine's AHCI controller. The files are a tar archive on the disk that has no slices (the
+# system numbers the two disks in either order from one boot to the next), unpacked into
 # /tmp: a file on the system's FAT mount is not executable. The image's own file system has about
 # seven megabytes free, which is the room a delivered program and what it writes have.
 name = "puredarwin-x86_64"
@@ -82,7 +95,7 @@ script   = "sh {script}"
 
 [files]
 form  = "tar"
-mount = ["mkdir -p /tmp/dirun", "dd if=/dev/rdisk1 bs=1048576 2>/dev/null | tar xf - -C /tmp/dirun", "cd /tmp/dirun"]
+mount = ["mkdir -p /tmp/dirun", "for x in /dev/rdisk[0-9]; do [ -e \"$x\"s1 ] || d=$x; done; dd if=$d bs=1048576 2>/dev/null | tar xf - -C /tmp/dirun", "cd /tmp/dirun"]
 at    = "/tmp/dirun"
 
 [relay]
