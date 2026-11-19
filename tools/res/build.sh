@@ -599,10 +599,10 @@ gdb)
     done
     [[ -f "$work/$d/share/terminfo/x/xterm-256color" ]] || die "no xterm-256color terminfo"
     seen() {    # what, a session's output, the lines it must hold (each logged)
-        local what="$1" out="$2" want; shift 2
+        local what="$1" said="$2" want; shift 2
         for want in "$@"; do
-            grep -qF -- "$want" <<< "$out" || die "$what: no '$want' in: $out"
-            log "$what: $(grep -F -m1 -- "$want" <<< "$out")"
+            grep -qF -- "$want" <<< "$said" || die "$what: no '$want' in: $said"
+            log "$what: $(grep -F -m1 -- "$want" <<< "$said")"
         done
     }
     session() { timeout 120 "$g" -nx -batch "$@" 2>&1; }
@@ -611,25 +611,25 @@ gdb)
     # its status -- from DWARF as written, compressed with zstd, and through
     # gdbserver, whose target description gdb reads as XML.
     for p in t tz; do
-        out="$(session -ex 'break add' -ex run -ex bt -ex 'print a * b' -ex continue "$work/$p")" || die "gdb on $p: $out"
-        seen "gdb on $p" "$out" 'Breakpoint 1, add (a=40, b=2) at t.c:1' 'in main () at t.c:2' '$1 = 80' 'exited with code 07'
+        said="$(session -ex 'break add' -ex run -ex bt -ex 'print a * b' -ex continue "$work/$p")" || die "gdb on $p: $said"
+        seen "gdb on $p" "$said" 'Breakpoint 1, add (a=40, b=2) at t.c:1' 'in main () at t.c:2' '$1 = 80' 'exited with code 07'
     done
-    out="$(session -ex "target remote | $work/$d/bin/gdbserver - $work/t" -ex 'break add' -ex continue -ex bt -ex continue "$work/t")" \
-        || die "gdb through gdbserver: $out"
-    seen "gdb through gdbserver" "$out" 'Remote debugging using stdio' 'Breakpoint 1, add (a=40, b=2) at t.c:1' 'exited with code 07'
+    said="$(session -ex "target remote | $work/$d/bin/gdbserver - $work/t" -ex 'break add' -ex continue -ex bt -ex continue "$work/t")" \
+        || die "gdb through gdbserver: $said"
+    seen "gdb through gdbserver" "$said" 'Remote debugging using stdio' 'Breakpoint 1, add (a=40, b=2) at t.c:1' 'exited with code 07'
     # A program of the runner's, linked against its glibc: its libraries are
     # read and the system call it ends with is caught by name. A static gdb
     # cannot load the program's libthread_db; what it says of that is logged.
-    out="$(session -ex 'catch syscall exit_group' -ex run -ex 'info sharedlibrary' /bin/true)" || die "gdb on /bin/true: $out"
-    seen "gdb on the runner's /bin/true" "$out" 'Catchpoint 1 (call to syscall exit_group)' 'libc.so.6'
-    log "gdb on the runner's /bin/true: $(grep -F -m1 libthread_db <<< "$out" || echo 'nothing of libthread_db')"
+    said="$(session -ex 'catch syscall exit_group' -ex run -ex 'info sharedlibrary' /bin/true)" || die "gdb on /bin/true: $said"
+    seen "gdb on the runner's /bin/true" "$said" 'Catchpoint 1 (call to syscall exit_group)' 'libc.so.6'
+    log "gdb on the runner's /bin/true: $(grep -F -m1 libthread_db <<< "$said" || echo 'nothing of libthread_db')"
     # Moved elsewhere, it finds its data directory beside it and reads the
     # system call tables there.
     mkdir "$work/moved" && mv "$work/$d" "$work/moved/"
-    out="$(timeout 120 "$work/moved/$d/bin/gdb" -nx -batch -ex 'show data-directory' -ex 'show debug-file-directory' \
-            -ex 'catch syscall write' "$work/t" 2>&1)" || die "gdb, moved: $out"
+    said="$(timeout 120 "$work/moved/$d/bin/gdb" -nx -batch -ex 'show data-directory' -ex 'show debug-file-directory' \
+            -ex 'catch syscall write' "$work/t" 2>&1)" || die "gdb, moved: $said"
     mv "$work/moved/$d" "$work/"
-    seen "gdb, moved" "$out" "\"$(realpath "$work/moved")/$d/share/gdb\"" '"/usr/lib/debug"' "Catchpoint 1 (syscall 'write' ["
+    seen "gdb, moved" "$said" "\"$(realpath "$work/moved")/$d/share/gdb\"" '"/usr/lib/debug"' "Catchpoint 1 (syscall 'write' ["
     provenance "$d" "GNU gdb $version (ftpmirror.gnu.org, sha256 $(input gdb "$version")): gdb and gdbserver, static, built in Alpine 3.20 (musl) with $(grep -E "^(${libs// /|})-[0-9]" "$work/installed" | tr '\n' ' ')(Alpine's static archives); the TUI; no Python, Guile, debuginfod, source-highlight, NLS, simulator or in-process agent; share/gdb found beside bin/gdb; terminfo for: $terms. Checked where it was built: a static program debugged from its DWARF as written and compressed with zstd, and through gdbserver; a program linked against that machine's glibc"
     pack "$d" ;;
 wl-clipboard)
