@@ -70,8 +70,9 @@ function install()
         end
     end
     -- GCC's run-time, of the release the version took (16 in 20261118, 15 in 20260314).
-    if #os.files(path.join(dir, "usr/lib/gcc/x86_64-gnu/*/libgcc.a")) == 0 then
-        raise("x86_64-hurd-sysroot payload is missing usr/lib/gcc/x86_64-gnu/<gcc>/libgcc.a")
+    if not (os.isfile(path.join(dir, "usr/lib/gcc/x86_64-gnu/15/libgcc.a"))
+            or os.isfile(path.join(dir, "usr/lib/gcc/x86_64-gnu/16/libgcc.a"))) then
+        raise("x86_64-hurd-sysroot payload is missing usr/lib/gcc/x86_64-gnu/<15|16>/libgcc.a")
     end
     return true
 end
