@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Assemble openbsd-disk-image: OpenBSD installed from the project's own media.
+"""Assemble openbsd-disk-image (amd64) or aarch64-openbsd-disk-image (arm64): OpenBSD
+installed from the project's own media.
 
 OpenBSD publishes no disk image, so the image is an installation: the official
 `cd<ver>.iso` boots the installer, which answers itself from a response file
@@ -18,12 +19,22 @@ the free space with zeros so the image compresses. The disk holds one file syste
 (an autopartitioning template), so the one fill reaches all of its free space. The disk is then converted to
 qcow2, which keeps no zero cluster, and the archive compresses it.
 
-The installer's own console is chosen at its `boot>` prompt, which is drawn on the
-VGA screen only: the prompt is read from the screen and `set tty com0` typed there
-through the emulator's monitor; everything after it is on the serial line.
+On amd64 the installer's own console is chosen at its `boot>` prompt, which is drawn
+on the VGA screen only: the prompt is read from the screen and `set tty com0` typed
+there through the emulator's monitor; everything after it is on the serial line.
 
-usage: build-openbsd-disk-image.py <out-dir> <version> <sets-dir> <qemu-system-x86_64 with user networking> <qemu-img>
-       (<sets-dir> holds cdXX.iso, bsd, bsd.mp, bsd.rd, baseXX.tgz, BUILDINFO, SHA256, SHA256.sig)
+On arm64 the machine is QEMU's `virt' with the EDK II firmware for AArch64, which
+has no screen: the firmware, the boot loader's `boot>` prompt, the installer and the
+system all speak on the serial line (the PL011, which OpenBSD names com0). The
+installation media are a CD on a virtio SCSI controller (cd0), the disk a virtio
+block device (sd0). Without a hardware accelerator for the guest the emulator
+translates (TCG), and the timeouts are longer.
+
+usage: build-openbsd-disk-image.py <out-dir> <version> <sets-dir> <qemu-system with user networking> <qemu-img>
+                                   [arm64 <edk2-aarch64-code.fd>]
+       (<sets-dir> holds cdXX.iso, bsd, bsd.mp, bsd.rd, baseXX.tgz, BUILDINFO, SHA256, SHA256.sig
+        of the architecture; the emulator is qemu-system-x86_64 for amd64 and
+        qemu-system-aarch64 for arm64)
 """
 import hashlib, http.server, io, os, re, socket, socketserver, subprocess, sys, tarfile, tempfile, threading, time
 from pathlib import Path
@@ -68,7 +79,7 @@ URL to autopartitioning template for disklabel = http://10.0.2.100/disklabel
 Location of sets = http
 HTTP proxy URL = none
 HTTP Server = 10.0.2.100
-Server directory = pub/OpenBSD/{version}/amd64
+Server directory = pub/OpenBSD/{version}/{arch}
 Set name(s) = -game* -man* -x* -comp* site*
 Checksum test for site{v}.tgz failed. Continue anyway = yes
 Unverified sets: site{v}.tgz. Continue without verification = yes
@@ -191,6 +202,31 @@ def digest(p: Path, algo="sha256") -> str:
 def main() -> int:
     out, version, sets, qemu, qemu_img = (Path(sys.argv[1]).resolve(), sys.argv[2], Path(sys.argv[3]).resolve(),
                                           sys.argv[4], sys.argv[5])
+    arch = sys.argv[6] if len(sys.argv) > 6 else "amd64"
+    if arch not in ("amd64", "arm64") or (arch == "arm64") != (len(sys.argv) == 8):
+        raise SystemExit("the architecture is amd64, or arm64 followed by the EDK II firmware for AArch64")
+    firmware = Path(sys.argv[7]).resolve() if arch == "arm64" else None
+    # The package, the image and the machine of the architecture. TCG translates an arm64
+    # guest on an x86_64 host: an installation and a first boot take minutes, not seconds.
+    if arch == "amd64":
+        package, image_name, slow = f"openbsd-disk-image-{version}", f"openbsd-{version}.qcow2", 1
+        def machine(disk, cdrom=None):
+            args = ["-machine", "q35,accel=kvm", "-cpu", "host", "-m", "1024", "-smp", "2",
+                    "-drive", f"file={disk},if=virtio,format=qcow2"]
+            return args + (["-cdrom", str(cdrom), "-boot", "d"] if cdrom else [])
+    else:
+        package, image_name, slow = f"openbsd-disk-image-{version}-aarch64", f"openbsd-{version}-aarch64.qcow2", 4
+        def machine(disk, cdrom=None):
+            # cortex-a72: under `max' QEMU offers the newest extensions (SVE2, SME), and OpenBSD 8.0's
+            # kernel stopped at its first floating-point use (`FP exception in kernel', measured).
+            args = ["-machine", "virt", "-cpu", "cortex-a72", "-accel", "kvm", "-accel", "tcg", "-m", "1024", "-smp", "2",
+                    "-drive", f"if=pflash,format=raw,readonly=on,file={firmware}",
+                    "-drive", f"file={disk},if=none,id=hd0,format=qcow2",
+                    "-device", "virtio-blk-pci,drive=hd0,bootindex=1"]
+            if cdrom:
+                args += ["-drive", f"file={cdrom},if=none,id=cd0,media=cdrom,readonly=on",
+                         "-device", "virtio-scsi-pci", "-device", "scsi-cd,drive=cd0,bootindex=0"]
+            return args
     v = version.replace(".", "")
     names = [f"cd{v}.iso", "bsd", "bsd.mp", "bsd.rd", f"base{v}.tgz", "BUILDINFO"]
     stated = {m.group(1): m.group(2) for m in re.finditer(r"SHA256 \((.+?)\) = ([0-9a-f]+)", (sets / "SHA256").read_text())}
@@ -200,7 +236,7 @@ def main() -> int:
     out.mkdir(parents=True, exist_ok=True)
     work = Path(tempfile.mkdtemp(dir=out))
     serve = work / "www"
-    tree = serve / f"pub/OpenBSD/{version}/amd64"
+    tree = serve / f"pub/OpenBSD/{version}/{arch}"
     tree.mkdir(parents=True)
     for n in names[1:] + ["SHA256", "SHA256.sig"]:
         os.symlink(sets / n, tree / n)
@@ -225,7 +261,7 @@ def main() -> int:
 
     httpd = socketserver.TCPServer(("127.0.0.1", 0), Quiet)
     port = httpd.server_address[1]
-    (serve / "install.conf").write_text(RESPONSES.format(port=port, version=version, v=v))
+    (serve / "install.conf").write_text(RESPONSES.format(port=port, version=version, v=v, arch=arch))
     (serve / "disklabel").write_text(DISKLABEL)
     threading.Thread(target=httpd.serve_forever, daemon=True).start()
 
@@ -236,69 +272,68 @@ def main() -> int:
     disk = work / f"openbsd-{version}.qcow2"
     subprocess.run([qemu_img, "create", "-q", "-f", "qcow2", str(disk), "6G"], check=True)
     log = out / f"openbsd-{version}-install.log"
-    vm = VM(qemu, ["-machine", "q35,accel=kvm", "-cpu", "host", "-m", "1024", "-smp", "2",
-                   "-drive", f"file={disk},if=virtio,format=qcow2", "-cdrom", str(sets / f"cd{v}.iso"),
-                   "-boot", "d", "-netdev", f"user,id=n0,restrict=on,guestfwd=tcp:10.0.2.100:80-cmd:{sys.executable} {relay} {port}",
+    vm = VM(qemu, machine(disk, sets / f"cd{v}.iso") + [
+                   "-netdev", f"user,id=n0,restrict=on,guestfwd=tcp:10.0.2.100:80-cmd:{sys.executable} {relay} {port}",
                    "-device", "virtio-net-pci,netdev=n0", "-no-reboot"],
             work, log)
     try:
-        end = time.time() + 120
-        while "boot>" not in vm.screen():
-            if time.time() > end:
-                raise SystemExit("the installer's boot> prompt did not appear on the screen")
-            time.sleep(0.3)
-        vm.type("set tty com0\n")
-        vm.expect(r"boot> ", 30)
+        if arch == "amd64":
+            end = time.time() + 120
+            while "boot>" not in vm.screen():
+                if time.time() > end:
+                    raise SystemExit("the installer's boot> prompt did not appear on the screen")
+                time.sleep(0.3)
+            vm.type("set tty com0\n")
+        vm.expect(r"boot> ", 120 * slow)
         vm.send("")
-        vm.expect(r"\(I\)nstall, \(U\)pgrade, \(A\)utoinstall or \(S\)hell\? ", 180)
+        vm.expect(r"\(I\)nstall, \(U\)pgrade, \(A\)utoinstall or \(S\)hell\? ", 180 * slow)
         vm.send("a")
-        vm.expect(r"Response file location\?.*\] ", 120)
+        vm.expect(r"Response file location\?.*\] ", 120 * slow)
         vm.send("http://10.0.2.100/install.conf")
-        if vm.expect(r"CONGRATULATIONS|failed; check /tmp/ai/ai.log", 1800).group(0) != b"CONGRATULATIONS":
+        if vm.expect(r"CONGRATULATIONS|failed; check /tmp/ai/ai.log", 1800 * slow).group(0) != b"CONGRATULATIONS":
             raise SystemExit(f"the installer stopped: see {log}")
-        vm.wait_exit(300)
+        vm.wait_exit(300 * slow)
     finally:
         vm.kill()
         httpd.shutdown()
 
     # The first boot, with no network: the console, the login and a clean halt.
-    vm = VM(qemu, ["-machine", "q35,accel=kvm", "-cpu", "host", "-m", "1024", "-smp", "2",
-                   "-drive", f"file={disk},if=virtio,format=qcow2", "-nic", "none", "-no-reboot"], work, log)
+    vm = VM(qemu, machine(disk) + ["-nic", "none", "-no-reboot"], work, log)
     try:
         t0 = time.time()
-        vm.expect(r"login: ", 600)
+        vm.expect(r"login: ", 600 * slow)
         print(f"login prompt after {time.time() - t0:.0f} s")
         vm.send("root")
         vm.expect(r"Password:", 30)
         vm.send("root")
         vm.expect(r"# ", 60)
         vm.send("halt -p")
-        vm.wait_exit(300)
+        vm.wait_exit(300 * slow)
     finally:
         vm.kill()
 
-    pkg = out / f"openbsd-disk-image-{version}"
+    pkg = out / package
     pkg.mkdir(exist_ok=True)
-    image = pkg / f"openbsd-{version}.qcow2"
+    image = pkg / image_name
     subprocess.run([qemu_img, "convert", "-O", "qcow2", str(disk), str(image)], check=True)
     disk.unlink()
     listing = "\n".join(f"    {n}\n        sha256 {stated[n]}" for n in names if n in stated)
     (pkg / "PROVENANCE.md").write_text(f'''# Provenance
 
-Installed by `build-openbsd-disk-image.py` from the OpenBSD {version} release
-(https://cdn.openbsd.org/pub/OpenBSD/{version}/amd64/), by the release's own installer
+Installed by `build-openbsd-disk-image.py` from the OpenBSD {version} release for {arch}
+(https://cdn.openbsd.org/pub/OpenBSD/{version}/{arch}/), by the release's own installer
 answering a response file (autoinstall(8)). The installer verified the sets against the
 release's signed SHA256.sig; their digests, as SHA256 states them:
 
 {listing}
 
 Installed sets: bsd, bsd.mp, bsd.rd, base{v}.tgz. Root's password is `root`, sshd is off, the
-console is com0 at 115200. A local set, site{v}.tgz, ran this install.site in the new system:
+console is com0 at 115200{" (on arm64, QEMU virt's PL011 with the EDK II firmware)" if arch == "arm64" else ""}. A local set, site{v}.tgz, ran this install.site in the new system:
 
 {SITE}
 The disk is converted to qcow2 (`qemu-img convert`), which keeps no zero cluster.
 ''')
-    archive = out / f"openbsd-disk-image-{version}.tar.xz"
+    archive = out / f"{package}.tar.xz"
     subprocess.run(["tar", "-C", str(out), "--owner=0", "--group=0", "--numeric-owner", "--sort=name",
                     "-cJf", str(archive), pkg.name], check=True)
     print(archive, digest(archive), archive.stat().st_size)
