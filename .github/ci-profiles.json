@@ -217,6 +217,17 @@
       ".github/workflows/glibc-root-runtime.yml"
     ]
   },
+  "llvm_payload": {
+    "workflow": "llvm-payload.yml",
+    "direct_only": true,
+    "paths": [
+      ".github/scripts/llvm-payload-plan.py",
+      ".github/scripts/program-checks/llvm-compressed-links.py",
+      ".github/workflows/llvm-payload.yml",
+      "pkgs/l/llvm.lua",
+      "tools/res/revision.py"
+    ]
+  },
   "llvm_linux_aarch64": {
     "workflow": "llvm-linux-aarch64.yml",
     "paths": [

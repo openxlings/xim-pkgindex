@@ -119,8 +119,14 @@ package = {
             -- unchanged. The r2 assets stay published, so a cached index
             -- still gets the bytes its hash names; r1/r2 pins likewise stay
             -- installable.
+            --
+            -- Revision 4 changes the Windows archive alone (the windows
+            -- section's note). A corrective revision is the version's, on
+            -- every platform that carries it, so this entry states 4 over the
+            -- revision 3 archives, unchanged; their lld already answers to
+            -- every name the driver asks for.
             ["23.1.3"] = {
-                revision = 3,
+                revision = 4,
                 x86_64 = {
                     url = {
                         GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3-r3/llvm-23.1.3-r3-linux-x86_64.tar.gz",
@@ -165,8 +171,10 @@ package = {
             -- top-level directory must equal the asset file name minus its
             -- extension); r3 renames the inner directory, payload otherwise
             -- unchanged — same rationale as the linux section's note.
+            -- Revision 4: the revision 3 archive, unchanged (the linux
+            -- section's note).
             ["23.1.3"] = {
-                revision = 3,
+                revision = 4,
                 url = {
                     GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3-r3/llvm-23.1.3-r3-macosx-arm64.tar.xz",
                     CN     = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3-r3/llvm-23.1.3-r3-macosx-arm64.tar.xz",
@@ -179,6 +187,10 @@ package = {
         },
         windows = {
             ["latest"] = { ref = "22.1.8" },
+            -- 20.1.7 and 22.1.8 are carved from upstream Windows builds made
+            -- without zlib and zstd: their lld reads no compressed debug
+            -- section, which the same versions read on Linux and macOS
+            -- (measured 2026-11-19). Upstream's 23.1.3 is built with both.
             ["20.1.7"] = "XLINGS_RES",
             ["22.1.8"] = "XLINGS_RES",
             -- Revision 2 leaves the shared template (a corrective asset
@@ -187,13 +199,27 @@ package = {
             -- section's note. Revision 3 restores the top-level-directory
             -- convention the r2 zip broke, same rationale as the linux
             -- section's note.
+            --
+            -- Revision 4 adds bin/ld.lld.exe, bin/ld64.lld.exe and
+            -- bin/wasm-ld.exe to the r3 archive: the files of these names in
+            -- upstream's release, each the program r3 ships as lld-link.exe.
+            -- clang's driver links an ELF target with ld.lld, Mach-O with
+            -- ld64.lld and WebAssembly with wasm-ld, looking beside itself
+            -- first and then on PATH; r3 carried none of them, so a link for
+            -- x86_64-freebsd on a Windows host ran the ld.lld of the host's
+            -- PATH, one without zlib, and stopped at the base's compressed
+            -- crtend.o (mcpp-platforms run 44123489011), while r3's own lld
+            -- reads zlib and zstd. Every installed r3 links that way, hence
+            -- the floor. Derived from the r3 archive by tools/res/build.sh
+            -- (`llvm 23.1.3-r4`); no other file changed.
             ["23.1.3"] = {
-                revision = 3,
+                revision = 4,
+                floor = 4,
                 url = {
-                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3-r3/llvm-23.1.3-r3-windows-x86_64.zip",
-                    CN     = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3-r3/llvm-23.1.3-r3-windows-x86_64.zip",
+                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3-r4/llvm-23.1.3-r4-windows-x86_64.zip",
+                    CN     = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3-r4/llvm-23.1.3-r4-windows-x86_64.zip",
                 },
-                sha256 = "65dded778a0426a742c967e0e0d977a008e6a887c1ef590ff957433e83658f25",
+                sha256 = "b811d386a32920f1a382e69275b1a387f902d1a13e0be8314fd0de39b324188f",
             },
         },
     },

@@ -8,10 +8,18 @@ from tests.lib.assertions import (
     assert_xim_add_succeeds, assert_install_succeeds,
     assert_command_output, assert_xvm_registered,
 )
-from tests.lib.platform_utils import skip_if_not
+from tests.lib.platform_utils import current_platform, skip_if_not
 
 PKG = "llvm"
 PKG_FILE = "pkgs/l/llvm.lua"
+
+# The install and the checks of it run through `bash -l -c` (tests/lib). On a
+# Windows runner process creation finds System32's bash.exe, the WSL launcher
+# with no distribution, before PATH (measured: the install job of
+# xim-pkgindex#1196). There the job's windows-test.ps1 installs, checks and
+# removes the payload, and llvm-payload.yml runs its clang and lld.
+not_windows = pytest.mark.skipif(current_platform() == "windows",
+                                 reason="the module's clients run bash, which is WSL's launcher on a Windows runner")
 
 
 @pytest.fixture(scope='module')
@@ -113,16 +121,19 @@ class TestIsolation:
 
 class TestLifecycle:
     @pytest.mark.lifecycle
+    @not_windows
     def test_install(self):
         assert_install_succeeds(PKG)
 
 
 class TestVerify:
     @pytest.mark.verify
+    @not_windows
     def test_clang(self):
         assert_command_output("clang --version")
 
     @pytest.mark.verify
+    @not_windows
     def test_xvm_llvm(self):
         assert_xvm_registered("llvm")
 

@@ -54,6 +54,12 @@ gh workflow run res-build.yml --ref <branch> -f publish_runs="<run-id>" -f execu
 The first builds one resource on a branch; the second publishes the artifacts of
 runs already made, in the protected `xlings-res-publish` environment.
 
+A corrective revision whose change is confined to the archive (its directory
+renamed, a file added) is derived from the published archive of the revision
+before it, by `tools/res/revision.py`: every file it does not name is that
+archive's, byte for byte, and a zip comes out as the same bytes on every run.
+The Windows payload of `llvm` 23.1.3-r4 is made this way.
+
 **Self-hosting is the direction, not yet the state.** Inside the factory's
 containers, build tools come from the distribution's package manager (Alpine's
 `apk`, Debian's `apt`). The goal is a factory whose tools are themselves

@@ -48,6 +48,10 @@ gh workflow run res-build.yml --ref <branch> -f publish_runs="<run-id>" -f execu
 前者在一个分支上构建一个资源；后者在受保护的 `xlings-res-publish` 环境中发布已有运行的
 artifact。
 
+改动只在归档本身的修正修订（目录改名、增加一个文件），由 `tools/res/revision.py` 从上一个
+修订已发布的归档派生：它未点名的每个文件都与那个归档逐字节相同，zip 每次生成相同的字节。
+`llvm` 23.1.3-r4 的 Windows 载荷即如此得到。
+
 **自举是方向，还不是现状。** 在工厂的容器里，构建工具来自发行版的包管理器（Alpine 的
 `apk`、Debian 的 `apt`）。目标是工厂所用的工具本身也由 xlings 从本索引安装，使每个资源都
 只由本生态发布的东西构建；在那之前，容器 digest 和 `README.provenance` 精确记录了用到的
