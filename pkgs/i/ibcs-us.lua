@@ -24,7 +24,10 @@ package = {
     -- shorten a file or change a file's mode; `mcpp-community/ibcs-us` builds
     -- the released source with seven corrections and runs a probe of each
     -- before it publishes. The version is `<upstream>-<n>`: the n-th state of
-    -- those corrections.
+    -- its patches. From 4.3-2 a program of the interface that execs another is
+    -- started under the emulation again (upstream hands exec to Linux, which
+    -- starts the file outside it, where its first call through the gate
+    -- faults); any other file is still Linux's.
     --
     -- HOW IT IS STARTED: `unshare -Ur ibcs-us <program>`. ibcs-us asks for the
     -- root identity or CAP_SYS_RAWIO before anything else, and the root of a
@@ -33,7 +36,16 @@ package = {
     -- of the package at run time.
     xpm = {
         linux = {
-            ["latest"] = { ref = "4.3-1" },
+            ["latest"] = { ref = "4.3-2" },
+            ["4.3-2"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpp-community/ibcs-us/releases/download/4.3-2/ibcs-us-4.3-2-linux-x64.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/ibcs-us/releases/download/4.3-2/ibcs-us-4.3-2-linux-x64.tar.gz",
+                },
+                sha256 = {
+                    ["x86_64"] = "23d3ea7ed809a207d17e1c465e74c8f09c08b74a6b029beb0c0ea38ead72aab3",
+                },
+            },
             ["4.3-1"] = {
                 url = {
                     GLOBAL = "https://github.com/mcpp-community/ibcs-us/releases/download/4.3-1/ibcs-us-4.3-1-linux-x64.tar.gz",
