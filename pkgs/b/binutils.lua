@@ -187,9 +187,22 @@ end
 -- wrong on.
 function write_ld_wrapper()
     local dir = path.join(pkginfo.install_dir(), WRAPPER_SUBDIR)
-    fs.mkdir_p(dir)
     local wrapper = path.join(dir, "ld")
     local real = path.join(pkginfo.install_dir(), "bin", "ld")
+
+    -- A LINK ENTRY IS ITS OWNER'S (xlings upstreams; mcpp docs/25 §3): this
+    -- home's version directory is a link to another home's payload, whose
+    -- wrapper that home wrote. Writing it again put this home's path into the
+    -- owner's fallback line, and a temporary home's path stayed there after the
+    -- home was removed (measured: mcpp's test homes, mcpp#293).
+    local linked = os.iorun(string.format("if [ -L %s ]; then echo link; fi", __shq(pkginfo.install_dir())))
+    if linked and linked:find("link", 1, true) then
+        if os.isfile(wrapper) then return dir end
+        log.warn("the linked binutils payload at %s has no ld wrapper; `ld` resolves to bin/ld",
+                 pkginfo.install_dir())
+        return nil
+    end
+    fs.mkdir_p(dir)
 
     -- ${0%/*}, not $(dirname "$0"): a SubOS root may have no coreutils
     -- (luban-tiny is busybox), and the shell alone can take the directory.

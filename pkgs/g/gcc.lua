@@ -390,6 +390,16 @@ function __shq(s)
     return "'" .. tostring(s):gsub("'", "'\\''") .. "'"
 end
 
+-- A LINK ENTRY IS ITS OWNER'S (xlings upstreams; mcpp docs/25 §3): this home's version
+-- directory is a link to another home's payload, configured by that home and never written by
+-- this one. Its owner's user can write it, so `__writable` does not tell it apart: a borrowing
+-- home that rewrote the specs wrote its own temporary paths into the owner's toolchain
+-- (measured: mcpp's test homes, mcpp#293).
+function __link_entry(dir)
+    local out = os.iorun(string.format("if [ -L %s ]; then echo link; fi", __shq(dir)))
+    return out ~= nil and out:find("link", 1, true) ~= nil
+end
+
 function __config_linux()
     local gcc_bindir = path.join(pkginfo.install_dir(), "bin")
 
@@ -655,14 +665,15 @@ function __rewrite_specs_linux(rpath, dynamic_linker)
     )
     local gcc_bin = path.join(pkginfo.install_dir(), "bin/gcc")
 
-    -- A payload this home borrows -- an upstream's, read-only here (xlings:
-    -- link entries, configured in the borrowing home) -- is its owner's. Its
+    -- A payload this home borrows -- an upstream's (xlings: link entries,
+    -- configured in the borrowing home), read-only here or a link entry of a
+    -- home of the same user -- is its owner's. Its
     -- specs stay as the owner wrote them (inside a Luban system they name the
     -- system's /lib64 loader), and it is judged by what it builds here: a
     -- program that runs. Writing them was refused, and was not this home's
     -- to do.
     local specs_file = __specs_file(gcc_bin)
-    if specs_file and not __writable(specs_file) then
+    if specs_file and (not __writable(specs_file) or __link_entry(pkginfo.install_dir())) then
         local ok, why = __builds_a_program_that_runs(gcc_bin, dynamic_linker and path.directory(dynamic_linker) or nil)
         if ok then
             log.info("gcc: a borrowed payload; its specs are its owner's, and a program it builds runs here")
