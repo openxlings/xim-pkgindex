@@ -1,0 +1,85 @@
+name: slint payload
+
+# Builds the `slint` payload (Slint's C++ SDK: libslint_cpp, its headers,
+# slint-compiler) on each platform's native runner with
+# .agents/tools/slint/build-slint.sh, which also checks the run-time closure,
+# and keeps the archives as artifacts. Publication to xlings-res (GitHub and
+# GitCode, byte-identical) is a maintainer step after admission, like the other
+# payloads (.agents/tools/graphics/publish.sh); the recipe pkgs/s/slint.lua
+# names the published bytes.
+#
+# Plan: mcpp-index/.agents/docs/2026-11-20-add-slint-mwrap-plan.md.
+
+on:
+  pull_request:
+    paths:
+      - ".agents/tools/slint/**"
+      - ".github/workflows/slint-payload.yml"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Slint version (a tag v<version> with its sha256 in .agents/tools/slint/sources.sha256)
+        type: string
+        default: "1.19.0"
+      profile:
+        description: Feature profile (build-slint.sh)
+        type: string
+        default: default
+
+concurrency:
+  group: slint-payload-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  SLINT_VERSION: ${{ inputs.version || '1.19.0' }}
+  SLINT_PROFILE: ${{ inputs.profile || 'default' }}
+  # Slint 1.19's rust-version is 1.95; the payloads are built with one stated toolchain.
+  RUST_TOOLCHAIN: "1.99.1"
+
+jobs:
+  build:
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # glibc 2.39: the payload runs under the ecosystem's xim:glibc (2.44), never older.
+          - { name: linux-x86_64,   os: ubuntu-24.04 }
+          - { name: linux-aarch64,  os: ubuntu-24.04-arm }
+          - { name: macosx-arm64,   os: macos-15 }
+          - { name: windows-x86_64, os: windows-2025 }
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Rust toolchain
+        run: |
+          rustup toolchain install "$RUST_TOOLCHAIN" --profile minimal
+          rustup default "$RUST_TOOLCHAIN"
+          rustc --version
+
+      - name: Build dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          # fontconfig is the library's one NEEDED beyond the C runtime (the
+          # recipe's xim:fontconfig at run time); the rest are dlopen()ed and
+          # only their headers are not needed at all.
+          sudo apt-get install -y -qq libfontconfig1-dev pkg-config
+
+      - name: Build and check the payload
+        run: bash .agents/tools/slint/build-slint.sh "$SLINT_VERSION" "$SLINT_PROFILE" "$RUNNER_TEMP/dist"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: slint-${{ env.SLINT_VERSION }}-${{ env.SLINT_PROFILE }}-${{ matrix.name }}
+          path: ${{ runner.temp }}/dist/*
+          if-no-files-found: error
+          retention-days: 30
