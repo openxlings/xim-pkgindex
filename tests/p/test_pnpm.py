@@ -45,9 +45,7 @@ class TestStatic:
 
 
 class TestResources:
-    """The version matrix: what is mirrored, and the two asset shapes 7.x and 8+
-    publish. Byte-identity of every CN copy below was checked by download on
-    2026-09-16; the sha256 in the recipe is what re-checks it at install time."""
+    """Check mirrored releases and the standalone and archive asset layouts."""
 
     @pytest.mark.static
     def test_mirrored_versions_carry_both_urls(self, code):
@@ -116,9 +114,9 @@ class TestResources:
     @pytest.mark.static
     def test_install_handles_both_asset_shapes(self, code):
         install = code[code.index("function install()"):code.index("function config()")]
-        assert 'os.isdir("dist")' in install, "the 8+ archive's dist/ must still move"
-        assert "pnpm-linux-x64" in install and "pnpm-macos-arm64" in install, \
-            "the 7.x bare executable must be recognised by its asset name"
+        assert 'os.isdir("dist")' in install, "the archive's dist/ must still move"
+        assert "pnpm-linuxstatic-x64" in install and "pnpm-macos-arm64" in install, \
+            "the standalone executable must be recognised by its asset name"
         assert "chmod +x" in install, "a downloaded executable arrives without the bit"
 
     @pytest.mark.static
@@ -132,7 +130,7 @@ class TestResources:
         ("cannot find section '.dynamic'") and leaves it byte-identical, so
         there is nothing to opt out of. Verified 2026-09-16, both directions.
 
-        8+ is an ordinary node build that is supposed to be patched."""
+        The executable in an archive is relocatable by elfpatch."""
         body = "\n".join(line for line in code.splitlines()
                           if not line.lstrip().startswith("--"))
         assert "elfpatch" not in body, \
@@ -146,7 +144,7 @@ class TestResources:
         config = code[code.index("function config()"):code.index("function uninstall()")]
         assert "--version" in config and "os.iorun" in config
         assert 'os.isdir(path.join(dir, "dist"))' in config, \
-            "the run is scoped to the payload with no dist/, i.e. the 7.x one"
+            "the run is scoped to standalone executables without dist/"
         assert "pkginfo.version()" in config, "the reported version must be compared, not just printed"
 
 

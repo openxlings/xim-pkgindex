@@ -26,7 +26,7 @@ def test_legacy_executable_entry_points_are_removed():
 
 @pytest.mark.static
 def test_cn_package_uses_dual_required_targets_and_keeps_publication():
-    text = (ROOT / 'pkgs/p/pnpm.lua').read_text()
+    text = (ROOT / 'pkgs/g/go.lua').read_text()
     declaration = text.split('autoupdate = {', 1)[1].split('xpm = {', 1)[0]
     assert 'GLOBAL = {' in declaration and 'CN = {' in declaration
     assert declaration.count('required = true') == 2
