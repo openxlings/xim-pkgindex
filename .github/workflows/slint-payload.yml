@@ -65,14 +65,19 @@ jobs:
           rustup default "$RUST_TOOLCHAIN"
           rustc --version
 
-      - name: Build dependencies (Linux)
+      - name: fontconfig from the ecosystem (Linux)
         if: runner.os == 'Linux'
         run: |
-          sudo apt-get update -qq
-          # fontconfig is the library's one NEEDED beyond the C runtime (the
-          # recipe's xim:fontconfig at run time); the rest are dlopen()ed and
-          # only their headers are not needed at all.
-          sudo apt-get install -y -qq libfontconfig1-dev pkg-config
+          # fontconfig is the library's one NEEDED beyond the C runtime; it is
+          # linked against the payload the recipe declares for run time
+          # (xim:fontconfig), not a host package. X11, Wayland and GL are
+          # dlopen()ed and need nothing here.
+          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
+          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
+          xlings install xim:fontconfig@2.15.0.1 -y
+          fc=$(ls -d "$HOME"/.xlings/data/xpkgs/xim-x-fontconfig/2.15.0.1 | head -1)
+          test -f "$fc/lib/pkgconfig/fontconfig.pc"
+          echo "PKG_CONFIG_PATH=$fc/lib/pkgconfig" >> "$GITHUB_ENV"
 
       - name: Build and check the payload
         run: bash .agents/tools/slint/build-slint.sh "$SLINT_VERSION" "$SLINT_PROFILE" "$RUNNER_TEMP/dist"
