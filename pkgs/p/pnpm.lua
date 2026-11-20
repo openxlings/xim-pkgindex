@@ -36,12 +36,12 @@ package = {
 
             ["latest"] = { ref = "12.21.0" },
             ["12.22.0"] = {
-                url = "https://github.com/pnpm/pnpm/releases/download/v12.22.0/pnpm-linux-x64.tar.gz",
-                sha256 = "07ee196f91af1e21edb0c794401f4152932c74b0dba5d415dc4dbd5783f3c7af",
+                url = "https://registry.npmjs.org/@pnpm/exe.linux-x64/-/exe.linux-x64-12.22.0.tgz",
+                sha256 = "c0362f05e75732a8099e8aa7ec10faba7594e87ae14c768729270680d4151eae",
             },
             ["12.21.0"] = {
-                url = "https://github.com/pnpm/pnpm/releases/download/v12.21.0/pnpm-linux-x64.tar.gz",
-                sha256 = "84c4773bcf4a217f4083cd7b2a91e4cee6103cf42426c1282ef37d308f55a410",
+                url = "https://registry.npmjs.org/@pnpm/exe.linux-x64/-/exe.linux-x64-12.21.0.tgz",
+                sha256 = "5e853227a4fa387a95cf6f61400a83d1fc7e3164943c00e275f8756b75939de2",
             },
             ["12.1.0"] = {
                 url = {
@@ -128,12 +128,12 @@ package = {
 
             ["latest"] = { ref = "12.21.0" },
             ["12.22.0"] = {
-                url = "https://github.com/pnpm/pnpm/releases/download/v12.22.0/pnpm-darwin-arm64.tar.gz",
-                sha256 = "af43c44f22ef89191d83163c3ef9f5ee021a7368f401c95d92731be7d6b21cc5",
+                url = "https://registry.npmjs.org/@pnpm/exe.darwin-arm64/-/exe.darwin-arm64-12.22.0.tgz",
+                sha256 = "07a1437593a2cf67299d5c4406c3c6c9a589337137394c36f9b477932e97a408",
             },
             ["12.21.0"] = {
-                url = "https://github.com/pnpm/pnpm/releases/download/v12.21.0/pnpm-darwin-arm64.tar.gz",
-                sha256 = "5c4d73018e00dd602531ce714625594fb693cbe110e6719df2b043b0ae62ab1a",
+                url = "https://registry.npmjs.org/@pnpm/exe.darwin-arm64/-/exe.darwin-arm64-12.21.0.tgz",
+                sha256 = "bae3c72420a433a347b5f1fe1b37c3309c99c4bb72229a616d8ce026b68e0e36",
             },
             ["12.1.0"] = {
                 url = {
@@ -249,16 +249,8 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.system")
 
--- Tarball / zip layouts (verified via tar -tzf / unzip -l):
---   linux/macos: `pnpm` binary at top level + `dist/` directory of
---                supporting JS modules. Both must end up in install_dir.
---   windows:     `pnpm.exe` at top level + `dist/`.
---
--- xlings auto-extracts the archive into a runtime working directory
--- whose contents we then move into install_dir wholesale. The shape
--- is intentionally flat (binary at install_dir root, NOT install_dir/bin)
--- because the `dist/` sibling needs to be findable relative to the
--- binary at runtime — pnpm uses argv[0] resolution to locate dist/.
+-- 安装独立的 pnpm 可执行文件。npm registry 的归档将程序放在 package/ 下，
+-- GitHub 归档中的 dist/ 则必须与可执行文件留在同一目录
 function install()
     local dir = pkginfo.install_dir()
     os.tryrm(dir)
@@ -266,12 +258,14 @@ function install()
 
     local exe = is_host("windows") and "pnpm.exe" or "pnpm"
 
-    -- 压缩包内的可执行文件和 dist/ 必须保留在同一目录
+    local npm_exe = path.join("package", exe)
     if os.isfile(exe) then
         os.trymv(exe, path.join(dir, exe))
         if os.isdir("dist") then
             os.trymv("dist", path.join(dir, "dist"))
         end
+    elseif os.isfile(npm_exe) then
+        os.mv(npm_exe, path.join(dir, exe))
     else
         -- 单文件版本内嵌 JS，下载文件名包含平台后缀，安装时统一为 pnpm 或 pnpm.exe
         local found = nil
