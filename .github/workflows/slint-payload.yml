@@ -72,8 +72,9 @@ jobs:
           # linked against the payload the recipe declares for run time
           # (xim:fontconfig), not a host package. X11, Wayland and GL are
           # dlopen()ed and need nothing here.
+          export XLINGS_NON_INTERACTIVE=1
           curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
-          export PATH="$HOME/.xlings/subos/current/bin:$PATH"
+          export PATH="$HOME/.xlings/bin:$HOME/.xlings/subos/current/bin:$PATH"
           xlings install xim:fontconfig@2.15.0.1 -y
           fc=$(ls -d "$HOME"/.xlings/data/xpkgs/xim-x-fontconfig/2.15.0.1 | head -1)
           test -f "$fc/lib/pkgconfig/fontconfig.pc"
