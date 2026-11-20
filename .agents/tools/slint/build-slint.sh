@@ -75,7 +75,38 @@ if [ -z "${SLINT_SRC:-}" ]; then
   [ -n "$pin" ] || { echo "no sha256 pinned for ${version} in sources.sha256" >&2; exit 1; }
   got=$( (sha256sum "$archive" 2>/dev/null || shasum -a 256 "$archive") | cut -d' ' -f1)
   [ "$got" = "$pin" ] || { echo "source sha256 $got != pinned $pin" >&2; exit 1; }
-  tar -xzf "$archive" -C "$work"
+  if [ "$os" = windows ]; then
+    # The tag archive holds 159 symlinks (license texts, assets) that tar under
+    # git-bash cannot create; each becomes a copy of its target instead.
+    py=$(command -v python3 || command -v python)
+    "$py" - "$archive" "$work" <<'PY'
+import os, shutil, sys, tarfile
+archive, dest = sys.argv[1], sys.argv[2]
+with tarfile.open(archive) as tar:
+    members = tar.getmembers()
+    tar.extractall(dest, members=[m for m in members if not (m.issym() or m.islnk())], filter="data")
+    links = [m for m in members if m.issym() or m.islnk()]
+for _ in range(len(links) + 1):           # a link may name another link
+    pending = []
+    for m in links:
+        path = os.path.join(dest, m.name)
+        target = os.path.normpath(os.path.join(os.path.dirname(path), m.linkname)) if m.issym() \
+            else os.path.join(dest, m.linkname)
+        if os.path.isdir(target):
+            shutil.copytree(target, path, dirs_exist_ok=True)
+        elif os.path.isfile(target):
+            os.makedirs(os.path.dirname(path), exist_ok=True); shutil.copyfile(target, path)
+        else:
+            pending.append(m)
+    if not pending:
+        break
+    links = pending
+if pending:
+    sys.exit("unresolved links: " + ", ".join(m.name for m in pending))
+PY
+  else
+    tar -xzf "$archive" -C "$work"
+  fi
   SLINT_SRC="$work/slint-${version}"
 fi
 src=$(cd "$SLINT_SRC" && pwd)
@@ -83,15 +114,15 @@ src=$(cd "$SLINT_SRC" && pwd)
 # ── build ───────────────────────────────────────────────────────────────────
 export CARGO_TARGET_DIR="${CARGO_TARGET_DIR:-$work/target}"
 export SLINT_GENERATED_INCLUDE_DIR="$work/generated_include/"
-jobs=(); [ -n "${CARGO_JOBS:-}" ] && jobs=(-j "$CARGO_JOBS")
+jobs=(-j "${CARGO_JOBS:-0}"); [ -n "${CARGO_JOBS:-}" ] || jobs=()
 cd "$src"
 if [ "$os" = macosx ]; then
-  cargo rustc --release --locked "${jobs[@]}" -p slint-cpp --lib --no-default-features --features "$features" \
+  cargo rustc --release --locked ${jobs[@]+"${jobs[@]}"} -p slint-cpp --lib --no-default-features --features "$features" \
     -- -C "link-arg=-Wl,-install_name,@rpath/libslint_cpp.dylib"
 else
-  cargo build --release --locked "${jobs[@]}" -p slint-cpp --lib --no-default-features --features "$features"
+  cargo build --release --locked ${jobs[@]+"${jobs[@]}"} -p slint-cpp --lib --no-default-features --features "$features"
 fi
-cargo build --release --locked "${jobs[@]}" -p slint-compiler
+cargo build --release --locked ${jobs[@]+"${jobs[@]}"} -p slint-compiler
 
 # ── assemble ────────────────────────────────────────────────────────────────
 pkg="$work/$name"
@@ -160,5 +191,6 @@ else
   artifact="$outdir/$name.tar.gz"
 fi
 (cd "$outdir" && { sha256sum "$(basename "$artifact")" 2>/dev/null || shasum -a 256 "$(basename "$artifact")"; } > "$(basename "$artifact").sha256")
+[ -s "$artifact" ] || { echo "no archive produced" >&2; exit 1; }
 cat "$pkg/BUILD-INFO.txt"
 echo "built $artifact"
