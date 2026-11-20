@@ -78,7 +78,11 @@ jobs:
           xlings install xim:fontconfig@2.15.0.1 -y
           fc=$(ls -d "$HOME"/.xlings/data/xpkgs/xim-x-fontconfig/2.15.0.1 | head -1)
           test -f "$fc/lib/pkgconfig/fontconfig.pc"
-          echo "PKG_CONFIG_PATH=$fc/lib/pkgconfig" >> "$GITHUB_ENV"
+          # fontconfig.pc Requires freetype2 and expat: the payloads xim:fontconfig declares.
+          pc=$(ls -d "$fc/lib/pkgconfig" "$HOME"/.xlings/data/xpkgs/xim-x-freetype/*/lib/pkgconfig \
+                     "$HOME"/.xlings/data/xpkgs/xim-x-expat/*/lib/pkgconfig 2>/dev/null | paste -sd: -)
+          PKG_CONFIG_PATH="$pc" pkg-config --libs fontconfig
+          echo "PKG_CONFIG_PATH=$pc" >> "$GITHUB_ENV"
 
       - name: Build and check the payload
         run: bash .agents/tools/slint/build-slint.sh "$SLINT_VERSION" "$SLINT_PROFILE" "$RUNNER_TEMP/dist"
