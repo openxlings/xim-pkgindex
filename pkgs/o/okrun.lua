@@ -37,13 +37,16 @@ package = {
     -- 0.7.1 enters an image file an image starts through its loader, with the
     -- runner's signature requirements, and ends the program as the image ends
     -- it (openkal-image#42, #43); the version openkal-platform 0.31.1 pins.
+    -- `latest' stays 0.6.4: under 0.7.1 a program an image forks ends in a
+    -- wait for the runner's task, which the copy does not have
+    -- (openkal-image#44).
     xpm = {
         linux = {
             source = {
                 GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/${version}/okrun-${version}-linux-${arch}.zip",
                 CN = "https://gitcode.com/xlings-res/okrun/releases/download/${version}/okrun-${version}-linux-${arch}.zip",
             },
-            ["latest"] = { ref = "0.7.1" },
+            ["latest"] = { ref = "0.6.4" },
             ["0.7.1"] = {
                 sha256 = {
                     ["aarch64"] = "6eca22a735d1828086cadbaf39f51224549ea67c05388e2103297dae9a967d57",
@@ -160,7 +163,7 @@ package = {
                 GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/${version}/okrun-${version}-macos-${arch}.zip",
                 CN = "https://gitcode.com/xlings-res/okrun/releases/download/${version}/okrun-${version}-macos-${arch}.zip",
             },
-            ["latest"] = { ref = "0.7.1" },
+            ["latest"] = { ref = "0.6.4" },
             ["0.7.1"] = {
                 sha256 = {
                     ["aarch64"] = "cd76742fd090f9289ce923dbb2fe9710f103c3c819652d761c8a9b0096f7c53d",
@@ -260,7 +263,7 @@ package = {
                 GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/${version}/okrun-${version}-windows-${arch}.zip",
                 CN = "https://gitcode.com/xlings-res/okrun/releases/download/${version}/okrun-${version}-windows-${arch}.zip",
             },
-            ["latest"] = { ref = "0.7.1" },
+            ["latest"] = { ref = "0.6.4" },
             ["0.7.1"] = {
                 sha256 = {
                     ["x86_64"] = "051e74d9e09361617980d386d20a4e8f8d19f15bcbd823fb3911b7807eb0d28a",
