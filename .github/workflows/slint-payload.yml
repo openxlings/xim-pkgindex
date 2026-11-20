@@ -50,7 +50,7 @@ jobs:
         include:
           # glibc 2.39: the payload runs under the ecosystem's xim:glibc (2.44), never older.
           - { name: linux-x86_64,   os: ubuntu-24.04 }
-          - { name: linux-aarch64,  os: ubuntu-24.04-arm }
+          # linux-aarch64 waits for an aarch64 xim:fontconfig (x86_64 only today).
           - { name: macosx-arm64,   os: macos-15 }
           - { name: windows-x86_64, os: windows-2025 }
     defaults:
