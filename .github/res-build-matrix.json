@@ -408,15 +408,5 @@
     "what": "gdb",
     "version": "18.1",
     "arch": "aarch64"
-  },
-  {
-    "what": "llvm",
-    "version": "23.1.6",
-    "arch": "x86_64"
-  },
-  {
-    "what": "llvm",
-    "version": "23.1.6",
-    "arch": "aarch64"
   }
 ]
