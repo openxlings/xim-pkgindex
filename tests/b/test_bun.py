@@ -33,16 +33,16 @@ UPSTREAM = {
 }
 ASSET_URLS = {
     "linux": {
-        "x86_64": "https://github.com/oven-sh/bun/releases/download/bun-v${version}/bun-linux-x64-baseline.zip",
-        "aarch64": "https://github.com/oven-sh/bun/releases/download/bun-v${version}/bun-linux-aarch64.zip",
+        "x86_64": "https://github.com/oven-sh/bun/releases/download/bun-v1.4.5/bun-linux-x64-baseline.zip",
+        "aarch64": "https://github.com/oven-sh/bun/releases/download/bun-v1.4.5/bun-linux-aarch64.zip",
     },
     "macosx": {
-        "x86_64": "https://github.com/oven-sh/bun/releases/download/bun-v${version}/bun-darwin-x64-baseline.zip",
-        "aarch64": "https://github.com/oven-sh/bun/releases/download/bun-v${version}/bun-darwin-aarch64.zip",
+        "x86_64": "https://github.com/oven-sh/bun/releases/download/bun-v1.4.5/bun-darwin-x64-baseline.zip",
+        "aarch64": "https://github.com/oven-sh/bun/releases/download/bun-v1.4.5/bun-darwin-aarch64.zip",
     },
     "windows": {
-        "x86_64": "https://github.com/oven-sh/bun/releases/download/bun-v${version}/bun-windows-x64-baseline.zip",
-        "aarch64": "https://github.com/oven-sh/bun/releases/download/bun-v${version}/bun-windows-aarch64.zip",
+        "x86_64": "https://github.com/oven-sh/bun/releases/download/bun-v1.4.5/bun-windows-x64-baseline.zip",
+        "aarch64": "https://github.com/oven-sh/bun/releases/download/bun-v1.4.5/bun-windows-aarch64.zip",
     },
 }
 AUTUPDATE_URLS = {
@@ -128,7 +128,7 @@ class TestStatic:
     @pytest.mark.static
     def test_latest_install_uses_native_release_and_preserves_legacy_path(self, meta):
         content = meta.raw_content
-        assert "https://github.com/oven-sh/bun/releases/download/bun-v${version}/" in content
+        assert "https://github.com/oven-sh/bun/releases/download/bun-v1.4.5/" in content
         assert 'if version == "1.3.11" then' in content
         assert 'npm install --prefix' in content
         assert 'local extracted = pkginfo.install_file():replace(".zip", "")' in content

@@ -54,11 +54,11 @@ package = {
             ["latest"] = {ref = "1.4.5"},
             ["1.4.5"] = {
                 x86_64 = {
-                    url = "https://github.com/oven-sh/bun/releases/download/bun-v${version}/bun-linux-x64-baseline.zip",
+                    url = "https://github.com/oven-sh/bun/releases/download/bun-v1.4.5/bun-linux-x64-baseline.zip",
                     sha256 = "dcb23a18a1c2fff12d57bcef696dbbb42eb67fde29f43816ecb595459a24c463",
                 },
                 aarch64 = {
-                    url = "https://github.com/oven-sh/bun/releases/download/bun-v${version}/bun-linux-aarch64.zip",
+                    url = "https://github.com/oven-sh/bun/releases/download/bun-v1.4.5/bun-linux-aarch64.zip",
                     sha256 = "18656a3bf0ea5641f5796ae4213b75255579a70a0fded2f337933785568cdf84",
                 },
             },
@@ -69,11 +69,11 @@ package = {
             ["latest"] = {ref = "1.4.5"},
             ["1.4.5"] = {
                 x86_64 = {
-                    url = "https://github.com/oven-sh/bun/releases/download/bun-v${version}/bun-darwin-x64-baseline.zip",
+                    url = "https://github.com/oven-sh/bun/releases/download/bun-v1.4.5/bun-darwin-x64-baseline.zip",
                     sha256 = "fb0121739a7e80e7511b6bfe4d2116422b48ba18a013acadef0c425348e95891",
                 },
                 aarch64 = {
-                    url = "https://github.com/oven-sh/bun/releases/download/bun-v${version}/bun-darwin-aarch64.zip",
+                    url = "https://github.com/oven-sh/bun/releases/download/bun-v1.4.5/bun-darwin-aarch64.zip",
                     sha256 = "b5d6bc2e13caf14e57c89661e89efd073ff16165b41bfe43882616410609cd10",
                 },
             },
@@ -84,11 +84,11 @@ package = {
             ["latest"] = {ref = "1.4.5"},
             ["1.4.5"] = {
                 x86_64 = {
-                    url = "https://github.com/oven-sh/bun/releases/download/bun-v${version}/bun-windows-x64-baseline.zip",
+                    url = "https://github.com/oven-sh/bun/releases/download/bun-v1.4.5/bun-windows-x64-baseline.zip",
                     sha256 = "3c081c73865e7a3453a9d514cc2ba3d699880621bcf67bb17241ff5194cb1d4b",
                 },
                 aarch64 = {
-                    url = "https://github.com/oven-sh/bun/releases/download/bun-v${version}/bun-windows-aarch64.zip",
+                    url = "https://github.com/oven-sh/bun/releases/download/bun-v1.4.5/bun-windows-aarch64.zip",
                     sha256 = "41f57d49c3c6811888d9633c569e40b4eb1f7e92b5e5336e3abd3af03187d77a",
                 },
             },
