@@ -59,7 +59,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Room to build
-        if: (matrix.what == 'gcc' || matrix.what == 'mingw-cross-gcc' || matrix.what == 'kernel-virt')
+        if: (matrix.what == 'gcc' || matrix.what == 'mingw-cross-gcc' || matrix.what == 'kernel-virt' || matrix.what == 'llvm')
         run: |
           sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/share/boost /opt/hostedtoolcache || true
           df -h /

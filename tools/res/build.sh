@@ -62,6 +62,10 @@
 #   android-ndk-libcxx-modules  an NDK release's libc++ module sources, for its Windows archive
 #   sample-music    luban:sample-music, a piece to play (the Open Goldberg Variations' Aria, CC0)
 #
+# Carved from an upstream release (no build):
+#   llvm          a release (23.1.6): the slim toolchain for Linux of this
+#                 architecture and, on x86_64, Windows x86_64
+#
 # Corrective revisions of a published archive, derived from the archive of the
 # revision before (revision.py; no build):
 #   llvm            the llvm payload for Windows x86_64, with the lld names clang's driver runs
@@ -891,44 +895,144 @@ i586-pc-msdosdjgpp-gcc)
             || die "$file holds a hard link"
     done ;;
 llvm)
-    # The llvm payload for Windows x86_64 at a corrective revision: the archive
-    # of the revision before, its directory renamed, with ld.lld.exe,
-    # ld64.lld.exe and wasm-ld.exe added -- the files of these names in
-    # upstream's release, each the program the archive already ships as
-    # lld-link.exe (checked here, byte for byte). clang's driver links an ELF
-    # target with ld.lld, Mach-O with ld64.lld and WebAssembly with wasm-ld,
-    # looking beside itself first and then on PATH; the archive carried none of
-    # them, so a link for x86_64-freebsd on a Windows host ran the ld.lld of the
-    # host's PATH, which reads no zlib-compressed section (mcpp-platforms run
-    # 44123489011), while the archive's own lld reads zlib and zstd.
-    upstream="${version%%-r*}"
-    case "$version" in
-        23.1.3-r4) from=23.1.3-r3 ;;
-        *) die "llvm: no derivation recorded for $version" ;;
-    esac
-    command -v zstd >/dev/null || die "llvm: no zstd to read upstream's .tar.zst"
-    d="llvm-$version-windows-x86_64"
-    up="clang+llvm-$upstream-x86_64-pc-windows-msvc"
-    source_of llvm-windows-x86_64 "$from" \
-        "https://github.com/xlings-res/llvm/releases/download/$from/llvm-$from-windows-x86_64.zip" "$work/from.zip"
-    source_of clang+llvm-x86_64-pc-windows-msvc "$upstream" \
-        "https://github.com/llvm/llvm-project/releases/download/llvmorg-$upstream/$up.tar.zst" "$work/upstream.tar.zst"
-    lld="$(python3 -I "$here/revision.py" digest "$work/from.zip" "llvm-$from-windows-x86_64/bin/lld-link.exe")"
-    # Upstream's archive is zstd with a 1 GiB window.
-    zstd -dc --long=31 "$work/upstream.tar.zst" \
-        | python3 -I "$here/revision.py" tar-digests bin/lld-link.exe bin/lld.exe bin/ld.lld.exe bin/ld64.lld.exe bin/wasm-ld.exe \
-        > "$work/upstream.sha256"
-    rm -f "$work/upstream.tar.zst"
-    while read -r sha name; do
-        [[ "$sha" == "$lld" ]] || die "upstream's $name ($sha) is not the lld-link.exe of llvm $from ($lld)"
-    done < "$work/upstream.sha256"
-    printf '%s\n' "llvm $version for Windows x86_64: the archive of llvm $from (xlings-res/llvm, sha256 $(input llvm-windows-x86_64 "$from")), its directory renamed, with bin/ld.lld.exe, bin/ld64.lld.exe and bin/wasm-ld.exe added -- the files of these names in $up.tar.zst (github.com/llvm/llvm-project, release llvmorg-$upstream, sha256 $(input clang+llvm-x86_64-pc-windows-msvc "$upstream")), each byte-identical to that release's bin/lld-link.exe and to the archive's own (sha256 $lld); no other file changed. clang's driver links an ELF target with ld.lld, Mach-O with ld64.lld and WebAssembly with wasm-ld, found beside it." \
-        > "$work/README.provenance"
-    python3 -I "$here/revision.py" zip "$work/from.zip" "$out/$d.zip" "llvm-$from-windows-x86_64" "$d" \
-        --same bin/lld-link.exe=bin/ld.lld.exe --same bin/lld-link.exe=bin/ld64.lld.exe \
-        --same bin/lld-link.exe=bin/wasm-ld.exe --add "README.provenance=$work/README.provenance" \
-        || die "llvm $version: the derived archive is not llvm $from with the lld names"
-    seal "$out/$d.zip" ;;
+    if [[ "$version" != *-r* ]]; then
+        # A release, carved from upstream's for each host this machine makes it
+        # for -- Linux of its own architecture and, on x86_64, Windows x86_64 --
+        # by .agents/tools/build-llvm-subpkg.sh (--pkg llvm: the slim toolchain of
+        # the llvm-subpackaging skill) in the pinned Debian, with patchelf 0.19.3
+        # and Debian's gcc (the libatomic beside libc++). Each archive carries
+        # what this index's revisions of 23.1.3 added to theirs:
+        #   Linux: lib/clang/<major>/lib/{x86_64,aarch64}-w64-windows-gnu/
+        #     libclang_rt.builtins.a, the MinGW-w64 sysroot's compiler-rt builtins
+        #     (23.1.3 r2): clang links a windows-gnu target with its own builtins.
+        #   Windows: bin/ld.lld.exe, bin/ld64.lld.exe and bin/wasm-ld.exe, the
+        #     files of these names in upstream's release, each lld-link.exe's bytes
+        #     (23.1.3 r4): clang's driver runs them from beside itself.
+        # A Linux archive passes verify-toolchain.sh's llvm gate (import std and
+        # std.compat, hermetic CRT) against the index's glibc and the kernel
+        # headers gcc declares before it is sealed. The carve is not
+        # byte-reproducible (directory order, the factory's libatomic), so a
+        # release is not a resource of res-build-matrix.json: the llvm payload
+        # check takes the published archives by their digests.
+        major="${version%%.*}"
+        command -v zstd >/dev/null || die "llvm: no zstd to read upstream's .tar.zst"
+        msv="$(input_version llvm-windows-gnu-builtins)"; ms="mingw-w64-sysroot-$msv"
+        source_of mingw-w64-sysroot "$msv" \
+            "https://github.com/xlings-res/mingw-w64-sysroot/releases/download/$msv/$ms.tar.xz" "$work/ms.tar.xz"
+        tar -xJf "$work/ms.tar.xz" -C "$work" "$ms/compiler-rt/lib/windows/libclang_rt.builtins-x86_64.a" \
+            "$ms/compiler-rt/lib/windows/libclang_rt.builtins-aarch64.a"
+        rm -f "$work/ms.tar.xz"
+        source_of "patchelf-$arch" 0.19.3 \
+            "https://github.com/NixOS/patchelf/releases/download/0.19.3/patchelf-0.19.3-$arch.tar.gz" "$work/patchelf.tar.gz"
+        mkdir -p "$work/patchelf" && tar -xzf "$work/patchelf.tar.gz" -C "$work/patchelf"
+        cp "$here/../../.agents/tools/build-llvm-subpkg.sh" "$here/../../.agents/tools/verify-toolchain.sh" "$work/"
+        glibc_v="$(input_version gcc-sysroot-glibc)"; headers_v="$(input_version gcc-sysroot-linux-headers)"
+        lh="linux-headers-$headers_v-linux-$arch"
+        source_of "linux-headers-linux-$arch" "$headers_v" \
+            "https://github.com/xlings-res/linux-headers/releases/download/$headers_v/$lh.tar.gz" "$work/$lh.tar.gz"
+        xl="xlings-$XLINGS_CLIENT-linux-$arch.tar.gz"
+        curl -fsSL --retry 3 -o "$work/$xl" "https://github.com/openxlings/xlings/releases/download/v$XLINGS_CLIENT/$xl"
+        curl -fsSL --retry 3 -o "$work/$xl.sha256" "https://github.com/openxlings/xlings/releases/download/v$XLINGS_CLIENT/$xl.sha256"
+        (cd "$work" && sha256sum -c "$xl.sha256" >/dev/null) || die "the xlings client does not match its digest"
+        hosts="linux-$arch"; [[ "$arch" == x86_64 ]] && hosts="linux-x86_64 windows-x86_64"
+        for host in $hosts; do
+            case "$host" in
+                linux-x86_64)   up="LLVM-$version-Linux-X64";  input_name=LLVM-Linux-X64 ;;
+                linux-aarch64)  up="LLVM-$version-Linux-ARM64"; input_name=LLVM-Linux-ARM64 ;;
+                windows-x86_64) up="clang+llvm-$version-x86_64-pc-windows-msvc"; input_name=clang+llvm-x86_64-pc-windows-msvc ;;
+            esac
+            d="llvm-$version-$host"; platform="${host%-*}"
+            source_of "$input_name" "$version" \
+                "https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/$up.tar.zst" "$work/up.tar.zst"
+            rm -rf "${work:?}/full" "${work:?}/carve" && mkdir -p "$work/full" "$work/carve"
+            # The static libraries directly under lib/ (libLLVM*, libclang*: most
+            # of the archive) are no part of the slim toolchain.
+            zstd -dc --long=31 "$work/up.tar.zst" \
+                | tar -x -C "$work/full" --no-wildcards-match-slash --exclude='*/lib/*.a' --exclude='*/lib/*.lib'
+            rm -f "$work/up.tar.zst"
+            fmt=tar.gz; [[ "$platform" == windows ]] && fmt=zip
+            debian "apt-get -qq update && apt-get -qq install -y gcc binutils zip xz-utils python3 file >/dev/null \
+                && export PATH=/w/patchelf/bin:\$PATH \
+                && bash /w/build-llvm-subpkg.sh --in /w/full --pkg llvm --version $version --platform $platform --arch ${host#*-} \
+                     --out /w/carve --formats $fmt >/w/carve.log 2>&1" \
+              || { tail -40 "$work/carve.log" >&2; die "llvm $version: the $host carve failed"; }
+            if [[ "$platform" == windows ]]; then
+                top="$(dirname "$(find "$work/full" -mindepth 2 -maxdepth 2 -type d -name bin | head -1)")"
+                for name in ld.lld.exe ld64.lld.exe wasm-ld.exe; do
+                    cmp -s "$top/bin/$name" "$top/bin/lld-link.exe" \
+                        || die "upstream's bin/$name is not its bin/lld-link.exe"
+                done
+                printf '%s\n' "llvm $version for Windows x86_64: carved from $up.tar.zst (github.com/llvm/llvm-project, release llvmorg-$version, sha256 $(input "$input_name" "$version")) by .agents/tools/build-llvm-subpkg.sh --pkg llvm, with bin/ld.lld.exe, bin/ld64.lld.exe and bin/wasm-ld.exe added: the files of these names in that release, each byte-identical to its bin/lld-link.exe. clang's driver links an ELF target with ld.lld, Mach-O with ld64.lld and WebAssembly with wasm-ld, found beside it." \
+                    > "$work/README.provenance"
+                python3 -I "$here/revision.py" zip "$work/carve/$d.zip" "$out/$d.zip" "$d" "$d" \
+                    --same bin/lld-link.exe=bin/ld.lld.exe --same bin/lld-link.exe=bin/ld64.lld.exe \
+                    --same bin/lld-link.exe=bin/wasm-ld.exe --add "README.provenance=$work/README.provenance" \
+                    || die "llvm $version: the Windows archive is not the carve with the lld names"
+                seal "$out/$d.zip"
+            else
+                rm -rf "${work:?}/$d" && tar -xzf "$work/carve/$d.tar.gz" -C "$work"
+                for t in x86_64 aarch64; do
+                    mkdir -p "$work/$d/lib/clang/$major/lib/$t-w64-windows-gnu"
+                    cp "$work/$ms/compiler-rt/lib/windows/libclang_rt.builtins-$t.a" \
+                        "$work/$d/lib/clang/$major/lib/$t-w64-windows-gnu/libclang_rt.builtins.a"
+                done
+                provenance "$d" "llvm $version for Linux $arch: carved from $up.tar.zst (github.com/llvm/llvm-project, release llvmorg-$version, sha256 $(input "$input_name" "$version")) by .agents/tools/build-llvm-subpkg.sh --pkg llvm in Debian 12 (libatomic: LIBATOMIC-PROVENANCE.txt); lib/clang/$major/lib/{x86_64,aarch64}-w64-windows-gnu/libclang_rt.builtins.a: compiler-rt/lib/windows/libclang_rt.builtins-{x86_64,aarch64}.a of mingw-w64-sysroot $msv (xlings-res/mingw-w64-sysroot, sha256 $(input mingw-w64-sysroot "$msv")); verify-toolchain.sh's llvm gate passed against xim:glibc@$glibc_v and linux-headers $headers_v"
+                pack "$d"
+                cp "$out/$d.tar.gz" "$work/verify.tar.gz"
+                debian "apt-get -qq update && apt-get -qq install -y gcc file curl ca-certificates xz-utils libxml2 >/dev/null \
+                    && export PATH=/w/patchelf/bin:\$PATH && tar -xzf /w/$lh.tar.gz -C /w \
+                    && mkdir -p /w/xl && tar -xzf /w/$xl -C /w/xl && export XLINGS_HOME=/w/xh \
+                    && (cd /w/xl/*/ && ./bin/xlings self install </dev/null >/w/xlings-install.log 2>&1) \
+                    && /w/xh/bin/xlings install -y glibc@$glibc_v </dev/null >/w/sysroot.log 2>&1 \
+                    && L=\$(ls /w/xh/data/xpkgs/xim-x-glibc/$glibc_v/lib*/ld-linux-*.so.* | head -1) \
+                    && bash /w/verify-toolchain.sh /w/verify.tar.gz --loader \$L --linux-headers /w/$lh/include >/w/verify.log 2>&1" \
+                  || { tail -60 "$work/verify.log" "$work/sysroot.log" >&2 2>/dev/null; rm -f "$out/$d.tar.gz" "$out/$d.tar.gz.sha256"; die "llvm $version: $d does not pass verify-toolchain.sh"; }
+                grep -q '^llvm gate: PASS' "$work/verify.log" && grep -q '^PASS: compiled & ran' "$work/verify.log" \
+                    || { cat "$work/verify.log" >&2; rm -f "$out/$d.tar.gz" "$out/$d.tar.gz.sha256"; die "llvm $version: verify-toolchain.sh did not pass $d"; }
+                rm -rf "${work:?}/$d" "$work/verify.tar.gz"
+            fi
+            rm -rf "${work:?}/full" "${work:?}/carve"
+        done
+    else
+        # The llvm payload for Windows x86_64 at a corrective revision: the archive
+        # of the revision before, its directory renamed, with ld.lld.exe,
+        # ld64.lld.exe and wasm-ld.exe added -- the files of these names in
+        # upstream's release, each the program the archive already ships as
+        # lld-link.exe (checked here, byte for byte). clang's driver links an ELF
+        # target with ld.lld, Mach-O with ld64.lld and WebAssembly with wasm-ld,
+        # looking beside itself first and then on PATH; the archive carried none of
+        # them, so a link for x86_64-freebsd on a Windows host ran the ld.lld of the
+        # host's PATH, which reads no zlib-compressed section (mcpp-platforms run
+        # 44123489011), while the archive's own lld reads zlib and zstd.
+        upstream="${version%%-r*}"
+        case "$version" in
+            23.1.3-r4) from=23.1.3-r3 ;;
+            *) die "llvm: no derivation recorded for $version" ;;
+        esac
+        command -v zstd >/dev/null || die "llvm: no zstd to read upstream's .tar.zst"
+        d="llvm-$version-windows-x86_64"
+        up="clang+llvm-$upstream-x86_64-pc-windows-msvc"
+        source_of llvm-windows-x86_64 "$from" \
+            "https://github.com/xlings-res/llvm/releases/download/$from/llvm-$from-windows-x86_64.zip" "$work/from.zip"
+        source_of clang+llvm-x86_64-pc-windows-msvc "$upstream" \
+            "https://github.com/llvm/llvm-project/releases/download/llvmorg-$upstream/$up.tar.zst" "$work/upstream.tar.zst"
+        lld="$(python3 -I "$here/revision.py" digest "$work/from.zip" "llvm-$from-windows-x86_64/bin/lld-link.exe")"
+        # Upstream's archive is zstd with a 1 GiB window.
+        zstd -dc --long=31 "$work/upstream.tar.zst" \
+            | python3 -I "$here/revision.py" tar-digests bin/lld-link.exe bin/lld.exe bin/ld.lld.exe bin/ld64.lld.exe bin/wasm-ld.exe \
+            > "$work/upstream.sha256"
+        rm -f "$work/upstream.tar.zst"
+        while read -r sha name; do
+            [[ "$sha" == "$lld" ]] || die "upstream's $name ($sha) is not the lld-link.exe of llvm $from ($lld)"
+        done < "$work/upstream.sha256"
+        printf '%s\n' "llvm $version for Windows x86_64: the archive of llvm $from (xlings-res/llvm, sha256 $(input llvm-windows-x86_64 "$from")), its directory renamed, with bin/ld.lld.exe, bin/ld64.lld.exe and bin/wasm-ld.exe added -- the files of these names in $up.tar.zst (github.com/llvm/llvm-project, release llvmorg-$upstream, sha256 $(input clang+llvm-x86_64-pc-windows-msvc "$upstream")), each byte-identical to that release's bin/lld-link.exe and to the archive's own (sha256 $lld); no other file changed. clang's driver links an ELF target with ld.lld, Mach-O with ld64.lld and WebAssembly with wasm-ld, found beside it." \
+            > "$work/README.provenance"
+        python3 -I "$here/revision.py" zip "$work/from.zip" "$out/$d.zip" "llvm-$from-windows-x86_64" "$d" \
+            --same bin/lld-link.exe=bin/ld.lld.exe --same bin/lld-link.exe=bin/ld64.lld.exe \
+            --same bin/lld-link.exe=bin/wasm-ld.exe --add "README.provenance=$work/README.provenance" \
+            || die "llvm $version: the derived archive is not llvm $from with the lld names"
+        seal "$out/$d.zip"
+    fi ;;
 x86_64-freebsd-sysroot|aarch64-freebsd-sysroot)
     # A FreeBSD base at a corrective revision: the archive of an earlier
     # revision, its directory renamed, every file that archive's. 14.5-r3 is
