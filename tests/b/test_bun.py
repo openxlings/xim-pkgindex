@@ -70,7 +70,8 @@ def _assert_bun_output(cmd, contains):
 echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
 echo "bun command: $(command -v bun)"
 type -a bun
-candidate="$(find "$XLINGS_HOME/data/xpkgs" -type f -path "*/{VERSION}/bun" -print -quit)"
+home="${{XLINGS_HOME:-$HOME/.xlings}}"
+candidate="$(find "$home/data/xpkgs" -type f -path "*/{VERSION}/bun" -print -quit)"
 echo "candidate executable: $candidate"
 if [ -n "$candidate" ]; then
   file "$candidate"
