@@ -30,8 +30,10 @@ package = {
                 build   = { "xim:node" },
             },
             ["latest"] = { ref = "1.3.11" },
-            -- revision 1: npm's postinstall is not run (xlings#724).
-            ["1.3.11"] = { revision = 1 },
+            -- No revision for xlings#724's change: what an install leaves is
+            -- the same binary, registered the same way; only how the hook
+            -- chooses it moved, and a copy installed before works as it did.
+            ["1.3.11"] = { ref = "1.3.11" },
         },
         macosx = {
             deps = {
