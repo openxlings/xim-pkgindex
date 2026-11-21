@@ -94,9 +94,11 @@ package = {
             -- this recipe declares: binutils 2.47 is the target's assembler
             -- and linker while gcc is configured and built (GCC decides from
             -- them which assembler and linker features it emits), the
-            -- sysroot's kernel headers are linux-headers 6.18.64. Revision 0
-            -- (Debian 12's binutils 2.40) runs with binutils 2.47 too, so it
-            -- stays usable.
+            -- sysroot's kernel headers are linux-headers 6.18.64. It needs
+            -- that binutils: on aarch64 it emits the AArch64 build attributes
+            -- (`.aeabi_subsection`), which binutils 2.42's `as` refuses
+            -- (measured). Revision 0 (Debian 12's binutils 2.40) runs with
+            -- binutils 2.47 too, so it stays usable.
             ["16.2.0"] = {
                 revision = 1,
                 x86_64 = {
