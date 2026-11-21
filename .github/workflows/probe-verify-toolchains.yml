@@ -27,9 +27,14 @@ jobs:
           W="$RUNNER_TEMP/w"; mkdir -p "$W"; cd "$W"
           get() { curl -fsSL --retry 3 -o "$2" "$1"; echo "$3  $2" | sha256sum -c -; }
           case "$ARCH" in
-            x86_64)  pe=1bfa6d97c93d640415ea8efa381be465c48ec8ddb93e30db3dba310b05ebcdca; lh=1fd036428760dffe306a020513d4e00adbbb0b3bc25dc3c25cf4737f1bfd4701 ;;
-            aarch64) pe=6b8b5bcf29b4b5eac67797f71620a05f0b44707a0323c5e8af6d416118ae2e37; lh=283bb8f2cbb84ffabbb3361f02e42c361d623f97a1cfd60e67e425de3d2a997b ;;
+            x86_64)  pe=1bfa6d97c93d640415ea8efa381be465c48ec8ddb93e30db3dba310b05ebcdca; lh=1fd036428760dffe306a020513d4e00adbbb0b3bc25dc3c25cf4737f1bfd4701; bu=76678811e3f80c9c8fcb7c668d1554428a52e2cbb4345155a82edf2f994c823a ;;
+            aarch64) pe=6b8b5bcf29b4b5eac67797f71620a05f0b44707a0323c5e8af6d416118ae2e37; lh=283bb8f2cbb84ffabbb3361f02e42c361d623f97a1cfd60e67e425de3d2a997b; bu=10b848d1857c5b2709e286d4df3aa1bad1b5cf1a416f5138af5ec768fe034947 ;;
           esac
+          # gcc's declared assembler and linker: a gcc built against binutils
+          # 2.47 emits what an older `as` refuses (aarch64 .aeabi_subsection).
+          get "https://github.com/xlings-res/binutils/releases/download/2.47/binutils-2.47-linux-$ARCH.tar.gz" bu.tgz "$bu"
+          tar -xzf bu.tgz
+          echo "BINUTILS=$W/binutils-2.47-linux-$ARCH/bin" >> "$GITHUB_ENV"
           get "https://github.com/xlings-res/patchelf/releases/download/0.19.3/patchelf-0.19.3-linux-$ARCH.tar.gz" pe.tgz "$pe"
           get "https://github.com/xlings-res/linux-headers/releases/download/6.18.64/linux-headers-6.18.64-linux-$ARCH.tar.gz" lh.tgz "$lh"
           tar -xzf pe.tgz && tar -xzf lh.tgz
@@ -51,7 +56,15 @@ jobs:
         env:
           ARCH: ${{ matrix.arch }}
         run: |
-          set -uo pipefail
+          set +e -uo pipefail
+          # verify-toolchain.sh picks a musl toolchain's loader by `find`
+          # order, and the first hit may be the dangling ld-musl-<arch>.so.1
+          # link musl-cross-make writes (then it reports could-not-run); this
+          # copy takes <triple>/lib/libc.so, the loader the musl-gcc recipe
+          # relocates the toolchain onto. Nothing else differs.
+          sed 's#-path .\*-linux-musl/lib/libc.so. -o -name .ld-musl-x86_64.so.1.#-path "*-linux-musl/lib/libc.so"#' \
+              .agents/tools/verify-toolchain.sh > "$RUNNER_TEMP/verify-musl.sh"
+          diff .agents/tools/verify-toolchain.sh "$RUNNER_TEMP/verify-musl.sh"
           status=0
           while read -r arch url sha; do
             [ "$arch" = "$ARCH" ] || continue
@@ -59,7 +72,11 @@ jobs:
             curl -fsSL --retry 3 -o "$f" "$url"
             echo "$sha  $f" | sha256sum -c - || { status=1; continue; }
             echo "::group::$(basename "$url")"
-            VERIFY_SYSROOT="$SYSROOT" bash .agents/tools/verify-toolchain.sh "$f" --loader "$LOADER" --linux-headers "$HEADERS"
+            case "$f" in
+              */gcc-*) PATH="$BINUTILS:$PATH" VERIFY_SYSROOT="$SYSROOT" bash .agents/tools/verify-toolchain.sh "$f" --loader "$LOADER" --linux-headers "$HEADERS" </dev/null ;;
+              */musl-gcc-*) bash "$RUNNER_TEMP/verify-musl.sh" "$f" </dev/null ;;
+              *) VERIFY_SYSROOT="$SYSROOT" bash .agents/tools/verify-toolchain.sh "$f" --loader "$LOADER" --linux-headers "$HEADERS" </dev/null ;;
+            esac
             rc=$?
             echo "::endgroup::"
             echo "$(basename "$url"): exit $rc"
