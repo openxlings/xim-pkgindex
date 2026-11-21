@@ -1247,7 +1247,8 @@ mingw-cross-gcc)
     # so the payload is relocatable; `mingw` is the relative link GCC's
     # native header directory (/mingw/include) reads through. Self-contained:
     # its own binutils, CRT and libstdc++. Checked: a C++23 program using
-    # `import std`, linked -static, runs under wine.
+    # `import std`, linked -static, runs under wine (std::print's Windows
+    # console functions are in libstdc++exp, as libstdc++ documents).
     [[ "$arch" == x86_64 ]] || die "mingw-cross-gcc: a Linux x86_64 host's"
     binutils_v="$(input_version gcc-binutils)"; mingw_v="$(input_version mingw-w64)"
     source_of gcc "$version" "https://ftpmirror.gnu.org/gnu/gcc/gcc-$version/gcc-$version.tar.xz" "$work/gcc.tar.xz"
@@ -1283,7 +1284,7 @@ mingw-cross-gcc)
         && cd /w && printf 'import std;\nint main(){ std::println(\"c++23 ok {}\", std::ranges::fold_left(std::views::iota(1,5), 0, std::plus{})); }\n' > t.cpp \
         && STD=\$(ls $P/$T/include/c++/$version/bits/std.cc) && test -s \$STD \
         && $T-g++ -std=c++23 -fmodules -fsearch-include-path -c bits/std.cc -o std.o \
-        && $T-g++ -std=c++23 -fmodules t.cpp std.o -static -o t.exe \
+        && $T-g++ -std=c++23 -fmodules t.cpp std.o -static -lstdc++exp -o t.exe \
         && export WINEPREFIX=/w/wine WINEDEBUG=-all && timeout 600 wine t.exe > /w/cxx.out" \
       || { for f in prereq binutils headers configure make crt winpthreads install; do
                [[ -f "$work/$f.log" ]] && { log "--- $f.log"; tail -40 "$work/$f.log" >&2; }; done; die "mingw-cross-gcc build failed"; }
