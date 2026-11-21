@@ -149,6 +149,24 @@ def lua_string(body: str, key: str) -> str | None:
     return match.group(1) if match else None
 
 
+def entry_url(body: str) -> str | None:
+    """The upstream URL of a version entry.
+
+    An entry spells it as a string, or as a region map
+    `url = { GLOBAL = "...", CN = "..." }` once a mirror carries it (xpackage
+    v2). The mirror is materialized from GLOBAL, the upstream bytes; reading
+    only the string form failed every pnpm release since 7.33.7 gained a CN URL
+    ("URL/template missing", runs 35108801349, 39872912661, 44882411917)."""
+    url = lua_string(body, "url")
+    if url:
+        return url
+    match = re.search(r"\burl\s*=\s*\{([^{}]*)\}", body)
+    if not match:
+        return None
+    regions = dict(re.findall(r"\b([A-Za-z][A-Za-z0-9_]*)\s*=\s*\"([^\"]+)\"", match.group(1)))
+    return regions.get("GLOBAL")
+
+
 def source_templates(body: str) -> dict[str, str] | None:
     match = re.search(r"\bsource\s*=\s*\{((?:[^{}]|\$\{[^{}]*\})*)\}", body)
     if not match:
@@ -337,7 +355,7 @@ def materialize(args: argparse.Namespace) -> int:
         if not version_block:
             return fail(f"{platform}: version {version} block missing")
         body = platform_body[version_block[0]:version_block[1]]
-        url = lua_string(body, "url")
+        url = entry_url(body)
         source_match = re.search(r'\bsource\s*=\s*"([^"]+)"', platform_body)
         if not source_match:
             source_match = re.search(r'\bsource\s*=\s*"([^"]+)"', xpm_body)

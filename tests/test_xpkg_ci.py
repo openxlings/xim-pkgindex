@@ -356,3 +356,54 @@ def test_arch_alias_template_counts_as_arch_parameterized():
         ["x86_64", "aarch64"], template, {"x86_64": "x64"})
     assert error is None
     assert arches == ["x86_64", "aarch64"]
+
+
+def test_entry_url_reads_the_string_and_the_region_map():
+    assert mod.entry_url('["1.0"] = { url = "https://u/a.tgz", sha256 = "x" },') == "https://u/a.tgz"
+    mirrored = ('["1.0"] = {\n    url = {\n        GLOBAL = "https://github.com/o/r/releases/download/v1.0/a.tgz",\n'
+                '        CN = "https://gitcode.com/xlings-res/r/releases/download/1.0/a.tgz",\n    },\n'
+                '    sha256 = "x",\n},')
+    assert mod.entry_url(mirrored) == "https://github.com/o/r/releases/download/v1.0/a.tgz"
+    assert mod.entry_url('["1.0"] = { url = { CN = "https://gitcode.com/a.tgz" } },') is None
+    assert mod.entry_url('["1.0"] = { sha256 = "x" },') is None
+
+
+def test_materialize_takes_global_from_a_mirrored_latest():
+    """pnpm's latest carries `url = { GLOBAL, CN }`; the mirror job failed
+    "linux: URL/template missing" on every pnpm release that had one."""
+    import io
+    import zipfile
+
+    tgz = io.BytesIO()
+    with tarfile.open(fileobj=tgz, mode="w:gz") as archive:
+        info = tarfile.TarInfo("pnpm"); info.size = 1
+        archive.addfile(info, io.BytesIO(b"x"))
+    zipped = io.BytesIO()
+    with zipfile.ZipFile(zipped, "w") as archive:
+        archive.writestr("pnpm.exe", b"x")
+    seen = []
+
+    class Body(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+    def urlopen(request, timeout=None):
+        seen.append(request.full_url)
+        return Body((zipped if request.full_url.endswith(".zip") else tgz).getvalue())
+
+    orig = mod.urllib.request.urlopen
+    try:
+        mod.urllib.request.urlopen = urlopen
+        with tempfile.TemporaryDirectory() as d:
+            args = type("A", (), {"workspace": str(ROOT), "package": "pnpm",
+                                  "version": None, "output": d})()
+            assert mod.materialize(args) == 0
+            manifest = json.loads((Path(d) / "manifest.json").read_text(encoding="utf-8"))
+    finally:
+        mod.urllib.request.urlopen = orig
+    assert {a["os"] for a in manifest["assets"]} == {"linux", "macosx", "windows"}
+    assert all(url.startswith("https://github.com/pnpm/pnpm/releases/download/v") for url in seen), seen
+    assert all(f"/v{manifest['version']}/" in url for url in seen), seen
