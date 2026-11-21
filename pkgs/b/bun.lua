@@ -47,10 +47,10 @@ package = {
         linux = {
             -- Keep Node for the immutable 1.3.11 npm-backed package. Newer
             -- releases install directly from the native upstream archive.
-            deps = {
-                runtime = {"xim:glibc@>=2.39"},
-                build = {"xim:node"},
-            },
+            -- Do not declare a managed glibc runtime here: elfpatch rewrites
+            -- Bun's upstream ELF loader/RPATH, and the ARM64 binary then
+            -- segfaults. The pristine upstream binary runs with host glibc.
+            deps = {build = {"xim:node"}},
             ["latest"] = {ref = "1.4.5"},
             ["1.4.5"] = {
                 x86_64 = {

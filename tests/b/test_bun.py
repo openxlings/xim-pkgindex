@@ -1,6 +1,5 @@
 """Tests for the native Bun release package."""
 import re
-import subprocess
 
 import pytest
 from tests.lib.xpkg_parser import parse_xpkg
@@ -60,61 +59,6 @@ AUTUPDATE_URLS = {
         "aarch64": "https://github.com/oven-sh/bun/releases/download/${tag}/bun-windows-aarch64.zip",
     },
 }
-
-
-def _assert_bun_output(cmd, contains):
-    try:
-        assert_command_output(cmd, contains=contains)
-    except AssertionError as error:
-        arm_asset_url = ASSET_URLS["linux"]["aarch64"]
-        script = rf'''set +e
-echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
-echo "bun command: $(command -v bun)"
-type -a bun
-home="${{XLINGS_HOME:-$HOME/.xlings}}"
-candidate="$(find "$home/data/xpkgs" -type f -path "*/{VERSION}/bun" -print -quit)"
-echo "candidate executable: $candidate"
-if [ -n "$candidate" ]; then
-  runtime_loader="$home/abi/linux-aarch64-glibc/ld-linux-aarch64.so.1"
-  host_loader="/lib/ld-linux-aarch64.so.1"
-  file "$candidate"
-  readelf -lW "$candidate" | grep -E 'interpreter|Requesting program interpreter'
-  readelf -dW "$candidate" | grep -E 'NEEDED|RPATH|RUNPATH'
-  file "$runtime_loader" "$host_loader"
-  "$runtime_loader" --version; echo "xlings_loader_exit=$?"
-  "$host_loader" --version; echo "host_loader_exit=$?"
-  ldd "$candidate"
-  "$candidate" --version; echo "inherited_env_exit=$?"
-  env -u LD_LIBRARY_PATH "$candidate" --version; echo "clean_env_exit=$?"
-  host_copy="$(mktemp -d)/bun"
-  cp "$candidate" "$host_copy"
-  patchelf --set-interpreter "$host_loader" --remove-rpath "$host_copy"
-  env -u LD_LIBRARY_PATH "$host_copy" --version; echo "host_runtime_exit=$?"
-fi
-if [ "$(uname -m)" = "aarch64" ]; then
-  original="/tmp/bun-1.4.5-linux-aarch64-original"
-  archive="/tmp/bun-1.4.5-linux-aarch64-original.zip"
-  if [ ! -s "$original" ]; then
-    curl -fsSL "{arm_asset_url}" -o "$archive"
-    unzip -p "$archive" bun > "$original"
-    chmod +x "$original"
-  fi
-  sha256sum "$archive"
-  file "$original"
-  env -u LD_LIBRARY_PATH "$original" --version; echo "upstream_unpatched_exit=$?"
-fi
-bun --version; echo "shim_inherited_env_exit=$?"
-env -u LD_LIBRARY_PATH bun --version; echo "shim_clean_env_exit=$?"
-'''
-        diagnostics = subprocess.run(
-            ["bash", "-l", "-c", script],
-            capture_output=True, text=True, timeout=30,
-        )
-        pytest.fail(
-            f"{error}\nBun runtime diagnostics:\n"
-            f"{diagnostics.stdout}{diagnostics.stderr}",
-            pytrace=False,
-        )
 
 
 @pytest.fixture(scope="module")
@@ -190,6 +134,8 @@ class TestStatic:
         assert 'local extracted = pkginfo.install_file():replace(".zip", "")' in content
         assert 'pkginfo.version() == "1.3.11"' in content
         assert '"xim:node"' in content
+        linux_section = _platform_section(content, "linux")
+        assert not re.search(r"(?m)^\s+runtime\s*=", linux_section)
 
     @pytest.mark.static
     def test_autoupdate_tracks_all_release_assets(self, meta):
@@ -247,12 +193,12 @@ class TestVerify:
     @pytest.mark.verify
     @skip_if_not("linux")
     def test_bun_version(self):
-        _assert_bun_output("bun --version", contains=VERSION)
+        assert_command_output("bun --version", contains=VERSION)
 
     @pytest.mark.verify
     @skip_if_not("linux")
     def test_bun_runs_javascript(self):
-        _assert_bun_output("bun -e 'console.log(6 * 7)'", contains="42")
+        assert_command_output("bun -e 'console.log(6 * 7)'", contains="42")
 
     @pytest.mark.verify
     @skip_if_not("linux")
