@@ -43,6 +43,8 @@ Actions artifact. Generated audit snapshots do not belong in the PR.
 
 When a PR backfills an older major release under an existing default, CI verifies
 its explicit resource URLs and SHA-256 values and schedules native installation.
+A PR that only backfills older major releases may also fix installation hooks
+under review. Published versions, the default, and protected metadata remain guarded.
 Forward updates still use the declared source and resource templates.
 
 `latest = "advance"` and each resource target's `required = true` are defaults.

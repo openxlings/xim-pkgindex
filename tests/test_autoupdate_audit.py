@@ -318,6 +318,20 @@ def test_a_recipe_a_bot_writes_keeps_the_automatic_rules(index):
         module.guard(base)
 
 
+@pytest.mark.parametrize('also_advances', [False, True])
+def test_only_historical_backfill_can_also_fix_install_hook(index, also_advances):
+    additions = '["0.9.0"] = { url = "https://example.com/foo-0.9.0", sha256 = "' + 'b' * 64 + '" },\n'
+    if also_advances:
+        additions += '["1.1.0"] = { url = "https://example.com/foo-1.1.0.zip", sha256 = "' + 'c' * 64 + '" },\n'
+    after = RECIPE.replace('["latest"]', additions + '["latest"]') + '\nfunction install() return true end\n'
+    module, base = _guarded(index, RECIPE, after)
+    if also_advances:
+        with pytest.raises(module.Invalid, match='must not change runtime hooks'):
+            module.guard(base)
+    else:
+        assert module.guard(base)['status'] == 'preserved'
+
+
 def test_candidate_verification_receives_the_installed_version(index, monkeypatch):
     """A clean candidate home contains only the new version, never the old pin."""
     import json

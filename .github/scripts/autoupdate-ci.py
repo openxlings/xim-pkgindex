@@ -144,13 +144,12 @@ def candidates(base):
     return {'include': jobs}
 
 
-def verify_added_versions(info, before, github):
-    """按各自的资源地址校验旧主版本补录，按更新模板校验其余新增版本。"""
-    old = parse(before).fields['xpm'].fields
+def split_backfills(info, old):
+    """分离更早的主版本，供 PR 校验各自的资源和安装行为。"""
     latest = xim.latest_refs(info)
     previous_refs = [old[p].fields.get('latest') for p in latest if p in old]
     if len(previous_refs) != len(latest) or any(ref is None for ref in previous_refs):
-        return xim.verify_candidates(info, before, github)
+        return info, {}
     previous_major = min(version_key(ref.fields['ref'].string())[1][0] for ref in previous_refs)
     history = {}
     platforms = {}
@@ -163,7 +162,23 @@ def verify_added_versions(info, before, github):
                 del entries[version]
         platforms[platform] = {**data, 'entries': entries}
 
-    reports = xim.verify_candidates({**info, 'platforms': platforms}, before, github)
+    return {**info, 'platforms': platforms}, history
+
+
+def backfill_baseline(info, before, old, history):
+    """纯历史补录可随 PR 审查修正安装钩子，同时保留索引元数据的校验。"""
+    if history and all(data['entries'].keys() <= old[p].fields.keys()
+                       for p, data in info['platforms'].items()):
+        after = info['text']
+        return before[:parse(before).end] + after[parse(after).end:]
+    return before
+
+
+def verify_added_versions(info, before, github):
+    """按显式资源地址校验历史补录，按更新模板校验其余新增版本。"""
+    old = parse(before).fields['xpm'].fields
+    forward, history = split_backfills(info, old)
+    reports = xim.verify_candidates(forward, backfill_baseline(forward, before, old, history), github)
     matrix = xim.matrix(info)
     for version, entries in sorted(history.items(), key=lambda item: version_key(item[0])):
         if not xim.platform_divergent(info) and entries.keys() != matrix.keys():
@@ -288,12 +303,7 @@ def declares_autoupdate(text):
 
 
 def guard(base):
-    """A pull request's recipes against its base. Published versions are kept in
-    every recipe. What an automatic update may change -- latest only by its
-    advance policy, no dependency, metadata or hook -- is checked where one may
-    run: a recipe declaring extensions.autoupdate. One nobody's bot writes (a
-    hand-kept edition, a package xlings' release writes: tests/test_release_owned.py)
-    moves its latest and its hooks by review."""
+    """保护已发布版本，并按版本变更类型应用自动更新或人工补录规则。"""
     files = git('ls-tree', '-r', '--name-only', base, '--', 'pkgs').splitlines()
     changed = []
     for filename in files:
@@ -308,7 +318,10 @@ def guard(base):
             continue
         try:
             if declares_autoupdate(after):
-                xim.guard(before, after)
+                info = xim.package_info(path, ROOT)
+                old = parse(before).fields['xpm'].fields
+                forward, history = split_backfills(info, old)
+                xim.guard(backfill_baseline(forward, before, old, history), after)
             else:
                 assert_preserved(before, after)
         except Invalid as e:

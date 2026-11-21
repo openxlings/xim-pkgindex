@@ -317,15 +317,15 @@ function config()
     -- build that is SUPPOSED to be patched, and is left alone.
     if not os.isdir(path.join(dir, "dist")) then
         local prog = path.join(dir, exe)
-        local out = try { function() return os.iorun('"' .. prog .. '" --version') end }
+        local cmd = '"' .. prog .. '" --version'
+        if is_host("windows") then
+            -- cmd /c 消耗最外层引号，内部引号继续保护可执行文件路径
+            cmd = '""' .. prog:gsub("/", "\\") .. '" --version"'
+        end
+        local out = try { function() return os.iorun(cmd) end }
         local reported = tostring(out or ""):gsub("%s+", "")
-        -- A broken `pkg` binary fails on stderr and prints nothing, so an empty
-        -- answer is the shape this guard exists to catch -- name that rather
-        -- than reporting it as a mismatch against the empty string.
         if reported == "" then
-            raise("pnpm: " .. prog .. " printed no version -- the payload was modified "
-                  .. "after staging. A `pkg` single-file executable does not survive having "
-                  .. "its ELF rewritten; see the version table in this recipe.")
+            raise("pnpm: " .. prog .. " --version produced no output")
         end
         if reported ~= pkginfo.version() then
             raise("pnpm: " .. prog .. " reports version " .. reported
