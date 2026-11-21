@@ -28,7 +28,17 @@ package = {
     xvm_enable = true,
     xpm = {
         linux = {
-            ["latest"] = { ref = "0.11.1" },
+            ["latest"] = { ref = "0.11.2" },
+            ["0.11.2"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpp-community/mtest/releases/download/v0.11.2/mtest-0.11.2-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mtest/releases/download/v0.11.2/mtest-0.11.2-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    ["aarch64"] = "88144bacd76ff3af3957b29560e55af813906db2f682f8cefae1869a2be74de9",
+                    ["x86_64"] = "88144bacd76ff3af3957b29560e55af813906db2f682f8cefae1869a2be74de9",
+                },
+            },
             ["0.11.1"] = {
                 url = {
                     GLOBAL = "https://github.com/mcpp-community/mtest/releases/download/v0.11.1/mtest-0.11.1-openkal-bundle-all.tar.gz",
@@ -201,7 +211,17 @@ package = {
             },
         },
         macosx = {
-            ["latest"] = { ref = "0.11.1" },
+            ["latest"] = { ref = "0.11.2" },
+            ["0.11.2"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpp-community/mtest/releases/download/v0.11.2/mtest-0.11.2-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mtest/releases/download/v0.11.2/mtest-0.11.2-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    ["aarch64"] = "88144bacd76ff3af3957b29560e55af813906db2f682f8cefae1869a2be74de9",
+                    ["x86_64"] = "88144bacd76ff3af3957b29560e55af813906db2f682f8cefae1869a2be74de9",
+                },
+            },
             ["0.11.1"] = {
                 url = {
                     GLOBAL = "https://github.com/mcpp-community/mtest/releases/download/v0.11.1/mtest-0.11.1-openkal-bundle-all.tar.gz",
@@ -365,7 +385,17 @@ package = {
             },
         },
         windows = {
-            ["latest"] = { ref = "0.11.1" },
+            ["latest"] = { ref = "0.11.2" },
+            ["0.11.2"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpp-community/mtest/releases/download/v0.11.2/mtest-0.11.2-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/mtest/releases/download/v0.11.2/mtest-0.11.2-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    ["aarch64"] = "88144bacd76ff3af3957b29560e55af813906db2f682f8cefae1869a2be74de9",
+                    ["x86_64"] = "88144bacd76ff3af3957b29560e55af813906db2f682f8cefae1869a2be74de9",
+                },
+            },
             ["0.11.1"] = {
                 url = {
                     GLOBAL = "https://github.com/mcpp-community/mtest/releases/download/v0.11.1/mtest-0.11.1-openkal-bundle-all.tar.gz",

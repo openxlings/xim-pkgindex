@@ -36,12 +36,12 @@
   },
   {
     "what": "gcc",
-    "version": "16.2.0",
+    "version": "16.2.0-r1",
     "arch": "x86_64"
   },
   {
     "what": "gcc",
-    "version": "16.2.0",
+    "version": "16.2.0-r1",
     "arch": "aarch64"
   },
   {
@@ -58,6 +58,46 @@
     "what": "binutils",
     "version": "2.42",
     "arch": "aarch64"
+  },
+  {
+    "what": "binutils",
+    "version": "2.47",
+    "arch": "x86_64"
+  },
+  {
+    "what": "binutils",
+    "version": "2.47",
+    "arch": "aarch64"
+  },
+  {
+    "what": "linux-headers",
+    "version": "6.18.64",
+    "arch": "x86_64"
+  },
+  {
+    "what": "linux-headers",
+    "version": "6.18.64",
+    "arch": "aarch64"
+  },
+  {
+    "what": "patchelf",
+    "version": "0.19.3",
+    "arch": "x86_64"
+  },
+  {
+    "what": "patchelf",
+    "version": "0.19.3",
+    "arch": "aarch64"
+  },
+  {
+    "what": "mingw-gcc",
+    "version": "16.2.0",
+    "arch": "x86_64"
+  },
+  {
+    "what": "mingw-cross-gcc",
+    "version": "16.2.0",
+    "arch": "x86_64"
   },
   {
     "what": "bash",

@@ -46,7 +46,14 @@
 #   openssl       openssl on glibc, lib64
 #   binutils      binutils on glibc
 #   gcc           gcc on glibc, configured as x86_64's (fromsource:gcc),
-#                 against a sysroot xlings makes (glibc + linux-headers)
+#                 against a sysroot xlings makes (glibc) with the declared
+#                 linux-headers, the declared binutils first on PATH
+#   linux-headers the kernel's UAPI headers (make headers_install)
+#   mingw-cross-gcc a Linux-hosted GCC for x86_64-w64-mingw32 (MSVCRT)
+#
+# Repacked, no build:
+#   patchelf      NixOS/patchelf's static release binary, under one directory
+#   mingw-gcc     winlibs' MinGW-w64 GCC for Windows, its directory renamed
 #
 # Data, the same on every architecture (built once, <name>-<version>.tar.gz):
 #   terminfo        the terminal descriptions (ncurses' terminfo.src, compiled)
@@ -54,6 +61,10 @@
 #   luban-fonts     the fonts the Luban OS window ships with
 #   android-ndk-libcxx-modules  an NDK release's libc++ module sources, for its Windows archive
 #   sample-music    luban:sample-music, a piece to play (the Open Goldberg Variations' Aria, CC0)
+#
+# Carved from an upstream release (no build):
+#   llvm          a release (23.1.6): the slim toolchain for Linux of this
+#                 architecture and, on x86_64, Windows x86_64
 #
 # Corrective revisions of a published archive, derived from the archive of the
 # revision before (revision.py; no build):
@@ -884,44 +895,144 @@ i586-pc-msdosdjgpp-gcc)
             || die "$file holds a hard link"
     done ;;
 llvm)
-    # The llvm payload for Windows x86_64 at a corrective revision: the archive
-    # of the revision before, its directory renamed, with ld.lld.exe,
-    # ld64.lld.exe and wasm-ld.exe added -- the files of these names in
-    # upstream's release, each the program the archive already ships as
-    # lld-link.exe (checked here, byte for byte). clang's driver links an ELF
-    # target with ld.lld, Mach-O with ld64.lld and WebAssembly with wasm-ld,
-    # looking beside itself first and then on PATH; the archive carried none of
-    # them, so a link for x86_64-freebsd on a Windows host ran the ld.lld of the
-    # host's PATH, which reads no zlib-compressed section (mcpp-platforms run
-    # 44123489011), while the archive's own lld reads zlib and zstd.
-    upstream="${version%%-r*}"
-    case "$version" in
-        23.1.3-r4) from=23.1.3-r3 ;;
-        *) die "llvm: no derivation recorded for $version" ;;
-    esac
-    command -v zstd >/dev/null || die "llvm: no zstd to read upstream's .tar.zst"
-    d="llvm-$version-windows-x86_64"
-    up="clang+llvm-$upstream-x86_64-pc-windows-msvc"
-    source_of llvm-windows-x86_64 "$from" \
-        "https://github.com/xlings-res/llvm/releases/download/$from/llvm-$from-windows-x86_64.zip" "$work/from.zip"
-    source_of clang+llvm-x86_64-pc-windows-msvc "$upstream" \
-        "https://github.com/llvm/llvm-project/releases/download/llvmorg-$upstream/$up.tar.zst" "$work/upstream.tar.zst"
-    lld="$(python3 -I "$here/revision.py" digest "$work/from.zip" "llvm-$from-windows-x86_64/bin/lld-link.exe")"
-    # Upstream's archive is zstd with a 1 GiB window.
-    zstd -dc --long=31 "$work/upstream.tar.zst" \
-        | python3 -I "$here/revision.py" tar-digests bin/lld-link.exe bin/lld.exe bin/ld.lld.exe bin/ld64.lld.exe bin/wasm-ld.exe \
-        > "$work/upstream.sha256"
-    rm -f "$work/upstream.tar.zst"
-    while read -r sha name; do
-        [[ "$sha" == "$lld" ]] || die "upstream's $name ($sha) is not the lld-link.exe of llvm $from ($lld)"
-    done < "$work/upstream.sha256"
-    printf '%s\n' "llvm $version for Windows x86_64: the archive of llvm $from (xlings-res/llvm, sha256 $(input llvm-windows-x86_64 "$from")), its directory renamed, with bin/ld.lld.exe, bin/ld64.lld.exe and bin/wasm-ld.exe added -- the files of these names in $up.tar.zst (github.com/llvm/llvm-project, release llvmorg-$upstream, sha256 $(input clang+llvm-x86_64-pc-windows-msvc "$upstream")), each byte-identical to that release's bin/lld-link.exe and to the archive's own (sha256 $lld); no other file changed. clang's driver links an ELF target with ld.lld, Mach-O with ld64.lld and WebAssembly with wasm-ld, found beside it." \
-        > "$work/README.provenance"
-    python3 -I "$here/revision.py" zip "$work/from.zip" "$out/$d.zip" "llvm-$from-windows-x86_64" "$d" \
-        --same bin/lld-link.exe=bin/ld.lld.exe --same bin/lld-link.exe=bin/ld64.lld.exe \
-        --same bin/lld-link.exe=bin/wasm-ld.exe --add "README.provenance=$work/README.provenance" \
-        || die "llvm $version: the derived archive is not llvm $from with the lld names"
-    seal "$out/$d.zip" ;;
+    if [[ "$version" != *-r* ]]; then
+        # A release, carved from upstream's for each host this machine makes it
+        # for -- Linux of its own architecture and, on x86_64, Windows x86_64 --
+        # by .agents/tools/build-llvm-subpkg.sh (--pkg llvm: the slim toolchain of
+        # the llvm-subpackaging skill) in the pinned Debian, with patchelf 0.19.3
+        # and Debian's gcc (the libatomic beside libc++). Each archive carries
+        # what this index's revisions of 23.1.3 added to theirs:
+        #   Linux: lib/clang/<major>/lib/{x86_64,aarch64}-w64-windows-gnu/
+        #     libclang_rt.builtins.a, the MinGW-w64 sysroot's compiler-rt builtins
+        #     (23.1.3 r2): clang links a windows-gnu target with its own builtins.
+        #   Windows: bin/ld.lld.exe, bin/ld64.lld.exe and bin/wasm-ld.exe, the
+        #     files of these names in upstream's release, each lld-link.exe's bytes
+        #     (23.1.3 r4): clang's driver runs them from beside itself.
+        # A Linux archive passes verify-toolchain.sh's llvm gate (import std and
+        # std.compat, hermetic CRT) against the index's glibc and the kernel
+        # headers gcc declares before it is sealed. The carve is not
+        # byte-reproducible (directory order, the factory's libatomic), so a
+        # release is not a resource of res-build-matrix.json: the llvm payload
+        # check takes the published archives by their digests.
+        major="${version%%.*}"
+        command -v zstd >/dev/null || die "llvm: no zstd to read upstream's .tar.zst"
+        msv="$(input_version llvm-windows-gnu-builtins)"; ms="mingw-w64-sysroot-$msv"
+        source_of mingw-w64-sysroot "$msv" \
+            "https://github.com/xlings-res/mingw-w64-sysroot/releases/download/$msv/$ms.tar.xz" "$work/ms.tar.xz"
+        tar -xJf "$work/ms.tar.xz" -C "$work" "$ms/compiler-rt/lib/windows/libclang_rt.builtins-x86_64.a" \
+            "$ms/compiler-rt/lib/windows/libclang_rt.builtins-aarch64.a"
+        rm -f "$work/ms.tar.xz"
+        source_of "patchelf-$arch" 0.19.3 \
+            "https://github.com/NixOS/patchelf/releases/download/0.19.3/patchelf-0.19.3-$arch.tar.gz" "$work/patchelf.tar.gz"
+        mkdir -p "$work/patchelf" && tar -xzf "$work/patchelf.tar.gz" -C "$work/patchelf"
+        cp "$here/../../.agents/tools/build-llvm-subpkg.sh" "$here/../../.agents/tools/verify-toolchain.sh" "$work/"
+        glibc_v="$(input_version gcc-sysroot-glibc)"; headers_v="$(input_version gcc-sysroot-linux-headers)"
+        lh="linux-headers-$headers_v-linux-$arch"
+        source_of "linux-headers-linux-$arch" "$headers_v" \
+            "https://github.com/xlings-res/linux-headers/releases/download/$headers_v/$lh.tar.gz" "$work/$lh.tar.gz"
+        xl="xlings-$XLINGS_CLIENT-linux-$arch.tar.gz"
+        curl -fsSL --retry 3 -o "$work/$xl" "https://github.com/openxlings/xlings/releases/download/v$XLINGS_CLIENT/$xl"
+        curl -fsSL --retry 3 -o "$work/$xl.sha256" "https://github.com/openxlings/xlings/releases/download/v$XLINGS_CLIENT/$xl.sha256"
+        (cd "$work" && sha256sum -c "$xl.sha256" >/dev/null) || die "the xlings client does not match its digest"
+        hosts="linux-$arch"; [[ "$arch" == x86_64 ]] && hosts="linux-x86_64 windows-x86_64"
+        for host in $hosts; do
+            case "$host" in
+                linux-x86_64)   up="LLVM-$version-Linux-X64";  input_name=LLVM-Linux-X64 ;;
+                linux-aarch64)  up="LLVM-$version-Linux-ARM64"; input_name=LLVM-Linux-ARM64 ;;
+                windows-x86_64) up="clang+llvm-$version-x86_64-pc-windows-msvc"; input_name=clang+llvm-x86_64-pc-windows-msvc ;;
+            esac
+            d="llvm-$version-$host"; platform="${host%-*}"
+            source_of "$input_name" "$version" \
+                "https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/$up.tar.zst" "$work/up.tar.zst"
+            rm -rf "${work:?}/full" "${work:?}/carve" && mkdir -p "$work/full" "$work/carve"
+            # The static libraries directly under lib/ (libLLVM*, libclang*: most
+            # of the archive) are no part of the slim toolchain.
+            zstd -dc --long=31 "$work/up.tar.zst" \
+                | tar -x -C "$work/full" --no-wildcards-match-slash --exclude='*/lib/*.a' --exclude='*/lib/*.lib'
+            rm -f "$work/up.tar.zst"
+            fmt=tar.gz; [[ "$platform" == windows ]] && fmt=zip
+            debian "apt-get -qq update && apt-get -qq install -y gcc binutils zip xz-utils python3 file >/dev/null \
+                && export PATH=/w/patchelf/bin:\$PATH \
+                && bash /w/build-llvm-subpkg.sh --in /w/full --pkg llvm --version $version --platform $platform --arch ${host#*-} \
+                     --out /w/carve --formats $fmt >/w/carve.log 2>&1" \
+              || { tail -40 "$work/carve.log" >&2; die "llvm $version: the $host carve failed"; }
+            if [[ "$platform" == windows ]]; then
+                top="$(dirname "$(find "$work/full" -mindepth 2 -maxdepth 2 -type d -name bin | head -1)")"
+                for name in ld.lld.exe ld64.lld.exe wasm-ld.exe; do
+                    cmp -s "$top/bin/$name" "$top/bin/lld-link.exe" \
+                        || die "upstream's bin/$name is not its bin/lld-link.exe"
+                done
+                printf '%s\n' "llvm $version for Windows x86_64: carved from $up.tar.zst (github.com/llvm/llvm-project, release llvmorg-$version, sha256 $(input "$input_name" "$version")) by .agents/tools/build-llvm-subpkg.sh --pkg llvm, with bin/ld.lld.exe, bin/ld64.lld.exe and bin/wasm-ld.exe added: the files of these names in that release, each byte-identical to its bin/lld-link.exe. clang's driver links an ELF target with ld.lld, Mach-O with ld64.lld and WebAssembly with wasm-ld, found beside it." \
+                    > "$work/README.provenance"
+                python3 -I "$here/revision.py" zip "$work/carve/$d.zip" "$out/$d.zip" "$d" "$d" \
+                    --same bin/lld-link.exe=bin/ld.lld.exe --same bin/lld-link.exe=bin/ld64.lld.exe \
+                    --same bin/lld-link.exe=bin/wasm-ld.exe --add "README.provenance=$work/README.provenance" \
+                    || die "llvm $version: the Windows archive is not the carve with the lld names"
+                seal "$out/$d.zip"
+            else
+                rm -rf "${work:?}/$d" && tar -xzf "$work/carve/$d.tar.gz" -C "$work"
+                for t in x86_64 aarch64; do
+                    mkdir -p "$work/$d/lib/clang/$major/lib/$t-w64-windows-gnu"
+                    cp "$work/$ms/compiler-rt/lib/windows/libclang_rt.builtins-$t.a" \
+                        "$work/$d/lib/clang/$major/lib/$t-w64-windows-gnu/libclang_rt.builtins.a"
+                done
+                provenance "$d" "llvm $version for Linux $arch: carved from $up.tar.zst (github.com/llvm/llvm-project, release llvmorg-$version, sha256 $(input "$input_name" "$version")) by .agents/tools/build-llvm-subpkg.sh --pkg llvm in Debian 12 (libatomic: LIBATOMIC-PROVENANCE.txt); lib/clang/$major/lib/{x86_64,aarch64}-w64-windows-gnu/libclang_rt.builtins.a: compiler-rt/lib/windows/libclang_rt.builtins-{x86_64,aarch64}.a of mingw-w64-sysroot $msv (xlings-res/mingw-w64-sysroot, sha256 $(input mingw-w64-sysroot "$msv")); verify-toolchain.sh's llvm gate passed against xim:glibc@$glibc_v and linux-headers $headers_v"
+                pack "$d"
+                cp "$out/$d.tar.gz" "$work/verify.tar.gz"
+                debian "apt-get -qq update && apt-get -qq install -y gcc file curl ca-certificates xz-utils libxml2 >/dev/null \
+                    && export PATH=/w/patchelf/bin:\$PATH && tar -xzf /w/$lh.tar.gz -C /w \
+                    && mkdir -p /w/xl && tar -xzf /w/$xl -C /w/xl && export XLINGS_HOME=/w/xh \
+                    && (cd /w/xl/*/ && ./bin/xlings self install </dev/null >/w/xlings-install.log 2>&1) \
+                    && /w/xh/bin/xlings install -y glibc@$glibc_v </dev/null >/w/sysroot.log 2>&1 \
+                    && L=\$(ls /w/xh/data/xpkgs/xim-x-glibc/$glibc_v/lib*/ld-linux-*.so.* | head -1) \
+                    && bash /w/verify-toolchain.sh /w/verify.tar.gz --loader \$L --linux-headers /w/$lh/include >/w/verify.log 2>&1" \
+                  || { tail -60 "$work/verify.log" "$work/sysroot.log" >&2 2>/dev/null; rm -f "$out/$d.tar.gz" "$out/$d.tar.gz.sha256"; die "llvm $version: $d does not pass verify-toolchain.sh"; }
+                grep -q '^llvm gate: PASS' "$work/verify.log" && grep -q '^PASS: compiled & ran' "$work/verify.log" \
+                    || { cat "$work/verify.log" >&2; rm -f "$out/$d.tar.gz" "$out/$d.tar.gz.sha256"; die "llvm $version: verify-toolchain.sh did not pass $d"; }
+                rm -rf "${work:?}/$d" "$work/verify.tar.gz"
+            fi
+            rm -rf "${work:?}/full" "${work:?}/carve"
+        done
+    else
+        # The llvm payload for Windows x86_64 at a corrective revision: the archive
+        # of the revision before, its directory renamed, with ld.lld.exe,
+        # ld64.lld.exe and wasm-ld.exe added -- the files of these names in
+        # upstream's release, each the program the archive already ships as
+        # lld-link.exe (checked here, byte for byte). clang's driver links an ELF
+        # target with ld.lld, Mach-O with ld64.lld and WebAssembly with wasm-ld,
+        # looking beside itself first and then on PATH; the archive carried none of
+        # them, so a link for x86_64-freebsd on a Windows host ran the ld.lld of the
+        # host's PATH, which reads no zlib-compressed section (mcpp-platforms run
+        # 44123489011), while the archive's own lld reads zlib and zstd.
+        upstream="${version%%-r*}"
+        case "$version" in
+            23.1.3-r4) from=23.1.3-r3 ;;
+            *) die "llvm: no derivation recorded for $version" ;;
+        esac
+        command -v zstd >/dev/null || die "llvm: no zstd to read upstream's .tar.zst"
+        d="llvm-$version-windows-x86_64"
+        up="clang+llvm-$upstream-x86_64-pc-windows-msvc"
+        source_of llvm-windows-x86_64 "$from" \
+            "https://github.com/xlings-res/llvm/releases/download/$from/llvm-$from-windows-x86_64.zip" "$work/from.zip"
+        source_of clang+llvm-x86_64-pc-windows-msvc "$upstream" \
+            "https://github.com/llvm/llvm-project/releases/download/llvmorg-$upstream/$up.tar.zst" "$work/upstream.tar.zst"
+        lld="$(python3 -I "$here/revision.py" digest "$work/from.zip" "llvm-$from-windows-x86_64/bin/lld-link.exe")"
+        # Upstream's archive is zstd with a 1 GiB window.
+        zstd -dc --long=31 "$work/upstream.tar.zst" \
+            | python3 -I "$here/revision.py" tar-digests bin/lld-link.exe bin/lld.exe bin/ld.lld.exe bin/ld64.lld.exe bin/wasm-ld.exe \
+            > "$work/upstream.sha256"
+        rm -f "$work/upstream.tar.zst"
+        while read -r sha name; do
+            [[ "$sha" == "$lld" ]] || die "upstream's $name ($sha) is not the lld-link.exe of llvm $from ($lld)"
+        done < "$work/upstream.sha256"
+        printf '%s\n' "llvm $version for Windows x86_64: the archive of llvm $from (xlings-res/llvm, sha256 $(input llvm-windows-x86_64 "$from")), its directory renamed, with bin/ld.lld.exe, bin/ld64.lld.exe and bin/wasm-ld.exe added -- the files of these names in $up.tar.zst (github.com/llvm/llvm-project, release llvmorg-$upstream, sha256 $(input clang+llvm-x86_64-pc-windows-msvc "$upstream")), each byte-identical to that release's bin/lld-link.exe and to the archive's own (sha256 $lld); no other file changed. clang's driver links an ELF target with ld.lld, Mach-O with ld64.lld and WebAssembly with wasm-ld, found beside it." \
+            > "$work/README.provenance"
+        python3 -I "$here/revision.py" zip "$work/from.zip" "$out/$d.zip" "llvm-$from-windows-x86_64" "$d" \
+            --same bin/lld-link.exe=bin/ld.lld.exe --same bin/lld-link.exe=bin/ld64.lld.exe \
+            --same bin/lld-link.exe=bin/wasm-ld.exe --add "README.provenance=$work/README.provenance" \
+            || die "llvm $version: the derived archive is not llvm $from with the lld names"
+        seal "$out/$d.zip"
+    fi ;;
 x86_64-freebsd-sysroot|aarch64-freebsd-sysroot)
     # A FreeBSD base at a corrective revision: the archive of an earlier
     # revision, its directory renamed, every file that archive's. 14.5-r3 is
@@ -976,7 +1087,7 @@ bash|coreutils|openssl|binutils)
     [[ -n "$GLIBC_ELFS" ]] || die "$what: no dynamically linked ELF in the payload"
     case "$what" in
         openssl)  glibc_only libssl.so.3 libcrypto.so.3 ;;
-        binutils) glibc_only libbfd-$v.so libopcodes-$v.so libctf.so.0 libctf-nobfd.so.0 libsframe.so.1 libz.so.1 libstdc++.so.6 libgcc_s.so.1 ;;
+        binutils) glibc_only libbfd-$v.so libopcodes-$v.so libctf.so.0 libctf-nobfd.so.0 libsframe.so.1 libsframe.so.3 libz.so.1 libstdc++.so.6 libgcc_s.so.1 ;;
         *)        glibc_only ;;
     esac
     case "$what" in
@@ -990,37 +1101,60 @@ bash|coreutils|openssl|binutils)
 gcc)
     # As x86_64's (fromsource:gcc): a prebuilt compiler builds the new one
     # with the same configure, against a sysroot xlings itself makes from the
-    # index (glibc + linux-headers). The stage-0 compiler is the pinned
-    # factory's; what ships is gcc built by it, verified below.
+    # index (glibc) and the kernel headers the recipe declares. The stage-0
+    # compiler is the pinned factory's; what ships is gcc built by it,
+    # verified below.
+    # The assembler and linker are the index's binutils payload, named to
+    # configure as the target's tools (<TOOL>_FOR_TARGET; without them it
+    # prefers the factory's <triple>-as over an `as` on PATH) and first on
+    # PATH: GCC's configure decides from them which assembler and linker
+    # features the compiler emits, so a payload is built against the binutils
+    # its recipe declares and runs with that one or a newer one (mcpp design
+    # 2026-11-21 §3.5). The driver bakes in no path: it finds `as` and `ld`
+    # where it always did. Both payloads are named in inputs.txt
+    # (gcc-binutils, gcc-sysroot-linux-headers) by the digests the recipes
+    # name.
     # A RELEASE (16.2.0) is GNU's signed tarball; A TRUNK SNAPSHOT is written
     # `<major>.0.0-<YYYYMMDD>` (17.0.0-20261108), which is what the snapshot's
     # compiler reports of itself (`17.0.0 20261108 (experimental)`) and sorts
     # below the major's first release (17.1.0). Upstream signs no snapshot: its
     # digest in inputs.txt is the one measured when it was added.
-    if [[ "$version" =~ ^([0-9]+)\.0\.0-([0-9]{8})$ ]]; then
+    # <release>-r<N> is this index's Nth rebuild of the release (16.2.0-r1).
+    upstream="${version%%-r[0-9]*}"
+    if [[ "$upstream" =~ ^([0-9]+)\.0\.0-([0-9]{8})$ ]]; then
         src="gcc-${BASH_REMATCH[1]}-${BASH_REMATCH[2]}"
         url="https://gcc.gnu.org/pub/gcc/snapshots/${BASH_REMATCH[1]}-${BASH_REMATCH[2]}/$src.tar.xz"
-        reports="${version%-*} ${version#*-}"
+        reports="${upstream%-*} ${upstream#*-}"
     else
-        src="gcc-$version"
-        url="https://ftpmirror.gnu.org/gnu/gcc/gcc-$version/gcc-$version.tar.xz"
-        reports="$version"
+        src="gcc-$upstream"
+        url="https://ftpmirror.gnu.org/gnu/gcc/gcc-$upstream/gcc-$upstream.tar.xz"
+        reports="$upstream"
     fi
-    source_of gcc "$version" "$url" "$work/gcc.tar.xz"
+    source_of gcc "$upstream" "$url" "$work/gcc.tar.xz"
     xl="xlings-$XLINGS_CLIENT-linux-$arch.tar.gz"
     curl -fsSL --retry 3 -o "$work/$xl" "https://github.com/openxlings/xlings/releases/download/v$XLINGS_CLIENT/$xl"
     curl -fsSL --retry 3 -o "$work/$xl.sha256" "https://github.com/openxlings/xlings/releases/download/v$XLINGS_CLIENT/$xl.sha256"
     (cd "$work" && sha256sum -c "$xl.sha256" >/dev/null) || die "the xlings client does not match its digest"
-    glibc_v="$(awk '$1 == "gcc-sysroot-glibc" { print $2 }' "$here/inputs.txt")"
-    headers_v="$(awk '$1 == "gcc-sysroot-linux-headers" { print $2 }' "$here/inputs.txt")"
+    glibc_v="$(input_version gcc-sysroot-glibc)"
+    headers_v="$(input_version gcc-sysroot-linux-headers)"
+    binutils_v="$(input_version gcc-binutils)"
+    bu="binutils-$binutils_v-linux-$arch"; lh="linux-headers-$headers_v-linux-$arch"
+    source_of "binutils-linux-$arch" "$binutils_v" \
+        "https://github.com/xlings-res/binutils/releases/download/$binutils_v/$bu.tar.gz" "$work/$bu.tar.gz"
+    source_of "linux-headers-linux-$arch" "$headers_v" \
+        "https://github.com/xlings-res/linux-headers/releases/download/$headers_v/$lh.tar.gz" "$work/$lh.tar.gz"
     d="gcc-$version-linux-$arch"
     triple="$arch-linux-gnu"
     debian "apt-get -qq update && apt-get -qq install -y build-essential flex bison texinfo xz-utils bzip2 curl wget ca-certificates file python3 >/dev/null \
+        && tar -xzf $bu.tar.gz -C /w && tar -xzf $lh.tar.gz -C /w && export PATH=/w/$bu/bin:\$PATH \
+        && as --version | head -1 | grep -qF ' $binutils_v' && ld --version | head -1 | grep -qF ' $binutils_v' \
+        && for t in as ld ar nm ranlib objcopy objdump readelf strip; do T=\$(echo \$t | tr a-z A-Z); export \${T}_FOR_TARGET=/w/$bu/bin/\$t; done \
         && mkdir -p /w/xl && tar -xzf $xl -C /w/xl && export XLINGS_HOME=/w/xh \
         && (cd /w/xl/*/ && ./bin/xlings self install </dev/null >/w/xlings-install.log 2>&1) \
-        && /w/xh/bin/xlings install -y glibc@$glibc_v linux-headers@$headers_v </dev/null >/w/sysroot.log 2>&1 \
+        && /w/xh/bin/xlings install -y glibc@$glibc_v </dev/null >/w/sysroot.log 2>&1 \
         && S=\$(dirname \$(dirname \$(ls /w/xh/subos/*/lib/crt1.o | head -1))) && echo \$S > /w/sysroot \
-        && test -f \$S/usr/include/stdio.h && test -d \$S/usr/include/linux \
+        && cp -R /w/$lh/include/. \$S/usr/include/ \
+        && test -f \$S/usr/include/stdio.h && test -f \$S/usr/include/linux/limits.h \
         && { [ -e \$S/lib64 ] || ln -s lib \$S/lib64; } && mkdir -p \$S/usr \
         && { [ -e \$S/usr/lib ] || ln -s ../lib \$S/usr/lib; } && { [ -e \$S/usr/lib64 ] || ln -s ../lib \$S/usr/lib64; } \
         && tar -xJf gcc.tar.xz && cd $src \
@@ -1033,6 +1167,7 @@ gcc)
              --disable-werror --disable-lto --enable-threads=posix \
              --build=$triple --host=$triple --target=$triple --enable-libsanitizer >/w/configure.log 2>&1 \
         && make -j\$(nproc) >/w/make.log 2>&1 && make install-strip >/w/install.log 2>&1 \
+        && grep -qF /w/$bu/bin/as /w/build/gcc/as && grep -qF /w/$bu/bin/ld /w/build/gcc/collect-ld \
         && cd /w && printf '#include <stdio.h>\nint main(void){puts(\"c ok\");return 0;}\n' > t.c \
         && printf 'import std;\nint main(){ std::println(\"c++23 ok {}\", std::ranges::fold_left(std::views::iota(1,5), 0, std::plus{})); }\n' > t.cpp \
         && L=\$(ls \$S/lib/ld-linux-*.so.* | head -1) \
@@ -1047,7 +1182,121 @@ gcc)
     [[ -d "$work/$d/lib64" && -f "$work/$d/lib64/libstdc++.so.6" ]] || die "no lib64/libstdc++.so.6"
     GLIBC_ELFS="$(find "$work/$d/bin" "$work/$d/libexec" -type f -exec sh -c 'file -b "$1" | grep -q "^ELF.*dynamically linked" && echo "$1"' _ {} \;)"
     glibc_only libstdc++.so.6 libgcc_s.so.1 libzstd.so.1 libz.so.1
-    provenance "$d" "gcc $version (${url%%/gcc-*}, sha256 $(input gcc "$version")) configured as fromsource:gcc (c,c++; no multilib, no bootstrap, no LTO; libsanitizer), $triple, against a sysroot of xim:glibc@$glibc_v + xim:linux-headers@$headers_v made by xlings $XLINGS_CLIENT; stage 0 is Debian 12's gcc; a C program and a C++23 program using import std built and ran"
+    provenance "$d" "gcc $upstream (${url%%/gcc-*}, sha256 $(input gcc "$upstream")) configured as fromsource:gcc (c,c++; no multilib, no bootstrap, no LTO; libsanitizer), $triple, against a sysroot of xim:glibc@$glibc_v made by xlings $XLINGS_CLIENT and the kernel headers of linux-headers $headers_v (xlings-res/linux-headers, sha256 $(input "linux-headers-linux-$arch" "$headers_v")); assembler and linker: binutils $binutils_v (xlings-res/binutils, sha256 $(input "binutils-linux-$arch" "$binutils_v")), first on PATH while gcc was configured and built; stage 0 is Debian 12's gcc; a C program and a C++23 program using import std built and ran"
+    pack "$d" ;;
+linux-headers)
+    # The kernel's UAPI headers of a kernel.org release for this architecture
+    # (`make headers_install`): what the C library and a program include as
+    # <linux/...> and <asm/...>, and what gcc's sysroot is built with. The
+    # digest is kernel.org's sha256sums.asc, as kernel-virt reads it.
+    sums="$work/sha256sums.asc"
+    curl -fsSL --retry 3 -o "$sums" "https://cdn.kernel.org/pub/linux/kernel/v${version%%.*}.x/sha256sums.asc"
+    sha="$(grep " linux-$version.tar.xz\$" "$sums" | cut -d' ' -f1)"
+    [[ -n "$sha" ]] || die "kernel.org lists no linux-$version.tar.xz"
+    fetch "https://cdn.kernel.org/pub/linux/kernel/v${version%%.*}.x/linux-$version.tar.xz" "$sha" "$work/linux.tar.xz"
+    karch=x86; [[ "$arch" == aarch64 ]] && karch=arm64
+    d="linux-headers-$version-linux-$arch"
+    debian "apt-get -qq update && apt-get -qq install -y build-essential rsync xz-utils >/dev/null \
+        && tar -xJf linux.tar.xz && make -s -C linux-$version ARCH=$karch headers_install INSTALL_HDR_PATH=/w/$d \
+        && cp linux-$version/COPYING /w/$d/LICENSE"
+    for h in linux/limits.h linux/errno.h linux/version.h asm/unistd.h asm-generic/errno.h; do
+        [[ -f "$work/$d/include/$h" ]] || die "no include/$h"
+    done
+    grep -q "^#define LINUX_VERSION_MAJOR ${version%%.*}\$" "$work/$d/include/linux/version.h" \
+        || die "linux/version.h does not name $version"
+    [[ -z "$(find "$work/$d" -name '.*' -o -name '*.cmd')" ]] || die "build state left in the headers"
+    provenance "$d" "the UAPI headers of linux $version (kernel.org, sha256 $sha): make ARCH=$karch headers_install, in Debian 12"
+    pack "$d" ;;
+patchelf)
+    # NixOS/patchelf's release binary for this architecture (static-pie) and
+    # its share/, byte for byte, under one top directory: upstream's archive
+    # extracts flat (./bin, ./share), and the index's install convention is
+    # patchelf-<version>-linux-<arch>/. No build.
+    source_of "patchelf-$arch" "$version" \
+        "https://github.com/NixOS/patchelf/releases/download/$version/patchelf-$version-$arch.tar.gz" "$work/in.tar.gz"
+    d="patchelf-$version-linux-$arch"
+    mkdir -p "$work/$d" && tar -xzf "$work/in.tar.gz" -C "$work/$d"
+    [[ -x "$work/$d/bin/patchelf" ]] || die "no bin/patchelf"
+    static_only "$work/$d/bin/patchelf"
+    [[ "$("$work/$d/bin/patchelf" --version)" == "patchelf $version" ]] || die "patchelf does not report $version"
+    provenance "$d" "patchelf $version: the files of patchelf-$version-$arch.tar.gz (github.com/NixOS/patchelf, release $version, sha256 $(input "patchelf-$arch" "$version")), unchanged, under patchelf-$version-linux-$arch/"
+    pack "$d" ;;
+mingw-gcc)
+    # winlibs' standalone MinGW-w64 GCC for Windows x86_64 (POSIX threads,
+    # SEH, UCRT, without LLVM), its top directory mingw64/ renamed to
+    # mingw-gcc-<version>-windows-x86_64/ (revision.py: every entry's
+    # compressed bytes unchanged). No build. The release named is winlibs'
+    # newest build of the GCC release.
+    case "$version" in
+        16.2.0) release=16.2.0posix-23.1.3-14.0.0-ucrt-r3; zip=winlibs-x86_64-posix-seh-gcc-16.2.0-mingw-w64ucrt-14.0.0-r3.zip ;;
+        *) die "mingw-gcc: no winlibs release recorded for $version" ;;
+    esac
+    d="mingw-gcc-$version-windows-x86_64"
+    source_of winlibs-x86_64-posix-seh-ucrt "$version" \
+        "https://github.com/brechtsanders/winlibs_mingw/releases/download/$release/$zip" "$work/in.zip"
+    printf '%s\n' "MinGW-w64 GCC $version for Windows x86_64: $zip (github.com/brechtsanders/winlibs_mingw, release $release, sha256 $(input winlibs-x86_64-posix-seh-ucrt "$version")), its top directory mingw64/ renamed to $d/; no other file changed." \
+        > "$work/README.provenance"
+    python3 -I "$here/revision.py" zip "$work/in.zip" "$out/$d.zip" mingw64 "$d" \
+        --add "README.provenance=$work/README.provenance" \
+        || die "mingw-gcc $version: the archive is not winlibs' renamed"
+    seal "$out/$d.zip" ;;
+mingw-cross-gcc)
+    # A Linux-hosted GCC for x86_64-w64-mingw32 (Windows PE, the MSVCRT
+    # runtime), built as mingw-cross-gcc 16.1.0 was (mcpp
+    # .agents/docs/2026-07-15-mingw-linux-cross-windows-design.md §4.2):
+    # binutils for the target, the mingw-w64 headers, GCC's compilers, the
+    # mingw-w64 CRT (--with-default-msvcrt=msvcrt) and winpthreads, then the
+    # rest of GCC (libstdc++, with bits/std.cc). The sysroot is the prefix,
+    # so the payload is relocatable; `mingw` is the relative link GCC's
+    # native header directory (/mingw/include) reads through. Self-contained:
+    # its own binutils, CRT and libstdc++. Checked: a C++23 program using
+    # `import std`, linked -static, runs under wine (std::print's Windows
+    # console functions are in libstdc++exp, as libstdc++ documents).
+    [[ "$arch" == x86_64 ]] || die "mingw-cross-gcc: a Linux x86_64 host's"
+    binutils_v="$(input_version gcc-binutils)"; mingw_v="$(input_version mingw-w64)"
+    source_of gcc "$version" "https://ftpmirror.gnu.org/gnu/gcc/gcc-$version/gcc-$version.tar.xz" "$work/gcc.tar.xz"
+    source_of binutils "$binutils_v" "https://ftpmirror.gnu.org/gnu/binutils/binutils-$binutils_v.tar.xz" "$work/binutils.tar.xz"
+    source_of mingw-w64 "$mingw_v" \
+        "https://downloads.sourceforge.net/project/mingw-w64/mingw-w64/mingw-w64-release/mingw-w64-v$mingw_v.tar.bz2" "$work/mingw-w64.tar.bz2"
+    d="mingw-cross-gcc-$version-linux-x86_64"; T=x86_64-w64-mingw32; P="/w/$d"
+    debian "apt-get -qq update && apt-get -qq install -y build-essential flex bison texinfo xz-utils bzip2 curl wget ca-certificates file python3 wine wine64 >/dev/null \
+        && tar -xJf binutils.tar.xz && tar -xjf mingw-w64.tar.bz2 && tar -xJf gcc.tar.xz \
+        && (cd gcc-$version && sed -i 's/--no-verbose/ /; s#ftp://gcc.gnu.org#https://gcc.gnu.org#' contrib/download_prerequisites \
+            && ./contrib/download_prerequisites >/w/prereq.log 2>&1) \
+        && export PATH=$P/bin:\$PATH MAKEINFO=true \
+        && mkdir /w/b-binutils && cd /w/b-binutils \
+        && /w/binutils-$binutils_v/configure --with-pkgversion=xlings-fromsource --prefix=$P --target=$T --with-sysroot=$P \
+             --disable-multilib --disable-nls --disable-werror >/w/binutils.log 2>&1 \
+        && make -j\$(nproc) >>/w/binutils.log 2>&1 && make install-strip >>/w/binutils.log 2>&1 \
+        && mkdir /w/b-headers && cd /w/b-headers \
+        && /w/mingw-w64-v$mingw_v/mingw-w64-headers/configure --host=$T --prefix=$P/$T --with-default-msvcrt=msvcrt >/w/headers.log 2>&1 \
+        && make install >>/w/headers.log 2>&1 && ln -s $T $P/mingw \
+        && mkdir /w/b-gcc && cd /w/b-gcc \
+        && /w/gcc-$version/configure --with-pkgversion=xlings-fromsource --prefix=$P --target=$T --with-sysroot=$P \
+             --enable-languages=c,c++ --enable-threads=posix --disable-multilib --disable-nls --disable-werror >/w/configure.log 2>&1 \
+        && make -j\$(nproc) all-gcc >/w/make.log 2>&1 && make install-strip-gcc >/w/install.log 2>&1 \
+        && mkdir /w/b-crt && cd /w/b-crt \
+        && /w/mingw-w64-v$mingw_v/mingw-w64-crt/configure --host=$T --prefix=$P/$T --with-sysroot=$P \
+             --with-default-msvcrt=msvcrt --enable-lib64 --disable-lib32 >/w/crt.log 2>&1 \
+        && make -j\$(nproc) >>/w/crt.log 2>&1 && make install >>/w/crt.log 2>&1 \
+        && mkdir /w/b-winpthreads && cd /w/b-winpthreads \
+        && /w/mingw-w64-v$mingw_v/mingw-w64-libraries/winpthreads/configure --host=$T --prefix=$P/$T >/w/winpthreads.log 2>&1 \
+        && make -j\$(nproc) >>/w/winpthreads.log 2>&1 && make install >>/w/winpthreads.log 2>&1 \
+        && cd /w/b-gcc && make -j\$(nproc) >>/w/make.log 2>&1 && make install-strip >>/w/install.log 2>&1 \
+        && rm -rf $P/share/info $P/share/man $P/share/doc && rm -f $P/bin/$T-lto-dump \
+        && cd /w && printf 'import std;\nint main(){ std::println(\"c++23 ok {}\", std::ranges::fold_left(std::views::iota(1,5), 0, std::plus{})); }\n' > t.cpp \
+        && STD=\$(ls $P/$T/include/c++/$version/bits/std.cc) && test -s \$STD \
+        && $T-g++ -std=c++23 -fmodules -fsearch-include-path -c bits/std.cc -o std.o \
+        && $T-g++ -std=c++23 -fmodules t.cpp std.o -static -lstdc++exp -o t.exe \
+        && export WINEPREFIX=/tmp/wine WINEDEBUG=-all WINEDLLOVERRIDES=mscoree,mshtml= && timeout 600 wine t.exe > /w/cxx.out" \
+      || { for f in prereq binutils headers configure make crt winpthreads install; do
+               [[ -f "$work/$f.log" ]] && { log "--- $f.log"; tail -40 "$work/$f.log" >&2; }; done; die "mingw-cross-gcc build failed"; }
+    grep -q "c++23 ok 10" "$work/cxx.out" || die "the C++23 check did not print what it should under wine"
+    "$work/$d/bin/$T-gcc" --version | head -1 | grep -qF "$version" || die "$T-gcc does not report $version"
+    [[ "$(readlink "$work/$d/mingw")" == "$T" ]] || die "mingw is not the relative link to $T"
+    GLIBC_ELFS="$(find "$work/$d/bin" "$work/$d/libexec" "$work/$d/$T/bin" -type f -exec sh -c 'file -b "$1" | grep -q "^ELF.*dynamically linked" && echo "$1"' _ {} \;)"
+    glibc_only libstdc++.so.6 libgcc_s.so.1 libzstd.so.1 libz.so.1
+    provenance "$d" "gcc $version (sha256 $(input gcc "$version")), binutils $binutils_v (sha256 $(input binutils "$binutils_v")) and mingw-w64 v$mingw_v (sha256 $(input mingw-w64 "$mingw_v")): a Linux x86_64 host's compiler for $T, the MSVCRT runtime (--with-default-msvcrt=msvcrt), POSIX threads (winpthreads), c and c++, the sysroot its prefix; built in Debian 12; a C++23 program using import std, linked -static, ran under wine"
     pack "$d" ;;
 labwc-desktop)
     # The traditional Luban desktop (xlings: Luban OS architecture design

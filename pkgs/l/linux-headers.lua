@@ -20,6 +20,25 @@ package = {
     xpm = {
         linux = {
             ["latest"] = { ref = "5.11.1" },
+            ["6.18.64"] = {
+                -- The UAPI headers of the 6.18 longterm release
+                -- (make headers_install), built on each architecture by
+                -- tools/res/build.sh linux-headers.
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/linux-headers/releases/download/6.18.64/linux-headers-6.18.64-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/linux-headers/releases/download/6.18.64/linux-headers-6.18.64-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "1fd036428760dffe306a020513d4e00adbbb0b3bc25dc3c25cf4737f1bfd4701",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/linux-headers/releases/download/6.18.64/linux-headers-6.18.64-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/linux-headers/releases/download/6.18.64/linux-headers-6.18.64-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "283bb8f2cbb84ffabbb3361f02e42c361d623f97a1cfd60e67e425de3d2a997b",
+                },
+            },
             -- Self-contained PREBUILT kernel headers, mirror-aware.
             --
             -- Previously this was a thin delegator that depended on

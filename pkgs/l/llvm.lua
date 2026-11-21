@@ -2,6 +2,12 @@ package = {
     spec = "1",
     homepage = "https://llvm.org",
 
+    -- Platform version sets differ ON PURPOSE: macOS does not carry 23.1.6.
+    -- Every payload of this recipe is carved from upstream's release for its
+    -- host, and llvm-project's llvmorg-23.1.6 release publishes no macOS
+    -- binary; macOS keeps 23.1.3 until one exists.
+    platform_versions_diverge = true,
+
     name = "llvm",
     description = "LLVM compiler infrastructure and toolchain",
     maintainers = {"LLVM Project"},
@@ -21,6 +27,9 @@ package = {
         autoupdate = {
             source = "https://github.com/xlings-res/llvm/releases",
             verify = "sha256-sidecar",
+            -- A version reaches each platform when upstream's release has
+            -- its binary (llvmorg-23.1.6 has none for macOS).
+            divergence = "platform",
             resources = {
                 GLOBAL = {
                     required = true,
@@ -142,6 +151,26 @@ package = {
                     sha256 = "14e3ff7785a0862f92411a43fc552ad9333ce700a92030fef696a4dfef703ec4",
                 },
             },
+            ["23.1.6"] = {
+                -- Carved from upstream's release by tools/res/build.sh
+                -- (`llvm 23.1.6`), with the MinGW-w64 sysroot's windows-gnu
+                -- builtins that 23.1.3 revision 2 added; the llvm gate of
+                -- .agents/tools/verify-toolchain.sh passed on each.
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.6/llvm-23.1.6-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.6/llvm-23.1.6-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "77babef27e18e3efadb3261489e63832fc2d393ce77368c542a406d2836401f4",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.6/llvm-23.1.6-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.6/llvm-23.1.6-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "4c01ad73f71de070b6dd91d1d5dc1d3d29924e5fc844af918675f2c7d88c7818",
+                },
+            },
         },
         -- macOS ships a slim, self-contained toolchain carved from the upstream
         -- full release (the 1.4GB upstream monolith is no longer mirrored):
@@ -220,6 +249,16 @@ package = {
                     CN     = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3-r4/llvm-23.1.3-r4-windows-x86_64.zip",
                 },
                 sha256 = "b811d386a32920f1a382e69275b1a387f902d1a13e0be8314fd0de39b324188f",
+            },
+            ["23.1.6"] = {
+                -- Carved from upstream's release by tools/res/build.sh
+                -- (`llvm 23.1.6`), with bin/ld.lld.exe, bin/ld64.lld.exe and
+                -- bin/wasm-ld.exe as 23.1.3 revision 4 added them.
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.6/llvm-23.1.6-windows-x86_64.zip",
+                    CN     = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.6/llvm-23.1.6-windows-x86_64.zip",
+                },
+                sha256 = "348ea65f4e24e2e6ac0989ec8e13f27a2580d8ee3b001b900ec0a99003803736",
             },
         },
     },

@@ -50,6 +50,28 @@ package = {
                 build = { "xim:patchelf@0.18.0" },
             },
             ["latest"] = { ref = "2.42.1" },
+            ["2.47"] = {
+                -- GNU's signed release, built on each architecture by
+                -- tools/res/build.sh binutils (Debian 12, glibc), without
+                -- hard links. The release tarball is a development build
+                -- (bfd/development.sh), so the tools report 2.47.20260726.
+                -- No gold: from 2.44 GNU ships it only in a separate
+                -- binutils-with-gold tarball, and none exists for 2.47.
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/binutils/releases/download/2.47/binutils-2.47-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/binutils/releases/download/2.47/binutils-2.47-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "76678811e3f80c9c8fcb7c668d1554428a52e2cbb4345155a82edf2f994c823a",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/binutils/releases/download/2.47/binutils-2.47-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/binutils/releases/download/2.47/binutils-2.47-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "10b848d1857c5b2709e286d4df3aa1bad1b5cf1a416f5138af5ec768fe034947",
+                },
+            },
             -- SAME ARTIFACT, NEW KEY. The bytes are identical to 2.42 -- the
             -- sha256 below is the 2.42 tarball's -- and the only thing that
             -- changed is this recipe's config(), which now installs the `ld`
