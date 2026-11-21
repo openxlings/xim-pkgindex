@@ -19,22 +19,31 @@ PREVIOUS_VERSION = "1.3.11"
 
 UPSTREAM = {
     "linux": {
-        "x86_64": ("x64-baseline", "dcb23a18a1c2fff12d57bcef696dbbb42eb67fde29f43816ecb595459a24c463"),
-        "aarch64": ("aarch64", "18656a3bf0ea5641f5796ae4213b75255579a70a0fded2f337933785568cdf84"),
+        "x86_64": "dcb23a18a1c2fff12d57bcef696dbbb42eb67fde29f43816ecb595459a24c463",
+        "aarch64": "18656a3bf0ea5641f5796ae4213b75255579a70a0fded2f337933785568cdf84",
     },
     "macosx": {
-        "x86_64": ("x64-baseline", "fb0121739a7e80e7511b6bfe4d2116422b48ba18a013acadef0c425348e95891"),
-        "aarch64": ("aarch64", "b5d6bc2e13caf14e57c89661e89efd073ff16165b41bfe43882616410609cd10"),
+        "x86_64": "fb0121739a7e80e7511b6bfe4d2116422b48ba18a013acadef0c425348e95891",
+        "aarch64": "b5d6bc2e13caf14e57c89661e89efd073ff16165b41bfe43882616410609cd10",
     },
     "windows": {
-        "x86_64": ("x64-baseline", "3c081c73865e7a3453a9d514cc2ba3d699880621bcf67bb17241ff5194cb1d4b"),
-        "aarch64": ("aarch64", "41f57d49c3c6811888d9633c569e40b4eb1f7e92b5e5336e3abd3af03187d77a"),
+        "x86_64": "3c081c73865e7a3453a9d514cc2ba3d699880621bcf67bb17241ff5194cb1d4b",
+        "aarch64": "41f57d49c3c6811888d9633c569e40b4eb1f7e92b5e5336e3abd3af03187d77a",
     },
 }
-SOURCES = {
-    "linux": "https://github.com/oven-sh/bun/releases/download/bun-v${version}/bun-linux-${arch_alias}.zip",
-    "macosx": "https://github.com/oven-sh/bun/releases/download/bun-v${version}/bun-darwin-${arch_alias}.zip",
-    "windows": "https://github.com/oven-sh/bun/releases/download/bun-v${version}/bun-windows-${arch_alias}.zip",
+ASSET_URLS = {
+    "linux": {
+        "x86_64": "https://github.com/oven-sh/bun/releases/download/bun-v${version}/bun-linux-x64-baseline.zip",
+        "aarch64": "https://github.com/oven-sh/bun/releases/download/bun-v${version}/bun-linux-aarch64.zip",
+    },
+    "macosx": {
+        "x86_64": "https://github.com/oven-sh/bun/releases/download/bun-v${version}/bun-darwin-x64-baseline.zip",
+        "aarch64": "https://github.com/oven-sh/bun/releases/download/bun-v${version}/bun-darwin-aarch64.zip",
+    },
+    "windows": {
+        "x86_64": "https://github.com/oven-sh/bun/releases/download/bun-v${version}/bun-windows-x64-baseline.zip",
+        "aarch64": "https://github.com/oven-sh/bun/releases/download/bun-v${version}/bun-windows-aarch64.zip",
+    },
 }
 AUTUPDATE_URLS = {
     "linux": {
@@ -55,12 +64,6 @@ AUTUPDATE_URLS = {
 @pytest.fixture(scope="module")
 def meta():
     return parse_xpkg(PKG_FILE)
-
-
-def _lua_map(section, field):
-    match = re.search(rf"{field}\s*=\s*\{{([^}}]*)\}}", section, re.S)
-    assert match, f"{field} table missing"
-    return dict(re.findall(r'(\w+)\s*=\s*"([^"]+)"', match.group(1)))
 
 
 def _platform_section(content, platform):
@@ -98,25 +101,39 @@ class TestStatic:
 
         for platform, expected in UPSTREAM.items():
             section = _platform_section(meta.raw_content, platform)
-            source = re.search(r'source\s*=\s*"([^"]+)"', section)
-            assert source and source.group(1) == SOURCES[platform]
             assert f'["latest"] = {{ref = "{VERSION}"}}' in section
             assert f'["{VERSION}"] = {{' in section
-            assert f'["{PREVIOUS_VERSION}"] = {{' in section
-            assert _lua_map(section, "arch_alias") == {
-                arch: pair[0] for arch, pair in expected.items()
-            }
-            digests = _lua_map(section, "sha256")
-            assert digests == {arch: pair[1] for arch, pair in expected.items()}
-            assert all(re.fullmatch(r"[0-9a-f]{64}", value) for value in digests.values())
+            previous = re.search(
+                rf'\["{PREVIOUS_VERSION}"\]\s*=\s*\{{\s*ref\s*=\s*"{PREVIOUS_VERSION}"\s*\}}',
+                section,
+            )
+            assert previous, f"published {PREVIOUS_VERSION} entry changed for {platform}"
+
+            version_start = section.index(f'["{VERSION}"] = {{')
+            previous_start = section.index(f'["{PREVIOUS_VERSION}"] = {{', version_start)
+            version_entry = section[version_start:previous_start]
+            for arch, digest in expected.items():
+                arch_entry = re.search(
+                    rf"(?ms)^\s+{arch}\s*=\s*\{{(.*?)^\s+\}}", version_entry
+                )
+                assert arch_entry, f"missing {VERSION} resource for {platform}/{arch}"
+                resource = arch_entry.group(1)
+                assert re.search(
+                    rf'url\s*=\s*"{re.escape(ASSET_URLS[platform][arch])}"', resource
+                )
+                hash_value = re.search(r'sha256\s*=\s*"([^"]+)"', resource)
+                assert hash_value and hash_value.group(1) == digest
+                assert re.fullmatch(r"[0-9a-f]{64}", digest)
 
     @pytest.mark.static
-    def test_install_uses_upstream_zip_without_npm_or_node(self, meta):
+    def test_latest_install_uses_native_release_and_preserves_legacy_path(self, meta):
         content = meta.raw_content
         assert "https://github.com/oven-sh/bun/releases/download/bun-v${version}/" in content
-        assert '"xim:node"' not in content
-        assert "npm install" not in content
-        assert "node_modules" not in content
+        assert 'if version == "1.3.11" then' in content
+        assert 'npm install --prefix' in content
+        assert 'local extracted = pkginfo.install_file():replace(".zip", "")' in content
+        assert 'pkginfo.version() == "1.3.11"' in content
+        assert '"xim:node"' in content
 
     @pytest.mark.static
     def test_autoupdate_tracks_all_release_assets(self, meta):
