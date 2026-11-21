@@ -74,12 +74,21 @@ home="${{XLINGS_HOME:-$HOME/.xlings}}"
 candidate="$(find "$home/data/xpkgs" -type f -path "*/{VERSION}/bun" -print -quit)"
 echo "candidate executable: $candidate"
 if [ -n "$candidate" ]; then
+  runtime_loader="$home/abi/linux-aarch64-glibc/ld-linux-aarch64.so.1"
+  host_loader="/lib/ld-linux-aarch64.so.1"
   file "$candidate"
   readelf -lW "$candidate" | grep -E 'interpreter|Requesting program interpreter'
   readelf -dW "$candidate" | grep -E 'NEEDED|RPATH|RUNPATH'
+  file "$runtime_loader" "$host_loader"
+  "$runtime_loader" --version; echo "xlings_loader_exit=$?"
+  "$host_loader" --version; echo "host_loader_exit=$?"
   ldd "$candidate"
   "$candidate" --version; echo "inherited_env_exit=$?"
   env -u LD_LIBRARY_PATH "$candidate" --version; echo "clean_env_exit=$?"
+  host_copy="$(mktemp -d)/bun"
+  cp "$candidate" "$host_copy"
+  patchelf --set-interpreter "$host_loader" --remove-rpath "$host_copy"
+  env -u LD_LIBRARY_PATH "$host_copy" --version; echo "host_runtime_exit=$?"
 fi
 bun --version; echo "shim_inherited_env_exit=$?"
 env -u LD_LIBRARY_PATH bun --version; echo "shim_clean_env_exit=$?"
