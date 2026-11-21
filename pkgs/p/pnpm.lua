@@ -319,8 +319,8 @@ function config()
         local prog = path.join(dir, exe)
         local cmd = '"' .. prog .. '" --version'
         if is_host("windows") then
-            -- cmd /c 消耗最外层引号，内部引号继续保护可执行文件路径
-            cmd = '""' .. prog:gsub("/", "\\") .. '" --version"'
+            -- call 保留带空格的路径，让 os.iorun 的重定向留在命令参数之外
+            cmd = 'call "' .. prog:gsub("/", "\\") .. '" --version'
         end
         local out = try { function() return os.iorun(cmd) end }
         local reported = tostring(out or ""):gsub("%s+", "")
