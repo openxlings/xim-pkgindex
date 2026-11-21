@@ -1,0 +1,6 @@
+x86_64 https://github.com/xlings-res/gcc/releases/download/16.2.0-r1/gcc-16.2.0-r1-linux-x86_64.tar.gz 4ec32c79be6a25f815d83d1d9247495035d64519ed6502afc741ab11ba03118d
+aarch64 https://github.com/xlings-res/gcc/releases/download/16.2.0-r1/gcc-16.2.0-r1-linux-aarch64.tar.gz 0628e9266275dcb8615de4301ba7099a2e30db15ad7fc97b4db9a714122af115
+x86_64 https://github.com/xlings-res/musl-gcc/releases/download/16.2.0/musl-gcc-16.2.0-linux-x86_64.tar.gz ae24c48af92105dd26867fd2195de358d3a335759aaf9772a7514723bb15657f
+aarch64 https://github.com/xlings-res/musl-gcc/releases/download/16.2.0/musl-gcc-16.2.0-linux-aarch64.tar.gz e9692cc3353553db50fa00a767af600ae30dfd1c9c3a95c822c932be4d422a94
+x86_64 https://github.com/xlings-res/llvm/releases/download/23.1.6/llvm-23.1.6-linux-x86_64.tar.gz 77babef27e18e3efadb3261489e63832fc2d393ce77368c542a406d2836401f4
+aarch64 https://github.com/xlings-res/llvm/releases/download/23.1.6/llvm-23.1.6-linux-aarch64.tar.gz 4c01ad73f71de070b6dd91d1d5dc1d3d29924e5fc844af918675f2c7d88c7818

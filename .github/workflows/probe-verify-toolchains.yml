@@ -1,0 +1,90 @@
+name: probe verify toolchains
+# Throwaway: runs .agents/tools/verify-toolchain.sh on published toolchain
+# payloads on their own architecture, against the index's glibc (2.44.3) and
+# the linux-headers 6.18.64 payload. Never merged.
+on:
+  push:
+    branches: ['probe/verify-toolchains-2026-11-21']
+permissions:
+  contents: read
+jobs:
+  verify:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { arch: x86_64,  runner: ubuntu-24.04 }
+          - { arch: aarch64, runner: ubuntu-24.04-arm }
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: The managed glibc, kernel headers and patchelf
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          W="$RUNNER_TEMP/w"; mkdir -p "$W"; cd "$W"
+          get() { curl -fsSL --retry 3 -o "$2" "$1"; echo "$3  $2" | sha256sum -c -; }
+          case "$ARCH" in
+            x86_64)  pe=1bfa6d97c93d640415ea8efa381be465c48ec8ddb93e30db3dba310b05ebcdca; lh=1fd036428760dffe306a020513d4e00adbbb0b3bc25dc3c25cf4737f1bfd4701 ;;
+            aarch64) pe=6b8b5bcf29b4b5eac67797f71620a05f0b44707a0323c5e8af6d416118ae2e37; lh=283bb8f2cbb84ffabbb3361f02e42c361d623f97a1cfd60e67e425de3d2a997b ;;
+          esac
+          get "https://github.com/xlings-res/patchelf/releases/download/0.19.3/patchelf-0.19.3-linux-$ARCH.tar.gz" pe.tgz "$pe"
+          get "https://github.com/xlings-res/linux-headers/releases/download/6.18.64/linux-headers-6.18.64-linux-$ARCH.tar.gz" lh.tgz "$lh"
+          tar -xzf pe.tgz && tar -xzf lh.tgz
+          echo "$W/patchelf-0.19.3-linux-$ARCH/bin" >> "$GITHUB_PATH"
+          xl="xlings-2026.10.11.2-linux-$ARCH.tar.gz"
+          curl -fsSL --retry 3 -o "$xl" "https://github.com/openxlings/xlings/releases/download/v2026.10.11.2/$xl"
+          curl -fsSL --retry 3 -o "$xl.sha256" "https://github.com/openxlings/xlings/releases/download/v2026.10.11.2/$xl.sha256"
+          sha256sum -c "$xl.sha256"
+          mkdir xl && tar -xzf "$xl" -C xl
+          export XLINGS_HOME="$W/xh" XLINGS_NON_INTERACTIVE=1
+          (cd xl/*/ && ./bin/xlings self install </dev/null)
+          "$W/xh/bin/xlings" install -y glibc@2.44.3 </dev/null
+          S=$(dirname "$(dirname "$(ls "$W"/xh/subos/*/lib/crt1.o | head -1)")")
+          cp -R "$W/linux-headers-6.18.64-linux-$ARCH/include/." "$S/usr/include/"
+          test -f "$S/usr/include/stdio.h" && test -f "$S/usr/include/linux/limits.h"
+          L=$(ls "$W"/xh/data/xpkgs/xim-x-glibc/2.44.3/lib*/ld-linux-*.so.* | head -1)
+          { echo "SYSROOT=$S"; echo "LOADER=$L"; echo "HEADERS=$W/linux-headers-6.18.64-linux-$ARCH/include"; } >> "$GITHUB_ENV"
+      - name: verify-toolchain.sh on each payload
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          set -uo pipefail
+          status=0
+          while read -r arch url sha; do
+            [ "$arch" = "$ARCH" ] || continue
+            f="$RUNNER_TEMP/$(basename "$url")"
+            curl -fsSL --retry 3 -o "$f" "$url"
+            echo "$sha  $f" | sha256sum -c - || { status=1; continue; }
+            echo "::group::$(basename "$url")"
+            VERIFY_SYSROOT="$SYSROOT" bash .agents/tools/verify-toolchain.sh "$f" --loader "$LOADER" --linux-headers "$HEADERS"
+            rc=$?
+            echo "::endgroup::"
+            echo "$(basename "$url"): exit $rc"
+            echo "| $(basename "$url") | $rc |" >> "$GITHUB_STEP_SUMMARY"
+            [ "$rc" = 0 ] || status=1
+            rm -f "$f"
+          done < .github/probe-verify.tsv
+          exit $status
+  mingw-gcc:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: winlibs GCC 16.2.0 compiles, links and runs a C++23 program using import std
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          curl -fsSL --retry 3 -o m.zip https://github.com/xlings-res/mingw-gcc/releases/download/16.2.0/mingw-gcc-16.2.0-windows-x86_64.zip
+          echo "a041ba410b339a85cd4958acbf57de903f93be043b74e565971a30765f921c88  m.zip" | sha256sum -c -
+          7z x -y m.zip >/dev/null
+          G="$PWD/mingw-gcc-16.2.0-windows-x86_64/bin"
+          export PATH="$G:$PATH"
+          g++ --version | head -1
+          printf 'import std;\nint main(){ std::println("c++23 ok {}", std::ranges::fold_left(std::views::iota(1,5), 0, std::plus{})); }\n' > t.cpp
+          g++ -std=c++23 -fmodules -fsearch-include-path -c bits/std.cc -o std.o
+          g++ -std=c++23 -fmodules t.cpp std.o -static -lstdc++exp -o t.exe
+          ./t.exe | tee out.txt
+          grep -q "c++23 ok 10" out.txt
