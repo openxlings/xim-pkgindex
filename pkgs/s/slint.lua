@@ -10,6 +10,17 @@
 -- the C runtime only — X11, Wayland and GL are dlopen()ed — so on Linux the
 -- payload declares xim:fontconfig, and selfcontain.seal writes its RUNPATH.
 --
+-- The libraries libslint_cpp dlopen()s are runtime dependencies as well: the
+-- seal writes DT_RUNPATH from the declared runtime dependencies, and glibc
+-- searches a dlopen() issued by an object that has DT_RUNPATH in that
+-- DT_RUNPATH, LD_LIBRARY_PATH and the system directories only -- never in the
+-- DT_RPATH of the program that loaded it. Undeclared, they were found in no
+-- program built against this payload, and a program failed at start on a
+-- machine with a display (mcpp design 2026-11-21 §3.10). Declared: X11 and
+-- X11-xcb (libX11), xcb (libxcb), Xcursor, Xrandr, Xi, xkbcommon and
+-- xkbcommon-x11 (libxkbcommon), Wayland client, cursor and EGL (wayland),
+-- EGL and GL (libglvnd).
+--
 -- Linux is x86_64 only: xim:fontconfig (and the freetype/expat under it) has
 -- no aarch64 payload, and an aarch64 slint would link a host fontconfig the
 -- recipe cannot name. A linux-aarch64 row follows an aarch64 xim:fontconfig.
@@ -35,12 +46,19 @@ package = {
     keywords = {"slint", "gui", "ui"},
     xpm = {
         linux = {
-            deps = { "xim:fontconfig@2.15.0.1", "xim:gcc-runtime@15.1.0", "xim:glibc" },
+            deps = {
+                "xim:fontconfig@2.15.0.1", "xim:gcc-runtime@15.1.0", "xim:glibc",
+                "xim:libX11", "xim:libxcb", "xim:libXcursor", "xim:libXrandr", "xim:libXi",
+                "xim:libxkbcommon", "xim:wayland", "xim:libglvnd",
+            },
             exports = {
                 runtime = { libdirs = { "lib" } },
             },
             ["latest"] = { ref = "1.19.0" },
             ["1.19.0"] = {
+                -- 1: the archive unchanged; the seal's DT_RUNPATH now reaches
+                -- the libraries libslint_cpp dlopen()s (the deps above).
+                revision = 1,
                 x86_64 = {
                     url = {
                         GLOBAL = "https://github.com/xlings-res/slint/releases/download/1.19.0/slint-1.19.0-default-linux-x86_64.tar.gz",
