@@ -59,6 +59,14 @@ package = {
                     x86_64 = "cfe6cd70eecc5c93f628ee1436545b3782a2ac17cac0fe5c4836b99185abe14f",
                 },
             },
+            ["16.2.0"] = {
+                -- winlibs 16.2.0posix-23.1.3-14.0.0-ucrt-r3, the build
+                -- without LLVM, renamed by tools/res/build.sh mingw-gcc.
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "a041ba410b339a85cd4958acbf57de903f93be043b74e565971a30765f921c88",
+                },
+            },
         },
     },
 }

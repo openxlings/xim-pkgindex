@@ -50,6 +50,15 @@ package = {
             -- gcc 16: fixes the GCC-15 module-instantiation link bug
             -- (mcpp remediation doc A2/R5b); stripped ~105MB assets.
             ["16.1.0"] = "XLINGS_RES",
+            ["16.2.0"] = {
+                -- musl-cross-make, built natively on each architecture and
+                -- stripped (xlings-res/musl-gcc build-native.yml).
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64  = "ae24c48af92105dd26867fd2195de358d3a335759aaf9772a7514723bb15657f",
+                    aarch64 = "e9692cc3353553db50fa00a767af600ae30dfd1c9c3a95c822c932be4d422a94",
+                },
+            },
             ["15.1.0"] = "XLINGS_RES", -- deps musl-gcc
             ["13.3.0"] = "XLINGS_RES",
             ["11.5.0"] = "XLINGS_RES",
