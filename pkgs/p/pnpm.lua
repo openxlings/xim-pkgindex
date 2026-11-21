@@ -18,9 +18,30 @@ package = {
     programs = { "pnpm" },
     xvm_enable = true,
 
-    -- 使用上游自带 Node.js 的发行文件，直接安装独立的 pnpm 命令
-    -- 手动根据上游 latest 标签更新默认版本。自动更新按版本号推进，
-    -- 且要求一套固定的资源模板，无法同时覆盖单文件程序和压缩包
+    -- 自动更新使用三端压缩包。7.x 至 10.x 的单文件版本在平台表中手动维护
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/pnpm/pnpm/releases",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = "https://github.com/pnpm/pnpm/releases/download/v${version}/pnpm-linux-x64.tar.gz",
+                        macosx = "https://github.com/pnpm/pnpm/releases/download/v${version}/pnpm-darwin-arm64.tar.gz",
+                        windows = "https://github.com/pnpm/pnpm/releases/download/v${version}/pnpm-win32-x64.zip",
+                    },
+                    required = true,
+                },
+                CN = {
+                    url = {
+                        linux = "https://gitcode.com/xlings-res/pnpm/releases/download/${version}/pnpm-linux-x64.tar.gz",
+                        macosx = "https://gitcode.com/xlings-res/pnpm/releases/download/${version}/pnpm-darwin-arm64.tar.gz",
+                        windows = "https://gitcode.com/xlings-res/pnpm/releases/download/${version}/pnpm-win32-x64.zip",
+                    },
+                    required = true,
+                },
+            },
+        },
+    },
 
     xpm = {
         linux = {
@@ -34,15 +55,7 @@ package = {
                 runtime = { "xim:glibc@>=2.39", "xim:gcc-runtime@15.1.0" },
             },
 
-            ["latest"] = { ref = "12.21.0" },
-            ["12.22.0"] = {
-                url = "https://registry.npmjs.org/@pnpm/exe.linux-x64/-/exe.linux-x64-12.22.0.tgz",
-                sha256 = "c0362f05e75732a8099e8aa7ec10faba7594e87ae14c768729270680d4151eae",
-            },
-            ["12.21.0"] = {
-                url = "https://registry.npmjs.org/@pnpm/exe.linux-x64/-/exe.linux-x64-12.21.0.tgz",
-                sha256 = "5e853227a4fa387a95cf6f61400a83d1fc7e3164943c00e275f8756b75939de2",
-            },
+            ["latest"] = { ref = "12.1.0" },
             ["12.1.0"] = {
                 url = {
                     GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v12.1.0/pnpm-linux-x64.tar.gz",
@@ -53,10 +66,6 @@ package = {
             ["12.0.0"] = {
                 url = "https://github.com/pnpm/pnpm/releases/download/v12.0.0/pnpm-linux-x64.tar.gz",
                 sha256 = "d93497ba07d5dfc7d527b30905fdd24f55c87618ea23ea3af287cdff061510e0",
-            },
-            ["11.28.13"] = {
-                url = "https://github.com/pnpm/pnpm/releases/download/v11.28.13/pnpm-linux-x64.tar.gz",
-                sha256 = "b1a0f00fa001fc88c9d76abca12f1eb2641d66ba599cd64cf68e7e66c8dd0a69",
             },
             ["11.12.0"] = {
                 url = {
@@ -126,15 +135,7 @@ package = {
         },
         macosx = {
 
-            ["latest"] = { ref = "12.21.0" },
-            ["12.22.0"] = {
-                url = "https://registry.npmjs.org/@pnpm/exe.darwin-arm64/-/exe.darwin-arm64-12.22.0.tgz",
-                sha256 = "07a1437593a2cf67299d5c4406c3c6c9a589337137394c36f9b477932e97a408",
-            },
-            ["12.21.0"] = {
-                url = "https://registry.npmjs.org/@pnpm/exe.darwin-arm64/-/exe.darwin-arm64-12.21.0.tgz",
-                sha256 = "bae3c72420a433a347b5f1fe1b37c3309c99c4bb72229a616d8ce026b68e0e36",
-            },
+            ["latest"] = { ref = "12.1.0" },
             ["12.1.0"] = {
                 url = {
                     GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v12.1.0/pnpm-darwin-arm64.tar.gz",
@@ -145,10 +146,6 @@ package = {
             ["12.0.0"] = {
                 url = "https://github.com/pnpm/pnpm/releases/download/v12.0.0/pnpm-darwin-arm64.tar.gz",
                 sha256 = "c31f5abe796dfc8489ea980cb438844053ad6b402bb4f3eb9abd71086279d75b",
-            },
-            ["11.28.13"] = {
-                url = "https://github.com/pnpm/pnpm/releases/download/v11.28.13/pnpm-darwin-arm64.tar.gz",
-                sha256 = "e98fd2e9ae491c0e55273b89e7a7080fc884983d8c437da8bf1c8ec754fec095",
             },
             ["11.12.0"] = {
                 url = {
@@ -185,15 +182,7 @@ package = {
         },
         windows = {
 
-            ["latest"] = { ref = "12.21.0" },
-            ["12.22.0"] = {
-                url = "https://github.com/pnpm/pnpm/releases/download/v12.22.0/pnpm-win32-x64.zip",
-                sha256 = "0a9c1bc147202089b12d91f43349f6f9ae26df191ee704dee313ba3f9a0a8ffe",
-            },
-            ["12.21.0"] = {
-                url = "https://github.com/pnpm/pnpm/releases/download/v12.21.0/pnpm-win32-x64.zip",
-                sha256 = "4fb64bb37e46c788309e0fd4ea93beb512546fdc7348121194fb704fbb72c09c",
-            },
+            ["latest"] = { ref = "12.1.0" },
             ["12.1.0"] = {
                 url = {
                     GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v12.1.0/pnpm-win32-x64.zip",
@@ -204,10 +193,6 @@ package = {
             ["12.0.0"] = {
                 url = "https://github.com/pnpm/pnpm/releases/download/v12.0.0/pnpm-win32-x64.zip",
                 sha256 = "092f60a1304fd61df44c6c534d424144146e41cc9b3cb0557372baadc00f29d5",
-            },
-            ["11.28.13"] = {
-                url = "https://github.com/pnpm/pnpm/releases/download/v11.28.13/pnpm-win32-x64.zip",
-                sha256 = "e94a3720974cf0acdf7947ffe8b12a292170fec36c881e10aca545cc22cf2067",
             },
             ["11.12.0"] = {
                 url = {
@@ -249,8 +234,16 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.system")
 
--- 安装独立的 pnpm 可执行文件。npm registry 的归档将程序放在 package/ 下，
--- GitHub 归档中的 dist/ 则必须与可执行文件留在同一目录
+-- Tarball / zip layouts (verified via tar -tzf / unzip -l):
+--   linux/macos: `pnpm` binary at top level + `dist/` directory of
+--                supporting JS modules. Both must end up in install_dir.
+--   windows:     `pnpm.exe` at top level + `dist/`.
+--
+-- xlings auto-extracts the archive into a runtime working directory
+-- whose contents we then move into install_dir wholesale. The shape
+-- is intentionally flat (binary at install_dir root, NOT install_dir/bin)
+-- because the `dist/` sibling needs to be findable relative to the
+-- binary at runtime — pnpm uses argv[0] resolution to locate dist/.
 function install()
     local dir = pkginfo.install_dir()
     os.tryrm(dir)
@@ -258,16 +251,18 @@ function install()
 
     local exe = is_host("windows") and "pnpm.exe" or "pnpm"
 
-    local npm_exe = path.join("package", exe)
+    -- 8+ : an archive holding the binary and its `dist/`, both of which move.
     if os.isfile(exe) then
         os.trymv(exe, path.join(dir, exe))
         if os.isdir("dist") then
             os.trymv("dist", path.join(dir, "dist"))
         end
-    elseif os.isfile(npm_exe) then
-        os.mv(npm_exe, path.join(dir, exe))
     else
-        -- 单文件版本内嵌 JS，下载文件名包含平台后缀，安装时统一为 pnpm 或 pnpm.exe
+        -- 7.x: one self-contained executable, downloaded rather than extracted,
+        -- so it arrives under its platform's asset name and has no `dist/`
+        -- beside it. Renaming it to `pnpm` is what makes both shapes register
+        -- the same way below, and argv[0] resolution has nothing to find for
+        -- this one anyway -- the JS is inside the binary.
         local found = nil
         for _, candidate in ipairs({"pnpm-linuxstatic-x64", "pnpm-linuxstatic-arm64",
                                     "pnpm-linux-x64", "pnpm-linux-arm64",
@@ -280,9 +275,17 @@ function install()
         end
         os.mv(found, path.join(dir, exe))
 
-        -- Linux 单文件构建没有 PT_INTERP。9.15.9 是静态 PIE，虽有 .dynamic，
-        -- 也无需重定位。保留原始文件字节才能保留 pkg 附加的 JS 负载
-        -- 平台级 deps 仍会解析，静态构建运行时无需加载它们
+        -- No elfpatch opt-out here, and that is the point: on linux this asset
+        -- is the statically linked build (see the version table), which has no
+        -- INTERP and no .dynamic section, so patchelf refuses it and leaves it
+        -- byte-identical. macos and windows are not ELF at all. The payload is
+        -- whole on every platform because nothing rewrites it -- which for a
+        -- `pkg` single-file executable is the only way it stays whole.
+        --
+        -- The `deps` above are declared per-platform and so still resolve for
+        -- this version, where nothing uses them. A wasted download rather than
+        -- a wrong answer, and the cost of a dep table that cannot name a
+        -- version.
     end
 
     local installed = path.join(dir, exe)
@@ -300,8 +303,18 @@ function config()
     local dir = pkginfo.install_dir()
     local exe = is_host("windows") and "pnpm.exe" or "pnpm"
 
-    -- 单文件版本在 ELF 重定位阶段结束后运行 --version，确认内嵌负载可用，
-    -- 再注册命令。压缩包版本使用独立的 dist/，可正常执行 ELF 重定位
+    -- The bare-executable payload is RUN once, here. config() is the first
+    -- hook after elfpatch, and for this shape nothing short of running it can
+    -- see the damage: every existence check passes on a `pkg` binary whose
+    -- appended payload has been shifted out from under the prelude, and only
+    -- `--version` reports the truth. An install that registered a shim for one
+    -- would fail in the consumer's terminal instead (contributing.md 5.1).
+    --
+    -- The static asset makes that damage unconstructible rather than merely
+    -- unlikely, so this is a check on the invariant, not on a workaround: if it
+    -- ever fires, something changed about the asset or about who is allowed to
+    -- rewrite it. The 8+ shape has a `dist/` beside it, is an ordinary node
+    -- build that is SUPPOSED to be patched, and is left alone.
     if not os.isdir(path.join(dir, "dist")) then
         local prog = path.join(dir, exe)
         local out = try { function() return os.iorun('"' .. prog .. '" --version') end }

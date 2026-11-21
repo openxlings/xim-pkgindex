@@ -104,6 +104,37 @@ def test_chatgpt_official_feed_appends_without_rewriting_helper_history(tmp_path
     assert reports[0]['status'] == 'verified' and len(reports[0]['assets']) == 2
 
 
+@pytest.mark.parametrize(('changed_asset', 'error'), [
+    (None, None),
+    ('legacy', 'historical resource SHA256 mismatch'),
+    ('forward', 'candidate URLs differ from the declared matrix'),
+])
+def test_backfill_checks_its_own_asset_and_keeps_forward_template(index, changed_asset, error):
+    module, recipe = index
+    legacy_url = 'https://github.com/acme/foo/releases/download/v0.9.0/foo-linux-x64'
+    forward_url = 'https://github.com/acme/foo/releases/download/v1.1.0/foo.zip'
+    listed_url = forward_url.replace('.zip', '.tgz') if changed_asset == 'forward' else forward_url
+    legacy_sha, forward_sha = 'b' * 64, 'c' * 64
+    versions = (f'["0.9.0"] = {{ url = "{legacy_url}", sha256 = "{legacy_sha}" }},\n'
+                f'["1.1.0"] = {{ url = "{listed_url}", sha256 = "{forward_sha}" }},\n')
+    recipe.write_text(RECIPE.replace('["latest"]', versions + '        ["latest"]'))
+    info = module.xim.package_info(recipe, module.ROOT)
+
+    class Assets:
+        def artifact(self, url):
+            hashes = {legacy_url: 'a' if changed_asset == 'legacy' else 'b', forward_url: 'c'}
+            return {'url': url, 'sha256': hashes[url] * 64, 'size': 1}
+
+    if error:
+        with pytest.raises(module.Invalid, match=error):
+            module.verify_added_versions(info, RECIPE, Assets())
+    else:
+        reports = module.verify_added_versions(info, RECIPE, Assets())
+        assert {r['candidate']: r['assets'][0]['resources']['GLOBAL']['url'] for r in reports} == {
+            '0.9.0': legacy_url, '1.1.0': forward_url,
+        }
+
+
 def test_unreviewed_cn_is_still_rejected(index):
     module, recipe = index
     recipe.write_text(RECIPE.replace('resources = {', 'resources = { CN = "https://unreviewed.example/${version}.zip",'))

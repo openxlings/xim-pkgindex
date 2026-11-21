@@ -10,8 +10,10 @@ import subprocess
 from pathlib import Path
 
 from xpkgindex_update.adapters import xim_pkgindex as xim
+from xpkgindex_update.cli import config as updater_config
+from xpkgindex_update.github import GitHub
 from xpkgindex_update.lua_edit import Invalid, parse, tokens
-from xpkgindex_update.manifest import assert_preserved, descriptor_digest, ordered
+from xpkgindex_update.manifest import assert_preserved, descriptor_digest, ordered, version_key
 
 ROOT = Path(__file__).resolve().parents[2]
 import sys
@@ -142,6 +144,71 @@ def candidates(base):
     return {'include': jobs}
 
 
+def verify_added_versions(info, before, github):
+    """按各自的资源地址校验旧主版本补录，按更新模板校验其余新增版本。"""
+    old = parse(before).fields['xpm'].fields
+    latest = xim.latest_refs(info)
+    previous_refs = [old[p].fields.get('latest') for p in latest if p in old]
+    if len(previous_refs) != len(latest) or any(ref is None for ref in previous_refs):
+        return xim.verify_candidates(info, before, github)
+    previous_major = min(version_key(ref.fields['ref'].string())[1][0] for ref in previous_refs)
+    history = {}
+    platforms = {}
+    for platform, data in info['platforms'].items():
+        entries = data['entries'].copy()
+        for version, entry in data['entries'].items():
+            if (version not in old[platform].fields and version != latest[platform]
+                    and version_key(version)[1][0] < previous_major):
+                history.setdefault(version, {})[platform] = entry.plain()
+                del entries[version]
+        platforms[platform] = {**data, 'entries': entries}
+
+    reports = xim.verify_candidates({**info, 'platforms': platforms}, before, github)
+    matrix = xim.matrix(info)
+    for version, entries in sorted(history.items(), key=lambda item: version_key(item[0])):
+        if not xim.platform_divergent(info) and entries.keys() != matrix.keys():
+            raise Invalid(f'{version}: historical additions must cover every platform')
+        assets = []
+        for platform, entry in entries.items():
+            arches = matrix[platform]
+            resources_by_arch = {'shared': entry} if arches.keys() == {'shared'} else entry
+            if not isinstance(resources_by_arch, dict) or resources_by_arch.keys() != arches.keys():
+                raise Invalid(f'{version}: historical resource architecture mismatch for {platform}')
+            for arch, resource in resources_by_arch.items():
+                if not isinstance(resource, dict) or resource.keys() != {'url', 'sha256'}:
+                    raise Invalid(f'{version}: historical resource requires explicit URL and SHA256')
+                urls = xim.regions(resource['url'])
+                if 'GLOBAL' not in urls:
+                    raise Invalid(f'{version}: historical resource requires a GLOBAL URL')
+                checked = {}
+                for region, url in urls.items():
+                    artifact = github.artifact(url)
+                    if artifact['sha256'] != resource['sha256']:
+                        raise Invalid(f'{version}: historical resource SHA256 mismatch: {url}')
+                    checked[region] = artifact
+                if 'CN' in checked and (xim.github_fallback(checked['CN']) or xim.global_fallback(checked)):
+                    raise Invalid(f'{version}: historical CN mirror redirects to the GLOBAL download host')
+                assets.append({'platform': platform, 'arch': arch, 'resources': checked})
+        reports.append({'id': info['id'], 'candidate': version, 'status': 'verified', 'assets': assets})
+    return reports
+
+
+def verify(base):
+    """下载并校验 PR 为自动更新配方新增的资源。"""
+    policy = updater_config(ROOT)
+    github = GitHub(os.getenv('GH_TOKEN'), **{key: policy[key] for key in
+                    ('request_budget', 'resource_bytes', 'download_bytes')})
+    reports = []
+    for filename in git('diff', '--name-only', '--diff-filter=M', base, 'HEAD', '--', 'pkgs').splitlines():
+        if not filename.endswith('.lua') or not (ROOT / filename).exists():
+            continue
+        info = xim.package_info(ROOT / filename, ROOT)
+        if info['autoupdate']:
+            before = subprocess.check_output(['git', 'show', f'{base}:{filename}'], cwd=ROOT, text=True)
+            reports.extend(verify_added_versions(info, before, github))
+    return {'packages': reports, 'requests': github.requests, 'downloaded_bytes': github.downloaded}
+
+
 def summarize_coverage(report):
     """Make the installation boundary visible alongside the full JSON audit."""
     summary = os.environ.get('GITHUB_STEP_SUMMARY')
@@ -252,7 +319,7 @@ def guard(base):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['audit', 'matrix', 'candidate', 'guard'])
+    parser.add_argument('command', choices=['audit', 'matrix', 'candidate', 'guard', 'verify'])
     parser.add_argument('--base', default='origin/main')
     parser.add_argument('--output', default='autoupdate-report.json')
     parser.add_argument('--package')
@@ -266,6 +333,8 @@ def main():
         report = audit()
         write(args.output, report)
         summarize_coverage(report)
+    elif args.command == 'verify':
+        write(args.output, verify(args.base))
     else:
         write(args.output, guard(args.base) if args.command == 'guard'
               else candidates(args.base))

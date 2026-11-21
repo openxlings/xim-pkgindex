@@ -33,6 +33,9 @@ LTS 或固定默认版本使用 `latest = "keep"`。提交 PR 前用下方固定
 首次建包走常规建包 CI，updater 候选检查用于已有配方的新增版本。
 CI 直接校验当前配方，自动生成 `coverage.json` 并上传 Actions artifact；生成的审计快照不进入 PR。
 
+在现有默认版本下手工补录更早的主版本时，CI 按条目声明的下载地址校验 SHA-256，并安排原生安装验证。
+其余新增版本继续按自动更新声明的资源模板校验。
+
 默认 `latest = "advance"`，每个目标默认 `required = true`；`latest = "keep"` 保留既有指针。
 复杂目标可写 `{ required = true, url = { linux = { x86_64 = "..." } } }`。
 版本来源识别 GitHub releases/tags 和以 `.xml` 结尾的公开 HTTPS Sparkle RSS appcast，下载模板可使用任意公开 HTTPS。

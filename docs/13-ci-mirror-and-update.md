@@ -41,6 +41,10 @@ Initial package versions use normal package CI; the updater candidate checks app
 to added versions in existing recipes. CI validates current recipes and generates `coverage.json`, uploaded as an
 Actions artifact. Generated audit snapshots do not belong in the PR.
 
+When a PR backfills an older major release under an existing default, CI verifies
+its explicit resource URLs and SHA-256 values and schedules native installation.
+Forward updates still use the declared source and resource templates.
+
 `latest = "advance"` and each resource target's `required = true` are defaults.
 Use `latest = "keep"` for a pinned/LTS default. A target can expand to
 `{ required = true, url = { linux = { x86_64 = "..." } } }`.
