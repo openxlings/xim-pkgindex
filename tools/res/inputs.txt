@@ -38,6 +38,11 @@ gcc-sysroot-linux-headers 6.18.64
 # The binutils gcc is configured and built with (first on PATH), the one its
 # recipe declares; mingw-cross-gcc builds its own binutils from this release.
 gcc-binutils 2.47
+# The binutils and linux-headers payloads as published (the digests their recipes name).
+binutils-linux-x86_64 2.47 76678811e3f80c9c8fcb7c668d1554428a52e2cbb4345155a82edf2f994c823a
+binutils-linux-aarch64 2.47 10b848d1857c5b2709e286d4df3aa1bad1b5cf1a416f5138af5ec768fe034947
+linux-headers-linux-x86_64 6.18.64 1fd036428760dffe306a020513d4e00adbbb0b3bc25dc3c25cf4737f1bfd4701
+linux-headers-linux-aarch64 6.18.64 283bb8f2cbb84ffabbb3361f02e42c361d623f97a1cfd60e67e425de3d2a997b
 # mingw-w64's release tarball (sourceforge.net/projects/mingw-w64; the digest measured when added).
 mingw-w64 14.0.0 6eaf921d9eb987d3820b364ea9775bc19b965ec81490b6fdd716526c28e1995c
 qemu 9.2.4 f3cc1c4eabfdb288218ac3e33763dbe9e276d8bc890b867a2335d58de2ddd39a
