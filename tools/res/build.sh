@@ -1288,7 +1288,7 @@ mingw-cross-gcc)
         && STD=\$(ls $P/$T/include/c++/$version/bits/std.cc) && test -s \$STD \
         && $T-g++ -std=c++23 -fmodules -fsearch-include-path -c bits/std.cc -o std.o \
         && $T-g++ -std=c++23 -fmodules t.cpp std.o -static -lstdc++exp -o t.exe \
-        && export WINEPREFIX=/w/wine WINEDEBUG=-all && timeout 600 wine t.exe > /w/cxx.out" \
+        && export WINEPREFIX=/tmp/wine WINEDEBUG=-all WINEDLLOVERRIDES=mscoree,mshtml= && timeout 600 wine t.exe > /w/cxx.out" \
       || { for f in prereq binutils headers configure make crt winpthreads install; do
                [[ -f "$work/$f.log" ]] && { log "--- $f.log"; tail -40 "$work/$f.log" >&2; }; done; die "mingw-cross-gcc build failed"; }
     grep -q "c++23 ok 10" "$work/cxx.out" || die "the C++23 check did not print what it should under wine"
