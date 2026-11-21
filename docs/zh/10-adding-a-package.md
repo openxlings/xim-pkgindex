@@ -122,6 +122,20 @@ deps = {
   声明 loader 依赖：声明了 `xim:glibc`，elfpatch 就会替换它的 `DT_RPATH`，自带的库全部
   失联，而安装仍然报告成功。依据实测的 `DT_NEEDED` 闭包判断
   （`LD_TRACE_LOADED_OBJECTS=1 <bin>`），并在测试中真正运行一次程序 —— `--version` 看不出来。
+- 载荷以 `dlopen()` 加载的库同样是 runtime 依赖：xlings 按 runtime 依赖写出载荷的
+  `DT_RUNPATH`，而带 `DT_RUNPATH` 的对象发起的 `dlopen()`，glibc 只在其中、`LD_LIBRARY_PATH`
+  与系统目录中查找，不查找加载它的程序的 `DT_RPATH`（`slint`）。
+
+## 版本号
+
+- 版本键是上游的版本，按上游的写法（`binutils` 2.47、`linux-headers` 6.18.64）。
+- 同一上游版本的重新打包 —— 以其他依赖重建、修正归档、改变布局 —— 是该版本项的
+  `revision`，配新的资源（`<版本>-r<N>`），不新增版本键
+  （[XPackage V2](../specs/xpackage-v2.md#revision--a-packaging-change-under-an-unchanged-version)）。
+- 来自另一源码树的构建 —— 带有上游尚未发布的修正的上游版本 —— 使用自己的键，并带预发布
+  标记（`ninja` 1.13.2-mcpp.1）。
+- 已发布的键不改名、不删除。此规则之前的键保持原样（`binutils` 2.42.1，即 2.42 的载荷）；
+  此后的版本遵循此规则。
 
 ## 保证包正确的规则
 
