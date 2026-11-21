@@ -86,8 +86,8 @@ done
 # bun: the binary the recipe put in place runs.
 bun="$(find "$bun_payloads" -path '*xim-x-bun*/node_modules/bun/bin/bun.exe' 2>/dev/null | head -1)"
 if [ -n "$bun" ]; then
-    if [ "$mode" = root ]; then v="$(inroot "${bun#"$R"}" --version 2>&1)"
-    else v="$("$bun" --version 2>&1)"; fi
+    if [ "$mode" = root ]; then v="$(inroot "${bun#"$R"}" --version 2>&1)" || v="exit $?: $v"
+    else v="$("$bun" --version 2>&1)" || v="exit $?: $v"; fi
     echo "bun --version: $v"
     case "$v" in [0-9]*.[0-9]*) ;; *) failed="$failed bun--version" ;; esac
 fi

@@ -31,7 +31,7 @@ package = {
             },
             ["latest"] = { ref = "1.3.11" },
             -- revision 1: npm's postinstall is not run (xlings#724).
-            ["1.3.11"] = { ref = "1.3.11", revision = 1 },
+            ["1.3.11"] = { revision = 1 },
         },
         macosx = {
             deps = {
@@ -53,6 +53,7 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
+import("xim.libxpkg.elfpatch")
 
 -- On Linux the platform binary is chosen here, not by bun's npm postinstall.
 -- That script runs the binary it picks to see that it works, before xlings
@@ -105,6 +106,30 @@ function install()
         local bunx = path.join(modules, "bun", "bin", "bunx.exe")
         os.tryrm(bunx)
         os.exec(string.format([[ln -s bun.exe "%s"]], bunx))
+        -- aarch64: the automatic pass writes the interpreter AND an RPATH, and
+        -- the RPATH is what this binary does not survive -- patchelf grows and
+        -- moves .dynamic, and the program segfaults before main (measured
+        -- under qemu-aarch64 with 1.3.11: interpreter only, it runs; with the
+        -- RPATH, in either order, SIGSEGV; xim-pkgindex#1215 saw the same on a
+        -- runner). It needs none: the environment's glibc loader finds libc,
+        -- libm, libpthread and libdl beside itself. So the interpreter only,
+        -- the one the automatic pass would write (the runtime dep's loader).
+        if path.filename(path.directory(path.directory(binary))) == "bun-linux-aarch64" then
+            local loader
+            for _, e in pairs((_RUNTIME and _RUNTIME.deps_exports) or {}) do
+                if type(e) == "table" and e.loader and e.loader ~= "" then loader = e.loader; break end
+            end
+            if not loader then
+                log.error("bun: no runtime loader to point %s at", selected)
+                return false
+            end
+            local set = elfpatch.set_interpreter(selected, loader)
+            if set.failed > 0 or set.patched == 0 then
+                log.error("bun: %s could not be pointed at %s", selected, loader)
+                return false
+            end
+            elfpatch.skip()
+        end
     end
     if not os.isfile(selected) then
         return false
