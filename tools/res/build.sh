@@ -1104,12 +1104,14 @@ gcc)
     # index (glibc) and the kernel headers the recipe declares. The stage-0
     # compiler is the pinned factory's; what ships is gcc built by it,
     # verified below.
-    # The assembler and linker are the index's binutils payload, first on
-    # PATH while gcc is configured and built: GCC's configure takes the `as`
-    # and `ld` it finds and decides from them which assembler and linker
+    # The assembler and linker are the index's binutils payload, named to
+    # configure as the target's tools (<TOOL>_FOR_TARGET; without them it
+    # prefers the factory's <triple>-as over an `as` on PATH) and first on
+    # PATH: GCC's configure decides from them which assembler and linker
     # features the compiler emits, so a payload is built against the binutils
     # its recipe declares and runs with that one or a newer one (mcpp design
-    # 2026-11-21 §3.5). Both payloads are named in inputs.txt
+    # 2026-11-21 §3.5). The driver bakes in no path: it finds `as` and `ld`
+    # where it always did. Both payloads are named in inputs.txt
     # (gcc-binutils, gcc-sysroot-linux-headers) by the digests the recipes
     # name.
     # A RELEASE (16.2.0) is GNU's signed tarball; A TRUNK SNAPSHOT is written
@@ -1146,6 +1148,7 @@ gcc)
     debian "apt-get -qq update && apt-get -qq install -y build-essential flex bison texinfo xz-utils bzip2 curl wget ca-certificates file python3 >/dev/null \
         && tar -xzf $bu.tar.gz -C /w && tar -xzf $lh.tar.gz -C /w && export PATH=/w/$bu/bin:\$PATH \
         && as --version | head -1 | grep -qF ' $binutils_v' && ld --version | head -1 | grep -qF ' $binutils_v' \
+        && for t in as ld ar nm ranlib objcopy objdump readelf strip; do T=\$(echo \$t | tr a-z A-Z); export \${T}_FOR_TARGET=/w/$bu/bin/\$t; done \
         && mkdir -p /w/xl && tar -xzf $xl -C /w/xl && export XLINGS_HOME=/w/xh \
         && (cd /w/xl/*/ && ./bin/xlings self install </dev/null >/w/xlings-install.log 2>&1) \
         && /w/xh/bin/xlings install -y glibc@$glibc_v </dev/null >/w/sysroot.log 2>&1 \
