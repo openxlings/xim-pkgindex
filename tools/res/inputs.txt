@@ -25,13 +25,21 @@ bash 5.2.37 9599b22ecd1d5787ad7d3b7bf0c59f312b3396d1e281175dd1f8a4014da621ff
 coreutils 9.5 cd328edeac92f6a665de9f323c93b712af1858bc2e0d88f3f7100469470a1b8a
 openssl 3.1.5 6ae015467dabf0469b139ada93319327be24b98251ffaeceda0221848dc09262
 binutils 2.42 f6e4d41fd5fc778b06b7891457b3620da5ecea1006c6a4a41ae998109f85a800
+# GNU publishes a signature, not a digest: binutils-2.47.tar.xz.sig verified against gnu-keyring.gpg
+# (RSA key 3A24BC1E8FB409FA9F14371813FCEF89DD9E3C4F, Nick Clifton), the sha256 measured.
+binutils 2.47 154ab23b60070e8f27013c22977f1129425d67d1e8acd6e13010e617811e4cff
 gcc 16.1.0 50efb4d94c3397aff3b0d61a5abd748b4dd31d9d3f2ab7be05b171d36a510f79
 gcc 16.2.0 e6738e29597f733270731aa90600f37ffdc045079dfc27ec7e8192cc81085c3e
 gcc 17.0.0-20261108 9cdb6db806b2c82a121c6e055e014de587c8c80ad08b1a85c50a9d06d95e208d
 # The sysroot gcc is configured against (what the x86_64 payload's was, at
-# the index's aarch64 glibc).
+# the index's aarch64 glibc), with the kernel headers gcc's recipe declares.
 gcc-sysroot-glibc 2.44.3
-gcc-sysroot-linux-headers 5.11.1
+gcc-sysroot-linux-headers 6.18.64
+# The binutils gcc is configured and built with (first on PATH), the one its
+# recipe declares; mingw-cross-gcc builds its own binutils from this release.
+gcc-binutils 2.47
+# mingw-w64's release tarball (sourceforge.net/projects/mingw-w64; the digest measured when added).
+mingw-w64 14.0.0 6eaf921d9eb987d3820b364ea9775bc19b965ec81490b6fdd716526c28e1995c
 qemu 9.2.4 f3cc1c4eabfdb288218ac3e33763dbe9e276d8bc890b867a2335d58de2ddd39a
 libslirp 4.8.0 2a98852e65666db313481943e7a1997abff0183bd9bea80caec1b5da89fda28c
 dtc 1.6.1 65cec529893659a49a89740bb362f507a3b94fc8cd791e76a8d6a2b6f3203473
@@ -80,3 +88,9 @@ clang+llvm-x86_64-pc-windows-msvc 23.1.3 7e69dc07a4536b79ff24a651a2611990bf8eaab
 # FreeBSD's release ships them, which revision 3 restores.
 x86_64-freebsd-sysroot 14.5 346158d8ee810d6d2bf735f513d6a7bc92ae54d18e7718146be6308a7e7fc6e8
 aarch64-freebsd-sysroot 14.5 68e84f928603aad765610bff7512eab1c09ab28dbbb91b806ba489996d90d3e6
+# NixOS/patchelf's release binaries (the digests GitHub records for the release's assets).
+patchelf-x86_64 0.19.3 38861b171079e440b25ac86483284f690d0ee7921dba98b0c8fe04a9b0a11667
+patchelf-aarch64 0.19.3 2281dd071995b449b9ce7c53c71d6d56ec3a280ae1cc66b779442abf624f7c10
+# winlibs' MinGW-w64 GCC 16.2.0 for Windows x86_64 (POSIX, SEH, UCRT, without LLVM), release
+# 16.2.0posix-23.1.3-14.0.0-ucrt-r3 (the digest GitHub records for the asset).
+winlibs-x86_64-posix-seh-ucrt 16.2.0 3c69305081e4a647144339a936244fcf7d3d9e558319e1ad7be2cd2886d4b6a1

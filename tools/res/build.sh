@@ -46,7 +46,14 @@
 #   openssl       openssl on glibc, lib64
 #   binutils      binutils on glibc
 #   gcc           gcc on glibc, configured as x86_64's (fromsource:gcc),
-#                 against a sysroot xlings makes (glibc + linux-headers)
+#                 against a sysroot xlings makes (glibc) with the declared
+#                 linux-headers, the declared binutils first on PATH
+#   linux-headers the kernel's UAPI headers (make headers_install)
+#   mingw-cross-gcc a Linux-hosted GCC for x86_64-w64-mingw32 (MSVCRT)
+#
+# Repacked, no build:
+#   patchelf      NixOS/patchelf's static release binary, under one directory
+#   mingw-gcc     winlibs' MinGW-w64 GCC for Windows, its directory renamed
 #
 # Data, the same on every architecture (built once, <name>-<version>.tar.gz):
 #   terminfo        the terminal descriptions (ncurses' terminfo.src, compiled)
@@ -976,7 +983,7 @@ bash|coreutils|openssl|binutils)
     [[ -n "$GLIBC_ELFS" ]] || die "$what: no dynamically linked ELF in the payload"
     case "$what" in
         openssl)  glibc_only libssl.so.3 libcrypto.so.3 ;;
-        binutils) glibc_only libbfd-$v.so libopcodes-$v.so libctf.so.0 libctf-nobfd.so.0 libsframe.so.1 libz.so.1 libstdc++.so.6 libgcc_s.so.1 ;;
+        binutils) glibc_only libbfd-$v.so libopcodes-$v.so libctf.so.0 libctf-nobfd.so.0 libsframe.so.1 libsframe.so.3 libz.so.1 libstdc++.so.6 libgcc_s.so.1 ;;
         *)        glibc_only ;;
     esac
     case "$what" in
@@ -990,37 +997,57 @@ bash|coreutils|openssl|binutils)
 gcc)
     # As x86_64's (fromsource:gcc): a prebuilt compiler builds the new one
     # with the same configure, against a sysroot xlings itself makes from the
-    # index (glibc + linux-headers). The stage-0 compiler is the pinned
-    # factory's; what ships is gcc built by it, verified below.
+    # index (glibc) and the kernel headers the recipe declares. The stage-0
+    # compiler is the pinned factory's; what ships is gcc built by it,
+    # verified below.
+    # The assembler and linker are the index's binutils payload, first on
+    # PATH while gcc is configured and built: GCC's configure takes the `as`
+    # and `ld` it finds and decides from them which assembler and linker
+    # features the compiler emits, so a payload is built against the binutils
+    # its recipe declares and runs with that one or a newer one (mcpp design
+    # 2026-11-21 §3.5). Both payloads are named in inputs.txt
+    # (gcc-binutils, gcc-sysroot-linux-headers) by the digests the recipes
+    # name.
     # A RELEASE (16.2.0) is GNU's signed tarball; A TRUNK SNAPSHOT is written
     # `<major>.0.0-<YYYYMMDD>` (17.0.0-20261108), which is what the snapshot's
     # compiler reports of itself (`17.0.0 20261108 (experimental)`) and sorts
     # below the major's first release (17.1.0). Upstream signs no snapshot: its
     # digest in inputs.txt is the one measured when it was added.
-    if [[ "$version" =~ ^([0-9]+)\.0\.0-([0-9]{8})$ ]]; then
+    # <release>-r<N> is this index's Nth rebuild of the release (16.2.0-r1).
+    upstream="${version%%-r[0-9]*}"
+    if [[ "$upstream" =~ ^([0-9]+)\.0\.0-([0-9]{8})$ ]]; then
         src="gcc-${BASH_REMATCH[1]}-${BASH_REMATCH[2]}"
         url="https://gcc.gnu.org/pub/gcc/snapshots/${BASH_REMATCH[1]}-${BASH_REMATCH[2]}/$src.tar.xz"
-        reports="${version%-*} ${version#*-}"
+        reports="${upstream%-*} ${upstream#*-}"
     else
-        src="gcc-$version"
-        url="https://ftpmirror.gnu.org/gnu/gcc/gcc-$version/gcc-$version.tar.xz"
-        reports="$version"
+        src="gcc-$upstream"
+        url="https://ftpmirror.gnu.org/gnu/gcc/gcc-$upstream/gcc-$upstream.tar.xz"
+        reports="$upstream"
     fi
-    source_of gcc "$version" "$url" "$work/gcc.tar.xz"
+    source_of gcc "$upstream" "$url" "$work/gcc.tar.xz"
     xl="xlings-$XLINGS_CLIENT-linux-$arch.tar.gz"
     curl -fsSL --retry 3 -o "$work/$xl" "https://github.com/openxlings/xlings/releases/download/v$XLINGS_CLIENT/$xl"
     curl -fsSL --retry 3 -o "$work/$xl.sha256" "https://github.com/openxlings/xlings/releases/download/v$XLINGS_CLIENT/$xl.sha256"
     (cd "$work" && sha256sum -c "$xl.sha256" >/dev/null) || die "the xlings client does not match its digest"
-    glibc_v="$(awk '$1 == "gcc-sysroot-glibc" { print $2 }' "$here/inputs.txt")"
-    headers_v="$(awk '$1 == "gcc-sysroot-linux-headers" { print $2 }' "$here/inputs.txt")"
+    glibc_v="$(input_version gcc-sysroot-glibc)"
+    headers_v="$(input_version gcc-sysroot-linux-headers)"
+    binutils_v="$(input_version gcc-binutils)"
+    bu="binutils-$binutils_v-linux-$arch"; lh="linux-headers-$headers_v-linux-$arch"
+    source_of "binutils-linux-$arch" "$binutils_v" \
+        "https://github.com/xlings-res/binutils/releases/download/$binutils_v/$bu.tar.gz" "$work/$bu.tar.gz"
+    source_of "linux-headers-linux-$arch" "$headers_v" \
+        "https://github.com/xlings-res/linux-headers/releases/download/$headers_v/$lh.tar.gz" "$work/$lh.tar.gz"
     d="gcc-$version-linux-$arch"
     triple="$arch-linux-gnu"
     debian "apt-get -qq update && apt-get -qq install -y build-essential flex bison texinfo xz-utils bzip2 curl wget ca-certificates file python3 >/dev/null \
+        && tar -xzf $bu.tar.gz -C /w && tar -xzf $lh.tar.gz -C /w && export PATH=/w/$bu/bin:\$PATH \
+        && as --version | head -1 | grep -qF ' $binutils_v' && ld --version | head -1 | grep -qF ' $binutils_v' \
         && mkdir -p /w/xl && tar -xzf $xl -C /w/xl && export XLINGS_HOME=/w/xh \
         && (cd /w/xl/*/ && ./bin/xlings self install </dev/null >/w/xlings-install.log 2>&1) \
-        && /w/xh/bin/xlings install -y glibc@$glibc_v linux-headers@$headers_v </dev/null >/w/sysroot.log 2>&1 \
+        && /w/xh/bin/xlings install -y glibc@$glibc_v </dev/null >/w/sysroot.log 2>&1 \
         && S=\$(dirname \$(dirname \$(ls /w/xh/subos/*/lib/crt1.o | head -1))) && echo \$S > /w/sysroot \
-        && test -f \$S/usr/include/stdio.h && test -d \$S/usr/include/linux \
+        && cp -R /w/$lh/include/. \$S/usr/include/ \
+        && test -f \$S/usr/include/stdio.h && test -f \$S/usr/include/linux/limits.h \
         && { [ -e \$S/lib64 ] || ln -s lib \$S/lib64; } && mkdir -p \$S/usr \
         && { [ -e \$S/usr/lib ] || ln -s ../lib \$S/usr/lib; } && { [ -e \$S/usr/lib64 ] || ln -s ../lib \$S/usr/lib64; } \
         && tar -xJf gcc.tar.xz && cd $src \
@@ -1033,6 +1060,7 @@ gcc)
              --disable-werror --disable-lto --enable-threads=posix \
              --build=$triple --host=$triple --target=$triple --enable-libsanitizer >/w/configure.log 2>&1 \
         && make -j\$(nproc) >/w/make.log 2>&1 && make install-strip >/w/install.log 2>&1 \
+        && grep -qF /w/$bu/bin/as /w/build/gcc/as && grep -qF /w/$bu/bin/ld /w/build/gcc/collect-ld \
         && cd /w && printf '#include <stdio.h>\nint main(void){puts(\"c ok\");return 0;}\n' > t.c \
         && printf 'import std;\nint main(){ std::println(\"c++23 ok {}\", std::ranges::fold_left(std::views::iota(1,5), 0, std::plus{})); }\n' > t.cpp \
         && L=\$(ls \$S/lib/ld-linux-*.so.* | head -1) \
@@ -1047,7 +1075,120 @@ gcc)
     [[ -d "$work/$d/lib64" && -f "$work/$d/lib64/libstdc++.so.6" ]] || die "no lib64/libstdc++.so.6"
     GLIBC_ELFS="$(find "$work/$d/bin" "$work/$d/libexec" -type f -exec sh -c 'file -b "$1" | grep -q "^ELF.*dynamically linked" && echo "$1"' _ {} \;)"
     glibc_only libstdc++.so.6 libgcc_s.so.1 libzstd.so.1 libz.so.1
-    provenance "$d" "gcc $version (${url%%/gcc-*}, sha256 $(input gcc "$version")) configured as fromsource:gcc (c,c++; no multilib, no bootstrap, no LTO; libsanitizer), $triple, against a sysroot of xim:glibc@$glibc_v + xim:linux-headers@$headers_v made by xlings $XLINGS_CLIENT; stage 0 is Debian 12's gcc; a C program and a C++23 program using import std built and ran"
+    provenance "$d" "gcc $upstream (${url%%/gcc-*}, sha256 $(input gcc "$upstream")) configured as fromsource:gcc (c,c++; no multilib, no bootstrap, no LTO; libsanitizer), $triple, against a sysroot of xim:glibc@$glibc_v made by xlings $XLINGS_CLIENT and the kernel headers of linux-headers $headers_v (xlings-res/linux-headers, sha256 $(input "linux-headers-linux-$arch" "$headers_v")); assembler and linker: binutils $binutils_v (xlings-res/binutils, sha256 $(input "binutils-linux-$arch" "$binutils_v")), first on PATH while gcc was configured and built; stage 0 is Debian 12's gcc; a C program and a C++23 program using import std built and ran"
+    pack "$d" ;;
+linux-headers)
+    # The kernel's UAPI headers of a kernel.org release for this architecture
+    # (`make headers_install`): what the C library and a program include as
+    # <linux/...> and <asm/...>, and what gcc's sysroot is built with. The
+    # digest is kernel.org's sha256sums.asc, as kernel-virt reads it.
+    sums="$work/sha256sums.asc"
+    curl -fsSL --retry 3 -o "$sums" "https://cdn.kernel.org/pub/linux/kernel/v${version%%.*}.x/sha256sums.asc"
+    sha="$(grep " linux-$version.tar.xz\$" "$sums" | cut -d' ' -f1)"
+    [[ -n "$sha" ]] || die "kernel.org lists no linux-$version.tar.xz"
+    fetch "https://cdn.kernel.org/pub/linux/kernel/v${version%%.*}.x/linux-$version.tar.xz" "$sha" "$work/linux.tar.xz"
+    karch=x86; [[ "$arch" == aarch64 ]] && karch=arm64
+    d="linux-headers-$version-linux-$arch"
+    debian "apt-get -qq update && apt-get -qq install -y build-essential rsync xz-utils >/dev/null \
+        && tar -xJf linux.tar.xz && make -s -C linux-$version ARCH=$karch headers_install INSTALL_HDR_PATH=/w/$d \
+        && cp linux-$version/COPYING /w/$d/LICENSE"
+    for h in linux/limits.h linux/errno.h linux/version.h asm/unistd.h asm-generic/errno.h; do
+        [[ -f "$work/$d/include/$h" ]] || die "no include/$h"
+    done
+    grep -q "^#define LINUX_VERSION_MAJOR ${version%%.*}\$" "$work/$d/include/linux/version.h" \
+        || die "linux/version.h does not name $version"
+    [[ -z "$(find "$work/$d" -name '.*' -o -name '*.cmd')" ]] || die "build state left in the headers"
+    provenance "$d" "the UAPI headers of linux $version (kernel.org, sha256 $sha): make ARCH=$karch headers_install, in Debian 12"
+    pack "$d" ;;
+patchelf)
+    # NixOS/patchelf's release binary for this architecture (static-pie) and
+    # its share/, byte for byte, under one top directory: upstream's archive
+    # extracts flat (./bin, ./share), and the index's install convention is
+    # patchelf-<version>-linux-<arch>/. No build.
+    source_of "patchelf-$arch" "$version" \
+        "https://github.com/NixOS/patchelf/releases/download/$version/patchelf-$version-$arch.tar.gz" "$work/in.tar.gz"
+    d="patchelf-$version-linux-$arch"
+    mkdir -p "$work/$d" && tar -xzf "$work/in.tar.gz" -C "$work/$d"
+    [[ -x "$work/$d/bin/patchelf" ]] || die "no bin/patchelf"
+    static_only "$work/$d/bin/patchelf"
+    [[ "$("$work/$d/bin/patchelf" --version)" == "patchelf $version" ]] || die "patchelf does not report $version"
+    provenance "$d" "patchelf $version: the files of patchelf-$version-$arch.tar.gz (github.com/NixOS/patchelf, release $version, sha256 $(input "patchelf-$arch" "$version")), unchanged, under patchelf-$version-linux-$arch/"
+    pack "$d" ;;
+mingw-gcc)
+    # winlibs' standalone MinGW-w64 GCC for Windows x86_64 (POSIX threads,
+    # SEH, UCRT, without LLVM), its top directory mingw64/ renamed to
+    # mingw-gcc-<version>-windows-x86_64/ (revision.py: every entry's
+    # compressed bytes unchanged). No build. The release named is winlibs'
+    # newest build of the GCC release.
+    case "$version" in
+        16.2.0) release=16.2.0posix-23.1.3-14.0.0-ucrt-r3; zip=winlibs-x86_64-posix-seh-gcc-16.2.0-mingw-w64ucrt-14.0.0-r3.zip ;;
+        *) die "mingw-gcc: no winlibs release recorded for $version" ;;
+    esac
+    d="mingw-gcc-$version-windows-x86_64"
+    source_of winlibs-x86_64-posix-seh-ucrt "$version" \
+        "https://github.com/brechtsanders/winlibs_mingw/releases/download/$release/$zip" "$work/in.zip"
+    printf '%s\n' "MinGW-w64 GCC $version for Windows x86_64: $zip (github.com/brechtsanders/winlibs_mingw, release $release, sha256 $(input winlibs-x86_64-posix-seh-ucrt "$version")), its top directory mingw64/ renamed to $d/; no other file changed." \
+        > "$work/README.provenance"
+    python3 -I "$here/revision.py" zip "$work/in.zip" "$out/$d.zip" mingw64 "$d" \
+        --add "README.provenance=$work/README.provenance" \
+        || die "mingw-gcc $version: the archive is not winlibs' renamed"
+    seal "$out/$d.zip" ;;
+mingw-cross-gcc)
+    # A Linux-hosted GCC for x86_64-w64-mingw32 (Windows PE, the MSVCRT
+    # runtime), built as mingw-cross-gcc 16.1.0 was (mcpp
+    # .agents/docs/2026-07-15-mingw-linux-cross-windows-design.md §4.2):
+    # binutils for the target, the mingw-w64 headers, GCC's compilers, the
+    # mingw-w64 CRT (--with-default-msvcrt=msvcrt) and winpthreads, then the
+    # rest of GCC (libstdc++, with bits/std.cc). The sysroot is the prefix,
+    # so the payload is relocatable; `mingw` is the relative link GCC's
+    # native header directory (/mingw/include) reads through. Self-contained:
+    # its own binutils, CRT and libstdc++. Checked: a C++23 program using
+    # `import std`, linked -static, runs under wine.
+    [[ "$arch" == x86_64 ]] || die "mingw-cross-gcc: a Linux x86_64 host's"
+    binutils_v="$(input_version gcc-binutils)"; mingw_v="$(input_version mingw-w64)"
+    source_of gcc "$version" "https://ftpmirror.gnu.org/gnu/gcc/gcc-$version/gcc-$version.tar.xz" "$work/gcc.tar.xz"
+    source_of binutils "$binutils_v" "https://ftpmirror.gnu.org/gnu/binutils/binutils-$binutils_v.tar.xz" "$work/binutils.tar.xz"
+    source_of mingw-w64 "$mingw_v" \
+        "https://downloads.sourceforge.net/project/mingw-w64/mingw-w64/mingw-w64-release/mingw-w64-v$mingw_v.tar.bz2" "$work/mingw-w64.tar.bz2"
+    d="mingw-cross-gcc-$version-linux-x86_64"; T=x86_64-w64-mingw32; P="/w/$d"
+    debian "apt-get -qq update && apt-get -qq install -y build-essential flex bison texinfo xz-utils bzip2 curl wget ca-certificates file python3 wine wine64 >/dev/null \
+        && tar -xJf binutils.tar.xz && tar -xjf mingw-w64.tar.bz2 && tar -xJf gcc.tar.xz \
+        && (cd gcc-$version && sed -i 's/--no-verbose/ /; s#ftp://gcc.gnu.org#https://gcc.gnu.org#' contrib/download_prerequisites \
+            && ./contrib/download_prerequisites >/w/prereq.log 2>&1) \
+        && export PATH=$P/bin:\$PATH MAKEINFO=true \
+        && mkdir /w/b-binutils && cd /w/b-binutils \
+        && /w/binutils-$binutils_v/configure --with-pkgversion=xlings-fromsource --prefix=$P --target=$T --with-sysroot=$P \
+             --disable-multilib --disable-nls --disable-werror >/w/binutils.log 2>&1 \
+        && make -j\$(nproc) >>/w/binutils.log 2>&1 && make install-strip >>/w/binutils.log 2>&1 \
+        && mkdir /w/b-headers && cd /w/b-headers \
+        && /w/mingw-w64-v$mingw_v/mingw-w64-headers/configure --host=$T --prefix=$P/$T --with-default-msvcrt=msvcrt >/w/headers.log 2>&1 \
+        && make install >>/w/headers.log 2>&1 && ln -s $T $P/mingw \
+        && mkdir /w/b-gcc && cd /w/b-gcc \
+        && /w/gcc-$version/configure --with-pkgversion=xlings-fromsource --prefix=$P --target=$T --with-sysroot=$P \
+             --enable-languages=c,c++ --enable-threads=posix --disable-multilib --disable-nls --disable-werror >/w/configure.log 2>&1 \
+        && make -j\$(nproc) all-gcc >/w/make.log 2>&1 && make install-strip-gcc >/w/install.log 2>&1 \
+        && mkdir /w/b-crt && cd /w/b-crt \
+        && /w/mingw-w64-v$mingw_v/mingw-w64-crt/configure --host=$T --prefix=$P/$T --with-sysroot=$P \
+             --with-default-msvcrt=msvcrt --enable-lib64 --disable-lib32 >/w/crt.log 2>&1 \
+        && make -j\$(nproc) >>/w/crt.log 2>&1 && make install >>/w/crt.log 2>&1 \
+        && mkdir /w/b-winpthreads && cd /w/b-winpthreads \
+        && /w/mingw-w64-v$mingw_v/mingw-w64-libraries/winpthreads/configure --host=$T --prefix=$P/$T >/w/winpthreads.log 2>&1 \
+        && make -j\$(nproc) >>/w/winpthreads.log 2>&1 && make install >>/w/winpthreads.log 2>&1 \
+        && cd /w/b-gcc && make -j\$(nproc) >>/w/make.log 2>&1 && make install-strip >>/w/install.log 2>&1 \
+        && rm -rf $P/share/info $P/share/man $P/share/doc && rm -f $P/bin/$T-lto-dump \
+        && cd /w && printf 'import std;\nint main(){ std::println(\"c++23 ok {}\", std::ranges::fold_left(std::views::iota(1,5), 0, std::plus{})); }\n' > t.cpp \
+        && STD=\$(ls $P/$T/include/c++/$version/bits/std.cc) && test -s \$STD \
+        && $T-g++ -std=c++23 -fmodules -fsearch-include-path -c bits/std.cc -o std.o \
+        && $T-g++ -std=c++23 -fmodules t.cpp std.o -static -o t.exe \
+        && export WINEPREFIX=/w/wine WINEDEBUG=-all && timeout 600 wine t.exe > /w/cxx.out" \
+      || { for f in prereq binutils headers configure make crt winpthreads install; do
+               [[ -f "$work/$f.log" ]] && { log "--- $f.log"; tail -40 "$work/$f.log" >&2; }; done; die "mingw-cross-gcc build failed"; }
+    grep -q "c++23 ok 10" "$work/cxx.out" || die "the C++23 check did not print what it should under wine"
+    "$work/$d/bin/$T-gcc" --version | head -1 | grep -qF "$version" || die "$T-gcc does not report $version"
+    [[ "$(readlink "$work/$d/mingw")" == "$T" ]] || die "mingw is not the relative link to $T"
+    GLIBC_ELFS="$(find "$work/$d/bin" "$work/$d/libexec" "$work/$d/$T/bin" -type f -exec sh -c 'file -b "$1" | grep -q "^ELF.*dynamically linked" && echo "$1"' _ {} \;)"
+    glibc_only libstdc++.so.6 libgcc_s.so.1 libzstd.so.1 libz.so.1
+    provenance "$d" "gcc $version (sha256 $(input gcc "$version")), binutils $binutils_v (sha256 $(input binutils "$binutils_v")) and mingw-w64 v$mingw_v (sha256 $(input mingw-w64 "$mingw_v")): a Linux x86_64 host's compiler for $T, the MSVCRT runtime (--with-default-msvcrt=msvcrt), POSIX threads (winpthreads), c and c++, the sysroot its prefix; built in Debian 12; a C++23 program using import std, linked -static, ran under wine"
     pack "$d" ;;
 labwc-desktop)
     # The traditional Luban desktop (xlings: Luban OS architecture design
