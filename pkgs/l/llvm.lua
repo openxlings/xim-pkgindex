@@ -27,6 +27,9 @@ package = {
         autoupdate = {
             source = "https://github.com/xlings-res/llvm/releases",
             verify = "sha256-sidecar",
+            -- A version reaches each platform when upstream's release has
+            -- its binary (llvmorg-23.1.6 has none for macOS).
+            divergence = "platform",
             resources = {
                 GLOBAL = {
                     required = true,

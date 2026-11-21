@@ -62,9 +62,12 @@ package = {
             ["16.2.0"] = {
                 -- winlibs 16.2.0posix-23.1.3-14.0.0-ucrt-r3, the build
                 -- without LLVM, renamed by tools/res/build.sh mingw-gcc.
-                url = "XLINGS_RES",
-                sha256 = {
-                    x86_64 = "a041ba410b339a85cd4958acbf57de903f93be043b74e565971a30765f921c88",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/mingw-gcc/releases/download/16.2.0/mingw-gcc-16.2.0-windows-x86_64.zip",
+                        CN     = "https://gitcode.com/xlings-res/mingw-gcc/releases/download/16.2.0/mingw-gcc-16.2.0-windows-x86_64.zip",
+                    },
+                    sha256 = "a041ba410b339a85cd4958acbf57de903f93be043b74e565971a30765f921c88",
                 },
             },
         },
