@@ -1,5 +1,6 @@
 """Tests for the native Bun release package."""
 import re
+import subprocess
 
 import pytest
 from tests.lib.xpkg_parser import parse_xpkg
@@ -59,6 +60,38 @@ AUTUPDATE_URLS = {
         "aarch64": "https://github.com/oven-sh/bun/releases/download/${tag}/bun-windows-aarch64.zip",
     },
 }
+
+
+def _assert_bun_output(cmd, contains):
+    try:
+        assert_command_output(cmd, contains=contains)
+    except AssertionError as error:
+        script = rf'''set +e
+echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
+echo "bun command: $(command -v bun)"
+type -a bun
+candidate="$(find "$XLINGS_HOME/data/xpkgs" -type f -path "*/{VERSION}/bun" -print -quit)"
+echo "candidate executable: $candidate"
+if [ -n "$candidate" ]; then
+  file "$candidate"
+  readelf -lW "$candidate" | grep -E 'interpreter|Requesting program interpreter'
+  readelf -dW "$candidate" | grep -E 'NEEDED|RPATH|RUNPATH'
+  ldd "$candidate"
+  "$candidate" --version; echo "inherited_env_exit=$?"
+  env -u LD_LIBRARY_PATH "$candidate" --version; echo "clean_env_exit=$?"
+fi
+bun --version; echo "shim_inherited_env_exit=$?"
+env -u LD_LIBRARY_PATH bun --version; echo "shim_clean_env_exit=$?"
+'''
+        diagnostics = subprocess.run(
+            ["bash", "-l", "-c", script],
+            capture_output=True, text=True, timeout=30,
+        )
+        pytest.fail(
+            f"{error}\nBun runtime diagnostics:\n"
+            f"{diagnostics.stdout}{diagnostics.stderr}",
+            pytrace=False,
+        )
 
 
 @pytest.fixture(scope="module")
@@ -191,12 +224,12 @@ class TestVerify:
     @pytest.mark.verify
     @skip_if_not("linux")
     def test_bun_version(self):
-        assert_command_output("bun --version", contains=VERSION)
+        _assert_bun_output("bun --version", contains=VERSION)
 
     @pytest.mark.verify
     @skip_if_not("linux")
     def test_bun_runs_javascript(self):
-        assert_command_output("bun -e 'console.log(6 * 7)'", contains="42")
+        _assert_bun_output("bun -e 'console.log(6 * 7)'", contains="42")
 
     @pytest.mark.verify
     @skip_if_not("linux")
