@@ -17,6 +17,32 @@ package = {
     programs = {"bun"},
     xvm_enable = true,
 
+    extensions = {
+        autoupdate = {
+            source = "https://github.com/oven-sh/bun/releases",
+            tag = "bun-v${version}",
+            resources = {
+                GLOBAL = {
+                    url = {
+                        linux = {
+                            x86_64 = "https://github.com/oven-sh/bun/releases/download/${tag}/bun-linux-x64-baseline.zip",
+                            aarch64 = "https://github.com/oven-sh/bun/releases/download/${tag}/bun-linux-aarch64.zip",
+                        },
+                        macosx = {
+                            x86_64 = "https://github.com/oven-sh/bun/releases/download/${tag}/bun-darwin-x64-baseline.zip",
+                            aarch64 = "https://github.com/oven-sh/bun/releases/download/${tag}/bun-darwin-aarch64.zip",
+                        },
+                        windows = {
+                            x86_64 = "https://github.com/oven-sh/bun/releases/download/${tag}/bun-windows-x64-baseline.zip",
+                            aarch64 = "https://github.com/oven-sh/bun/releases/download/${tag}/bun-windows-aarch64.zip",
+                        },
+                    },
+                    required = true,
+                },
+            },
+        },
+    },
+
     xpm = {
         linux = {
             -- The upstream Linux binary dynamically links glibc. Node is not

@@ -35,6 +35,20 @@ SOURCES = {
     "macosx": "https://github.com/oven-sh/bun/releases/download/bun-v${version}/bun-darwin-${arch_alias}.zip",
     "windows": "https://github.com/oven-sh/bun/releases/download/bun-v${version}/bun-windows-${arch_alias}.zip",
 }
+AUTUPDATE_URLS = {
+    "linux": {
+        "x86_64": "https://github.com/oven-sh/bun/releases/download/${tag}/bun-linux-x64-baseline.zip",
+        "aarch64": "https://github.com/oven-sh/bun/releases/download/${tag}/bun-linux-aarch64.zip",
+    },
+    "macosx": {
+        "x86_64": "https://github.com/oven-sh/bun/releases/download/${tag}/bun-darwin-x64-baseline.zip",
+        "aarch64": "https://github.com/oven-sh/bun/releases/download/${tag}/bun-darwin-aarch64.zip",
+    },
+    "windows": {
+        "x86_64": "https://github.com/oven-sh/bun/releases/download/${tag}/bun-windows-x64-baseline.zip",
+        "aarch64": "https://github.com/oven-sh/bun/releases/download/${tag}/bun-windows-aarch64.zip",
+    },
+}
 
 
 @pytest.fixture(scope="module")
@@ -100,6 +114,22 @@ class TestStatic:
         assert '"xim:node"' not in content
         assert "npm install" not in content
         assert "node_modules" not in content
+
+    @pytest.mark.static
+    def test_autoupdate_tracks_all_release_assets(self, meta):
+        content = meta.raw_content
+        extension = content.split("autoupdate = {", 1)[1].split("    xpm = {", 1)[0]
+        assert 'source = "https://github.com/oven-sh/bun/releases"' in extension
+        assert 'tag = "bun-v${version}"' in extension
+        assert "GLOBAL = {" in extension and "required = true" in extension
+        assert "CN =" not in extension
+
+        for platform, assets in AUTUPDATE_URLS.items():
+            assert re.search(rf"(?m)^\s+{platform}\s*=\s*\{{", extension)
+            for arch, url in assets.items():
+                assert re.search(
+                    rf'(?m)^\s+{arch}\s*=\s*"{re.escape(url)}",?\r?$', extension
+                ), f"missing autoupdate URL for {platform}/{arch}"
 
 
 class TestIndex:
