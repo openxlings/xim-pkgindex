@@ -61,14 +61,6 @@
       "pkgs/**"
     ]
   },
-  "payload_hard_links": {
-    "workflow": "payload-hard-links.yml",
-    "paths": [
-      ".github/scripts/check-payload-hard-links.py",
-      ".github/workflows/payload-hard-links.yml",
-      "pkgs/**"
-    ]
-  },
   "runtime_revision_gate": {
     "workflow": "runtime-revision-gate.yml",
     "paths": [

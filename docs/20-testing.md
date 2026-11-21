@@ -157,7 +157,6 @@ Some rules span every recipe, and each has its own test or script:
 | a published Luban version's output never changes | `tests/test_luban_published.py` |
 | a changed resource raises `revision` | `.github/scripts/check-revision.lua` |
 | `floor` is an integer within `0 ≤ floor ≤ revision`, on the version entry | `.github/scripts/check-revision.lua` |
-| no hard link in a payload | `.github/scripts/check-payload-hard-links.py` |
 | a dependency's namespace resolves in this index | `.github/scripts/check-dep-namespace.sh` |
 | no host package manager in workflows or scripts | `tools/lint_host_deps.sh` |
 | the docs' structure and links | `tests/test_docs.py` |

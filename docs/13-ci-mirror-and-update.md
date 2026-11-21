@@ -41,6 +41,13 @@ Initial package versions use normal package CI; the updater candidate checks app
 to added versions in existing recipes. CI validates current recipes and generates `coverage.json`, uploaded as an
 Actions artifact. Generated audit snapshots do not belong in the PR.
 
+A version older than every existing one is a historical backfill: the updater
+never appends it, so CI checks the URLs its entry declares instead of the release
+template, with the same platform, architecture, required-region and SHA256 rules,
+and installs it natively. An updater proposal (`auto/bump-*`) must not change
+dependencies, other metadata or hooks; any other PR is reviewed and may correct
+them. Published versions and the latest policy hold for both.
+
 `latest = "advance"` and each resource target's `required = true` are defaults.
 Use `latest = "keep"` for a pinned/LTS default. A target can expand to
 `{ required = true, url = { linux = { x86_64 = "..." } } }`.
