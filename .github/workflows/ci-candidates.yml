@@ -42,12 +42,23 @@ jobs:
         python -m pytest -q tests/test_autoupdate_audit.py tests/test_autoupdate_workflow.py
     - name: Audit all package declarations
       run: python .github/scripts/autoupdate-ci.py audit --output coverage.json
+    - name: Classify the change as automatic or reviewed
+      env:
+        HEAD_REF: ${{ github.head_ref || github.ref_name }}
+      # The updater proposes on auto/bump-* branches (xpkgindex-update
+      # pull_request.py) and must leave dependencies, metadata and hooks alone.
+      # Anything else is a reviewed change, which may correct them.
+      run: |
+        case "$HEAD_REF" in
+          auto/bump-*) echo "REVIEWED=" >> "$GITHUB_ENV" ;;
+          *) echo "REVIEWED=--reviewed" >> "$GITHUB_ENV" ;;
+        esac
     - name: Protect published versions
       env:
         BASE: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
       run: |
         resolved=$(git rev-parse --verify "$BASE^{commit}" 2>/dev/null || git rev-parse --verify "origin/$BASE^{commit}")
-        python .github/scripts/autoupdate-ci.py guard --base "$resolved" --output preservation.json
+        python .github/scripts/autoupdate-ci.py guard --base "$resolved" $REVIEWED --output preservation.json
     - name: Select added candidate versions from the PR diff
       id: matrix
       env:
@@ -62,7 +73,7 @@ jobs:
         BASE: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
       run: |
         resolved=$(git rev-parse --verify "$BASE^{commit}" 2>/dev/null || git rev-parse --verify "origin/$BASE^{commit}")
-        python .github/scripts/autoupdate-ci.py verify --base "$resolved" --output candidate-resources.json
+        python -m xpkgindex_update verify --base "$resolved" $REVIEWED --output candidate-resources.json
     - uses: actions/upload-artifact@v4
       if: always()
       with:

@@ -104,37 +104,6 @@ def test_chatgpt_official_feed_appends_without_rewriting_helper_history(tmp_path
     assert reports[0]['status'] == 'verified' and len(reports[0]['assets']) == 2
 
 
-@pytest.mark.parametrize(('changed_asset', 'error'), [
-    (None, None),
-    ('legacy', 'historical resource SHA256 mismatch'),
-    ('forward', 'candidate URLs differ from the declared matrix'),
-])
-def test_backfill_checks_its_own_asset_and_keeps_forward_template(index, changed_asset, error):
-    module, recipe = index
-    legacy_url = 'https://github.com/acme/foo/releases/download/v0.9.0/foo-linux-x64'
-    forward_url = 'https://github.com/acme/foo/releases/download/v1.1.0/foo.zip'
-    listed_url = forward_url.replace('.zip', '.tgz') if changed_asset == 'forward' else forward_url
-    legacy_sha, forward_sha = 'b' * 64, 'c' * 64
-    versions = (f'["0.9.0"] = {{ url = "{legacy_url}", sha256 = "{legacy_sha}" }},\n'
-                f'["1.1.0"] = {{ url = "{listed_url}", sha256 = "{forward_sha}" }},\n')
-    recipe.write_text(RECIPE.replace('["latest"]', versions + '        ["latest"]'))
-    info = module.xim.package_info(recipe, module.ROOT)
-
-    class Assets:
-        def artifact(self, url):
-            hashes = {legacy_url: 'a' if changed_asset == 'legacy' else 'b', forward_url: 'c'}
-            return {'url': url, 'sha256': hashes[url] * 64, 'size': 1}
-
-    if error:
-        with pytest.raises(module.Invalid, match=error):
-            module.verify_added_versions(info, RECIPE, Assets())
-    else:
-        reports = module.verify_added_versions(info, RECIPE, Assets())
-        assert {r['candidate']: r['assets'][0]['resources']['GLOBAL']['url'] for r in reports} == {
-            '0.9.0': legacy_url, '1.1.0': forward_url,
-        }
-
-
 def test_unreviewed_cn_is_still_rejected(index):
     module, recipe = index
     recipe.write_text(RECIPE.replace('resources = {', 'resources = { CN = "https://unreviewed.example/${version}.zip",'))
@@ -318,18 +287,21 @@ def test_a_recipe_a_bot_writes_keeps_the_automatic_rules(index):
         module.guard(base)
 
 
-@pytest.mark.parametrize('also_advances', [False, True])
-def test_only_historical_backfill_can_also_fix_install_hook(index, also_advances):
-    additions = '["0.9.0"] = { url = "https://example.com/foo-0.9.0", sha256 = "' + 'b' * 64 + '" },\n'
-    if also_advances:
-        additions += '["1.1.0"] = { url = "https://example.com/foo-1.1.0.zip", sha256 = "' + 'c' * 64 + '" },\n'
-    after = RECIPE.replace('["latest"]', additions + '["latest"]') + '\nfunction install() return true end\n'
-    module, base = _guarded(index, RECIPE, after)
-    if also_advances:
-        with pytest.raises(module.Invalid, match='must not change runtime hooks'):
-            module.guard(base)
-    else:
-        assert module.guard(base)['status'] == 'preserved'
+def test_a_reviewed_change_may_correct_a_hook_an_automatic_one_may_not(index):
+    """pnpm's Windows version probe (#1209): a hook bug in a recipe the bot also
+    writes is corrected by review; the bot's own proposals keep the freeze."""
+    fixed = RECIPE + '\nfunction config() return true end\n'
+    module, base = _guarded(index, RECIPE + '\nfunction config() return false end\n', fixed)
+    with pytest.raises(module.Invalid, match='must not change runtime hooks'):
+        module.guard(base)
+    assert module.guard(base, reviewed=True)['changed'] == [{'path': 'pkgs/f/foo.lua', 'rules': 'automatic'}]
+
+
+def test_a_reviewed_change_still_keeps_the_latest_policy(index):
+    moved = RECIPE.replace('["latest"] = { ref = "1.0.0" }', '["latest"] = { ref = "0.9.0" }')
+    module, base = _guarded(index, RECIPE, moved)
+    with pytest.raises(module.Invalid):
+        module.guard(base, reviewed=True)
 
 
 def test_candidate_verification_receives_the_installed_version(index, monkeypatch):
