@@ -172,6 +172,10 @@ commit, descriptor, tag commit or resource bytes change.
 `tools/xpkg_ci.py` provides `inspect`, `materialize`, `verify`, `ensure-repo` and `mirror`.
 It has no version discovery or proposal command. Mirror publication runs separately and cannot
 produce the resources a proposal is waiting for only after that same proposal is merged.
+`materialize` reads a latest entry's string URL or the GLOBAL leg of its
+`url = { GLOBAL, CN }` map. A failed mirror run is retried by dispatching
+`xpkg-mirror-release` on main with `package` set; the package must still declare
+`ci = { mirror = true }`.
 
 Self-built/repacked payloads need their own resource production workflow. The updater can consume
 those assets once available; it does not create them. Published resource changes require the existing

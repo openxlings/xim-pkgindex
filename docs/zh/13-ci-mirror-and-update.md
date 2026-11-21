@@ -126,6 +126,8 @@ xpkgindex-update apply --plan plan.json --package xim:foo
 `ci = { mirror = true }` 继续独立控制已声明资源的镜像发布。
 `tools/xpkg_ci.py` 仅保留 `inspect`、`materialize`、`verify`、`ensure-repo`、`mirror`。
 镜像发布不能成为同一个更新 PR 合并后才可满足的资源前置条件。
+`materialize` 读取 latest 条目的字符串 URL，或 `url = { GLOBAL, CN }` 区域表中的 GLOBAL。
+镜像运行失败后，在 main 上手动触发 `xpkg-mirror-release` 并填写 `package` 即可重试；该包仍需声明 `ci = { mirror = true }`。
 自建/重打包载荷由独立工作流生产，updater 只消费已就绪资源；已发布资源变更仍走人工 revision 流程。
 
 旧自动更新字段和工作流已移除，不提供旧协议回退。CI 每次从配方生成全量包清单，不读取提交到仓库的审计快照。
