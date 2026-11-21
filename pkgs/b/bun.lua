@@ -19,32 +19,41 @@ package = {
 
     xpm = {
         linux = {
-            -- node is needed at install time only (it also provides npm);
-            -- after install the selected bun native binary is self-contained.
-            -- glibc is the actual runtime dep. Bun's npm package keeps
-            -- @oven/* optional platform payloads, including musl variants;
-            -- install() removes them after postinstall has copied the selected
-            -- binary, because CI scans every ELF in the payload.
-            deps = {
-                runtime = { "xim:glibc@>=2.39" },
-                build   = { "xim:node" },
+            -- The upstream Linux binary dynamically links glibc. Node is not
+            -- needed: install the native Bun executable from its release zip.
+            deps = {runtime = {"xim:glibc@>=2.39"}},
+            source = "https://github.com/oven-sh/bun/releases/download/bun-v${version}/bun-linux-${arch_alias}.zip",
+            ["latest"] = {ref = "1.3.11"},
+            ["1.3.11"] = {
+                -- Use baseline x64 builds so x86_64 does not imply AVX2.
+                arch_alias = {x86_64 = "x64-baseline", aarch64 = "aarch64"},
+                sha256 = {
+                    x86_64 = "abe346f63414547cdf6b35b7a649a490c728b93d006226156923918a84c0e59b",
+                    aarch64 = "d13944da12a53ecc74bf6a720bd1d04c4555c038dfe422365356a7be47691fdf",
+                },
             },
-            ["latest"] = { ref = "1.3.11" },
-            ["1.3.11"] = { ref = "1.3.11" },
         },
         macosx = {
-            deps = {
-                build = { "xim:node" },
+            source = "https://github.com/oven-sh/bun/releases/download/bun-v${version}/bun-darwin-${arch_alias}.zip",
+            ["latest"] = {ref = "1.3.11"},
+            ["1.3.11"] = {
+                arch_alias = {x86_64 = "x64-baseline", aarch64 = "aarch64"},
+                sha256 = {
+                    x86_64 = "fb6739b08bf54550edaa7c824cd5b2dca45b6a06afef408443087a63105f6f8d",
+                    aarch64 = "6f5a3467ed9caec4795bf78cd476507d9f870c7d57b86c945fcb338126772ffc",
+                },
             },
-            ["latest"] = { ref = "1.3.11" },
-            ["1.3.11"] = { ref = "1.3.11" },
         },
         windows = {
-            deps = {
-                build = { "xim:node" },
+            source = "https://github.com/oven-sh/bun/releases/download/bun-v${version}/bun-windows-${arch_alias}.zip",
+            ["latest"] = {ref = "1.3.11"},
+            ["1.3.11"] = {
+                arch_alias = {x86_64 = "x64-baseline", aarch64 = "aarch64"},
+                sha256 = {
+                    x86_64 = "9d0e0f923e9626f3bc6044fc32e0d3ab29039aea753f5678ef8801cf26f75288",
+                    aarch64 = "c7f661d7529ec3f2fdfc1eac39a760c65f526955bce06b74859c532cb4bf00d7",
+                },
             },
-            ["latest"] = { ref = "1.3.11" },
-            ["1.3.11"] = { ref = "1.3.11" },
         },
     }
 }
@@ -52,34 +61,25 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 
+-- Each upstream zip contains bun under its target-specific top-level folder.
 function install()
-    os.tryrm(pkginfo.install_dir())
-    os.mkdir(pkginfo.install_dir())
-
-    local npm_install = string.format(
-        [[npm install --prefix "%s" --no-fund --no-audit "bun@%s"]],
-        pkginfo.install_dir(),
-        pkginfo.version()
-    )
-    os.exec(npm_install)
-
-    local selected = path.join(pkginfo.install_dir(), "node_modules", "bun", "bin", "bun.exe")
-    if not os.isfile(selected) then
+    local extracted = pkginfo.install_file():replace(".zip", "")
+    local executable = is_host("windows") and "bun.exe" or "bun"
+    local source = path.join(extracted, executable)
+    if not os.isfile(source) then
         return false
     end
-    os.tryrm(path.join(pkginfo.install_dir(), "node_modules", "@oven"))
-    return true
+
+    os.tryrm(pkginfo.install_dir())
+    os.mkdir(pkginfo.install_dir())
+    local target = path.join(pkginfo.install_dir(), executable)
+    os.mv(source, target)
+    os.tryrm(extracted)
+    return os.isfile(target)
 end
 
 function config()
-    local bindir = path.join(pkginfo.install_dir(), "node_modules", ".bin")
-    local alias = "bun"
-
-    if is_host("windows") then
-        alias = "bun.cmd"
-    end
-
-    xvm.add("bun", { bindir = bindir, alias = alias })
+    xvm.add("bun", {bindir = pkginfo.install_dir()})
     return true
 end
 
