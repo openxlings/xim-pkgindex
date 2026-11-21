@@ -121,7 +121,6 @@ def test_one_pr_entry_and_no_feature_push_duplication():
 def test_profile_routes_watch_their_own_executors():
     for profile in PROFILES.values():
         assert '.github/workflows/' + profile['workflow'] in profile['paths']
-    assert '.github/scripts/check-payload-hard-links.py' in PROFILES['payload_hard_links']['paths']
 
 
 def test_bot_dispatch_compares_complete_pr_not_last_commit():

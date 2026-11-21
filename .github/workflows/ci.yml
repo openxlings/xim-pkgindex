@@ -43,7 +43,6 @@ jobs:
       ci_tools: ${{ steps.plan.outputs.ci_tools }}
       site_check: ${{ steps.plan.outputs.site_check }}
       consumer_through_index_override: ${{ steps.plan.outputs.consumer_through_index_override }}
-      payload_hard_links: ${{ steps.plan.outputs.payload_hard_links }}
       runtime_revision_gate: ${{ steps.plan.outputs.runtime_revision_gate }}
       eden_smoke: ${{ steps.plan.outputs.eden_smoke }}
       android_runner: ${{ steps.plan.outputs.android_runner }}
@@ -129,13 +128,6 @@ jobs:
       head_sha: ${{ needs.plan.outputs.head_sha }}
       files: ${{ needs.plan.outputs.files }}
 
-  payload_hard_links:
-    needs: plan
-    if: needs.plan.outputs.payload_hard_links == 'true'
-    uses: ./.github/workflows/payload-hard-links.yml
-    with:
-      base_sha: ${{ needs.plan.outputs.base_sha }}
-      head_sha: ${{ needs.plan.outputs.head_sha }}
   runtime_revision_gate:
     needs: plan
     if: needs.plan.outputs.runtime_revision_gate == 'true'
@@ -266,7 +258,7 @@ jobs:
       head_sha: ${{ needs.plan.outputs.head_sha }}
   required:
     if: always()
-    needs: [plan, install, ci_xpkg_test, ci_tools, site_check, consumer_through_index_override, payload_hard_links, runtime_revision_gate, eden_smoke, android_runner, apple_runners, baremetal_riscv_smoke, bundletool, chatgpt_runtime, jvm_build_tools, node_native_modules, wix_bundle, toolchain_consumer_smoke, luban_agent_workspace, release_owned, glibc_root_runtime, llvm_linux_aarch64, llvm_payload, ci_sweep, ci_candidates]
+    needs: [plan, install, ci_xpkg_test, ci_tools, site_check, consumer_through_index_override, runtime_revision_gate, eden_smoke, android_runner, apple_runners, baremetal_riscv_smoke, bundletool, chatgpt_runtime, jvm_build_tools, node_native_modules, wix_bundle, toolchain_consumer_smoke, luban_agent_workspace, release_owned, glibc_root_runtime, llvm_linux_aarch64, llvm_payload, ci_sweep, ci_candidates]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

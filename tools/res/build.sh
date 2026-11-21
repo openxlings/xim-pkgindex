@@ -139,8 +139,9 @@ seal() {    # file -> file.sha256
     log "$(cat "$1.sha256")"
 }
 
-# Never a hard link in a payload: xlings extracts one with link(2), which
-# Android's app sandbox and FAT refuse (.github/scripts/check-payload-hard-links.py).
+# Never a hard link in a payload this index builds: Android's app sandbox and FAT
+# refuse link(2). The client copies a refused one from 2026.10.10.2 (the index
+# floor); a payload that needs no copy installs the same everywhere.
 pack() {    # directory under $work [contents only] -> $out/<name>-<version>-linux-<arch>.tar.gz
     local file="$out/$what-$version-linux-$arch.tar.gz"
     if [[ "${2:-}" == contents ]]; then
