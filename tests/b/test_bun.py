@@ -66,6 +66,7 @@ def _assert_bun_output(cmd, contains):
     try:
         assert_command_output(cmd, contains=contains)
     except AssertionError as error:
+        arm_asset_url = ASSET_URLS["linux"]["aarch64"]
         script = rf'''set +e
 echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH"
 echo "bun command: $(command -v bun)"
@@ -89,6 +90,18 @@ if [ -n "$candidate" ]; then
   cp "$candidate" "$host_copy"
   patchelf --set-interpreter "$host_loader" --remove-rpath "$host_copy"
   env -u LD_LIBRARY_PATH "$host_copy" --version; echo "host_runtime_exit=$?"
+fi
+if [ "$(uname -m)" = "aarch64" ]; then
+  original="/tmp/bun-1.4.5-linux-aarch64-original"
+  archive="/tmp/bun-1.4.5-linux-aarch64-original.zip"
+  if [ ! -s "$original" ]; then
+    curl -fsSL "{arm_asset_url}" -o "$archive"
+    unzip -p "$archive" bun > "$original"
+    chmod +x "$original"
+  fi
+  sha256sum "$archive"
+  file "$original"
+  env -u LD_LIBRARY_PATH "$original" --version; echo "upstream_unpatched_exit=$?"
 fi
 bun --version; echo "shim_inherited_env_exit=$?"
 env -u LD_LIBRARY_PATH bun --version; echo "shim_clean_env_exit=$?"
