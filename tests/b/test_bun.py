@@ -14,20 +14,21 @@ from tests.lib.platform_utils import skip_if_not, under_test
 
 PKG = "bun"
 PKG_FILE = "pkgs/b/bun.lua"
-VERSION = "1.3.11"
+VERSION = "1.4.5"
+PREVIOUS_VERSION = "1.3.11"
 
 UPSTREAM = {
     "linux": {
-        "x86_64": ("x64-baseline", "abe346f63414547cdf6b35b7a649a490c728b93d006226156923918a84c0e59b"),
-        "aarch64": ("aarch64", "d13944da12a53ecc74bf6a720bd1d04c4555c038dfe422365356a7be47691fdf"),
+        "x86_64": ("x64-baseline", "dcb23a18a1c2fff12d57bcef696dbbb42eb67fde29f43816ecb595459a24c463"),
+        "aarch64": ("aarch64", "18656a3bf0ea5641f5796ae4213b75255579a70a0fded2f337933785568cdf84"),
     },
     "macosx": {
-        "x86_64": ("x64-baseline", "fb6739b08bf54550edaa7c824cd5b2dca45b6a06afef408443087a63105f6f8d"),
-        "aarch64": ("aarch64", "6f5a3467ed9caec4795bf78cd476507d9f870c7d57b86c945fcb338126772ffc"),
+        "x86_64": ("x64-baseline", "fb0121739a7e80e7511b6bfe4d2116422b48ba18a013acadef0c425348e95891"),
+        "aarch64": ("aarch64", "b5d6bc2e13caf14e57c89661e89efd073ff16165b41bfe43882616410609cd10"),
     },
     "windows": {
-        "x86_64": ("x64-baseline", "9d0e0f923e9626f3bc6044fc32e0d3ab29039aea753f5678ef8801cf26f75288"),
-        "aarch64": ("aarch64", "c7f661d7529ec3f2fdfc1eac39a760c65f526955bce06b74859c532cb4bf00d7"),
+        "x86_64": ("x64-baseline", "3c081c73865e7a3453a9d514cc2ba3d699880621bcf67bb17241ff5194cb1d4b"),
+        "aarch64": ("aarch64", "41f57d49c3c6811888d9633c569e40b4eb1f7e92b5e5336e3abd3af03187d77a"),
     },
 }
 SOURCES = {
@@ -80,6 +81,7 @@ class TestStatic:
     @pytest.mark.static
     def test_valid_spec(self, meta):
         assert_valid_spec(meta)
+        assert meta.spec == "2"
 
     @pytest.mark.static
     def test_valid_type(self, meta):
@@ -100,6 +102,7 @@ class TestStatic:
             assert source and source.group(1) == SOURCES[platform]
             assert f'["latest"] = {{ref = "{VERSION}"}}' in section
             assert f'["{VERSION}"] = {{' in section
+            assert f'["{PREVIOUS_VERSION}"] = {{' in section
             assert _lua_map(section, "arch_alias") == {
                 arch: pair[0] for arch, pair in expected.items()
             }
