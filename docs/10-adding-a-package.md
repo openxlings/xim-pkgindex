@@ -151,9 +151,11 @@ deps = {
   registers, links, declares or writes raises the version entry's `revision`, or
   scopes that already configured it never see the change. `config()` never
   writes scope-specific data into the shared payload.
-- **No hard links in a payload.** xlings extracts them with `link(2)`, which
-  Android's app sandbox and FAT refuse (`payload-hard-links.yml`). Pack with
-  `tar --hard-dereference`.
+- **Hard links in an archive are the client's to handle.** Android's app
+  sandbox, FAT and exFAT refuse `link(2)`; from xlings 2026.10.10.2, this
+  index's floor (`index-compat.json`), extraction copies a refused hard link.
+  An upstream archive is mirrored as published. Payloads this index builds
+  still pack with `tar --hard-dereference` (`tools/res/build.sh`).
 - **A hook does not guess the architecture from its environment** on clients
   before 2026.10.8.1, where `os.arch()` is absent in hooks: detect from the
   payload's content (`os.isfile` on the loader it ships).

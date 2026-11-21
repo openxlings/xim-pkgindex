@@ -121,7 +121,6 @@ def test_one_pr_entry_and_no_feature_push_duplication():
 def test_profile_routes_watch_their_own_executors():
     for profile in PROFILES.values():
         assert '.github/workflows/' + profile['workflow'] in profile['paths']
-    assert '.github/scripts/check-payload-hard-links.py' in PROFILES['payload_hard_links']['paths']
 
 
 def test_bot_dispatch_compares_complete_pr_not_last_commit():
@@ -181,6 +180,35 @@ def test_publication_follows_build_inputs_too():
         # input), but the CI-verified fallback can never be dropped.
         assert any('github.event.workflow_run.head_sha || github.sha' in (step.get('with', {}).get('ref') or '')
                    for job in d['jobs'].values() for step in job.get('steps', []))
+
+
+def test_a_failed_mirror_can_be_retried_for_one_package_on_main():
+    """A mirror failure (pnpm, run 44882411917) left no retry but committing a
+    manifest. A dispatch names the package; discover still requires ci.mirror,
+    and the retry runs only from main."""
+    import subprocess
+    d, on = workflow('xpkg-mirror.yml')
+    inputs = on['workflow_dispatch']['inputs']
+    assert inputs['package']['default'] == '' and inputs['manifest']['required'] is False
+    assert "inputs.package != ''" in d['jobs']['discover']['if']
+    assert "github.ref == 'refs/heads/main'" in d['jobs']['discover']['if']
+    assert "inputs.manifest != ''" in d['jobs']['publish-manual']['if']
+    step = next(s for s in d['jobs']['discover']['steps'] if s.get('id') == 'discover')
+    assert step['env']['PACKAGE'] == '${{ inputs.package }}'
+    script = step['run'].split("python3 - <<'PY'\n", 1)[1].rsplit('PY', 1)[0]
+    script = '\n'.join(line[len('          '):] if line.startswith('          ') else line
+                       for line in script.splitlines())
+    out = tmp = ROOT / '.pytest-mirror-output'
+    try:
+        for package, ok in [('pnpm', True), ('cmake', False)]:
+            result = subprocess.run(['python3', '-c', script], cwd=ROOT, capture_output=True, text=True,
+                                    env={'PATH': '/usr/bin:/bin', 'EVENT_SHA': '', 'PACKAGE': package,
+                                         'GITHUB_OUTPUT': str(out)})
+            assert (result.returncode == 0) is ok, result.stderr
+            if ok:
+                assert out.read_text().strip().endswith('packages=["pnpm"]')
+    finally:
+        tmp.unlink(missing_ok=True)
 
 
 def test_multicommit_pr_keeps_earlier_package_change(tmp_path):

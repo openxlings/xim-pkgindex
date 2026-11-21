@@ -33,6 +33,10 @@ LTS 或固定默认版本使用 `latest = "keep"`。提交 PR 前用下方固定
 首次建包走常规建包 CI，updater 候选检查用于已有配方的新增版本。
 CI 直接校验当前配方，自动生成 `coverage.json` 并上传 Actions artifact；生成的审计快照不进入 PR。
 
+比现有所有版本都旧的新增版本属于历史补录：updater 不会追加它，CI 按条目声明的地址校验，
+平台、架构、必需区域和 SHA256 规则不变，并安排原生安装。updater 提议（`auto/bump-*` 分支）
+不得修改依赖、其他元数据和钩子；其余 PR 经人工评审，可以修正它们。两者都保护已发布版本和 latest 策略。
+
 默认 `latest = "advance"`，每个目标默认 `required = true`；`latest = "keep"` 保留既有指针。
 复杂目标可写 `{ required = true, url = { linux = { x86_64 = "..." } } }`。
 版本来源识别 GitHub releases/tags 和以 `.xml` 结尾的公开 HTTPS Sparkle RSS appcast，下载模板可使用任意公开 HTTPS。
@@ -122,6 +126,8 @@ xpkgindex-update apply --plan plan.json --package xim:foo
 `ci = { mirror = true }` 继续独立控制已声明资源的镜像发布。
 `tools/xpkg_ci.py` 仅保留 `inspect`、`materialize`、`verify`、`ensure-repo`、`mirror`。
 镜像发布不能成为同一个更新 PR 合并后才可满足的资源前置条件。
+`materialize` 读取 latest 条目的字符串 URL，或 `url = { GLOBAL, CN }` 区域表中的 GLOBAL。
+镜像运行失败后，在 main 上手动触发 `xpkg-mirror-release` 并填写 `package` 即可重试；该包仍需声明 `ci = { mirror = true }`。
 自建/重打包载荷由独立工作流生产，updater 只消费已就绪资源；已发布资源变更仍走人工 revision 流程。
 
 旧自动更新字段和工作流已移除，不提供旧协议回退。CI 每次从配方生成全量包清单，不读取提交到仓库的审计快照。

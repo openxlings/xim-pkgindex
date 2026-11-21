@@ -220,13 +220,15 @@ def declares_autoupdate(text):
     return bool(ext and ext.fields.get('autoupdate'))
 
 
-def guard(base):
+def guard(base, reviewed=False):
     """A pull request's recipes against its base. Published versions are kept in
-    every recipe. What an automatic update may change -- latest only by its
-    advance policy, no dependency, metadata or hook -- is checked where one may
-    run: a recipe declaring extensions.autoupdate. One nobody's bot writes (a
-    hand-kept edition, a package xlings' release writes: tests/test_release_owned.py)
-    moves its latest and its hooks by review."""
+    every recipe. A recipe declaring extensions.autoupdate also keeps its latest
+    policy: latest moves only by advance, to a newly appended version. What only
+    an automatic update must leave alone -- dependencies, other metadata, hooks --
+    is frozen unless the change is reviewed (anything but an updater branch,
+    ci-candidates.yml): a reviewed change may correct a hook, and package CI
+    installs it. One nobody's bot writes (a hand-kept edition, a package xlings'
+    release writes: tests/test_release_owned.py) moves its latest by review."""
     files = git('ls-tree', '-r', '--name-only', base, '--', 'pkgs').splitlines()
     changed = []
     for filename in files:
@@ -241,7 +243,7 @@ def guard(base):
             continue
         try:
             if declares_autoupdate(after):
-                xim.guard(before, after)
+                xim.guard(before, after, reviewed=reviewed)
             else:
                 assert_preserved(before, after)
         except Invalid as e:
@@ -259,6 +261,8 @@ def main():
     parser.add_argument('--path')
     parser.add_argument('--version')
     parser.add_argument('--arch')
+    parser.add_argument('--reviewed', action='store_true',
+                        help='a reviewed change may correct dependencies, metadata and hooks')
     args = parser.parse_args()
     if args.command == 'candidate':
         run_candidate(args.package, args.path, args.version, args.arch)
@@ -267,7 +271,7 @@ def main():
         write(args.output, report)
         summarize_coverage(report)
     else:
-        write(args.output, guard(args.base) if args.command == 'guard'
+        write(args.output, guard(args.base, args.reviewed) if args.command == 'guard'
               else candidates(args.base))
 
 

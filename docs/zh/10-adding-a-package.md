@@ -133,8 +133,9 @@ deps = {
 - **config 的效果由 `revision` 标识。** 改变 `config()` 注册、链接、声明或写出的内容时，
   提高版本项的 `revision`，否则已经配置过的 scope 永远看不到变化。`config()` 不把 scope
   相关的数据写进共享的载荷。
-- **载荷中不能有硬链接。** xlings 用 `link(2)` 解出硬链接，Android 应用沙箱和 FAT 会拒绝
-  （`payload-hard-links.yml`）。打包时用 `tar --hard-dereference`。
+- **归档中的硬链接由客户端处理。** Android 应用沙箱、FAT 和 exFAT 会拒绝 `link(2)`；
+  从本索引的最低版本 xlings 2026.10.10.2（`index-compat.json`）起，解包时被拒绝的硬链接改为复制。
+  上游归档按原样镜像；本索引自建的载荷仍用 `tar --hard-dereference` 打包（`tools/res/build.sh`）。
 - **钩子不从环境猜测架构**：2026.10.8.1 之前的客户端在钩子中没有 `os.arch()`，要从载荷
   内容判断（对它带的 loader 用 `os.isfile`）。
 
