@@ -23,14 +23,15 @@ package = {
             -- after install the selected bun native binary is self-contained.
             -- glibc is the actual runtime dep. Bun's npm package keeps
             -- @oven/* optional platform payloads, including musl variants;
-            -- install() removes them after postinstall has copied the selected
-            -- binary, because CI scans every ELF in the payload.
+            -- install() picks the glibc one itself and removes the rest,
+            -- because CI scans every ELF in the payload.
             deps = {
                 runtime = { "xim:glibc@>=2.39" },
                 build   = { "xim:node" },
             },
             ["latest"] = { ref = "1.3.11" },
-            ["1.3.11"] = { ref = "1.3.11" },
+            -- revision 1: npm's postinstall is not run (xlings#724).
+            ["1.3.11"] = { ref = "1.3.11", revision = 1 },
         },
         macosx = {
             deps = {
@@ -51,23 +52,64 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.log")
+
+-- On Linux the platform binary is chosen here, not by bun's npm postinstall.
+-- That script runs the binary it picks to see that it works, before xlings
+-- has rewritten its loader: on a machine without /lib64/ld-linux-x86-64.so.2
+-- (the Luban host machine on Windows and macOS, Alpine) it cannot start, and
+-- the script's fallback then fails with an unrelated ENOENT (xlings#724).
+-- With --ignore-scripts every platform package is installed and
+-- bin/bun.exe is a placeholder; the glibc one is put there -- xlings binds
+-- the payload to its own glibc whatever the host's libc is -- the plain
+-- x64 build where the CPU has AVX2, the baseline build otherwise, as the
+-- postinstall chooses.
+local function linux_platform_binary_(modules)
+    local oven = path.join(modules, "@oven")
+    local aarch64 = path.join(oven, "bun-linux-aarch64", "bin", "bun")
+    if os.isfile(aarch64) then return aarch64 end
+    local cpuinfo = io.readfile("/proc/cpuinfo") or ""
+    local avx2 = cpuinfo:find("[ \t]avx2[ \t\n]") ~= nil
+    local plain = path.join(oven, "bun-linux-x64", "bin", "bun")
+    local baseline = path.join(oven, "bun-linux-x64-baseline", "bin", "bun")
+    if avx2 and os.isfile(plain) then return plain end
+    if os.isfile(baseline) then return baseline end
+    return nil
+end
 
 function install()
     os.tryrm(pkginfo.install_dir())
     os.mkdir(pkginfo.install_dir())
 
+    local linux = is_host("linux")
     local npm_install = string.format(
-        [[npm install --prefix "%s" --no-fund --no-audit "bun@%s"]],
+        [[npm install --prefix "%s" --no-fund --no-audit%s "bun@%s"]],
         pkginfo.install_dir(),
+        linux and " --ignore-scripts" or "",
         pkginfo.version()
     )
     os.exec(npm_install)
 
-    local selected = path.join(pkginfo.install_dir(), "node_modules", "bun", "bin", "bun.exe")
+    local modules = path.join(pkginfo.install_dir(), "node_modules")
+    local selected = path.join(modules, "bun", "bin", "bun.exe")
+    if linux then
+        local binary = linux_platform_binary_(modules)
+        if not binary then
+            log.error("bun: no glibc platform package under %s", path.join(modules, "@oven"))
+            return false
+        end
+        os.tryrm(selected)
+        os.cp(binary, selected)
+        os.exec(string.format([[chmod 755 "%s"]], selected))
+        -- bunx is the same program by another name, as the postinstall links it.
+        local bunx = path.join(modules, "bun", "bin", "bunx.exe")
+        os.tryrm(bunx)
+        os.exec(string.format([[ln -s bun.exe "%s"]], bunx))
+    end
     if not os.isfile(selected) then
         return false
     end
-    os.tryrm(path.join(pkginfo.install_dir(), "node_modules", "@oven"))
+    os.tryrm(path.join(modules, "@oven"))
     return true
 end
 

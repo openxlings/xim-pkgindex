@@ -147,6 +147,11 @@ deps = {
 - **config 的效果由 `revision` 标识。** 改变 `config()` 注册、链接、声明或写出的内容时，
   提高版本项的 `revision`，否则已经配置过的 scope 永远看不到变化。`config()` 不把 scope
   相关的数据写进共享的载荷。
+- **预编译的原生程序原样取来，不由脚本挑选。** 优先直接取平台归档（`esbuild`、`codex`）；只有包管理器一种分发方式时，
+  关掉它的安装脚本、在配方里选定平台包（`bun`、`openclaw`）。运行自己下载的二进制的脚本，运行时 xlings 还没有改写它的
+  loader：在没有 `/lib64/ld-linux-x86-64.so.2` 的宿主上（Alpine；Windows、macOS 上每一次安装都经过的 Luban host machine）
+  这要到 xlings 2026.11.22.1 才可行，在 glibc 比二进制要求的旧的宿主上则始终不行。`native-binary-hosts.yml` 在这两种假设都
+  不成立的地方安装这些配方。
 - **归档中的硬链接由客户端处理。** Android 应用沙箱、FAT 和 exFAT 会拒绝 `link(2)`；
   从本索引的最低版本 xlings 2026.10.10.2（`index-compat.json`）起，解包时被拒绝的硬链接改为复制。
   上游归档按原样镜像；本索引自建的载荷仍用 `tar --hard-dereference` 打包（`tools/res/build.sh`）。

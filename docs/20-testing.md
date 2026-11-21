@@ -171,6 +171,7 @@ Some rules span every recipe, and each has its own test or script:
 | `ci-sweep.yml` | weekly | installs one slice of every recipe, by ISO week |
 | `luban-agent-workspace.yml` | a change to Luban's recipes or what they pin | builds and boots the editions on x86_64 and aarch64 |
 | `llvm-payload.yml` | a change to `pkgs/l/llvm.lua` or to the check | on every host a changed llvm version is served on (Linux x86_64 and aarch64, macOS arm64, Windows x86_64), the archive the recipe names compiles one object with zlib-compressed and one with zstd-compressed debug sections with its own clang, and links each with the `ld.lld` beside that clang; an archive the index makes is built first |
+| `native-binary-hosts.yml` | a change to a recipe with prebuilt native programs (bun, esbuild, codex, the agents), nightly | installs them on Alpine x86_64 and aarch64 (no glibc loader), Ubuntu 20.04 (the oldest glibc) and in a root made like the Luban host machine (a static xlings, busybox and bwrap; with Luban's agent tool sets), with the published xlings or a given run's |
 | `site-check.yml` | a change to `pkgs/`, `docs/` or the site config | builds the site in strict mode |
 
 L3 and L4 run in CI only for what a change touched and in the weekly sweep: a

@@ -1,0 +1,116 @@
+name: Native binaries on the hosts a desktop does not catch
+
+# Recipes that carry prebuilt native programs (bun, esbuild, codex, the
+# coding agents), installed where a Linux desktop's assumptions do not hold
+# (xlings#724; scripts/native-binary-hosts.sh):
+#   - Alpine (x86_64, aarch64): no glibc loader -- "the host has one"
+#   - Ubuntu 20.04: the oldest glibc the index supports -- "it is new enough"
+#   - the Luban host machine's root (a static xlings, busybox, bwrap): no
+#     distribution's tools -- what every install on Windows and macOS meets;
+#     with the packages Luban's agent editions list
+# With the published xlings, or a given xlings CI run's build.
+on:
+  pull_request:
+    paths:
+      - pkgs/b/bun.lua
+      - pkgs/e/esbuild.lua
+      - pkgs/c/codex.lua
+      - pkgs/o/openclaw.lua
+      - pkgs/p/pnpm.lua
+      - pkgs/n/npm.lua
+      - pkgs/n/node.lua
+      - pkgs/d/dsh.lua
+      - pkgs/c/claude.lua
+      - pkgs/o/opencode.lua
+      - pkgs/p/pi.lua
+      - pkgs/luban/tools-agent.lua
+      - scripts/native-binary-hosts.sh
+      - .github/workflows/native-binary-hosts.yml
+  schedule:
+    - cron: "40 5 * * *"
+  workflow_dispatch:
+    inputs:
+      xlings_run:
+        description: 'an openxlings/xlings CI run whose xlings-linux-x86_64 artifact is the build under test (x86_64 legs; default: the published release)'
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+env:
+  NATIVE: "xim:bun xim:esbuild xim:codex xim:openclaw xim:pnpm xim:npm xim:claude xim:opencode xim:pi"
+
+jobs:
+  hosts:
+    name: ${{ matrix.leg }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { leg: alpine-x86_64, runner: ubuntu-24.04, arch: x86_64, mode: host, image: "alpine:3.20" }
+          - { leg: alpine-aarch64, runner: ubuntu-24.04-arm, arch: aarch64, mode: host, image: "alpine:3.20" }
+          - { leg: ubuntu-2004, runner: ubuntu-24.04, arch: x86_64, mode: host, image: "ubuntu:20.04" }
+          - { leg: host-machine-root-x86_64, runner: ubuntu-24.04, arch: x86_64, mode: root }
+          - { leg: host-machine-root-aarch64, runner: ubuntu-24.04-arm, arch: aarch64, mode: root }
+    steps:
+      - uses: actions/checkout@v4
+      - name: The xlings under test (a given run's build, or the published release)
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN: ${{ inputs.xlings_run }}
+          ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          if [[ -n "${RUN:-}" && "$ARCH" == x86_64 ]]; then
+            gh run download "$RUN" -R openxlings/xlings -n xlings-linux-x86_64 -D build
+          else
+            v="$(gh release view -R openxlings/xlings --json tagName --jq .tagName)"
+            gh release download "$v" -R openxlings/xlings -p "xlings-${v#v}-linux-$ARCH.tar.gz" -O build/release.tar.gz
+          fi
+          ls -la build
+      - name: Packages for this leg
+        id: list
+        env:
+          MODE: ${{ matrix.mode }}
+          ARCH: ${{ matrix.arch }}
+        run: |
+          list="$NATIVE"
+          # dsh is built for x86_64 only (luban:tools-agent adds it there).
+          [[ "$ARCH" == x86_64 ]] && list="$list xim:dsh"
+          # The packages Luban's agent editions list, in the host machine's root.
+          [[ "$MODE" == root ]] && list="$list luban:tools-agent luban:tools-dev"
+          echo "packages=$list" >> "$GITHUB_OUTPUT"
+      - name: Install them (a container)
+        if: matrix.mode == 'host'
+        env:
+          IMAGE: ${{ matrix.image }}
+          PACKAGES: ${{ steps.list.outputs.packages }}
+        run: |
+          # A bare image made able to fetch over TLS, and nothing else: the
+          # recipes' tools come from xlings.
+          case "$IMAGE" in
+            alpine*) prep='apk add -q ca-certificates tar gzip' ;;  # host-dep-ok: a bare distribution, prepared to install xlings
+            *) prep='apt-get -qq update >/dev/null && DEBIAN_FRONTEND=noninteractive apt-get -qq install -y ca-certificates >/dev/null' ;;  # host-dep-ok: a bare distribution, prepared to install xlings
+          esac
+          docker run --rm --security-opt seccomp=unconfined --security-opt apparmor=unconfined --cap-add SYS_ADMIN \
+            -e EVIDENCE=/w/evidence -v "$PWD:/w" -w /w "$IMAGE" \
+            sh -c "$prep && sh scripts/native-binary-hosts.sh host build/release.tar.gz /w $PACKAGES"
+      - name: Install them (the host machine's root)
+        if: matrix.mode == 'root'
+        env:
+          PACKAGES: ${{ steps.list.outputs.packages }}
+        run: |
+          # bwrap enters the root as an ordinary user would on a host machine's kernel.
+          sudo sysctl -q -w kernel.apparmor_restrict_unprivileged_userns=0 || true
+          EVIDENCE="$PWD/evidence" sh scripts/native-binary-hosts.sh root build/release.tar.gz "$PWD" $PACKAGES
+      - name: Evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-binary-hosts-${{ matrix.leg }}
+          path: evidence/
+          if-no-files-found: ignore

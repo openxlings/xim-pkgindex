@@ -171,6 +171,15 @@ deps = {
   registers, links, declares or writes raises the version entry's `revision`, or
   scopes that already configured it never see the change. `config()` never
   writes scope-specific data into the shared payload.
+- **A prebuilt native program is fetched as it is, not picked by a script.** Prefer
+  a platform archive taken directly (`esbuild`, `codex`); where a package manager
+  is the only distribution, install with its install scripts off and choose the
+  platform package in the recipe (`bun`, `openclaw`). A script that runs the
+  binary it downloads does so before xlings rewrites its loader: on a host without
+  `/lib64/ld-linux-x86-64.so.2` (Alpine; the Luban host machine every Windows and
+  macOS install goes through) that worked only since xlings 2026.11.22.1, and on a
+  host whose glibc is older than the binary needs it never does.
+  `native-binary-hosts.yml` installs these recipes where both assumptions fail.
 - **Hard links in an archive are the client's to handle.** Android's app
   sandbox, FAT and exFAT refuse `link(2)`; from xlings 2026.10.10.2, this
   index's floor (`index-compat.json`), extraction copies a refused hard link.
