@@ -243,14 +243,14 @@ function hostlib.canonical_libdir(arch)
     return "/usr/lib/" .. triplet
 end
 
--- A shell command's output, or "" when it cannot be run. Through `os.iorun`,
--- as the recipes run their commands: a hook's `io.popen` answered nothing on
--- the index's CI runners, so a step built on it linked nothing and said so
--- nowhere. `sh -c` because an older client's `os.iorun` runs no shell; the
--- command never holds a single quote (paths from the store and the host).
+-- A shell command's output, or "" when it cannot be run, by the same means
+-- the probes above read ldconfig.
 local function __sh(cmd)
-    local ok, out = pcall(os.iorun, "sh -c '" .. cmd .. " 2>/dev/null; true'")
-    return ok and out or ""
+    local f = io.popen(cmd .. " 2>/dev/null")
+    if not f then return "" end
+    local out = f:read("*a") or ""
+    f:close()
+    return out
 end
 
 -- The links of a host-link package, generated from the host as it is now.
