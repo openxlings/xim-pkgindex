@@ -63,6 +63,7 @@ package = {
             deps = { build = { "xim:7zip" } },
             ["latest"] = { ref = "6.7.1" },
             ["6.7.1"] = {
+                revision = 1,
                 x86_64 = {
                     url = "https://downloads.sourceforge.net/project/winscp/WinSCP/6.7.1/WinSCP-6.7.1-Portable.zip",
                     sha256 = "e6d2f8e1249e41f3bf8638319bb9bd15a541a64720df0805cb0bebdedb5eda83",
@@ -73,6 +74,7 @@ package = {
 }
 
 import("xim.libxpkg.fs")
+import("xim.libxpkg.log")
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
@@ -83,6 +85,28 @@ end
 
 local function ps_quote(s)
     return (s:gsub("'", "''"))
+end
+
+local function start_menu_lnk(name)
+    local appdata = os.getenv("APPDATA")
+    if not appdata or appdata == "" then return nil end
+    return winpath(appdata) .. "\\Microsoft\\Windows\\Start Menu\\Programs\\" .. name .. ".lnk"
+end
+
+local function create_start_menu_shortcut(name, target, workdir, description)
+    local lnk = start_menu_lnk(name)
+    if not lnk then return end
+    local programs_dir = lnk:match("^(.*)\\[^\\]+$")
+    if programs_dir then fs.mkdir_p(programs_dir) end
+    -- exec-quoting-ok: every interpolated value is enclosed in PowerShell single quotes.
+    system.exec(string.format(
+        [[powershell -NoProfile -ExecutionPolicy Bypass -Command "$s = (New-Object -ComObject WScript.Shell).CreateShortcut('%s'); $s.TargetPath = '%s'; $s.IconLocation = '%s,0'; $s.WorkingDirectory = '%s'; $s.Description = '%s'; $s.Save()"]],
+        ps_quote(lnk),
+        ps_quote(winpath(target)),
+        ps_quote(winpath(target)),
+        ps_quote(winpath(workdir)),
+        ps_quote(description)
+    ))
 end
 
 local function required_files()
@@ -131,10 +155,22 @@ function config()
     local dir = pkginfo.install_dir()
     xvm.add("winscp", { bindir = dir, alias = "WinSCP.exe" })
     xvm.add("winscp-cli", { bindir = dir, alias = "WinSCP.com", binding = "winscp@" .. pkginfo.version() })
+    local ok, err = pcall(
+        create_start_menu_shortcut,
+        "WinSCP",
+        dir .. "/WinSCP.exe",
+        dir,
+        "WinSCP SFTP, FTP, WebDAV, S3 and SCP client"
+    )
+    if not ok then
+        log.warn("winscp: failed to create Start Menu shortcut: " .. tostring(err))
+    end
     return true
 end
 
 function uninstall()
+    local lnk = start_menu_lnk("WinSCP")
+    if lnk then os.tryrm(lnk) end
     xvm.remove("winscp-cli")
     xvm.remove("winscp")
     return true
