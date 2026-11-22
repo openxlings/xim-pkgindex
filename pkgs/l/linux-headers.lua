@@ -48,14 +48,14 @@ package = {
                         GLOBAL = "https://github.com/xlings-res/linux-headers/releases/download/6.18.64-r1/linux-headers-6.18.64-r1.tar.gz",
                         CN     = "https://gitcode.com/xlings-res/linux-headers/releases/download/6.18.64-r1/linux-headers-6.18.64-r1.tar.gz",
                     },
-                    sha256 = "@SHA_R1@",
+                    sha256 = "b8a82fd0c9e9e0b2261b45afa2f2a6cecb91e52f84deadc1e2e4ef8016cd23a2",
                 },
                 aarch64 = {
                     url = {
                         GLOBAL = "https://github.com/xlings-res/linux-headers/releases/download/6.18.64-r1/linux-headers-6.18.64-r1.tar.gz",
                         CN     = "https://gitcode.com/xlings-res/linux-headers/releases/download/6.18.64-r1/linux-headers-6.18.64-r1.tar.gz",
                     },
-                    sha256 = "@SHA_R1@",
+                    sha256 = "b8a82fd0c9e9e0b2261b45afa2f2a6cecb91e52f84deadc1e2e4ef8016cd23a2",
                 },
             },
             -- Self-contained PREBUILT kernel headers, mirror-aware.
