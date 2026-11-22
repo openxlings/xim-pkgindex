@@ -34,14 +34,23 @@ package = {
                   .. "libcusparse/linux-${arch_alias}/"
                   .. "libcusparse-linux-${arch_alias}-${version}-archive.tar.xz",
             arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
+            -- libcusparse.so and its siblings name libgcc_s.so.1 (some libstdc++.so.6 too) in DT_NEEDED
+            -- (readelf, the x86_64 archive of the newest version). A toolchain whose runtime is not
+            -- GCC's supplies neither, so the package declares the GCC runtime itself and the
+            -- seal's DT_RUNPATH reaches it.
+            deps = { "xim:gcc-runtime" },
             ["latest"] = { ref = "12.8.1.7" },
             ["12.8.1.7"] = {
+                -- 1: the archive unchanged; the GCC runtime is declared (deps above).
+                revision = 1,
                 sha256 = {
                     aarch64  = "b23a486db30b80cd692e701e3f5eb77a2b96cb88292b1b588eac05100f82f72b",
                     x86_64   = "c258aab32bd5c3f19eb9e82be368501b8e24c21d5825f2ab86473008a26ba0c7",
                 },
             },
             ["12.5.10.65"] = {
+                -- 1: the archive unchanged; the GCC runtime is declared (deps above).
+                revision = 1,
                 sha256 = {
                     aarch64  = "8d1c8a57ba3eaecc3f7c11e29fed275a2f3dca5cea51dd2a24d07ab5d9998583",
                     x86_64   = "a83415dcd3e1183afe363d4740f9f0309cfe560c6c08016c2a61468304f4b848",
