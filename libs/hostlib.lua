@@ -243,6 +243,46 @@ function hostlib.canonical_libdir(arch)
     return "/usr/lib/" .. triplet
 end
 
+-- A shell command's output, or "" when it cannot be run.
+local function __sh(cmd)
+    local f = io.popen(cmd .. " 2>/dev/null")
+    if not f then return "" end
+    local out = f:read("*a") or ""
+    f:close()
+    return out
+end
+
+-- The links of a host-link package, generated from the host as it is now.
+--
+-- TARGETS maps a link name to the host path it names. Every symbolic link in
+-- LIBDIR whose name is not in TARGETS is removed, and every name in TARGETS is
+-- linked again; a regular file in LIBDIR is the package's own (an interposer)
+-- and is neither removed nor replaced. Returns the number of links written.
+--
+-- One step for install() and config(), because config() is what xlings runs
+-- again when a host fact the package declares (`host_facts`, the driver's
+-- version file) reads differently: a driver upgrade renames the private
+-- libraries after its version, and links named at install time then dangle
+-- while the package still reads as installed (xlings#727). Generating the set
+-- from the host on every configuration, rather than repairing names, is what
+-- makes running config() again the whole repair.
+function hostlib.link_set(libdir, targets)
+    __sh(string.format([[mkdir -p "%s"]], libdir))
+    for line in __sh(string.format([[find "%s" -mindepth 1 -maxdepth 1 -type l]], libdir)):gmatch("[^\n]+") do
+        if targets[path.filename(line)] == nil then __sh(string.format([[rm -f "%s"]], line)) end
+    end
+    local written = 0
+    for name, target in pairs(targets) do
+        local at = path.join(libdir, name)
+        -- The package's own file stays; a link, or nothing, is written.
+        if __sh(string.format([[test -f "%s" && ! test -L "%s" && echo own]], at, at)):find("own") == nil then
+            __sh(string.format([[ln -sfn "%s" "%s"]], target, at))
+            written = written + 1
+        end
+    end
+    return written
+end
+
 -- Say what was found, once, in the form a reader can act on.
 --
 -- Separate from the probe so a caller that legitimately expects nothing (a
