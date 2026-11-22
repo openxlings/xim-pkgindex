@@ -94,6 +94,48 @@ for _, f in ipairs(files) do
 end
 ''', PKG_FILE)
 
+    @pytest.mark.static
+    def test_start_menu_shortcut_only_without_desktop(self):
+        _run_lua('''
+import = function() end
+dofile(arg[1])
+local mkdirs, execs, rms, xvm_adds, xvm_rms, warns = {}, {}, {}, {}, {}, {}
+pkginfo = {
+    install_dir = function() return "C:/xlings/filezilla/3.72.1" end,
+    version = function() return "3.72.1" end,
+}
+os.getenv = function(k) return k == "APPDATA" and "C:\\\\Users\\\\O'Neil\\\\AppData\\\\Roaming" or nil end
+fs = { mkdir_p = function(p) table.insert(mkdirs, p) end }
+system = { exec = function(cmd) table.insert(execs, cmd) end }
+os.tryrm = function(p) table.insert(rms, p) end
+log = { warn = function(msg) table.insert(warns, msg) end }
+xvm = {
+    add = function(name, opts) table.insert(xvm_adds, {name, opts}) end,
+    remove = function(name) table.insert(xvm_rms, name) end,
+}
+
+assert(config())
+assert(#xvm_adds == 1)
+assert(mkdirs[1] == "C:\\\\Users\\\\O'Neil\\\\AppData\\\\Roaming\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs")
+assert(#execs == 1)
+assert(execs[1]:find("Start Menu\\\\Programs\\\\FileZilla%.lnk", 1, false))
+assert(execs[1]:find("O''Neil", 1, false))
+assert(not execs[1]:find("Desktop", 1, true))
+assert(#warns == 0)
+
+assert(uninstall())
+assert(#rms == 1 and rms[1] == "C:\\\\Users\\\\O'Neil\\\\AppData\\\\Roaming\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\\\\FileZilla.lnk")
+assert(not rms[1]:find("Desktop", 1, true))
+assert(#xvm_rms == 1)
+
+-- Best-effort fallback: Start Menu failure must not abort config()
+execs, warns, xvm_adds = {}, {}, {}
+system.exec = function() error("access denied") end
+assert(config())
+assert(#xvm_adds == 1)
+assert(#warns == 1)
+''', PKG_FILE)
+
 
 class TestIndex:
     @pytest.mark.index
@@ -122,7 +164,7 @@ class TestIsolation:
     def test_portable_lua_and_libxpkg_only(self):
         src = Path(PKG_FILE).read_text(encoding="utf-8")
         assert set(re.findall(r'import\("([^"]+)"\)', src)) <= {
-            "xim.libxpkg.fs", "xim.libxpkg.pkginfo",
+            "xim.libxpkg.fs", "xim.libxpkg.log", "xim.libxpkg.pkginfo",
             "xim.libxpkg.system", "xim.libxpkg.xvm",
         }
         assert not re.search(r'\b(?:path\.|is_host\(|os\.host\(|raise\()', src)
