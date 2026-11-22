@@ -17,7 +17,7 @@
 -- DT_RPATH of the program that loaded it. Undeclared, they were found in no
 -- program built against this payload, and a program failed at start on a
 -- machine with a display (mcpp design 2026-11-21 §3.10). Declared: X11 and
--- X11-xcb (libX11), xcb (libxcb), Xcursor, Xrandr, Xi, xkbcommon and
+-- X11-xcb (libX11), xcb (libxcb), Xcursor, Xrandr, Xrender, Xi, xkbcommon and
 -- xkbcommon-x11 (libxkbcommon), Wayland client, cursor and EGL (wayland),
 -- EGL and GL (libglvnd).
 --
@@ -48,7 +48,7 @@ package = {
         linux = {
             deps = {
                 "xim:fontconfig@2.15.0.1", "xim:gcc-runtime@15.1.0", "xim:glibc",
-                "xim:libX11", "xim:libxcb", "xim:libXcursor", "xim:libXrandr", "xim:libXi",
+                "xim:libX11", "xim:libxcb", "xim:libXcursor", "xim:libXrandr", "xim:libXrender", "xim:libXi",
                 "xim:libxkbcommon", "xim:wayland", "xim:libglvnd",
             },
             exports = {
@@ -58,7 +58,10 @@ package = {
             ["1.19.0"] = {
                 -- 1: the archive unchanged; the seal's DT_RUNPATH now reaches
                 -- the libraries libslint_cpp dlopen()s (the deps above).
-                revision = 1,
+                -- 2: the archive unchanged; libXrender, which libslint_cpp
+                -- dlopen()s too, is declared: it was reached only as a
+                -- dependency of an Xcursor or Xrandr loaded before it.
+                revision = 2,
                 x86_64 = {
                     url = {
                         GLOBAL = "https://github.com/xlings-res/slint/releases/download/1.19.0/slint-1.19.0-default-linux-x86_64.tar.gz",
