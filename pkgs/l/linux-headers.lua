@@ -36,17 +36,27 @@ package = {
                 },
                 sha256 = "b9ed727b50aa92cab72f99474fcd64f93e0470341163a93806caf38d5cc2009e",
             },
-            -- Revision 1: the same headers in the layout above, under a new
-            -- asset name (the per-architecture archives of revision 0 stay
-            -- published). `floor` stays 0: an installed revision-0 payload
-            -- holds the host's headers and remains usable.
+            -- Revision 1: the same headers in the layout above, as the
+            -- corrective asset `6.18.64-r1` (the revision-0 archives of each
+            -- architecture stay published). Each host's entry names the one
+            -- archive. `floor` stays 0: an installed revision-0 payload holds
+            -- the host's headers and remains usable.
             ["6.18.64"] = {
                 revision = 1,
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/linux-headers/releases/download/6.18.64/linux-headers-6.18.64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/linux-headers/releases/download/6.18.64/linux-headers-6.18.64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/linux-headers/releases/download/6.18.64-r1/linux-headers-6.18.64-r1.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/linux-headers/releases/download/6.18.64-r1/linux-headers-6.18.64-r1.tar.gz",
+                    },
+                    sha256 = "@SHA_R1@",
                 },
-                sha256 = "1db434b778969f328ab3ec939e745fa430b5cd2b255257c28fe7fe4fc89c0dc2",
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/linux-headers/releases/download/6.18.64-r1/linux-headers-6.18.64-r1.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/linux-headers/releases/download/6.18.64-r1/linux-headers-6.18.64-r1.tar.gz",
+                    },
+                    sha256 = "@SHA_R1@",
+                },
             },
             -- Self-contained PREBUILT kernel headers, mirror-aware.
             --
@@ -85,6 +95,7 @@ import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
 import("xim.pkgindex.sysroot")
+import("xim.pkgindex.shell")
 
 function install()
     -- The prebuilt tarball extracts to `linux-headers-<ver>/include/...`.
@@ -116,15 +127,14 @@ function install()
             log.error("linux-headers %s carries no headers of %s", pkginfo.version(), arch)
             return false
         end
-        os.exec(string.format([[ln -sfn "../arch/%s/include/asm" "%s"]], arch,
-                              path.join(root, "include", "asm")))
-        local list = io.popen(string.format([[cd "%s" && find . -type f ! -path './asm/*']], own))
+        shell.exec({ "ln", "-sfn", "../arch/" .. arch .. "/include/asm", path.join(root, "include", "asm") })
+        local list = io.popen("cd " .. shell.quote(own) .. " && find . -type f ! -path './asm/*'")
         for line in list:lines() do
             local rel = line:gsub("^%./", "")
             local up = string.rep("../", select(2, rel:gsub("/", "")) + 1)
             local dst = path.join(root, "include", rel)
             if not os.isdir(path.directory(dst)) then os.mkdir(path.directory(dst)) end
-            os.exec(string.format([[ln -sfn "%sarch/%s/include/%s" "%s"]], up, arch, rel, dst))
+            shell.exec({ "ln", "-sfn", up .. "arch/" .. arch .. "/include/" .. rel, dst })
         end
         list:close()
     end

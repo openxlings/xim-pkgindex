@@ -71,7 +71,7 @@
   },
   {
     "what": "linux-headers",
-    "version": "6.18.64",
+    "version": "6.18.64-r1",
     "arch": "x86_64"
   },
   {

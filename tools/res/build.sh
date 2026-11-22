@@ -1200,12 +1200,14 @@ linux-headers)
     # files into include/, so a reader of include/ sees what the
     # per-architecture archives held; a build for another architecture reads
     # arch/<arch>/include first. The digest is kernel.org's sha256sums.asc, as
-    # kernel-virt reads it.
+    # kernel-virt reads it. <kernel.org version>[-r<N>]: a revision is the same
+    # source packed again (xpkg-manifest-v1 §5.1.1).
+    kv="${version%%-r*}"
     sums="$work/sha256sums.asc"
-    curl -fsSL --retry 3 -o "$sums" "https://cdn.kernel.org/pub/linux/kernel/v${version%%.*}.x/sha256sums.asc"
-    sha="$(grep " linux-$version.tar.xz\$" "$sums" | cut -d' ' -f1)"
-    [[ -n "$sha" ]] || die "kernel.org lists no linux-$version.tar.xz"
-    fetch "https://cdn.kernel.org/pub/linux/kernel/v${version%%.*}.x/linux-$version.tar.xz" "$sha" "$work/linux.tar.xz"
+    curl -fsSL --retry 3 -o "$sums" "https://cdn.kernel.org/pub/linux/kernel/v${kv%%.*}.x/sha256sums.asc"
+    sha="$(grep " linux-$kv.tar.xz\$" "$sums" | cut -d' ' -f1)"
+    [[ -n "$sha" ]] || die "kernel.org lists no linux-$kv.tar.xz"
+    fetch "https://cdn.kernel.org/pub/linux/kernel/v${kv%%.*}.x/linux-$kv.tar.xz" "$sha" "$work/linux.tar.xz"
     # xpkg architecture -> the kernel's ARCH. i686 is x86's headers (asm/
     # carries unistd_32.h beside unistd_64.h, chosen by __i386__), a link to
     # x86_64's.
@@ -1213,10 +1215,10 @@ linux-headers)
     d="linux-headers-$version"
     installs=""
     for pair in $kernel_arches; do
-        installs+=" && make -s -C linux-$version ARCH=${pair#*:} headers_install INSTALL_HDR_PATH=/w/hdr-${pair%%:*}"
+        installs+=" && make -s -C linux-$kv ARCH=${pair#*:} headers_install INSTALL_HDR_PATH=/w/hdr-${pair%%:*}"
     done
     debian "apt-get -qq update && apt-get -qq install -y build-essential rsync xz-utils >/dev/null \
-        && tar -xJf linux.tar.xz $installs && cp linux-$version/COPYING /w/LICENSE"
+        && tar -xJf linux.tar.xz $installs && cp linux-$kv/COPYING /w/LICENSE"
     arches=""
     for pair in $kernel_arches; do
         a="${pair%%:*}"; arches+=" $a"
@@ -1249,11 +1251,11 @@ linux-headers)
     done
     ln -s x86_64 "$work/$d/arch/i686"
     cp "$work/LICENSE" "$work/$d/LICENSE"
-    grep -q "^#define LINUX_VERSION_MAJOR ${version%%.*}\$" "$work/$d/include/linux/version.h" \
-        || die "linux/version.h does not name $version"
+    grep -q "^#define LINUX_VERSION_MAJOR ${kv%%.*}\$" "$work/$d/include/linux/version.h" \
+        || die "linux/version.h does not name $kv"
     [[ ! -e "$work/$d/include/asm" ]] || die "include/asm is the install step's link, not the archive's"
     [[ -z "$(find "$work/$d" -name '.*' -o -name '*.cmd')" ]] || die "build state left in the headers"
-    provenance "$d" "the UAPI headers of linux $version (kernel.org, sha256 $sha): make ARCH=<x86|arm64|riscv|loongarch> headers_install, in Debian 12; include/ holds the files every architecture installs byte for byte alike, arch/<arch>/include/ the rest of each architecture's (asm/ and the headers only some install)"
+    provenance "$d" "the UAPI headers of linux $kv (kernel.org, sha256 $sha): make ARCH=<x86|arm64|riscv|loongarch> headers_install, in Debian 12; include/ holds the files every architecture installs byte for byte alike, arch/<arch>/include/ the rest of each architecture's (asm/ and the headers only some install)"
     pack_data "$d" ;;
 patchelf)
     # NixOS/patchelf's release binary for this architecture (static-pie) and
