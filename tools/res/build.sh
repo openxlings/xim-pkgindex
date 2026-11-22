@@ -1188,22 +1188,27 @@ linux-headers)
     # The kernel's UAPI headers of a kernel.org release (`make headers_install`):
     # what the C library and a program include as <linux/...> and <asm/...>,
     # and what gcc's sysroot is built with. A data resource, the same bytes on
-    # every machine: the headers are the TARGET's, not a program of the host,
-    # and of headers_install's output only asm/ differs between architectures.
+    # every machine: the headers are the TARGET's, not a program of the host.
     #
-    #   include/                     every directory but asm/, which the install
-    #                                step links to arch/<host arch>/include/asm
-    #   arch/<arch>/include/asm/     one per architecture, <arch> the xpkg name
+    #   include/                     the files every architecture installs alike
+    #   arch/<arch>/include/         the rest of one architecture's: asm/, and
+    #                                the headers only some install (measured on
+    #                                6.18.64: linux/a.out.h on x86 alone,
+    #                                linux/kvm_para.h not on riscv)
     #
-    # The identity of the common part is checked here, not assumed. The digest
-    # is kernel.org's sha256sums.asc, as kernel-virt reads it.
+    # <arch> is the xpkg name. The install step links the host architecture's
+    # files into include/, so a reader of include/ sees what the
+    # per-architecture archives held; a build for another architecture reads
+    # arch/<arch>/include first. The digest is kernel.org's sha256sums.asc, as
+    # kernel-virt reads it.
     sums="$work/sha256sums.asc"
     curl -fsSL --retry 3 -o "$sums" "https://cdn.kernel.org/pub/linux/kernel/v${version%%.*}.x/sha256sums.asc"
     sha="$(grep " linux-$version.tar.xz\$" "$sums" | cut -d' ' -f1)"
     [[ -n "$sha" ]] || die "kernel.org lists no linux-$version.tar.xz"
     fetch "https://cdn.kernel.org/pub/linux/kernel/v${version%%.*}.x/linux-$version.tar.xz" "$sha" "$work/linux.tar.xz"
-    # xpkg architecture -> the kernel's ARCH. i686 is x86's asm/ (unistd_32.h
-    # beside unistd_64.h, chosen by __i386__), so it is a link to x86_64's.
+    # xpkg architecture -> the kernel's ARCH. i686 is x86's headers (asm/
+    # carries unistd_32.h beside unistd_64.h, chosen by __i386__), a link to
+    # x86_64's.
     kernel_arches="x86_64:x86 aarch64:arm64 riscv64:riscv loongarch64:loongarch"
     d="linux-headers-$version"
     installs=""
@@ -1212,30 +1217,43 @@ linux-headers)
     done
     debian "apt-get -qq update && apt-get -qq install -y build-essential rsync xz-utils >/dev/null \
         && tar -xJf linux.tar.xz $installs && cp linux-$version/COPYING /w/LICENSE"
-    first=""
+    arches=""
     for pair in $kernel_arches; do
-        a="${pair%%:*}"; h="$work/hdr-$a/include"
+        a="${pair%%:*}"; arches+=" $a"
         for f in linux/limits.h linux/errno.h linux/version.h asm/unistd.h asm-generic/errno.h; do
-            [[ -f "$h/$f" ]] || die "$a: no include/$f"
+            [[ -f "$work/hdr-$a/include/$f" ]] || die "$a: no include/$f"
         done
-        if [[ -z "$first" ]]; then
-            first="$a"
-            mkdir -p "$work/$d"
-            rsync -a --exclude=/asm "$h/" "$work/$d/include/"
-        else
-            diff -r -x asm "$work/hdr-$first/include" "$h" >/dev/null \
-                || die "the headers outside asm/ differ between $first and $a"
-        fi
-        mkdir -p "$work/$d/arch/$a/include"
-        cp -a "$h/asm" "$work/$d/arch/$a/include/asm"
+        (cd "$work/hdr-$a/include" && find . -type f | sed 's|^\./||' | sort) > "$work/files-$a"
     done
-    mkdir -p "$work/$d/arch" && ln -s x86_64 "$work/$d/arch/i686"
+    # Common: a file outside asm/ every architecture installs, byte for byte
+    # the same. asm/ is one architecture's whole (some of its files read the
+    # same everywhere; the install step links the directory, not the files).
+    first="${arches# }"; first="${first%% *}"
+    cp "$work/files-$first" "$work/common"
+    for a in $arches; do comm -12 "$work/common" "$work/files-$a" > "$work/c" && mv "$work/c" "$work/common"; done
+    : > "$work/same"
+    grep -v '^asm/' "$work/common" > "$work/c" || true; mv "$work/c" "$work/common"
+    while read -r f; do
+        same=1
+        for a in $arches; do cmp -s "$work/hdr-$first/include/$f" "$work/hdr-$a/include/$f" || same=0; done
+        [[ "$same" == 1 ]] && echo "$f" >> "$work/same"
+    done < "$work/common"
+    mkdir -p "$work/$d/include"
+    (cd "$work/hdr-$first/include" && xargs -a "$work/same" cp --parents -t "$work/$d/include")
+    for a in $arches; do
+        comm -23 "$work/files-$a" "$work/same" > "$work/own-$a"
+        [[ -s "$work/own-$a" ]] || die "$a: no file of its own (asm/ at least)"
+        mkdir -p "$work/$d/arch/$a/include"
+        (cd "$work/hdr-$a/include" && xargs -a "$work/own-$a" cp --parents -t "$work/$d/arch/$a/include")
+        log "$a: $(wc -l < "$work/own-$a") files of its own, $(grep -vc '^asm/' "$work/own-$a" || true) outside asm/"
+    done
+    ln -s x86_64 "$work/$d/arch/i686"
     cp "$work/LICENSE" "$work/$d/LICENSE"
     grep -q "^#define LINUX_VERSION_MAJOR ${version%%.*}\$" "$work/$d/include/linux/version.h" \
         || die "linux/version.h does not name $version"
     [[ ! -e "$work/$d/include/asm" ]] || die "include/asm is the install step's link, not the archive's"
     [[ -z "$(find "$work/$d" -name '.*' -o -name '*.cmd')" ]] || die "build state left in the headers"
-    provenance "$d" "the UAPI headers of linux $version (kernel.org, sha256 $sha): make ARCH=<x86|arm64|riscv|loongarch> headers_install, in Debian 12; include/ is the output outside asm/ (identical for every architecture, checked), arch/<arch>/include/asm/ each architecture's asm/"
+    provenance "$d" "the UAPI headers of linux $version (kernel.org, sha256 $sha): make ARCH=<x86|arm64|riscv|loongarch> headers_install, in Debian 12; include/ holds the files every architecture installs byte for byte alike, arch/<arch>/include/ the rest of each architecture's (asm/ and the headers only some install)"
     pack_data "$d" ;;
 patchelf)
     # NixOS/patchelf's release binary for this architecture (static-pie) and

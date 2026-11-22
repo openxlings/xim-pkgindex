@@ -100,20 +100,33 @@ function install()
     os.tryrm(pkginfo.install_dir())
     os.trymv(srcdir, pkginfo.install_dir())
 
-    -- The layout with arch/: include/asm is the host's. Read through
-    -- `uname -m`, as os.arch() is unbound in the hook runtime (pkgs/q/qt.lua).
-    local archdir = path.join(pkginfo.install_dir(), "arch")
-    if os.isdir(archdir) then
+    -- The layout with arch/: include/ gains the host architecture's own
+    -- files -- asm/ as one link, and each header only some architectures
+    -- install -- so it reads as the per-architecture archives did. The host
+    -- is read through `uname -m`, as os.arch() is unbound in the hook runtime
+    -- (pkgs/q/qt.lua).
+    local root = pkginfo.install_dir()
+    if os.isdir(path.join(root, "arch")) then
         local f = io.popen("uname -m")
         local arch = f and (f:read("l") or "") or ""
         if f then f:close() end
         if arch == "arm64" then arch = "aarch64" end
-        if not os.isdir(path.join(archdir, arch, "include", "asm")) then
-            log.error("linux-headers %s carries no asm/ for %s", pkginfo.version(), arch)
+        local own = path.join(root, "arch", arch, "include")
+        if not os.isdir(path.join(own, "asm")) then
+            log.error("linux-headers %s carries no headers of %s", pkginfo.version(), arch)
             return false
         end
         os.exec(string.format([[ln -sfn "../arch/%s/include/asm" "%s"]], arch,
-                              path.join(pkginfo.install_dir(), "include", "asm")))
+                              path.join(root, "include", "asm")))
+        local list = io.popen(string.format([[cd "%s" && find . -type f ! -path './asm/*']], own))
+        for line in list:lines() do
+            local rel = line:gsub("^%./", "")
+            local up = string.rep("../", select(2, rel:gsub("/", "")) + 1)
+            local dst = path.join(root, "include", rel)
+            if not os.isdir(path.directory(dst)) then os.mkdir(path.directory(dst)) end
+            os.exec(string.format([[ln -sfn "%sarch/%s/include/%s" "%s"]], up, arch, rel, dst))
+        end
+        list:close()
     end
 
     return true
