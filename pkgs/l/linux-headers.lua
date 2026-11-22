@@ -34,7 +34,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/linux-headers/releases/download/7.3.5/linux-headers-7.3.5.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/linux-headers/releases/download/7.3.5/linux-headers-7.3.5.tar.gz",
                 },
-                sha256 = "@SHA_7.3.5@",
+                sha256 = "b9ed727b50aa92cab72f99474fcd64f93e0470341163a93806caf38d5cc2009e",
             },
             -- Revision 1: the same headers in the layout above, under a new
             -- asset name (the per-architecture archives of revision 0 stay
@@ -46,7 +46,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/linux-headers/releases/download/6.18.64/linux-headers-6.18.64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/linux-headers/releases/download/6.18.64/linux-headers-6.18.64.tar.gz",
                 },
-                sha256 = "@SHA_6.18.64@",
+                sha256 = "1db434b778969f328ab3ec939e745fa430b5cd2b255257c28fe7fe4fc89c0dc2",
             },
             -- Self-contained PREBUILT kernel headers, mirror-aware.
             --
