@@ -14,6 +14,15 @@ package = {
     categories = {"runtime", "lib", "gpu", "nvidia"},
     keywords = {"cuda", "nvidia", "driver", "host-link", "sentinel"},
 
+    -- The host file the links are generated from (xpkg manifest v1 §3.2): the
+    -- version of the NVIDIA kernel module now loaded. A client from xlings
+    -- 2026.11.23.1 records it after config() and runs config() again where it
+    -- reads differently (install, `xlings use`, SubOS entry, `self doctor`),
+    -- which links the driver as it is then. An older client ignores the field.
+    host_facts = {
+        linux = { "/sys/module/nvidia/version" },
+    },
+
     -- ─────────────────────────────────────────────────────────────────────
     -- What this package does (and what it does NOT do)
     --
@@ -88,7 +97,6 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
-import("xim.libxpkg.system")
 import("xim.pkgindex.hostlib")
 
 -- Probe the host for libcuda.so.1.
@@ -148,43 +156,30 @@ local function __canonical_path_for_distro(soname)
     return path.join(hostlib.canonical_libdir(), soname)
 end
 
-function install()
-    local libdir = path.join(pkginfo.install_dir(), "lib")
-    os.tryrm(pkginfo.install_dir())
-    os.mkdir(libdir)
-
-    -- One link per name, and the same treatment for every name: a probe, a
-    -- canonical fallback, a link that is created whether or not its target
-    -- exists yet.
-    --
-    -- Dangling-but-canonical is intentional: when the user later installs
-    -- nvidia-driver via their distro package manager, the driver will
-    -- materialize at the canonical path, and these symlinks (plus all
-    -- transitive consumer symlinks pointing to them) will resolve
-    -- automatically — no xpkg reinstall needed.
-    local found = 0
+-- The links, from the host as it is now: one per name, a probe, a canonical
+-- fallback, and a link created whether or not its target exists yet.
+-- Dangling-but-canonical is intentional: when the distro's driver package
+-- later puts the file at the canonical path, the link resolves without this
+-- package running again. Run by install() and by config(), which a changed
+-- driver version runs again (`host_facts`), through the one generation step
+-- of the host-link packages (hostlib.link_set).
+local function __link(libdir)
+    local targets, found = {}, 0
     for _, soname in ipairs(SONAMES) do
-        local host   = __probe_host_lib(soname)
-        local target = host or __canonical_path_for_distro(soname)
-        -- Use `ln -sf` rather than os.ln (xmake's lua has no os.ln helper);
-        -- -f is harmless here since we just os.tryrm'd the parent.
-        system.exec(string.format([[ln -sf "%s" "%s"]],
-                                  target, path.join(libdir, soname)))
+        local host = __probe_host_lib(soname)
+        targets[soname] = host or __canonical_path_for_distro(soname)
         if host then
             found = found + 1
             log.info("libcuda-host-link: %s -> %s", soname, host)
         else
-            log.info("libcuda-host-link: %s -> %s (dangling)", soname, target)
+            log.info("libcuda-host-link: %s -> %s (dangling)", soname, targets[soname])
         end
     end
+    hostlib.link_set(libdir, targets)
 
-    -- The count, not just the individual lines. A sentinel that resolved one
-    -- of two names is a different machine from one that resolved neither, and
-    -- reading that off a scrolled log is what "the driver is installed" was
-    -- being inferred from before.
-    log.info("libcuda-host-link: %d of %d resolved on this host",
-             found, #SONAMES)
-
+    -- The count, not only the individual lines: a sentinel that resolved some
+    -- of its names is a different machine from one that resolved none.
+    log.info("libcuda-host-link: %d of %d resolved on this host", found, #SONAMES)
     if found < #SONAMES then
         log.warn("NVIDIA driver not fully detected on this host.")
         log.warn("  %d of %d libraries are dangling links", #SONAMES - found, #SONAMES)
@@ -193,11 +188,18 @@ function install()
         log.warn("  distro package manager — at which point the links")
         log.warn("  self-heal and GPU acceleration starts working.")
     end
+end
 
+function install()
+    local libdir = path.join(pkginfo.install_dir(), "lib")
+    os.tryrm(pkginfo.install_dir())
+    os.mkdir(libdir)
+    __link(libdir)
     return true
 end
 
 function config()
+    __link(path.join(pkginfo.install_dir(), "lib"))
     xvm.add(package.name)
     return true
 end

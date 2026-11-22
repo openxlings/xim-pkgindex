@@ -49,7 +49,7 @@ package = {
                 runtime = { "xim:glibc@>=2.39", "xim:gcc-runtime@>=15" },
                 build = { "xim:patchelf@0.18.0" },
             },
-            ["latest"] = { ref = "2.42.1" },
+            ["latest"] = { ref = "2.47" },
             ["2.47"] = {
                 -- GNU's signed release, built on each architecture by
                 -- tools/res/build.sh binutils (Debian 12, glibc), without

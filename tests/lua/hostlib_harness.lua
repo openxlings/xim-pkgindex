@@ -126,6 +126,29 @@ print("== 6. a dangling symlink is dropped, not counted ==")
 local got2 = hostlib.entries_with_prefix(ROOT .. "/dangling", { "^libnvidia%-" })
 check("dangling dropped", #got2, 0)
 
+print("== 7. link_set: the links follow the host, the package's own files stay ==")
+-- The driver upgrade the host-link packages are configured again for: the
+-- private library was linked under the old driver's version, the interposer is
+-- the package's own regular file, and the new driver's file is the target now.
+local lib = ROOT .. "/linkset/lib"
+os.execute(string.format('mkdir -p "%s"', lib))
+os.execute(string.format('ln -sfn "%s/mixed/libnvidia-glcore.so.550" "%s/libnvidia-glcore.so.550"', ROOT, lib))
+os.execute(string.format('printf interposer > "%s/libEGL_nvidia.so.0"', lib))
+local function sh(cmd)
+    local f = io.popen(cmd .. " 2>/dev/null"); local out = f:read("*a"); f:close(); return out
+end
+local written = hostlib.link_set(lib, {
+    ["libnvidia-glcore.so.560"] = ROOT .. "/mixed/libnvidia-glcore.so.550",
+    ["libEGL_nvidia.so.0"] = "/host/libEGL_nvidia.so.0",
+})
+check("links written", written, 1)
+check("stale link removed", sh(string.format('test -L "%s/libnvidia-glcore.so.550" && echo yes', lib)), "")
+check("new link names the target", sh(string.format('readlink "%s/libnvidia-glcore.so.560"', lib)),
+      ROOT .. "/mixed/libnvidia-glcore.so.550\n")
+check("interposer kept", sh(string.format('cat "%s/libEGL_nvidia.so.0"', lib)), "interposer")
+check("empty set removes every link", hostlib.link_set(lib, {}), 0)
+check("no link left", sh(string.format('find "%s" -type l', lib)), "")
+
 print()
 if fail_count == 0 then
     print(string.format("PASS: %d assertions", ok_count))

@@ -68,7 +68,15 @@ package = {
 
     xpm = {
         linux = {
-            -- No deps: a fully self-contained toolchain. The single host asset
+            -- The kernel headers: the payload's sysroot carries musl's headers
+            -- and none of the kernel's (measured: no <linux/version.h> under
+            -- riscv64-linux-musl/include, where aarch64-linux-musl-gcc carries
+            -- 4.19.88). A build compiles against the ones the toolchain
+            -- declares; linux-headers 6.18.64 revision 1 carries riscv64's.
+            deps = {
+                runtime = { "xim:linux-headers@6.18.64" },
+            },
+            -- No other deps: a fully self-contained toolchain. The single host asset
             -- (x86_64) is FULLY STATIC — its host ELFs (gcc/g++/cc1plus/as/ld/
             -- ...) have no PT_INTERP and no NEEDED libs, so they need neither a
             -- libc loader in the sandbox (no xim:glibc) nor elfpatch relocation;
