@@ -8,7 +8,7 @@ from tests.lib.assertions import (
     assert_required_fields, assert_valid_spec, assert_valid_type,
     assert_no_typos, assert_no_exec_xvm, assert_no_bashrc_modification,
     assert_no_direct_path_modification, assert_uses_new_api,
-    assert_xim_add_succeeds, assert_install_succeeds,
+    assert_xim_add_succeeds,
     assert_xvm_registered, assert_config_registers_package_name,
     assert_valid_xvm_node_kinds,
 )
@@ -16,7 +16,7 @@ from tests.lib.platform_utils import skip_if_not, under_test
 from tests.m._magpie_resources import (
     PLATFORMS, latest_refs, platform_resources,
 )
-from tests.m._magpie_shim import shim_output
+from tests.m._magpie_shim import install_package, shim_output
 
 PKG = "magpie"
 PKG_FILE = "pkgs/m/magpie.lua"
@@ -185,7 +185,8 @@ class TestIsolation:
 class TestLifecycle:
     @pytest.mark.lifecycle
     def test_install(self):
-        assert_install_succeeds(under_test(PKG, VERSION), timeout=900)
+        ok, out = install_package(under_test(PKG, VERSION))
+        assert ok, out[-400:]
 
 
 class TestVerify:
