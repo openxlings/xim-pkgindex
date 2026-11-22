@@ -51,6 +51,7 @@ package = {
             deps = { build = { "xim:7zip" } },
             ["latest"] = { ref = "3.72.1" },
             ["3.72.1"] = {
+                revision = 1,
                 x86_64 = {
                     url = "https://packages.chocolatey.org/filezilla.3.72.1.nupkg",
                     sha256 = "b2f058831a72a522b1230c5e2230ff4dc5cc107bd1d00bf89babf55e00a840e5",
@@ -61,6 +62,7 @@ package = {
 }
 
 import("xim.libxpkg.fs")
+import("xim.libxpkg.log")
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
@@ -71,6 +73,28 @@ end
 
 local function ps_quote(s)
     return (s:gsub("'", "''"))
+end
+
+local function start_menu_lnk(name)
+    local appdata = os.getenv("APPDATA")
+    if not appdata or appdata == "" then return nil end
+    return winpath(appdata) .. "\\Microsoft\\Windows\\Start Menu\\Programs\\" .. name .. ".lnk"
+end
+
+local function create_start_menu_shortcut(name, target, workdir, description)
+    local lnk = start_menu_lnk(name)
+    if not lnk then return end
+    local programs_dir = lnk:match("^(.*)\\[^\\]+$")
+    if programs_dir then fs.mkdir_p(programs_dir) end
+    -- exec-quoting-ok: every interpolated value is enclosed in PowerShell single quotes.
+    system.exec(string.format(
+        [[powershell -NoProfile -ExecutionPolicy Bypass -Command "$s = (New-Object -ComObject WScript.Shell).CreateShortcut('%s'); $s.TargetPath = '%s'; $s.IconLocation = '%s,0'; $s.WorkingDirectory = '%s'; $s.Description = '%s'; $s.Save()"]],
+        ps_quote(lnk),
+        ps_quote(winpath(target)),
+        ps_quote(winpath(target)),
+        ps_quote(winpath(workdir)),
+        ps_quote(description)
+    ))
 end
 
 local function required_files()
@@ -144,11 +168,24 @@ function install()
 end
 
 function config()
-    xvm.add("filezilla", { bindir = pkginfo.install_dir() })
+    local dir = pkginfo.install_dir()
+    xvm.add("filezilla", { bindir = dir })
+    local ok, err = pcall(
+        create_start_menu_shortcut,
+        "FileZilla",
+        dir .. "/filezilla.exe",
+        dir,
+        "FileZilla FTP, FTPS and SFTP client"
+    )
+    if not ok then
+        log.warn("filezilla: failed to create Start Menu shortcut: " .. tostring(err))
+    end
     return true
 end
 
 function uninstall()
+    local lnk = start_menu_lnk("FileZilla")
+    if lnk then os.tryrm(lnk) end
     xvm.remove("filezilla")
     return true
 end
