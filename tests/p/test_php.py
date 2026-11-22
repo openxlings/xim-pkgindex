@@ -56,18 +56,62 @@ class TestStatic:
 import = function() end
 dofile(arg[1])
 local expected = {
-    linux = {"x86_64", "aarch64"},
-    macosx = {"x86_64", "aarch64"},
-    windows = {"x86_64"},
+    linux = {
+        arches = {"x86_64", "aarch64"},
+        aliases = {
+            latest = "8.5.12",
+            ["8.5"] = "8.5.12",
+            ["8.4"] = "8.4.27",
+            ["8.3"] = "8.3.36",
+            ["8.2"] = "8.2.35",
+            ["8.1"] = "8.1.34",
+            ["8.0"] = "8.0.30",
+        },
+        versions = {"8.5.12", "8.4.27", "8.3.36", "8.2.35", "8.1.34", "8.0.30"},
+    },
+    macosx = {
+        arches = {"x86_64", "aarch64"},
+        aliases = {
+            latest = "8.5.12",
+            ["8.5"] = "8.5.12",
+            ["8.4"] = "8.4.27",
+            ["8.3"] = "8.3.36",
+            ["8.2"] = "8.2.35",
+            ["8.1"] = "8.1.34",
+            ["8.0"] = "8.0.30",
+        },
+        versions = {"8.5.12", "8.4.27", "8.3.36", "8.2.35", "8.1.34", "8.0.30"},
+    },
+    windows = {
+        arches = {"x86_64"},
+        aliases = {
+            latest = "8.5.12",
+            ["8.5"] = "8.5.12",
+            ["8.4"] = "8.4.27",
+            ["8.3"] = "8.3.36",
+            ["8.2"] = "8.2.35",
+            ["8.1"] = "8.1.34",
+            ["8.0"] = "8.0.30",
+            ["7.4"] = "7.4.33",
+        },
+        versions = {"8.5.12", "8.4.27", "8.3.36", "8.2.35", "8.1.34", "8.0.30", "7.4.33"},
+    },
 }
-for plat, arches in pairs(expected) do
+for plat, spec in pairs(expected) do
     local p = assert(package.xpm[plat], "missing platform: " .. plat)
-    local ref = assert(p.latest and p.latest.ref)
-    local v = assert(p[ref], "missing version " .. ref .. " on " .. plat)
-    for _, arch in ipairs(arches) do
-        local r = assert(v[arch], "missing " .. plat .. "/" .. arch)
-        assert(type(r.url) == "string" and r.url:find("php%-" .. ref, 1, false))
-        assert(type(r.sha256) == "string" and #r.sha256 == 64 and r.sha256:match("^%x+$"))
+    for alias, target in pairs(spec.aliases) do
+        assert(p[alias] and p[alias].ref == target,
+            plat .. " alias " .. alias .. " expected ref " .. target)
+    end
+    for _, ver in ipairs(spec.versions) do
+        local v = assert(p[ver], "missing version " .. ver .. " on " .. plat)
+        for _, arch in ipairs(spec.arches) do
+            local r = assert(v[arch], "missing " .. plat .. "/" .. arch .. "@" .. ver)
+            assert(type(r.url) == "string" and r.url:find("php%-" .. ver, 1, false),
+                "unexpected url for " .. plat .. "/" .. arch .. "@" .. ver)
+            assert(type(r.sha256) == "string" and #r.sha256 == 64 and r.sha256:match("^%x+$"),
+                "invalid sha256 for " .. plat .. "/" .. arch .. "@" .. ver)
+        end
     end
 end
 ''', PKG_FILE)
@@ -77,7 +121,11 @@ end
         _run_lua('''
 import = function() end
 dofile(arg[1])
-pkginfo = { install_dir = function() return "/pkg" end }
+local ver = "8.5.12"
+pkginfo = {
+    install_dir = function() return "/pkg" end,
+    version = function() return ver end,
+}
 local present = {}
 os.isfile = function(p) return present[p] == true end
 assert(not installed())
@@ -86,6 +134,54 @@ assert(installed())
 present["/pkg/php"] = nil
 present["/pkg/php.exe"] = true
 assert(installed())
+
+ver = "7.4.33"
+assert(not installed(), "7.4.33 requires php7.dll alongside php.exe")
+present["/pkg/php7.dll"] = true
+assert(installed())
+''', PKG_FILE)
+
+    @pytest.mark.static
+    def test_install_routes_static_and_win_vc15(self):
+        _run_lua('''
+import = function() end
+dofile(arg[1])
+local present, moved, execs = {}, {}, {}
+local cur_ver, cur_file, cur_dir = "8.4.27", "/tmp/php-8.4.27-1-cli-linux-x86_64.tar.gz", "/pkg/8.4.27"
+pkginfo = {
+    version = function() return cur_ver end,
+    install_file = function() return cur_file end,
+    install_dir = function() return cur_dir end,
+}
+fs = { mkdir_p = function() end }
+os.tryrm = function() end
+os.isfile = function(p) return present[p] == true end
+os.mv = function(src, dst)
+    table.insert(moved, {src, dst})
+    present[dst] = true
+end
+os.getenv = function(k) return k == "SystemRoot" and "C:\\\\Windows" or nil end
+system = {
+    exec = function(cmd)
+        table.insert(execs, cmd)
+        if cmd:find("tar%.exe") then
+            present[cur_dir .. "/php.exe"] = true
+            present[cur_dir .. "/php7.dll"] = true
+        end
+    end,
+}
+
+assert(install())
+assert(moved[1][1] == "/tmp/php" and moved[1][2] == "/pkg/8.4.27/php")
+assert(execs[1] == 'chmod +x "/pkg/8.4.27/php"')
+
+moved, execs = {}, {}
+cur_ver = "7.4.33"
+cur_file = "C:/cache/php-7.4.33-nts-Win32-vc15-x64.zip"
+cur_dir = "C:/install/7.4.33"
+assert(install())
+assert(#moved == 0)
+assert(execs[1]:match('^C:\\\\Windows\\\\System32\\\\tar%.exe %-xf "C:\\\\cache\\\\php%-7%.4%.33%-nts%-Win32%-vc15%-x64%.zip" %-C "C:\\\\install\\\\7%.4%.33"$'))
 ''', PKG_FILE)
 
 
