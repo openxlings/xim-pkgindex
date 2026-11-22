@@ -48,7 +48,6 @@
 #   gcc           gcc on glibc, configured as x86_64's (fromsource:gcc),
 #                 against a sysroot xlings makes (glibc) with the declared
 #                 linux-headers, the declared binutils first on PATH
-#   linux-headers the kernel's UAPI headers (make headers_install)
 #   mingw-cross-gcc a Linux-hosted GCC for x86_64-w64-mingw32 (MSVCRT)
 #
 # Repacked, no build:
@@ -61,6 +60,7 @@
 #   luban-fonts     the fonts the Luban OS window ships with
 #   android-ndk-libcxx-modules  an NDK release's libc++ module sources, for its Windows archive
 #   sample-music    luban:sample-music, a piece to play (the Open Goldberg Variations' Aria, CC0)
+#   linux-headers   the kernel's UAPI headers (make headers_install), asm/ for each architecture
 #
 # Carved from an upstream release (no build):
 #   llvm          a release (23.1.6): the slim toolchain for Linux of this
@@ -1185,28 +1185,58 @@ gcc)
     provenance "$d" "gcc $upstream (${url%%/gcc-*}, sha256 $(input gcc "$upstream")) configured as fromsource:gcc (c,c++; no multilib, no bootstrap, no LTO; libsanitizer), $triple, against a sysroot of xim:glibc@$glibc_v made by xlings $XLINGS_CLIENT and the kernel headers of linux-headers $headers_v (xlings-res/linux-headers, sha256 $(input "linux-headers-linux-$arch" "$headers_v")); assembler and linker: binutils $binutils_v (xlings-res/binutils, sha256 $(input "binutils-linux-$arch" "$binutils_v")), first on PATH while gcc was configured and built; stage 0 is Debian 12's gcc; a C program and a C++23 program using import std built and ran"
     pack "$d" ;;
 linux-headers)
-    # The kernel's UAPI headers of a kernel.org release for this architecture
-    # (`make headers_install`): what the C library and a program include as
-    # <linux/...> and <asm/...>, and what gcc's sysroot is built with. The
-    # digest is kernel.org's sha256sums.asc, as kernel-virt reads it.
+    # The kernel's UAPI headers of a kernel.org release (`make headers_install`):
+    # what the C library and a program include as <linux/...> and <asm/...>,
+    # and what gcc's sysroot is built with. A data resource, the same bytes on
+    # every machine: the headers are the TARGET's, not a program of the host,
+    # and of headers_install's output only asm/ differs between architectures.
+    #
+    #   include/                     every directory but asm/, which the install
+    #                                step links to arch/<host arch>/include/asm
+    #   arch/<arch>/include/asm/     one per architecture, <arch> the xpkg name
+    #
+    # The identity of the common part is checked here, not assumed. The digest
+    # is kernel.org's sha256sums.asc, as kernel-virt reads it.
     sums="$work/sha256sums.asc"
     curl -fsSL --retry 3 -o "$sums" "https://cdn.kernel.org/pub/linux/kernel/v${version%%.*}.x/sha256sums.asc"
     sha="$(grep " linux-$version.tar.xz\$" "$sums" | cut -d' ' -f1)"
     [[ -n "$sha" ]] || die "kernel.org lists no linux-$version.tar.xz"
     fetch "https://cdn.kernel.org/pub/linux/kernel/v${version%%.*}.x/linux-$version.tar.xz" "$sha" "$work/linux.tar.xz"
-    karch=x86; [[ "$arch" == aarch64 ]] && karch=arm64
-    d="linux-headers-$version-linux-$arch"
-    debian "apt-get -qq update && apt-get -qq install -y build-essential rsync xz-utils >/dev/null \
-        && tar -xJf linux.tar.xz && make -s -C linux-$version ARCH=$karch headers_install INSTALL_HDR_PATH=/w/$d \
-        && cp linux-$version/COPYING /w/$d/LICENSE"
-    for h in linux/limits.h linux/errno.h linux/version.h asm/unistd.h asm-generic/errno.h; do
-        [[ -f "$work/$d/include/$h" ]] || die "no include/$h"
+    # xpkg architecture -> the kernel's ARCH. i686 is x86's asm/ (unistd_32.h
+    # beside unistd_64.h, chosen by __i386__), so it is a link to x86_64's.
+    kernel_arches="x86_64:x86 aarch64:arm64 riscv64:riscv loongarch64:loongarch"
+    d="linux-headers-$version"
+    installs=""
+    for pair in $kernel_arches; do
+        installs+=" && make -s -C linux-$version ARCH=${pair#*:} headers_install INSTALL_HDR_PATH=/w/hdr-${pair%%:*}"
     done
+    debian "apt-get -qq update && apt-get -qq install -y build-essential rsync xz-utils >/dev/null \
+        && tar -xJf linux.tar.xz $installs && cp linux-$version/COPYING /w/LICENSE"
+    first=""
+    for pair in $kernel_arches; do
+        a="${pair%%:*}"; h="$work/hdr-$a/include"
+        for f in linux/limits.h linux/errno.h linux/version.h asm/unistd.h asm-generic/errno.h; do
+            [[ -f "$h/$f" ]] || die "$a: no include/$f"
+        done
+        if [[ -z "$first" ]]; then
+            first="$a"
+            mkdir -p "$work/$d"
+            rsync -a --exclude=/asm "$h/" "$work/$d/include/"
+        else
+            diff -r -x asm "$work/hdr-$first/include" "$h" >/dev/null \
+                || die "the headers outside asm/ differ between $first and $a"
+        fi
+        mkdir -p "$work/$d/arch/$a/include"
+        cp -a "$h/asm" "$work/$d/arch/$a/include/asm"
+    done
+    mkdir -p "$work/$d/arch" && ln -s x86_64 "$work/$d/arch/i686"
+    cp "$work/LICENSE" "$work/$d/LICENSE"
     grep -q "^#define LINUX_VERSION_MAJOR ${version%%.*}\$" "$work/$d/include/linux/version.h" \
         || die "linux/version.h does not name $version"
+    [[ ! -e "$work/$d/include/asm" ]] || die "include/asm is the install step's link, not the archive's"
     [[ -z "$(find "$work/$d" -name '.*' -o -name '*.cmd')" ]] || die "build state left in the headers"
-    provenance "$d" "the UAPI headers of linux $version (kernel.org, sha256 $sha): make ARCH=$karch headers_install, in Debian 12"
-    pack "$d" ;;
+    provenance "$d" "the UAPI headers of linux $version (kernel.org, sha256 $sha): make ARCH=<x86|arm64|riscv|loongarch> headers_install, in Debian 12; include/ is the output outside asm/ (identical for every architecture, checked), arch/<arch>/include/asm/ each architecture's asm/"
+    pack_data "$d" ;;
 patchelf)
     # NixOS/patchelf's release binary for this architecture (static-pie) and
     # its share/, byte for byte, under one top directory: upstream's archive

@@ -76,8 +76,8 @@
   },
   {
     "what": "linux-headers",
-    "version": "6.18.64",
-    "arch": "aarch64"
+    "version": "7.3.5",
+    "arch": "x86_64"
   },
   {
     "what": "patchelf",

@@ -64,7 +64,7 @@ package = {
                 "xim:gcc-specs-config@0.0.1",
                 },
             },
-            ["latest"] = { ref = "16.1.0" },
+            ["latest"] = { ref = "16.2.0" },
             -- aarch64: built natively on an arm runner as x86_64's was
             -- (tools/res/build.sh gcc: fromsource:gcc's configure, against a
             -- sysroot of xim:glibc + xim:linux-headers), C++23 `import std`
@@ -89,7 +89,7 @@ package = {
                 },
             },
             -- 16.2.0: the GNU release (signature checked), built as 16.1.0 is
-            -- (tools/res/build.sh gcc). `latest` stays 16.1.0.
+            -- (tools/res/build.sh gcc), and `latest`.
             -- 1: 16.2.0-r1 -- built again with the binutils and kernel headers
             -- this recipe declares: binutils 2.47 is the target's assembler
             -- and linker while gcc is configured and built (GCC decides from
