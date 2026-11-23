@@ -41,13 +41,27 @@ package = {
     -- copy ends itself: under 0.7.1 the copy's kal_exit waited for the
     -- runner's task, which the copy does not have (openkal-image#44, #45);
     -- the version openkal-platform 0.31.2 pins.
+    -- 0.7.3 is the carrier that, as a package's runner, names itself the
+    -- loader (openkal-image#46); the version openkal-platform 0.32.0 pins. Its
+    -- archives are the platform-0.32.0 asset revision, built over that
+    -- platform's version group (openkal-windows 0.23.1 among it).
     xpm = {
         linux = {
             source = {
                 GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/${version}/okrun-${version}-linux-${arch}.zip",
                 CN = "https://gitcode.com/xlings-res/okrun/releases/download/${version}/okrun-${version}-linux-${arch}.zip",
             },
-            ["latest"] = { ref = "0.7.2" },
+            ["latest"] = { ref = "0.7.3" },
+            ["0.7.3"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/0.7.3/okrun-0.7.3-platform-0.32.0-linux-${arch}.zip",
+                    CN = "https://gitcode.com/xlings-res/okrun/releases/download/0.7.3/okrun-0.7.3-platform-0.32.0-linux-${arch}.zip",
+                },
+                sha256 = {
+                    ["aarch64"] = "9b5afcb0c26655d13905123d21ec5a10f618e4fbbb61a1445da18b5fe60ee6cc",
+                    ["x86_64"] = "f3857af8addf52cfb35e0eec388783aba07d33957499dc470f3157dd43de004e",
+                },
+            },
             ["0.7.2"] = {
                 sha256 = {
                     ["aarch64"] = "ce701845456a93961be38ff4b4186c270cc724c4f2df131d1ec706f59a37bb63",
@@ -170,7 +184,16 @@ package = {
                 GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/${version}/okrun-${version}-macos-${arch}.zip",
                 CN = "https://gitcode.com/xlings-res/okrun/releases/download/${version}/okrun-${version}-macos-${arch}.zip",
             },
-            ["latest"] = { ref = "0.7.2" },
+            ["latest"] = { ref = "0.7.3" },
+            ["0.7.3"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/0.7.3/okrun-0.7.3-platform-0.32.0-macos-${arch}.zip",
+                    CN = "https://gitcode.com/xlings-res/okrun/releases/download/0.7.3/okrun-0.7.3-platform-0.32.0-macos-${arch}.zip",
+                },
+                sha256 = {
+                    ["aarch64"] = "c575ffc8c0ce2f3449eea46ec748e505cc37a1afc5d1b648b38c2221026f40c7",
+                },
+            },
             ["0.7.2"] = {
                 sha256 = {
                     ["aarch64"] = "7d8de4d35c948ab6d37592fa2f1ea78cc32869b114bf0281f8a1444229684bdc",
@@ -275,7 +298,16 @@ package = {
                 GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/${version}/okrun-${version}-windows-${arch}.zip",
                 CN = "https://gitcode.com/xlings-res/okrun/releases/download/${version}/okrun-${version}-windows-${arch}.zip",
             },
-            ["latest"] = { ref = "0.7.2" },
+            ["latest"] = { ref = "0.7.3" },
+            ["0.7.3"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/0.7.3/okrun-0.7.3-platform-0.32.0-windows-${arch}.zip",
+                    CN = "https://gitcode.com/xlings-res/okrun/releases/download/0.7.3/okrun-0.7.3-platform-0.32.0-windows-${arch}.zip",
+                },
+                sha256 = {
+                    ["x86_64"] = "00c24f635cd66b4e465afc4c81c7f59af0694a96c5abe0a3336cca1b9b9a0c56",
+                },
+            },
             ["0.7.2"] = {
                 sha256 = {
                     ["x86_64"] = "be28e0a50fcbc6b188e6c19ee1b023c797df5a605ebf1787e2f839a8290e4112",
