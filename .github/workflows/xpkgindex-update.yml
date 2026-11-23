@@ -28,7 +28,7 @@ concurrency:
 env:
   PYTHONUTF8: '1'
   UPDATER_COMMIT: c60835a1f00f902dd02f85739d5be9680cd52754
-  XLINGS_VERSION: v2026.10.24.3
+  XLINGS_VERSION: v2026.11.23.1
 jobs:
   cadence:
     runs-on: ubuntu-latest
