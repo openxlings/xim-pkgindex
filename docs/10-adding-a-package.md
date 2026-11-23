@@ -110,6 +110,12 @@ end
   once per scope, recorded by revision.
 - Hooks use standard Lua and `xim.libxpkg.*` only: never a host package manager,
   never `.bashrc`, never `PATH` directly (the isolation tests fail them).
+- Shared modules under `libs/` answer what several recipes would otherwise spell
+  each its own way: `xim.pkgindex.winpath` (a path a Windows program accepts),
+  `xim.pkgindex.payload` (landing the archive, then naming any file that did not
+  land) and `xim.pkgindex.shortcut` (a Start Menu or Desktop entry, best-effort
+  by contract). Import one instead of copying the code; the modules' headers are
+  the reference.
 - A configuration package writes in `config()`, keeps what the user already has,
   and never prints a token.
 

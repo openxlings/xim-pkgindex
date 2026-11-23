@@ -90,15 +90,30 @@ assert(not installed())
     def test_start_menu_shortcut_only_without_desktop(self):
         _run_lua('''
 import = function() end
+winpath = assert(loadfile("libs/winpath.lua"))()
+shortcut = assert(loadfile("libs/shortcut.lua"))()
 dofile(arg[1])
 local mkdirs, execs, rms, xvm_adds, xvm_rms, warns = {}, {}, {}, {}, {}, {}
 pkginfo = {
     install_dir = function() return "C:/xlings/winscp/6.7.1" end,
     version = function() return "6.7.1" end,
+    name = function() return "winscp" end,
 }
+os.host = function() return "windows" end
 os.getenv = function(k) return k == "APPDATA" and "C:\\\\Users\\\\O'Neil\\\\AppData\\\\Roaming" or nil end
+local present = {}
+os.isfile = function(p) return present[p] == true end
 fs = { mkdir_p = function(p) table.insert(mkdirs, p) end }
-system = { exec = function(cmd) table.insert(execs, cmd) end }
+-- The entry PowerShell would have written is the first single-quoted value;
+-- marking it present is what lets the module's own wrote-check stay quiet.
+system = { exec = function(cmd)
+    table.insert(execs, cmd)
+    local q = string.char(39)
+    local _, b = cmd:find("CreateShortcut(", 1, true)
+    local v = cmd:sub(b + 2)
+    local e = v:find(q .. ");", 1, true)
+    present[(v:sub(1, e - 1)):gsub(q .. q, q)] = true
+end }
 os.tryrm = function(p) table.insert(rms, p) end
 log = { warn = function(msg) table.insert(warns, msg) end }
 xvm = {
@@ -156,7 +171,8 @@ class TestIsolation:
     def test_portable_lua_and_libxpkg_only(self):
         src = Path(PKG_FILE).read_text(encoding="utf-8")
         assert set(re.findall(r'import\("([^"]+)"\)', src)) <= {
-            "xim.libxpkg.fs", "xim.libxpkg.log", "xim.libxpkg.pkginfo",
+            "xim.libxpkg.fs", "xim.libxpkg.pkginfo",
             "xim.libxpkg.system", "xim.libxpkg.xvm",
+            "xim.pkgindex.shortcut", "xim.pkgindex.winpath",
         }
         assert not re.search(r'\b(?:path\.|is_host\(|os\.host\(|raise\()', src)

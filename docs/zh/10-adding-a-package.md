@@ -100,6 +100,10 @@ end
   revision 记录。
 - 钩子只使用标准 Lua 和 `xim.libxpkg.*`：不调用宿主的包管理器，不改 `.bashrc`，不直接
   改 `PATH`（隔离测试会让这些失败）。
+- `libs/` 下的共享模块替多个配方回答同一类问题：`xim.pkgindex.winpath`
+  （Windows 程序接受的路径）、`xim.pkgindex.payload`（归档落地，再点名没落地的文件）、
+  `xim.pkgindex.shortcut`（开始菜单/桌面快捷方式，按契约 best-effort）。
+  import 它们而不是拷贝代码；各模块的文件头注释即参考文档。
 - 配置类的包在 `config()` 中写配置，保留用户已有的配置，不输出 token。
 
 ## 依赖

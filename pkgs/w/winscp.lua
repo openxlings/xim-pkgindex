@@ -74,39 +74,14 @@ package = {
 }
 
 import("xim.libxpkg.fs")
-import("xim.libxpkg.log")
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
-
-local function winpath(p)
-    return (p:gsub("/", "\\"))
-end
+import("xim.pkgindex.shortcut")
+import("xim.pkgindex.winpath")
 
 local function ps_quote(s)
     return (s:gsub("'", "''"))
-end
-
-local function start_menu_lnk(name)
-    local appdata = os.getenv("APPDATA")
-    if not appdata or appdata == "" then return nil end
-    return winpath(appdata) .. "\\Microsoft\\Windows\\Start Menu\\Programs\\" .. name .. ".lnk"
-end
-
-local function create_start_menu_shortcut(name, target, workdir, description)
-    local lnk = start_menu_lnk(name)
-    if not lnk then return end
-    local programs_dir = lnk:match("^(.*)\\[^\\]+$")
-    if programs_dir then fs.mkdir_p(programs_dir) end
-    -- exec-quoting-ok: every interpolated value is enclosed in PowerShell single quotes.
-    system.exec(string.format(
-        [[powershell -NoProfile -ExecutionPolicy Bypass -Command "$s = (New-Object -ComObject WScript.Shell).CreateShortcut('%s'); $s.TargetPath = '%s'; $s.IconLocation = '%s,0'; $s.WorkingDirectory = '%s'; $s.Description = '%s'; $s.Save()"]],
-        ps_quote(lnk),
-        ps_quote(winpath(target)),
-        ps_quote(winpath(target)),
-        ps_quote(winpath(workdir)),
-        ps_quote(description)
-    ))
 end
 
 local function required_files()
@@ -128,7 +103,7 @@ function install()
     local dir = pkginfo.install_dir()
     local archive = pkginfo.install_file()
     local build_dep = assert(pkginfo.build_dep("7zip"), "xim:7zip build dependency is missing")
-    local seven_zip = winpath(build_dep.path) .. "\\7z.exe"
+    local seven_zip = winpath.native(build_dep.path) .. "\\7z.exe"
 
     os.tryrm(dir)
     fs.mkdir_p(dir)
@@ -137,8 +112,8 @@ function install()
     system.exec(string.format(
         [[powershell -NoProfile -ExecutionPolicy Bypass -Command "$q = [char]34; $p = Start-Process -FilePath '%s' -ArgumentList ('x ' + $q + '%s' + $q + ' -o' + $q + '%s' + $q + ' -y') -Wait -NoNewWindow -PassThru; if ($p.ExitCode -ne 0) { exit $p.ExitCode }"]],
         ps_quote(seven_zip),
-        ps_quote(winpath(archive)),
-        ps_quote(winpath(dir))
+        ps_quote(winpath.native(archive)),
+        ps_quote(winpath.native(dir))
     ))
 
     local missing = {}
@@ -155,22 +130,18 @@ function config()
     local dir = pkginfo.install_dir()
     xvm.add("winscp", { bindir = dir, alias = "WinSCP.exe" })
     xvm.add("winscp-cli", { bindir = dir, alias = "WinSCP.com", binding = "winscp@" .. pkginfo.version() })
-    local ok, err = pcall(
-        create_start_menu_shortcut,
-        "WinSCP",
-        dir .. "/WinSCP.exe",
-        dir,
-        "WinSCP SFTP, FTP, WebDAV, S3 and SCP client"
-    )
-    if not ok then
-        log.warn("winscp: failed to create Start Menu shortcut: " .. tostring(err))
-    end
+    -- Best-effort by contract: shortcut.create never raises and writes its
+    -- own warning (with this package's name) when the entry cannot be written.
+    shortcut.create{
+        name = "WinSCP",
+        target = dir .. "/WinSCP.exe",
+        description = "WinSCP SFTP, FTP, WebDAV, S3 and SCP client",
+    }
     return true
 end
 
 function uninstall()
-    local lnk = start_menu_lnk("WinSCP")
-    if lnk then os.tryrm(lnk) end
+    shortcut.remove{ name = "WinSCP" }
     xvm.remove("winscp-cli")
     xvm.remove("winscp")
     return true
