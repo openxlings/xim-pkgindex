@@ -203,8 +203,8 @@ CI 自动生成完整覆盖报告；不要提交生成的审计 JSON 或重复�
 >   命令可以拼得完全正确,然后找不到自己的文件。
 > - `path.join` 在 Windows 上**混用分隔符**(保留已有的 `\`、新加 `/`)。
 >   `"C:\Windows/System32/tar.exe"` 执行不了,`msiexec` 也拒收。
->   凡是要交给 Windows 程序的路径都过一遍 `winpath()` —— **包括可执行文件
->   本身的路径**,不只是它的参数。
+>   凡是要交给 Windows 程序的路径都过一遍 `winpath.native(p)`（`import("xim.pkgindex.winpath")`，
+>   见 2.1.3）—— **包括可执行文件本身的路径**,不只是它的参数。
 
 #### Windows 上的 `tar`:PATH 会替你选,而两个 tar 能力不同
 
@@ -260,6 +260,33 @@ rm -rf ~/.xlings/data/xpkgs/{xim,local}-x-<pkg>/<version>
 - 修改已有 JSON 配置时先读取并保留原对象，只更新本包负责的 key；写入前备份，并用 `log.info/log.warn/log.error` 说明结果，敏感 token 不要明文打印。
 - 如果用户未输入新 key 但已有有效配置，使用 `log.warn` 提示继续复用旧 key 且不改 token；如果没有可复用 key，使用 `log.error` 后失败。
 - 针对独立行为（例如修复 Claude token 缓存的 env 项）单独抽成函数，便于测试锁定边界。
+
+### 2.1.3 共享模块（libs/，新代码必须优先复用）
+
+`libs/` 下的模块由 libxpkg 解析为索引根的 `libs/<名字>.lua`，经
+`import("xim.pkgindex.<名字>")` 加载并以模块名为全局变量注册。
+**写新包前先查这里，不要自带私有拷贝**（一份拷贝就是一个会各自过期的答案）：
+
+| 模块 | 回答的问题 | 入口 |
+|---|---|---|
+| `xim.pkgindex.winpath` | 交给 Windows 程序的路径分隔符 | `winpath.native(p)` |
+| `xim.pkgindex.payload` | 归档落地：预解压目录在哪、zip 用哪个 tar 解、装完缺了哪些文件 | `payload.unpack{ extracted = …, strip = 1 }`、`payload.require{…}`、`payload.present{…}` |
+| `xim.pkgindex.shortcut` | Windows 开始菜单/桌面快捷方式的创建与删除 | `shortcut.create{ name = …, target = … }`、`shortcut.remove{ name = … }` |
+| `hostlib` / `shell` / `sysroot` / `relocate` / `selfcontain` / `nvim_plugin` 等既有模块 | 见各自文件头注释 | — |
+
+要点：
+
+- `shortcut.create` **永不抛错**：快捷方式是装饰性的，写不出来时库自己
+  `log.warn`（带包名）并返回 `false`——配方里不要再包 `pcall` + `log.warn` 样板；
+  只有 `.lnk` 真落在磁盘上才算成功（断言产物，不是断言命令跑了）。
+- `payload.unpack` 找不到预解压目录且不是可解的 zip 时直接 `error`（点名找过哪里）；
+  zip 分支只证明「命令跑了」，真正落没落地由 `payload.require` 逐文件断言——
+  `installed()`（`payload.present`）与 `install()` 结尾共用同一份清单。
+- **不变量已上锁**：`tests/test_shortcut.py` 禁止配方自己拼
+  `CreateShortcut`/`WScript.Shell`（存量四个配方在豁免名单里，名单只减不增）。
+- 坑：配方经 `xlings config --add-xpkg` 注册进 `local:` 而旁边没有 `libs/` 时，
+  这些 import 拿到的是「怎么调都成功」的桩（见 `libs/selfcontain.lua` 头注释）。
+  CI 的 install job 会把 `libs/` 一并复制过去所以测得到；本地手工注册测不到。
 
 ### 2.2 install() 约束
 
@@ -347,6 +374,8 @@ log.error("... 不在应该在的位置:\n    " .. table.concat(missing, "\n    
 - 使用 `xvm.add("tool")`
 - 或 `xvm.add("tool", { bindir = ..., alias = ... })`
 - 可执行文件不在安装根目录时，必须明确 `bindir`
+- 需要 Windows 开始菜单/桌面快捷方式时用 `shortcut.create`（best-effort，见 2.1.3），
+  `uninstall()` 里对应 `shortcut.remove`——不要自己拼 PowerShell/VBS
 
 ### 2.3.1 共享名与 flavor 版本（注册前必查）
 
