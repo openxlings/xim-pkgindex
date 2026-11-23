@@ -115,7 +115,9 @@ end
   `xim.pkgindex.payload` (landing the archive, then naming any file that did not
   land) and `xim.pkgindex.shortcut` (a Start Menu or Desktop entry, best-effort
   by contract). Import one instead of copying the code; the modules' headers are
-  the reference.
+  the reference. A prebuilt MSVC program whose import tables name the VC++
+  runtime DLLs declares `xim:vcruntime` and copies its `bin/` beside the
+  executables (app-local deployment) -- it never vendors the DLLs itself.
 - A configuration package writes in `config()`, keeps what the user already has,
   and never prints a token.
 
