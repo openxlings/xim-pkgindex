@@ -293,6 +293,11 @@ rm -rf ~/.xlings/data/xpkgs/{xim,local}-x-<pkg>/<version>
 `install()` 只负责安装动作本身：
 - 使用 `pkginfo.install_file()` 获取下载/解压后的输入路径
 - 使用 `pkginfo.install_dir()` 作为目标安装目录
+- Windows 预构建 MSVC 程序依赖 VC++ 运行时（导入表含 `VCRUNTIME140.dll`/`MSVCP140.dll`
+  而归档不带）时：`deps` 声明 `runtime = { "xim:vcruntime" }`，install() 里把
+  `pkginfo.dep_install_dir("xim:vcruntime")/bin` 的 DLL 拷到可执行文件旁（app-local，
+  加载器最先搜 exe 目录）。**不要**把运行库 vendor 进自己的归档——CRT 检查只豁免
+  msvc 与 vcruntime 两个再分发方
 - 可先 `os.tryrm(pkginfo.install_dir())` 再 `os.mv(...)`
 - 若是 Linux 预构建 ELF，必要时做可重定位修复（如 patchelf）
 

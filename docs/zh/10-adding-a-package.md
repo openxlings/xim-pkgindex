@@ -103,7 +103,9 @@ end
 - `libs/` 下的共享模块替多个配方回答同一类问题：`xim.pkgindex.winpath`
   （Windows 程序接受的路径）、`xim.pkgindex.payload`（归档落地，再点名没落地的文件）、
   `xim.pkgindex.shortcut`（开始菜单/桌面快捷方式，按契约 best-effort）。
-  import 它们而不是拷贝代码；各模块的文件头注释即参考文档。
+  import 它们而不是拷贝代码；各模块的文件头注释即参考文档。预构建的 MSVC 程序
+  若导入表引用 VC++ 运行时 DLL，声明 `xim:vcruntime` 并把它的 `bin/` 拷到可执行
+  文件旁（app-local 部署）——不要自行 vendor 这些 DLL。
 - 配置类的包在 `config()` 中写配置，保留用户已有的配置，不输出 token。
 
 ## 依赖
