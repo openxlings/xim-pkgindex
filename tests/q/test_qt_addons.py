@@ -69,6 +69,40 @@ class TestStatic:
             assert "xim:7zip" not in deps[plat]["runtime"], f"{plat} 把 xim:7zip 声明成了 runtime 依赖"
 
     @pytest.mark.static
+    def test_linux_declares_the_loader_so_its_tools_run(self, meta):
+        """Linux: xim:glibc 让 xlings 在 install() 之后改写每个可执行文件的解释器和每个 ELF 的
+        RUNPATH(libxpkg elfpatch, loader-provider 谓词)。不声明它, bin/qsb 等工具带着系统的
+        loader 和 RUNPATH=$ORIGIN/../lib 启动, 找不到 xim:qt 的 Qt 库, 回落到发行版自己的
+        libQt6Core 或报 GLIBC_2.43 not found。"""
+        deps = declared_deps(PKG_FILE)
+        assert "xim:glibc" in deps["linux"]["runtime"], "linux 缺 xim:glibc (没有它不会 elfpatch)"
+        assert "xim:qt@6.11.1" in deps["linux"]["runtime"]
+        # elfpatch 写入的 RPATH 只含这里直接声明的包, 不含 xim:qt 的传递依赖: 本包的 ELF
+        # 直接用到的库必须在这里再声明 (qsb 缺 libxkbcommon.so.0 就是这个原因)
+        for dep in ("xim:gcc-runtime", "xim:libglvnd", "xim:libxkbcommon", "xim:libX11",
+                    "xim:libXext", "xim:libXrandr", "xim:libdrm", "xim:wayland", "xim:zlib", "xim:glib"):
+            assert dep in deps["linux"]["runtime"], f"linux 缺 {dep}"
+        # 这个闭包只有 Linux 需要: Windows/macOS 不声明 loader
+        for plat in ("windows", "macosx"):
+            assert "xim:glibc" not in deps[plat]["runtime"], f"{plat} 不该声明 xim:glibc"
+
+    @pytest.mark.static
+    def test_linux_runtime_closure_is_versioned_and_marked(self, meta):
+        """revision 1 替换没有 elfpatch 的 revision 0 载荷; 只有 Linux 写/查 runtime 标记, 这样
+        Windows/macOS 已装的 128-160 MB 载荷不会被判为过期而重下。"""
+        raw = meta.raw_content
+        m = re.search(r'linux\s*=\s*\{.*?\n        \},', raw, re.DOTALL)
+        assert m, "找不到 linux 块"
+        block = m.group(0)
+        assert re.search(r'\["6\.11\.1"\]\s*=\s*\{\s*revision\s*=\s*1\s*\}', block), "linux 的 6.11.1 未声明 revision = 1"
+        assert re.search(r'exports\s*=\s*\{\s*runtime\s*=\s*\{\s*libdirs\s*=\s*\{\s*"lib"', block)
+        for plat in ("windows", "macosx"):
+            mm = re.search(rf'{plat}\s*=\s*\{{.*?\n        \}},', raw, re.DOTALL)
+            assert mm and "revision" not in mm.group(0), f"{plat} 不该变 revision"
+        assert 'os.host() == "linux" then qtsdk.mark_runtime(marker_path())' in raw
+        assert 'os.host() == "linux" and not qtsdk.runtime_current(marker)' in raw
+
+    @pytest.mark.static
     def test_addons_table_has_every_platform_and_field(self):
         """ADDONS 表覆盖 5 个 platform key, 每条记录都有 module/name/path/sha256。
 
@@ -159,3 +193,46 @@ class TestVerify:
             "libQt63DCore.so.6 not found -- qt3d module missing or "
             "extracted to the wrong place"
         )
+
+    @pytest.mark.verify
+    @skip_if_not('linux')
+    def test_qsb_runs(self):
+        """qsb 链接 libQt6ShaderTools(本包)、libQt6Gui/Core(xim:qt)、libxkbcommon、libGL:
+        能启动就说明解释器和 RUNPATH 都被 elfpatch 改到了生态的闭包。"""
+        d = self._installed_pkgdir()
+        r = subprocess.run([os.path.join(d, "bin", "qsb"), "--version"],
+                            capture_output=True, text=True, timeout=30)
+        assert r.returncode == 0, f"qsb --version failed: {r.stderr}"
+        assert "6.11.1" in r.stdout + r.stderr, r.stdout + r.stderr
+
+    @pytest.mark.verify
+    @skip_if_not('linux')
+    def test_qsb_compiles_a_shader(self, tmp_path):
+        """不只是启动: 真的把一个 GLSL 片段着色器编成 .qsb (qsb 的实际工作)。"""
+        d = self._installed_pkgdir()
+        src = tmp_path / "t.frag"
+        src.write_text(
+            "#version 440\n"
+            "layout(location = 0) in vec2 qt_TexCoord0;\n"
+            "layout(location = 0) out vec4 fragColor;\n"
+            "layout(std140, binding = 0) uniform buf { mat4 qt_Matrix; float qt_Opacity; };\n"
+            "void main() { fragColor = vec4(qt_TexCoord0, 0.0, 1.0) * qt_Opacity; }\n")
+        out = tmp_path / "t.frag.qsb"
+        r = subprocess.run([os.path.join(d, "bin", "qsb"), "--qt6", "-o", str(out), str(src)],
+                            capture_output=True, text=True, timeout=60)
+        assert r.returncode == 0, f"qsb failed: {r.stderr}"
+        assert out.is_file() and out.stat().st_size > 0, "qsb 没有写出 .qsb"
+
+    @pytest.mark.verify
+    @skip_if_not('linux')
+    def test_executables_are_patched_to_the_ecosystem_loader(self):
+        """bin/ 下的可执行文件的解释器是生态的 loader(.../abi/linux-*-glibc/ld-linux-*), 不是系统的
+        /lib64/ld-linux-*; RUNPATH/RPATH 含 xim:qt 的 lib。"""
+        d = self._installed_pkgdir()
+        exe = os.path.join(d, "bin", "qsb")
+        prog = subprocess.run(["readelf", "-l", exe], capture_output=True, text=True).stdout
+        m = re.search(r"Requesting program interpreter: (\S+?)\]", prog)
+        assert m, f"没有解释器: {prog[:300]}"
+        assert not m.group(1).startswith("/lib64/"), f"解释器仍是系统的: {m.group(1)}"
+        dyn = subprocess.run(["readelf", "-d", exe], capture_output=True, text=True).stdout
+        assert "xim-x-qt" in dyn, f"RUNPATH/RPATH 没有 xim:qt 的 lib: {dyn}"
