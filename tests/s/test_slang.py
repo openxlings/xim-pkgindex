@@ -99,6 +99,16 @@ class TestResources:
         assert len(refs) == len(EXPECTED_SOURCES), "每个平台都要有 latest -> 具体版本"
         assert set(refs) == {VERSION}
 
+    @pytest.mark.static
+    def test_flat_archive_extracted_into_payload_alone(self, content):
+        """xlings extracts every flat archive into one shared directory, so
+        its `lib/` is a merge: moving it put ollama's `lib/ollama/`
+        (libggml-cuda.so, which names libcuda.so.1) into slang's payload."""
+        code = "\n".join(ln for ln in content.splitlines()
+                         if not ln.lstrip().startswith("--"))
+        assert 'tar -xf "%s" -C "%s"' in code
+        assert 'os.mv(p, path.join(dir, name))' not in code
+
 
 class TestIndex:
     @pytest.mark.index

@@ -1,8 +1,13 @@
 name: xpkg-mirror-release
 
-# Publishing is intentionally a separate, protected workflow.  PRs and the
-# scanner are read-only; a maintainer or a post-merge release controller must
-# provide a verified manifest before this job can publish immutable assets.
+# Publishing is intentionally a separate, protected workflow. It runs after a successful
+# CI on main and publishes only what the merged commits changed (plus packages still listed
+# as failing in the tracking issue). The batch is planned, run and recorded in three jobs:
+#   plan    what to process: the diff since the last successful run of this workflow;
+#   mirror  one job for the whole batch, a few packages at a time, one retry per upload;
+#   record  the failing list, written back to the single tracking issue (label mirror-failed).
+# A failed package does not fail the run: it is listed in the tracking issue and retried
+# automatically the next time the workflow runs. Docs: docs/13-ci-mirror-and-update.md.
 on:
   workflow_run:
     workflows: [CI]
@@ -16,7 +21,7 @@ on:
         default: ""
         type: string
       package:
-        description: "Re-run the mirror job for one ci.mirror package at this ref (e.g. after a failed run)"
+        description: "Re-run the mirror for one ci.mirror package at this ref (e.g. after a failed run)"
         required: false
         default: ""
         type: string
@@ -24,12 +29,14 @@ on:
 permissions:
   contents: read
 
+# One run at a time. A run that waits is replaced by a newer one; the newest run plans
+# everything since the last successful run, so replaced runs lose nothing.
 concurrency:
   group: resource-mirror-main
   cancel-in-progress: false
 
 jobs:
-  discover:
+  plan:
     if: >-
       (github.event_name == 'workflow_run' &&
       github.event.workflow_run.conclusion == 'success' &&
@@ -41,8 +48,11 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      actions: read
+      issues: read
     outputs:
-      packages: ${{ steps.discover.outputs.packages }}
+      plan: ${{ steps.plan.outputs.plan }}
+      packages: ${{ steps.plan.outputs.packages }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -55,56 +65,36 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Discover mirror packages
-        id: discover
+      - name: Read the tracking issue
         env:
-          EVENT_SHA: ${{ github.event.workflow_run.head_sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: gh issue list --repo "$GITHUB_REPOSITORY" --label mirror-failed --state all --limit 1 --json number,state,body > current.json
+
+      - name: Plan
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
           PACKAGE: ${{ inputs.package }}
         run: |
           set -euo pipefail
-          python3 - <<'PY'
-          import json
-          import os
-          import subprocess
-          from pathlib import Path
-
-          sha = os.environ["EVENT_SHA"]
-          requested = os.environ.get("PACKAGE", "")
-          if requested:
-              # A dispatched retry names its package; it must still opt into ci.mirror.
-              changed = [f"pkgs/{requested[0]}/{requested}.lua"]
-          else:
-              changed = subprocess.check_output(
-                  ["git", "diff", "--name-only", f"{sha}^", sha, "--", "pkgs/*/*.lua"],
-                  text=True,
-              ).splitlines()
-          packages = set()
-          for file in changed:
-              package = Path(file).stem
-              output = subprocess.check_output(
-                  ["python3", "tools/xpkg_ci.py", "--workspace", ".", "inspect", "--only", package],
-                  text=True,
-              )
-              data = json.loads(output)
-              if data["packages"] and data["packages"][0]["mirror"]:
-                  packages.add(package)
-          if requested and requested not in packages:
-              raise SystemExit(f"{requested} does not declare ci = {{ mirror = true }}")
-          value = json.dumps(sorted(packages), separators=(",", ":"))
-          with open(os.environ["GITHUB_OUTPUT"], "a", encoding="utf-8") as output:
-              output.write(f"packages={value}\n")
-          print(value)
-          PY
+          base=""
+          if [ -z "$PACKAGE" ]; then
+            # The newest successful run of this workflow on main is the baseline: its
+            # plan and record both succeeded. Dispatched single-package runs do not count.
+            base="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/xpkg-mirror.yml/runs?branch=main&event=workflow_run&status=success&per_page=5" --jq '.workflow_runs[0].head_sha // empty')"
+          fi
+          python3 tools/xpkg_mirror_queue.py --workspace . plan --head "$HEAD_SHA" --base "$base" \
+            --only "$PACKAGE" --current current.json --out plan.json
+          echo "plan=$(python3 -c 'import json; print(json.dumps(json.load(open("plan.json")), separators=(",", ":")))')" >> "$GITHUB_OUTPUT"
+          echo "packages=$(python3 -c 'import json; print(json.dumps(json.load(open("plan.json"))["packages"], separators=(",", ":")))')" >> "$GITHUB_OUTPUT"
 
   mirror:
-    needs: discover
-    if: needs.discover.outputs.packages != '[]'
-    strategy:
-      fail-fast: false
-      matrix:
-        package: ${{ fromJSON(needs.discover.outputs.packages) }}
+    needs: plan
+    if: needs.plan.outputs.packages != '[]'
     runs-on: ubuntu-latest
     environment: xlings-res-publish
+    timeout-minutes: 240
     permissions:
       contents: read
     steps:
@@ -117,17 +107,85 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Mirror ${{ matrix.package }}
+      - name: Mirror the planned packages
         env:
           GH_TOKEN: ${{ secrets.XLINGS_RES_TOKEN }}
           GITCODE_TOKEN: ${{ secrets.GITCODE_TOKEN }}
+          PLAN: ${{ needs.plan.outputs.plan }}
         run: |
           set -euo pipefail
-          out="$RUNNER_TEMP/xpkg-manifests/${{ matrix.package }}"
-          mkdir -p "$out"
-          python3 tools/xpkg_ci.py --workspace . materialize "${{ matrix.package }}" --output "$out"
-          python3 tools/xpkg_ci.py --workspace . verify "$out/manifest.json"
-          python3 tools/xpkg_ci.py --workspace . mirror "$out/manifest.json" --execute
+          printf '%s\n' "$PLAN" > plan.json
+          python3 tools/xpkg_mirror_queue.py --workspace . run --plan plan.json \
+            --work "$RUNNER_TEMP/mirror-work" --results results
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mirror-results
+          path: results/
+          if-no-files-found: ignore
+          retention-days: 7
+
+  record:
+    needs: [plan, mirror]
+    if: always() && needs.plan.result == 'success'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: mirror-results
+          path: results
+
+      - name: Read the tracking issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh issue list --repo "$GITHUB_REPOSITORY" --label mirror-failed --state all --limit 1 --json number,state,body > current.json
+
+      - name: Record the results
+        env:
+          PLAN: ${{ needs.plan.outputs.plan }}
+        run: |
+          set -euo pipefail
+          printf '%s\n' "$PLAN" > plan.json
+          mkdir -p results
+          python3 tools/xpkg_mirror_queue.py --workspace . record --plan plan.json --results results \
+            --current current.json --body body.md --status status.json
+
+      - name: Update the tracking issue (one issue, never a duplicate)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          pending="$(python3 -c 'import json; print(json.load(open("status.json"))["pending"])')"
+          number="$(python3 -c 'import json; print(json.load(open("status.json"))["number"] or "")')"
+          state="$(python3 -c 'import json; print(json.load(open("status.json"))["state"] or "")')"
+          title="$(python3 -c 'import json; print(json.load(open("status.json"))["title"])')"
+          if [ "$pending" -gt 0 ]; then
+            if [ -z "$number" ]; then
+              gh label create mirror-failed --color B60205 --description "xlings-res mirror failure" 2>/dev/null || true
+              gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" --label mirror-failed --body-file body.md
+            else
+              gh issue edit "$number" --repo "$GITHUB_REPOSITORY" --body-file body.md
+              if [ "$state" = "CLOSED" ]; then gh issue reopen "$number" --repo "$GITHUB_REPOSITORY"; fi
+            fi
+          elif [ -n "$number" ] && [ "$state" = "OPEN" ]; then
+            gh issue edit "$number" --repo "$GITHUB_REPOSITORY" --body-file body.md
+            gh issue close "$number" --repo "$GITHUB_REPOSITORY" --comment "All packages in the mirror batch are published."
+          fi
 
   publish-manual:
     if: github.event_name == 'workflow_dispatch' && inputs.manifest != ''
