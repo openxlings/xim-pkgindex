@@ -1,4 +1,5 @@
 """测试 media-crawler 包"""
+import re
 import pytest
 from tests.lib.xpkg_parser import parse_xpkg
 from tests.lib.assertions import (
@@ -33,6 +34,18 @@ class TestStatic:
     @pytest.mark.static
     def test_no_typos(self):
         assert_no_typos(PKG_FILE)
+
+    @pytest.mark.static
+    def test_every_platform_declares_uv(self):
+        """install() takes uv when it is there and otherwise pip with the
+        host's python3. Under pip, matplotlib 3.9.0 (pinned upstream) has no
+        wheel for a current Python and its source build fails, so a platform
+        without xim:uv did not install (macOS)."""
+        body = open(PKG_FILE, encoding="utf-8").read()
+        for plat in ("linux", "macosx"):
+            section = re.search(r"\n        %s = \{(.*?)\n        \}," % plat, body, re.S)
+            assert section, plat
+            assert '"xim:uv"' in section.group(1), plat
 
 
 class TestIndex:

@@ -2,7 +2,7 @@
 
 [English](../10-adding-a-package.md) | **简体中文**
 
-从一个配方到合入的 PR。精确规则见 [XPackage V2](../specs/xpackage-v2.md)；本章是路径。
+从一个 xpkg 到合入的 PR。精确规则见 [XPackage V2](../specs/xpackage-v2.md)；本章是路径。
 
 ## 流程
 
@@ -49,15 +49,24 @@ package = {
 
 ### 资源的写法
 
+资源先取自上游自己的发布或其官方仓库的 release，其次才是知名第三方的 release。只有存在知名
+镜像（USTC、清华等）、且你核对过它的路径和字节时才加 CN 镜像；否则只声明 GLOBAL。没有 `xlings-res`
+写权限时跳过 CN：有权限的维护者会在以后，或在同一个 PR 里补充 CN 资源。
+优先选择该官方来源提供的静态（musl）产物，安装过程中绝不从源码构建。
+
 保持 `platform -> version` 模型，按顺序选第一个适用的：
 
 | 情形 | 写法 |
 |---|---|
-| xlings-res 上的官方资源 | `xpm.source = "xlings-res"`，加每个架构的 `sha256` |
-| URL 规则统一的第三方 release | `xpm.source = "<含 ${version} 的模板>"`，加每个架构的 `sha256` |
+| URL 规则统一的 release（上游的，或知名第三方的） | `xpm.source = "<含 ${version} 的模板>"`，加每个架构的 `sha256` |
 | 各架构 URL 不规则 | 按架构分别写资源表，每项 `{ url, sha256 }` |
 | 单个特殊或历史版本 | 在该版本项写显式 `url` / 镜像表，覆盖 `source` |
-| 旧配方 | `"XLINGS_RES"`、`res = true`、单个 URL、单个 hash —— 仍然兼容 |
+| 维护者托管在 xlings-res 上的资源 | `xpm.source = "xlings-res"`，加每个架构的 `sha256`；由有权限的维护者添加，请在 issue 中申请 |
+| 旧 xpkg | `"XLINGS_RES"`、`res = true`、单个 URL、单个 hash —— 仍然兼容 |
+
+重新打包、打补丁的构建，或任何你自己维护的打包，要在 `package` 里设置
+`namespace = "<你的标识>"`，这样它的 id 就是 `<namespace>:<name>@<version>`；资产由你自己托管，
+并在 PR 里写明可复现的过程。
 
 每个架构都要有 sha256。没有权威 hash 时，先保留旧写法，等资源和它的 sidecar 都存在后
 再迁移；不能发布没有 hash 的新官方二进制版本。
@@ -70,7 +79,7 @@ package = {
 
 索引每三天扫描一次，选择满足所有必需资源的最新版本并创建 PR 供 review，保留历史版本条目和 hooks。
 没有镜像时只声明 GLOBAL；有已核实 CN 镜像时默认设为必需，也可经 review 显式设为可选。
-按该章节完成本地检查；CI 从配方生成覆盖报告，人工维护的原因写入配方注释或 PR 说明。
+按该章节完成本地检查；CI 从 xpkg 生成覆盖报告，人工维护的原因写入 xpkg 注释或 PR 说明。
 
 ## 钩子
 
@@ -100,7 +109,7 @@ end
   revision 记录。
 - 钩子只使用标准 Lua 和 `xim.libxpkg.*`：不调用宿主的包管理器，不改 `.bashrc`，不直接
   改 `PATH`（隔离测试会让这些失败）。
-- `libs/` 下的共享模块替多个配方回答同一类问题：`xim.pkgindex.winpath`
+- `libs/` 下的共享模块替多个 xpkg 回答同一类问题：`xim.pkgindex.winpath`
   （Windows 程序接受的路径）、`xim.pkgindex.payload`（归档落地，再点名没落地的文件）、
   `xim.pkgindex.shortcut`（开始菜单/桌面快捷方式，按契约 best-effort）。
   import 它们而不是拷贝代码；各模块的文件头注释即参考文档。预构建的 MSVC 程序
@@ -154,10 +163,10 @@ deps = {
   提高版本项的 `revision`，否则已经配置过的 scope 永远看不到变化。`config()` 不把 scope
   相关的数据写进共享的载荷。
 - **预编译的原生程序原样取来，不由脚本挑选。** 优先直接取平台归档（`esbuild`、`codex`）；只有包管理器一种分发方式时，
-  关掉它的安装脚本、在配方里选定平台包（`bun`、`openclaw`）。运行自己下载的二进制的脚本，运行时 xlings 还没有改写它的
+  关掉它的安装脚本、在 xpkg 里选定平台包（`bun`、`openclaw`）。运行自己下载的二进制的脚本，运行时 xlings 还没有改写它的
   loader：在没有 `/lib64/ld-linux-x86-64.so.2` 的宿主上（Alpine；Windows、macOS 上每一次安装都经过的 Luban host machine）
   这要到 xlings 2026.11.22.1 才可行，在 glibc 比二进制要求的旧的宿主上则始终不行。`native-binary-hosts.yml` 在这两种假设都
-  不成立的地方安装这些配方。
+  不成立的地方安装这些 xpkg。
 - **归档中的硬链接由客户端处理。** Android 应用沙箱、FAT 和 exFAT 会拒绝 `link(2)`；
   从本索引的最低版本 xlings 2026.10.10.2（`index-compat.json`）起，解包时被拒绝的硬链接改为复制。
   上游归档按原样镜像；本索引自建的载荷仍用 `tar --hard-dereference` 打包（`tools/res/build.sh`）。
@@ -191,12 +200,16 @@ XLINGS_HOME="$TMP_HOME" xlings remove <name> -y
 - 资源：来源、版本、镜像 release、sha256；
 - install、config、uninstall 是否改变用户环境；
 - 运行了什么：命令、pytest、隔离安装；
-- `latest` 移动时，它指向的已验证版本。
+- `latest` 移动时，它指向的已验证版本；
+- 可选：使用了哪个 agent 和模型（PR 模板里有对应的行）。
+
+标签只是由 workflow 补上的提示，不做检查。描述和日志都是公开的，而且编辑会在历史中保留旧文本，
+所以发布前请去掉本地绝对路径、用户名、主机名、邮箱和 token。
 
 提交遵循 `<type>(<scope>): <description>` —— `feat(pkg): add foo 1.2.0`、
 `fix(index): add missing aarch64 checksums`。Linux、macOS、Windows 和索引检查都通过后合入。
 
 ## 职责边界
 
-xlings 与 libxpkg 是配方、兼容规则和资源解析的唯一实现；本索引只声明数据和钩子。
-配方不重新实现平台判断、资源服务器 URL 或模板展开。
+xlings 与 libxpkg 是 xpkg、兼容规则和资源解析的唯一实现；本索引只声明数据和钩子。
+xpkg 不重新实现平台判断、资源服务器 URL 或模板展开。

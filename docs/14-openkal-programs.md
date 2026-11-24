@@ -4,8 +4,8 @@
 
 A program built for an ok-image target (`x86_64-openkal`, `aarch64-openkal`) is
 one image per architecture, and the same image runs on Linux, macOS and Windows
-through a loader, `okrun`. Its recipe states that once: one asset for every
-system. The recipes `pkgs/o/okrun.lua` (the loader) and `pkgs/m/mcpp-ide.lua`
+through a loader, `okrun`. Its xpkg states that once: one asset for every
+system. The xpkgs `pkgs/o/okrun.lua` (the loader) and `pkgs/m/mcpp-ide.lua`
 (a program) are the reference.
 
 ## What the asset is
@@ -23,7 +23,7 @@ one archive with one top-level directory holding
 
 The archive is the same file for every system, so its sha256 is one value.
 
-## The recipe
+## The xpkg
 
 - `archs` names the architectures whose images the package holds.
 - `linux`, `macosx` and `windows` each name the same URL and the same sha256.
@@ -35,7 +35,7 @@ The archive is the same file for every system, so its sha256 is one value.
   and on Windows the command is the `.cmd` launcher (`alias = "<name>.cmd"`).
 
 `mcpp emit xpkg --package <archive> --url <release prefix>` writes these parts
-from `mcpp-package.json`; the recipe adds what an index states and a package
+from `mcpp-package.json`; the xpkg adds what an index states and a package
 does not (authors, licenses, the CN mirror, the version history).
 
 ## The loader
@@ -44,13 +44,13 @@ does not (authors, licenses, the CN mirror, the version history).
 by openkal-image's `release binaries` workflow over openkal-platform's hosted
 arrangement (static on Linux, no SDK on macOS, no MSVC run-time on Windows);
 `okld`, the linker and bundler of ok images, is built and described the same
-way. Each recipe is per system, one asset and one sha256 per architecture of
+way. Each xpkg is per system, one asset and one sha256 per architecture of
 the rows the workflow builds (`linux-x86_64`, `linux-aarch64`,
 `macos-aarch64`, `windows-x86_64`), and is written by
 `mcpp emit xpkg --package` from the four archives.
 
 A program whose package is not universal (one archive per system, such as
-`mcppls`, whose payload carries a system's clangd) keeps a recipe per system.
+`mcppls`, whose payload carries a system's clangd) keeps an xpkg per system.
 
 ## Resources
 
