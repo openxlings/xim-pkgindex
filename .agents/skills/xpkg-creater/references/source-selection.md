@@ -25,10 +25,10 @@ Never copy a hash from a place that is not the source of the bytes.
   that mirrors the *original* upstream files. Check the real path (do not guess it from the
   domain), that every asset you need is there, and that its sha256 equals GLOBAL's. A redirect
   back to GitHub is not a CN resource.
-- **No well-known CN mirror**: `xlings-res` on GitCode is the fallback, and only maintainers with
-  `xlings-res` access can write it. A contributor without that access skips CN and declares GLOBAL
-  only; a maintainer supplements the CN resource later. A maintainer with access may publish it
-  directly in the same pull request (`maintainer-publishing.md`). Never invent a mirror path.
+- **No well-known CN mirror**: declare `ci = { mirror = true }`. After merge CI copies the GLOBAL
+  bytes to `xlings-res`; users fetch that copy only once a `CN` leg points to it, and a maintainer
+  adds that leg later (`docs/13-ci-mirror-and-update.md`). A maintainer with `xlings-res` access may
+  write the CN resource in the same pull request (`maintainer-publishing.md`). Never invent a mirror path.
 - The user's client tries its region first and falls back to the other, and the xpkg's
   sha256 decides what is accepted, so a stale mirror is refused, not trusted.
 

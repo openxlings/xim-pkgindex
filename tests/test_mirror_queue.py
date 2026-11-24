@@ -189,3 +189,29 @@ def test_one_gitcode_upload_retry_not_three():
     xpkg_ci_spec.loader.exec_module(xpkg_ci)
     assert xpkg_ci.GITCODE_UPLOAD_ATTEMPTS == 2
     assert xpkg_ci.GITCODE_UPLOAD_TIMEOUT == 600
+
+
+def test_known_cn_hosts_are_found_in_a_cn_leg_only():
+    text = ('url = {\n  GLOBAL = "https://github.com/x/y.zip",\n'
+            '  CN = "https://mirrors.tuna.tsinghua.edu.cn/Adoptium/x.tar.gz",\n}\n'
+            'other = "https://mirrors.ustc.edu.cn/not-a-cn-leg"\n')
+    assert queue.known_cn_hosts(text) == ["mirrors.tuna.tsinghua.edu.cn"]
+    assert queue.known_cn_hosts('CN = "https://gitcode.com/xlings-res/x/releases"') == []
+    assert queue.known_cn_hosts('CN = "https://mirrors.cloud.tencent.com/apache/maven/x.zip"') == [
+        "mirrors.cloud.tencent.com"]
+
+
+def test_precheck_refuses_ci_mirror_next_to_a_known_cn_mirror(monkeypatch, tmp_path):
+    lua = tmp_path / "pkgs" / "m" / "maven.lua"
+    lua.parent.mkdir(parents=True)
+    lua.write_text('ci = { mirror = true }\nCN = "https://mirrors.cloud.tencent.com/apache/maven/x.zip"\n')
+    monkeypatch.setattr(queue, "changed_stems", lambda ws, rev: ["maven"])
+    monkeypatch.setattr(queue, "declares_mirror", lambda ws, name: True)
+
+    def must_not_run(*args, **kwargs):
+        raise AssertionError("precheck must refuse before materializing anything")
+
+    monkeypatch.setattr(queue, "run_batch", must_not_run)
+    rc = queue.main(["--workspace", str(tmp_path), "precheck", "--base", "a", "--head", "b",
+                     "--work", str(tmp_path / "w"), "--results", str(tmp_path / "r")])
+    assert rc == 1
