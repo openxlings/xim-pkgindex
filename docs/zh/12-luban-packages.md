@@ -2,7 +2,7 @@
 
 [English](../12-luban-packages.md) | **简体中文**
 
-Luban 的 edition、策略和启动层都是本索引中的普通配方：xpkg 格式不变，数据写在配方里，
+Luban 的 edition、策略和启动层都是本索引中的普通 xpkg：xpkg 格式不变，数据写在 xpkg 里，
 只有 `libs/luban.lua` 写盘。Luban 是什么、edition 怎样使用，见
 [xlings 的 Luban 文档](https://github.com/openxlings/xlings/tree/main/docs/zh/luban)。
 
@@ -15,10 +15,10 @@ Luban 的 edition、策略和启动层都是本索引中的普通配方：xpkg �
 不限制谁使用。
 
 luban 中的短名就是这个命名空间里的名字：`--edition desktop` 即 `luban:desktop`，`--desktop kde`
-即 `luban:kde`。新增官方桌面就是在这里新增它的配方；luban 与 Luban OS 应用里没有名单。
+即 `luban:kde`。新增官方桌面就是在这里新增它的 xpkg；luban 与 Luban OS 应用里没有名单。
 
 `xim`、`luban`、`subos`、`config` 是**保留的**：`index-compat.json` 声明它们（`namespaces.reserved`），
-认识这个字段的客户端只从本索引接受这些命名空间的包——别处写 `namespace = "luban"` 的配方被拒绝，
+认识这个字段的客户端只从本索引接受这些命名空间的包——别处写 `namespace = "luban"` 的 xpkg 被拒绝，
 并指出它的索引与文件。规则在客户端、是通用的：任何索引都可以这样保留自己的命名空间。
 
 已发布的 `subos:luban-*` edition 与 `xim:labwc-desktop` 冻结：保留、照常解析（实例与旧 edition 引用它们），
@@ -29,11 +29,11 @@ luban 中的短名就是这个命名空间里的名字：`--edition desktop` 即
 | 类别 | `type` | 命名空间 | 版本 | 写盘 |
 |---|---|---|---|---|
 | edition | `subos` | `luban`（冻结的：`subos`） | 发布日期 `YYYY.M.D.N` | `luban.edition({id, variant, versions, files})` |
-| 桌面组件（`luban:labwc`、`luban:foot`） | `package` | `luban` | 上游版本，本索引的构建加 `-rN` | 配方自己；`luban_component` 放置 |
+| 桌面组件（`luban:labwc`、`luban:foot`） | `package` | `luban` | 上游版本，本索引的构建加 `-rN` | xpkg 自己；`luban_component` 放置 |
 | 组合包（`luban:compositor`、`luban:xdesk`）或工具集（`luban:tools-dev`） | `package` | `luban` | 发布日期，或所组合的版本 | 它的依赖、会话与配置 |
 | 策略 | `subos-policy` | `xim` | 发布日期 | `luban.policy(json)` |
 | 启动层 | `package` | `xim` | 发布日期 | `luban.boot(json)` |
-| 上游软件（内核、limine、busybox 等） | `package` | `xim` | 上游版本，重建时加 `-rN` | 配方自己 |
+| 上游软件（内核、limine、busybox 等） | `package` | `xim` | 上游版本，重建时加 `-rN` | xpkg 自己 |
 
 每个组件在注释里写明它的形态与理由（整包、运行时、由原子包组成的组合包）：形态改变时，名字与约定
 （会话文件、`X-Luban-Shell`、自检、默认终端）不变。
@@ -62,7 +62,7 @@ manifest = {
 
 ## Luban 怎样呈现一个包：`extensions.luban`
 
-配方在包级的 `extensions`（xpackage 字段，见 [`specs/xpackage-v2.md`](../specs/xpackage-v2.md)）里告诉 Luban 怎样呈现它：
+xpkg 在包级的 `extensions`（xpackage 字段，见 [`specs/xpackage-v2.md`](../specs/xpackage-v2.md)）里告诉 Luban 怎样呈现它：
 xlings 原样带出，Luban OS 的新建页与 `luban search` 读它（xlings 设计 2026-10-19 §5.4、§20）。每个键都可以不写，不写时 Luban 用自己的默认。
 
 | 键 | 类型 | 含义 | 不写时 |
@@ -92,7 +92,7 @@ extensions = {
 1. **已发布版本的输出永不改变。**
    `tests/fixtures/luban-published.json` 记录每个已发布版本写出的每个文件的 sha256 和权限位，
    `tests/test_luban_published.py` 比对。一个版本合入 `main` 时把它加进去：
-   `LUBAN_PUBLISHED_ADD=pkgs/l/<recipe>.lua@<version> pytest -k add_published`。
+   `LUBAN_PUBLISHED_ADD=pkgs/l/<name>.lua@<version> pytest -k add_published`。
    fixture 只增不改。
 2. **用到新客户端字段的 edition 写 `min_client`。** 新字段设计成旧客户端忽略后仍然安全
    （`boot.profile` 被忽略时退回 `boot.kernel`）。

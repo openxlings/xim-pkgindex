@@ -2,8 +2,8 @@
 
 **English** | [简体中文](zh/12-luban-packages.md)
 
-Luban's editions, policies and boot profiles are ordinary recipes in this index:
-the xpkg format is unchanged, the data is in the recipe, and only
+Luban's editions, policies and boot profiles are ordinary xpkgs in this index:
+the xpkg format is unchanged, the data is in the xpkg, and only
 `libs/luban.lua` writes files. What Luban is, and how editions are used, is in
 [xlings's Luban docs](https://github.com/openxlings/xlings/tree/main/docs/luban).
 
@@ -19,11 +19,11 @@ system: the namespace says who publishes it, not who may use it.
 
 A short name in luban is a name in this namespace: `--edition desktop` is
 `luban:desktop`, `--desktop kde` is `luban:kde`. Adding an official desktop is
-adding its recipe here; nothing in luban or the Luban OS app lists them.
+adding its xpkg here; nothing in luban or the Luban OS app lists them.
 
 `xim`, `luban`, `subos` and `config` are **reserved**: `index-compat.json`
 declares them (`namespaces.reserved`), and a client that knows the field takes
-packages in them from this index only -- a recipe elsewhere that says
+packages in them from this index only -- an xpkg elsewhere that says
 `namespace = "luban"` is refused, naming its index and file. The rule is the
 client's and generic: any index may reserve its own namespaces the same way.
 
@@ -37,11 +37,11 @@ honours from the same index only.
 | Kind | `type` | Namespace | Version | Written by |
 |---|---|---|---|---|
 | an edition | `subos` | `luban` (frozen ones: `subos`) | the release date, `YYYY.M.D.N` | `luban.edition({id, variant, versions, files})` |
-| a desktop component (`luban:labwc`, `luban:foot`) | `package` | `luban` | upstream's, `-rN` for this index's build | the recipe; `luban_component` places it |
+| a desktop component (`luban:labwc`, `luban:foot`) | `package` | `luban` | upstream's, `-rN` for this index's build | the xpkg; `luban_component` places it |
 | a composite (`luban:compositor`, `luban:xdesk`) or a tool set (`luban:tools-dev`) | `package` | `luban` | the release date, or what it composes | its deps, its session and configuration |
 | a policy | `subos-policy` | `xim` | the release date | `luban.policy(json)` |
 | a boot profile | `package` | `xim` | the release date | `luban.boot(json)` |
-| upstream software (kernels, limine, busybox, ...) | `package` | `xim` | upstream's, `-rN` when rebuilt | the recipe |
+| upstream software (kernels, limine, busybox, ...) | `package` | `xim` | upstream's, `-rN` when rebuilt | the xpkg |
 
 Each component says, in a comment, the form it takes and why (a bundle, a
 runtime, a composite of atomic packages): the name and its conventions (a
@@ -73,7 +73,7 @@ manifest = {
 
 ## What Luban shows of a package: `extensions.luban`
 
-A recipe tells Luban how to present it in its package-level `extensions`
+An xpkg tells Luban how to present it in its package-level `extensions`
 (the xpackage field, [`specs/xpackage-v2.md`](specs/xpackage-v2.md)): xlings
 hands it on untouched; the Luban OS quick start and `luban search` read it
 (xlings design 2026-10-19 §5.4, §20). Every key is optional; without one
@@ -108,7 +108,7 @@ extensions = {
    `tests/fixtures/luban-published.json` records the sha256 and mode of every file
    each published version writes, and `tests/test_luban_published.py` compares.
    When a version merges to `main`, add it:
-   `LUBAN_PUBLISHED_ADD=pkgs/l/<recipe>.lua@<version> pytest -k add_published`.
+   `LUBAN_PUBLISHED_ADD=pkgs/l/<name>.lua@<version> pytest -k add_published`.
    The fixture only grows.
 2. **An edition using a field newer clients read sets `min_client`.** A new field
    is designed so an older client ignoring it is still safe (an ignored
