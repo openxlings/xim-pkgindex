@@ -78,9 +78,13 @@ gh issue create --repo openxlings/<repo> \
 
   Filed by an AI agent while contributing `<name>`.
   Authorship: by-ai
+  Agent: <optional: the tool, e.g. Claude Code; blank if unsure>
+  Model: <optional: the model id; blank if unsure>
   ```
-- Never include tokens, keys, e-mail addresses, personal paths or the contents of the user's
-  configuration. Trim logs to what shows the problem.
+- **Nothing private**: remove local absolute paths and user names (`/home/<you>/`, `/Users/<you>/`,
+  `C:\Users\<you>\`; write `~`, `<user>`, `<tmp>`), host names, e-mail addresses, tokens and the
+  contents of the user's configuration, **before** posting: an edit keeps the old text in the
+  history. `pr-workflow` has a `sed` one-liner. Trim logs to what shows the problem.
 - Afterwards: link the issue from your pull request, and tell the user the issue link.
 
 ## 5. Do not hide a tool bug in the xpkg

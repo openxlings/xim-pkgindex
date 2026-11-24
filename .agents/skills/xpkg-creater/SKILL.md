@@ -151,6 +151,8 @@ entry to the existing note's revision log.
   pull request instead of writing a competing one.
 - A fix to what a hook installs: raise that entry's `revision` (and `floor` only as the spec
   says); `.github/scripts/check-revision.sh` checks it.
+- A published version entry never changes (its url, sha256, what its hooks install): a fix is a
+  new `revision` or a new version.
 - Do not migrate an old xpkg's style, and do not touch other versions' entries.
 
 ## 7. Pull request

@@ -73,11 +73,35 @@ The description states:
 - **`Authorship:`**, one line: `by-ai` (an agent produced it from a task, a person directed and
   reviewed), `human-and-ai` (a person and an AI worked together; the person wrote or substantially
   reworked it) or `by-human`. The pull request template has it. An agent writes `by-ai`.
+- optionally `Agent:` (the tool, e.g. Claude Code) and `Model:` (the model id): fill them when you
+  know them, leave them blank otherwise, never guess.
+- **nothing private**: see "Before you post" below.
 
-Labels are applied by a workflow from that line and the changed files (`add-xpkg` for a new xpkg,
+Labels are hints, not checks: nothing fails without them. A workflow adds them from that line and
+the changed files (`add-xpkg` for a new xpkg,
 `update-xpkg` for a change to an existing one, `luban`, `bug` for a `fix` title). Do not pass
 `--label`: a reporter without triage rights loses labels, and a label that does not exist can
-make the command fail.
+make the command fail. If you cannot get a label, one line in the description saying what kind of
+change this is (a new xpkg, a version update, a fix) is enough.
+
+### Before you post (pull requests and issues)
+
+Descriptions, logs and screenshots are public, and an edit keeps the old text in the history, so
+clean them **before** posting. Remove or replace:
+
+- local absolute paths and user names (`/home/<you>/...`, `/Users/<you>/...`,
+  `C:\Users\<you>\...`): write `~`, `$HOME`, `$XLINGS_HOME`, `<user>` or `<tmp>`;
+- host names, IP addresses, e-mail addresses;
+- tokens, keys, and the contents of the user's configuration or shell profile.
+
+`/home/runner` and `/Users/runner` of CI are not private. A quick pass over a log:
+
+```bash
+sed -e "s#$HOME#~#g" -e "s#$(id -un)#<user>#g" log.txt > log.clean.txt
+```
+
+Trim logs to the lines that show the problem. If something private was posted, tell a maintainer
+at once: they can delete the edit history.
 
 ### 5. Watch CI
 

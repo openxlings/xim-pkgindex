@@ -236,7 +236,12 @@ The description gives:
 - the resources: source, version, mirror release, sha256s;
 - whether install, config or uninstall change the user's environment;
 - what you ran: commands, pytest, the isolated install;
-- when `latest` moves, the verified version it points to.
+- when `latest` moves, the verified version it points to;
+- optionally, which agent and model you used (the pull request template has the lines).
+
+Labels are hints that a workflow adds; nothing checks them. Descriptions and logs are public and
+an edit keeps the old text in the history, so remove local absolute paths, user names, host
+names, e-mail addresses and tokens before you post.
 
 Commits follow `<type>(<scope>): <description>` — `feat(pkg): add foo 1.2.0`,
 `fix(index): add missing aarch64 checksums`. A pull request merges once Linux,

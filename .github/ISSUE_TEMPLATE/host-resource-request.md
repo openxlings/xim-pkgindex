@@ -7,6 +7,8 @@ assignees: ''
 
 ---
 
+<!-- Before posting, remove local paths, user names, e-mail addresses and tokens: an edit keeps the old text in the history. | 提交前请去掉本地路径、用户名、邮箱和 token：编辑会在历史中保留旧文本。 -->
+
 <!-- Contributors do not publish to xlings-res; maintainers do, and later. Most packages should
 point at the upstream's own release. This is for what the upstream cannot serve: a repack, a
 layout fix, a static/musl build the upstream does not publish. -->
@@ -28,3 +30,5 @@ The pull request or xpkg that uses it now, with a `namespace` of your own | 当�
 
 ### Authorship | 作者
 Authorship: <by-human | human-and-ai | by-ai>
+Agent: <optional | 可选>
+Model: <optional | 可选>

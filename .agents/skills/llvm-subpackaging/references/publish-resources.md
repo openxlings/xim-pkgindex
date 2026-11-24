@@ -55,7 +55,7 @@ gtc release upload xlings-res/llvm --tag <tag> <file>...
 > **gtc cannot delete assets**, nor overwrite assets of the same name. To replace an old asset with the same name, **the maintainer
 > manually deletes it on the GitCode web page** and then runs `gtc release upload`. New asset names (e.g. a new platform/new version) need no deletion; upload directly.
 
-For the location and configuration of `gtc`, see the reference memo (`/home/speak/.local/bin/gtc`,
+For the location and configuration of `gtc`, see the reference memo (`~/.local/bin/gtc`,
 token in `~/.config/gitcode-tool/config.json`).
 `gtc release create` may return HTTP 400; fall back to creating the release directly via the GitCode API (see the memo).
 

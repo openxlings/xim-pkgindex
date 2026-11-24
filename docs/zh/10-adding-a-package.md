@@ -200,7 +200,11 @@ XLINGS_HOME="$TMP_HOME" xlings remove <name> -y
 - 资源：来源、版本、镜像 release、sha256；
 - install、config、uninstall 是否改变用户环境；
 - 运行了什么：命令、pytest、隔离安装；
-- `latest` 移动时，它指向的已验证版本。
+- `latest` 移动时，它指向的已验证版本；
+- 可选：使用了哪个 agent 和模型（PR 模板里有对应的行）。
+
+标签只是由 workflow 补上的提示，不做检查。描述和日志都是公开的，而且编辑会在历史中保留旧文本，
+所以发布前请去掉本地绝对路径、用户名、主机名、邮箱和 token。
 
 提交遵循 `<type>(<scope>): <description>` —— `feat(pkg): add foo 1.2.0`、
 `fix(index): add missing aarch64 checksums`。Linux、macOS、Windows 和索引检查都通过后合入。
