@@ -3,7 +3,7 @@
 **English** | [简体中文](zh/12-disk-image-assets.md)
 
 The asset class for "a system's official media, assembled into a bootable
-image": what such a package is, how it is named, and what a recipe of the
+image": what such a package is, how it is named, and what an xpkg of the
 class states. Nothing here is engine vocabulary — the engine knows none of
 these names; the class serves any consumer that boots an image.
 
@@ -32,7 +32,7 @@ it. `tests/test_dirun_profiles.py` parses every profile and holds this rule.
 | Package name | `<system>-disk-image` — the thing, not a mechanism, not a format |
 | Asset names | carry the format (`*.qcow2`, `*.vfd`, …); the package name never does |
 | Prefixes | none for generic assets; a tool whose contract is a build-system session carries that system's prefix |
-| Attribution | the recipe names the publisher of the media it assembles |
+| Attribution | the xpkg names the publisher of the media it assembles |
 | Provenance | repacked bytes are recorded, double-mirrored, sha-identical |
 
 Why `disk-image` and not the alternatives: `disk` alone may read as
@@ -40,7 +40,7 @@ hardware, `image` alone is claimed by containers, an `iso` name lies the day
 the media becomes a qcow2, and a `boot-` prefix says nothing a disk image
 does not already say.
 
-## What a recipe of the class states
+## What an xpkg of the class states
 
 ```lua
 -- <system>-disk-image.lua — an asset package: install only, nothing on PATH
