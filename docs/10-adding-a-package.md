@@ -71,6 +71,12 @@ Keep the `platform -> version` model and pick the first that fits:
 | a resource the maintainers host on xlings-res | `xpm.source = "xlings-res"` and a per-architecture `sha256`; maintainers with access add it, so ask in an issue |
 | an older xpkg | `"XLINGS_RES"`, `res = true`, a single URL, a single hash — still accepted |
 
+**Mirror.** Declare `ci = { mirror = true }` by default: after merge CI copies the GLOBAL resources to
+xlings-res, so the index keeps its own copy. Users fetch that copy only once a `CN` leg points to it;
+a maintainer adds the leg later. Leave `ci.mirror` out if you declare a well-known CN mirror in `url`.
+A mirror never overwrites a `url`, `ci` or `CN` you wrote. The pull-request precheck fails when a changed
+package declares both. Details: [CI: Mirror and Update](13-ci-mirror-and-update.md).
+
 A repack, a patched build or any packaging you maintain yourself sets
 `namespace = "<your handle>"` in `package`, so its id is `<namespace>:<name>@<version>`; host
 the asset yourself and give its reproducible process in the pull request.

@@ -18,7 +18,8 @@ fix, a test, a doc or a skill.
 | Open a pull request | yes | yes |
 | Edit `pkgs/<own>`, `tests/<own>`, own package note, relevant `docs/` | yes | yes |
 | Edit `.github/**`, `libs/**`, `tools/**`, `index-compat.json`, `tests/lib/**`, `tests/fixtures/**`, `docs/specs/**` | no | when the task is about them |
-| Publish to `xlings-res` (incl. the GitCode CN asset), set `ci.mirror`, use `xpm.source = "xlings-res"` | no (skip CN, or open an issue) | yes, if they have `xlings-res` access |
+| Declare `ci = { mirror = true }` (the default; see AGENTS.md, Source) | yes, unless they declare a well-known CN mirror | yes |
+| Use `xpm.source = "xlings-res"`, or edit the mirror workflow or its tracking issue | no (ask in an issue) | yes, if they have `xlings-res` access |
 | Merge | no | yes (squash) |
 
 ## Steps

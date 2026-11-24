@@ -70,10 +70,11 @@ xpkgs exist and are not to be imitated.
   `extensions.autoupdate` from `docs/13-ci-mirror-and-update.md`, GLOBAL first; add `CN` only when a
   mirror's real path and bytes are verified. Run `xpkgindex-update inspect` and a `check` on your
   package before the PR. Do not commit generated plans.
-- **CN**: only a well-known institutional mirror you verified; otherwise leave it out. Without
-  `xlings-res` access do not use `xlings-res` as `source`, `ci = { mirror = true }`, or publish
-  releases: a maintainer adds the CN resource later (see AGENTS.md). A maintainer with access
-  follows `references/maintainer-publishing.md`.
+- **Mirror and CN**: declare `ci = { mirror = true }` (the default): after merge CI copies your GLOBAL
+  resources to `xlings-res`. Add a CN leg only for a well-known institutional mirror you verified
+  (`references/source-selection.md`); if you do, leave `ci.mirror` out, since the lint rejects both.
+  Never set `xpm.source = "xlings-res"`: a maintainer writes that resource
+  (`references/maintainer-publishing.md`).
 
 Minimal skeleton:
 
