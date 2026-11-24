@@ -2,7 +2,7 @@
 name: Update a package | 更新包
 about: A new version, a missing platform or architecture, or a changed upstream location
 title: "[update]: "
-labels: enhancement
+labels: update-xpkg
 assignees: ''
 
 ---
@@ -26,3 +26,6 @@ The official release page and the asset URLs | 官方发布页与资产地址:
 requests first. | 带 `extensions.autoupdate` 的包由更新器提升版本，请先看它的 PR。 -->
 
 ### Additional context | 额外补充
+
+### Authorship | 作者
+Authorship: <by-human | human-and-ai | by-ai>

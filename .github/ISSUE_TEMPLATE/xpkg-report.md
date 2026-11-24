@@ -1,0 +1,41 @@
+---
+name: xpkg report | 贡献 xpkg 时发现的问题
+about: A bug in xlings, libxpkg, the updater or this index, found while adding or updating an xpkg
+title: "[xpkg-report]: "
+labels: xpkg-report
+assignees: ''
+
+---
+
+<!-- An xpkg's own mistake is not a report: fix it. Search existing issues first (xlings, libxpkg,
+xpkgindex-update, xim-pkgindex) and comment on a match instead of opening a duplicate. -->
+
+### Context | 背景
+
+Found while contributing `<namespace>:<name>` (pull request) | 贡献哪个包时发现（附 PR）:
+
+### Versions | 版本
+
+xlings version, and the version CI pins (`.github/actions/setup-xlings/action.yml`); OS and
+architecture | xlings 版本、CI 固定的版本、系统与架构:
+
+### Reproduce | 复现
+
+The smallest commands, in an isolated home | 最小复现命令，使用隔离的 home:
+
+```bash
+XLINGS_HOME="$(mktemp -d)" xlings install <name>@<version> -y
+```
+
+### Expected / actual | 预期与实际
+
+### Analysis | 分析
+
+Observed (facts) | 观察到的事实:
+
+Suspected (a guess, marked as one) | 推测（标明是推测）:
+
+Ruled out | 已排除:
+
+### Authorship | 作者
+Authorship: <by-human | human-and-ai | by-ai>

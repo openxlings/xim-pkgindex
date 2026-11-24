@@ -36,9 +36,9 @@ required by default; set `required = false` explicitly for an optional mirror af
 review. At least one target must remain required. Use `latest = "keep"` for an LTS
 or pinned default. Before opening the PR, run `inspect` and a package-specific
 `check` with the pinned tool below and review the plan. Keep configuration in the
-recipe itself; document manual-maintenance reasons in a recipe comment or the PR.
+xpkg itself; document manual-maintenance reasons in an xpkg comment or the PR.
 Initial package versions use normal package CI; the updater candidate checks apply
-to added versions in existing recipes. CI validates current recipes and generates `coverage.json`, uploaded as an
+to added versions in existing xpkgs. CI validates current xpkgs and generates `coverage.json`, uploaded as an
 Actions artifact. Generated audit snapshots do not belong in the PR.
 
 A version older than every existing one is a historical backfill: the updater
@@ -182,4 +182,4 @@ those assets once available; it does not create them. Published resource changes
 reviewed revision procedure, not an updater refresh.
 
 The old update fields and workflows have been removed. There is no legacy update fallback.
-CI derives the complete package inventory from recipes on each run; it does not read a committed audit snapshot.
+CI derives the complete package inventory from xpkgs on each run; it does not read a committed audit snapshot.

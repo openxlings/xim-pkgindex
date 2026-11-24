@@ -35,7 +35,7 @@ git checkout -b <type>/<scope> origin/main
 
 ### 2. Do the work, minimal and verified
 
-- Only the files the task needs. Do not reformat or migrate other recipes.
+- Only the files the task needs. Do not reformat or migrate other xpkgs.
 - Run the checks in `xpkg-creater/references/testing-and-acceptance.md` in an isolated
   `XLINGS_HOME`, on every platform you can reach.
 - Do not push to find out: CI is slow and shared. Changes to widely depended-on packages
@@ -69,7 +69,15 @@ The description states:
   `PATH` or configuration;
 - **what you ran**: commands, pytest, the isolated install per platform, with results;
 - **what you did not run**, why, and the risk;
-- when `latest` moves, the verified version it points to; the issue it closes, if any.
+- when `latest` moves, the verified version it points to; the issue it closes, if any;
+- **`Authorship:`**, one line: `by-ai` (an agent produced it from a task, a person directed and
+  reviewed), `human-and-ai` (a person and an AI worked together; the person wrote or substantially
+  reworked it) or `by-human`. The pull request template has it. An agent writes `by-ai`.
+
+Labels are applied by a workflow from that line and the changed files (`add-xpkg` for a new xpkg,
+`update-xpkg` for a change to an existing one, `luban`, `bug` for a `fix` title). Do not pass
+`--label`: a reporter without triage rights loses labels, and a label that does not exist can
+make the command fail.
 
 ### 5. Watch CI
 
@@ -78,7 +86,7 @@ gh pr checks <number>
 ```
 
 Expected: `plan`, `required`, the `ci_xpkg_test` jobs (static-and-isolation,
-index-registration), `install` for each platform the recipe claims, and the site check. A
+index-registration), `install` for each platform the xpkg claims, and the site check. A
 skipped job is usually a path filter, not a pass.
 
 If a job fails: read the failing job's log, find the cause (see
@@ -119,6 +127,6 @@ request.
 
 ## Related
 
-- `xpkg-creater`: the procedure for the recipe itself; its note, tests and checklist.
+- `xpkg-creater`: the procedure for the xpkg itself; its note, tests and checklist.
 - `luban-packages`: the extra rules for `pkgs/luban/`.
 - `AGENTS.md`: the rules every change follows.

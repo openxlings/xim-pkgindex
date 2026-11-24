@@ -1,22 +1,22 @@
 # Hooks: what the runtime has, what it lacks, and what must hold
 
-Hooks run in a sandboxed Lua runtime. A recipe that works on your machine can fail on another
+Hooks run in a sandboxed Lua runtime. An xpkg that works on your machine can fail on another
 platform, or "succeed" while installing nothing. Read this before writing `install()`,
 `config()`, `uninstall()` or `installed()`.
 
 ## 1. The Lua / API boundary (§2.1)
 
-A recipe may use only:
+An xpkg may use only:
 
 - the `package` metadata, `xpm` description and lifecycle hooks of the spec,
 - standard Lua syntax and library (`string`, `table`, `io`, `os.getenv`, `pcall`, `error`),
 - `xim.libxpkg.*` (`pkginfo`, `xvm`, `system`, `log`, `json`) and this index's
   `xim.pkgindex.*` (`libs/`).
 
-Avoid xmake's private runtime unless an existing recipe's compatibility proves it necessary:
+Avoid xmake's private runtime unless an existing xpkg's compatibility proves it necessary:
 `core.*`, `detect.*`, `runtime.*`, `xim.base.runtime`, `common`, `platform`, `os.host()`,
-`try { ... }`, and `path.*` beyond the basics existing recipes use (`path.join`, `path.directory`,
-`path.filename`). `is_host()` and `raise(...)` appear in many recipes and work in `install()`
+`try { ... }`, and `path.*` beyond the basics existing xpkgs use (`path.join`, `path.directory`,
+`path.filename`). `is_host()` and `raise(...)` appear in many xpkgs and work in `install()`
 hooks; do not use them in `type = "config"` packages (section 3). Import the new API
 (`xim.libxpkg.pkginfo`, `.xvm`, `.system`, `.log`), not the old one.
 
@@ -40,7 +40,7 @@ uses of a sandbox API, assume it is not in the runtime. A wrong guess costs a Wi
 Two that exist but behave unexpectedly:
 
 - After `os.cd(dir)`, **`system.exec` does not inherit that cwd** (`os.exec` does). Check which one
-  a recipe you copy from uses.
+  an xpkg you copy from uses.
 - `path.join` on Windows **mixes separators**. `"C:\Windows/System32/tar.exe"` will not run and
   `msiexec` refuses it. Pass every path meant for a Windows program through a `winpath()`
   normalizer, including the path of the executable itself.
@@ -53,7 +53,7 @@ Two that exist but behave unexpectedly:
   (`pnpm.lua`, `dsh.lua`).
 - Two `tar` programs exist on a runner: bsdtar (`%SystemRoot%\System32\tar.exe`, reads zip, takes
   `C:\...`) and GNU tar (Git for Windows / MSYS2: no zip, and `C:\...` is read as `host:path`).
-  PATH order decides which a bare `tar` is, so the same recipe passes on one runner and fails on
+  PATH order decides which a bare `tar` is, so the same xpkg passes on one runner and fails on
   another. To unpack a zip or `.vsix`, use the absolute `System32\tar.exe`. `--force-local` is not
   an answer: GNU tar accepts it and bsdtar refuses it.
 
@@ -116,8 +116,8 @@ For `type = "config"` packages that write a user's tool configuration (Claude, a
 
 ## 5. `installed()` means "works", not "a directory exists" (§2.2.1)
 
-`installed()` says whether the payload is in the state **this recipe produces**. Package
-versions do not change when a recipe does, so on a machine that installed an older layout it is
+`installed()` says whether the payload is in the state **this xpkg produces**. Package
+versions do not change when an xpkg does, so on a machine that installed an older layout it is
 the only thing that can pull the machine back. In the MSVC ecosystem, four of nine defects were
 this, with every windows test green and the package unusable.
 
@@ -143,7 +143,7 @@ Apps Tools, ...). Sampling would have missed the 365 libs that are disjoint from
 **(c) Say what must not be there.** A removed file needs an explicit "must not exist":
 
 ```lua
--- the new recipe no longer installs vctip.exe (it kept the payload from uninstalling)
+-- the new xpkg no longer installs vctip.exe (it kept the payload from uninstalling)
 for _, d in ipairs(bin_arch_dirs()) do
     if os.isfile(path.join(d, "vctip.exe")) then return false end
 end
@@ -191,7 +191,7 @@ local FLAVOR = "musl"
 local function flavor_version() return pkginfo.version() .. "-" .. FLAVOR end
 ```
 
-1. **Compute the colliding set**: intersect the other recipe's registry with your payload's real
+1. **Compute the colliding set**: intersect the other xpkg's registry with your payload's real
    files, and lock the set with a test so upstream changing its file set is noticed.
 2. **Flavor the colliding names, and the non-colliding ones too**, so the whole group switches
    with one `xlings use`, and a third package collides with a convention, not an empty slot.

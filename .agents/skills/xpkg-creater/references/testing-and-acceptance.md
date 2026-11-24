@@ -1,6 +1,6 @@
 # Testing and acceptance
 
-Two kinds of verification are required for every new or changed recipe:
+Two kinds of verification are required for every new or changed xpkg:
 
 1. **Direct commands** run against an isolated xlings home.
 2. **The pytest suite**, the same levels CI runs (`docs/20-testing.md`).
@@ -9,13 +9,13 @@ Never run installs against your own `XLINGS_HOME`.
 
 ## A. Direct commands (local)
 
-Let `<pkg>` be the package name and `<file>` the recipe path.
+Let `<pkg>` be the package name and `<file>` the xpkg path.
 
 ```bash
 TMP_HOME="$(mktemp -d)"
 export XLINGS_HOME="$TMP_HOME"
 
-xlings config --add-xpkg <file>        # 1. register the recipe in the local overlay
+xlings config --add-xpkg <file>        # 1. register the xpkg in the local overlay
 xlings search <pkg>                    # 2. it is visible
 xlings install <pkg>@<version> -y      # 3. install, for every version you changed
 <pkg> --version                        # 4. run it (its real command), and `which <pkg>`
@@ -24,7 +24,7 @@ xlings install <pkg>@<version> -y      # 6. install again: must be a clean no-op
 xlings remove <pkg> -y                 # 7. remove
 xlings list <pkg>                      # 8. gone; no shim left in the subos bin/
 xlings remove <pkg> -y                 # 9. remove again: must not fail badly
-xlings config --remove-xpkg <pkg>      # 10. drop your recipe from the overlay
+xlings config --remove-xpkg <pkg>      # 10. drop your xpkg from the overlay
 ```
 
 (`--remove-xpkg` needs xlings >= 2026.9.12.1. A forgotten copy that is byte-identical to the
@@ -51,7 +51,7 @@ LD_TRACE_LOADED_OBJECTS=1 <install_dir>/bin/<prog>     # no "not found"
 
 ## B. The pytest levels
 
-Every recipe has a mirror: `pkgs/n/mypackage.lua` -> `tests/n/test_mypackage.py` (`-` becomes
+Every xpkg has a mirror: `pkgs/n/mypackage.lua` -> `tests/n/test_mypackage.py` (`-` becomes
 `_`). Model it on a neighbour's test module; `docs/20-testing.md` has a full example.
 
 ```bash

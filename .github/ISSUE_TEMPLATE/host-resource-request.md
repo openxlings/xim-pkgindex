@@ -2,7 +2,7 @@
 name: Host a resource on xlings-res | 申请托管资源
 about: Ask the maintainers to host a generally useful resource on xlings-res
 title: "[xlings-res]: "
-labels: enhancement
+labels: xlings-res
 assignees: ''
 
 ---
@@ -24,4 +24,7 @@ layout fix, a static/musl build the upstream does not publish. -->
 
 ### Current state | 当前状态
 
-The pull request or recipe that uses it now, with a `namespace` of your own | 当前使用它的 PR 或配方（带你自己的命名空间）:
+The pull request or xpkg that uses it now, with a `namespace` of your own | 当前使用它的 PR 或 xpkg（带你自己的命名空间）:
+
+### Authorship | 作者
+Authorship: <by-human | human-and-ai | by-ai>

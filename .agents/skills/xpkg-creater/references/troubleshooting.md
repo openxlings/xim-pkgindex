@@ -1,7 +1,7 @@
 # Troubleshooting: symptom, cause, local check, fix
 
 Failures in this index have a small number of shapes. Find yours, run the **local check**
-before changing anything, and fix the cause in the recipe unless the cause is in xlings,
+before changing anything, and fix the cause in the xpkg unless the cause is in xlings,
 libxpkg or CI (then open an issue in that repository and say so in your PR).
 
 ## How to investigate (for you or a local AI)
@@ -48,7 +48,7 @@ libxpkg or CI (then open an issue in that repository and say so in your PR).
 | A `build` tool is not installed though declared | Mixed `deps` shape (`{ "a", build = {...} }`) dropped by older clients | `tests/test_deps_shape.py` | Use `{ runtime = {...}, build = {...} }` |
 | `7zip`/`patchelf` ends on the user's PATH | Declared as runtime although only `install()` uses it | D3 advice in the install log | Move it to `build` |
 
-## Recipe and version
+## Xpkg and version
 
 | Symptom | Likely cause | Check | Fix |
 |---|---|---|---|
@@ -64,7 +64,7 @@ libxpkg or CI (then open an issue in that repository and say so in your PR).
 
 | Symptom | Likely cause | Check | Fix |
 |---|---|---|---|
-| `another package already owns this exact name and version` | Two packages register the same shared xvm name | The other recipe's `xvm.add` | Register `<version>-<flavor>` (`hook-pitfalls.md` section 6) |
+| `another package already owns this exact name and version` | Two packages register the same shared xvm name | The other xpkg's `xvm.add` | Register `<version>-<flavor>` (`hook-pitfalls.md` section 6) |
 | After uninstall, lib nodes remain in `.xlings.json` | `xvm.remove` got a bare key for a namespaced install | `workspace` in `subos/<name>/.xlings.json` | Use the stored (namespaced) key |
 | A shim `bin/<name> -> bin/xlings` that always fails | A binding root registered as a program | `xlings self doctor` | Register the root as `type = "group"` |
 | User config lost or a token printed | A config hook overwrote or logged it | Read the hook | Back up, merge keys, never print secrets |
@@ -74,6 +74,6 @@ libxpkg or CI (then open an issue in that repository and say so in your PR).
 | Symptom | Likely cause | What to do |
 |---|---|---|
 | A huge matrix of jobs for a small change | You touched a package many others depend on (`glibc`, `gcc-runtime`, `libs/**`) | Confirm the change is needed; keep it minimal; expect a long run |
-| A job fails on a package you did not touch | A recipe in the reverse closure had its own latent bug the broader run exposed | Say so in the PR; do not "fix" unrelated recipes unless asked (a maintainer may split a fix PR) |
+| A job fails on a package you did not touch | An xpkg in the reverse closure had its own latent bug the broader run exposed | Say so in the PR; do not "fix" unrelated xpkgs unless asked (a maintainer may split a fix PR) |
 | A workflow or script is red | The problem is in `.github/**` | Do not edit it; report the log link and what you saw |
 | A skipped job you expected | Path filter or planner; or the job needs a trigger | Ask a maintainer; do not dispatch workflows |

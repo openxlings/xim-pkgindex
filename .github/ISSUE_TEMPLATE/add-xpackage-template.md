@@ -2,7 +2,7 @@
 name: Add XPackage | 添加 XPackage
 about: Propose a package for the official index (or announce the pull request that adds it)
 title: "[XPackage]: "
-labels: add-xpackage
+labels: add-xpkg
 assignees: ''
 
 ---
@@ -30,7 +30,7 @@ Rules: AGENTS.md. Format: docs/specs/xpackage-v2.md. Path: docs/10-adding-a-pack
 - Checksums published by the source? | 来源是否发布校验和:
 - CN mirror (a well-known one, checked), or "none" (a maintainer adds it later) | CN 镜像（知名且已核对），没有就写“无”（维护者以后补充）:
 - Static (musl) build available? Otherwise, which libraries does it need? | 是否有静态 (musl) 构建？否则依赖哪些库:
-- Does it need compiling to install? (then it is not a recipe, see AGENTS.md) | 是否需要从源码编译才能安装:
+- Does it need compiling to install? (then it is not an xpkg, see AGENTS.md) | 是否需要从源码编译才能安装:
 
 ## Platforms | 平台
 
@@ -60,3 +60,6 @@ Paste the output or a screenshot, per platform | 按平台贴输出或截图:
 Link it here once it is open | PR 开启后在此链接:
 
 ...
+
+### Authorship | 作者
+Authorship: <by-human | human-and-ai | by-ai>

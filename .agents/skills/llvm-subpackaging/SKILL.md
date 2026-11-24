@@ -75,7 +75,7 @@ build-llvm-subpkg.sh --in <dir>                  --pkg tools  --version 22.1.8 -
 - After publishing, compare sha256 across GLOBAL, CN and the carve output (all three must match); when backfilling an old version, `latest` must not go backwards.
 - Full commands: `references/publish-resources.md`.
 
-## 5) Wire into the package index (.lua recipes)
+## 5) Wire into the package index (.lua xpkgs)
 
 - `pkgs/l/llvm.lua`: `xpm` for all three platforms. linux/win use `"XLINGS_RES"` (resources are ready); mac uses an explicit
   `url={GLOBAL=...,CN=...}` (following the macosx style in `llvm-tools.lua`). **Do not pin sha256**.
@@ -103,5 +103,5 @@ build-llvm-subpkg.sh --in <dir>                  --pkg tools  --version 22.1.8 -
 - [ ] Model is 2 packages (`llvm` + `llvm-tools`); core/libcxx not revived.
 - [ ] Every binary passes the self-containment verification; not stripped.
 - [ ] Assets complete on GLOBAL+CN, naming compliant, sha256 consistent across all three.
-- [ ] Recipes structurally aligned across the three platforms, no sha256 pin, isolation compliant; platforms/versions without resources are not wired.
+- [ ] Xpkgs structurally aligned across the three platforms, no sha256 pin, isolation compliant; platforms/versions without resources are not wired.
 - [ ] New/changed packages come with tests and go through `pr-workflow` with all CI passing (including macos-install-test).

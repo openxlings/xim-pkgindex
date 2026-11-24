@@ -29,7 +29,7 @@ Never copy a hash from a place that is not the source of the bytes.
   `xlings-res` access can write it. A contributor without that access skips CN and declares GLOBAL
   only; a maintainer supplements the CN resource later. A maintainer with access may publish it
   directly in the same pull request (`maintainer-publishing.md`). Never invent a mirror path.
-- The user's client tries its region first and falls back to the other, and the recipe's
+- The user's client tries its region first and falls back to the other, and the xpkg's
   sha256 decides what is accepted, so a stale mirror is refused, not trusted.
 
 ## 3. Linking: static and musl preferred, inside the official source
@@ -43,7 +43,7 @@ Order of preference for a Linux binary, **within the best source tier available*
 "Official beats musl": if the upstream only ships a dynamic glibc build, use it. Do not
 replace it with a third-party musl build. If a general, official static build does not exist
 and a musl one would be valuable, open an issue; building one is the maintainers' resource
-factory (`tools/res/`), never the recipe's.
+factory (`tools/res/`), never the xpkg's.
 
 A payload that finds its own libraries through `$ORIGIN` (Electron-style, xPack) declares no
 loader dependency: declaring `xim:glibc` would make elfpatch replace its `DT_RPATH`.
@@ -52,7 +52,7 @@ loader dependency: declaring `xim:glibc` would make elfpatch replace its `DT_RPA
 
 `install()` never runs `configure`, `cmake`, `make`, `cargo`, `go build` or a compiler. It
 unpacks, places and (for a Linux prebuilt ELF) relocates. A package that exists only as source
-is not a recipe here: open an issue, and a maintainer can have the resource factory build it.
+is not an xpkg here: open an issue, and a maintainer can have the resource factory build it.
 
 `install()` also should not resolve a language runtime's dependency tree from the network
 (`pip install`, `npm install` of an unpinned tree) unless the upstream's own lockfile and a
@@ -75,6 +75,6 @@ platform's toolchain, and do not fall back silently to the host's.
   a reviewer can rebuild the asset and compare the sha256.
 - A package that many users would want, but whose asset you had to build: open an issue asking
   maintainers to host it on `xlings-res`. If accepted, a maintainer republishes it and the
-  recipe moves to `xim:` without a prefix.
+  xpkg moves to `xim:` without a prefix.
 - Precedent: `pkgs/t/tinynext.lua`, `pkgs/c/clash-flux.lua`, `pkgs/l/llm-switch.lua`
   (`namespace = "farnaherry"`).

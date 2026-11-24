@@ -2,7 +2,7 @@
 
 **English** | [简体中文](zh/10-adding-a-package.md)
 
-From a recipe to a merged pull request. The exact rules are
+From an xpkg to a merged pull request. The exact rules are
 [XPackage V2](specs/xpackage-v2.md); this chapter is the path.
 
 ## The procedure
@@ -69,7 +69,7 @@ Keep the `platform -> version` model and pick the first that fits:
 | irregular URLs per architecture | a per-architecture map, each `{ url, sha256 }` |
 | one special or historical version | an explicit `url` / mirror table in that entry, which overrides `source` |
 | a resource the maintainers host on xlings-res | `xpm.source = "xlings-res"` and a per-architecture `sha256`; maintainers with access add it, so ask in an issue |
-| an older recipe | `"XLINGS_RES"`, `res = true`, a single URL, a single hash — still accepted |
+| an older xpkg | `"XLINGS_RES"`, `res = true`, a single URL, a single hash — still accepted |
 
 A repack, a patched build or any packaging you maintain yourself sets
 `namespace = "<your handle>"` in `package`, so its id is `<namespace>:<name>@<version>`; host
@@ -91,7 +91,7 @@ The index scans every three days, selects the newest version satisfying all requ
 resources, and opens a PR for review. Existing version entries and hooks are preserved.
 GLOBAL works alone; add a verified CN mirror as required by default, or explicitly
 optional after review. Follow that chapter's local checks; CI generates coverage
-from the recipes. Keep manual-maintenance reasons in a recipe comment or the PR.
+from the xpkgs. Keep manual-maintenance reasons in an xpkg comment or the PR.
 
 ## The hooks
 
@@ -122,7 +122,7 @@ end
   once per scope, recorded by revision.
 - Hooks use standard Lua and `xim.libxpkg.*` only: never a host package manager,
   never `.bashrc`, never `PATH` directly (the isolation tests fail them).
-- Shared modules under `libs/` answer what several recipes would otherwise spell
+- Shared modules under `libs/` answer what several xpkgs would otherwise spell
   each its own way: `xim.pkgindex.winpath` (a path a Windows program accepts),
   `xim.pkgindex.payload` (landing the archive, then naming any file that did not
   land) and `xim.pkgindex.shortcut` (a Start Menu or Desktop entry, best-effort
@@ -194,12 +194,12 @@ deps = {
 - **A prebuilt native program is fetched as it is, not picked by a script.** Prefer
   a platform archive taken directly (`esbuild`, `codex`); where a package manager
   is the only distribution, install with its install scripts off and choose the
-  platform package in the recipe (`bun`, `openclaw`). A script that runs the
+  platform package in the xpkg (`bun`, `openclaw`). A script that runs the
   binary it downloads does so before xlings rewrites its loader: on a host without
   `/lib64/ld-linux-x86-64.so.2` (Alpine; the Luban host machine every Windows and
   macOS install goes through) that worked only since xlings 2026.11.22.1, and on a
   host whose glibc is older than the binary needs it never does.
-  `native-binary-hosts.yml` installs these recipes where both assumptions fail.
+  `native-binary-hosts.yml` installs these xpkgs where both assumptions fail.
 - **Hard links in an archive are the client's to handle.** Android's app
   sandbox, FAT and exFAT refuse `link(2)`; from xlings 2026.10.10.2, this
   index's floor (`index-compat.json`), extraction copies a refused hard link.
@@ -244,6 +244,6 @@ macOS, Windows and the index checks pass.
 
 ## Where the boundaries are
 
-xlings and libxpkg are the only parser of a recipe, its compatibility rules and
-its resource resolution; this index declares data and hooks. A recipe never
+xlings and libxpkg are the only parser of an xpkg, its compatibility rules and
+its resource resolution; this index declares data and hooks. An xpkg never
 re-implements platform detection, resource-server URLs or template expansion.

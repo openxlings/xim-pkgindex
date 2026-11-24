@@ -22,7 +22,7 @@ maintainer supplements it later. The gates below apply to either route.
 - The CN side of a package whose upstream has no well-known institutional mirror.
 - Later, as a fallback for an upstream that disappears or rate-limits.
 
-It is not the default source of a new package: the recipe points at the upstream
+It is not the default source of a new package: the xpkg points at the upstream
 (`AGENTS.md`, "Source order").
 
 ## What `xpm.source = "xlings-res"` promises
@@ -33,14 +33,14 @@ hosts with byte-identical content: GLOBAL `https://github.com/xlings-res`, CN
 named `<name>-<version>-<os>-<arch>.<ext>` with a `.sha256` sidecar. This is the resource server
 for package binaries; the index's own artefacts (`xlings-res/xim-index`) are a different kind.
 
-## Gates before a recipe names a version on `xlings-res`
+## Gates before an xpkg names a version on `xlings-res`
 
 1. A release with the same tag exists on both hosts, with every asset for every platform and
    architecture the version declares, with the same names.
 2. Both come from one authoritative upstream release or one build. After publishing, download from
    GitHub RES, GitCode RES and the authoritative upstream and compare sha256: the bytes are
    identical. (GitCode: verify with GET, not HEAD; it answers HEAD with 401.)
-3. Every archive has a same-named `.sha256` sidecar (`sha256sum` format), and the recipe's
+3. Every archive has a same-named `.sha256` sidecar (`sha256sum` format), and the xpkg's
    per-architecture hashes equal the sidecars.
 4. `xpkgindex-update apply --plan plan.json` fails closed, changing nothing, when a platform,
    architecture, asset or sidecar is missing.
@@ -64,7 +64,7 @@ gtc release upload xlings-res/<pkg> --tag <version> <files...>
 
 Upload the upstream bytes unchanged plus the `<file>.sha256` sidecar, then download each file back
 from `https://gitcode.com/xlings-res/<pkg>/releases/download/<version>/<file>` and `cmp` it with the
-upstream. The tag is the bare version (no `v`). Auto-update recipes require GLOBAL and CN to hold
+upstream. The tag is the bare version (no `v`). Auto-update xpkgs require GLOBAL and CN to hold
 identical bytes.
 
 ## Auto-update declarations (reviewed by maintainers)

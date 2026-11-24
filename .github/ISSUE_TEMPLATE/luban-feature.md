@@ -2,7 +2,7 @@
 name: Luban OS feature | Luban OS 新功能
 about: Propose a new Luban edition, desktop, component or boot profile before writing it
 title: "[luban]: "
-labels: enhancement
+labels: luban
 assignees: ''
 
 ---
@@ -23,3 +23,6 @@ docs/12-luban-packages.md. -->
 ### How it will be verified locally | 本地验证计划
 
 ### Additional context | 额外补充
+
+### Authorship | 作者
+Authorship: <by-human | human-and-ai | by-ai>

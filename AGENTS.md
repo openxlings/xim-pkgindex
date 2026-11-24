@@ -1,20 +1,20 @@
 # AGENTS.md
 
 This is `xim-pkgindex`, the official package index of [xlings](https://github.com/openxlings/xlings)
-(the `xim:` namespace). A package is one Lua recipe. Whoever adds or updates one is
-usually **not** the upstream project's author, and may be an agent working for them:
-what matters is that the package's information and resources are official, or from a
-well-known mirror, and that you have run what you submit.
+(the `xim:` namespace). A package is defined by one **xpkg** (xpackage): a Lua file under
+`pkgs/`. Whoever adds or updates one is usually **not** the upstream project's author, and may
+be an agent working for them: what matters is that the package's information and resources are
+official, or from a well-known mirror, and that you have run what you submit.
 
-This file holds the rules that apply to every change. The how-to is in the skills,
-the reasons in `docs/`. When a rule here and an old recipe disagree, the rule wins:
-recipes are history, not examples.
+This file holds the rules that apply to every change. The how-to is in the skills, the reasons
+in `docs/`. When a rule here and an old xpkg disagree, the rule wins: old xpkgs are history,
+not examples.
 
 ## Layout
 
-- `pkgs/<first letter>/<name>.lua`: recipes (`pkgs/luban/` holds Luban OS packages).
-- `tests/<first letter>/test_<name>.py`: one pytest module per recipe.
-- `libs/`: Lua shared by recipes, imported as `xim.pkgindex.<name>`.
+- `pkgs/<first letter>/<name>.lua`: xpkgs (`pkgs/luban/` holds Luban OS packages).
+- `tests/<first letter>/test_<name>.py`: one pytest module per xpkg.
+- `libs/`: Lua shared by xpkgs, imported as `xim.pkgindex.<name>`.
 - `docs/`: human documentation (English, mirrored in `docs/zh/`); `docs/specs/` is the normative format.
 - `.agents/skills/`: how-to for agents. `.agents/docs/`: per-package notes and dated design
   records (history, not rules). `.agents/tools/`, `tools/`, `.github/`: maintainers' machinery.
@@ -29,10 +29,21 @@ recipes are history, not examples.
 | carving an LLVM sub-package | `.agents/skills/llvm-subpackaging/SKILL.md` |
 | debugging a failure | `.agents/skills/xpkg-creater/references/troubleshooting.md` |
 
+## Workflow
+
+1. **Task unclear?** If no package is named, ask the user: which package, add / bump / fix,
+   its upstream URL, which platforms. Do not guess one.
+2. Write the xpkg and its test; verify them in an isolated home (below).
+3. Open the pull request and stay with it until CI is green: fix locally, push once, repeat.
+4. **A tool problem** (xlings, libxpkg, the updater, CI)? Compare your `xlings --version` with
+   CI's pin, search existing issues, analyse locally, and for a real bug file an issue titled
+   `[xpkg-report]: ...`. Details: `.agents/skills/xpkg-creater/references/tooling-and-reporting.md`.
+5. Finish by telling the user: the pull request, CI state, issues filed, what you could not run.
+
 ## Change only what the task needs
 
-- Edit your own recipe and its test, plus the package note below. Do not reformat, migrate
-  or "clean up" other recipes, or older entries of your own.
+- Edit your own xpkg and its test, plus the package note below. Do not reformat, migrate
+  or "clean up" other xpkgs, or older entries of your own.
 - **Do not edit** `.github/**` (workflows, CI profiles, updater config), `tools/**`,
   `.agents/tools/**`, `libs/**`, `index-compat.json`, `tests/lib/**`, `tests/fixtures/**`,
   `docs/specs/**`, or generated files (`.xpkgindex*`, `.xlings-index-cache.json`) unless you
@@ -41,11 +52,11 @@ recipes are history, not examples.
 - A published version entry (its url, sha256, hooks' output) never changes. A fix is a new
   `revision` or a new version, never an edit in place.
 
-## Recipes
+## xpkgs
 
-- **Use the latest spec.** New recipes are `spec = "2"` ([`docs/specs/xpackage-v2.md`](docs/specs/xpackage-v2.md)).
-  Start from `docs/specs/xpackage-template.lua`, **not** from a neighbouring recipe: many are
-  older. Keep an older spec only when maintaining that recipe, and do not convert it on the way.
+- **Use the latest spec.** New xpkgs are `spec = "2"` ([`docs/specs/xpackage-v2.md`](docs/specs/xpackage-v2.md)).
+  Start from `docs/specs/xpackage-template.lua`, **not** from a neighbouring xpkg: many are
+  older. Keep an older spec only when maintaining that xpkg, and do not convert it on the way.
 - **Source order.** GLOBAL, in this order: (1) the upstream project's own release, or its
   official repository's release; (2) a well-known third-party release; (3) `xlings-res`, which
   only maintainers can write to. Use the URL-template form of `xpm.source` with a per-architecture `sha256`. Cover the platforms and
@@ -77,7 +88,7 @@ recipes are history, not examples.
   artifact exists; `installed()` checks files, not directories.
 - **Several platforms with one set of versions**: define one `local versions = {...}` before
   `package` and name it in each section. Never write `macosx = { ref = "linux" }` for the
-  three looked-up platforms (linux, macosx, windows). Share logic across recipes through
+  three looked-up platforms (linux, macosx, windows). Share logic across xpkgs through
   `libs/`, not by copying.
 - **Dependencies**: `deps = { runtime = {...}, build = {...} }`, never a positional list mixed
   with `build`. A tool only `install()` uses is `build`. Declare every library a payload's
@@ -110,8 +121,8 @@ that removal leaves nothing behind.
 
 ## CI is shared and costs real time
 
-A change to something many recipes depend on (`glibc`, `gcc-runtime`, `libs/**`, a Luban
-package) fans out to its whole reverse closure (about 190 recipes on Linux for glibc) and
+A change to something many xpkgs depend on (`glibc`, `gcc-runtime`, `libs/**`, a Luban
+package) fans out to its whole reverse closure (about 190 xpkgs on Linux for glibc) and
 to the Luban editions. Touch those only when the task is about them. Get it right locally,
 then push once: no empty commits to re-run CI, no manually dispatched workflows.
 
@@ -126,8 +137,10 @@ then push once: no empty commits to re-run CI, no manually dispatched workflows.
   `.agents/skills/xpkg-creater/references/package-note-template.md`. A plain version bump adds
   no file. A larger change (layout, dependencies, source, a `revision`) appends a dated entry
   to that package's existing note.
-- Add the recipe's test module. When you are unsure of something, ask in an issue rather than
+- Add the xpkg's test module. When you are unsure of something, ask in an issue rather than
   guess.
+- Write `Authorship: by-ai` in the description (and in every issue you file); a workflow turns
+  it, and the changed files, into labels. Do not pass `--label`.
 
 ## Language
 

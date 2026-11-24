@@ -1,27 +1,22 @@
 # xlings setup and links
 
-## 1. Install xlings (needed before you develop a recipe)
+## 1. Install xlings (needed before you develop an xpkg)
 
-Goal: `xlings --version` runs. Commands used by this repository's CI and workflows:
+Goal: `xlings --version` runs, at the version CI uses (the default in
+`.github/actions/setup-xlings/action.yml`).
 
-```bash
-# A: quick_install (GitHub)
-export XLINGS_NON_INTERACTIVE=1
-curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
-```
-
-```bash
-# B: d2learn installer
-export XLINGS_NON_INTERACTIVE=1
-curl -fsSL https://d2learn.org/xlings-install.sh | bash
-```
+- **Missing**: ask the user to install it from the repository README (install commands there).
+  Do not pipe a remote install script into a shell yourself: xlings flags an unpinned
+  `curl ... | bash` as a risk (xlings#713, #714).
+- **Older than CI's pin, or a bug that may be fixed**: `xlings self update`. It changes the
+  user's installed client, so ask first, unless they already agreed in this conversation or in
+  your memory (`references/tooling-and-reporting.md`).
+- **Matching CI exactly** is the installer with `XLINGS_VERSION=v<version>` set (see the setup
+  action); leave running it to the user.
 
 ```bash
 xlings --version
 ```
-
-Install a specific version when you need to match CI: set `XLINGS_VERSION=v<version>` before the
-installer (see `.github/actions/setup-xlings`).
 
 ## 2. Links
 

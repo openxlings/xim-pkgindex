@@ -1,11 +1,11 @@
 ---
 name: xpkg-creater
-description: Add or update a package (an xpkg recipe) in xim-pkgindex. For anyone, not only the upstream's author: pick an official or well-known source, write a spec-2 recipe from the template, verify it in an isolated home, add the package note, and open a minimal pull request. Use when creating a recipe, bumping a version, or fixing one.
+description: Add or update a package (an xpkg xpkg) in xim-pkgindex. For anyone, not only the upstream's author: pick an official or well-known source, write a spec-2 xpkg from the template, verify it in an isolated home, add the package note, and open a minimal pull request. Use when creating an xpkg, bumping a version, or fixing one.
 ---
 
 # xpkg-creater
 
-Adds or maintains one recipe under `pkgs/`. The hard rules are in `AGENTS.md`; this skill is
+Adds or maintains one xpkg under `pkgs/`. The hard rules are in `AGENTS.md`; this skill is
 the procedure and the decisions behind them. The contributor may be anyone: the test is that
 the information and resources are official or from a well-known mirror, and that you ran it.
 
@@ -15,9 +15,17 @@ References (read when the step says so):
 - `references/hook-pitfalls.md`: what the hook runtime lacks, `installed()`, shared xvm names.
 - `references/testing-and-acceptance.md`: the commands, levels and what to put in the PR.
 - `references/troubleshooting.md`: symptom → cause → how to check locally → fix.
+- `references/tooling-and-reporting.md`: xlings version vs CI, triage, filing an `[xpkg-report]:` issue.
 - `references/package-note-template.md`: the `.agents/docs/<name>.md` format.
 - `references/maintainer-publishing.md`: `xlings-res` and mirror publishing. Maintainers only.
 - `references/xlings-setup-and-links.md`: installing xlings, links.
+
+## 0. Start
+
+If the task names no package, **ask the user** before doing anything: which package, whether to
+add it, bump it or fix it, its upstream URL, and which platforms matter. A named package is
+enough to proceed: write, verify, open the pull request, and stay with it until CI is green,
+then tell the user the pull request, the CI state, the issues you filed and what you did not run.
 
 ## 1. Decide before you write
 
@@ -31,15 +39,15 @@ References (read when the step says so):
    useful, open an issue asking maintainers to host it on `xlings-res` instead.
 4. **Static or dynamic?** Prefer the official static or musl artifact. A dynamic glibc one is
    fine and declares its dependencies.
-5. **Does it need compiling at install?** Then it is not a recipe for this index: open an issue.
+5. **Does it need compiling at install?** Then it is not an xpkg for this index: open an issue.
 6. **Luban?** Bug fixes only, locally verified; features go through an issue first.
 
-## 2. Write the recipe
+## 2. Write the xpkg
 
 Copy `docs/specs/xpackage-template.lua` to `pkgs/<first letter>/<name>.lua`. Always
 `spec = "2"`; the specification is `docs/specs/xpackage-v2.md`, the walk-through is
 `docs/10-adding-a-package.md`. Do not copy the shape of an old neighbour: `spec = "1"`
-recipes exist and are not to be imitated.
+xpkgs exist and are not to be imitated.
 
 - **Required**: `spec`, `name`, `description`, `type`, `xpm`. Also set `licenses`, `repo`,
   `archs` (only what you tested), `status`, `programs`, `xvm_enable = true` when it puts a
@@ -51,7 +59,7 @@ recipes exist and are not to be imitated.
 - **Several platforms, same versions**: one `local versions = {...}` above `package`, named in
   each platform section. `{ ref = "linux" }` (or `inherits`) as the whole body of the linux, macosx
   or windows section is forbidden: older clients read it as a version named `ref`.
-- **Other recipes' code**: use `libs/` through `import("xim.pkgindex.<name>")` instead of copying.
+- **Other xpkgs' code**: use `libs/` through `import("xim.pkgindex.<name>")` instead of copying.
 - **Dependencies**: `deps = { runtime = {...}, build = {...} }`. Measure the payload's
   `DT_NEEDED` (`readelf -d`, `LD_TRACE_LOADED_OBJECTS=1`) and declare each library it names; a
   tool only `install()` uses is `build`. A payload that carries its own libraries via `$ORIGIN`
@@ -121,7 +129,7 @@ end
 
 `tests/<first letter>/test_<name>.py` (a `-` in the name becomes `_`), written like its
 neighbours (`docs/20-testing.md`). It locks the static and isolation levels and the
-recipe-specific rules you rely on (a dependency, an `installed()` list, a template).
+xpkg-specific rules you rely on (a dependency, an `installed()` list, a template).
 
 ## 4. Verify locally
 
@@ -139,11 +147,11 @@ entry to the existing note's revision log.
 ## 6. Updating an existing package
 
 - A new version: add the version entry, move `latest` forward, change nothing else. If the
-  recipe has `extensions.autoupdate`, the updater usually does this for you: check its
+  xpkg has `extensions.autoupdate`, the updater usually does this for you: check its
   pull request instead of writing a competing one.
 - A fix to what a hook installs: raise that entry's `revision` (and `floor` only as the spec
   says); `.github/scripts/check-revision.sh` checks it.
-- Do not migrate an old recipe's style, and do not touch other versions' entries.
+- Do not migrate an old xpkg's style, and do not touch other versions' entries.
 
 ## 7. Pull request
 
@@ -154,5 +162,6 @@ the commands you ran and their results; what you did not run.
 ## 8. Stuck?
 
 Open `references/troubleshooting.md` first; most failures here have a known shape. If the
-cause is in xlings, libxpkg or the CI itself, say so in the pull request or open an issue in
-the owning repository rather than working around it in the recipe.
+cause may be in xlings, libxpkg, the updater or the CI, follow `references/tooling-and-reporting.md`:
+compare your xlings with CI's pin, search existing issues, analyse locally, and file a
+`[xpkg-report]:` issue for a real bug instead of working around it in the xpkg.

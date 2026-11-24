@@ -4,7 +4,7 @@ Asset repository: `xlings-res/llvm` (the same repository, archived by tag=versio
 - `GLOBAL` = https://github.com/xlings-res/llvm
 - `CN`     = https://gitcode.com/xlings-res/llvm
 
-The two mirrors **must contain exactly the same assets**, otherwise the recipe cannot be switched to that version.
+The two mirrors **must contain exactly the same assets**, otherwise the xpkg cannot be switched to that version.
 
 ## 1. Asset naming convention
 
@@ -79,7 +79,7 @@ https://gitcode.com/xlings-res/llvm/releases/download/<tag>/<asset>
 - [ ] Every sub-package asset for all three platforms is uploaded to **both GLOBAL and CN**, naming compliant.
 - [ ] Every asset's sha256 is consistent three ways (carve / GLOBAL / CN).
 - [ ] When backfilling an old version, `latest` on both sides still points to the version that should be newest (no going backwards).
-- [ ] Recipe has `sha256 = nil`, so same-name replacement needs no recipe change; if some recipe pins a sha256, update it in sync.
+- [ ] Xpkg has `sha256 = nil`, so same-name replacement needs no xpkg change; if some xpkg pins a sha256, update it in sync.
 - [ ] State the GLOBAL/CN tag and sha256 results clearly in the PR/report (required by `xpkg-creater` §1.2.1).
 
 ## 5. Relationship to existing mechanisms

@@ -1,7 +1,7 @@
 # Package note: `.agents/docs/<name>.md`
 
 Every package gets one short note **when it is first added**. It is the place a later
-maintainer (or agent) learns why the recipe is the way it is, without reading the git history.
+maintainer (or agent) learns why the xpkg is the way it is, without reading the git history.
 
 - File name is the package name: `.agents/docs/<name>.md` (for a namespaced package,
   `.agents/docs/<namespace>-<name>.md`). Dated names such as `2026-10-23-...md` are design

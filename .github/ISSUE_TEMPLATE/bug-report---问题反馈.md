@@ -1,6 +1,6 @@
 ---
 name: Bug report | 问题反馈
-about: A package fails to install, run or remove; or a recipe is wrong
+about: A package fails to install, run or remove; or an xpkg is wrong
 title: '[bug]: '
 labels: bug
 assignees: ''
@@ -38,3 +38,6 @@ The full output, not only the last line | 完整输出，而不只是最后一�
 ### Additional context | 额外补充
 
 <!-- For CI failures: the run link and the failing job. -->
+
+### Authorship | 作者
+Authorship: <by-human | human-and-ai | by-ai>
