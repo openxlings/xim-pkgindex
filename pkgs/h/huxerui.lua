@@ -119,7 +119,28 @@ package = {
                 "xim:libsoup@>=3.0",     -- cmake: libsoup-3.0>=3.0
             },
             source = "https://github.com/HuxerUI/HuxerUI/releases/download/v${version}/huxerui-sdk-${version}-linux-${arch}.${ext}",
-            ["latest"] = { ref = "0.5.0" },
+            ["latest"] = { ref = "0.5.5" },
+            -- 0.5.5 is the first version with a CN mirror: the five release
+            -- archives are copied byte for byte to gitcode.com/xlings-res/huxerui
+            -- (release tag `0.5.5`, same file names, `.sha256` sidecars beside
+            -- them), so every entry names GLOBAL (the upstream release) and CN
+            -- explicitly. Earlier versions keep the plain GitHub `source`.
+            ["0.5.5"] = {
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/HuxerUI/HuxerUI/releases/download/v0.5.5/huxerui-sdk-0.5.5-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/huxerui/releases/download/0.5.5/huxerui-sdk-0.5.5-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "943606f212f0e476de73f810969b98f52e999bfa0d683482971ac1a9c2de1c1f",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/HuxerUI/HuxerUI/releases/download/v0.5.5/huxerui-sdk-0.5.5-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/huxerui/releases/download/0.5.5/huxerui-sdk-0.5.5-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "520c97c28c162f5c3b72626b3d719af9156411daac30909ffe9639f494aea3f5",
+                },
+            },
             ["0.5.0"] = {
                 sha256 = {
                     x86_64  = "25a5b98d5877131e523ff6fd7181dbe07194d22f3538b47e8737ff3310397361",
@@ -161,7 +182,25 @@ package = {
             -- `${arch}` template alone would 404 on Apple Silicon. `arch_alias`
             -- maps the canonical key to upstream's spelling for this platform.
             source = "https://github.com/HuxerUI/HuxerUI/releases/download/v${version}/huxerui-sdk-${version}-macos-${arch_alias}.${ext}",
-            ["latest"] = { ref = "0.5.0" },
+            ["latest"] = { ref = "0.5.5" },
+            -- 0.5.5 names its resources explicitly (GLOBAL + CN mirror, see the
+            -- linux block); upstream spells the Apple Silicon archive `macos-arm64`.
+            ["0.5.5"] = {
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/HuxerUI/HuxerUI/releases/download/v0.5.5/huxerui-sdk-0.5.5-macos-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/huxerui/releases/download/0.5.5/huxerui-sdk-0.5.5-macos-x86_64.tar.gz",
+                    },
+                    sha256 = "a409d80cde3abc5195f64159fc6cfd9a843c08b55fb74947a2f75bf8398e9a5c",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/HuxerUI/HuxerUI/releases/download/v0.5.5/huxerui-sdk-0.5.5-macos-arm64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/huxerui/releases/download/0.5.5/huxerui-sdk-0.5.5-macos-arm64.tar.gz",
+                    },
+                    sha256 = "b2ef6e7d54742cdc3ff9428120ab1d1acfb418c24c61df8c76f259d260e18704",
+                },
+            },
             ["0.5.0"] = {
                 arch_alias = { x86_64 = "x86_64", aarch64 = "arm64" },
                 sha256 = {
@@ -201,7 +240,16 @@ package = {
             },
             -- windows asset is a .zip; ${ext} resolves to `zip` on windows.
             source = "https://github.com/HuxerUI/HuxerUI/releases/download/v${version}/huxerui-sdk-${version}-windows-${arch}.${ext}",
-            ["latest"] = { ref = "0.5.0" },
+            ["latest"] = { ref = "0.5.5" },
+            ["0.5.5"] = {
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/HuxerUI/HuxerUI/releases/download/v0.5.5/huxerui-sdk-0.5.5-windows-x86_64.zip",
+                        CN     = "https://gitcode.com/xlings-res/huxerui/releases/download/0.5.5/huxerui-sdk-0.5.5-windows-x86_64.zip",
+                    },
+                    sha256 = "ca6b27fc6b47db5ff14ed50f7a15c563d9b8a1587e1ffadbab7fe951684927bb",
+                },
+            },
             ["0.5.0"] = {
                 sha256 = {
                     x86_64 = "70b58c4c6bfa17c34c3e36a21c2ac47f509a7d5a33e7319c41b5f06fa91cdf76",
