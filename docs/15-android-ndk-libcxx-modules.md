@@ -81,6 +81,6 @@ The install's self-test then precompiles `std.cppm` for
 2. Otherwise add the release name to the `android-ndk-libcxx-modules` case of
    `tools/res/build.sh`, the two archive digests to `tools/res/inputs.txt` and
    the version to `.github/res-build-matrix.json`, then build and publish.
-3. Add the version to both recipes in one change, the dependency on the new
+3. Add the version to both xpkgs in one change, the dependency on the new
    `windows` entry only;
    `tests/a/test_android_ndk_libcxx_modules.py` checks that they agree.
