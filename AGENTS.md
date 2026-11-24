@@ -29,8 +29,9 @@ the skills (see "Read next"), the reasons in `docs/`.
   many are older.
 - **Source**: the upstream's own release (or its official repository's), then a well-known third
   party; within it prefer a static/musl artifact. CN only through a well-known mirror you
-  verified, otherwise skip CN. **`xlings-res` is written by maintainers**: do not use
-  `xpm.source = "xlings-res"` or `ci.mirror`; ask in an issue if a package needs it.
+  verified, otherwise skip CN. Declare `ci = { mirror = true }` by default, unless you declare a
+  well-known CN mirror (the pull-request lint rejects both). **`xlings-res` as `xpm.source` is
+  written by maintainers**: do not use it; ask in an issue if a package needs it.
 - **Install means unpack and place**: never compile, never use a host package manager, `sudo`, a
   shell profile or `PATH`.
 - **Unofficial packaging** (a repack, a patched build, a personal packaging) sets
