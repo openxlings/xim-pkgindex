@@ -1,120 +1,79 @@
-# testing & acceptance
+# Testing and acceptance
 
-新增/修改 xpkg 时，需要做两类验证：
-1. **直接命令验证**（本地运行 xlings/xim/xvm 命令）
-2. **测试集验证**（pytest 测试机/CI 同类流程）
+Two kinds of verification are required for every new or changed xpkg:
 
----
+1. **Direct commands** run against an isolated xlings home.
+2. **The pytest suite**, the same levels CI runs (`docs/20-testing.md`).
 
-## A. 直接命令验证流程（本地）
+Never run installs against your own `XLINGS_HOME`.
 
-假设包名为 `<pkg>`，包文件为 `<path_to_pkg.lua>`。
+## A. Direct commands (local)
 
-```bash
-# 1) 注册包到本地索引
-xim --add-xpkg <path_to_pkg.lua>
-```
+Let `<pkg>` be the package name and `<file>` the xpkg path.
 
 ```bash
-# 2) 搜索是否可见
-xim -s <pkg>
+TMP_HOME="$(mktemp -d)"
+export XLINGS_HOME="$TMP_HOME"
+
+xlings config --add-xpkg <file>        # 1. register the xpkg in the local overlay
+xlings search <pkg>                    # 2. it is visible
+xlings install <pkg>@<version> -y      # 3. install, for every version you changed
+<pkg> --version                        # 4. run it (its real command), and `which <pkg>`
+xlings list <pkg>                      # 5. the install list shows it
+xlings install <pkg>@<version> -y      # 6. install again: must be a clean no-op
+xlings remove <pkg> -y                 # 7. remove
+xlings list <pkg>                      # 8. gone; no shim left in the subos bin/
+xlings remove <pkg> -y                 # 9. remove again: must not fail badly
+xlings config --remove-xpkg <pkg>      # 10. drop your xpkg from the overlay
 ```
+
+(`--remove-xpkg` needs xlings >= 2026.9.12.1. A forgotten copy that is byte-identical to the
+index is cleaned at the next `xlings update`; a modified one keeps shadowing the index, and
+`xlings config --list-xpkg` shows it.)
+
+What acceptance means:
+
+- it is found, installs, and the command **runs and does what it should** (not only `--version`:
+  run the thing the package is for once);
+- `ls` the install directory: the payload is there, not just `.xpkg.lua` (see
+  `hook-pitfalls.md` section 2);
+- after `config()` the xvm route works, and removal leaves no shim or registration behind;
+- for several platforms, check them on each platform you can reach, and the resolution on
+  x86_64 and aarch64 for the architectures you cannot run; for mirrors, fetch the real GLOBAL and
+  CN responses and compare sha256s.
+
+For a Linux dynamic payload also check its closure:
 
 ```bash
-# 3) 安装
-xim -i <pkg>
+readelf -d <install_dir>/bin/<prog> | grep NEEDED
+LD_TRACE_LOADED_OBJECTS=1 <install_dir>/bin/<prog>     # no "not found"
 ```
+
+## B. The pytest levels
+
+Every xpkg has a mirror: `pkgs/n/mypackage.lua` -> `tests/n/test_mypackage.py` (`-` becomes
+`_`). Model it on a neighbour's test module; `docs/20-testing.md` has a full example.
 
 ```bash
-# 4) 验证可执行/版本（按包实际命令替换）
-<pkg> --version
-which <pkg>
+pytest tests/<letter>/test_<pkg>.py -m "static or isolation" -v   # always
+pytest tests/<letter>/test_<pkg>.py -m index -v                   # needs xlings
+XLINGS_HOME="$(mktemp -d)" pytest tests/<letter>/test_<pkg>.py -m "lifecycle or verify" -v
 ```
+
+Before you open the pull request, also run the repository-wide static checks:
 
 ```bash
-# 5) 安装列表检查
-xim -l <pkg>
+pytest tests/ -m "static or isolation" --tb=short -q
+bash .github/scripts/check-revision.sh        # a hook/payload change needs a revision
+bash .github/scripts/check-dep-namespace.sh   # dependencies carry the right namespace
 ```
 
-```bash
-# 6) 卸载
-xim -r <pkg>
-```
+They need a Lua 5.3+ interpreter and `origin/main` fetched as the base ref; a missing one is an
+error, not a pass. They are maintainers' files: run them, do not edit them.
 
-```bash
-# 7) 卸载后复检
-xim -l <pkg>
-```
+## C. What the pull request must say
 
-```bash
-# 8) 测完把 recipe 从本地覆盖层拿掉(xlings ≥ 2026.9.12.1)
-xlings config --remove-xpkg <pkg>
-# 忘了也没关系:与主索引字节相同的副本会在下次 `xlings update` 时自动清掉;
-# 改过的副本会一直留在覆盖层并压住主索引,`xlings config --list-xpkg` 能看到它。
-```
-
-验收重点：
-- 能搜索到
-- 能安装成功
-- 命令可执行
-- `config()` 后 xvm 路由正常
-- 能干净卸载
-
----
-
-## B. 测试集验证流程（pytest / CI 对齐）
-
-### B1. 新增包必须新增测试文件
-
-映射规则：
-- `pkgs/n/mypackage.lua` -> `tests/n/test_mypackage.py`
-- 包名有 `-` 时，在测试文件名中改为 `_`
-
-### B2. 分层执行建议
-
-```bash
-# 必跑：静态 + 隔离
-pytest tests/<group>/test_<pkg>.py -m "static or isolation" -v
-```
-
-```bash
-# 必跑：索引注册
-pytest tests/<group>/test_<pkg>.py -m index -v
-```
-
-```bash
-# 推荐：生命周期
-pytest tests/<group>/test_<pkg>.py -m lifecycle -v
-```
-
-```bash
-# 推荐：功能验证
-pytest tests/<group>/test_<pkg>.py -m verify -v
-```
-
-### B3. 提交 PR 前建议补跑
-
-```bash
-# 全仓静态检查
-pytest tests/ -m static --tb=short -q
-```
-
-```bash
-# 全仓隔离合规
-pytest tests/ -m isolation --tb=short -q
-```
-
-```bash
-# 全仓索引注册（需要已安装 xlings）
-pytest tests/ -m index --tb=short -q
-```
-
----
-
-## C. PR 中必须写的测试信息
-
-至少包含：
-1. 本地直接命令验证结果（add/search/install/verify/remove）
-2. pytest 执行命令与结果（至少 L0/L1/L2）
-3. 如有未跑项，说明原因与风险
-4. 说明 CI 是否预期通过（static/isolation/index）
+1. The direct-command results above (add, search, install, run, remove), per platform.
+2. The pytest commands and their results (at least `static or isolation`, and `index`).
+3. What you did not run, why, and the risk that leaves.
+4. Whether you expect CI to pass, and which checks are the ones that matter for this change.
