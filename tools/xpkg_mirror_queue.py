@@ -36,6 +36,11 @@ WORKERS = 2
 # shorter timeout in xpkg_ci.py (GITCODE_UPLOAD_TIMEOUT) with one retry.
 STEP_TIMEOUT = 3600
 ERROR_LIMIT = 300
+# Well-known institutional mirrors of upstream files. A package that declares one of these as its
+# CN leg does not also declare ci = { mirror = true }: the CN leg is the copy users fetch.
+KNOWN_CN_MIRRORS = ("mirrors.ustc.edu.cn", "mirrors.tuna.tsinghua.edu.cn", "mirrors.cloud.tencent.com",
+                    "mirrors.aliyun.com", "repo.huaweicloud.com")
+CN_LEG = re.compile(r'\bCN\s*=\s*"https?://([^/"\s]+)')
 SECRET = re.compile(
     r"(gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|glpat-[A-Za-z0-9_-]{20,}"
     r"|x-access-token:[^@\s]+)"
@@ -184,6 +189,10 @@ def record(pending: dict[str, dict], plan_doc: dict, results_dir: Path) -> dict[
     return new
 
 
+def known_cn_hosts(text: str) -> list[str]:
+    return sorted({host.lower() for host in CN_LEG.findall(text) if host.lower() in KNOWN_CN_MIRRORS})
+
+
 def render_body(pending: dict[str, dict]) -> str:
     state = json.dumps({"pending": pending}, indent=2, sort_keys=True)
     lines = [STATE_OPEN, state, STATE_CLOSE, "", f"# {ISSUE_TITLE}", ""]
@@ -259,6 +268,16 @@ def main(argv: list[str] | None = None) -> int:
         if not names:
             print("no changed package declares ci = { mirror = true }")
             return 0
+        conflicts = []
+        for name in names:
+            path = workspace / "pkgs" / name[0] / f"{name}.lua"
+            hosts = known_cn_hosts(path.read_text(encoding="utf-8")) if path.exists() else []
+            if hosts:
+                conflicts.append(name)
+                print(f"::error::{name} declares ci = {{ mirror = true }} and a well-known CN mirror "
+                      f"({', '.join(hosts)}); keep the CN mirror and drop ci.mirror")
+        if conflicts:
+            return 1
         outcomes = run_batch(workspace, names, Path(args.work), Path(args.results), dry_run=True)
         failed = [o for o in outcomes if o["status"] == "failed"]
         for o in failed:

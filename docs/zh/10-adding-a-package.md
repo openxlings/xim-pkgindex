@@ -64,6 +64,11 @@ package = {
 | 维护者托管在 xlings-res 上的资源 | `xpm.source = "xlings-res"`，加每个架构的 `sha256`；由有权限的维护者添加，请在 issue 中申请 |
 | 旧 xpkg | `"XLINGS_RES"`、`res = true`、单个 URL、单个 hash —— 仍然兼容 |
 
+**镜像。** 默认声明 `ci = { mirror = true }`：合并后 CI 把 GLOBAL 资源复制到 xlings-res，索引保留自己的副本。
+用户只有在 `CN` 区域指向它之后才会下载这份副本，由维护者以后补充。如果你在 `url` 中声明了知名 CN 镜像，则不要声明
+`ci.mirror`。镜像不会覆盖你写的 `url`、`ci` 或 `CN`。PR 预检在改动的包同时声明两者时会失败。详见
+[CI：镜像与自动更新](13-ci-mirror-and-update.md)。
+
 重新打包、打补丁的构建，或任何你自己维护的打包，要在 `package` 里设置
 `namespace = "<你的标识>"`，这样它的 id 就是 `<namespace>:<name>@<version>`；资产由你自己托管，
 并在 PR 里写明可复现的过程。
