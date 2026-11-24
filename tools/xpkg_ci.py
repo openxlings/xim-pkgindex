@@ -33,6 +33,8 @@ DEFAULT_ARCH_ALIASES = {"x86_64": "amd64", "aarch64": "arm64"}
 ARCHIVE_SUFFIXES = (".tar.gz", ".tar.xz", ".tar.bz2", ".tgz", ".zip")
 # GitCode's upload callback is especially slow for large release assets.
 GITCODE_UPLOAD_TIMEOUT = 600
+# One attempt plus one retry: a timed-out upload is re-checked before the retry (asset_available).
+GITCODE_UPLOAD_ATTEMPTS = 2
 GITCODE_VERIFY_TIMEOUT = 20
 
 
@@ -678,7 +680,7 @@ def cmd_mirror(args: argparse.Namespace) -> int:
         last_error = ""
         if asset_available(filename):
             continue
-        for attempt in range(3):
+        for attempt in range(GITCODE_UPLOAD_ATTEMPTS):
             try:
                 result_upload = subprocess.run(
                     upload,
@@ -692,7 +694,7 @@ def cmd_mirror(args: argparse.Namespace) -> int:
             if asset_available(filename):
                 uploaded = True
                 break
-            if attempt < 2:
+            if attempt < GITCODE_UPLOAD_ATTEMPTS - 1:
                 time.sleep(2 ** attempt)
         if not uploaded:
             return fail(f"GitCode asset upload failed for {filename}: {last_error}")
