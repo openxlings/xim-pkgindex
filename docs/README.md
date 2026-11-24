@@ -11,10 +11,10 @@ add to it. Using xlings itself is in
 | Part | For | Holds |
 |---|---|---|
 | 0x | everyone | what this index is, installing from it |
-| 1x | package authors and maintainers | recipes, official resources, Luban's packages, CI automation |
+| 1x | package authors and maintainers | xpkgs, official resources, Luban's packages, CI automation |
 | 2x | package authors and maintainers | tests and what CI runs |
-| [`specs/`](specs/README.md) | whoever implements against the format | the recipe format, normative, English only |
-| [`migrations/`](migrations/) | maintainers of older recipes | dated notes on moving recipes to newer APIs |
+| [`specs/`](specs/README.md) | whoever implements against the format | the xpkg format, normative, English only |
+| [`migrations/`](migrations/) | maintainers of older xpkgs | dated notes on moving xpkgs to newer APIs |
 
 ## Chapters
 

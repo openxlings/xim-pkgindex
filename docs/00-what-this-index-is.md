@@ -3,23 +3,23 @@
 **English** | [简体中文](zh/00-what-this-index-is.md)
 
 xim-pkgindex is the official package index of [xlings](https://github.com/openxlings/xlings):
-the recipes `xlings install` reads, the resources they name, and the tests that
+the xpkgs `xlings install` reads, the resources they name, and the tests that
 keep them installable. Browse it at [index.xlings.org](https://index.xlings.org).
 
 ## What is in it
 
 | Path | What |
 |---|---|
-| `pkgs/<letter>/<name>.lua` | one recipe per package (an xpkg: metadata, a platform–version resource matrix, hooks) |
+| `pkgs/<letter>/<name>.lua` | one xpkg per package (an xpkg: metadata, a platform–version resource matrix, hooks) |
 | `pkgs/luban/<name>.lua` | the packages that exist only for Luban: its editions, boot profiles, `luban-os`, `xdesk`, `labwc-desktop`, `luban-fonts` |
-| `libs/` | Lua modules recipes share (`sysroot`, `relocate`, `graphics`, `luban`, ...) |
+| `libs/` | Lua modules xpkgs share (`sysroot`, `relocate`, `graphics`, `luban`, ...) |
 | `tests/` | pytest suites mirroring `pkgs/`, plus repository-wide checks |
 | `tools/res/` | the build factory for resources this index builds itself |
 | `xim-indexrepos.lua` | the default sub-indexes |
 | `index-compat.json` | the oldest client this index needs |
 | `.xpkgindex.json` | the site's configuration |
 
-A recipe is data first: the resources it installs and their sha256s, the
+An xpkg is data first: the resources it installs and their sha256s, the
 programs it provides, its dependencies. Hooks do only what data cannot. The
 format is [XPackage V2](specs/xpackage-v2.md).
 
@@ -39,7 +39,7 @@ are sub-indexes searched. An explicit namespace (`xim:gcc`) searches exactly tha
 index. Two main indexes answering the same bare name is an error asking for the
 namespace.
 
-A dependency a recipe here declares without a namespace means **this index's**
+A dependency an xpkg here declares without a namespace means **this index's**
 package of that name.
 
 ## How it reaches a machine
