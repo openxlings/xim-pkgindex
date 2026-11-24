@@ -123,11 +123,26 @@ xpkgindex-update apply --plan plan.json --package xim:foo
 
 ## 镜像发布
 
-`ci = { mirror = true }` 继续独立控制已声明资源的镜像发布。
-`tools/xpkg_ci.py` 仅保留 `inspect`、`materialize`、`verify`、`ensure-repo`、`mirror`。
-镜像发布不能成为同一个更新 PR 合并后才可满足的资源前置条件。
-`materialize` 读取 latest 条目的字符串 URL，或 `url = { GLOBAL, CN }` 区域表中的 GLOBAL。
-镜像运行失败后，在 main 上手动触发 `xpkg-mirror-release` 并填写 `package` 即可重试；该包仍需声明 `ci = { mirror = true }`。
+`ci = { mirror = true }` 要求 CI 把包声明的 GLOBAL 资源复制到 `xlings-res` 组织（GitHub 与 GitCode）。
+`tools/xpkg_ci.py` 提供 `inspect`、`materialize`、`verify`、`ensure-repo`、`mirror`；
+`tools/xpkg_mirror_queue.py` 负责把它们组成批次。
+
+批次的行为（`.github/workflows/xpkg-mirror.yml`）：
+
+- 在 `main` 上 CI 成功后运行，处理自上一次成功运行以来变更的包，以及仍在失败列表中的包。
+  被更新的运行替换的运行不会丢失内容：最新运行覆盖上一次成功以来的全部变更。
+- 一个 job 处理整批，同时最多两个包。每次 GitCode 上传超时 600 秒，重试 1 次；不按包的体积放宽超时。
+- 失败的包不会让运行失败，而是列入唯一的跟踪 issue（标签 `mirror-failed`，标题
+  "xlings-res mirror: packages that did not publish"）。该 issue 会被查找并更新，不会重复创建。
+  失败的包在之后每次运行中自动重试，直到发布成功；持续失败的包每次都会被尝试，应修复或移除 `ci = { mirror = true }`。
+- 修改了声明 `ci = { mirror = true }` 的包的 PR，在合并前会被 materialize 和 verify
+  （`.github/workflows/mirror-precheck.yml`）；PR 中不发布任何内容。
+- 手动重试单个包：在 `main` 上运行 `xpkg-mirror.yml` 并填写 `package`；该包仍需声明 `ci = { mirror = true }`。
+- 发布不可变：已存在且资产不同的 release 会被拒绝，不会覆盖。
+
+合并 PR 即是审批。镜像不会改写包的 `url`：指向镜像的 `CN` 区域需要之后经过审核的改动来添加。
+维护者流程见 `.agents/skills/xlings-res-maintainer/SKILL.md`。
+
 自建/重打包载荷由独立工作流生产，updater 只消费已就绪资源；已发布资源变更仍走人工 revision 流程。
 
 旧自动更新字段和工作流已移除，不提供旧协议回退。CI 每次从 xpkg 生成全量包清单，不读取提交到仓库的审计快照。

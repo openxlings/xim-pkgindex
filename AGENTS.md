@@ -62,5 +62,6 @@ the skills (see "Read next"), the reasons in `docs/`.
 | debugging, or filing an issue about a tool | `.agents/skills/xpkg-creater/references/troubleshooting.md`, `.../tooling-and-reporting.md` |
 | touching Luban | `.agents/skills/luban-packages/SKILL.md` |
 | carving an LLVM sub-package | `.agents/skills/llvm-subpackaging/SKILL.md` |
+| maintaining the xlings-res mirror, or its tracking issue (label `mirror-failed`) | `.agents/skills/xlings-res-maintainer/SKILL.md` |
 
 `AGENTS.md` and `.agents/skills/**` are English only.

@@ -168,14 +168,30 @@ commit, descriptor, tag commit or resource bytes change.
 
 ## Mirror publication
 
-`ci = { mirror = true }` remains an independent request to mirror already declared resources.
-`tools/xpkg_ci.py` provides `inspect`, `materialize`, `verify`, `ensure-repo` and `mirror`.
-It has no version discovery or proposal command. Mirror publication runs separately and cannot
-produce the resources a proposal is waiting for only after that same proposal is merged.
-`materialize` reads a latest entry's string URL or the GLOBAL leg of its
-`url = { GLOBAL, CN }` map. A failed mirror run is retried by dispatching
-`xpkg-mirror-release` on main with `package` set; the package must still declare
-`ci = { mirror = true }`.
+`ci = { mirror = true }` asks CI to copy a package's declared GLOBAL resources to the `xlings-res`
+organisation (GitHub and GitCode). `tools/xpkg_ci.py` provides `inspect`, `materialize`, `verify`,
+`ensure-repo` and `mirror`; `tools/xpkg_mirror_queue.py` batches them.
+
+How the batch behaves (`.github/workflows/xpkg-mirror.yml`):
+
+- It runs after a successful CI on `main` and handles the packages changed since the newest successful
+  run of this workflow, plus the packages still failing. A run replaced by a newer one loses nothing:
+  the newest run covers every change since the last success.
+- One job publishes the batch, two packages at a time. Each GitCode upload has a 600-second timeout and
+  one retry; there is no timeout per package size.
+- A failed package does not fail the run. It is listed in one tracking issue (label `mirror-failed`, title
+  "xlings-res mirror: packages that did not publish"), which is found and updated, never duplicated. The
+  package is attempted again on the next run until it publishes; a package that keeps failing is attempted
+  on every run, so fix it or remove `ci = { mirror = true }`.
+- A pull request that changes a package declaring `ci = { mirror = true }` is materialized and verified
+  before merge (`.github/workflows/mirror-precheck.yml`). Nothing is published from a pull request.
+- To retry one package by hand, run `xpkg-mirror.yml` on `main` with `package` set. It must still declare
+  `ci = { mirror = true }`.
+- Publication is immutable: a release that exists with different assets is refused, never overwritten.
+
+Merging the pull request is the approval. The mirror does not rewrite the package's `url`: a `CN` leg that
+points at the mirror is added by a later reviewed change. The maintainer procedure is
+`.agents/skills/xlings-res-maintainer/SKILL.md`.
 
 Self-built/repacked payloads need their own resource production workflow. The updater can consume
 those assets once available; it does not create them. Published resource changes require the existing
