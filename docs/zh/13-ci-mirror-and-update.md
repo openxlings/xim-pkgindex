@@ -137,6 +137,8 @@ xpkgindex-update apply --plan plan.json --package xim:foo
   失败的包在之后每次运行中自动重试，直到发布成功；持续失败的包每次都会被尝试，应修复或移除 `ci = { mirror = true }`。
 - 修改了声明 `ci = { mirror = true }` 的包的 PR，在合并前会被 materialize 和 verify
   （`.github/workflows/mirror-precheck.yml`）；PR 中不发布任何内容。
+- 默认声明 `ci = { mirror = true }`。如果在 `url` 中声明了知名 CN 镜像，则由它代替：同时声明两者的 PR 会被预检拒绝。
+  已知 CN 域名列在 `tools/xpkg_mirror_queue.py` 的 `KNOWN_CN_MIRRORS` 中。你显式写的 `url`、`ci` 或 `CN` 不会被覆盖。
 - 手动重试单个包：在 `main` 上运行 `xpkg-mirror.yml` 并填写 `package`；该包仍需声明 `ci = { mirror = true }`。
 - 发布不可变：已存在且资产不同的 release 会被拒绝，不会覆盖。
 
