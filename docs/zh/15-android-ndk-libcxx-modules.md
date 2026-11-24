@@ -68,5 +68,5 @@ bash tools/res/build.sh android-ndk-libcxx-modules 30.0.16248370 out
 2. 否则把版本名加入 `tools/res/build.sh` 的 `android-ndk-libcxx-modules` 分支，
    把两个压缩包的摘要加入 `tools/res/inputs.txt`，把版本加入
    `.github/res-build-matrix.json`，然后构建并发布。
-3. 在同一次改动中把版本加入两个配方，依赖只加在新的 `windows` 条目上；
+3. 在同一次改动中把版本加入两个 xpkg，依赖只加在新的 `windows` 条目上；
    `tests/a/test_android_ndk_libcxx_modules.py` 检查二者一致。

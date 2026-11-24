@@ -38,7 +38,9 @@ package = {
 
     xpm = {
         linux = {
-            deps = { "xim:libXext@>=1.3" },
+            -- libXxf86vm.so.1 names libX11.so.6 and libc.so.6 itself (DT_NEEDED);
+            -- libXext declaring them does not put them in this payload's RPATH.
+            deps = { "xim:libXext@>=1.3", "xim:libX11@>=1.8", "xim:glibc" },
             -- elfpatch reads this from each dependency and writes the consumer's
             -- RPATH, which is what makes the stack resolve without anyone
             -- setting LD_LIBRARY_PATH. Same mechanism `gcc-runtime` uses.
