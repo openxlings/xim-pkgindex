@@ -1,22 +1,40 @@
 ---
 name: Bug report | 问题反馈
-about: Create a report to help us improve
-title: ''
+about: A package fails to install, run or remove; or a recipe is wrong
+title: '[bug]: '
 labels: bug
 assignees: ''
 
 ---
 
-### Background | 背景
+### Package and version | 包与版本
 
-### Describe | 问题描述
+`<namespace>:<name>@<version>` (for example `xim:gcc@16.1.0`):
 
-### Desktop | 环境
+### Environment | 环境
 
-### To Reproduce | 复现步骤
+- OS and architecture | 系统与架构:
+- xlings version (`xlings --version`) | xlings 版本:
+- Region / mirror in use, if relevant | 区域与镜像:
 
-### Expection | 预期结果
+### What happened | 问题描述
 
-### Solution by you | 已尝试的方案
+### To reproduce | 复现步骤
+
+In an isolated home if you can | 尽量在隔离的 home 中:
+
+```bash
+XLINGS_HOME="$(mktemp -d)" xlings install <name>@<version> -y
+```
+
+### Expected | 预期结果
+
+### Logs | 日志
+
+The full output, not only the last line | 完整输出，而不只是最后一行:
+
+### What you already tried | 已尝试的方案
 
 ### Additional context | 额外补充
+
+<!-- For CI failures: the run link and the failing job. -->

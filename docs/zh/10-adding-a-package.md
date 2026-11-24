@@ -49,15 +49,24 @@ package = {
 
 ### 资源的写法
 
+资源先取自上游自己的发布或其官方仓库的 release，其次才是知名第三方的 release。只有存在知名
+镜像（USTC、清华等）、且你核对过它的路径和字节时才加 CN 镜像；否则只声明 GLOBAL。没有 `xlings-res`
+写权限时跳过 CN：有权限的维护者会在以后，或在同一个 PR 里补充 CN 资源。
+优先选择该官方来源提供的静态（musl）产物，安装过程中绝不从源码构建。
+
 保持 `platform -> version` 模型，按顺序选第一个适用的：
 
 | 情形 | 写法 |
 |---|---|
-| xlings-res 上的官方资源 | `xpm.source = "xlings-res"`，加每个架构的 `sha256` |
-| URL 规则统一的第三方 release | `xpm.source = "<含 ${version} 的模板>"`，加每个架构的 `sha256` |
+| URL 规则统一的 release（上游的，或知名第三方的） | `xpm.source = "<含 ${version} 的模板>"`，加每个架构的 `sha256` |
 | 各架构 URL 不规则 | 按架构分别写资源表，每项 `{ url, sha256 }` |
 | 单个特殊或历史版本 | 在该版本项写显式 `url` / 镜像表，覆盖 `source` |
+| 维护者托管在 xlings-res 上的资源 | `xpm.source = "xlings-res"`，加每个架构的 `sha256`；由有权限的维护者添加，请在 issue 中申请 |
 | 旧配方 | `"XLINGS_RES"`、`res = true`、单个 URL、单个 hash —— 仍然兼容 |
+
+重新打包、打补丁的构建，或任何你自己维护的打包，要在 `package` 里设置
+`namespace = "<你的标识>"`，这样它的 id 就是 `<namespace>:<name>@<version>`；资产由你自己托管，
+并在 PR 里写明可复现的过程。
 
 每个架构都要有 sha256。没有权威 hash 时，先保留旧写法，等资源和它的 sidecar 都存在后
 再迁移；不能发布没有 hash 的新官方二进制版本。

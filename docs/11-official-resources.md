@@ -5,6 +5,12 @@
 The binaries this index installs from its own servers: where they live, how they
 are built, and the gates a release passes before a recipe names it.
 
+A recipe does not start here. A package points at the upstream's own release, or a well-known
+third party's, and `xlings-res` is where the maintainers host what that cannot serve: a repack,
+a layout fix, a build the upstream does not publish, and the CN (GitCode) side of a package
+whose upstream has no well-known mirror. Only maintainers with access write to it: contributors
+skip CN or ask in an issue, and the gates below are the maintainers'.
+
 ## Where they live
 
 `xpm.source = "xlings-res"` resolves to the official resource servers, one

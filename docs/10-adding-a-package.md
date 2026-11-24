@@ -53,15 +53,27 @@ package = {
 
 ### Choosing how a resource is written
 
+Take the resource from the upstream's own release or its official repository first, then
+from a well-known third-party release. Add a CN mirror (USTC, Tsinghua, ...) only when a
+well-known one exists and you checked its path and bytes; otherwise declare GLOBAL alone. Without
+write access to `xlings-res` you skip CN: a maintainer who has it adds the CN resource later, or
+in the same pull request.
+Prefer a static (musl) artifact from that official source, and never build from source while
+installing.
+
 Keep the `platform -> version` model and pick the first that fits:
 
 | Case | Write |
 |---|---|
-| an official resource on xlings-res | `xpm.source = "xlings-res"` and a per-architecture `sha256` |
-| a third-party release with regular URLs | `xpm.source = "<template with ${version}>"` and a per-architecture `sha256` |
+| a release with regular URLs (the upstream's, or a well-known third party's) | `xpm.source = "<template with ${version}>"` and a per-architecture `sha256` |
 | irregular URLs per architecture | a per-architecture map, each `{ url, sha256 }` |
 | one special or historical version | an explicit `url` / mirror table in that entry, which overrides `source` |
+| a resource the maintainers host on xlings-res | `xpm.source = "xlings-res"` and a per-architecture `sha256`; maintainers with access add it, so ask in an issue |
 | an older recipe | `"XLINGS_RES"`, `res = true`, a single URL, a single hash — still accepted |
+
+A repack, a patched build or any packaging you maintain yourself sets
+`namespace = "<your handle>"` in `package`, so its id is `<namespace>:<name>@<version>`; host
+the asset yourself and give its reproducible process in the pull request.
 
 Every architecture has its sha256. Without an authoritative hash, keep the old
 form until the resource and its sidecar exist; never publish a new official

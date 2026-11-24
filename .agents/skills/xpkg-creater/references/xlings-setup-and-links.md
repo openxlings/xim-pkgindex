@@ -1,40 +1,40 @@
-# xlings setup & links
+# xlings setup and links
 
-## 1) 安装 xlings（开发 xpkg 前置）
+## 1. Install xlings (needed before you develop a recipe)
 
-> 目标：本地可执行 `xlings --version`。
-
-常用安装命令（来自本仓库 CI/工作流中使用的安装方式）：
+Goal: `xlings --version` runs. Commands used by this repository's CI and workflows:
 
 ```bash
-# 方式 A：quick_install（GitHub）
+# A: quick_install (GitHub)
 export XLINGS_NON_INTERACTIVE=1
 curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
 ```
 
 ```bash
-# 方式 B：d2learn 安装脚本
+# B: d2learn installer
 export XLINGS_NON_INTERACTIVE=1
 curl -fsSL https://d2learn.org/xlings-install.sh | bash
 ```
-
-安装后建议执行：
 
 ```bash
 xlings --version
 ```
 
-## 2) 核心链接
+Install a specific version when you need to match CI: set `XLINGS_VERSION=v<version>` before the
+installer (see `.github/actions/setup-xlings`).
 
-- xlings 仓库：<https://github.com/openxlings/xlings>
-- openxlings GitHub 组织：<https://github.com/openxlings>
-- xlings 文档入口：<https://xlings.d2learn.org>
-- 社区论坛：<https://forum.d2learn.org>
-- 本仓库（包索引）：<https://github.com/openxlings/xim-pkgindex>
-- 包索引页面：<https://openxlings.github.io/xim-pkgindex>
-- 索引机制：xlings 的 `docs/specs/index-distribution.md`（分发、镜像、区域链）与 `docs/specs/index-version-contract.md`；本仓库的命名空间与官方资源见 `docs/00-what-this-index-is.md`、`docs/11-official-resources.md`
+## 2. Links
 
-## 3) 说明
+- xlings: <https://github.com/openxlings/xlings>
+- the openxlings organisation: <https://github.com/openxlings>
+- xlings docs: <https://xlings.d2learn.org>
+- forum: <https://forum.d2learn.org>
+- this index: <https://github.com/openxlings/xim-pkgindex>, browsable at <https://index.xlings.org>
+- how an index reaches a machine: xlings `docs/specs/index-distribution.md` and
+  `docs/specs/index-version-contract.md`; this repository's namespaces and official resources:
+  `docs/00-what-this-index-is.md`, `docs/11-official-resources.md`
 
-- 若安装命令更新，优先以 xlings 仓库 README 为准。
-- 本 skill 只保留常用命令；完整安装矩阵（平台差异）请查看上方链接。
+## 3. Notes
+
+- If an install command changes, the xlings repository's README is the authority.
+- This file keeps only the common commands; the platform matrix is in the xlings docs.
