@@ -42,6 +42,6 @@ The full output, not only the last line | 完整输出，而不只是最后一�
 <!-- For CI failures: the run link and the failing job. -->
 
 ### Authorship | 作者
-Authorship: <by-human | human-and-ai | by-ai>
+Authorship: <by-human | ai-and-human>
 Agent: <optional | 可选>
 Model: <optional | 可选>

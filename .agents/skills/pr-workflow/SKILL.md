@@ -71,9 +71,9 @@ The description states:
 - **what you ran**: commands, pytest, the isolated install per platform, with results;
 - **what you did not run**, why, and the risk;
 - when `latest` moves, the verified version it points to; the issue it closes, if any;
-- **`Authorship:`**, one line: `by-ai` (an agent produced it from a task, a person directed and
-  reviewed), `human-and-ai` (a person and an AI worked together; the person wrote or substantially
-  reworked it) or `by-human`. The pull request template has it. An agent writes `by-ai`.
+- **`Authorship:`**, one line: `ai-and-human` (an AI did most of the work; a person directed it and
+  interacted briefly) or `by-human` (a person led and decided; the AI only assisted). The pull request
+  template has it. An agent writes `ai-and-human`.
 - optionally `Agent:` (the tool, e.g. Claude Code) and `Model:` (the model id): fill them when you
   know them, leave them blank otherwise, never guess.
 - **nothing private**: see "Before you post" below.
