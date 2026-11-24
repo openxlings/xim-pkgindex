@@ -10,7 +10,7 @@
   * 不表达"什么不该在" → 已经装了旧布局的机器永远拉不回来
 
 这条 lint 挡住的是第三条:**多 payload 的包,断言数不能退化成抽样。**
-规则本身写在 `.agents/skills/xpkg-creater/SKILL.md` §2.2.1。
+规则本身写在 `.agents/skills/xpkg-creater/references/hook-pitfalls.md` §5。
 """
 import re
 import pathlib
