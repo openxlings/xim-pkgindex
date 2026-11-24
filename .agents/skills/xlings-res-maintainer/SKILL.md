@@ -80,7 +80,8 @@ for a package failure; the workflow owns it.
 A published mirror does not change the package. When both GitHub and GitCode assets are verified:
 
 1. Edit the xpkg in a pull request: add `CN` beside `GLOBAL` in the `url` map, pointing at the
-   GitCode release asset. Keep the sha256 unchanged.
+   GitCode release asset. Keep the sha256 unchanged. In the same change, remove
+   `ci = { mirror = true }`: the lint rejects a package that declares both.
 2. Follow the published-entry rule: a changed resource needs a new `revision`.
 3. Run `tests/test_docs.py` and the package's own tests; the mirror does not run them for you.
 
