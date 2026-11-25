@@ -93,7 +93,7 @@ package = {
                     "xim:libxcb@>=1.17",
                 },
             },
-            ["latest"] = { ref = "4.5.0" },
+            ["latest"] = { ref = "4.5.1" },
             ["4.5.0"] = {
                 x86_64 = {
                     url = "https://github.com/Kitware/CMake/releases/download/v4.5.0/cmake-4.5.0-linux-x86_64.tar.gz",
@@ -107,9 +107,15 @@ package = {
                 },
             },
             ["4.0.2"] = "XLINGS_RES",
+            ["4.5.1"] = {
+                x86_64 = {
+                    url = "https://github.com/Kitware/CMake/releases/download/v4.5.1/cmake-4.5.1-linux-x86_64.tar.gz",
+                    sha256 = "83b71181fb62b4fe8f26067a9321448572e7a43bd04ff6c7f54a24c33698f16d",
+                },
+            },
         },
         macosx = {
-            ["latest"] = { ref = "4.5.0" },
+            ["latest"] = { ref = "4.5.1" },
             ["4.5.0"] = {
                 aarch64 = {
                     url = "https://github.com/Kitware/CMake/releases/download/v4.5.0/cmake-4.5.0-macos-universal.tar.gz",
@@ -123,9 +129,15 @@ package = {
                 },
             },
             ["4.0.2"] = "XLINGS_RES",
+            ["4.5.1"] = {
+                aarch64 = {
+                    url = "https://github.com/Kitware/CMake/releases/download/v4.5.1/cmake-4.5.1-macos-universal.tar.gz",
+                    sha256 = "e1fb288543e4eb2a410e385ecebc64323bda51f0205782f2b094ccd5d572ca2d",
+                },
+            },
         },
         windows = {
-            ["latest"] = { ref = "4.5.0" },
+            ["latest"] = { ref = "4.5.1" },
             ["4.5.0"] = {
                 x86_64 = {
                     url = "https://github.com/Kitware/CMake/releases/download/v4.5.0/cmake-4.5.0-windows-x86_64.zip",
@@ -139,6 +151,12 @@ package = {
                 },
             },
             ["4.0.2"] = "XLINGS_RES",
+            ["4.5.1"] = {
+                x86_64 = {
+                    url = "https://github.com/Kitware/CMake/releases/download/v4.5.1/cmake-4.5.1-windows-x86_64.zip",
+                    sha256 = "bfe6eadb245dc8213e0d3feea316b520cb2aae92f5667ffd76059ba6b05c430c",
+                },
+            },
         },
     },
 }
