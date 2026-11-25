@@ -4,16 +4,16 @@
 > inside xlings. Changes: [changelog](xpackage-v2-changelog.md).
 
 > `spec = "2"` — adds **multi-architecture** package description.
-> V2 is a strict superset of [V1](legacy/V1/xpackage-spec.md): every V1 recipe is a
-> valid V2 recipe. Only the additions are documented here; for everything else
+> V2 is a strict superset of [V1](legacy/V1/xpackage-spec.md): every V1 xpkg is a
+> valid V2 xpkg. Only the additions are documented here; for everything else
 > (base fields, hooks, libxpkg stdlib, `XLINGS_RES`, mirror tables) see V1.
 
 ## Why V2
 
 In V1, `xpm` resolved a download by **platform + version** only. Architecture
 was a flat `archs = {...}` metadata list that was **never used** during URL
-resolution and **never validated**. Recipes that shipped one URL per platform
-silently served the same binary to every CPU arch — e.g. a recipe declaring
+resolution and **never validated**. Xpkgs that shipped one URL per platform
+silently served the same binary to every CPU arch — e.g. an xpkg declaring
 `archs = {"x86_64", "aarch64"}` but hard-coding an `amd64` URL would install a
 broken binary on ARM. V2 makes architecture a **first-class, declarative,
 install-time-resolved** dimension, with a mandatory per-arch checksum.
@@ -208,7 +208,7 @@ aborts with a clear error instead of fetching a wrong binary.
 
 ### Process architecture in catalog metadata
 
-From xlings 2026.10.8.1, `os.arch()` is available when a native Lua recipe
+From xlings 2026.10.8.1, `os.arch()` is available when a native Lua xpkg
 loads, including catalog discovery, local validation and lifecycle hooks.
 It identifies the running client process ABI. Hardware capability does not
 change this value: an x86_64 client under emulation uses x86_64 payloads.
@@ -217,9 +217,9 @@ The operating-system value follows the same process build identity.
 Architecture-dependent runtime exports are selected before resolver use.
 Changing `exports.runtime.loader`, `abi` or `libdirs` inside an installation
 hook cannot repair metadata the resolver already read. An index that uses
-architecture at recipe load declares `requires.xlings.min` of at least
+architecture at xpkg load declares `requires.xlings.min` of at least
 `2026.10.8.1` in `index-compat.json`. Compatible snapshot history retains an
-index that older clients can consume. A raw local recipe additionally gives
+index that older clients can consume. A raw local xpkg additionally gives
 a clear client-version refusal when it cannot express its selected runtime.
 
 ## The three new version-entry shapes
@@ -319,12 +319,12 @@ xpm = {
 An explicit version `url` always overrides `source`; mirror tables, `ref`,
 single hashes and per-arch resource maps remain valid. `res = true` is a
 legacy input for the same official resource URL and should not be added to new
-recipes.
+xpkgs.
 
 ### Platforms that share their versions
 
 The client looks up the section of its own platform (`linux`, `macosx`,
-`windows`). When several platforms carry the same versions, the recipe defines
+`windows`). When several platforms carry the same versions, the xpkg defines
 one version table before `package` and each section names it:
 
 ```lua
@@ -374,7 +374,7 @@ install time (so a single shared index artifact serves every arch).
 
 ## `revision` — a packaging change under an unchanged version
 
-A version entry may state `revision`: how many times what the recipe installs
+A version entry may state `revision`: how many times what the xpkg installs
 for that version has changed while the upstream version has not.
 
 | field | type | default | on |
@@ -406,7 +406,7 @@ rejects it.
 
 ### When it increases
 
-Whenever what the recipe installs for a published version changes:
+Whenever what the xpkg installs for a published version changes:
 
 - **a new asset** — the payload is rebuilt or repackaged for a reason of ours
   (a prefix, a patch, a layout fix) while the upstream version stays; or
@@ -419,6 +419,13 @@ change instead. Packaging versions with a fourth segment (`fontconfig`
 payload directory name is the binding consumers hold, so a new key moved every
 binding with it, and a range dependency resolved to whichever key sorted
 highest (openxlings/xlings#620).
+
+A build from another source tree is another version, not a revision: an
+upstream version with a correction upstream has not released, built from a
+fork, takes a key of its own with a prerelease marker (`ninja` 1.12.1-mcpp.1).
+The marker orders it below the upstream version, an exact request for the
+upstream version does not select it, and `latest` does not name it. `revision`
+would replace what every consumer of the upstream version installs.
 
 A published url and its sha256 are immutable. A client holding a cached index
 still has the old hash, and new bytes behind the old url fail its integrity
@@ -446,7 +453,7 @@ revision of that version an installed payload may have and still be used.
 
 A raised `revision` says what a new install gets. Whether a payload installed
 at an older revision must be replaced is a separate fact, and only the
-recipe's author knows it: a revision that removes hard links for Android, or
+xpkg's author knows it: a revision that removes hard links for Android, or
 regenerates a cfg after a dependency's layout changed, leaves every installed
 payload correct; a revision that fixes a defect every installed payload has
 does not. The entry states the second case with `floor`. An entry that states
@@ -462,7 +469,7 @@ rejects both.
 
 - **Record** the revision that was installed, with the payload. A record that
   predates the field reads as revision 0.
-- **Classify** the payload against the recipe entry. It is *current* when its
+- **Classify** the payload against the xpkg entry. It is *current* when its
   recorded revision equals the entry's `revision`, and *usable* when it is
   complete and its recorded revision is at least the entry's `floor`.
 - **Use** a usable payload. A command that only uses packages (a build, a run)
@@ -520,10 +527,10 @@ extensions = {
 
 ## Install hooks must be arch-aware too
 
-If a recipe unpacks an arch-named directory, derive it from `os.arch()` in the
+If an xpkg unpacks an arch-named directory, derive it from `os.arch()` in the
 hook (don't hard-code one arch). `os.arch()` returns the canonical host arch.
 
-A recipe that must still install on clients before 2026.10.8.1, where hooks do
+An xpkg that must still install on clients before 2026.10.8.1, where hooks do
 not have `os.arch()`, decides from the payload's content instead — the file it
 ships for one architecture and not the other (`os.isfile`; hooks have no
 `os.islink`).
@@ -583,7 +590,7 @@ An unresolvable placeholder is left **verbatim** rather than blanked —
 outside the subos. `xlings self doctor` reports it.
 
 **Do not write cleanup in `uninstall()`.** Declarations are provider-scoped:
-xlings drops the whole section with the package. A recipe removing them itself
+xlings drops the whole section with the package. An xpkg removing them itself
 would be a second owner of that state.
 
 Conflicts (two packages claiming one variable) resolve deterministically by
@@ -594,7 +601,7 @@ resolving it quietly. A variable the **user** already exported wins over a
 
 ## `resolved_deps` — what the resolver decided, for hooks that need it
 
-A recipe writes a dependency as a **question**:
+An xpkg writes a dependency as a **question**:
 
 ```lua
 deps = { "xim:glibc@>=2.38" }
@@ -620,8 +627,8 @@ indistinguishable, and telling them apart is the point.
 
 ### Use it instead of looking a dependency up yourself
 
-`pkginfo.dep_install_dir(name)` consults this table first, so most recipes need
-nothing new. What a recipe must NOT do is re-derive the answer:
+`pkginfo.dep_install_dir(name)` consults this table first, so most xpkgs need
+nothing new. What an xpkg must NOT do is re-derive the answer:
 
 ```lua
 -- WRONG: a second answer to a question that already has one.
@@ -728,7 +735,7 @@ differently:
   ```
 
 There is no `min_xlings` in this index, so an old client cannot be served an
-old recipe. Adopt the capability **in the recipe**, by probing for it:
+old xpkg. Adopt the capability **in the xpkg**, by probing for it:
 
 ```lua
 if xvm.files then
@@ -777,7 +784,7 @@ a `function`. That is the only thing that separates them.
 | a new function on an existing module (`xvm.files`) | `if xvm.files then` |
 | a new module (`subos.env`) | `if type(subos.env) == "function" then` |
 
-xlings E2E-61 runs one recipe through a real released binary and the current
+xlings E2E-61 runs one xpkg through a real released binary and the current
 build and asserts both readings — truthiness `true` on both, `type()` `false`
 then `true`. If `import()` ever stops stubbing unknown modules, that test is
 what says the rule can be relaxed.
@@ -793,11 +800,11 @@ Rules:
    or the same files end up with two owners.
 4. **Verify against a real old binary.** `import()` returns a permissive proxy
    stub for unknown modules, so a module resolved that way would make the probe
-   truthy everywhere and silently useless. xlings E2E-37 runs one recipe
+   truthy everywhere and silently useless. xlings E2E-37 runs one xpkg
    through a downloaded 0.4.69 and the current build.
-5. **Compare the old-client result differentially.** Many recipes guard their
+5. **Compare the old-client result differentially.** Many xpkgs guard their
    copy on `os.isdir(sysroot/usr/include)`, which does not exist in a fresh
-   home -- the *unmigrated* recipe places nothing either. Assert "same as
+   home -- the *unmigrated* xpkg places nothing either. Assert "same as
    before the migration", not "the file is there".
 
 The probe is removed when the index drops support for clients older than the
@@ -806,7 +813,7 @@ prerequisite for shipping.
 
 ### Dropping the probe later — and why there is no `min_xlings`
 
-A probe is temporary by design. Removing one means the recipe declares the
+A probe is temporary by design. Removing one means the xpkg declares the
 capability unconditionally, and clients without it stop being able to install
 the package. Before doing that, the package needs a way to *tell* those
 clients why.

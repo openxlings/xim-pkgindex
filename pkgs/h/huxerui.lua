@@ -68,16 +68,18 @@ package = {
         -- has always supported.
         --
         -- The DT_NEEDED closure of bin/huxerui + lib/libhuxerui.so, enumerated
-        -- from the 0.3.0 linux-x86_64 artifact with readelf (unchanged from
-        -- 0.2.0; re-measured at the bump by verify-huxerui-closure.sh, which
-        -- walked 63 objects and resolved all 230 edges inside data/xpkgs):
+        -- from the 0.4.0 linux-x86_64 artifact with readelf and re-measured at
+        -- the bump by verify-huxerui-closure.sh, which walked the installed
+        -- payload and resolved every edge inside data/xpkgs:
         --   glibc/gcc-runtime half:  libc.so.6, libm.so.6, libdl.so,
         --                            libstdc++.so.6, libgcc_s.so.1
         --   GTK4 desktop stack:      libgtk-4.so.1, libgdk_pixbuf-2.0.so.0,
         --                            libsoup-3.0.so.0, libgio-2.0.so.0,
         --                            libgobject-2.0.so.0, libglib-2.0.so.0,
         --                            libpango-1.0.so.0, libpangocairo-1.0.so.0,
-        --                            libcairo.so.2
+        --                            libpangoft2-1.0.so.0, libcairo.so.2,
+        --                            libgraphene-1.0.so.0, libfontconfig.so.1,
+        --                            libepoxy.so.0
         --   (plus libc++_shared.so from the bundled Android runtime payload)
         --
         -- Every soname above now has a package, so the closure is complete.
@@ -88,6 +90,13 @@ package = {
             deps = {
                 "xim:cmake",
                 "xim:mcpp",
+
+                -- The SDK is C++: bin/huxerui and lib/libhuxerui.so both name
+                -- libstdc++.so.6 and libgcc_s.so.1, and neither arrives through
+                -- the GTK stack. Measured in a fresh XLINGS_HOME, without this
+                -- the closure walk stopped on exactly those two sonames; with
+                -- it, all 228 edges resolve inside data/xpkgs.
+                "xim:gcc-runtime@>=15",
 
                 -- DIRECT dependencies only. These are exactly the four
                 -- modules the SDK's own cmake asks pkg-config for
@@ -110,7 +119,40 @@ package = {
                 "xim:libsoup@>=3.0",     -- cmake: libsoup-3.0>=3.0
             },
             source = "https://github.com/HuxerUI/HuxerUI/releases/download/v${version}/huxerui-sdk-${version}-linux-${arch}.${ext}",
-            ["latest"] = { ref = "0.3.0" },
+            ["latest"] = { ref = "0.5.5" },
+            -- 0.5.5 is the first version with a CN mirror: the five release
+            -- archives are copied byte for byte to gitcode.com/xlings-res/huxerui
+            -- (release tag `0.5.5`, same file names, `.sha256` sidecars beside
+            -- them), so every entry names GLOBAL (the upstream release) and CN
+            -- explicitly. Earlier versions keep the plain GitHub `source`.
+            ["0.5.5"] = {
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/HuxerUI/HuxerUI/releases/download/v0.5.5/huxerui-sdk-0.5.5-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/huxerui/releases/download/0.5.5/huxerui-sdk-0.5.5-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "943606f212f0e476de73f810969b98f52e999bfa0d683482971ac1a9c2de1c1f",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/HuxerUI/HuxerUI/releases/download/v0.5.5/huxerui-sdk-0.5.5-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/huxerui/releases/download/0.5.5/huxerui-sdk-0.5.5-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "520c97c28c162f5c3b72626b3d719af9156411daac30909ffe9639f494aea3f5",
+                },
+            },
+            ["0.5.0"] = {
+                sha256 = {
+                    x86_64  = "25a5b98d5877131e523ff6fd7181dbe07194d22f3538b47e8737ff3310397361",
+                    aarch64 = "1a82966a3d824cbaf126606d9e867825e9ee1402e53f17627a77cdcbf28a822d",
+                },
+            },
+            ["0.4.0"] = {
+                sha256 = {
+                    x86_64  = "86837f3e872fe6716464d1804c10d894957742a6616a8d2977ea93e630799583",
+                    aarch64 = "85a6a893015aecf4e548763ea94796c5cf12dd766256639f015d104acb68b658",
+                },
+            },
             ["0.3.0"] = {
                 sha256 = {
                     x86_64  = "5413ccd9d35d0ad50c08c67045d73cb9faff23c04005a554af0faa7a914eb916",
@@ -140,7 +182,39 @@ package = {
             -- `${arch}` template alone would 404 on Apple Silicon. `arch_alias`
             -- maps the canonical key to upstream's spelling for this platform.
             source = "https://github.com/HuxerUI/HuxerUI/releases/download/v${version}/huxerui-sdk-${version}-macos-${arch_alias}.${ext}",
-            ["latest"] = { ref = "0.3.0" },
+            ["latest"] = { ref = "0.5.5" },
+            -- 0.5.5 names its resources explicitly (GLOBAL + CN mirror, see the
+            -- linux block); upstream spells the Apple Silicon archive `macos-arm64`.
+            ["0.5.5"] = {
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/HuxerUI/HuxerUI/releases/download/v0.5.5/huxerui-sdk-0.5.5-macos-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/huxerui/releases/download/0.5.5/huxerui-sdk-0.5.5-macos-x86_64.tar.gz",
+                    },
+                    sha256 = "a409d80cde3abc5195f64159fc6cfd9a843c08b55fb74947a2f75bf8398e9a5c",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/HuxerUI/HuxerUI/releases/download/v0.5.5/huxerui-sdk-0.5.5-macos-arm64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/huxerui/releases/download/0.5.5/huxerui-sdk-0.5.5-macos-arm64.tar.gz",
+                    },
+                    sha256 = "b2ef6e7d54742cdc3ff9428120ab1d1acfb418c24c61df8c76f259d260e18704",
+                },
+            },
+            ["0.5.0"] = {
+                arch_alias = { x86_64 = "x86_64", aarch64 = "arm64" },
+                sha256 = {
+                    x86_64  = "fade0e1c027d5844b7a27d7c3d48d94a98b50cd7ad95430dfe4ac552ba0ff05c",
+                    aarch64 = "f91183f2488452f2888c438f94d484a0b890e7d9636d4ae0cdfb149cb041183c",
+                },
+            },
+            ["0.4.0"] = {
+                arch_alias = { x86_64 = "x86_64", aarch64 = "arm64" },
+                sha256 = {
+                    x86_64  = "f8052aa997e680dde3677733211d237599404d46479ac1172486ca1c9e186a4d",
+                    aarch64 = "fe1f6b8832e39c4434ed4a60f7ae510c12b6ae1ea2968b90f0826cd5a7acb123",
+                },
+            },
             ["0.3.0"] = {
                 arch_alias = { x86_64 = "x86_64", aarch64 = "arm64" },
                 sha256 = {
@@ -166,7 +240,26 @@ package = {
             },
             -- windows asset is a .zip; ${ext} resolves to `zip` on windows.
             source = "https://github.com/HuxerUI/HuxerUI/releases/download/v${version}/huxerui-sdk-${version}-windows-${arch}.${ext}",
-            ["latest"] = { ref = "0.3.0" },
+            ["latest"] = { ref = "0.5.5" },
+            ["0.5.5"] = {
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/HuxerUI/HuxerUI/releases/download/v0.5.5/huxerui-sdk-0.5.5-windows-x86_64.zip",
+                        CN     = "https://gitcode.com/xlings-res/huxerui/releases/download/0.5.5/huxerui-sdk-0.5.5-windows-x86_64.zip",
+                    },
+                    sha256 = "ca6b27fc6b47db5ff14ed50f7a15c563d9b8a1587e1ffadbab7fe951684927bb",
+                },
+            },
+            ["0.5.0"] = {
+                sha256 = {
+                    x86_64 = "70b58c4c6bfa17c34c3e36a21c2ac47f509a7d5a33e7319c41b5f06fa91cdf76",
+                },
+            },
+            ["0.4.0"] = {
+                sha256 = {
+                    x86_64 = "5eb4deaf2bdbccf9be8f198e915c2eb176f2287088c169adb687baf40fd69fee",
+                },
+            },
             ["0.3.0"] = {
                 sha256 = {
                     x86_64 = "d1aca11de979070f950f16d319492d3f9fc0355d1ddbcb9bb926d79872bc2ef4",

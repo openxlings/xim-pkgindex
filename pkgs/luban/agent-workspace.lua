@@ -24,12 +24,13 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "2026.10.24.1" },
+            ["latest"] = { ref = "2026.11.22.1" },
             ["2026.10.18.1"] = { min_client = "2026.10.18.1" },
             ["2026.10.19.1"] = { min_client = "2026.10.18.1" },
             ["2026.10.20.1"] = { min_client = "2026.10.20.1" },
             ["2026.10.23.1"] = { min_client = "2026.10.20.1" },
             ["2026.10.24.1"] = { min_client = "2026.10.20.1" },
+            ["2026.11.22.1"] = { min_client = "2026.10.20.1" },
         },
     },
 }
@@ -130,6 +131,26 @@ versions["2026.10.24.1"] = {
         replaces = "subos:luban-agent-workspace",
         abi = { kernel = "linux", libc = "gnu" },
         packages = { "luban:tools-dev@2026.10.18.1", "luban:tools-agent@2026.10.18.1",
+                     "xim:claude", "xim:codex", "xim:pi", "xim:opencode" },
+        policy = "xim:agent-private@2026.10.11.1",
+        boot = { virt = "xim:linux-kernel-virt@6.12.112-r3" },
+        luban = { settings = { enter = "console", login_shell = "/usr/bin/fish" } },
+        workspace = {},
+    },
+}
+
+-- 2026.11.22.1: 2026.10.24.1 with curl. Its policy's zone is the proxy's
+-- exit, asked through the proxy with curl from the home's packages before the
+-- system is entered; without one it was UTC and a warning on every run.
+versions["2026.11.22.1"] = {
+    files = versions["2026.10.23.1"].files,
+    manifest = {
+        subos_kind = "rootfs",
+        min_client = "2026.10.20.1",
+        from = "luban:core@2026.10.24.1",
+        replaces = "subos:luban-agent-workspace",
+        abi = { kernel = "linux", libc = "gnu" },
+        packages = { "luban:tools-dev@2026.10.18.1", "luban:tools-agent@2026.10.18.1", "xim:curl@8.22.0",
                      "xim:claude", "xim:codex", "xim:pi", "xim:opencode" },
         policy = "xim:agent-private@2026.10.11.1",
         boot = { virt = "xim:linux-kernel-virt@6.12.112-r3" },

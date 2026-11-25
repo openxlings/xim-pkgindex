@@ -36,11 +36,29 @@ package = {
             CN = "https://gitcode.com/xlings-res/freebsd-disk/releases/download/${version}/freebsd-disk-${version}-aarch64.tar.xz",
         },
         linux = {
-            ["latest"] = { ref = "14.5" },
+            ["latest"] = { ref = "14.5-1" },
+            ["14.5-1"] = {
+                -- r1: the files are copied to a writable /tmp/dirun, where the command runs (its working directory).
+                revision = 1,
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/freebsd-disk/releases/download/14.5/freebsd-disk-14.5-aarch64.tar.xz",
+                    CN     = "https://gitcode.com/xlings-res/freebsd-disk/releases/download/14.5/freebsd-disk-14.5-aarch64.tar.xz",
+                },
+                sha256 = "f9a4ff17bcfb6ee460b1a63d8437568c9aa2d96bd51d1c84cc05d08651b193ae",
+            },
             ["14.5"] = { sha256 = "f9a4ff17bcfb6ee460b1a63d8437568c9aa2d96bd51d1c84cc05d08651b193ae" },
         },
         macosx = {
-            ["latest"] = { ref = "14.5" },
+            ["latest"] = { ref = "14.5-1" },
+            ["14.5-1"] = {
+                -- r1: the files are copied to a writable /tmp/dirun, where the command runs (its working directory).
+                revision = 1,
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/freebsd-disk/releases/download/14.5/freebsd-disk-14.5-aarch64.tar.xz",
+                    CN     = "https://gitcode.com/xlings-res/freebsd-disk/releases/download/14.5/freebsd-disk-14.5-aarch64.tar.xz",
+                },
+                sha256 = "f9a4ff17bcfb6ee460b1a63d8437568c9aa2d96bd51d1c84cc05d08651b193ae",
+            },
             ["14.5"] = { sha256 = "f9a4ff17bcfb6ee460b1a63d8437568c9aa2d96bd51d1c84cc05d08651b193ae" },
         },
     },
@@ -88,8 +106,8 @@ line-max = 200            # a longer line is written to the files disk and run f
 script   = "sh {script}"
 
 [files]
-mount = ["mkdir -p /mnt/dirun", "mount -r -t msdosfs /dev/vtbd1s1 /mnt/dirun"]
-at    = "/mnt/dirun"
+mount = ["mkdir -p /mnt/fat /tmp/dirun", "mount -r -t msdosfs /dev/vtbd1s1 /mnt/fat", "cp -R /mnt/fat/. /tmp/dirun/", "umount /mnt/fat", "cd /tmp/dirun"]
+at    = "/tmp/dirun"
 
 [relay]
 report = "/tmp/dirun-mtest.ndjson"
@@ -97,10 +115,12 @@ report = "/tmp/dirun-mtest.ndjson"
 
 function install()
     local dir = pkginfo.install_dir()
+    -- The release the asset is of: a packaging revision (`14.5-1`) names the same asset.
+    local release = pkginfo.version():match("^[^-]+")
     local image = path.join(dir, "freebsd-14.5-aarch64.qcow2")
     for _, from in ipairs({
-        path.join(path.directory(pkginfo.install_file()), "freebsd-disk-" .. pkginfo.version() .. "-aarch64.qcow2"),
-        path.join(dir, "freebsd-disk-" .. pkginfo.version() .. "-aarch64.qcow2"),
+        path.join(path.directory(pkginfo.install_file()), "freebsd-disk-" .. release .. "-aarch64.qcow2"),
+        path.join(dir, "freebsd-disk-" .. release .. "-aarch64.qcow2"),
     }) do
         if os.isfile(from) and from ~= image then
             os.mkdir(dir)

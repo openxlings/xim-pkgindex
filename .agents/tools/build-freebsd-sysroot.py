@@ -17,9 +17,18 @@ Layout of <arch>-freebsd-sysroot-<version>/:
     lib/  libexec/  usr/            the sysroot
     usr/share/libc++/v1/            std.cppm, std.compat.cppm, std/, std.compat/
 
+The link inputs (crt objects, static archives) are the release's bytes: FreeBSD
+compresses their debug sections with zlib (SHF_COMPRESSED), and the llvm
+payload's lld reads them on every host. Revision 2 of 14.5 decompressed them
+because a Windows host's link ran an lld without zlib -- the host's, found on
+PATH, since the payload shipped no ld.lld.exe (llvm 23.1.3 revision 4 ships it).
+
+REVISION=<n> in the environment names the archive and its directory
+`<identity>-sysroot-<version>-r<n>` (a repack of the same release).
+
 usage: build-freebsd-sysroot.py <out-dir> <version> <libcxx-src-dir> amd64=<base.txz> arm64=<base.txz>
 """
-import hashlib, shutil, subprocess, sys, tarfile, tempfile
+import hashlib, os, shutil, subprocess, sys, tarfile, tempfile
 from pathlib import Path, PurePosixPath
 
 ARCH = {"amd64": "x86_64", "arm64": "aarch64"}       # FreeBSD machine -> mcpp arch
@@ -72,7 +81,8 @@ def main() -> int:
     for machine, txz in inputs.items():
         txz = Path(txz).resolve()
         identity = f"{ARCH[machine]}-freebsd"
-        name = f"{identity}-sysroot-{version}"
+        revision = os.environ.get("REVISION", "")
+        name = f"{identity}-sysroot-{version}" + (f"-r{revision}" if revision else "")
         with tempfile.TemporaryDirectory(dir=out) as tmp:
             root = Path(tmp) / name
             root.mkdir()

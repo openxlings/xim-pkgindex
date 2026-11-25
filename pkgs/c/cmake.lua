@@ -20,68 +20,50 @@ package = {
     -- xvm: xlings version management
     xvm_enable = true,
 
-    -- Mirrored through the xlings-res resource service, so every version entry
-    -- below needs the SAME tag present on both legs before it can be referenced
-    -- here (xpkg-creater §1.2.1): github.com/xlings-res/cmake and
-    -- gitcode.com/xlings-res/cmake. Asset names follow the resource-service
-    -- convention `cmake-<ver>-<os>-<arch>.{tar.gz,zip}` (the installer appends
-    -- the host arch itself) plus a matching `.sha256` sidecar.
+    -- From 4.5.0 on, resources come straight from Kitware's own GitHub
+    -- release assets (same bytes as cmake.org), sha256 cross-checked against
+    -- the release's `cmake-<ver>-SHA-256.txt` manifest. Upstream archive
+    -- names match their extracted top-level directories, so install()'s
+    -- strip-the-extension derivation needs no repack — including
+    -- macos-universal, the asset the xlings-res leg had to repack.
     --
-    -- macosx-arm64 is upstream's `cmake-<ver>-macos-universal.tar.gz` REPACKED
-    -- so the top-level directory matches the asset name — install() derives the
-    -- extracted directory by stripping the extension off the download, so a
-    -- plain rename would leave it looking for a directory that isn't there.
-    -- linux-x86_64 and windows-x86_64 are upstream bytes verbatim.
-    --
-    -- No `ci = { update = true }` / `res_versioned = true` here: the auto-bump
-    -- path verifies mirrored assets but does not create them, so it would just
-    -- error on every upstream release until someone mirrors it by hand. That is
-    -- also why this recipe sat on 4.0.2 while upstream reached 4.4.2 — worth
-    -- automating (mirror-then-bump), but that is a tooling change, not a
-    -- recipe change.
+    -- Historical 4.4.2 / 4.0.2 stay on the xlings-res mirror (both legs,
+    -- github.com/xlings-res/cmake and gitcode.com/xlings-res/cmake),
+    -- untouched. The autoupdate source now points at the real upstream
+    -- release directory so future versions no longer wait on a hand-mirrored
+    -- xlings-res tag (the reason this recipe sat on 4.0.2 while upstream
+    -- reached 4.4.2). Kitware publishes one `cmake-<ver>-SHA-256.txt`
+    -- manifest per release instead of per-asset `.sha256` sidecars, so the
+    -- old `verify = "sha256-sidecar"` does not apply upstream and is dropped.
 
 
     extensions = {
         autoupdate = {
-            source = "https://github.com/xlings-res/cmake/releases",
+            source = "https://github.com/Kitware/CMake/releases",
             resources = {
                 GLOBAL = {
+                    required = true,
                     url = {
                         linux = {
-                            x86_64 = "https://github.com/xlings-res/cmake/releases/download/${version}/cmake-${version}-linux-x86_64.tar.gz",
+                            x86_64 = "https://github.com/Kitware/CMake/releases/download/v${version}/cmake-${version}-linux-x86_64.tar.gz",
                         },
                         macosx = {
-                            aarch64 = "https://github.com/xlings-res/cmake/releases/download/${version}/cmake-${version}-macosx-arm64.tar.gz",
+                            aarch64 = "https://github.com/Kitware/CMake/releases/download/v${version}/cmake-${version}-macos-universal.tar.gz",
                         },
                         windows = {
-                            x86_64 = "https://github.com/xlings-res/cmake/releases/download/${version}/cmake-${version}-windows-x86_64.zip",
+                            x86_64 = "https://github.com/Kitware/CMake/releases/download/v${version}/cmake-${version}-windows-x86_64.zip",
                         },
                     },
-                    required = true,
-                },
-                CN = {
-                    url = {
-                        linux = {
-                            x86_64 = "https://gitcode.com/xlings-res/cmake/releases/download/${version}/cmake-${version}-linux-x86_64.tar.gz",
-                        },
-                        macosx = {
-                            aarch64 = "https://gitcode.com/xlings-res/cmake/releases/download/${version}/cmake-${version}-macosx-arm64.tar.gz",
-                        },
-                        windows = {
-                            x86_64 = "https://gitcode.com/xlings-res/cmake/releases/download/${version}/cmake-${version}-windows-x86_64.zip",
-                        },
-                    },
-                    required = true,
                 },
             },
-            verify = "sha256-sidecar",
         },
     },
 
     xpm = {
         linux = {
-            -- Runtime deps, re-measured across the WHOLE 4.4.2 payload rather
-            -- than just bin/cmake (readelf on every ELF under bin/):
+            -- Runtime deps, re-measured across the WHOLE 4.5.0 payload rather
+            -- than just bin/cmake (readelf on every ELF under bin/; the
+            -- closure is identical to 4.4.2):
             --
             --   cmake, ctest, cpack, ccmake   libdl librt libpthread libm libc
             --                                 + ld-linux  -> all glibc
@@ -111,7 +93,13 @@ package = {
                     "xim:libxcb@>=1.17",
                 },
             },
-            ["latest"] = { ref = "4.4.2" },
+            ["latest"] = { ref = "4.5.0" },
+            ["4.5.0"] = {
+                x86_64 = {
+                    url = "https://github.com/Kitware/CMake/releases/download/v4.5.0/cmake-4.5.0-linux-x86_64.tar.gz",
+                    sha256 = "81f0d5b0960fb6adc8197030ffc827fba937640d51e73e39e0e9e40d88c66f6f",
+                },
+            },
             ["4.4.2"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -121,7 +109,13 @@ package = {
             ["4.0.2"] = "XLINGS_RES",
         },
         macosx = {
-            ["latest"] = { ref = "4.4.2" },
+            ["latest"] = { ref = "4.5.0" },
+            ["4.5.0"] = {
+                aarch64 = {
+                    url = "https://github.com/Kitware/CMake/releases/download/v4.5.0/cmake-4.5.0-macos-universal.tar.gz",
+                    sha256 = "a645d69fd21e521759cc0c64e7c60462d43faf0c7214ac05f75c80f7c5037dde",
+                },
+            },
             ["4.4.2"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -131,7 +125,13 @@ package = {
             ["4.0.2"] = "XLINGS_RES",
         },
         windows = {
-            ["latest"] = { ref = "4.4.2" },
+            ["latest"] = { ref = "4.5.0" },
+            ["4.5.0"] = {
+                x86_64 = {
+                    url = "https://github.com/Kitware/CMake/releases/download/v4.5.0/cmake-4.5.0-windows-x86_64.zip",
+                    sha256 = "301b1728317ccd84e984b02e366a8293735bc5ac618757d3d8f58b578f062411",
+                },
+            },
             ["4.4.2"] = {
                 url = "XLINGS_RES",
                 sha256 = {
