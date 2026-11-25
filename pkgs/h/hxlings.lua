@@ -59,7 +59,7 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "0.1.5" },
+            ["latest"] = { ref = "0.1.7" },
             ["0.1.5"] = {
                 revision = 1,
                 x86_64 = {
@@ -67,9 +67,15 @@ package = {
                     sha256 = "2dca576961521b5b185610b3cb06b924f7d8b27192efd1ea14c718b96ade30f4",
                 },
             },
+            ["0.1.7"] = {
+                x86_64 = {
+                    url = "https://github.com/FarnaHerry/Hxlings/releases/download/v0.1.7/hxlings-0.1.7-linux-x86_64.tar.gz",
+                    sha256 = "6bd72c76c2456325f683cca6c6c5ca26ccc71944b2e5e797743b8020e8677a57",
+                },
+            },
         },
         macosx = {
-            ["latest"] = { ref = "0.1.5" },
+            ["latest"] = { ref = "0.1.7" },
             ["0.1.5"] = {
                 revision = 1,
                 aarch64 = {
@@ -77,14 +83,26 @@ package = {
                     sha256 = "f3a1febfc49b20e769613efbb92dd38a40a894f10ea238ccdf4d2bc31536c701",
                 },
             },
+            ["0.1.7"] = {
+                aarch64 = {
+                    url = "https://github.com/FarnaHerry/Hxlings/releases/download/v0.1.7/hxlings-0.1.7-macos-arm64.tar.gz",
+                    sha256 = "808e17baf1a1ccd181f8f2309eb36a2950fe2e277ebf57274905a08ff8143145",
+                },
+            },
         },
         windows = {
-            ["latest"] = { ref = "0.1.5" },
+            ["latest"] = { ref = "0.1.7" },
             ["0.1.5"] = {
                 revision = 1,
                 x86_64 = {
                     url = "https://github.com/FarnaHerry/Hxlings/releases/download/v0.1.5/hxlings-0.1.5-windows-x86_64.zip",
                     sha256 = "9613fc498389a0d392c05f3c7ff9719feaec72291069554851b2ee484159e52a",
+                },
+            },
+            ["0.1.7"] = {
+                x86_64 = {
+                    url = "https://github.com/FarnaHerry/Hxlings/releases/download/v0.1.7/hxlings-0.1.7-windows-x86_64.zip",
+                    sha256 = "4c8cb80613f77ecd80fb33e2dce7733b09479366dc197b6e63e088a63b7288fc",
                 },
             },
         },
