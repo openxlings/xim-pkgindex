@@ -2,6 +2,12 @@ package = {
     spec = "1",
     homepage = "https://llvm.org",
 
+    -- Platform version sets differ ON PURPOSE: macOS does not carry 23.1.6.
+    -- Every payload of this recipe is carved from upstream's release for its
+    -- host, and llvm-project's llvmorg-23.1.6 release publishes no macOS
+    -- binary; macOS keeps 23.1.3 until one exists.
+    platform_versions_diverge = true,
+
     name = "llvm",
     description = "LLVM compiler infrastructure and toolchain",
     maintainers = {"LLVM Project"},
@@ -21,6 +27,9 @@ package = {
         autoupdate = {
             source = "https://github.com/xlings-res/llvm/releases",
             verify = "sha256-sidecar",
+            -- A version reaches each platform when upstream's release has
+            -- its binary (llvmorg-23.1.6 has none for macOS).
+            divergence = "platform",
             resources = {
                 GLOBAL = {
                     required = true,
@@ -98,21 +107,68 @@ package = {
             -- its LLVM line to it. Its shared libraries ship with $ORIGIN
             -- RUNPATH (set by the carve), so the archive is self-contained
             -- without the install-time rpath rewrite.
+            --
+            -- Revision 2 (same version key, new asset, the glibc 2.44.3
+            -- form): the r1 payload linked a plain C program for
+            -- aarch64-windows-gnu with clang's own `libclang_rt.builtins.a`
+            -- nowhere in its archive, so the link failed on every Linux host
+            -- that declared the row. r2 injects the MinGW-w64 sysroot's
+            -- `aarch64-w64-windows-gnu` and `x86_64-w64-windows-gnu`
+            -- builtins beside clang's own (source payload and per-file
+            -- hashes: .agents/tools/ of the xim-pkgindex tree that published
+            -- it), nothing else in the archive differs.
+            --
+            -- Revision 3: the r2 archives broke the index-wide install
+            -- convention — the archive's top-level directory must equal the
+            -- asset file name minus its extension (install() derives the
+            -- extracted directory that way) — by keeping the r1 inner
+            -- directory name, so every install of r2 moved nothing and the
+            -- config hook found an empty bin. r3 renames the inner directory
+            -- to carry -r3; the payload bytes are otherwise the r2 injection,
+            -- unchanged. The r2 assets stay published, so a cached index
+            -- still gets the bytes its hash names; r1/r2 pins likewise stay
+            -- installable.
+            --
+            -- Revision 4 changes the Windows archive alone (the windows
+            -- section's note). A corrective revision is the version's, on
+            -- every platform that carries it, so this entry states 4 over the
+            -- revision 3 archives, unchanged; their lld already answers to
+            -- every name the driver asks for.
             ["23.1.3"] = {
-                revision = 1,
+                revision = 4,
                 x86_64 = {
                     url = {
-                        GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3/llvm-23.1.3-linux-x86_64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3/llvm-23.1.3-linux-x86_64.tar.gz",
+                        GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3-r3/llvm-23.1.3-r3-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3-r3/llvm-23.1.3-r3-linux-x86_64.tar.gz",
                     },
-                    sha256 = "08dfe7d3b297e352117c2c9929fa223ede5970741f98dff09e5ad71494f57443",
+                    sha256 = "7fe4389e2a376d1a82bd6ecf225cbaf8c0a5af8accf96a4f091cb643aacaa08c",
                 },
                 aarch64 = {
                     url = {
-                        GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3/llvm-23.1.3-linux-aarch64.tar.gz",
-                        CN = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3/llvm-23.1.3-linux-aarch64.tar.gz",
+                        GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3-r3/llvm-23.1.3-r3-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3-r3/llvm-23.1.3-r3-linux-aarch64.tar.gz",
                     },
-                    sha256 = "8a4697b6f22703c1fb8d808a0ef6022f3a9e9111a70e7a02009b7814bdbe46a9",
+                    sha256 = "14e3ff7785a0862f92411a43fc552ad9333ce700a92030fef696a4dfef703ec4",
+                },
+            },
+            ["23.1.6"] = {
+                -- Carved from upstream's release by tools/res/build.sh
+                -- (`llvm 23.1.6`), with the MinGW-w64 sysroot's windows-gnu
+                -- builtins that 23.1.3 revision 2 added; the llvm gate of
+                -- .agents/tools/verify-toolchain.sh passed on each.
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.6/llvm-23.1.6-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.6/llvm-23.1.6-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "77babef27e18e3efadb3261489e63832fc2d393ce77368c542a406d2836401f4",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.6/llvm-23.1.6-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.6/llvm-23.1.6-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "4c01ad73f71de070b6dd91d1d5dc1d3d29924e5fc844af918675f2c7d88c7818",
                 },
             },
         },
@@ -137,22 +193,73 @@ package = {
                 },
                 sha256 = nil,
             },
+            -- Revision 2 (same version key, new asset): the MinGW-w64
+            -- builtins injection of the Linux r2 payload, same rationale as
+            -- the linux section's note. Revision 3: the r2 archive broke the
+            -- install convention the index-wide install() relies on (the
+            -- top-level directory must equal the asset file name minus its
+            -- extension); r3 renames the inner directory, payload otherwise
+            -- unchanged — same rationale as the linux section's note.
+            -- Revision 4: the revision 3 archive, unchanged (the linux
+            -- section's note).
             ["23.1.3"] = {
+                revision = 4,
                 url = {
-                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3/llvm-23.1.3-macosx-arm64.tar.xz",
-                    CN = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3/llvm-23.1.3-macosx-arm64.tar.xz",
+                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3-r3/llvm-23.1.3-r3-macosx-arm64.tar.xz",
+                    CN     = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3-r3/llvm-23.1.3-r3-macosx-arm64.tar.xz",
                 },
                 -- Fixed by content (SPEC-006 §4.6); new entries no longer ship
                 -- with sha256 = nil (xim-pkgindex#27 covers backfilling the
                 -- old ones).
-                sha256 = "05a73afb2c64847a16bf8cdc32f23251cb124555b4f5806b6f53d295739b3e82",
+                sha256 = "80a3df1d3dbbaa33ba18ef371edc220d59f1dffdedeefd3c552059a24458879e",
             },
         },
         windows = {
             ["latest"] = { ref = "22.1.8" },
+            -- 20.1.7 and 22.1.8 are carved from upstream Windows builds made
+            -- without zlib and zstd: their lld reads no compressed debug
+            -- section, which the same versions read on Linux and macOS
+            -- (measured 2026-11-19). Upstream's 23.1.3 is built with both.
             ["20.1.7"] = "XLINGS_RES",
             ["22.1.8"] = "XLINGS_RES",
-            ["23.1.3"] = "XLINGS_RES",
+            -- Revision 2 leaves the shared template (a corrective asset
+            -- lives under its own release tag, which no template spelling
+            -- reaches) for the explicit asset, same rationale as the linux
+            -- section's note. Revision 3 restores the top-level-directory
+            -- convention the r2 zip broke, same rationale as the linux
+            -- section's note.
+            --
+            -- Revision 4 adds bin/ld.lld.exe, bin/ld64.lld.exe and
+            -- bin/wasm-ld.exe to the r3 archive: the files of these names in
+            -- upstream's release, each the program r3 ships as lld-link.exe.
+            -- clang's driver links an ELF target with ld.lld, Mach-O with
+            -- ld64.lld and WebAssembly with wasm-ld, looking beside itself
+            -- first and then on PATH; r3 carried none of them, so a link for
+            -- x86_64-freebsd on a Windows host ran the ld.lld of the host's
+            -- PATH, one without zlib, and stopped at the base's compressed
+            -- crtend.o (mcpp-platforms run 44123489011), while r3's own lld
+            -- reads zlib and zstd. Every installed r3 links that way, hence
+            -- the floor. Derived from the r3 archive by tools/res/build.sh
+            -- (`llvm 23.1.3-r4`); no other file changed.
+            ["23.1.3"] = {
+                revision = 4,
+                floor = 4,
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.3-r4/llvm-23.1.3-r4-windows-x86_64.zip",
+                    CN     = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.3-r4/llvm-23.1.3-r4-windows-x86_64.zip",
+                },
+                sha256 = "b811d386a32920f1a382e69275b1a387f902d1a13e0be8314fd0de39b324188f",
+            },
+            ["23.1.6"] = {
+                -- Carved from upstream's release by tools/res/build.sh
+                -- (`llvm 23.1.6`), with bin/ld.lld.exe, bin/ld64.lld.exe and
+                -- bin/wasm-ld.exe as 23.1.3 revision 4 added them.
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/llvm/releases/download/23.1.6/llvm-23.1.6-windows-x86_64.zip",
+                    CN     = "https://gitcode.com/xlings-res/llvm/releases/download/23.1.6/llvm-23.1.6-windows-x86_64.zip",
+                },
+                sha256 = "348ea65f4e24e2e6ac0989ec8e13f27a2580d8ee3b001b900ec0a99003803736",
+            },
         },
     },
 }

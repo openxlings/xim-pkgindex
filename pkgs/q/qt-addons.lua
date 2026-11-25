@@ -76,9 +76,54 @@ package = {
             ["6.11.1"] = {},
         },
         linux = {
-            deps = { runtime = { "xim:qt@6.11.1" }, build = { "xim:7zip" } },
+            deps = {
+                runtime = {
+                    "xim:qt@6.11.1",
+                    -- The official Linux archives carry RUNPATH=$ORIGIN and the
+                    -- system loader as interpreter (readelf over bin/qsb), so
+                    -- bin/qsb, bin/balsam and the other tools started with the
+                    -- HOST's glibc and found no Qt library but this payload's own:
+                    -- qsb failed with `libQt6Core.so.6: version 'Qt_6.11' not
+                    -- found` (it picked the distribution's Qt) and, with xim:qt on
+                    -- the library path, with `GLIBC_2.43 not found` from xim:glib.
+                    -- Declaring xim:glibc -- the loader provider -- makes xlings
+                    -- patch the payload after install(), as pkgs/q/qt.lua and
+                    -- qt-base.lua rely on: each executable's interpreter, and each
+                    -- ELF file's RPATH set to the libraries of the packages
+                    -- declared HERE. The closure is not transitive: xim:qt's own
+                    -- runtime dependencies are not searched for this payload's
+                    -- files, so what they name directly is declared again.
+                    "xim:glibc",
+                    -- Measured over every ELF file of the payload (readelf -d,
+                    -- names not found in this lib/ or xim:qt's): libstdc++ and
+                    -- libgcc_s (every library and tool); libGL and libEGL
+                    -- (the tools and Qt Quick 3D); libxkbcommon (the tools);
+                    -- libX11, libXext and libXrandr (the FFmpeg backend of Qt
+                    -- Multimedia); libdrm (FFmpeg); the Wayland client, server and
+                    -- EGL libraries (Qt Wayland Compositor); zlib (the OpenAPI
+                    -- support); glib (the speech-dispatcher plugin of Qt
+                    -- TextToSpeech).
+                    "xim:gcc-runtime", "xim:libglvnd", "xim:libxkbcommon",
+                    "xim:libX11", "xim:libXext", "xim:libXrandr", "xim:libdrm",
+                    "xim:wayland", "xim:zlib", "xim:glib",
+                    -- Not provided by any package of the ecosystem, so not
+                    -- declared and still resolved by the host if it has them:
+                    -- libbz2 (FFmpeg), libpulse (Qt Multimedia), libbluetooth
+                    -- (Qt Connectivity's sdpscanner), libpcsclite (Qt NFC),
+                    -- libspeechd (Qt TextToSpeech's speechd plugin); libtiff.so.5
+                    -- (the TIFF image plugin), where xim:libtiff has .so.6.
+                },
+                build = { "xim:7zip" },
+            },
+            exports = {
+                runtime = { libdirs = { "lib" } },
+            },
             ["latest"] = { ref = "6.11.1" },
-            ["6.11.1"] = {},
+            -- Revision 1: a payload laid out before the runtime closure was
+            -- declared (no elfpatch) has no `runtime` line in its archive marker
+            -- and installed() says so; the revision is what replaces it on a
+            -- machine that holds revision 0 (as qt-base.lua's 6.11.1 entry).
+            ["6.11.1"] = { revision = 1 },
         },
         macosx = {
             deps = { runtime = { "xim:qt@6.11.1" }, build = { "xim:7zip" } },
@@ -638,6 +683,9 @@ function install()
     if not qtsdk.fetch_and_extract(list, install_dir, marker_path(), "qt-addons") then
         return false
     end
+    -- Linux only: the runtime closure above exists on Linux alone, so Windows
+    -- and macOS payloads already on disk stay valid (no 128-160 MB again).
+    if os.host() == "linux" then qtsdk.mark_runtime(marker_path()) end
 
     return installed()
 end
@@ -658,6 +706,9 @@ function installed()
     for _, e in ipairs(list) do
         if marker[e.module] ~= e.sha256 then return false end
     end
+    -- A Linux payload laid out before its runtime closure was declared (no
+    -- loader, RUNPATH=$ORIGIN) is not this one.
+    if os.host() == "linux" and not qtsdk.runtime_current(marker) then return false end
 
     local d = pkginfo.install_dir()
     local osname = os.host()

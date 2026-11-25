@@ -1,0 +1,38 @@
+# A DOS program run by DOSBox Staging with no display (dirun's payload form). The package
+# dosbox-staging installs this file beside the emulator, CWSDPMI (the DPMI host a DJGPP program
+# needs) and REDIR. The program is placed as C:\PROG.EXE beside them; a launcher runs it with its
+# arguments through REDIR, which writes its output and its standard error to two files of the
+# directory (the command interpreter has no `2>'; dirun 0.4.0 reads `stderr-file'), and writes its
+# status there too, because the emulator's own status is not the program's and its command
+# interpreter does not expand %ERRORLEVEL%: the status is read back one decimal digit at a time with
+# `if errorlevel', each test below 256. REDIR exits with the program's status (measured: 213).
+name = "dosbox-staging"
+
+[payload]
+machine     = false
+args        = ["--noprimaryconf", "--nolocalconf", "-c", "mount c {dir}", "-c", "c:", "-c", "call RUN.BAT", "-c", "exit"]
+place       = "PROG.EXE"
+status      = "file"
+status-file = "RC.TXT"
+output-file = "OUT.TXT"
+stderr-file = "ERR.TXT"
+env         = { SDL_VIDEODRIVER = "dummy", SDL_AUDIODRIVER = "dummy" }
+emulator    = "@EMULATOR@"
+beside      = ["CWSDPMI.EXE", "REDIR.EXE"]
+
+[payload.files]
+"RUN.BAT" = """@echo off\r
+REDIR.EXE -o OUT.TXT -e ERR.TXT PROG.EXE {args}\r
+set H=\r
+set T=\r
+set U=0\r
+for %%h in (1 2) do if errorlevel %%h00 set H=%%h\r
+if not "%H%"=="" set T=0\r
+set S=1 2 3 4 5 6 7 8 9\r
+if "%H%"=="2" set S=1 2 3 4 5\r
+for %%t in (%S%) do if errorlevel %H%%%t0 set T=%%t\r
+set S=1 2 3 4 5 6 7 8 9\r
+if "%H%%T%"=="25" set S=1 2 3 4 5\r
+for %%u in (%S%) do if errorlevel %H%%T%%%u set U=%%u\r
+echo %H%%T%%U%> RC.TXT\r
+"""

@@ -203,9 +203,21 @@ def test_existing_linux_llvm_versions_advance_hook_revision():
 dofile(arg[1])
 for _, version in ipairs({"20.1.7", "22.1.8", "23.1.3"}) do
   local entry = package.xpm.linux[version]
-  assert(entry.revision == 1)
+  local rev = entry.revision or 1
+  assert(type(rev) == "number" and rev >= 1)
   assert(entry.x86_64.revision == nil)
-  assert(entry.x86_64.url.GLOBAL:find("llvm%-" .. version:gsub("%.", "%%.") .. "%-linux%-x86_64.tar.gz$"))
+  -- The corrective channel: from revision 2 on, the url names a corrective
+  -- asset (llvm-<version>-r<k>-..., as glibc's), that of the revision which
+  -- last changed this archive -- the entry's own, or an earlier one when the
+  -- revision changed another platform's archive alone (23.1.3's fourth: the
+  -- updater's configuration-only form, the shape revision 1 took).
+  local url = entry.x86_64.url.GLOBAL
+  local k = url:match("llvm%-" .. version:gsub("%.", "%%.") .. "%-r(%d+)%-linux%-x86_64%.tar%.gz$")
+  if rev >= 2 then
+    assert(k and tonumber(k) >= 2 and tonumber(k) <= rev, url)
+  else
+    assert(url:find("llvm%-" .. version:gsub("%.", "%%.") .. "%-linux%-x86_64%.tar%.gz$"), url)
+  end
 end
 print("REVISION PASS")'''
     result = subprocess.run([lua, "-", str(ROOT / "pkgs/l/llvm.lua")],

@@ -2,7 +2,7 @@
 
 [English](../20-testing.md) | **简体中文**
 
-每个配方旁边都有一个 pytest 模块，仓库还有自己的检查。本章说明怎样运行它们、怎样添加
+每个 xpkg 旁边都有一个 pytest 模块，仓库还有自己的检查。本章说明怎样运行它们、怎样添加
 一个，以及 CI 运行什么。
 
 ## 层级
@@ -10,7 +10,7 @@
 | 层级 | 标记 | 需要 | 检查 |
 |---|---|---|---|
 | L0 静态 | `static` | 无 | Lua 语法、必填字段、`spec` / `type` 取值、已知拼写错误 |
-| L1 索引 | `index` | xlings | 配方能注册（`xlings config --add-xpkg`） |
+| L1 索引 | `index` | xlings | xpkg 能注册（`xlings config --add-xpkg`） |
 | L2 隔离 | `isolation` | 无 | 不用 `os.exec("xvm ...")`、不改 shell 配置、不改 `PATH`、使用 `xim.libxpkg.*` API、不调用宿主包管理器 |
 | L3 生命周期 | `lifecycle` | xlings、网络 | 安装与卸载成功 |
 | L4 功能 | `verify` | 包已安装 | 它的程序能运行，并做到应做的事 |
@@ -33,7 +33,7 @@ XLINGS_HOME="$(mktemp -d)" pytest tests/c/test_cmake.py -m "lifecycle or verify"
 
 ## 添加一个测试
 
-测试模块与配方对应：`pkgs/n/my-package.lua` → `tests/n/test_my_package.py`（`-` 换成 `_`）。
+测试模块与 xpkg 对应：`pkgs/n/my-package.lua` → `tests/n/test_my_package.py`（`-` 换成 `_`）。
 
 ```python
 """mypackage"""
@@ -132,19 +132,20 @@ class TestVerify:
 | `tests/lib/xvm_client.py` | `XvmClient.info()`、`.is_registered()`、`.shim_exists()` |
 | `tests/lib/xlings_client.py` | `XlingsClient.install()`、`.remove()`、`.xim_add_xpkg()` |
 | `tests/lib/platform_utils.py` | `current_platform()`、`skip_if_not()`、`xlings_home()` |
+| `tests/lib/base_package.py` | `assert_base_package()`：根目录带 `mcpp.toml` 的 sysroot 的布局契约 |
 
 ## 全仓库的检查
 
-有些规则覆盖所有配方，各有自己的测试或脚本：
+有些规则覆盖所有 xpkg，各有自己的测试或脚本：
 
 | 检查 | 位置 |
 |---|---|
 | 依赖坐标与分离的 `deps` 写法 | `tests/test_dep_query_coordinates.py`、`tests/test_deps_shape.py` |
 | 库载荷中没有编译器运行时 | `tests/test_no_compiler_runtime_in_payloads.py` |
+| xpkg 写出的 dirun 配置可按 TOML 解析 | `tests/test_dirun_profiles.py` |
 | 已发布的 Luban 版本输出不变 | `tests/test_luban_published.py` |
 | 资源变化时提高 `revision` | `.github/scripts/check-revision.lua` |
 | `floor` 是 `0 ≤ floor ≤ revision` 的整数，写在版本项上 | `.github/scripts/check-revision.lua` |
-| 载荷中没有硬链接 | `.github/scripts/check-payload-hard-links.py` |
 | 依赖的命名空间在本索引中可解析 | `.github/scripts/check-dep-namespace.sh` |
 | workflow 和脚本中不调用宿主包管理器 | `tools/lint_host_deps.sh` |
 | 文档的结构与链接 | `tests/test_docs.py` |
@@ -153,12 +154,26 @@ class TestVerify:
 
 | Workflow | 何时 | 运行 |
 |---|---|---|
-| `ci-xpkg-test.yml` | `pkgs/`、`libs/`、`tests/` 有改动 | 对所有配方跑 L0 和 L2，然后 L1 |
-| `ci-test.yml` | `pkgs/` 或 `libs/` 有改动 | 在 Linux、macOS、Windows 上安装改动涉及的包 |
+| `ci-xpkg-test.yml` | `pkgs/`、`libs/`、`tests/` 有改动 | 对所有 xpkg 跑 L0 和 L2，然后 L1 |
+| `ci-test.yml` | `pkgs/` 或 `libs/` 有改动 | 在 Linux、macOS、Windows 上安装并移除改动涉及的包；然后对改动直接编辑的每个 xpkg 运行它的 L3 和 L4 测试（`xpkg-tests.py`） |
 | `ci-tools.yml` | `tools/`、`scripts/` 或 workflow 有改动 | 工具自己的测试与仓库 lint |
-| `ci-sweep.yml` | 每周 | 按 ISO 周次安装所有配方中的一片 |
-| `luban-agent-workspace.yml` | Luban 的配方或它们锁定的包有改动 | 在 x86_64 和 aarch64 上构建并启动 edition |
+| `ci-sweep.yml` | 每周 | 按 ISO 周次安装所有 xpkg 中的一片 |
+| `luban-agent-workspace.yml` | Luban 的 xpkg 或它们锁定的包有改动 | 在 x86_64 和 aarch64 上构建并启动 edition |
+| `llvm-payload.yml` | `pkgs/l/llvm.lua` 或该检查本身有改动 | 在改动的 llvm 版本所服务的每个宿主上（Linux x86_64 与 aarch64、macOS arm64、Windows x86_64），xpkg 所指的归档以它自己的 clang 编译一个调试段为 zlib 压缩、一个为 zstd 压缩的对象，并以该 clang 旁边的 `ld.lld` 各链接一次；本索引自制的归档先构建 |
+| `native-binary-hosts.yml` | 带预编译原生程序的 xpkg（bun、esbuild、codex、各 agent）有改动；每晚 | 在 Alpine x86_64 与 aarch64（没有 glibc loader）、Ubuntu 20.04（最旧的 glibc）以及按 Luban host machine 造的根（静态的 xlings、busybox 与 bwrap；装 Luban 的 agent 工具集）里安装它们，用已发布的 xlings 或指定 run 的构建 |
 | `site-check.yml` | `pkgs/`、`docs/` 或站点配置有改动 | 以 strict 模式构建站点 |
 
 L3 和 L4 在 CI 中只针对改动涉及的包运行，以及在每周轮转中运行：每次推送都在每个平台上
-安装全部配方，超出了预算。
+安装全部 xpkg，超出了预算。改动直接编辑的 xpkg，在安装作业的每个宿主上运行它自己模块的 L3 和
+L4 测试；改动只经依赖波及的 xpkg，被安装并移除。因此，一个模块在 L4 断言的内容，就是它的 xpkg
+接纳新版本或新修订的条件：摘要相符、安装成功的载荷仍可能不可用，这一点由模块陈述。
+
+### 基座包
+
+根目录带 `mcpp.toml` 的 sysroot 是 mcpp 的基座包。它的模块调用
+`assert_base_package(<安装根目录>)`，核对其准入中仅凭目录树即可回答的部分：
+
+- 清单可解析，它所指的每个路径都存在；
+- 提供 `mcpp:c++-abi` 的包写出 std 模块的源码；
+- 构建会读取的链接（库、目标文件、头文件）在包内可解析；
+- GNU ld 脚本所指的路径按 sysroot 相对读取时在根下存在，且不含安装期占位符。

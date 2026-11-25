@@ -20,13 +20,16 @@ class XlingsClient:
 
     @staticmethod
     def install(pkg_name: str, timeout: int = 180) -> tuple[bool, str]:
-        code, out = _run_xlings(f"xlings install {pkg_name}", timeout=timeout)
+        # -y matches posix-test.sh / windows-test.ps1: remove (and newer
+        # install prompts) refuse to ask for confirmation when stdin is not
+        # a TTY ("there is nobody to ask"), so piped "y" lines are not enough.
+        code, out = _run_xlings(f"xlings install {pkg_name} -y", timeout=timeout)
         success = code == 0 and ("installed" in out.lower() or "already installed" in out.lower())
         return success, out
 
     @staticmethod
     def remove(pkg_name: str, timeout: int = 60) -> tuple[bool, str]:
-        code, out = _run_xlings(f"xlings remove {pkg_name}", timeout=timeout)
+        code, out = _run_xlings(f"xlings remove {pkg_name} -y", timeout=timeout)
         return code == 0, out
 
     @staticmethod

@@ -18,7 +18,7 @@ from tests.lib.assertions import (
     assert_no_direct_path_modification, assert_uses_new_api,
     assert_xim_add_succeeds, assert_install_succeeds,
 )
-from tests.lib.platform_utils import skip_if_not, xpkgs_dir
+from tests.lib.platform_utils import skip_if_not, xpkgs_dir, under_test
 
 PKG = "shaderc"
 PKG_FILE = "pkgs/s/shaderc.lua"
@@ -156,7 +156,7 @@ class TestLifecycle:
     @pytest.mark.lifecycle
     @skip_if_not('linux')
     def test_install(self):
-        assert_install_succeeds(f"local:{PKG}")
+        assert_install_succeeds(under_test(PKG))
 
 
 def _payload_dir() -> str:

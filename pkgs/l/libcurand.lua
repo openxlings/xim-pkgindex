@@ -51,14 +51,23 @@ package = {
                   .. "libcurand/linux-${arch_alias}/"
                   .. "libcurand-linux-${arch_alias}-${version}-archive.tar.xz",
             arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
+            -- libcurand.so and its siblings name libgcc_s.so.1 (some libstdc++.so.6 too) in DT_NEEDED
+            -- (readelf, the x86_64 archive of the newest version). A toolchain whose runtime is not
+            -- GCC's supplies neither, so the package declares the GCC runtime itself and the
+            -- seal's DT_RUNPATH reaches it.
+            deps = { "xim:gcc-runtime" },
             ["latest"] = { ref = "10.4.3.29" },
             ["10.4.3.29"] = {
+                -- 1: the archive unchanged; the GCC runtime is declared (deps above).
+                revision = 1,
                 sha256 = {
                     aarch64  = "3c2245e848ff8948663646ad7870cc8451b7cf1726758bedff7c123011126e4b",
                     x86_64   = "0218e62ab413e435dcd0274ec8e63b62214e6aba8519201061d1597e73caadbb",
                 },
             },
             ["10.3.10.19"] = {
+                -- 1: the archive unchanged; the GCC runtime is declared (deps above).
+                revision = 1,
                 sha256 = {
                     aarch64  = "078afec842c99b3a953d62cc76bd74afa2d883dc436e6d642e6440bb1e85eb8e",
                     x86_64   = "48281b4caadb1cf790d44ac76b23c77d06f474c0b1799814f314aafec9258ad6",

@@ -23,9 +23,12 @@
 #   htop          a static htop (musl; ncurses) and the terminfo it needs
 #   procps-ng     static ps, top, free, pgrep, pkill, pidof, uptime, vmstat, watch (musl; ncurses) and terminfo
 #   sudo          a static sudo and visudo (musl; no PAM, sudoers built in)
+#   gdb           static gdb and gdbserver (musl; GMP, MPFR, expat, zlib, zstd, xz, ncurses: the TUI) and terminfo
 #   wl-clipboard  static wl-copy / wl-paste (musl; libwayland built static)
 #   xsel          a static xsel (musl; libX11/xcb static)
 #   edk2-firmware the UEFI firmware qemu ships, decompressed (no build)
+#   dosbox-staging DOSBox Staging for each system, with CWSDPMI and its dirun profile (no build)
+#   i586-pc-msdosdjgpp-gcc DJGPP for each system, repacked without hard links (no build)
 #   qemu-system   static qemu-system-x86_64 and -aarch64 (musl; user networking)
 #   qemu-system-gl qemu-system-x86_64 with OpenGL (virglrenderer, egl-headless; glibc, dynamic)
 #   labwc-desktop the labwc desktop session, relocatable (musl loader and libraries inside)
@@ -43,13 +46,30 @@
 #   openssl       openssl on glibc, lib64
 #   binutils      binutils on glibc
 #   gcc           gcc on glibc, configured as x86_64's (fromsource:gcc),
-#                 against a sysroot xlings makes (glibc + linux-headers)
+#                 against a sysroot xlings makes (glibc) with the declared
+#                 linux-headers, the declared binutils first on PATH
+#   mingw-cross-gcc a Linux-hosted GCC for x86_64-w64-mingw32 (MSVCRT)
+#
+# Repacked, no build:
+#   patchelf      NixOS/patchelf's static release binary, under one directory
+#   mingw-gcc     winlibs' MinGW-w64 GCC for Windows, its directory renamed
 #
 # Data, the same on every architecture (built once, <name>-<version>.tar.gz):
 #   terminfo        the terminal descriptions (ncurses' terminfo.src, compiled)
 #   adwaita-cursors GNOME's Adwaita cursor theme, and the default theme naming it
 #   luban-fonts     the fonts the Luban OS window ships with
+#   android-ndk-libcxx-modules  an NDK release's libc++ module sources, for its Windows archive
 #   sample-music    luban:sample-music, a piece to play (the Open Goldberg Variations' Aria, CC0)
+#   linux-headers   the kernel's UAPI headers (make headers_install), asm/ for each architecture
+#
+# Carved from an upstream release (no build):
+#   llvm          a release (23.1.6): the slim toolchain for Linux of this
+#                 architecture and, on x86_64, Windows x86_64
+#
+# Corrective revisions of a published archive, derived from the archive of the
+# revision before (revision.py; no build):
+#   llvm            the llvm payload for Windows x86_64, with the lld names clang's driver runs
+#   x86_64-freebsd-sysroot, aarch64-freebsd-sysroot  a FreeBSD base, an earlier revision's files
 #
 # Runs on the machine of the target architecture (CI: ubuntu-24.04 and
 # ubuntu-24.04-arm). What it needs runs in a pinned container: the runner
@@ -130,8 +150,9 @@ seal() {    # file -> file.sha256
     log "$(cat "$1.sha256")"
 }
 
-# Never a hard link in a payload: xlings extracts one with link(2), which
-# Android's app sandbox and FAT refuse (.github/scripts/check-payload-hard-links.py).
+# Never a hard link in a payload this index builds: Android's app sandbox and FAT
+# refuse link(2). The client copies a refused one from 2026.10.10.2 (the index
+# floor); a payload that needs no copy installs the same everywhere.
 pack() {    # directory under $work [contents only] -> $out/<name>-<version>-linux-<arch>.tar.gz
     local file="$out/$what-$version-linux-$arch.tar.gz"
     if [[ "${2:-}" == contents ]]; then
@@ -534,6 +555,95 @@ sudo)
     "$work/$d/sbin/visudo" -c -q -f "$work/sudoers.check" || die "visudo does not accept a plain sudoers"
     provenance "$d" "sudo $version (www.sudo.ws, sha256 $(input sudo "$version")): static (musl), no PAM (shadow), sudoers built in; Alpine 3.20"
     pack "$d" ;;
+gdb)
+    # The GNU debugger and its remote server, static (musl): it runs on any
+    # Linux of the architecture and debugs what runs there. Alpine 3.20's
+    # static archives: GMP and MPFR (gdb requires both), expat (XML target
+    # descriptions, the system call tables), zlib, zstd and xz (compressed
+    # debug sections, MiniDebugInfo), ncursesw (the TUI). No Python, Guile,
+    # debuginfod, source-highlight, NLS or simulator; no in-process agent (a
+    # shared library). gdb relocates a directory under its prefix to where its
+    # own binary is: share/gdb is found beside bin/gdb wherever the payload
+    # is, and, as no lib/debug is beside it, separate debug files are looked
+    # for in /usr/lib/debug. The terminfo of the terminals it meets in
+    # share/terminfo, which the recipe names in TERMINFO_DIRS. The manual is
+    # not built (MAKEINFO=true): the build tree's GDBvn.texi is newer than
+    # the release's gdb.info, and the payload carries no manual. gdb links
+    # through libtool, for which -static keeps only libtool's own libraries
+    # static (the first build's gdb named the musl loader): it is linked again
+    # with -all-static. gdbserver links with the compiler, which reads
+    # LDFLAGS=-static; so do the configure scripts the build runs, which is
+    # why -all-static is not the build's LDFLAGS.
+    source_of gdb "$version" "https://ftpmirror.gnu.org/gnu/gdb/gdb-$version.tar.xz" "$work/src.tar.xz"
+    d="gdb-$version-linux-$arch"
+    libs="gmp-dev mpfr-dev expat-static zlib-static zstd-static xz-static ncurses-static"
+    terms="xterm xterm-256color screen screen-256color tmux tmux-256color foot foot-direct linux vt100 vt220 dumb"
+    # What it debugs below: a static program, its DWARF as written (t) and
+    # compressed with zstd (tz).
+    printf 'int add(int a, int b) { return a + b; }\nint main(void) { return add(40, 2) == 42 ? 7 : 1; }\n' > "$work/t.c"
+    alpine "apk add -q $APK_STATIC xz pkgconf $libs expat-dev zlib-dev zstd-dev xz-dev ncurses-dev \
+            ncurses-terminfo-base ncurses-terminfo \
+        && apk info -v 2>/dev/null | sort > /w/installed \
+        && tar -xJf src.tar.xz && mkdir build && cd build \
+        && ../gdb-$version/configure --prefix=/usr --disable-nls --disable-werror --disable-shared --disable-sim \
+             --disable-inprocess-agent --disable-source-highlight --enable-tui --with-system-zlib --with-zstd \
+             --with-expat --with-libexpat-type=static --with-lzma --with-liblzma-type=static \
+             --without-python --without-guile --without-debuginfod --without-intel-pt --without-xxhash \
+             CFLAGS=-O2 CXXFLAGS=-O2 LDFLAGS=-static > /w/configure.log 2>&1 \
+        && make -j\$(nproc) MAKEINFO=true all-gdb all-gdbserver > /w/make.log 2>&1 \
+        && rm gdb/gdb && make -C gdb MAKEINFO=true LDFLAGS=-all-static gdb >> /w/make.log 2>&1 \
+        && make -C gdb/data-directory install DESTDIR=/w/stage > /w/install.log 2>&1 \
+        && mkdir -p /w/$d/bin /w/$d/share/terminfo && cp gdb/gdb gdbserver/gdbserver /w/$d/bin/ && strip /w/$d/bin/* \
+        && cp -a /w/stage/usr/share/gdb /w/$d/share/ \
+        && for t in $terms; do f=\$(find /usr/share/terminfo /etc/terminfo -name \"\$t\" 2>/dev/null | head -1); \
+             [ -n \"\$f\" ] || { echo \"no terminfo for \$t\" >&2; exit 1; }; \
+             mkdir -p /w/$d/share/terminfo/\$(basename \$(dirname \$f)); cp \"\$f\" /w/$d/share/terminfo/\$(basename \$(dirname \$f))/; done \
+        && cd /w && gcc -g -O0 -static -o t t.c && objcopy --compress-debug-sections=zstd t tz && readelf -t tz | grep -q ZSTD" \
+      || { for f in configure make install; do [[ -f "$work/$f.log" ]] && { log "--- $f.log"; tail -40 "$work/$f.log" >&2; }; done; die "gdb build failed"; }
+    static_only "$work/$d/bin/gdb" "$work/$d/bin/gdbserver"
+    g="$work/$d/bin/gdb"
+    v="$("$g" --version)"; grep -qF "GNU gdb (GDB) $version" <<< "$v" || die "gdb does not report $version: $v"
+    v="$("$work/$d/bin/gdbserver" --version)"; grep -qF "GNU gdbserver (GDB) $version" <<< "$v" || die "gdbserver does not report $version: $v"
+    conf="$("$g" --configuration)"
+    for want in --with-expat --with-lzma --with-curses --enable-tui --without-python --without-guile \
+                --without-debuginfod '--with-gdb-datadir=/usr/share/gdb (relocatable)'; do
+        grep -qF -- "$want" <<< "$conf" || die "gdb is not configured $want: $conf"
+    done
+    [[ -f "$work/$d/share/terminfo/x/xterm-256color" ]] || die "no xterm-256color terminfo"
+    seen() {    # what, a session's output, the lines it must hold (each logged)
+        local what="$1" said="$2" want; shift 2
+        for want in "$@"; do
+            grep -qF -- "$want" <<< "$said" || die "$what: no '$want' in: $said"
+            log "$what: $(grep -F -m1 -- "$want" <<< "$said")"
+        done
+    }
+    session() { timeout 120 "$g" -nx -batch "$@" 2>&1; }
+    # It debugs, on the runner (a container may refuse ptrace): the program
+    # stops at a breakpoint, its stack and a value are read, it exits with
+    # its status -- from DWARF as written, compressed with zstd, and through
+    # gdbserver, whose target description gdb reads as XML.
+    for p in t tz; do
+        said="$(session -ex 'break add' -ex run -ex bt -ex 'print a * b' -ex continue "$work/$p")" || die "gdb on $p: $said"
+        seen "gdb on $p" "$said" 'Breakpoint 1, add (a=40, b=2) at t.c:1' 'in main () at t.c:2' '$1 = 80' 'exited with code 07'
+    done
+    said="$(session -ex "target remote | $work/$d/bin/gdbserver - $work/t" -ex 'break add' -ex continue -ex bt -ex continue "$work/t")" \
+        || die "gdb through gdbserver: $said"
+    seen "gdb through gdbserver" "$said" 'Remote debugging using stdio' 'Breakpoint 1, add (a=40, b=2) at t.c:1' 'exited with code 07'
+    # A program of the runner's, linked against its glibc: its libraries are
+    # read and the system call it ends with is caught by name. A static gdb
+    # cannot load the program's libthread_db; what it says of that is logged.
+    said="$(session -ex 'catch syscall exit_group' -ex run -ex 'info sharedlibrary' /bin/true)" || die "gdb on /bin/true: $said"
+    seen "gdb on the runner's /bin/true" "$said" 'Catchpoint 1 (call to syscall exit_group)' 'libc.so.6'
+    log "gdb on the runner's /bin/true: $(grep -F -m1 libthread_db <<< "$said" || echo 'nothing of libthread_db')"
+    # Moved elsewhere, it finds its data directory beside it and reads the
+    # system call tables there.
+    mkdir "$work/moved" && mv "$work/$d" "$work/moved/"
+    said="$(timeout 120 "$work/moved/$d/bin/gdb" -nx -batch -ex 'show data-directory' -ex 'show debug-file-directory' \
+            -ex 'catch syscall write' "$work/t" 2>&1)" || die "gdb, moved: $said"
+    mv "$work/moved/$d" "$work/"
+    seen "gdb, moved" "$said" "\"$(realpath "$work/moved")/$d/share/gdb\"" '"/usr/lib/debug"' "Catchpoint 1 (syscall 'write' ["
+    provenance "$d" "GNU gdb $version (ftpmirror.gnu.org, sha256 $(input gdb "$version")): gdb and gdbserver, static, built in Alpine 3.20 (musl) with $(grep -E "^(${libs// /|})-[0-9]" "$work/installed" | tr '\n' ' ')(Alpine's static archives); the TUI; no Python, Guile, debuginfod, source-highlight, NLS, simulator or in-process agent; share/gdb found beside bin/gdb; terminfo for: $terms. Checked where it was built: a static program debugged from its DWARF as written and compressed with zstd, and through gdbserver; a program linked against that machine's glibc"
+    pack "$d" ;;
 wl-clipboard)
     source_of wl-clipboard "$version" "https://github.com/bugaevc/wl-clipboard/archive/refs/tags/v$version.tar.gz" "$work/src.tar.gz"
     wv="$(awk '$1 == "wayland" { print $2 }' "$here/inputs.txt")"
@@ -715,6 +825,237 @@ edk2-firmware)
     done
     provenance "$d" "UEFI firmware (EDK II) as qemu $version ships it in pc-bios/, decompressed; digests of the .bz2 inputs in tools/res/inputs.txt"
     pack "$d" ;;
+dosbox-staging)
+    # DOSBox Staging as its project releases it for each system, with CWSDPMI (the DPMI host a
+    # DJGPP program needs, DJGPP's v2misc), REDIR (DJGPP's djdev: a program's output and its
+    # standard error to two files, its status kept; the emulator's command interpreter has no
+    # `2>') and the dirun profile that runs a DOS program by them, beside it: one archive per
+    # system, its one directory dosbox-staging-<version>. No build. A revision (`-2') is the
+    # archive's; the emulator is the upstream version's.
+    upstream=${version%%-*}
+    base="https://github.com/dosbox-staging/dosbox-staging/releases/download/v$upstream"
+    source_of csdpmi 7b "http://www.delorie.com/pub/djgpp/current/v2misc/csdpmi7b.zip" "$work/csdpmi7b.zip"
+    unzip -q -o "$work/csdpmi7b.zip" bin/CWSDPMI.EXE -d "$work/cws"
+    source_of djdev 2.05 "http://www.delorie.com/pub/djgpp/current/v2/djdev205.zip" "$work/djdev205.zip"
+    unzip -q -o "$work/djdev205.zip" bin/redir.exe -d "$work/djdev"
+    for sys in linux-x86_64 macosx-universal windows-x86_64; do
+        d="dosbox-staging-$version"
+        rm -rf "${work:?}/$d" "$work/unpack"; mkdir -p "$work/$d/dosbox" "$work/unpack"
+        case "$sys" in
+            linux-x86_64)
+                source_of dosbox-staging-linux-x86_64 "$upstream" "$base/dosbox-staging-linux-x86_64-v$upstream.tar.xz" "$work/in.tar.xz"
+                tar -xJf "$work/in.tar.xz" -C "$work/unpack"
+                cp -R "$work"/unpack/*/. "$work/$d/dosbox/"
+                emulator="dosbox/dosbox" ;;
+            macosx-universal)
+                source_of dosbox-staging-macos "$upstream" "$base/dosbox-staging-macOS-v$upstream.dmg" "$work/in.dmg"
+                7z x -y -o"$work/unpack" "$work/in.dmg" "DOSBox Staging.app/*" >/dev/null
+                cp -R "$work/unpack/DOSBox Staging.app" "$work/$d/dosbox/"
+                emulator="dosbox/DOSBox Staging.app/Contents/MacOS/dosbox" ;;
+            windows-x86_64)
+                source_of dosbox-staging-windows-x64 "$upstream" "$base/dosbox-staging-windows-x64-v$upstream.zip" "$work/in.zip"
+                unzip -q -o "$work/in.zip" -d "$work/unpack"
+                cp -R "$work"/unpack/*/. "$work/$d/dosbox/"
+                emulator="dosbox/dosbox.exe" ;;
+        esac
+        [[ -f "$work/$d/$emulator" ]] || die "$sys: no emulator at $emulator"
+        cp "$work/cws/bin/CWSDPMI.EXE" "$work/$d/"
+        cp "$work/djdev/bin/redir.exe" "$work/$d/REDIR.EXE"
+        sed "s|@EMULATOR@|$emulator|" "$here/dosbox-staging/dirun.toml.in" > "$work/$d/dirun.toml"
+        provenance "$d" "DOSBox Staging $upstream as its project releases it for $sys (github.com/dosbox-staging/dosbox-staging, GPL-2.0-or-later), CWSDPMI r7 (www.delorie.com/pub/djgpp/current/v2misc/csdpmi7b.zip, its own license: free redistribution with notice), REDIR of DJGPP 2.05 (www.delorie.com/pub/djgpp/current/v2/djdev205.zip, GPL-2.0-or-later with DJGPP's exception), and dirun.toml, the dirun profile that runs a DOS program by them; input digests in tools/res/inputs.txt"
+        file="$out/$what-$version-$sys.tar.gz"
+        tar --owner=0 --group=0 --numeric-owner --hard-dereference -czf "$file" -C "$work" "$d"
+        seal "$file"
+    done ;;
+i586-pc-msdosdjgpp-gcc)
+    # DJGPP (GCC, binutils, the DJGPP C library) as github.com/andrewwutw/build-djgpp
+    # builds it for each system, repacked: its archives hold hard links, which an
+    # xlings extraction makes with link(2). No build. The version is GCC's.
+    base="https://github.com/andrewwutw/build-djgpp/releases/download/v3.4"
+    for sys in linux-x86_64 macosx-x86_64 windows-x86_64; do
+        rm -rf "${work:?}/unpack"; mkdir -p "$work/unpack"
+        case "$sys" in
+            linux-x86_64)
+                source_of djgpp-linux64 "$version" "$base/djgpp-linux64-gcc${version//./}.tar.bz2" "$work/in.tar.bz2"
+                tar -xjf "$work/in.tar.bz2" -C "$work/unpack" ;;
+            macosx-x86_64)
+                source_of djgpp-osx "$version" "$base/djgpp-osx-gcc${version//./}.tar.bz2" "$work/in.tar.bz2"
+                tar -xjf "$work/in.tar.bz2" -C "$work/unpack" ;;
+            windows-x86_64)
+                source_of djgpp-mingw-standalone "$version" "$base/djgpp-mingw-gcc${version//./}-standalone.zip" "$work/in.zip"
+                unzip -q -o "$work/in.zip" -d "$work/unpack" ;;
+        esac
+        [[ -d "$work/unpack/djgpp/bin" ]] || die "$sys: no djgpp/bin"
+        printf '%s\n' "DJGPP as github.com/andrewwutw/build-djgpp v3.4 builds it for $sys (GCC $version, binutils, DJGPP 2.05), repacked without hard links; input digests in tools/res/inputs.txt" \
+            > "$work/unpack/djgpp/README.provenance"
+        file="$out/$what-$version-$sys.tar.gz"
+        tar --owner=0 --group=0 --numeric-owner --hard-dereference -czf "$file" -C "$work/unpack" djgpp
+        seal "$file"
+        python3 -c 'import sys, tarfile; sys.exit(any(m.islnk() for m in tarfile.open(sys.argv[1])))' "$file" \
+            || die "$file holds a hard link"
+    done ;;
+llvm)
+    if [[ "$version" != *-r* ]]; then
+        # A release, carved from upstream's for each host this machine makes it
+        # for -- Linux of its own architecture and, on x86_64, Windows x86_64 --
+        # by .agents/tools/build-llvm-subpkg.sh (--pkg llvm: the slim toolchain of
+        # the llvm-subpackaging skill) in the pinned Debian, with patchelf 0.19.3
+        # and Debian's gcc (the libatomic beside libc++). Each archive carries
+        # what this index's revisions of 23.1.3 added to theirs:
+        #   Linux: lib/clang/<major>/lib/{x86_64,aarch64}-w64-windows-gnu/
+        #     libclang_rt.builtins.a, the MinGW-w64 sysroot's compiler-rt builtins
+        #     (23.1.3 r2): clang links a windows-gnu target with its own builtins.
+        #   Windows: bin/ld.lld.exe, bin/ld64.lld.exe and bin/wasm-ld.exe, the
+        #     files of these names in upstream's release, each lld-link.exe's bytes
+        #     (23.1.3 r4): clang's driver runs them from beside itself.
+        # A Linux archive passes verify-toolchain.sh's llvm gate (import std and
+        # std.compat, hermetic CRT) against the index's glibc and the kernel
+        # headers gcc declares before it is sealed. The carve is not
+        # byte-reproducible (directory order, the factory's libatomic), so a
+        # release is not a resource of res-build-matrix.json: the llvm payload
+        # check takes the published archives by their digests.
+        major="${version%%.*}"
+        command -v zstd >/dev/null || die "llvm: no zstd to read upstream's .tar.zst"
+        msv="$(input_version llvm-windows-gnu-builtins)"; ms="mingw-w64-sysroot-$msv"
+        source_of mingw-w64-sysroot "$msv" \
+            "https://github.com/xlings-res/mingw-w64-sysroot/releases/download/$msv/$ms.tar.xz" "$work/ms.tar.xz"
+        tar -xJf "$work/ms.tar.xz" -C "$work" "$ms/compiler-rt/lib/windows/libclang_rt.builtins-x86_64.a" \
+            "$ms/compiler-rt/lib/windows/libclang_rt.builtins-aarch64.a"
+        rm -f "$work/ms.tar.xz"
+        source_of "patchelf-$arch" 0.19.3 \
+            "https://github.com/NixOS/patchelf/releases/download/0.19.3/patchelf-0.19.3-$arch.tar.gz" "$work/patchelf.tar.gz"
+        mkdir -p "$work/patchelf" && tar -xzf "$work/patchelf.tar.gz" -C "$work/patchelf"
+        cp "$here/../../.agents/tools/build-llvm-subpkg.sh" "$here/../../.agents/tools/verify-toolchain.sh" "$work/"
+        glibc_v="$(input_version gcc-sysroot-glibc)"; headers_v="$(input_version gcc-sysroot-linux-headers)"
+        lh="linux-headers-$headers_v-linux-$arch"
+        source_of "linux-headers-linux-$arch" "$headers_v" \
+            "https://github.com/xlings-res/linux-headers/releases/download/$headers_v/$lh.tar.gz" "$work/$lh.tar.gz"
+        xl="xlings-$XLINGS_CLIENT-linux-$arch.tar.gz"
+        curl -fsSL --retry 3 -o "$work/$xl" "https://github.com/openxlings/xlings/releases/download/v$XLINGS_CLIENT/$xl"
+        curl -fsSL --retry 3 -o "$work/$xl.sha256" "https://github.com/openxlings/xlings/releases/download/v$XLINGS_CLIENT/$xl.sha256"
+        (cd "$work" && sha256sum -c "$xl.sha256" >/dev/null) || die "the xlings client does not match its digest"
+        hosts="linux-$arch"; [[ "$arch" == x86_64 ]] && hosts="linux-x86_64 windows-x86_64"
+        for host in $hosts; do
+            case "$host" in
+                linux-x86_64)   up="LLVM-$version-Linux-X64";  input_name=LLVM-Linux-X64 ;;
+                linux-aarch64)  up="LLVM-$version-Linux-ARM64"; input_name=LLVM-Linux-ARM64 ;;
+                windows-x86_64) up="clang+llvm-$version-x86_64-pc-windows-msvc"; input_name=clang+llvm-x86_64-pc-windows-msvc ;;
+            esac
+            d="llvm-$version-$host"; platform="${host%-*}"
+            source_of "$input_name" "$version" \
+                "https://github.com/llvm/llvm-project/releases/download/llvmorg-$version/$up.tar.zst" "$work/up.tar.zst"
+            rm -rf "${work:?}/full" "${work:?}/carve" && mkdir -p "$work/full" "$work/carve"
+            # The static libraries directly under lib/ (libLLVM*, libclang*: most
+            # of the archive) are no part of the slim toolchain.
+            zstd -dc --long=31 "$work/up.tar.zst" \
+                | tar -x -C "$work/full" --no-wildcards-match-slash --exclude='*/lib/*.a' --exclude='*/lib/*.lib'
+            rm -f "$work/up.tar.zst"
+            fmt=tar.gz; [[ "$platform" == windows ]] && fmt=zip
+            debian "apt-get -qq update && apt-get -qq install -y gcc binutils zip xz-utils python3 file >/dev/null \
+                && export PATH=/w/patchelf/bin:\$PATH \
+                && bash /w/build-llvm-subpkg.sh --in /w/full --pkg llvm --version $version --platform $platform --arch ${host#*-} \
+                     --out /w/carve --formats $fmt >/w/carve.log 2>&1" \
+              || { tail -40 "$work/carve.log" >&2; die "llvm $version: the $host carve failed"; }
+            if [[ "$platform" == windows ]]; then
+                top="$(dirname "$(find "$work/full" -mindepth 2 -maxdepth 2 -type d -name bin | head -1)")"
+                for name in ld.lld.exe ld64.lld.exe wasm-ld.exe; do
+                    cmp -s "$top/bin/$name" "$top/bin/lld-link.exe" \
+                        || die "upstream's bin/$name is not its bin/lld-link.exe"
+                done
+                printf '%s\n' "llvm $version for Windows x86_64: carved from $up.tar.zst (github.com/llvm/llvm-project, release llvmorg-$version, sha256 $(input "$input_name" "$version")) by .agents/tools/build-llvm-subpkg.sh --pkg llvm, with bin/ld.lld.exe, bin/ld64.lld.exe and bin/wasm-ld.exe added: the files of these names in that release, each byte-identical to its bin/lld-link.exe. clang's driver links an ELF target with ld.lld, Mach-O with ld64.lld and WebAssembly with wasm-ld, found beside it." \
+                    > "$work/README.provenance"
+                python3 -I "$here/revision.py" zip "$work/carve/$d.zip" "$out/$d.zip" "$d" "$d" \
+                    --same bin/lld-link.exe=bin/ld.lld.exe --same bin/lld-link.exe=bin/ld64.lld.exe \
+                    --same bin/lld-link.exe=bin/wasm-ld.exe --add "README.provenance=$work/README.provenance" \
+                    || die "llvm $version: the Windows archive is not the carve with the lld names"
+                seal "$out/$d.zip"
+            else
+                rm -rf "${work:?}/$d" && tar -xzf "$work/carve/$d.tar.gz" -C "$work"
+                for t in x86_64 aarch64; do
+                    mkdir -p "$work/$d/lib/clang/$major/lib/$t-w64-windows-gnu"
+                    cp "$work/$ms/compiler-rt/lib/windows/libclang_rt.builtins-$t.a" \
+                        "$work/$d/lib/clang/$major/lib/$t-w64-windows-gnu/libclang_rt.builtins.a"
+                done
+                provenance "$d" "llvm $version for Linux $arch: carved from $up.tar.zst (github.com/llvm/llvm-project, release llvmorg-$version, sha256 $(input "$input_name" "$version")) by .agents/tools/build-llvm-subpkg.sh --pkg llvm in Debian 12 (libatomic: LIBATOMIC-PROVENANCE.txt); lib/clang/$major/lib/{x86_64,aarch64}-w64-windows-gnu/libclang_rt.builtins.a: compiler-rt/lib/windows/libclang_rt.builtins-{x86_64,aarch64}.a of mingw-w64-sysroot $msv (xlings-res/mingw-w64-sysroot, sha256 $(input mingw-w64-sysroot "$msv")); verify-toolchain.sh's llvm gate passed against xim:glibc@$glibc_v and linux-headers $headers_v"
+                pack "$d"
+                cp "$out/$d.tar.gz" "$work/verify.tar.gz"
+                debian "apt-get -qq update && apt-get -qq install -y gcc file curl ca-certificates xz-utils libxml2 >/dev/null \
+                    && export PATH=/w/patchelf/bin:\$PATH && tar -xzf /w/$lh.tar.gz -C /w \
+                    && mkdir -p /w/xl && tar -xzf /w/$xl -C /w/xl && export XLINGS_HOME=/w/xh \
+                    && (cd /w/xl/*/ && ./bin/xlings self install </dev/null >/w/xlings-install.log 2>&1) \
+                    && /w/xh/bin/xlings install -y glibc@$glibc_v </dev/null >/w/sysroot.log 2>&1 \
+                    && L=\$(ls /w/xh/data/xpkgs/xim-x-glibc/$glibc_v/lib*/ld-linux-*.so.* | head -1) \
+                    && bash /w/verify-toolchain.sh /w/verify.tar.gz --loader \$L --linux-headers /w/$lh/include >/w/verify.log 2>&1" \
+                  || { tail -60 "$work/verify.log" "$work/sysroot.log" >&2 2>/dev/null; rm -f "$out/$d.tar.gz" "$out/$d.tar.gz.sha256"; die "llvm $version: $d does not pass verify-toolchain.sh"; }
+                grep -q '^llvm gate: PASS' "$work/verify.log" && grep -q '^PASS: compiled & ran' "$work/verify.log" \
+                    || { cat "$work/verify.log" >&2; rm -f "$out/$d.tar.gz" "$out/$d.tar.gz.sha256"; die "llvm $version: verify-toolchain.sh did not pass $d"; }
+                rm -rf "${work:?}/$d" "$work/verify.tar.gz"
+            fi
+            rm -rf "${work:?}/full" "${work:?}/carve"
+        done
+    else
+        # The llvm payload for Windows x86_64 at a corrective revision: the archive
+        # of the revision before, its directory renamed, with ld.lld.exe,
+        # ld64.lld.exe and wasm-ld.exe added -- the files of these names in
+        # upstream's release, each the program the archive already ships as
+        # lld-link.exe (checked here, byte for byte). clang's driver links an ELF
+        # target with ld.lld, Mach-O with ld64.lld and WebAssembly with wasm-ld,
+        # looking beside itself first and then on PATH; the archive carried none of
+        # them, so a link for x86_64-freebsd on a Windows host ran the ld.lld of the
+        # host's PATH, which reads no zlib-compressed section (mcpp-platforms run
+        # 44123489011), while the archive's own lld reads zlib and zstd.
+        upstream="${version%%-r*}"
+        case "$version" in
+            23.1.3-r4) from=23.1.3-r3 ;;
+            *) die "llvm: no derivation recorded for $version" ;;
+        esac
+        command -v zstd >/dev/null || die "llvm: no zstd to read upstream's .tar.zst"
+        d="llvm-$version-windows-x86_64"
+        up="clang+llvm-$upstream-x86_64-pc-windows-msvc"
+        source_of llvm-windows-x86_64 "$from" \
+            "https://github.com/xlings-res/llvm/releases/download/$from/llvm-$from-windows-x86_64.zip" "$work/from.zip"
+        source_of clang+llvm-x86_64-pc-windows-msvc "$upstream" \
+            "https://github.com/llvm/llvm-project/releases/download/llvmorg-$upstream/$up.tar.zst" "$work/upstream.tar.zst"
+        lld="$(python3 -I "$here/revision.py" digest "$work/from.zip" "llvm-$from-windows-x86_64/bin/lld-link.exe")"
+        # Upstream's archive is zstd with a 1 GiB window.
+        zstd -dc --long=31 "$work/upstream.tar.zst" \
+            | python3 -I "$here/revision.py" tar-digests bin/lld-link.exe bin/lld.exe bin/ld.lld.exe bin/ld64.lld.exe bin/wasm-ld.exe \
+            > "$work/upstream.sha256"
+        rm -f "$work/upstream.tar.zst"
+        while read -r sha name; do
+            [[ "$sha" == "$lld" ]] || die "upstream's $name ($sha) is not the lld-link.exe of llvm $from ($lld)"
+        done < "$work/upstream.sha256"
+        printf '%s\n' "llvm $version for Windows x86_64: the archive of llvm $from (xlings-res/llvm, sha256 $(input llvm-windows-x86_64 "$from")), its directory renamed, with bin/ld.lld.exe, bin/ld64.lld.exe and bin/wasm-ld.exe added -- the files of these names in $up.tar.zst (github.com/llvm/llvm-project, release llvmorg-$upstream, sha256 $(input clang+llvm-x86_64-pc-windows-msvc "$upstream")), each byte-identical to that release's bin/lld-link.exe and to the archive's own (sha256 $lld); no other file changed. clang's driver links an ELF target with ld.lld, Mach-O with ld64.lld and WebAssembly with wasm-ld, found beside it." \
+            > "$work/README.provenance"
+        python3 -I "$here/revision.py" zip "$work/from.zip" "$out/$d.zip" "llvm-$from-windows-x86_64" "$d" \
+            --same bin/lld-link.exe=bin/ld.lld.exe --same bin/lld-link.exe=bin/ld64.lld.exe \
+            --same bin/lld-link.exe=bin/wasm-ld.exe --add "README.provenance=$work/README.provenance" \
+            || die "llvm $version: the derived archive is not llvm $from with the lld names"
+        seal "$out/$d.zip"
+    fi ;;
+x86_64-freebsd-sysroot|aarch64-freebsd-sysroot)
+    # A FreeBSD base at a corrective revision: the archive of an earlier
+    # revision, its directory renamed, every file that archive's. 14.5-r3 is
+    # revision 1's files -- the crt objects and static archives as FreeBSD's
+    # release ships them, their debug sections zlib-compressed. Revision 2 had
+    # decompressed them for a Windows host whose link ran an lld without zlib;
+    # the llvm payload's own ld.lld reads them (llvm 23.1.3-r4). How the base
+    # is assembled from the release: .agents/tools/build-freebsd-sysroot.py.
+    case "$version" in
+        14.5-r3) from=14.5 ;;
+        *) die "$what: no derivation recorded for $version" ;;
+    esac
+    d="$what-$version"
+    source_of "$what" "$from" \
+        "https://github.com/xlings-res/$what/releases/download/$from/$what-$from.tar.xz" "$work/from.tar.xz"
+    printf '%s\n' "$what $version: the archive of $what $from (xlings-res/$what, sha256 $(input "$what" "$from")), its directory renamed; every other file is that archive's, assembled from FreeBSD's release as its PROVENANCE.md states, the link inputs as the release ships them." \
+        > "$work/README.provenance"
+    python3 -I "$here/revision.py" tar "$work/from.tar.xz" "$out/$d.tar.xz" "$what-$from" "$d" \
+        --add "README.provenance=$work/README.provenance" \
+        || die "$what $version: the derived archive is not $what $from renamed"
+    python3 -c 'import sys, tarfile; sys.exit(any(m.islnk() for m in tarfile.open(sys.argv[1])))' "$out/$d.tar.xz" \
+        || die "$d holds a hard link"
+    seal "$out/$d.tar.xz" ;;
 bash|coreutils|openssl|binutils)
     v="${version%%-r[0-9]*}"   # <upstream>-rN: this index's Nth build of it; the payload keeps the name
     case "$what" in
@@ -746,7 +1087,7 @@ bash|coreutils|openssl|binutils)
     [[ -n "$GLIBC_ELFS" ]] || die "$what: no dynamically linked ELF in the payload"
     case "$what" in
         openssl)  glibc_only libssl.so.3 libcrypto.so.3 ;;
-        binutils) glibc_only libbfd-$v.so libopcodes-$v.so libctf.so.0 libctf-nobfd.so.0 libsframe.so.1 libz.so.1 libstdc++.so.6 libgcc_s.so.1 ;;
+        binutils) glibc_only libbfd-$v.so libopcodes-$v.so libctf.so.0 libctf-nobfd.so.0 libsframe.so.1 libsframe.so.3 libz.so.1 libstdc++.so.6 libgcc_s.so.1 ;;
         *)        glibc_only ;;
     esac
     case "$what" in
@@ -760,35 +1101,73 @@ bash|coreutils|openssl|binutils)
 gcc)
     # As x86_64's (fromsource:gcc): a prebuilt compiler builds the new one
     # with the same configure, against a sysroot xlings itself makes from the
-    # index (glibc + linux-headers). The stage-0 compiler is the pinned
-    # factory's; what ships is gcc built by it, verified below.
-    source_of gcc "$version" "https://ftpmirror.gnu.org/gnu/gcc/gcc-$version/gcc-$version.tar.xz" "$work/gcc.tar.xz"
+    # index (glibc) and the kernel headers the recipe declares. The stage-0
+    # compiler is the pinned factory's; what ships is gcc built by it,
+    # verified below.
+    # The assembler and linker are the index's binutils payload, named to
+    # configure as the target's tools (<TOOL>_FOR_TARGET; without them it
+    # prefers the factory's <triple>-as over an `as` on PATH) and first on
+    # PATH: GCC's configure decides from them which assembler and linker
+    # features the compiler emits, so a payload is built against the binutils
+    # its recipe declares and runs with that one or a newer one (mcpp design
+    # 2026-11-21 §3.5). The driver bakes in no path: it finds `as` and `ld`
+    # where it always did. Both payloads are named in inputs.txt
+    # (gcc-binutils, gcc-sysroot-linux-headers) by the digests the recipes
+    # name.
+    # A RELEASE (16.2.0) is GNU's signed tarball; A TRUNK SNAPSHOT is written
+    # `<major>.0.0-<YYYYMMDD>` (17.0.0-20261108), which is what the snapshot's
+    # compiler reports of itself (`17.0.0 20261108 (experimental)`) and sorts
+    # below the major's first release (17.1.0). Upstream signs no snapshot: its
+    # digest in inputs.txt is the one measured when it was added.
+    # <release>-r<N> is this index's Nth rebuild of the release (16.2.0-r1).
+    upstream="${version%%-r[0-9]*}"
+    if [[ "$upstream" =~ ^([0-9]+)\.0\.0-([0-9]{8})$ ]]; then
+        src="gcc-${BASH_REMATCH[1]}-${BASH_REMATCH[2]}"
+        url="https://gcc.gnu.org/pub/gcc/snapshots/${BASH_REMATCH[1]}-${BASH_REMATCH[2]}/$src.tar.xz"
+        reports="${upstream%-*} ${upstream#*-}"
+    else
+        src="gcc-$upstream"
+        url="https://ftpmirror.gnu.org/gnu/gcc/gcc-$upstream/gcc-$upstream.tar.xz"
+        reports="$upstream"
+    fi
+    source_of gcc "$upstream" "$url" "$work/gcc.tar.xz"
     xl="xlings-$XLINGS_CLIENT-linux-$arch.tar.gz"
     curl -fsSL --retry 3 -o "$work/$xl" "https://github.com/openxlings/xlings/releases/download/v$XLINGS_CLIENT/$xl"
     curl -fsSL --retry 3 -o "$work/$xl.sha256" "https://github.com/openxlings/xlings/releases/download/v$XLINGS_CLIENT/$xl.sha256"
     (cd "$work" && sha256sum -c "$xl.sha256" >/dev/null) || die "the xlings client does not match its digest"
-    glibc_v="$(awk '$1 == "gcc-sysroot-glibc" { print $2 }' "$here/inputs.txt")"
-    headers_v="$(awk '$1 == "gcc-sysroot-linux-headers" { print $2 }' "$here/inputs.txt")"
+    glibc_v="$(input_version gcc-sysroot-glibc)"
+    headers_v="$(input_version gcc-sysroot-linux-headers)"
+    binutils_v="$(input_version gcc-binutils)"
+    bu="binutils-$binutils_v-linux-$arch"; lh="linux-headers-$headers_v-linux-$arch"
+    source_of "binutils-linux-$arch" "$binutils_v" \
+        "https://github.com/xlings-res/binutils/releases/download/$binutils_v/$bu.tar.gz" "$work/$bu.tar.gz"
+    source_of "linux-headers-linux-$arch" "$headers_v" \
+        "https://github.com/xlings-res/linux-headers/releases/download/$headers_v/$lh.tar.gz" "$work/$lh.tar.gz"
     d="gcc-$version-linux-$arch"
     triple="$arch-linux-gnu"
     debian "apt-get -qq update && apt-get -qq install -y build-essential flex bison texinfo xz-utils bzip2 curl wget ca-certificates file python3 >/dev/null \
+        && tar -xzf $bu.tar.gz -C /w && tar -xzf $lh.tar.gz -C /w && export PATH=/w/$bu/bin:\$PATH \
+        && as --version | head -1 | grep -qF ' $binutils_v' && ld --version | head -1 | grep -qF ' $binutils_v' \
+        && for t in as ld ar nm ranlib objcopy objdump readelf strip; do T=\$(echo \$t | tr a-z A-Z); export \${T}_FOR_TARGET=/w/$bu/bin/\$t; done \
         && mkdir -p /w/xl && tar -xzf $xl -C /w/xl && export XLINGS_HOME=/w/xh \
         && (cd /w/xl/*/ && ./bin/xlings self install </dev/null >/w/xlings-install.log 2>&1) \
-        && /w/xh/bin/xlings install -y glibc@$glibc_v linux-headers@$headers_v </dev/null >/w/sysroot.log 2>&1 \
+        && /w/xh/bin/xlings install -y glibc@$glibc_v </dev/null >/w/sysroot.log 2>&1 \
         && S=\$(dirname \$(dirname \$(ls /w/xh/subos/*/lib/crt1.o | head -1))) && echo \$S > /w/sysroot \
-        && test -f \$S/usr/include/stdio.h && test -d \$S/usr/include/linux \
+        && cp -R /w/$lh/include/. \$S/usr/include/ \
+        && test -f \$S/usr/include/stdio.h && test -f \$S/usr/include/linux/limits.h \
         && { [ -e \$S/lib64 ] || ln -s lib \$S/lib64; } && mkdir -p \$S/usr \
         && { [ -e \$S/usr/lib ] || ln -s ../lib \$S/usr/lib; } && { [ -e \$S/usr/lib64 ] || ln -s ../lib \$S/usr/lib64; } \
-        && tar -xJf gcc.tar.xz && cd gcc-$version \
+        && tar -xJf gcc.tar.xz && cd $src \
         && sed -i 's/--no-verbose/ /; s#ftp://gcc.gnu.org#https://gcc.gnu.org#' contrib/download_prerequisites \
         && ./contrib/download_prerequisites >/w/prereq.log 2>&1 \
         && mkdir /w/build && cd /w/build \
-        && /w/gcc-$version/configure --with-pkgversion=xlings-fromsource \
+        && /w/$src/configure --with-pkgversion=xlings-fromsource \
              --with-build-sysroot=\$S --with-sysroot=\$S --prefix=/w/$d \
              --enable-languages=c,c++ --disable-multilib --disable-bootstrap \
              --disable-werror --disable-lto --enable-threads=posix \
              --build=$triple --host=$triple --target=$triple --enable-libsanitizer >/w/configure.log 2>&1 \
         && make -j\$(nproc) >/w/make.log 2>&1 && make install-strip >/w/install.log 2>&1 \
+        && grep -qF /w/$bu/bin/as /w/build/gcc/as && grep -qF /w/$bu/bin/ld /w/build/gcc/collect-ld \
         && cd /w && printf '#include <stdio.h>\nint main(void){puts(\"c ok\");return 0;}\n' > t.c \
         && printf 'import std;\nint main(){ std::println(\"c++23 ok {}\", std::ranges::fold_left(std::views::iota(1,5), 0, std::plus{})); }\n' > t.cpp \
         && L=\$(ls \$S/lib/ld-linux-*.so.* | head -1) \
@@ -799,11 +1178,175 @@ gcc)
       || { for f in xlings-install sysroot prereq configure make install; do
                [[ -f "$work/$f.log" ]] && { log "--- $f.log"; tail -40 "$work/$f.log" >&2; }; done; die "gcc build failed"; }
     grep -q "c++23 ok 10" "$work/cxx.out" || die "the C++23 check did not print what it should"
-    "$work/$d/bin/gcc" --version | head -1 | grep -q "$version" || die "gcc does not report $version"
+    "$work/$d/bin/gcc" --version | head -1 | grep -qF "$reports" || die "gcc does not report $reports"
     [[ -d "$work/$d/lib64" && -f "$work/$d/lib64/libstdc++.so.6" ]] || die "no lib64/libstdc++.so.6"
     GLIBC_ELFS="$(find "$work/$d/bin" "$work/$d/libexec" -type f -exec sh -c 'file -b "$1" | grep -q "^ELF.*dynamically linked" && echo "$1"' _ {} \;)"
     glibc_only libstdc++.so.6 libgcc_s.so.1 libzstd.so.1 libz.so.1
-    provenance "$d" "gcc $version (ftpmirror.gnu.org, sha256 $(input gcc "$version")) configured as fromsource:gcc (c,c++; no multilib, no bootstrap, no LTO; libsanitizer), $triple, against a sysroot of xim:glibc@$glibc_v + xim:linux-headers@$headers_v made by xlings $XLINGS_CLIENT; stage 0 is Debian 12's gcc; a C program and a C++23 program using import std built and ran"
+    provenance "$d" "gcc $upstream (${url%%/gcc-*}, sha256 $(input gcc "$upstream")) configured as fromsource:gcc (c,c++; no multilib, no bootstrap, no LTO; libsanitizer), $triple, against a sysroot of xim:glibc@$glibc_v made by xlings $XLINGS_CLIENT and the kernel headers of linux-headers $headers_v (xlings-res/linux-headers, sha256 $(input "linux-headers-linux-$arch" "$headers_v")); assembler and linker: binutils $binutils_v (xlings-res/binutils, sha256 $(input "binutils-linux-$arch" "$binutils_v")), first on PATH while gcc was configured and built; stage 0 is Debian 12's gcc; a C program and a C++23 program using import std built and ran"
+    pack "$d" ;;
+linux-headers)
+    # The kernel's UAPI headers of a kernel.org release (`make headers_install`):
+    # what the C library and a program include as <linux/...> and <asm/...>,
+    # and what gcc's sysroot is built with. A data resource, the same bytes on
+    # every machine: the headers are the TARGET's, not a program of the host.
+    #
+    #   include/                     the files every architecture installs alike
+    #   arch/<arch>/include/         the rest of one architecture's: asm/, and
+    #                                the headers only some install (measured on
+    #                                6.18.64: linux/a.out.h on x86 alone,
+    #                                linux/kvm_para.h not on riscv)
+    #
+    # <arch> is the xpkg name. The install step links the host architecture's
+    # files into include/, so a reader of include/ sees what the
+    # per-architecture archives held; a build for another architecture reads
+    # arch/<arch>/include first. The digest is kernel.org's sha256sums.asc, as
+    # kernel-virt reads it. <kernel.org version>[-r<N>]: a revision is the same
+    # source packed again (xpkg-manifest-v1 §5.1.1).
+    kv="${version%%-r*}"
+    sums="$work/sha256sums.asc"
+    curl -fsSL --retry 3 -o "$sums" "https://cdn.kernel.org/pub/linux/kernel/v${kv%%.*}.x/sha256sums.asc"
+    sha="$(grep " linux-$kv.tar.xz\$" "$sums" | cut -d' ' -f1)"
+    [[ -n "$sha" ]] || die "kernel.org lists no linux-$kv.tar.xz"
+    fetch "https://cdn.kernel.org/pub/linux/kernel/v${kv%%.*}.x/linux-$kv.tar.xz" "$sha" "$work/linux.tar.xz"
+    # xpkg architecture -> the kernel's ARCH. i686 is x86's headers (asm/
+    # carries unistd_32.h beside unistd_64.h, chosen by __i386__), a link to
+    # x86_64's.
+    kernel_arches="x86_64:x86 aarch64:arm64 riscv64:riscv loongarch64:loongarch"
+    d="linux-headers-$version"
+    installs=""
+    for pair in $kernel_arches; do
+        installs+=" && make -s -C linux-$kv ARCH=${pair#*:} headers_install INSTALL_HDR_PATH=/w/hdr-${pair%%:*}"
+    done
+    debian "apt-get -qq update && apt-get -qq install -y build-essential rsync xz-utils >/dev/null \
+        && tar -xJf linux.tar.xz $installs && cp linux-$kv/COPYING /w/LICENSE"
+    arches=""
+    for pair in $kernel_arches; do
+        a="${pair%%:*}"; arches+=" $a"
+        for f in linux/limits.h linux/errno.h linux/version.h asm/unistd.h asm-generic/errno.h; do
+            [[ -f "$work/hdr-$a/include/$f" ]] || die "$a: no include/$f"
+        done
+        (cd "$work/hdr-$a/include" && find . -type f | sed 's|^\./||' | sort) > "$work/files-$a"
+    done
+    # Common: a file outside asm/ every architecture installs, byte for byte
+    # the same. asm/ is one architecture's whole (some of its files read the
+    # same everywhere; the install step links the directory, not the files).
+    first="${arches# }"; first="${first%% *}"
+    cp "$work/files-$first" "$work/common"
+    for a in $arches; do comm -12 "$work/common" "$work/files-$a" > "$work/c" && mv "$work/c" "$work/common"; done
+    : > "$work/same"
+    grep -v '^asm/' "$work/common" > "$work/c" || true; mv "$work/c" "$work/common"
+    while read -r f; do
+        same=1
+        for a in $arches; do cmp -s "$work/hdr-$first/include/$f" "$work/hdr-$a/include/$f" || same=0; done
+        [[ "$same" == 1 ]] && echo "$f" >> "$work/same"
+    done < "$work/common"
+    mkdir -p "$work/$d/include"
+    (cd "$work/hdr-$first/include" && xargs -a "$work/same" cp --parents -t "$work/$d/include")
+    for a in $arches; do
+        comm -23 "$work/files-$a" "$work/same" > "$work/own-$a"
+        [[ -s "$work/own-$a" ]] || die "$a: no file of its own (asm/ at least)"
+        mkdir -p "$work/$d/arch/$a/include"
+        (cd "$work/hdr-$a/include" && xargs -a "$work/own-$a" cp --parents -t "$work/$d/arch/$a/include")
+        log "$a: $(wc -l < "$work/own-$a") files of its own, $(grep -vc '^asm/' "$work/own-$a" || true) outside asm/"
+    done
+    ln -s x86_64 "$work/$d/arch/i686"
+    cp "$work/LICENSE" "$work/$d/LICENSE"
+    grep -q "^#define LINUX_VERSION_MAJOR ${kv%%.*}\$" "$work/$d/include/linux/version.h" \
+        || die "linux/version.h does not name $kv"
+    [[ ! -e "$work/$d/include/asm" ]] || die "include/asm is the install step's link, not the archive's"
+    [[ -z "$(find "$work/$d" -name '.*' -o -name '*.cmd')" ]] || die "build state left in the headers"
+    provenance "$d" "the UAPI headers of linux $kv (kernel.org, sha256 $sha): make ARCH=<x86|arm64|riscv|loongarch> headers_install, in Debian 12; include/ holds the files every architecture installs byte for byte alike, arch/<arch>/include/ the rest of each architecture's (asm/ and the headers only some install)"
+    pack_data "$d" ;;
+patchelf)
+    # NixOS/patchelf's release binary for this architecture (static-pie) and
+    # its share/, byte for byte, under one top directory: upstream's archive
+    # extracts flat (./bin, ./share), and the index's install convention is
+    # patchelf-<version>-linux-<arch>/. No build.
+    source_of "patchelf-$arch" "$version" \
+        "https://github.com/NixOS/patchelf/releases/download/$version/patchelf-$version-$arch.tar.gz" "$work/in.tar.gz"
+    d="patchelf-$version-linux-$arch"
+    mkdir -p "$work/$d" && tar -xzf "$work/in.tar.gz" -C "$work/$d"
+    [[ -x "$work/$d/bin/patchelf" ]] || die "no bin/patchelf"
+    static_only "$work/$d/bin/patchelf"
+    [[ "$("$work/$d/bin/patchelf" --version)" == "patchelf $version" ]] || die "patchelf does not report $version"
+    provenance "$d" "patchelf $version: the files of patchelf-$version-$arch.tar.gz (github.com/NixOS/patchelf, release $version, sha256 $(input "patchelf-$arch" "$version")), unchanged, under patchelf-$version-linux-$arch/"
+    pack "$d" ;;
+mingw-gcc)
+    # winlibs' standalone MinGW-w64 GCC for Windows x86_64 (POSIX threads,
+    # SEH, UCRT, without LLVM), its top directory mingw64/ renamed to
+    # mingw-gcc-<version>-windows-x86_64/ (revision.py: every entry's
+    # compressed bytes unchanged). No build. The release named is winlibs'
+    # newest build of the GCC release.
+    case "$version" in
+        16.2.0) release=16.2.0posix-23.1.3-14.0.0-ucrt-r3; zip=winlibs-x86_64-posix-seh-gcc-16.2.0-mingw-w64ucrt-14.0.0-r3.zip ;;
+        *) die "mingw-gcc: no winlibs release recorded for $version" ;;
+    esac
+    d="mingw-gcc-$version-windows-x86_64"
+    source_of winlibs-x86_64-posix-seh-ucrt "$version" \
+        "https://github.com/brechtsanders/winlibs_mingw/releases/download/$release/$zip" "$work/in.zip"
+    printf '%s\n' "MinGW-w64 GCC $version for Windows x86_64: $zip (github.com/brechtsanders/winlibs_mingw, release $release, sha256 $(input winlibs-x86_64-posix-seh-ucrt "$version")), its top directory mingw64/ renamed to $d/; no other file changed." \
+        > "$work/README.provenance"
+    python3 -I "$here/revision.py" zip "$work/in.zip" "$out/$d.zip" mingw64 "$d" \
+        --add "README.provenance=$work/README.provenance" \
+        || die "mingw-gcc $version: the archive is not winlibs' renamed"
+    seal "$out/$d.zip" ;;
+mingw-cross-gcc)
+    # A Linux-hosted GCC for x86_64-w64-mingw32 (Windows PE, the MSVCRT
+    # runtime), built as mingw-cross-gcc 16.1.0 was (mcpp
+    # .agents/docs/2026-07-15-mingw-linux-cross-windows-design.md §4.2):
+    # binutils for the target, the mingw-w64 headers, GCC's compilers, the
+    # mingw-w64 CRT (--with-default-msvcrt=msvcrt) and winpthreads, then the
+    # rest of GCC (libstdc++, with bits/std.cc). The sysroot is the prefix,
+    # so the payload is relocatable; `mingw` is the relative link GCC's
+    # native header directory (/mingw/include) reads through. Self-contained:
+    # its own binutils, CRT and libstdc++. Checked: a C++23 program using
+    # `import std`, linked -static, runs under wine (std::print's Windows
+    # console functions are in libstdc++exp, as libstdc++ documents).
+    [[ "$arch" == x86_64 ]] || die "mingw-cross-gcc: a Linux x86_64 host's"
+    binutils_v="$(input_version gcc-binutils)"; mingw_v="$(input_version mingw-w64)"
+    source_of gcc "$version" "https://ftpmirror.gnu.org/gnu/gcc/gcc-$version/gcc-$version.tar.xz" "$work/gcc.tar.xz"
+    source_of binutils "$binutils_v" "https://ftpmirror.gnu.org/gnu/binutils/binutils-$binutils_v.tar.xz" "$work/binutils.tar.xz"
+    source_of mingw-w64 "$mingw_v" \
+        "https://downloads.sourceforge.net/project/mingw-w64/mingw-w64/mingw-w64-release/mingw-w64-v$mingw_v.tar.bz2" "$work/mingw-w64.tar.bz2"
+    d="mingw-cross-gcc-$version-linux-x86_64"; T=x86_64-w64-mingw32; P="/w/$d"
+    debian "apt-get -qq update && apt-get -qq install -y build-essential flex bison texinfo xz-utils bzip2 curl wget ca-certificates file python3 wine wine64 >/dev/null \
+        && tar -xJf binutils.tar.xz && tar -xjf mingw-w64.tar.bz2 && tar -xJf gcc.tar.xz \
+        && (cd gcc-$version && sed -i 's/--no-verbose/ /; s#ftp://gcc.gnu.org#https://gcc.gnu.org#' contrib/download_prerequisites \
+            && ./contrib/download_prerequisites >/w/prereq.log 2>&1) \
+        && export PATH=$P/bin:\$PATH MAKEINFO=true \
+        && mkdir /w/b-binutils && cd /w/b-binutils \
+        && /w/binutils-$binutils_v/configure --with-pkgversion=xlings-fromsource --prefix=$P --target=$T --with-sysroot=$P \
+             --disable-multilib --disable-nls --disable-werror >/w/binutils.log 2>&1 \
+        && make -j\$(nproc) >>/w/binutils.log 2>&1 && make install-strip >>/w/binutils.log 2>&1 \
+        && mkdir /w/b-headers && cd /w/b-headers \
+        && /w/mingw-w64-v$mingw_v/mingw-w64-headers/configure --host=$T --prefix=$P/$T --with-default-msvcrt=msvcrt >/w/headers.log 2>&1 \
+        && make install >>/w/headers.log 2>&1 && ln -s $T $P/mingw \
+        && mkdir /w/b-gcc && cd /w/b-gcc \
+        && /w/gcc-$version/configure --with-pkgversion=xlings-fromsource --prefix=$P --target=$T --with-sysroot=$P \
+             --enable-languages=c,c++ --enable-threads=posix --disable-multilib --disable-nls --disable-werror >/w/configure.log 2>&1 \
+        && make -j\$(nproc) all-gcc >/w/make.log 2>&1 && make install-strip-gcc >/w/install.log 2>&1 \
+        && mkdir /w/b-crt && cd /w/b-crt \
+        && /w/mingw-w64-v$mingw_v/mingw-w64-crt/configure --host=$T --prefix=$P/$T --with-sysroot=$P \
+             --with-default-msvcrt=msvcrt --enable-lib64 --disable-lib32 >/w/crt.log 2>&1 \
+        && make -j\$(nproc) >>/w/crt.log 2>&1 && make install >>/w/crt.log 2>&1 \
+        && mkdir /w/b-winpthreads && cd /w/b-winpthreads \
+        && /w/mingw-w64-v$mingw_v/mingw-w64-libraries/winpthreads/configure --host=$T --prefix=$P/$T >/w/winpthreads.log 2>&1 \
+        && make -j\$(nproc) >>/w/winpthreads.log 2>&1 && make install >>/w/winpthreads.log 2>&1 \
+        && cd /w/b-gcc && make -j\$(nproc) >>/w/make.log 2>&1 && make install-strip >>/w/install.log 2>&1 \
+        && rm -rf $P/share/info $P/share/man $P/share/doc && rm -f $P/bin/$T-lto-dump \
+        && cd /w && printf 'import std;\nint main(){ std::println(\"c++23 ok {}\", std::ranges::fold_left(std::views::iota(1,5), 0, std::plus{})); }\n' > t.cpp \
+        && STD=\$(ls $P/$T/include/c++/$version/bits/std.cc) && test -s \$STD \
+        && $T-g++ -std=c++23 -fmodules -fsearch-include-path -c bits/std.cc -o std.o \
+        && $T-g++ -std=c++23 -fmodules t.cpp std.o -static -lstdc++exp -o t.exe \
+        && export WINEPREFIX=/tmp/wine WINEDEBUG=-all WINEDLLOVERRIDES=mscoree,mshtml= && timeout 600 wine t.exe > /w/cxx.out" \
+      || { for f in prereq binutils headers configure make crt winpthreads install; do
+               [[ -f "$work/$f.log" ]] && { log "--- $f.log"; tail -40 "$work/$f.log" >&2; }; done; die "mingw-cross-gcc build failed"; }
+    grep -q "c++23 ok 10" "$work/cxx.out" || die "the C++23 check did not print what it should under wine"
+    "$work/$d/bin/$T-gcc" --version | head -1 | grep -qF "$version" || die "$T-gcc does not report $version"
+    [[ "$(readlink "$work/$d/mingw")" == "$T" ]] || die "mingw is not the relative link to $T"
+    GLIBC_ELFS="$(find "$work/$d/bin" "$work/$d/libexec" "$work/$d/$T/bin" -type f -exec sh -c 'file -b "$1" | grep -q "^ELF.*dynamically linked" && echo "$1"' _ {} \;)"
+    glibc_only libstdc++.so.6 libgcc_s.so.1 libzstd.so.1 libz.so.1
+    provenance "$d" "gcc $version (sha256 $(input gcc "$version")), binutils $binutils_v (sha256 $(input binutils "$binutils_v")) and mingw-w64 v$mingw_v (sha256 $(input mingw-w64 "$mingw_v")): a Linux x86_64 host's compiler for $T, the MSVCRT runtime (--with-default-msvcrt=msvcrt), POSIX threads (winpthreads), c and c++, the sysroot its prefix; built in Debian 12; a C++23 program using import std, linked -static, ran under wine"
     pack "$d" ;;
 labwc-desktop)
     # The traditional Luban desktop (xlings: Luban OS architecture design
@@ -1148,6 +1691,32 @@ luban-fonts)
     cp "$work/noto.LICENSE" "$l/NotoSansCJK-OFL.txt"
     for x in "$f"/*; do file -b "$x" | grep -Eq "TrueType|OpenType" || die "$(basename "$x") is not a font: $(file -b "$x")"; done
     provenance "$d" "luban-fonts $version: JetBrains Mono 2.304 (Regular, Bold), Inter 4.1 (Regular), Sarasa Mono SC 1.0.42 (Regular, Bold), Noto Sans SC 2.004 (Regular, subset OTF), Fusion Pixel 12px proportional zh_hans 2026.09.25 -- from their GitHub releases, digests in tools/res/inputs.txt; licenses in share/licenses/luban-fonts"
+    pack_data "$d" ;;
+android-ndk-libcxx-modules)
+    # The libc++ module sources (share/libc++/v1) of an NDK release, which its
+    # Windows archive omits (docs/android-ndk-libcxx-modules.md). Taken from
+    # the same release's Linux archive after checking both are that release,
+    # built from one clang revision, with byte-identical libc++ headers.
+    case "$version" in
+        30.0.16248370) release=r30 ;;
+        *) die "android-ndk-libcxx-modules: no release name recorded for $version" ;;
+    esac
+    for host in linux windows; do
+        source_of "android-ndk-$host" "$version" \
+            "https://dl.google.com/android/repository/android-ndk-$release-$host.zip" "$work/$host.zip"
+    done
+    d="android-ndk-libcxx-modules-$version"
+    # The darwin archive ships its own sources; they are compared by CRC-32 and size through
+    # its central directory, read with range requests, so the one payload is every host's.
+    python3 -I "$here/android-ndk/libcxx_modules.py" extract "$version" "$work/linux.zip" "$work/windows.zip" "$work/$d" \
+        "https://dl.google.com/android/repository/android-ndk-$release-darwin.zip" \
+        || die "the NDK archives do not support taking one host's module sources for another"
+    rm -f "$work/linux.zip" "$work/windows.zip"
+    [[ -f "$work/$d/share/libc++/v1/std.cppm" && -f "$work/$d/share/libc++/v1/std.compat.cppm" ]] || die "no std.cppm or std.compat.cppm"
+    (cd "$work/$d" && sha256sum -c --quiet MANIFEST) || die "MANIFEST does not describe the files"
+    provenance "$d" "android-ndk-libcxx-modules $version: share/libc++/v1 of android-ndk-$release-linux.zip (dl.google.com, sha256 $(input android-ndk-linux "$version")), unmodified; android-ndk-$release-windows.zip (sha256 $(input android-ndk-windows "$version")) checked to be the same Pkg.Revision and clang revision with byte-identical sysroot/usr/include/c++/v1 and no share/libc++/v1; licence: NOTICE.toolchain of that release"
+    # Modes from no umask, so every machine packs the same bytes.
+    chmod -R u=rwX,go=rX "$work/$d"
     pack_data "$d" ;;
 qt-runtime)
     # luban:qt-runtime: what LXQt and KDE share (design 2026-10-18 §13.5) --

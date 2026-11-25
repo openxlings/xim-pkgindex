@@ -10,17 +10,25 @@ entry points retain their separate lifecycles.
 ## Plan before allocating runners
 
 `ci-plan.py` compares explicit base/head commits and writes `ci-plan.json` and
-a job summary. New, deleted and renamed recipes are included. Runtime-only
+a job summary. New, deleted and renamed xpkgs are included. Runtime-only
 comparison uses the pinned updater's structural signature; opaque descriptors
 fall back to testing rather than silently disappearing. Metadata-only edits
 still receive static, registration, site and candidate-declaration checks.
 
 The planner follows `xim.pkgindex.*` imports through shared modules and then
 reverse package references using both source trees. It passes that expanded
-file set to consumer fixtures. Literal coordinates in legacy dependency
-expressions are deliberately conservative: an extra consumer is preferable to
-missing a dependency. Dynamically computed platform tables fall back to the
-existing platform readers rather than claiming unsupported precision.
+file set to consumer fixtures. A reference is a package coordinate
+(`<namespace>:<name>[@<version or range>]`) anywhere in an xpkg, which covers
+dependency expressions, or a bare name inside a `deps` table; other bare strings
+(keywords, categories, program names, paths) are not references. A name reaches
+every xpkg of that name. A consumer pinned to an exact version is affected only
+when that version's entry changed or the xpkg changed outside its version
+entries; one that names a range or no version is affected by any change, and one
+reached through another consumer counts as wholly changed. An appended version
+therefore plans the package and its unpinned consumers: an mcpp bump plans 4
+packages, where bare words planned 71 (#1094). Dynamically computed platform
+tables fall back to the existing platform readers rather than claiming
+unsupported precision.
 
 Platform lifecycle jobs only exist when there are files to install. Their
 native hosts remain Linux/Windows x86_64 and Apple Silicon macOS; automatic
@@ -28,7 +36,7 @@ upgrade candidates retain their explicit native platform/architecture matrix.
 This change does not claim that an x86_64 install validates an ARM64 payload.
 
 `.github/ci-profiles.json` owns routing. It lists each reusable workflow's own
-file and local executors as well as the recipes it consumes. Routing changes
+file and local executors as well as the xpkgs it consumes. Routing changes
 revalidate the profiles. Workflow execution remains in the existing files
 with `workflow_call`: emulator, SDK, native-addon, GUI, bare-metal and Luban
 acceptance criteria are retained. The resource builders and periodic sweep

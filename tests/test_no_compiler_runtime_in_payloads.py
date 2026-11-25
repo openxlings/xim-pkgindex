@@ -27,10 +27,14 @@ import pytest
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
 
-# The toolset packages: their redistributable directory is the compiler's
-# runtime, the one mcpp places and puts on PATH.
+# The redistributors: the toolset (its redistributable directory is the
+# compiler's runtime, the one mcpp places and puts on PATH), and the runtime
+# package itself -- the one place a recipe may legitimately name these DLLs,
+# because placing them is its entire purpose. Every other recipe reaches
+# them by copying from xim:vcruntime at install time, without naming them.
 TOOLSET_RECIPES = {
     "pkgs/m/msvc.lua",
+    "pkgs/v/vcruntime.lua",
 }
 
 CRT_REFERENCE = re.compile(

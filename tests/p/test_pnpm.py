@@ -45,28 +45,33 @@ class TestStatic:
 
 
 class TestResources:
-    """The version matrix: what is mirrored, and the two asset shapes 7.x and 8+
-    publish. Byte-identity of every CN copy below was checked by download on
-    2026-09-16; the sha256 in the recipe is what re-checks it at install time."""
+    """Check mirrored releases and the standalone and archive asset layouts."""
 
     @pytest.mark.static
     def test_mirrored_versions_carry_both_urls(self, code):
-        """12.1.0, 11.12.0 and 7.33.7 are on xlings-res/pnpm, once per platform.
-
-        7.33.7's copies were published 2026-09-16 and its three assets carry a
-        `.sha256` sidecar each, the shape the other two already had. A version
-        someone reaches for because a lockfile pins it is exactly the one that
-        needs a mirror."""
+        """Every version since 7.33.7 except 12.0.0 and 11.0.5 is on
+        xlings-res/pnpm, once per platform, each asset with a `.sha256` sidecar.
+        8.15.9 - 12.22.0 were published 2026-11-21, downloaded back and compared
+        with upstream byte-for-byte. A version someone reaches for because a
+        lockfile pins it is exactly the one that needs a mirror."""
         import re
         cn = re.findall(r'CN = "([^"]+)"', code)
-        assert len(cn) == 9, cn
-        for version in ("12.1.0", "11.12.0"):
+        archives = ("12.22.0", "12.1.0", "11.28.13", "11.12.0")
+        bare = ("10.34.9", "9.15.9", "8.15.9", "7.33.7")
+        assert len(cn) == 3 * (len(archives) + len(bare)), cn
+        for version in archives:
             for asset in ("pnpm-linux-x64.tar.gz", "pnpm-darwin-arm64.tar.gz", "pnpm-win32-x64.zip"):
                 url = f"https://gitcode.com/xlings-res/pnpm/releases/download/{version}/{asset}"
                 assert url in cn, url
-        for asset in ("pnpm-linuxstatic-x64", "pnpm-macos-arm64", "pnpm-win-x64.exe"):
-            url = f"https://gitcode.com/xlings-res/pnpm/releases/download/7.33.7/{asset}"
-            assert url in cn, url
+        for version in bare:
+            for asset in ("pnpm-linuxstatic-x64", "pnpm-macos-arm64", "pnpm-win-x64.exe"):
+                url = f"https://gitcode.com/xlings-res/pnpm/releases/download/{version}/{asset}"
+                assert url in cn, url
+
+    @pytest.mark.static
+    def test_latest_is_the_newest_release_on_every_platform(self, code):
+        import re
+        assert re.findall(r'\["latest"\] = \{ ref = "([^"]+)" \}', code) == ["12.22.0"] * 3
 
     @pytest.mark.static
     def test_unmirrored_versions_say_so_by_having_one_url(self, code):
@@ -90,12 +95,12 @@ class TestResources:
             assert g.group(1).rsplit("/", 1)[1] == c.group(1).rsplit("/", 1)[1], block
 
     @pytest.mark.static
-    def test_seven_is_a_bare_executable_on_every_platform(self, code):
-        """7.x publishes one self-contained executable per platform, not the
-        archive-plus-dist/ that 8+ ships. install() has to handle both."""
-        for asset in ("v7.33.7/pnpm-linuxstatic-x64", "v7.33.7/pnpm-macos-arm64",
-                      "v7.33.7/pnpm-win-x64.exe"):
-            assert asset in code, asset
+    def test_seven_to_ten_are_bare_executables_on_every_platform(self, code):
+        """7.x - 10.x publish one self-contained executable per platform, not the
+        archive-plus-dist/ that 11+ ships. install() has to handle both."""
+        for version in ("7.33.7", "8.15.9", "9.15.9", "10.34.9"):
+            for asset in ("pnpm-linuxstatic-x64", "pnpm-macos-arm64", "pnpm-win-x64.exe"):
+                assert f"v{version}/{asset}" in code, (version, asset)
 
     @pytest.mark.static
     def test_seven_on_linux_takes_the_static_asset(self, code):
@@ -110,15 +115,16 @@ class TestResources:
         The static one needs nothing from the machine at all, so it is the one
         that makes `xlings install pnpm@7.33.7` self-contained."""
         assert "pnpm-linuxstatic-x64" in code
-        assert "v7.33.7/pnpm-linux-x64" not in code, \
-            "the dynamic asset would depend on the host loader"
+        for version in ("7.33.7", "8.15.9", "9.15.9", "10.34.9"):
+            assert f"v{version}/pnpm-linux-x64\"" not in code, \
+                "the dynamic asset would depend on the host loader"
 
     @pytest.mark.static
     def test_install_handles_both_asset_shapes(self, code):
         install = code[code.index("function install()"):code.index("function config()")]
-        assert 'os.isdir("dist")' in install, "the 8+ archive's dist/ must still move"
-        assert "pnpm-linux-x64" in install and "pnpm-macos-arm64" in install, \
-            "the 7.x bare executable must be recognised by its asset name"
+        assert 'os.isdir("dist")' in install, "the archive's dist/ must still move"
+        assert "pnpm-linuxstatic-x64" in install and "pnpm-macos-arm64" in install, \
+            "the standalone executable must be recognised by its asset name"
         assert "chmod +x" in install, "a downloaded executable arrives without the bit"
 
     @pytest.mark.static
@@ -132,7 +138,7 @@ class TestResources:
         ("cannot find section '.dynamic'") and leaves it byte-identical, so
         there is nothing to opt out of. Verified 2026-09-16, both directions.
 
-        8+ is an ordinary node build that is supposed to be patched."""
+        The executable in an archive is relocatable by elfpatch."""
         body = "\n".join(line for line in code.splitlines()
                           if not line.lstrip().startswith("--"))
         assert "elfpatch" not in body, \
@@ -146,8 +152,16 @@ class TestResources:
         config = code[code.index("function config()"):code.index("function uninstall()")]
         assert "--version" in config and "os.iorun" in config
         assert 'os.isdir(path.join(dir, "dist"))' in config, \
-            "the run is scoped to the payload with no dist/, i.e. the 7.x one"
+            "the run is scoped to standalone executables without dist/"
         assert "pkginfo.version()" in config, "the reported version must be compared, not just printed"
+
+    @pytest.mark.static
+    def test_the_windows_probe_survives_cmd_quote_stripping(self, code):
+        """os.iorun runs `<cmd> 2>nul > "<tmp>"` through cmd /c, which strips the
+        outer quotes of a line that starts with one; `call` keeps the redirection
+        out of the program's quoted path (#1209)."""
+        config = code[code.index("function config()"):code.index("function uninstall()")]
+        assert "'call \"' .. prog:gsub(\"/\", \"\\\\\")" in config
 
 
 class TestIndex:

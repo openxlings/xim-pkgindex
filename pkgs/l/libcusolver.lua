@@ -34,14 +34,23 @@ package = {
                   .. "libcusolver/linux-${arch_alias}/"
                   .. "libcusolver-linux-${arch_alias}-${version}-archive.tar.xz",
             arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
+            -- libcusolver.so and its siblings name libgcc_s.so.1 (some libstdc++.so.6 too) in DT_NEEDED
+            -- (readelf, the x86_64 archive of the newest version). A toolchain whose runtime is not
+            -- GCC's supplies neither, so the package declares the GCC runtime itself and the
+            -- seal's DT_RUNPATH reaches it.
+            deps = { "xim:gcc-runtime" },
             ["latest"] = { ref = "12.2.2.18" },
             ["12.2.2.18"] = {
+                -- 1: the archive unchanged; the GCC runtime is declared (deps above).
+                revision = 1,
                 sha256 = {
                     aarch64  = "d10bee9fe0f521125617a653ce9c5934dd59eabd8459b628b6a3bf80baa1bc3a",
                     x86_64   = "100b49bc0b6372fe17c1fea3400dbb4cd12313ad326dea516fa26eb1d20c1a32",
                 },
             },
             ["11.7.5.82"] = {
+                -- 1: the archive unchanged; the GCC runtime is declared (deps above).
+                revision = 1,
                 sha256 = {
                     aarch64  = "db463593ffcbc78f542a7f1ef808da43bf742acae654d970d99a47289c2a83e5",
                     x86_64   = "3d3b96f3087dbc43893a28691b172f31725b316d524f5a3c1e6837257c898d06",
