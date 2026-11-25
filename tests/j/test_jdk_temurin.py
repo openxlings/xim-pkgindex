@@ -16,8 +16,8 @@ PKG = "jdk-temurin"
 PKG_FILE = "pkgs/j/jdk-temurin.lua"
 
 PLATFORMS = ("linux", "macosx", "windows")
-# One resource per (platform, arch): linux x2, macosx x2, windows x1.
-RESOURCE_COUNT = 5
+# One resource per (platform, arch): linux x2, macosx x2, windows x1, per full version.
+RESOURCES_PER_VERSION = 5
 
 
 def _code(content: str) -> str:
@@ -25,6 +25,21 @@ def _code(content: str) -> str:
     return "\n".join(
         line for line in content.splitlines() if not line.lstrip().startswith("--")
     )
+
+
+def _full_versions(content: str) -> set:
+    """`25.0.4+7` / `25.0.5.1+2` 这样的完整版本块 (别名 `25.0.4` 不算)"""
+    return set(re.findall(
+        r'^\s*\["(\d+(?:\.\d+)+\+\d+)"\]\s*=\s*\{\s*$', _code(content), re.M))
+
+
+def _latest() -> str:
+    """文件里 latest 指向的版本; verify 测试装的就是它"""
+    with open(PKG_FILE, encoding="utf-8") as f:
+        refs = set(re.findall(
+            r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"([^"]+)"\s*\}', _code(f.read())))
+    assert len(refs) == 1, f"latest 指向了多个版本: {sorted(refs)}"
+    return refs.pop()
 
 
 @pytest.fixture(scope='module')
@@ -61,18 +76,26 @@ class TestStatic:
 
     @pytest.mark.static
     def test_every_resource_has_cn_mirror(self, meta):
-        """每个资源都要有 GLOBAL(upstream) + CN(gitcode) 两个源, 且 sha256 齐全"""
+        """每个资源都要有 GLOBAL(upstream) + CN 两个源, 且 sha256 齐全
+
+        CN 是 GitCode 上的 xlings-res 镜像, 或 USTC 对 adoptium 的镜像
+        (自动更新生成的版本块用后者)。
+        """
         content = _code(meta.raw_content)
+        expected = RESOURCES_PER_VERSION * len(_full_versions(meta.raw_content))
         global_urls = re.findall(
             r'GLOBAL = "https://github\.com/adoptium/temurin25-binaries/[^"]+"', content)
         cn_urls = re.findall(
-            r'CN = "https://gitcode\.com/xlings-res/jdk-temurin/[^"]+"', content)
+            r'CN = "https://(?:gitcode\.com/xlings-res/jdk-temurin'
+            r'|mirrors\.ustc\.edu\.cn/github-release/adoptium/temurin25-binaries)/[^"]+"',
+            content)
         shas = re.findall(r'sha256 = "[0-9a-f]{64}"', content)
-        assert len(global_urls) == RESOURCE_COUNT, f"GLOBAL 源数量: {len(global_urls)}"
-        assert len(cn_urls) == RESOURCE_COUNT, f"CN 源数量: {len(cn_urls)}"
-        assert len(shas) == RESOURCE_COUNT, f"sha256 数量: {len(shas)}"
+        assert len(global_urls) == expected, f"GLOBAL 源数量: {len(global_urls)}"
+        assert len(cn_urls) == expected, f"CN 源数量: {len(cn_urls)}"
+        assert len(shas) == expected, f"sha256 数量: {len(shas)}"
         # GitCode 的 release API 会把路径里的 `+` 解成空格然后 404, 镜像 tag 用 `_`。
-        assert "%2B" not in "".join(cn_urls), "CN 镜像 tag 不能带 URL 编码的 '+'"
+        gitcode = [u for u in cn_urls if "gitcode.com" in u]
+        assert "%2B" not in "".join(gitcode), "CN 镜像 tag 不能带 URL 编码的 '+'"
 
     @pytest.mark.static
     def test_macos_bundle_layout(self, meta):
@@ -144,12 +167,12 @@ class TestVerify:
     def test_java_version(self):
         # java prints its version banner on stderr. Assert the full build
         # string: "25" alone would also match a pre-existing system JDK.
-        assert_command_output("java -version 2>&1", contains="25.0.4+7")
+        assert_command_output("java -version 2>&1", contains=_latest())
 
     @pytest.mark.verify
     @skip_if_not('linux')
     def test_javac_version(self):
-        assert_command_output("javac -version", contains="25.0.4")
+        assert_command_output("javac -version", contains=_latest().split("+")[0])
 
     @pytest.mark.verify
     @skip_if_not('linux')

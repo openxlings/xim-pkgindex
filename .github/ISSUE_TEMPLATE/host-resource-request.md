@@ -29,6 +29,6 @@ layout fix, a static/musl build the upstream does not publish. -->
 The pull request or xpkg that uses it now, with a `namespace` of your own | 当前使用它的 PR 或 xpkg（带你自己的命名空间）:
 
 ### Authorship | 作者
-Authorship: <by-human | human-and-ai | by-ai>
+Authorship: <by-human | ai-and-human>
 Agent: <optional | 可选>
 Model: <optional | 可选>
