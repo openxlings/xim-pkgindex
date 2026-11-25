@@ -11,8 +11,9 @@ from tests.lib.assertions import (
     assert_required_fields, assert_valid_spec, assert_valid_type,
     assert_no_typos, assert_no_exec_xvm, assert_no_bashrc_modification,
     assert_no_direct_path_modification, assert_uses_new_api,
-    assert_xim_add_succeeds,
+    assert_xim_add_succeeds, assert_command_output, assert_xvm_registered,
 )
+from tests.lib.platform_utils import skip_if_not
 
 PKG = "hxlings"
 PKG_FILE = "pkgs/h/hxlings.lua"
@@ -24,6 +25,15 @@ def _run_lua(script, *args):
         pytest.skip("Lua interpreter is unavailable")
     return subprocess.run([lua, "-", *args], input=script, text=True,
                           capture_output=True, check=True).stdout
+
+
+def _latest():
+    """the version the xpkg's `latest` points to (every platform must agree)"""
+    with open(PKG_FILE, encoding="utf-8") as f:
+        code = "\n".join(l for l in f.read().splitlines() if not l.lstrip().startswith("--"))
+    refs = set(re.findall(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"([^"]+)"\s*\}', code))
+    assert len(refs) == 1, f"latest points to several versions: {sorted(refs)}"
+    return refs.pop()
 
 
 @pytest.fixture(scope="module")
@@ -61,12 +71,12 @@ local expected = {
 for plat, arch in pairs(expected) do
     local p = assert(package.xpm[plat], "missing platform: " .. plat)
     local ref = assert(p.latest and p.latest.ref, "missing latest ref for " .. plat)
-    assert(ref == "0.1.5", plat .. " latest should be 0.1.5")
+    assert(ref == arg[2], plat .. " latest should be " .. arg[2])
     local entry = assert(p[ref] and p[ref][arch], "missing arch " .. arch .. " for " .. plat)
     assert(type(entry.url) == "string" and entry.url:find("FarnaHerry/Hxlings/releases/download/v" .. ref .. "/", 1, false))
     assert(type(entry.sha256) == "string" and #entry.sha256 == 64 and entry.sha256:match("^%x+$"))
 end
-''', PKG_FILE)
+''', PKG_FILE, _latest())
 
     @pytest.mark.static
     def test_installed_checks_platform_payload(self):
@@ -233,3 +243,12 @@ class TestIsolation:
             "xim.libxpkg.pkginfo", "xim.libxpkg.system", "xim.libxpkg.xvm",
         }
         assert not re.search(r'\b(?:path\.|is_host\(|os\.host\(|raise\()', src)
+
+
+class TestVerify:
+    # hxlings is a GUI application with no CLI flags (see the xpkg header), so
+    # the install is checked through its xvm registration, not by running it.
+    @pytest.mark.verify
+    @skip_if_not("linux")
+    def test_xvm_registered(self):
+        assert_xvm_registered("hxlings")
