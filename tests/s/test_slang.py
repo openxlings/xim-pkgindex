@@ -109,6 +109,15 @@ class TestResources:
         assert 'tar -xf "%s" -C "%s"' in code
         assert 'os.mv(p, path.join(dir, name))' not in code
 
+    @pytest.mark.static
+    def test_windows_zip_read_by_the_system_tar_by_path(self, content):
+        """a bare `tar` may be Git for Windows' GNU tar (bash puts it first on
+        PATH), which does not read zip: Windows names System32's bsdtar."""
+        code = "\n".join(ln for ln in content.splitlines()
+                         if not ln.lstrip().startswith("--"))
+        assert r'System32\\tar.exe' in code  # the Lua source escapes the backslash
+        assert "-xf" in code and "winpath.native" in code
+
 
 class TestIndex:
     @pytest.mark.index
