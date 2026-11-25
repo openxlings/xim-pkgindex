@@ -51,29 +51,41 @@ package = {
     xpm = {
         linux = {
             deps = { runtime = { "xim:php@>=8.0" } },
-            ["latest"] = { ref = "2.11.2" },
+            ["latest"] = { ref = "2.11.3" },
             ["2.11.2"] = {
                 revision = 1,
                 url = "https://github.com/composer/composer/releases/download/2.11.2/composer.phar",
                 sha256 = "dd158c0afd41d15fac89e1b4e47b5d42911fe316c3687cd5edac98319b25d028",
+            },
+            ["2.11.3"] = {
+                url = "https://github.com/composer/composer/releases/download/2.11.3/composer.phar",
+                sha256 = "04f8b003da4e3a2459056591fbfebd02b4dc3e5adeb158616b90cf55a65113ec",
             },
         },
         macosx = {
             deps = { runtime = { "xim:php@>=8.0" } },
-            ["latest"] = { ref = "2.11.2" },
+            ["latest"] = { ref = "2.11.3" },
             ["2.11.2"] = {
                 revision = 1,
                 url = "https://github.com/composer/composer/releases/download/2.11.2/composer.phar",
                 sha256 = "dd158c0afd41d15fac89e1b4e47b5d42911fe316c3687cd5edac98319b25d028",
             },
+            ["2.11.3"] = {
+                url = "https://github.com/composer/composer/releases/download/2.11.3/composer.phar",
+                sha256 = "04f8b003da4e3a2459056591fbfebd02b4dc3e5adeb158616b90cf55a65113ec",
+            },
         },
         windows = {
             deps = { runtime = { "xim:php@>=8.0" } },
-            ["latest"] = { ref = "2.11.2" },
+            ["latest"] = { ref = "2.11.3" },
             ["2.11.2"] = {
                 revision = 1,
                 url = "https://github.com/composer/composer/releases/download/2.11.2/composer.phar",
                 sha256 = "dd158c0afd41d15fac89e1b4e47b5d42911fe316c3687cd5edac98319b25d028",
+            },
+            ["2.11.3"] = {
+                url = "https://github.com/composer/composer/releases/download/2.11.3/composer.phar",
+                sha256 = "04f8b003da4e3a2459056591fbfebd02b4dc3e5adeb158616b90cf55a65113ec",
             },
         },
     },
