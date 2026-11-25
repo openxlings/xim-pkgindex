@@ -71,6 +71,24 @@ def _listed_versions(content: str) -> dict:
     return listed
 
 
+def _literal_candidates(content: str) -> set:
+    """xpm 里用字面资源块 (而不是 `_xxx_url()`) 列出的版本"""
+    found = set()
+    for line in _code(content).split("    xpm = {", 1)[1].splitlines():
+        literal = re.match(r'\s*\["([0-9][^"]*)"\]\s*=\s*\{\s*$', line)
+        if literal:
+            found.add(literal.group(1))
+    return found
+
+
+def _latest_version() -> str:
+    """文件里 latest 指向的版本; verify 测试装的就是它"""
+    refs = set(re.findall(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"([^"]+)"\s*\}',
+                          _code((REPO / PKG_FILE).read_text(encoding="utf-8"))))
+    assert len(refs) == 1, f"latest 指向了多个版本: {sorted(refs)}"
+    return refs.pop()
+
+
 def _sha_table(content: str) -> dict:
     """{version: {key: sha256}} — 解析 `local _sha256 = { ... }`"""
     body = re.search(r'local _sha256 = \{\n(.*?)\n\}\n', content, re.S)
@@ -114,7 +132,7 @@ class TestStatic:
         """历史版本由 `_asset()` 成对拼 URL；新增候选必须是字面资源块
 
         xpkgindex-update 会读取 PR 新增候选的显式 URL/hash，不接受
-        `_linux_url("26.13.0")` 这类动态表达式。这里允许 26.13.0 这个字面
+        `_linux_url("26.13.0")` 这类动态表达式。这里允许这些字面
         候选出现，同时继续禁止其他绕开 `_asset()` 的写死 URL。
         """
         code = _code(meta.raw_content)
@@ -125,11 +143,16 @@ class TestStatic:
         code_without_builder = code.replace(builder.group(0), "")
         global_lines = [line for line in code_without_builder.splitlines() if GLOBAL_HOST in line]
         cn_lines = [line for line in code_without_builder.splitlines() if CN_HOST in line]
-        assert len(global_lines) == 6, "GLOBAL URL 只能来自 26.13.0 字面候选"
-        assert len(cn_lines) == 6, "CN URL 只能来自 26.13.0 字面候选"
+        # 每个字面候选版本: 3 个平台 x 2 个 arch = 6 条 GLOBAL、6 条 CN
+        literal = _literal_candidates(meta.raw_content)
+        assert literal, "找不到字面候选版本块"
+        assert len(global_lines) == 6 * len(literal), \
+            f"GLOBAL URL 只能来自字面候选 {sorted(literal)}"
+        assert len(cn_lines) == 6 * len(literal), \
+            f"CN URL 只能来自字面候选 {sorted(literal)}"
         for line in global_lines + cn_lines:
-            assert "v26.13.0/node-v26.13.0-" in line, \
-                "除 26.13.0 新增候选外，历史版本 URL 必须由 _asset() 拼出"
+            assert any(f"v{v}/node-v{v}-" in line for v in literal), \
+                "除字面候选外，历史版本 URL 必须由 _asset() 拼出"
         assert GLOBAL_HOST in builder.group(0) and CN_HOST in builder.group(0), \
             "两个 host 必须都在 _asset() 里, 才能保证历史资产成对"
 
@@ -390,7 +413,7 @@ class TestVerify:
     @pytest.mark.verify
     @skip_if_not('linux')
     def test_node_version(self):
-        assert_command_output("node --version", contains="v26.13.0")
+        assert_command_output("node --version", contains="v" + _latest_version())
 
     @pytest.mark.verify
     @skip_if_not('linux')
