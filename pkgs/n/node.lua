@@ -8,6 +8,14 @@
 -- Every version listed in `xpm` must appear here (windows-only keys are absent
 -- for versions no windows section lists; 18.20.8 has no win-arm64 build at all).
 local _sha256 = {
+    ["26.13.1"] = {
+        linux_x64     = "5c063e46bab0fbc1c17cc445d7ff129cbdcd0471be6ed83b6ab864f8143bc864",
+        linux_arm64   = "89e1853138db51e8b82d3e98ba9c0d3f2956a28e5e55ea1b7e12d25aae92d5dd",
+        darwin_x64    = "82bb96078a24ca50b9c9a38f2379e6be6d87171fcd400fc14c8934b3bce96e2f",
+        darwin_arm64  = "aec2514ea1ceb2ba52455e9ec65986f6749a06dd759e5db2a72e6889668c9735",
+        win_x64       = "e2edda75bfb089654705cf65a13b58933bfd5f57148e8ebda916f58a2474f1f7",
+        win_arm64     = "181ebe431b90787113a9e4fc80d38ce86d37888a353a0386de44d2872e48cb97",
+    },
     ["26.13.0"] = {
         linux_x64     = "d28a96af6c38596f6d9d97c0ee531c13d238d757742387d1928de822d959e997",
         linux_arm64   = "406fe3fbde1c054adff8b297c16fdb5af6659db327c1ac8acd46b56ef1af9a92",
