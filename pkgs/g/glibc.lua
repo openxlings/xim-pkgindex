@@ -163,7 +163,7 @@ package = {
             -- and leaves the old asset published for cached indexes.
             -- Revision 1: the hooks of 2.44.3 revision 5 (linker scripts by file name).
             --
-            -- REVISION 2: THE SAME VERSION KEY, THE ASSET OF 2.44.3 REVISION 4.
+            -- REVISION 2: THE SAME VERSION KEY, THE CLEAN BYTES OF 2.44.3 REVISION 4.
             --
             -- Revisions 0 and 1 install the asset published as 2.44, whose
             -- bytes cannot change (sha256 0105292f...). It reads the host's
@@ -173,15 +173,16 @@ package = {
             -- built it, a path that exists on no user's machine and that xlings
             -- reports as a non-transitive search path on every install.
             --
-            -- Revision 2 installs the asset 2.44.3 revision 4 installs: the same
-            -- upstream glibc 2.44, built on a CI runner with the isolation
-            -- patches and relocated by this recipe at install time (its
-            -- PROVENANCE.txt records the derivation); every RUNPATH in it is
-            -- $ORIGIN. A binding that still names glibc@2.44, as older clients
+            -- Revision 2 installs the corrective asset `2.44-r2`, the bytes of
+            -- the 2.44.3 revision 4 archive (same sha256) under the name a
+            -- revision of this key takes: the same upstream glibc 2.44, built
+            -- on a CI runner with the isolation patches and relocated by this
+            -- recipe at install time (its PROVENANCE.txt records the
+            -- derivation); every RUNPATH in it is $ORIGIN. A binding that still names glibc@2.44, as older clients
             -- hold it, keeps its payload directory and gets that build. The
             -- revision 0/1 asset stays published for cached indexes.
             --
-            -- Two entries naming one asset install two complete payloads
+            -- Two entries holding the same bytes install two complete payloads
             -- (measured: 2.44, then 2.44.3). What xlings 2026.11.23.1 cannot do
             -- is install `2.44` when a 2.44.x is installed or in the same plan:
             -- it answers "already installed" or leaves an empty directory
@@ -194,8 +195,8 @@ package = {
                 revision = 2,
                 x86_64 = {
                     url = {
-                        GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.3-r4/glibc-2.44.3-r4-linux-x86_64.tar.gz",
-                        CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.3-r4/glibc-2.44.3-r4-linux-x86_64.tar.gz",
+                        GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44-r2/glibc-2.44-r2-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44-r2/glibc-2.44-r2-linux-x86_64.tar.gz",
                     },
                     sha256 = "7ada8e9c05addbbc67fae964eafa608eace82fc4f13a8900c7249ad0205fad86",
                 },
