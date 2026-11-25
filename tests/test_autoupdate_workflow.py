@@ -79,6 +79,24 @@ def test_resource_verification_is_independent_of_native_runner_support(workflow)
     assert 'coverage.json' in upload['with']['path']
 
 
+def test_only_an_updater_branch_keeps_hooks_frozen_in_candidate_validation():
+    """auto/bump-* is the updater's proposal branch; every other change is reviewed."""
+    import subprocess
+    steps = load('ci-candidates.yml')['jobs']['scan']['steps']
+    classify = next(s for s in steps if s.get('name', '').startswith('Classify the change'))
+    assert classify['env']['HEAD_REF'] == '${{ github.head_ref || github.ref_name }}'
+    for ref, flag in [('auto/bump-xim-pnpm', ''), ('feat/pnpm-12.22.0', '--reviewed'), ('main', '--reviewed')]:
+        out = subprocess.run(['bash', '-c', classify['run'].replace('"$GITHUB_ENV"', '/dev/stdout')],
+                             env={'HEAD_REF': ref, 'PATH': '/usr/bin:/bin'}, capture_output=True, text=True, check=True)
+        assert out.stdout.strip() == 'REVIEWED=' + flag
+    guard = next(s for s in steps if 'autoupdate-ci.py guard ' in s.get('run', ''))
+    verify = next(s for s in steps if 'xpkgindex_update verify ' in s.get('run', ''))
+    assert '$REVIEWED' in guard['run'] and '$REVIEWED' in verify['run']
+    # The updater's own validation keeps the full guard.
+    scan = load('xpkgindex-update.yml')['jobs']['scan']['steps']
+    assert not any('--reviewed' in s.get('run', '') or 'REVIEWED' in s.get('run', '') for s in scan)
+
+
 def test_queue_is_preserved_after_partial_proposal_failure_and_persistence_is_gated():
     flow = load('xpkgindex-update.yml')
     proposal = flow['jobs']['propose']

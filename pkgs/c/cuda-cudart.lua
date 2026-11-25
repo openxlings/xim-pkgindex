@@ -80,14 +80,23 @@ package = {
                   .. "cuda_cudart/linux-${arch_alias}/"
                   .. "cuda_cudart-linux-${arch_alias}-${version}-archive.tar.xz",
             arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
+            -- libcudart.so and its siblings name libgcc_s.so.1 (some libstdc++.so.6 too) in DT_NEEDED
+            -- (readelf, the x86_64 archive of the newest version). A toolchain whose runtime is not
+            -- GCC's supplies neither, so the package declares the GCC runtime itself and the
+            -- seal's DT_RUNPATH reaches it.
+            deps = { "xim:gcc-runtime" },
             ["latest"] = { ref = "13.3.29" },
             ["13.3.29"] = {
+                -- 1: the archive unchanged; the GCC runtime is declared (deps above).
+                revision = 1,
                 sha256 = {
                     aarch64  = "0cdd73d11885062daf3aa98ad4d7b8bd84f89b398be11f7054edea9ed31f597d",
                     x86_64   = "1e59c4888267d27ba1a9bd0f3669a6439db1334a96e754cd9013c7c73e18dc9d",
                 },
             },
             ["12.9.79"] = {
+                -- 1: the archive unchanged; the GCC runtime is declared (deps above).
+                revision = 1,
                 sha256 = {
                     aarch64  = "8b422a3b2cb8452cb678181b0bf9d7aa7342df168b5319c5488ae3b8514101fc",
                     x86_64   = "1f6ad42d4f530b24bfa35894ccf6b7209d2354f59101fd62ec4a6192a184ce99",

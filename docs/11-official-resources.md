@@ -3,7 +3,13 @@
 **English** | [简体中文](zh/11-official-resources.md)
 
 The binaries this index installs from its own servers: where they live, how they
-are built, and the gates a release passes before a recipe names it.
+are built, and the gates a release passes before an xpkg names it.
+
+An xpkg does not start here. A package points at the upstream's own release, or a well-known
+third party's, and `xlings-res` is where the maintainers host what that cannot serve: a repack,
+a layout fix, a build the upstream does not publish, and the CN (GitCode) side of a package
+whose upstream has no well-known mirror. Only maintainers with access write to it: contributors
+skip CN or ask in an issue, and the gates below are the maintainers'.
 
 ## Where they live
 
@@ -17,7 +23,7 @@ organisation on two hosts with byte-identical content:
 
 A resource is `xlings-res/<package>`, a release per version, assets named
 `<name>-<version>-<os>-<arch>.<ext>` with a `.sha256` sidecar. A client tries its
-region first and keeps the other as a fallback; the sha256 in the recipe decides
+region first and keeps the other as a fallback; the sha256 in the xpkg decides
 what is accepted, so a lagging mirror is refused, never trusted.
 
 Index artefacts (`xlings-res/xim-index`) are a separate kind of resource with
@@ -54,6 +60,13 @@ gh workflow run res-build.yml --ref <branch> -f publish_runs="<run-id>" -f execu
 The first builds one resource on a branch; the second publishes the artifacts of
 runs already made, in the protected `xlings-res-publish` environment.
 
+A corrective revision whose change is confined to the archive (its directory
+renamed, a file added) is derived from the published archive of the revision
+before it, by `tools/res/revision.py`: every file it does not name is that
+archive's, byte for byte, and a zip comes out as the same bytes on every run.
+The Windows payload of `llvm` 23.1.3-r4 and the FreeBSD bases 14.5-r3 are made
+this way.
+
 **Self-hosting is the direction, not yet the state.** Inside the factory's
 containers, build tools come from the distribution's package manager (Alpine's
 `apk`, Debian's `apt`). The goal is a factory whose tools are themselves
@@ -63,9 +76,9 @@ things this ecosystem publishes; until then the container digest and
 
 ## The gates
 
-A resource is named by a recipe only after all of these hold:
+A resource is named by an xpkg only after all of these hold:
 
-1. **Every platform and architecture** the recipe claims has an asset, on GitHub
+1. **Every platform and architecture** the xpkg claims has an asset, on GitHub
    and on GitCode, with the same name.
 2. **One build is the authority**: the sha256 is computed from it, then each copy
    (upstream, GitHub, GitCode) is downloaded and compared byte for byte. GitCode

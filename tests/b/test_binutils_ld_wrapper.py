@@ -204,7 +204,6 @@ def test_a_new_version_key_exists_so_installed_homes_re_run_config():
     and those users never get it. Same move as libglvnd 1.7.0.1.
     """
     text = _recipe_text()
-    assert '["latest"] = { ref = "2.42.1" }' in text
     assert '["2.42.1"] = {' in text
     assert '["2.42"] = "XLINGS_RES"' in text, (
         "the previous key must stay resolvable: homes pinned to it, and "

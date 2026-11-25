@@ -84,6 +84,20 @@ class TestStatic:
         assert "bindir = pkginfo.install_dir()" in body
         assert 'dep_install_dir("xim:node")' not in body
 
+    @pytest.mark.static
+    def test_windows_line_does_not_start_with_a_quote(self):
+        """libxpkg 0.0.67 (xlings 2026.11.23.1) runs a hook's line as
+        `cmd /d /s /c "<line>"`, as written; earlier clients run `cmd /c
+        <line>`, which strips the outer quotes of a line that starts with one.
+        A pair of our own around the line suited only the old client: the new
+        one handed `""C:\\...\\pnpm.exe" add ...` to cmd, which could not find
+        the program. `call` in front reads the same under both."""
+        code = [ln for ln in pathlib.Path(PKG_FILE).read_text(encoding="utf-8").splitlines()
+                if not ln.lstrip().startswith("--")]
+        body = "\n".join(code)
+        assert """cmd = '"' .. cmd .. '"'""" not in body
+        assert 'cmd = "call " .. cmd' in body
+
 
 class TestIndex:
     @pytest.mark.index

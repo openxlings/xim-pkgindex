@@ -18,23 +18,15 @@ package = {
     programs = { "pnpm" },
     xvm_enable = true,
 
-    -- Why we ship pnpm's standalone binary instead of the previous
-    -- `npm install -g pnpm` recipe:
-    --   * pnpm-v8+ ships a fully-self-contained binary that bundles the
-    --     Node.js runtime via zig-msvc / posix shims (the `pnpm-linux-x64.tar.gz`
-    --     and friends from the GitHub release page). No external Node
-    --     install needed.
-    --   * Previous recipe required `xim:node` first, doubling install time
-    --     and pulling a ~50 MB Node.js xpkg purely as a build dep, even
-    --     though the resulting pnpm binary doesn't need Node at runtime.
-    --   * Direct binary install removes the layered indirection and makes
-    --     `xlings install pnpm` equivalent to fetching one tarball, same
-    --     shape as xim:bun / xim:codex (who DO still go via npm because
-    --     their upstream wheel layout depends on it) NO — xim:bun and
-    --     xim:codex go via npm because their authors publish on npm
-    --     primarily; pnpm publishes a standalone too, so we use that.
-
-
+    -- pnpm ships a self-contained build, so no xim:node is needed, in two
+    -- shapes, and install() tells them apart by what was downloaded:
+    --   * 7.x - 10.x: one bare executable per platform (`pnpm-linuxstatic-x64`,
+    --     `pnpm-macos-arm64`, `pnpm-win-x64.exe`), the JS inside the binary.
+    --   * 11.x and later: an archive holding `pnpm(.exe)` and a `dist/` beside it.
+    -- autoupdate describes the archive, the shape of every future release. The
+    -- last release of each older major (7.33.7, 8.15.9, 9.15.9, 10.34.9) is a
+    -- reviewed historical entry with its own asset names; the updater only ever
+    -- appends a version newer than all of them.
     extensions = {
         autoupdate = {
             source = "https://github.com/pnpm/pnpm/releases",
@@ -71,7 +63,14 @@ package = {
                 runtime = { "xim:glibc@>=2.39", "xim:gcc-runtime@15.1.0" },
             },
 
-            ["latest"] = { ref = "12.1.0" },
+            ["latest"] = { ref = "12.22.0" },
+            ["12.22.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v12.22.0/pnpm-linux-x64.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/pnpm/releases/download/12.22.0/pnpm-linux-x64.tar.gz",
+                },
+                sha256 = "07ee196f91af1e21edb0c794401f4152932c74b0dba5d415dc4dbd5783f3c7af",
+            },
             ["12.1.0"] = {
                 url = {
                     GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v12.1.0/pnpm-linux-x64.tar.gz",
@@ -82,6 +81,13 @@ package = {
             ["12.0.0"] = {
                 url = "https://github.com/pnpm/pnpm/releases/download/v12.0.0/pnpm-linux-x64.tar.gz",
                 sha256 = "d93497ba07d5dfc7d527b30905fdd24f55c87618ea23ea3af287cdff061510e0",
+            },
+            ["11.28.13"] = {
+                url = {
+                    GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v11.28.13/pnpm-linux-x64.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/pnpm/releases/download/11.28.13/pnpm-linux-x64.tar.gz",
+                },
+                sha256 = "b1a0f00fa001fc88c9d76abca12f1eb2641d66ba599cd64cf68e7e66c8dd0a69",
             },
             ["11.12.0"] = {
                 url = {
@@ -94,18 +100,42 @@ package = {
                 url = "https://github.com/pnpm/pnpm/releases/download/v11.0.5/pnpm-linux-x64.tar.gz",
                 sha256 = "c1b55f53f5344cf0e26441d97b9ee2ee3b81791503c5cbd4bb93ae1898b8d211",
             },
-            -- 7.33.7, the last of the 7 line, for a project whose lockfile that
-            -- major still owns. Note the asset shape: 7.x publishes one bare,
-            -- self-contained executable per platform, not the `.tar.gz` with a
-            -- `dist/` beside it that 8+ ships, so install() handles both.
+            ["10.34.9"] = {
+                url = {
+                    GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v10.34.9/pnpm-linuxstatic-x64",
+                    CN = "https://gitcode.com/xlings-res/pnpm/releases/download/10.34.9/pnpm-linuxstatic-x64",
+                },
+                sha256 = "ead812f772f08c1abecc5ffca99277af2927dc2e96aecb1cdb22b88f323dc683",
+            },
+            ["9.15.9"] = {
+                url = {
+                    GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v9.15.9/pnpm-linuxstatic-x64",
+                    CN = "https://gitcode.com/xlings-res/pnpm/releases/download/9.15.9/pnpm-linuxstatic-x64",
+                },
+                sha256 = "038f2a41ccdabc823d09e5697fff85f2e74d5c37591f6d58dfd33a59ffa17fc0",
+            },
+            ["8.15.9"] = {
+                url = {
+                    GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v8.15.9/pnpm-linuxstatic-x64",
+                    CN = "https://gitcode.com/xlings-res/pnpm/releases/download/8.15.9/pnpm-linuxstatic-x64",
+                },
+                sha256 = "387f027c7604976051a317bea1bf21fcf798736b72fe0c338d465b6003cc14a8",
+            },
+            -- 8.15.9 - 10.34.9 above and 7.33.7 below: the last release of each
+            -- major before the archive, one bare executable per platform. Each
+            -- mirror copy was downloaded back from GitCode and compared with
+            -- upstream byte-for-byte (2026-11-21 for 8 - 12.22.0).
             --
             -- AND IT IS THE `linuxstatic` ASSET, NOT `linux`. Both exist for
-            -- this release; they differ in what they need from the machine, and
+            -- each of these releases; they differ in what they need from the machine, and
             -- only one of them closes the loop:
             --
             --   pnpm-linux-x64        49,884,244  dynamic, INTERP -> host glibc
             --   pnpm-linuxstatic-x64  42,457,484  statically linked, no INTERP,
             --                                     no .dynamic section at all
+            --   (7.33.7's sizes; 8.15.9 and 10.34.9 are the same shape, 9.15.9's
+            --   static asset is static-pie: a .dynamic section but no INTERP and
+            --   no DT_NEEDED, which elfpatch leaves alone as nothing to resolve.)
             --
             -- The dynamic one cannot be made hermetic here. It is built with
             -- `pkg` -- the JS payload sits after the ELF image and is found by
@@ -141,7 +171,14 @@ package = {
         },
         macosx = {
 
-            ["latest"] = { ref = "12.1.0" },
+            ["latest"] = { ref = "12.22.0" },
+            ["12.22.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v12.22.0/pnpm-darwin-arm64.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/pnpm/releases/download/12.22.0/pnpm-darwin-arm64.tar.gz",
+                },
+                sha256 = "af43c44f22ef89191d83163c3ef9f5ee021a7368f401c95d92731be7d6b21cc5",
+            },
             ["12.1.0"] = {
                 url = {
                     GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v12.1.0/pnpm-darwin-arm64.tar.gz",
@@ -153,6 +190,13 @@ package = {
                 url = "https://github.com/pnpm/pnpm/releases/download/v12.0.0/pnpm-darwin-arm64.tar.gz",
                 sha256 = "c31f5abe796dfc8489ea980cb438844053ad6b402bb4f3eb9abd71086279d75b",
             },
+            ["11.28.13"] = {
+                url = {
+                    GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v11.28.13/pnpm-darwin-arm64.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/pnpm/releases/download/11.28.13/pnpm-darwin-arm64.tar.gz",
+                },
+                sha256 = "e98fd2e9ae491c0e55273b89e7a7080fc884983d8c437da8bf1c8ec754fec095",
+            },
             ["11.12.0"] = {
                 url = {
                     GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v11.12.0/pnpm-darwin-arm64.tar.gz",
@@ -163,6 +207,27 @@ package = {
             ["11.0.5"] = {
                 url = "https://github.com/pnpm/pnpm/releases/download/v11.0.5/pnpm-darwin-arm64.tar.gz",
                 sha256 = "24d412b2d137c6bc91e09c039b0e8ced6b5ac8f1dc9ea1881f0521cdb3bc5318",
+            },
+            ["10.34.9"] = {
+                url = {
+                    GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v10.34.9/pnpm-macos-arm64",
+                    CN = "https://gitcode.com/xlings-res/pnpm/releases/download/10.34.9/pnpm-macos-arm64",
+                },
+                sha256 = "984b2f4316de371dc314243649e5f9ea392195d541dedbfdb990dc24d6c6e1a2",
+            },
+            ["9.15.9"] = {
+                url = {
+                    GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v9.15.9/pnpm-macos-arm64",
+                    CN = "https://gitcode.com/xlings-res/pnpm/releases/download/9.15.9/pnpm-macos-arm64",
+                },
+                sha256 = "d0a456d9d71e08c390cde622cc9b37e15c79d1d7ee6ded1d1b9a7dd0b3b85628",
+            },
+            ["8.15.9"] = {
+                url = {
+                    GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v8.15.9/pnpm-macos-arm64",
+                    CN = "https://gitcode.com/xlings-res/pnpm/releases/download/8.15.9/pnpm-macos-arm64",
+                },
+                sha256 = "24a75c802b936cb4ff11315ec525451cadbedf5dbe38364c26681118947da52a",
             },
             -- 7.33.7: one bare executable, and macos-arm64 rather than
             -- darwin-arm64.tar.gz. Mirrored 2026-09-16, same release as linux.
@@ -176,7 +241,14 @@ package = {
         },
         windows = {
 
-            ["latest"] = { ref = "12.1.0" },
+            ["latest"] = { ref = "12.22.0" },
+            ["12.22.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v12.22.0/pnpm-win32-x64.zip",
+                    CN = "https://gitcode.com/xlings-res/pnpm/releases/download/12.22.0/pnpm-win32-x64.zip",
+                },
+                sha256 = "0a9c1bc147202089b12d91f43349f6f9ae26df191ee704dee313ba3f9a0a8ffe",
+            },
             ["12.1.0"] = {
                 url = {
                     GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v12.1.0/pnpm-win32-x64.zip",
@@ -188,6 +260,13 @@ package = {
                 url = "https://github.com/pnpm/pnpm/releases/download/v12.0.0/pnpm-win32-x64.zip",
                 sha256 = "092f60a1304fd61df44c6c534d424144146e41cc9b3cb0557372baadc00f29d5",
             },
+            ["11.28.13"] = {
+                url = {
+                    GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v11.28.13/pnpm-win32-x64.zip",
+                    CN = "https://gitcode.com/xlings-res/pnpm/releases/download/11.28.13/pnpm-win32-x64.zip",
+                },
+                sha256 = "e94a3720974cf0acdf7947ffe8b12a292170fec36c881e10aca545cc22cf2067",
+            },
             ["11.12.0"] = {
                 url = {
                     GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v11.12.0/pnpm-win32-x64.zip",
@@ -198,6 +277,27 @@ package = {
             ["11.0.5"] = {
                 url = "https://github.com/pnpm/pnpm/releases/download/v11.0.5/pnpm-win32-x64.zip",
                 sha256 = "c79329a48a5e67bbbf73578fe0ddd5ff1fef05ed8c9ce43cfdc675d4d173fa3a",
+            },
+            ["10.34.9"] = {
+                url = {
+                    GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v10.34.9/pnpm-win-x64.exe",
+                    CN = "https://gitcode.com/xlings-res/pnpm/releases/download/10.34.9/pnpm-win-x64.exe",
+                },
+                sha256 = "e0af8d34dd5319f7e9a6c9838779e7e85caf9cfdedf99a7a4106aa1fdcf16d5c",
+            },
+            ["9.15.9"] = {
+                url = {
+                    GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v9.15.9/pnpm-win-x64.exe",
+                    CN = "https://gitcode.com/xlings-res/pnpm/releases/download/9.15.9/pnpm-win-x64.exe",
+                },
+                sha256 = "2271c3cbe627090c35f029812d812d03e4fccd9a75d4f42c2147dc8bfda9c3ed",
+            },
+            ["8.15.9"] = {
+                url = {
+                    GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v8.15.9/pnpm-win-x64.exe",
+                    CN = "https://gitcode.com/xlings-res/pnpm/releases/download/8.15.9/pnpm-win-x64.exe",
+                },
+                sha256 = "5293deb22e1bce2f10cc8ac384fc5355dc5a6501bd6154289b7b8cf67fb525ab",
             },
             -- 7.33.7: one bare executable, `win-x64.exe` rather than
             -- `win32-x64.zip`. Mirrored 2026-09-16, same release as linux.
@@ -216,10 +316,14 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.system")
 
--- Tarball / zip layouts (verified via tar -tzf / unzip -l):
+-- 11+ tarball / zip layouts (verified via tar -tzf / unzip -l):
 --   linux/macos: `pnpm` binary at top level + `dist/` directory of
 --                supporting JS modules. Both must end up in install_dir.
+--                From 12.x the tarballs carry hard-link entries under
+--                dist/node_modules; a filesystem that refuses link(2) gets
+--                copies from xlings 2026.10.10.2, the index's floor.
 --   windows:     `pnpm.exe` at top level + `dist/`.
+-- 7.x - 10.x arrive as the bare executable itself (see install()).
 --
 -- xlings auto-extracts the archive into a runtime working directory
 -- whose contents we then move into install_dir wholesale. The shape
@@ -233,14 +337,14 @@ function install()
 
     local exe = is_host("windows") and "pnpm.exe" or "pnpm"
 
-    -- 8+ : an archive holding the binary and its `dist/`, both of which move.
+    -- 11+ : an archive holding the binary and its `dist/`, both of which move.
     if os.isfile(exe) then
         os.trymv(exe, path.join(dir, exe))
         if os.isdir("dist") then
             os.trymv("dist", path.join(dir, "dist"))
         end
     else
-        -- 7.x: one self-contained executable, downloaded rather than extracted,
+        -- 7.x - 10.x: one self-contained executable, downloaded rather than extracted,
         -- so it arrives under its platform's asset name and has no `dist/`
         -- beside it. Renaming it to `pnpm` is what makes both shapes register
         -- the same way below, and argv[0] resolution has nothing to find for
@@ -295,15 +399,21 @@ function config()
     -- The static asset makes that damage unconstructible rather than merely
     -- unlikely, so this is a check on the invariant, not on a workaround: if it
     -- ever fires, something changed about the asset or about who is allowed to
-    -- rewrite it. The 8+ shape has a `dist/` beside it, is an ordinary node
+    -- rewrite it. The 11+ shape has a `dist/` beside it, is an ordinary node
     -- build that is SUPPOSED to be patched, and is left alone.
     if not os.isdir(path.join(dir, "dist")) then
         local prog = path.join(dir, exe)
-        local out = try { function() return os.iorun('"' .. prog .. '" --version') end }
+        local cmd = '"' .. prog .. '" --version'
+        if is_host("windows") then
+            -- os.iorun appends `2>nul > "<tmp>"` and runs the line through
+            -- cmd /c, which strips the first and last quote of a line that
+            -- starts with one: the redirection then lands inside the program's
+            -- quoted path and nothing is captured. `call` keeps the line from
+            -- starting with a quote; the path keeps its own quotes for spaces.
+            cmd = 'call "' .. prog:gsub("/", "\\") .. '" --version'
+        end
+        local out = try { function() return os.iorun(cmd) end }
         local reported = tostring(out or ""):gsub("%s+", "")
-        -- A broken `pkg` binary fails on stderr and prints nothing, so an empty
-        -- answer is the shape this guard exists to catch -- name that rather
-        -- than reporting it as a mismatch against the empty string.
         if reported == "" then
             raise("pnpm: " .. prog .. " printed no version -- the payload was modified "
                   .. "after staging. A `pkg` single-file executable does not survive having "

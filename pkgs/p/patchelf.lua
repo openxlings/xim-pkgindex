@@ -39,6 +39,15 @@ package = {
 
             ["latest"] = { ref = "0.18.0" },
             ["0.18.0"] = "XLINGS_RES",
+            ["0.19.3"] = {
+                -- Upstream's static binaries under one top directory
+                -- (tools/res/build.sh patchelf), the XLINGS_RES names.
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64  = "1bfa6d97c93d640415ea8efa381be465c48ec8ddb93e30db3dba310b05ebcdca",
+                    aarch64 = "6b8b5bcf29b4b5eac67797f71620a05f0b44707a0323c5e8af6d416118ae2e37",
+                },
+            },
         },
     },
 }

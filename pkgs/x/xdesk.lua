@@ -50,7 +50,37 @@ package = {
                 "xim:mesa@>=25",
                 "xim:libglvnd@>=1.7.0.1",
             },
-            ["latest"] = { ref = "2026.10.24.3" },
+            ["latest"] = { ref = "2026.11.23.1" },
+            ["2026.11.23.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "14533111727983ec9375e569705b2e484bb131acd684a22c94cc6134cc430f4b",
+                },
+            },
+            ["2026.11.22.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "1a7660f84834291ce8c7d2ddf6ff365597c37382879c008dded2772053ce0f69",
+                },
+            },
+            ["2026.11.21.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "fd239ada22c43d55520183b390d61dedcc67de38440e5477fd9ae68454f1c6ce",
+                },
+            },
+            ["2026.11.16.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "dd7b987bd738f2c209e51851500ff729665f71537c3aa89c93ef26712b8d5fde",
+                },
+            },
+            ["2026.10.26.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "ac6c7ecd53ce4b69d9ecd18d31dc403cd210c92b8ea3ed2bb991b0259e4e0887",
+                },
+            },
             ["2026.10.24.3"] = {
                 url = "XLINGS_RES",
                 sha256 = {

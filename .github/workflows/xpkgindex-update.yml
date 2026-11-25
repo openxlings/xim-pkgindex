@@ -27,8 +27,8 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 env:
   PYTHONUTF8: '1'
-  UPDATER_COMMIT: ffda5ad4cdaae5c4fec6e76ab1d498220cf79a69
-  XLINGS_VERSION: v2026.10.24.3
+  UPDATER_COMMIT: c60835a1f00f902dd02f85739d5be9680cd52754
+  XLINGS_VERSION: v2026.11.23.1
 jobs:
   cadence:
     runs-on: ubuntu-latest

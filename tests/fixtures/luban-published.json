@@ -53,6 +53,24 @@
    "sha256": "f180fa1faa625ef31cf371d5807d639bf247b523881c7ebd2d81d28808ddc29a"
   }
  },
+ "pkgs/luban/agent-workspace.lua@2026.11.22.1": {
+  ".xlings.json": {
+   "mode": "644",
+   "sha256": "569defe5607c9fd938fc5d4b0cda143e8fa1d03d2818a33ad63ac11df44c4bda"
+  },
+  "usr/share/factory/etc/motd": {
+   "mode": "644",
+   "sha256": "ba9d52dff3d3f164e8ba4d16df8a4777366cb6204871e75856d99ae8a1a6cdf8"
+  },
+  "usr/share/factory/etc/os-release": {
+   "mode": "644",
+   "sha256": "c97fa2c15fb5db041431b0f949c14e8401152fb8e5ced00359b4e9b4cc0c0405"
+  },
+  "usr/share/luban/settings.json": {
+   "mode": "644",
+   "sha256": "f180fa1faa625ef31cf371d5807d639bf247b523881c7ebd2d81d28808ddc29a"
+  }
+ },
  "pkgs/luban/core.lua@2026.10.18.1": {
   ".xlings.json": {
    "mode": "644",

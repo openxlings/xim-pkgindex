@@ -29,15 +29,19 @@ star 数也不能替代资源完整性和镜像可用性验证。
 没有已验证镜像时只声明 GLOBAL；增加 CN 前核实真实项目路径、完整候选资产及两侧 SHA256 一致性。
 目标默认必需；若镜像可选，经 review 显式设置 `required = false`，至少保留一个必需目标。
 LTS 或固定默认版本使用 `latest = "keep"`。提交 PR 前用下方固定版本工具运行 `inspect` 和指定包的
-`check` 并检查 plan。配置只维护在配方自身；人工维护的原因写入配方注释或 PR 说明。
-首次建包走常规建包 CI，updater 候选检查用于已有配方的新增版本。
-CI 直接校验当前配方，自动生成 `coverage.json` 并上传 Actions artifact；生成的审计快照不进入 PR。
+`check` 并检查 plan。配置只维护在 xpkg 自身；人工维护的原因写入 xpkg 注释或 PR 说明。
+首次建包走常规建包 CI，updater 候选检查用于已有 xpkg 的新增版本。
+CI 直接校验当前 xpkg，自动生成 `coverage.json` 并上传 Actions artifact；生成的审计快照不进入 PR。
+
+比现有所有版本都旧的新增版本属于历史补录：updater 不会追加它，CI 按条目声明的地址校验，
+平台、架构、必需区域和 SHA256 规则不变，并安排原生安装。updater 提议（`auto/bump-*` 分支）
+不得修改依赖、其他元数据和钩子；其余 PR 经人工评审，可以修正它们。两者都保护已发布版本和 latest 策略。
 
 默认 `latest = "advance"`，每个目标默认 `required = true`；`latest = "keep"` 保留既有指针。
 复杂目标可写 `{ required = true, url = { linux = { x86_64 = "..." } } }`。
 版本来源识别 GitHub releases/tags 和以 `.xml` 结尾的公开 HTTPS Sparkle RSS appcast，下载模板可使用任意公开 HTTPS。
 候选从新到旧检查，取所有必需目标完整平台/架构资源的真实版本交集，并下载校验字节一致。
-包可通过配方声明的 review 显式选择可选目标；本轮接入的 GLOBAL/CN 均默认配置为必需。
+包可通过 xpkg 声明的 review 显式选择可选目标；本轮接入的 GLOBAL/CN 均默认配置为必需。
 
 官方 appcast 可直接配置 `source = "https://vendor.example/appcast.xml"`，下载模板使用 `${version}`，
 不需要 GitHub 仓库或 `tag` 声明。版本来自 Sparkle 的数字短版本号，排除增量包及带 channel 的发布项。
@@ -55,7 +59,7 @@ CN 跳回 GitHub 不算镜像就绪。当前使用 xlings-res 的包，也可为
 
 实际扫描/提案每 3 天执行一次，时间为 02:17 UTC / 11:17 JST。每日轻量调度按 UTC 日期门禁，
 以 2026-10-23 为锚点（10 月 23/26/29 日、11 月 1 日等），非到期日跳过扫描/提案，跨月和跨年保持等间隔。
-PR 检查和人工触发不受该门禁限制。到期运行连续扫描多个批次，propose 消费同一份固定 plan，不重新发现版本。配方、base、tag commit
+PR 检查和人工触发不受该门禁限制。到期运行连续扫描多个批次，propose 消费同一份固定 plan，不重新发现版本。xpkg、base、tag commit
 或资源字节变化会拒绝应用。更新不执行 Lua、不改写历史版本、不自动修复冲突、不构建载荷、不自动合并。
 候选版本必须通过相应 runner 上的真实安装、功能验证和卸载。
 
@@ -66,7 +70,7 @@ PR 检查和人工触发不受该门禁限制。到期运行连续扫描多个�
 
 已验证的候选进入独立于扫描顺序的持久 FIFO 队列。`max_prs: 20` 限制每轮提案尝试次数，
 包括创建和刷新 PR；剩余候选继续排队，不必重新发现。更高候选版本替换记录但保留排队位置，
-失败项移到队尾并退避 1～24 小时。配方变更使旧候选失效，提案时重新校验上游身份和资源字节。
+失败项移到队尾并退避 1～24 小时。xpkg 变更使旧候选失效，提案时重新校验上游身份和资源字节。
 单包错误仍在最终结果中报告，其他已验证的候选可以继续处理。
 
 游标和队列保存在独立的运行状态分支 `auto/update-state`。首次接入可以迁移旧 Actions 缓存，
@@ -88,6 +92,15 @@ PR 检查和人工触发不受该门禁限制。到期运行连续扫描多个�
 gh workflow run xpkgindex-update.yml --ref fix/autoupdate-batching-ci -f dry_run=true -f max_batches=20
 ```
 
+项目发布时以类型为 `xpkgindex-update`、`client_payload.package = "xim:<name>"` 的 `repository_dispatch`
+请求提出其新版本；对本仓库有 Contents: write 的令牌即可发送。`xpkgindex-update-request.yml` 以本仓库的令牌
+把它转为上面的单包 `workflow_dispatch`（默认分支），项目的令牌在此不需要 Actions 权限。
+
+```sh
+gh api -X POST repos/openxlings/xim-pkgindex/dispatches \
+  -f event_type=xpkgindex-update -f 'client_payload[package]=xim:mcpp'
+```
+
 候选安装脚本从固定的 xlings release tag 获取。原生安装任务仅覆盖 Linux x86_64/ARM64、
 macOS ARM64 和 Windows x86_64。macOS Intel 和 Windows ARM64 仅校验资源：新增资源仍全部校验，
 但不创建安装任务。任务摘要和 `coverage.json` 明确报告此边界，资源校验不算安装验证。
@@ -106,13 +119,32 @@ xpkgindex-update apply --plan plan.json --package xim:foo
 分支固定为例如 `auto/bump-xim-nvim`；更高候选版本更新同一个 bot PR，包括标题和资源证据。
 普通追加提交替换未发布的候选变更，保留所有已发布版本；人工修改、并发更新会被拒绝，不使用强推。
 旧版带版本号的 bot PR 仅在固定分支的替代 PR 创建成功后关闭；已有人工包 PR 仍阻止自动提案。
-推分支成功但建 PR 失败可以恢复；base、配方、tag commit 或资源字节变化会拒绝应用。
+推分支成功但建 PR 失败可以恢复；base、xpkg、tag commit 或资源字节变化会拒绝应用。
 
 ## 镜像发布
 
-`ci = { mirror = true }` 继续独立控制已声明资源的镜像发布。
-`tools/xpkg_ci.py` 仅保留 `inspect`、`materialize`、`verify`、`ensure-repo`、`mirror`。
-镜像发布不能成为同一个更新 PR 合并后才可满足的资源前置条件。
+`ci = { mirror = true }` 要求 CI 把包声明的 GLOBAL 资源复制到 `xlings-res` 组织（GitHub 与 GitCode）。
+`tools/xpkg_ci.py` 提供 `inspect`、`materialize`、`verify`、`ensure-repo`、`mirror`；
+`tools/xpkg_mirror_queue.py` 负责把它们组成批次。
+
+批次的行为（`.github/workflows/xpkg-mirror.yml`）：
+
+- 在 `main` 上 CI 成功后运行，处理自上一次成功运行以来变更的包，以及仍在失败列表中的包。
+  被更新的运行替换的运行不会丢失内容：最新运行覆盖上一次成功以来的全部变更。
+- 一个 job 处理整批，同时最多两个包。每次 GitCode 上传超时 600 秒，重试 1 次；不按包的体积放宽超时。
+- 失败的包不会让运行失败，而是列入唯一的跟踪 issue（标签 `mirror-failed`，标题
+  "xlings-res mirror: packages that did not publish"）。该 issue 会被查找并更新，不会重复创建。
+  失败的包在之后每次运行中自动重试，直到发布成功；持续失败的包每次都会被尝试，应修复或移除 `ci = { mirror = true }`。
+- 修改了声明 `ci = { mirror = true }` 的包的 PR，在合并前会被 materialize 和 verify
+  （`.github/workflows/mirror-precheck.yml`）；PR 中不发布任何内容。
+- 默认声明 `ci = { mirror = true }`。如果在 `url` 中声明了知名 CN 镜像，则由它代替：同时声明两者的 PR 会被预检拒绝。
+  已知 CN 域名列在 `tools/xpkg_mirror_queue.py` 的 `KNOWN_CN_MIRRORS` 中。你显式写的 `url`、`ci` 或 `CN` 不会被覆盖。
+- 手动重试单个包：在 `main` 上运行 `xpkg-mirror.yml` 并填写 `package`；该包仍需声明 `ci = { mirror = true }`。
+- 发布不可变：已存在且资产不同的 release 会被拒绝，不会覆盖。
+
+合并 PR 即是审批。镜像不会改写包的 `url`：指向镜像的 `CN` 区域需要之后经过审核的改动来添加。
+维护者流程见 `.agents/skills/xlings-res-maintainer/SKILL.md`。
+
 自建/重打包载荷由独立工作流生产，updater 只消费已就绪资源；已发布资源变更仍走人工 revision 流程。
 
-旧自动更新字段和工作流已移除，不提供旧协议回退。CI 每次从配方生成全量包清单，不读取提交到仓库的审计快照。
+旧自动更新字段和工作流已移除，不提供旧协议回退。CI 每次从 xpkg 生成全量包清单，不读取提交到仓库的审计快照。
