@@ -16,7 +16,8 @@
 -- which retains released versions permanently (unlike `dlcdn.apache.org`, which
 -- drops older 3.9.x releases when a newer patch ships). `CN` points to
 -- Tencent's Apache mirror (`mirrors.cloud.tencent.com/apache/maven/maven-3/...`),
--- and `ci = { mirror = true }` also mirrors the `GLOBAL` archive to `xlings-res`.
+-- so the package declares no `ci.mirror`: a well-known CN mirror and the xlings-res
+-- copy are mutually exclusive.
 -- Verified 2026-11-24: `archive.apache.org`, `dlcdn.apache.org`,
 -- `mirrors.cloud.tencent.com`, `mirrors.tuna.tsinghua.edu.cn`, and
 -- `mirrors.ustc.edu.cn` serve byte-identical `apache-maven-3.9.16-bin.zip`
@@ -49,8 +50,6 @@ package = {
     licenses = {"Apache-2.0"},
     repo = "https://github.com/apache/maven",
     docs = "https://maven.apache.org/guides/",
-
-    ci = { mirror = true },
 
     type = "package",
     archs = {"x86_64", "aarch64"},
