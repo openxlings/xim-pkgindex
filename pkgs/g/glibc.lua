@@ -143,7 +143,8 @@ package = {
             -- prefix looks the way it does:
             -- .agents/tools/graphics/build-glibc.sh
             --
-            -- 2.44 IS LEFT IN PLACE, AND IT IS NOT THE ONE TO INSTALL.
+            -- 2.44 IS LEFT IN PLACE. ITS REVISIONS 0 AND 1 WERE NOT THE ONES TO
+            -- INSTALL; REVISION 2 (below the paragraph that follows) IS.
             --
             -- Its asset predates two decisions that were made about it and
             -- never reached it. `strings` on the published loader shows
@@ -160,15 +161,43 @@ package = {
             -- installs changes only by a higher `revision`, which points the
             -- entry at a NEW asset under the same version key (2.44.3 below)
             -- and leaves the old asset published for cached indexes.
+            -- Revision 1: the hooks of 2.44.3 revision 5 (linker scripts by file name).
+            --
+            -- REVISION 2: THE SAME VERSION KEY, THE ASSET OF 2.44.3 REVISION 4.
+            --
+            -- Revisions 0 and 1 install the asset published as 2.44, whose
+            -- bytes cannot change (sha256 0105292f...). It reads the host's
+            -- /etc/ld.so.preload (mcpp-community/mcpp#484), and 16 of its
+            -- executables (bin/iconv, getent, locale, localedef, zic, ...)
+            -- carry a DT_RUNPATH into a scratch directory of the machine that
+            -- built it, a path that exists on no user's machine and that xlings
+            -- reports as a non-transitive search path on every install.
+            --
+            -- Revision 2 installs the asset 2.44.3 revision 4 installs: the same
+            -- upstream glibc 2.44, built on a CI runner with the isolation
+            -- patches and relocated by this recipe at install time (its
+            -- PROVENANCE.txt records the derivation); every RUNPATH in it is
+            -- $ORIGIN. A binding that still names glibc@2.44, as older clients
+            -- hold it, keeps its payload directory and gets that build. The
+            -- revision 0/1 asset stays published for cached indexes.
+            --
+            -- Two entries naming one asset install two complete payloads
+            -- (measured: 2.44, then 2.44.3). What xlings 2026.11.23.1 cannot do
+            -- is install `2.44` when a 2.44.x is installed or in the same plan:
+            -- it answers "already installed" or leaves an empty directory
+            -- (openxlings/xlings#739); install 2.44 first.
+            --
+            -- No `floor`: a payload installed at revision 0 or 1 still works,
+            -- and is replaced the next time glibc@2.44 is installed. 2.44 stays
+            -- x86_64 only (aarch64 clients never held it).
             ["2.44"] = {
-                -- Revision 1: the hooks of 2.44.3 revision 5 (linker scripts by file name).
-                revision = 1,
+                revision = 2,
                 x86_64 = {
                     url = {
-                        GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44/glibc-2.44-linux-x86_64.tar.gz",
-                        CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44/glibc-2.44-linux-x86_64.tar.gz",
+                        GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.3-r4/glibc-2.44.3-r4-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/glibc/releases/download/2.44.3-r4/glibc-2.44.3-r4-linux-x86_64.tar.gz",
                     },
-                    sha256 = "0105292fd6b49f74fbf51f93af973b78a9fc18225cb1c757c720e90de3120182",
+                    sha256 = "7ada8e9c05addbbc67fae964eafa608eace82fc4f13a8900c7249ad0205fad86",
                 },
             },
             -- 2.44.2 IS BACK, AND IT IS `latest`.
