@@ -1,13 +1,15 @@
 -- MySQL Community Server - open-source relational database management system.
 --
 -- Platforms and sources:
---   macosx   x86_64, aarch64   Official Oracle MySQL 9.7.4 LTS tarball (.tar.gz, macos15 deployment floor, self-contained @loader_path dylibs)
---   windows  x86_64            Official Oracle MySQL 9.7.4 LTS archive (.zip) + app-local xim:vcruntime DLLs
+--   macosx   x86_64, aarch64   Official Oracle MySQL 9.7.4 / 8.4.11 LTS / 8.0.46 GA tarballs (.tar.gz, macos15 deployment floor, self-contained @loader_path dylibs)
+--   windows  x86_64            Official Oracle MySQL 9.7.4 / 8.4.11 LTS / 8.0.46 GA archives (.zip) + app-local xim:vcruntime DLLs
 --
 -- Linux is intentionally not declared: Oracle's generic glibc Linux tarballs link
 -- against `libaio.so.1` and `libnuma.so.1`, neither of which is currently provided
 -- by this index (`dep-closure-check.sh` D2 rejects host-only sonames under xlings' glibc).
 -- Upstream publishes no Windows ARM64 MySQL Community Server binary zip.
+-- 8.4.11 is the latest 8.4 LTS release covering macOS x86_64+aarch64 and Windows x64
+-- (8.4.13 lacks a macOS x86_64 tarball); 5.7.44 is omitted because it lacks macOS arm64.
 --
 -- First-time server startup requires initializing a data directory before launching
 -- `mysqld`:
@@ -52,6 +54,8 @@ package = {
         macosx = {
             ["latest"] = { ref = "9.7.4" },
             ["9.7"] = { ref = "9.7.4" },
+            ["8.4"] = { ref = "8.4.11" },
+            ["8.0"] = { ref = "8.0.46" },
             ["9.7.4"] = {
                 x86_64 = {
                     url = "https://cdn.mysql.com/Downloads/MySQL-9.7/mysql-9.7.4-macos15-x86_64.tar.gz",
@@ -62,15 +66,49 @@ package = {
                     sha256 = "abf378ff27753325c908d687a3060f025c58b6530eda53ff4a0c6fc5ff3d7716",
                 },
             },
+            ["8.4.11"] = {
+                x86_64 = {
+                    url = "https://cdn.mysql.com/Downloads/MySQL-8.4/mysql-8.4.11-macos15-x86_64.tar.gz",
+                    sha256 = "90e8aea10698d01b978f0179e72e8d5e2cbe9f9bd5771e88b0b75d7c82244d3f",
+                },
+                aarch64 = {
+                    url = "https://cdn.mysql.com/Downloads/MySQL-8.4/mysql-8.4.11-macos15-arm64.tar.gz",
+                    sha256 = "b96e00493bc3499b9ffd7f08d65c5d64933af0383a8287d9873b64f94c2d6009",
+                },
+            },
+            ["8.0.46"] = {
+                x86_64 = {
+                    url = "https://cdn.mysql.com/Downloads/MySQL-8.0/mysql-8.0.46-macos15-x86_64.tar.gz",
+                    sha256 = "8590bc6c3203fe17f51f757dc9132fb755d1b73cbdad9d12a67f85025a3c3b8f",
+                },
+                aarch64 = {
+                    url = "https://cdn.mysql.com/Downloads/MySQL-8.0/mysql-8.0.46-macos15-arm64.tar.gz",
+                    sha256 = "6ca4a361a45f5019fbf6d500997986b4aaf6f0e30ff9c41179d1e8ecd635f3db",
+                },
+            },
         },
         windows = {
             deps = { runtime = { "xim:vcruntime" } },
             ["latest"] = { ref = "9.7.4" },
             ["9.7"] = { ref = "9.7.4" },
+            ["8.4"] = { ref = "8.4.11" },
+            ["8.0"] = { ref = "8.0.46" },
             ["9.7.4"] = {
                 x86_64 = {
                     url = "https://cdn.mysql.com/Downloads/MySQL-9.7/mysql-9.7.4-winx64.zip",
                     sha256 = "641bdaf01004927194c561b956f14f915a3166c9b0f9b1b5464ae63152bf4b96",
+                },
+            },
+            ["8.4.11"] = {
+                x86_64 = {
+                    url = "https://cdn.mysql.com/Downloads/MySQL-8.4/mysql-8.4.11-winx64.zip",
+                    sha256 = "a492371d687d2bab088b0062581144a0044b8964baefdf4faa579292b423d25c",
+                },
+            },
+            ["8.0.46"] = {
+                x86_64 = {
+                    url = "https://cdn.mysql.com/Downloads/MySQL-8.0/mysql-8.0.46-winx64.zip",
+                    sha256 = "28e9eda019d88eff4478d811ea2110b83f02a3966be157fe91cc55def3ab0d4d",
                 },
             },
         },

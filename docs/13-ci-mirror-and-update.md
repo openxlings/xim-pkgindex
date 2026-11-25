@@ -185,6 +185,9 @@ How the batch behaves (`.github/workflows/xpkg-mirror.yml`):
   on every run, so fix it or remove `ci = { mirror = true }`.
 - A pull request that changes a package declaring `ci = { mirror = true }` is materialized and verified
   before merge (`.github/workflows/mirror-precheck.yml`). Nothing is published from a pull request.
+- By default a package declares `ci = { mirror = true }`. A well-known CN mirror declared in `url` replaces
+  it: the lint fails a pull request that declares both. Known CN hosts are listed in `KNOWN_CN_MIRRORS` in
+  `tools/xpkg_mirror_queue.py`. An explicit `url`, `ci` or `CN` you write is never overwritten.
 - To retry one package by hand, run `xpkg-mirror.yml` on `main` with `package` set. It must still declare
   `ci = { mirror = true }`.
 - Publication is immutable: a release that exists with different assets is refused, never overwritten.

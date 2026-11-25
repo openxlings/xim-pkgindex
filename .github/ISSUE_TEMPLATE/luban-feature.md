@@ -27,6 +27,6 @@ docs/12-luban-packages.md. -->
 ### Additional context | 额外补充
 
 ### Authorship | 作者
-Authorship: <by-human | human-and-ai | by-ai>
+Authorship: <by-human | ai-and-human>
 Agent: <optional | 可选>
 Model: <optional | 可选>

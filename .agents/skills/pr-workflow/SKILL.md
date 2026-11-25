@@ -18,7 +18,8 @@ fix, a test, a doc or a skill.
 | Open a pull request | yes | yes |
 | Edit `pkgs/<own>`, `tests/<own>`, own package note, relevant `docs/` | yes | yes |
 | Edit `.github/**`, `libs/**`, `tools/**`, `index-compat.json`, `tests/lib/**`, `tests/fixtures/**`, `docs/specs/**` | no | when the task is about them |
-| Publish to `xlings-res` (incl. the GitCode CN asset), set `ci.mirror`, use `xpm.source = "xlings-res"` | no (skip CN, or open an issue) | yes, if they have `xlings-res` access |
+| Declare `ci = { mirror = true }` (the default; see AGENTS.md, Source) | yes, unless they declare a well-known CN mirror | yes |
+| Use `xpm.source = "xlings-res"`, or edit the mirror workflow or its tracking issue | no (ask in an issue) | yes, if they have `xlings-res` access |
 | Merge | no | yes (squash) |
 
 ## Steps
@@ -70,9 +71,9 @@ The description states:
 - **what you ran**: commands, pytest, the isolated install per platform, with results;
 - **what you did not run**, why, and the risk;
 - when `latest` moves, the verified version it points to; the issue it closes, if any;
-- **`Authorship:`**, one line: `by-ai` (an agent produced it from a task, a person directed and
-  reviewed), `human-and-ai` (a person and an AI worked together; the person wrote or substantially
-  reworked it) or `by-human`. The pull request template has it. An agent writes `by-ai`.
+- **`Authorship:`**, one line: `ai-and-human` (an AI did most of the work; a person directed it and
+  interacted briefly) or `by-human` (a person led and decided; the AI only assisted). The pull request
+  template has it. An agent writes `ai-and-human`.
 - optionally `Agent:` (the tool, e.g. Claude Code) and `Model:` (the model id): fill them when you
   know them, leave them blank otherwise, never guess.
 - **nothing private**: see "Before you post" below.
