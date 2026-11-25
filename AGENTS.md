@@ -46,7 +46,7 @@ the skills (see "Read next"), the reasons in `docs/`.
 - Never push to `main`; one concern per pull request; commits `<type>(<scope>): <description>`;
   contributors do not merge. Fill the pull request template.
 - A **new** package adds `.agents/docs/<name>.md`; a version bump adds nothing.
-- `Authorship: by-ai` (agents) in every description; `Agent:` and `Model:` are optional and may
+- `Authorship: ai-and-human` or `by-human` in every description (agents write `ai-and-human`); `Agent:` and `Model:` are optional and may
   stay blank. A workflow turns these and the changed files into labels (hints, not checks): do not
   pass `--label`.
 - **Before posting, remove** local absolute paths, usernames, hostnames, e-mail addresses and

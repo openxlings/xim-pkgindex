@@ -64,6 +64,6 @@ Link it here once it is open | PR 开启后在此链接:
 ...
 
 ### Authorship | 作者
-Authorship: <by-human | human-and-ai | by-ai>
+Authorship: <by-human | ai-and-human>
 Agent: <optional | 可选>
 Model: <optional | 可选>
