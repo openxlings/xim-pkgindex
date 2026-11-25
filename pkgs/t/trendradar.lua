@@ -36,7 +36,7 @@ package = {
     xpm = {
         linux = {
             deps = {"xim:python"},
-            ["latest"] = { ref = "6.11.0" },
+            ["latest"] = { ref = "6.12.0" },
             ["6.6.1"] = {
                 url = "https://github.com/sansan0/TrendRadar/archive/refs/tags/v6.6.1.tar.gz",
                 sha256 = "1e7ffcfdb6fca901a0de61fb20e2d27375cb00511ffb5cb88a07206a9141b8f5",
@@ -44,10 +44,14 @@ package = {
             ["6.11.0"] = {
                 url = "https://github.com/sansan0/TrendRadar/archive/refs/tags/v6.11.0.tar.gz",
                 sha256 = "37fa16048d6d151431b54affe72ac359ed956fbdd4c7486ee838eb9581c9582f",
+            },
+            ["6.12.0"] = {
+                url = "https://github.com/sansan0/TrendRadar/archive/refs/tags/v6.12.0.tar.gz",
+                sha256 = "91359658af92806a36c024998bbf60eae13c5f778154d2cf3b523a457cd0de4a",
             },
         },
         macosx = {
-            ["latest"] = { ref = "6.11.0" },
+            ["latest"] = { ref = "6.12.0" },
             ["6.6.1"] = {
                 url = "https://github.com/sansan0/TrendRadar/archive/refs/tags/v6.6.1.tar.gz",
                 sha256 = "1e7ffcfdb6fca901a0de61fb20e2d27375cb00511ffb5cb88a07206a9141b8f5",
@@ -55,6 +59,10 @@ package = {
             ["6.11.0"] = {
                 url = "https://github.com/sansan0/TrendRadar/archive/refs/tags/v6.11.0.tar.gz",
                 sha256 = "37fa16048d6d151431b54affe72ac359ed956fbdd4c7486ee838eb9581c9582f",
+            },
+            ["6.12.0"] = {
+                url = "https://github.com/sansan0/TrendRadar/archive/refs/tags/v6.12.0.tar.gz",
+                sha256 = "91359658af92806a36c024998bbf60eae13c5f778154d2cf3b523a457cd0de4a",
             },
         },
     },
