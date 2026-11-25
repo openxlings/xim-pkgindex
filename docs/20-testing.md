@@ -2,7 +2,7 @@
 
 **English** | [简体中文](zh/20-testing.md)
 
-Every recipe has a pytest module beside it, and the repository has checks of its
+Every xpkg has a pytest module beside it, and the repository has checks of its
 own. This chapter is how to run them, how to add one, and what CI runs.
 
 ## Levels
@@ -10,7 +10,7 @@ own. This chapter is how to run them, how to add one, and what CI runs.
 | Level | Marker | Needs | Checks |
 |---|---|---|---|
 | L0 static | `static` | nothing | Lua syntax, required fields, `spec` / `type` values, known misspellings |
-| L1 index | `index` | xlings | the recipe registers (`xlings config --add-xpkg`) |
+| L1 index | `index` | xlings | the xpkg registers (`xlings config --add-xpkg`) |
 | L2 isolation | `isolation` | nothing | no `os.exec("xvm ...")`, no shell profile edits, no `PATH` edits, `xim.libxpkg.*` APIs, no host package manager |
 | L3 lifecycle | `lifecycle` | xlings, network | install and remove succeed |
 | L4 verify | `verify` | the package installed | its programs run and do what they should |
@@ -33,7 +33,7 @@ XLINGS_HOME="$(mktemp -d)" pytest tests/c/test_cmake.py -m "lifecycle or verify"
 
 ## Adding a test
 
-The module mirrors the recipe: `pkgs/n/my-package.lua` →
+The module mirrors the xpkg: `pkgs/n/my-package.lua` →
 `tests/n/test_my_package.py` (`-` becomes `_`).
 
 ```python
@@ -120,13 +120,13 @@ class TestVerify:
 ```
 
 - A lifecycle test names what it installs with `under_test(PKG)` or
-  `under_test(PKG, version)` (`tests/lib/platform_utils.py`). The recipe a
+  `under_test(PKG, version)` (`tests/lib/platform_utils.py`). The xpkg a
   change edits is in the home once: written over its published copy, where it
   answers as `xim:`, or registered beside the index (`xlings config
   --add-xpkg`) when the index has no copy of it, where it answers as `local:`.
   The function reads which, when the test runs. A namespace written into a
   module is right in one of the two states: `local:<pkg>` does not name a
-  published recipe, because registering a recipe identical to the published
+  published xpkg, because registering an xpkg identical to the published
   one adds nothing.
 - An alias package (`ref`) asserts `meta.is_ref` and little else.
 - A platform-specific test is marked `@skip_if_not("windows")`.
@@ -147,16 +147,16 @@ class TestVerify:
 
 ## Repository-wide checks
 
-Some rules span every recipe, and each has its own test or script:
+Some rules span every xpkg, and each has its own test or script:
 
 | Check | Where |
 |---|---|
 | dependency coordinates and the split `deps` form | `tests/test_dep_query_coordinates.py`, `tests/test_deps_shape.py` |
 | no compiler runtime in a library payload | `tests/test_no_compiler_runtime_in_payloads.py` |
+| a dirun profile an xpkg writes parses as TOML | `tests/test_dirun_profiles.py` |
 | a published Luban version's output never changes | `tests/test_luban_published.py` |
 | a changed resource raises `revision` | `.github/scripts/check-revision.lua` |
 | `floor` is an integer within `0 ≤ floor ≤ revision`, on the version entry | `.github/scripts/check-revision.lua` |
-| no hard link in a payload | `.github/scripts/check-payload-hard-links.py` |
 | a dependency's namespace resolves in this index | `.github/scripts/check-dep-namespace.sh` |
 | no host package manager in workflows or scripts | `tools/lint_host_deps.sh` |
 | the docs' structure and links | `tests/test_docs.py` |
@@ -165,19 +165,21 @@ Some rules span every recipe, and each has its own test or script:
 
 | Workflow | When | Runs |
 |---|---|---|
-| `ci-xpkg-test.yml` | a change to `pkgs/`, `libs/`, `tests/` | L0 and L2 on every recipe, then L1 |
-| `ci-test.yml` | a change to `pkgs/` or `libs/` | installs and removes what the change touched, on Linux, macOS and Windows; then runs the L3 and L4 tests of each recipe the change edits (`recipe-tests.py`) |
+| `ci-xpkg-test.yml` | a change to `pkgs/`, `libs/`, `tests/` | L0 and L2 on every xpkg, then L1 |
+| `ci-test.yml` | a change to `pkgs/` or `libs/` | installs and removes what the change touched, on Linux, macOS and Windows; then runs the L3 and L4 tests of each xpkg the change edits (`xpkg-tests.py`) |
 | `ci-tools.yml` | a change to `tools/`, `scripts/` or workflows | the tools' own tests and the repository lints |
-| `ci-sweep.yml` | weekly | installs one slice of every recipe, by ISO week |
-| `luban-agent-workspace.yml` | a change to Luban's recipes or what they pin | builds and boots the editions on x86_64 and aarch64 |
+| `ci-sweep.yml` | weekly | installs one slice of every xpkg, by ISO week |
+| `luban-agent-workspace.yml` | a change to Luban's xpkgs or what they pin | builds and boots the editions on x86_64 and aarch64 |
+| `llvm-payload.yml` | a change to `pkgs/l/llvm.lua` or to the check | on every host a changed llvm version is served on (Linux x86_64 and aarch64, macOS arm64, Windows x86_64), the archive the xpkg names compiles one object with zlib-compressed and one with zstd-compressed debug sections with its own clang, and links each with the `ld.lld` beside that clang; an archive the index makes is built first |
+| `native-binary-hosts.yml` | a change to an xpkg with prebuilt native programs (bun, esbuild, codex, the agents), nightly | installs them on Alpine x86_64 and aarch64 (no glibc loader), Ubuntu 20.04 (the oldest glibc) and in a root made like the Luban host machine (a static xlings, busybox and bwrap; with Luban's agent tool sets), with the published xlings or a given run's |
 | `site-check.yml` | a change to `pkgs/`, `docs/` or the site config | builds the site in strict mode |
 
 L3 and L4 run in CI only for what a change touched and in the weekly sweep: a
-full install of every recipe on every platform is not a per-push budget. A
-recipe the change edits runs its own module's L3 and L4 tests on each host of
-the install job; a recipe the change only reaches, through a dependency, is
+full install of every xpkg on every platform is not a per-push budget. A
+xpkg the change edits runs its own module's L3 and L4 tests on each host of
+the install job; an xpkg the change only reaches, through a dependency, is
 installed and removed. What a module asserts at L4 is therefore what admits a
-new version or revision of its recipe: a payload whose digest matches and
+new version or revision of its xpkg: a payload whose digest matches and
 whose install succeeds can still be unusable, and the module is where that is
 stated.
 

@@ -34,12 +34,20 @@ jobs:
         run: |
           set -euo pipefail
           xlings="$HOME/.xlings/bin/xlings"
-          "$xlings" config --add-xpkg pkgs/c/chatgpt.lua
+          register_out="$("$xlings" config --add-xpkg pkgs/c/chatgpt.lua)"
+          printf '%s\n' "$register_out"
+          # A client from 2026.10.10.2 does not register a recipe identical to
+          # its published copy ("nothing to add"); install the namespace the
+          # registration produced -- same bytes, same checkout.
+          ns="local"
+          if grep -q "is identical to xim:chatgpt;" <<<"$register_out"; then
+              ns="xim"
+          fi
           # the recipe imports xim.pkgindex.*: the local index needs this checkout's libs/
           mkdir -p "$HOME/.xlings/data/xim-pkgindex-local/libs"
           cp libs/*.lua "$HOME/.xlings/data/xim-pkgindex-local/libs/"
-          "$xlings" install local:chatgpt -y
-          app=$(ls -d "$HOME"/.xlings/data/xpkgs/local-x-chatgpt/*/app)
+          "$xlings" install "${ns}:chatgpt" -y
+          app=$(ls -d "$HOME"/.xlings/data/xpkgs/${ns}-x-chatgpt/*/app)
           [ "$(printf '%s\n' "$app" | wc -l)" -eq 1 ] || { echo "::error::expected one installed app/, found: $app"; exit 1; }
           echo "CHATGPT_APP=$app" >> "$GITHUB_ENV"
 

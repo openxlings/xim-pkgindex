@@ -65,6 +65,18 @@ package = {
                     x86_64 = "ca93aa25d5e59e568ce81db5bcdd161ed743c2893873fd1bbee4d9bc4e3e7fa8", -- filled by publish script from the built tarball
                 },
             },
+            ["16.2.0"] = {
+                -- Built as 16.1.0 was, by tools/res/build.sh mingw-cross-gcc
+                -- (binutils 2.47, mingw-w64 v14.0.0, MSVCRT); a C++23 program
+                -- using import std, linked -static, ran under wine.
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/mingw-cross-gcc/releases/download/16.2.0/mingw-cross-gcc-16.2.0-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/mingw-cross-gcc/releases/download/16.2.0/mingw-cross-gcc-16.2.0-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "7c6fba215606d5834ef2bbff15a02b8b44ba185c5a175d8e3bc6761a595a9af0",
+                },
+            },
         },
     },
 }

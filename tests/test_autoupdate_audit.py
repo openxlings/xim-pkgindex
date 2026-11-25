@@ -287,6 +287,23 @@ def test_a_recipe_a_bot_writes_keeps_the_automatic_rules(index):
         module.guard(base)
 
 
+def test_a_reviewed_change_may_correct_a_hook_an_automatic_one_may_not(index):
+    """pnpm's Windows version probe (#1209): a hook bug in a recipe the bot also
+    writes is corrected by review; the bot's own proposals keep the freeze."""
+    fixed = RECIPE + '\nfunction config() return true end\n'
+    module, base = _guarded(index, RECIPE + '\nfunction config() return false end\n', fixed)
+    with pytest.raises(module.Invalid, match='must not change runtime hooks'):
+        module.guard(base)
+    assert module.guard(base, reviewed=True)['changed'] == [{'path': 'pkgs/f/foo.lua', 'rules': 'automatic'}]
+
+
+def test_a_reviewed_change_still_keeps_the_latest_policy(index):
+    moved = RECIPE.replace('["latest"] = { ref = "1.0.0" }', '["latest"] = { ref = "0.9.0" }')
+    module, base = _guarded(index, RECIPE, moved)
+    with pytest.raises(module.Invalid):
+        module.guard(base, reviewed=True)
+
+
 def test_candidate_verification_receives_the_installed_version(index, monkeypatch):
     """A clean candidate home contains only the new version, never the old pin."""
     import json

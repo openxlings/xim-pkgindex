@@ -34,14 +34,23 @@ package = {
                   .. "libcufft/linux-${arch_alias}/"
                   .. "libcufft-linux-${arch_alias}-${version}-archive.tar.xz",
             arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
+            -- libcufft.so and its siblings name libgcc_s.so.1 (some libstdc++.so.6 too) in DT_NEEDED
+            -- (readelf, the x86_64 archive of the newest version). A toolchain whose runtime is not
+            -- GCC's supplies neither, so the package declares the GCC runtime itself and the
+            -- seal's DT_RUNPATH reaches it.
+            deps = { "xim:gcc-runtime" },
             ["latest"] = { ref = "12.3.0.29" },
             ["12.3.0.29"] = {
+                -- 1: the archive unchanged; the GCC runtime is declared (deps above).
+                revision = 1,
                 sha256 = {
                     aarch64  = "59cab9753d0e025b9bfebda843555b1bbf99d9ea2d4a8eaa87a1185610b068e4",
                     x86_64   = "b2404952a5d630fbbc13e12d36975ef87a9c05c71c321c2cb5b3820789e47462",
                 },
             },
             ["11.4.1.4"] = {
+                -- 1: the archive unchanged; the GCC runtime is declared (deps above).
+                revision = 1,
                 sha256 = {
                     aarch64  = "b87637db96e485f4793d7ca8bd2cf07250eca5c86f6c56744a36683418359c03",
                     x86_64   = "b0e65af59b0c2f6c8ed9f5552a9b375890855b7926ae2c0404d15dcf2565bda4",

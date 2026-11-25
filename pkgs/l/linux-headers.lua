@@ -9,7 +9,7 @@ package = {
 
     -- xim pkg info
     type = "package",
-    archs = {"x86_64", "aarch64"},
+    archs = {"x86_64", "aarch64", "riscv64", "loongarch64", "i686"},
     status = "stable", -- dev, stable, deprecated
 
     -- xvm: xlings version management
@@ -19,7 +19,45 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "5.11.1" },
+            -- The newest release of the newest longterm series.
+            ["latest"] = { ref = "6.18.64" },
+            -- ONE ARCHIVE FOR EVERY ARCHITECTURE (tools/res/build.sh
+            -- linux-headers). The headers are the target's data, not a
+            -- program of the host, and of `make headers_install`'s output only
+            -- asm/ differs between architectures: include/ holds the rest and
+            -- arch/<arch>/include/asm/ each architecture's asm/. install()
+            -- links include/asm to the host's, so a reader of include/ sees
+            -- what the per-architecture archives held; a cross build reads
+            -- arch/<target arch>/include first.
+            ["7.3.5"] = {
+                url = {
+                    GLOBAL = "https://github.com/xlings-res/linux-headers/releases/download/7.3.5/linux-headers-7.3.5.tar.gz",
+                    CN     = "https://gitcode.com/xlings-res/linux-headers/releases/download/7.3.5/linux-headers-7.3.5.tar.gz",
+                },
+                sha256 = "b9ed727b50aa92cab72f99474fcd64f93e0470341163a93806caf38d5cc2009e",
+            },
+            -- Revision 1: the same headers in the layout above, as the
+            -- corrective asset `6.18.64-r1` (the revision-0 archives of each
+            -- architecture stay published). Each host's entry names the one
+            -- archive. `floor` stays 0: an installed revision-0 payload holds
+            -- the host's headers and remains usable.
+            ["6.18.64"] = {
+                revision = 1,
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/linux-headers/releases/download/6.18.64-r1/linux-headers-6.18.64-r1.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/linux-headers/releases/download/6.18.64-r1/linux-headers-6.18.64-r1.tar.gz",
+                    },
+                    sha256 = "b8a82fd0c9e9e0b2261b45afa2f2a6cecb91e52f84deadc1e2e4ef8016cd23a2",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/linux-headers/releases/download/6.18.64-r1/linux-headers-6.18.64-r1.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/linux-headers/releases/download/6.18.64-r1/linux-headers-6.18.64-r1.tar.gz",
+                    },
+                    sha256 = "b8a82fd0c9e9e0b2261b45afa2f2a6cecb91e52f84deadc1e2e4ef8016cd23a2",
+                },
+            },
             -- Self-contained PREBUILT kernel headers, mirror-aware.
             --
             -- Previously this was a thin delegator that depended on
@@ -57,6 +95,7 @@ import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
 import("xim.pkgindex.sysroot")
+import("xim.pkgindex.shell")
 
 function install()
     -- The prebuilt tarball extracts to `linux-headers-<ver>/include/...`.
@@ -71,6 +110,34 @@ function install()
 
     os.tryrm(pkginfo.install_dir())
     os.trymv(srcdir, pkginfo.install_dir())
+
+    -- The layout with arch/: include/ gains the host architecture's own
+    -- files -- asm/ as one link, and each header only some architectures
+    -- install -- so it reads as the per-architecture archives did. The host
+    -- is read through `uname -m`, as os.arch() is unbound in the hook runtime
+    -- (pkgs/q/qt.lua).
+    local root = pkginfo.install_dir()
+    if os.isdir(path.join(root, "arch")) then
+        local f = io.popen("uname -m")
+        local arch = f and (f:read("l") or "") or ""
+        if f then f:close() end
+        if arch == "arm64" then arch = "aarch64" end
+        local own = path.join(root, "arch", arch, "include")
+        if not os.isdir(path.join(own, "asm")) then
+            log.error("linux-headers %s carries no headers of %s", pkginfo.version(), arch)
+            return false
+        end
+        shell.exec({ "ln", "-sfn", "../arch/" .. arch .. "/include/asm", path.join(root, "include", "asm") })
+        local list = io.popen("cd " .. shell.quote(own) .. " && find . -type f ! -path './asm/*'")
+        for line in list:lines() do
+            local rel = line:gsub("^%./", "")
+            local up = string.rep("../", select(2, rel:gsub("/", "")) + 1)
+            local dst = path.join(root, "include", rel)
+            if not os.isdir(path.directory(dst)) then os.mkdir(path.directory(dst)) end
+            shell.exec({ "ln", "-sfn", up .. "arch/" .. arch .. "/include/" .. rel, dst })
+        end
+        list:close()
+    end
 
     return true
 end
