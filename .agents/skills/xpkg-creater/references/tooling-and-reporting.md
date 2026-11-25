@@ -77,7 +77,7 @@ gh issue create --repo openxlings/<repo> \
   Ruled out: <what you checked>.
 
   Filed by an AI agent while contributing `<name>`.
-  Authorship: by-ai
+  Authorship: ai-and-human
   Agent: <optional: the tool, e.g. Claude Code; blank if unsure>
   Model: <optional: the model id; blank if unsure>
   ```

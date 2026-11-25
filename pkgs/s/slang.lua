@@ -184,6 +184,7 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.system")
+import("xim.pkgindex.winpath")
 
 -- The upstream archive extracts FLAT — `bin/`, `include/`, `lib/`, `share/`,
 -- `docs/`, `LICENSE` at top level with no `slang-<ver>-<os>-<arch>/` wrapper —
@@ -232,11 +233,22 @@ function install()
         -- `lib/ollama/` (libggml-cuda.so and the rest) into slang's payload
         -- whenever ollama had been installed first.
         -- r1: the payload is exactly the archive (it gains third-party-notices).
-        -- tar reads the zip on Windows too (bsdtar), and a line that starts
-        -- with `tar` runs the same under every libxpkg (see dsh.lua).
         os.mkdir(dir)
-        system.exec(string.format([[tar -xf "%s" -C "%s"]],
-                                  pkginfo.install_file(), dir))
+        if is_host("windows") then
+            -- The zip is read by Windows' own bsdtar, named by path: a bare
+            -- `tar` is whichever one PATH finds first, and under bash (as the
+            -- candidate CI step runs) that can be Git for Windows' GNU tar,
+            -- which does not read zip. The line starts with the unquoted
+            -- tar.exe path, as a Windows line must (see dsh.lua).
+            local sysroot = winpath.native(os.getenv("SystemRoot") or "C:\\Windows"):gsub("\\+$", "")
+            local systar = sysroot .. "\\System32\\tar.exe"
+            -- exec-quoting-ok: the first token is the system's tar.exe, which cmd.exe must see unquoted
+            system.exec(string.format('%s -xf "%s" -C "%s"', systar,
+                                      winpath.native(pkginfo.install_file()), winpath.native(dir)))
+        else
+            system.exec(string.format([[tar -xf "%s" -C "%s"]],
+                                      pkginfo.install_file(), dir))
+        end
     else
         os.mv(src, dir)
     end
