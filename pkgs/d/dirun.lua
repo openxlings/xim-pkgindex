@@ -27,7 +27,37 @@ package = {
     xvm_enable = true,
     xpm = {
         linux = {
-            ["latest"] = { ref = "0.5.0" },
+            ["latest"] = { ref = "0.8.0" },
+            ["0.8.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/Sunrisepeak/dirun/releases/download/v0.8.0/dirun-0.8.0-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/dirun/releases/download/v0.8.0/dirun-0.8.0-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    ["aarch64"] = "44997ea002a935072fa06d72a300eba037e68ace57eef732edaf8649216678ed",
+                    ["x86_64"] = "44997ea002a935072fa06d72a300eba037e68ace57eef732edaf8649216678ed",
+                },
+            },
+            ["0.7.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/Sunrisepeak/dirun/releases/download/v0.7.0/dirun-0.7.0-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/dirun/releases/download/v0.7.0/dirun-0.7.0-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    ["aarch64"] = "48e17cdb829dc08d48de484226a332f3fc1951830719d69283a908b4e735f454",
+                    ["x86_64"] = "48e17cdb829dc08d48de484226a332f3fc1951830719d69283a908b4e735f454",
+                },
+            },
+            ["0.6.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/Sunrisepeak/dirun/releases/download/v0.6.0/dirun-0.6.0-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/dirun/releases/download/v0.6.0/dirun-0.6.0-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    ["aarch64"] = "49f67782ef54111c4949c7d26c5293f7ae26f0a30f8b9b109252d39c619b3e9d",
+                    ["x86_64"] = "49f67782ef54111c4949c7d26c5293f7ae26f0a30f8b9b109252d39c619b3e9d",
+                },
+            },
             ["0.5.0"] = {
                 url = {
                     GLOBAL = "https://github.com/Sunrisepeak/dirun/releases/download/v0.5.0/dirun-0.5.0-openkal-bundle-all.tar.gz",
@@ -80,7 +110,37 @@ package = {
             },
         },
         macosx = {
-            ["latest"] = { ref = "0.5.0" },
+            ["latest"] = { ref = "0.8.0" },
+            ["0.8.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/Sunrisepeak/dirun/releases/download/v0.8.0/dirun-0.8.0-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/dirun/releases/download/v0.8.0/dirun-0.8.0-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    ["aarch64"] = "44997ea002a935072fa06d72a300eba037e68ace57eef732edaf8649216678ed",
+                    ["x86_64"] = "44997ea002a935072fa06d72a300eba037e68ace57eef732edaf8649216678ed",
+                },
+            },
+            ["0.7.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/Sunrisepeak/dirun/releases/download/v0.7.0/dirun-0.7.0-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/dirun/releases/download/v0.7.0/dirun-0.7.0-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    ["aarch64"] = "48e17cdb829dc08d48de484226a332f3fc1951830719d69283a908b4e735f454",
+                    ["x86_64"] = "48e17cdb829dc08d48de484226a332f3fc1951830719d69283a908b4e735f454",
+                },
+            },
+            ["0.6.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/Sunrisepeak/dirun/releases/download/v0.6.0/dirun-0.6.0-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/dirun/releases/download/v0.6.0/dirun-0.6.0-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    ["aarch64"] = "49f67782ef54111c4949c7d26c5293f7ae26f0a30f8b9b109252d39c619b3e9d",
+                    ["x86_64"] = "49f67782ef54111c4949c7d26c5293f7ae26f0a30f8b9b109252d39c619b3e9d",
+                },
+            },
             ["0.5.0"] = {
                 url = {
                     GLOBAL = "https://github.com/Sunrisepeak/dirun/releases/download/v0.5.0/dirun-0.5.0-openkal-bundle-all.tar.gz",
@@ -133,7 +193,37 @@ package = {
             },
         },
         windows = {
-            ["latest"] = { ref = "0.5.0" },
+            ["latest"] = { ref = "0.8.0" },
+            ["0.8.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/Sunrisepeak/dirun/releases/download/v0.8.0/dirun-0.8.0-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/dirun/releases/download/v0.8.0/dirun-0.8.0-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    ["aarch64"] = "44997ea002a935072fa06d72a300eba037e68ace57eef732edaf8649216678ed",
+                    ["x86_64"] = "44997ea002a935072fa06d72a300eba037e68ace57eef732edaf8649216678ed",
+                },
+            },
+            ["0.7.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/Sunrisepeak/dirun/releases/download/v0.7.0/dirun-0.7.0-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/dirun/releases/download/v0.7.0/dirun-0.7.0-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    ["aarch64"] = "48e17cdb829dc08d48de484226a332f3fc1951830719d69283a908b4e735f454",
+                    ["x86_64"] = "48e17cdb829dc08d48de484226a332f3fc1951830719d69283a908b4e735f454",
+                },
+            },
+            ["0.6.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/Sunrisepeak/dirun/releases/download/v0.6.0/dirun-0.6.0-openkal-bundle-all.tar.gz",
+                    CN = "https://gitcode.com/xlings-res/dirun/releases/download/v0.6.0/dirun-0.6.0-openkal-bundle-all.tar.gz",
+                },
+                sha256 = {
+                    ["aarch64"] = "49f67782ef54111c4949c7d26c5293f7ae26f0a30f8b9b109252d39c619b3e9d",
+                    ["x86_64"] = "49f67782ef54111c4949c7d26c5293f7ae26f0a30f8b9b109252d39c619b3e9d",
+                },
+            },
             ["0.5.0"] = {
                 url = {
                     GLOBAL = "https://github.com/Sunrisepeak/dirun/releases/download/v0.5.0/dirun-0.5.0-openkal-bundle-all.tar.gz",

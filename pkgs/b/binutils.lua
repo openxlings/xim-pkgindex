@@ -49,7 +49,29 @@ package = {
                 runtime = { "xim:glibc@>=2.39", "xim:gcc-runtime@>=15" },
                 build = { "xim:patchelf@0.18.0" },
             },
-            ["latest"] = { ref = "2.42.1" },
+            ["latest"] = { ref = "2.47" },
+            ["2.47"] = {
+                -- GNU's signed release, built on each architecture by
+                -- tools/res/build.sh binutils (Debian 12, glibc), without
+                -- hard links. The release tarball is a development build
+                -- (bfd/development.sh), so the tools report 2.47.20260726.
+                -- No gold: from 2.44 GNU ships it only in a separate
+                -- binutils-with-gold tarball, and none exists for 2.47.
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/binutils/releases/download/2.47/binutils-2.47-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/binutils/releases/download/2.47/binutils-2.47-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "76678811e3f80c9c8fcb7c668d1554428a52e2cbb4345155a82edf2f994c823a",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/binutils/releases/download/2.47/binutils-2.47-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/binutils/releases/download/2.47/binutils-2.47-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "10b848d1857c5b2709e286d4df3aa1bad1b5cf1a416f5138af5ec768fe034947",
+                },
+            },
             -- SAME ARTIFACT, NEW KEY. The bytes are identical to 2.42 -- the
             -- sha256 below is the 2.42 tarball's -- and the only thing that
             -- changed is this recipe's config(), which now installs the `ld`
@@ -187,9 +209,22 @@ end
 -- wrong on.
 function write_ld_wrapper()
     local dir = path.join(pkginfo.install_dir(), WRAPPER_SUBDIR)
-    fs.mkdir_p(dir)
     local wrapper = path.join(dir, "ld")
     local real = path.join(pkginfo.install_dir(), "bin", "ld")
+
+    -- A LINK ENTRY IS ITS OWNER'S (xlings upstreams; mcpp docs/25 §3): this
+    -- home's version directory is a link to another home's payload, whose
+    -- wrapper that home wrote. Writing it again put this home's path into the
+    -- owner's fallback line, and a temporary home's path stayed there after the
+    -- home was removed (measured: mcpp's test homes, mcpp#293).
+    local linked = os.iorun(string.format("if [ -L %s ]; then echo link; fi", __shq(pkginfo.install_dir())))
+    if linked and linked:find("link", 1, true) then
+        if os.isfile(wrapper) then return dir end
+        log.warn("the linked binutils payload at %s has no ld wrapper; `ld` resolves to bin/ld",
+                 pkginfo.install_dir())
+        return nil
+    end
+    fs.mkdir_p(dir)
 
     -- ${0%/*}, not $(dirname "$0"): a SubOS root may have no coreutils
     -- (luban-tiny is busybox), and the shell alone can take the directory.

@@ -1,0 +1,35 @@
+name: mirror-precheck
+
+# A package that declares ci = { mirror = true } is materialized and verified on the pull
+# request, with nothing published, so a bad URL, template or hash fails the pull request
+# instead of a later run on main. Docs: docs/13-ci-mirror-and-update.md.
+on:
+  pull_request:
+    paths:
+      - "pkgs/**/*.lua"
+
+permissions:
+  contents: read
+
+jobs:
+  precheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify the declared mirrors (no publish)
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          python3 tools/xpkg_mirror_queue.py --workspace . precheck --base "$BASE" --head "$HEAD" \
+            --work "$RUNNER_TEMP/precheck-work" --results "$RUNNER_TEMP/precheck-results"

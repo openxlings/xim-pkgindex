@@ -79,7 +79,7 @@ jobs:
 
       - uses: ./.github/actions/setup-xlings
         with:
-          version: v2026.8.8.2
+          version: v2026.11.23.1
 
       # Refresh the index. The release tarball bundles a pkgindex snapshot
       # frozen at build time, so without this a package's DEPENDENCIES resolve
@@ -138,7 +138,7 @@ jobs:
 
       - uses: ./.github/actions/setup-xlings
         with:
-          version: v2026.8.8.2
+          version: v2026.11.23.1
 
       # 先 update 再 overlay, 且之后不得再 update —— update 会重拉发布
       # artifact 把覆盖进去的文件盖回去。overlay 让 ncurses 的 deps 按本
