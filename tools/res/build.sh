@@ -45,6 +45,9 @@
 #   coreutils     coreutils on glibc
 #   openssl       openssl on glibc, lib64
 #   binutils      binutils on glibc
+#   libaio        libaio.so.1 and headers on glibc
+#   numactl       libnuma.so.1, headers and numa.pc on glibc
+#   libcurl       libcurl.so.4 (OpenSSL, zlib), headers and libcurl.pc on glibc
 #   gcc           gcc on glibc, configured as x86_64's (fromsource:gcc),
 #                 against a sysroot xlings makes (glibc) with the declared
 #                 linux-headers, the declared binutils first on PATH
@@ -1097,6 +1100,75 @@ bash|coreutils|openssl|binutils)
         binutils)  "$work/$d/bin/ld" --version | grep -q "$v" || die "ld does not report $version" ;;
     esac
     provenance "$d" "$what $version (sha256 $(input "$what" "$v")); built in Debian 12 against its glibc (an xlings install patches it onto the index's glibc)"
+    pack "$d" ;;
+libaio)
+    v="${version%%-r[0-9]*}"
+    d="libaio-$version-linux-$arch"
+    source_of libaio "$v" "https://snapshot.debian.org/archive/debian/20240101T000000Z/pool/main/liba/libaio/libaio_${v}.orig.tar.gz" "$work/src.tar.gz"
+    debian "apt-get -qq update && apt-get -qq install -y --no-install-recommends build-essential file >/dev/null \
+        && dpkg-query -W -f '\${Package} \${Version}\n' > /w/installed \
+        && tar -xzf src.tar.gz && cd libaio-$v/src \
+        && make -s clean >/dev/null && make -s -j\$(nproc) >/dev/null && make -s prefix=/w/$d install >/dev/null \
+        && rm -f /w/$d/lib/libaio.a && strip --strip-unneeded /w/$d/lib/libaio.so.* \
+        && printf '%s\n' '#include <libaio.h>' 'int main(void){ io_context_t ctx = 0; int rc = io_setup(1, &ctx); if (rc == 0) io_destroy(ctx); return 0; }' > /w/t.c \
+        && gcc /w/t.c -I/w/$d/include -L/w/$d/lib -Wl,-rpath,/w/$d/lib -laio -o /w/t && /w/t"
+    [[ -f "$work/$d/include/libaio.h" && -e "$work/$d/lib/libaio.so.1" ]] || die "libaio: missing expected files"
+    GLIBC_ELFS="$(find "$work/$d" -type f -exec sh -c 'file -b "$1" | grep -q "^ELF.*dynamically linked" && echo "$1"' _ {} \;)"
+    [[ -n "$GLIBC_ELFS" ]] || die "libaio: no dynamically linked ELF in the payload"
+    glibc_only
+    provenance "$d" "libaio $version (Debian archive snapshot of pagure.io/libaio, sha256 $(input libaio "$v")); libaio.so.1 and libaio.h; built in Debian 12 against $(grep -E '^libc6 ' "$work/installed" | tr '\n' ' ')(an xlings install patches it onto the index's glibc)"
+    pack "$d" ;;
+numactl)
+    v="${version%%-r[0-9]*}"
+    d="numactl-$version-linux-$arch"
+    source_of numactl "$v" "https://github.com/numactl/numactl/releases/download/v$v/numactl-$v.tar.gz" "$work/src.tar.gz"
+    debian "apt-get -qq update && apt-get -qq install -y --no-install-recommends build-essential file >/dev/null \
+        && dpkg-query -W -f '\${Package} \${Version}\n' > /w/installed \
+        && tar -xzf src.tar.gz && mkdir build stage \
+        && (cd build && ../numactl-$v/configure -q --prefix=/usr --libdir=/usr/lib --disable-static \
+            && make -s -j\$(nproc) libnuma.la numa.pc >/dev/null \
+            && make -s install-libLTLIBRARIES install-includeHEADERS install-pkgconfigDATA DESTDIR=/w/stage >/dev/null) \
+        && mv /w/stage/usr /w/$d && rm -f /w/$d/lib/libnuma.la \
+        && strip --strip-unneeded /w/$d/lib/libnuma.so.* \
+        && printf '%s\n' '#include <numa.h>' 'int main(void){ (void)numa_available(); return 0; }' > /w/t.c \
+        && gcc /w/t.c -I/w/$d/include -L/w/$d/lib -Wl,-rpath,/w/$d/lib -lnuma -o /w/t && /w/t"
+    [[ -f "$work/$d/include/numa.h" && -e "$work/$d/lib/libnuma.so.1" && -f "$work/$d/lib/pkgconfig/numa.pc" ]] || die "numactl: missing expected files"
+    GLIBC_ELFS="$(find "$work/$d" -type f -exec sh -c 'file -b "$1" | grep -q "^ELF.*dynamically linked" && echo "$1"' _ {} \;)"
+    [[ -n "$GLIBC_ELFS" ]] || die "numactl: no dynamically linked ELF in the payload"
+    glibc_only
+    provenance "$d" "numactl $version (github.com/numactl/numactl tag v$v, sha256 $(input numactl "$v")); libnuma.so.1, headers and numa.pc; built in Debian 12 against $(grep -E '^libc6 ' "$work/installed" | tr '\n' ' ')(an xlings install patches it onto the index's glibc)"
+    pack "$d" ;;
+libcurl)
+    v="${version%%-r[0-9]*}"
+    d="libcurl-$version-linux-$arch"
+    source_of libcurl "$v" "https://github.com/curl/curl/releases/download/curl-${v//./_}/curl-$v.tar.xz" "$work/src.tar.xz"
+    debian "apt-get -qq update && apt-get -qq install -y --no-install-recommends build-essential pkg-config libssl-dev zlib1g-dev xz-utils file >/dev/null \
+        && dpkg-query -W -f '\${Package} \${Version}\n' > /w/installed \
+        && tar -xJf src.tar.xz && mkdir build stage \
+        && (cd build && ../curl-$v/configure -q --prefix=/usr --libdir=/usr/lib --disable-static --enable-shared \
+                --with-openssl --with-zlib \
+                --without-nghttp2 --without-nghttp3 --without-ngtcp2 --without-quiche \
+                --without-libpsl --without-libidn2 --without-brotli --without-zstd \
+                --without-libssh --without-libssh2 --without-libgsasl --without-gssapi --without-libuv \
+                --disable-ares --disable-ldap --disable-ldaps --disable-manual --disable-docs \
+                --with-ca-bundle=/etc/ssl/certs/ca-certificates.crt --with-ca-fallback \
+            && make -s -j\$(nproc) -C lib libcurl.la >/dev/null \
+            && make -s -j\$(nproc) -C include >/dev/null \
+            && make -s libcurl.pc >/dev/null \
+            && make -s -C lib install-libLTLIBRARIES DESTDIR=/w/stage >/dev/null \
+            && make -s -C include install DESTDIR=/w/stage >/dev/null \
+            && make -s install-pkgconfigDATA DESTDIR=/w/stage >/dev/null) \
+        && mv /w/stage/usr /w/$d && rm -f /w/$d/lib/libcurl.la \
+        && sed -i -E '/^Libs\.private:/s/[[:space:]]-L[^[:space:]]+//g' /w/$d/lib/pkgconfig/libcurl.pc \
+        && strip --strip-unneeded /w/$d/lib/libcurl.so.* \
+        && printf '%s\n' '#include <curl/curl.h>' '#include <stdio.h>' 'int main(void){ const curl_version_info_data *v = curl_version_info(CURLVERSION_NOW); if (!v) return 1; printf(\"%s %s\n\", v->version, v->ssl_version ? v->ssl_version : \"none\"); return ((v->features & CURL_VERSION_SSL) && (v->features & CURL_VERSION_LIBZ)) ? 0 : 1; }' > /w/t.c \
+        && gcc /w/t.c -I/w/$d/include -L/w/$d/lib -Wl,-rpath,/w/$d/lib -lcurl -o /w/t && /w/t > /w/curl.version"
+    grep -q "^$v OpenSSL/" "$work/curl.version" || die "libcurl does not report $v with OpenSSL: $(cat "$work/curl.version")"
+    [[ -f "$work/$d/include/curl/curl.h" && -e "$work/$d/lib/libcurl.so.4" && -f "$work/$d/lib/pkgconfig/libcurl.pc" ]] || die "libcurl: missing expected files"
+    GLIBC_ELFS="$(find "$work/$d" -type f -exec sh -c 'file -b "$1" | grep -q "^ELF.*dynamically linked" && echo "$1"' _ {} \;)"
+    [[ -n "$GLIBC_ELFS" ]] || die "libcurl: no dynamically linked ELF in the payload"
+    glibc_only libssl.so.3 libcrypto.so.3 libz.so.1
+    provenance "$d" "curl $v (github.com/curl/curl tag curl-${v//./_}, sha256 $(input libcurl "$v")); libcurl.so.4 (OpenSSL, zlib; $(cat "$work/curl.version")), headers and libcurl.pc; built in Debian 12 against $(grep -E '^(libc6|libssl-dev|zlib1g-dev) ' "$work/installed" | tr '\n' ' ')(an xlings install patches it onto the index's glibc)"
     pack "$d" ;;
 gcc)
     # As x86_64's (fromsource:gcc): a prebuilt compiler builds the new one
