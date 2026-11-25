@@ -37,26 +37,38 @@ package = {
     xpm = {
         linux = {
 
-            ["latest"] = { ref = "15.1.0" },
+            ["latest"] = { ref = "15.2.0" },
             ["15.1.0"] = {
                 url = "https://github.com/BurntSushi/ripgrep/releases/download/15.1.0/ripgrep-15.1.0-x86_64-unknown-linux-musl.tar.gz",
                 sha256 = "1c9297be4a084eea7ecaedf93eb03d058d6faae29bbc57ecdaf5063921491599",
             },
+            ["15.2.0"] = {
+                url = "https://github.com/BurntSushi/ripgrep/releases/download/15.2.0/ripgrep-15.2.0-x86_64-unknown-linux-musl.tar.gz",
+                sha256 = "33e15bcf1624b25cdd2a55813a47a2f95dbe126268203e76aa6a585d1e7b149c",
+            },
         },
         macosx = {
 
-            ["latest"] = { ref = "15.1.0" },
+            ["latest"] = { ref = "15.2.0" },
             ["15.1.0"] = {
                 url = "https://github.com/BurntSushi/ripgrep/releases/download/15.1.0/ripgrep-15.1.0-aarch64-apple-darwin.tar.gz",
                 sha256 = "378e973289176ca0c6054054ee7f631a065874a352bf43f0fa60ef079b6ba715",
             },
+            ["15.2.0"] = {
+                url = "https://github.com/BurntSushi/ripgrep/releases/download/15.2.0/ripgrep-15.2.0-aarch64-apple-darwin.tar.gz",
+                sha256 = "3750b2e93f37e0c692657da574d7019a101c0084da05a790c83fd335bad973e4",
+            },
         },
         windows = {
 
-            ["latest"] = { ref = "15.1.0" },
+            ["latest"] = { ref = "15.2.0" },
             ["15.1.0"] = {
                 url = "https://github.com/BurntSushi/ripgrep/releases/download/15.1.0/ripgrep-15.1.0-x86_64-pc-windows-msvc.zip",
                 sha256 = "124510b94b6baa3380d051fdf4650eaa80a302c876d611e9dba0b2e18d87493a",
+            },
+            ["15.2.0"] = {
+                url = "https://github.com/BurntSushi/ripgrep/releases/download/15.2.0/ripgrep-15.2.0-x86_64-pc-windows-msvc.zip",
+                sha256 = "71b2fef860abe467217a538ff31de02f5258807c0129f771846f87bd029aafc5",
             },
         },
     },

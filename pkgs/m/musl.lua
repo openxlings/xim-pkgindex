@@ -27,8 +27,24 @@
 --
 -- It does NOT replace a musl toolchain: musl-gcc.lua carries its own
 -- musl sysroot (including its own loader) and does not read this
--- package. The two coexist — verified in one subos, `gcc` still building
--- and running glibc binaries while these libs were registered.
+-- package.
+--
+-- Where its files go. The subos's `lib/` and `usr/include` belong to its
+-- system C library (glibc); a plain `cc` links what is there. musl takes
+-- no name in either:
+--
+--   lib/ld-musl-<arch>.so.1  its loader, the one name only musl has: the
+--                            interpreter a musl program names, and what a
+--                            root's /lib serves (luban:tiny-musl)
+--   usr/lib/musl/            every file a musl link reads: crt1.o, crti.o,
+--                            crtn.o, Scrt1.o, rcrt1.o, libc.so, libc.a and
+--                            the stub archives (the payload's lib/)
+--   usr/include/musl/        its headers (the payload's include/)
+--
+-- A musl build names the two directories (`-B`/`-L usr/lib/musl`,
+-- `-isystem usr/include/musl`); nothing reaches them by default. Installing
+-- musl, or `xlings use musl`, therefore never changes what `cc` links:
+-- glibc keeps crt1.o, libc.so and the rest.
 --
 -- Versions: 1.2.5 is the one in the field — Alpine 3.20/3.21/3.22 ship
 -- it, so it is what "a musl binary" is overwhelmingly built against —
@@ -114,7 +130,8 @@ package = {
             ["1.2.6"] = {
                 -- 1: libc.so (the loader) no longer names the build
                 -- machine's musl-gcc lib/ as its RPATH (install()).
-                revision = 1,
+                -- 2: the link files leave lib/ for usr/lib/musl (config()).
+                revision = 2,
                 url = {
                     GLOBAL = "https://github.com/xlings-res/musl/releases/download/1.2.6/musl-1.2.6-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/musl/releases/download/1.2.6/musl-1.2.6-linux-x86_64.tar.gz",
@@ -124,7 +141,8 @@ package = {
             ["1.2.5"] = {
                 -- 1: libc.so (the loader) no longer names the build
                 -- machine's musl-gcc lib/ as its RPATH (install()).
-                revision = 1,
+                -- 2: the link files leave lib/ for usr/lib/musl (config()).
+                revision = 2,
                 x86_64 = {
                     url = {
                         GLOBAL = "https://github.com/xlings-res/musl/releases/download/1.2.5/musl-1.2.5-linux-x86_64.tar.gz",
@@ -230,49 +248,33 @@ function install()
     return true
 end
 
--- ── the eleven names glibc.lua also registers ──────────────────────────
+-- ── what goes into the subos's lib/ ────────────────────────────────────
 --
--- These are NOT musl's to own. glibc is the subos's system C library and
--- registers every one of them into the shared `lib/` directory; musl
--- ships a file under the same name, with incompatible contents. The
--- overlap was computed against glibc.lua's `glibc_libs` list and this
--- payload's actual `lib/`, not eyeballed.
+-- The loader only. Its name is musl's alone, so it registers into the
+-- shared `lib/` like any lib, under `<version>-musl` (the idiom of
+-- jdk-temurin's `25.0.4+7-temurin` and musl-gcc's `16.1.0-musl`) and bound
+-- to the release, so `xlings use musl` moves it.
+local LOADERS = { "ld-musl-x86_64.so.1", "ld-musl-aarch64.so.1" }
+
+-- ── what revision 1 registered there, and no release does now ──────────
 --
--- Registered under the plain version, they become two-owner names —
--- measured on a real install, not theorised:
+-- The link-time files, eleven of them under glibc's own names. Bound to
+-- `musl@<version>`, they went active with that group on `xlings install
+-- musl`, and from then on `cc` linked musl's crt1.o and libc.so against
+-- glibc's headers:
 --
---     crt1.o  = {"active": "glibc-2.39",
---                "installed": ["glibc-2.39", "musl-1.2.5"]}
+--     undefined reference to `__isoc23_strtol'
 --
--- and one `xvm use` landing on the musl side repoints the subos's
--- `crt1.o` at musl's, which silently breaks every glibc C link in that
--- subos.
---
--- So they register as `<version>-musl`, the same idiom jdk-temurin.lua
--- uses for `java`/`javac` (`25.0.4+7-temurin`) and musl-gcc.lua uses to
--- share `gcc` with gcc.lua (`16.1.0-musl`). `xlings use crt1.o
--- 1.2.5-musl` then names one libc unambiguously, and the whole set
--- switches together through the binding root below.
-local SHARED_LIBS = {
+-- They live in `usr/lib/musl` now. config() removes these nodes where the
+-- home still has them (a scope configured at revision 1), and uninstall()
+-- with the release.
+local LINK_LIBS = {
+    -- glibc registers these names too
     "Scrt1.o", "crt1.o", "crti.o", "crtn.o",
     "libc.a", "libc.so", "libdl.a", "libm.a",
     "libpthread.a", "librt.a", "libutil.a",
-}
-
--- ── names only musl ships ──────────────────────────────────────────────
---
--- No collision today, but they take the same flavor-tagged version so
--- the whole set moves as one under `xlings use musl`, and so a second
--- musl-ish libc arriving later meets the same convention rather than a
--- plain number that happens to be free.
---
--- `libm.a`/`libpthread.a`/`librt.a`/`libdl.a`/`libcrypt.a`/`libutil.a`/
--- `libxnet.a`/`libresolv.a` are all 8-byte empty archives: musl puts
--- everything in libc and keeps these so a `-lm`/`-lpthread` on someone's
--- link line resolves instead of erroring.
-local MUSL_ONLY_LIBS = {
-    "ld-musl-x86_64.so.1", "ld-musl-aarch64.so.1", "rcrt1.o",
-    "libcrypt.a", "libresolv.a", "libxnet.a",
+    -- musl's own
+    "rcrt1.o", "libcrypt.a", "libresolv.a", "libxnet.a",
 }
 
 local FLAVOR = "musl"
@@ -283,7 +285,7 @@ end
 
 function config()
     -- Root of this release's binding group, so `xlings use musl 1.2.5`
-    -- switches every lib bound to it in one step.
+    -- switches everything bound to it in one step.
     --
     -- `type = "group"` because the node names no artifact: there is no
     -- `bin/musl` to exec. Left as the default `program` kind it becomes
@@ -294,48 +296,55 @@ function config()
     local binding = "musl@" .. pkginfo.version()
     xvm.add("musl", { type = "group" })
 
-    local musl_libdir = path.join(pkginfo.install_dir(), "lib")
-    local lib_config = {
-        version = flavor_version(),
-        type = "lib",
-        bindir = musl_libdir,
-        binding = binding,
-    }
+    __remove_registered(LINK_LIBS, __stored_version())
 
-    log.debug("1 - config musl libs (%s)...", flavor_version())
-    for _, set in ipairs({ SHARED_LIBS, MUSL_ONLY_LIBS }) do
-        for _, lib in ipairs(set) do
-            -- Guarded the way glibc's registration is: a name absent
-            -- from this release's payload is skipped rather than
-            -- registered as a lib whose source file does not exist.
-            if os.isfile(path.join(musl_libdir, lib)) then
-                lib_config.filename = lib -- target file name
-                lib_config.alias = lib -- source file name
-                xvm.add(lib, lib_config)
-            end
+    local musl_libdir = path.join(pkginfo.install_dir(), "lib")
+    for _, loader in ipairs(LOADERS) do
+        -- Only the loader this payload has (one per architecture).
+        if os.isfile(path.join(musl_libdir, loader)) then
+            xvm.add(loader, {
+                version = flavor_version(),
+                type = "lib",
+                bindir = musl_libdir,
+                filename = loader, -- target file name
+                alias = loader, -- source file name
+                binding = binding,
+            })
         end
     end
 
-    log.debug("2 - musl config header files...")
-    __config_header(binding)
+    __declare_dir("lib", "usr/lib/musl", binding)
+    __declare_dir("include", "usr/include/musl", binding)
 
-    log.info("musl: libs registered as %s (glibc keeps the plain names)",
-             flavor_version())
+    log.info("musl: link files in usr/lib/musl, headers in usr/include/musl "
+             .. "(glibc keeps lib/ and usr/include)")
 
     return true
 end
 
 function uninstall()
-    -- Version-scoped on purpose: glibc's registration of the same eleven
-    -- names, and any other installed musl release, must survive this.
+    -- Version-scoped on purpose: any other installed musl release must
+    -- survive this. The declared usr/lib/musl and usr/include/musl
+    -- entries go with the release.
     local v = __stored_version()
-    for _, set in ipairs({ SHARED_LIBS, MUSL_ONLY_LIBS }) do
+    for _, set in ipairs({ LOADERS, LINK_LIBS }) do
         for _, lib in ipairs(set) do
             xvm.remove(lib, v)
         end
     end
     xvm.remove("musl", pkginfo.version())
     return true
+end
+
+-- Removes each of NAMES at KEY where this home has it registered. In
+-- config() a client refuses the removal of a version it does not know,
+-- and most scopes never held the revision-1 nodes.
+function __remove_registered(names, key)
+    for _, name in ipairs(names) do
+        if xvm.has(name, key) then
+            xvm.remove(name, key)
+        end
+    end
 end
 
 -- The key the lib nodes are actually STORED under.
@@ -373,42 +382,39 @@ end
 
 -- private
 
-function __config_header(binding)
+function __declare_dir(src_rel, dst_rel, binding)
+    -- The payload's SRC_REL, entry by entry, at DST_REL in the subos.
     -- Declared where the client supports it, so the entries follow
     -- `xlings use` and are removed with the release instead of outliving
     -- it.
     --
-    -- Unlike glibc, musl's headers are NOT safe to scatter into a shared
-    -- `usr/include` next to another libc's: the two disagree on the
-    -- contents of stdio.h, features.h and everything reachable from
-    -- them, and whichever lands second silently wins for every compile
-    -- in the subos. So they go to their own directory and a musl build
-    -- points at it explicitly (`-isystem`, or the toolchain's own
-    -- sysroot) rather than inheriting it by accident.
-    local include_dir = path.join(pkginfo.install_dir(), "include")
-    if not os.isdir(include_dir) then
+    -- Never into the shared `lib/` or `usr/include` themselves: musl's
+    -- crt1.o, libc.so, stdio.h and features.h carry the names of glibc's,
+    -- with other contents, and whichever lands second silently wins for
+    -- every compile and link in the subos. So they go to their own
+    -- directory and a musl build points at it explicitly (`-B`/`-L`,
+    -- `-isystem`, or the toolchain's own sysroot) rather than inheriting
+    -- it by accident.
+    local src_dir = path.join(pkginfo.install_dir(), src_rel)
+    if not os.isdir(src_dir) then
         return
     end
 
-    if sysroot.declare_headers(pkginfo.install_dir(), "include",
-                               "usr/include/musl", binding) then
+    if sysroot.declare_headers(pkginfo.install_dir(), src_rel, dst_rel, binding) then
         return
     end
 
     -- Legacy path for a client with no `xvm.files`. The stamp matters
     -- for the same reason it does in glibc.lua: config() runs on every
-    -- dependent install, and without it each one re-copies the tree.
-    local subos_sysrootdir = system.subos_sysrootdir()
-    local sysroot_usrdir = path.join(subos_sysrootdir, "usr")
-    if not os.isdir(sysroot_usrdir) then os.mkdir(sysroot_usrdir) end
-
-    local stamp = path.join(sysroot_usrdir, ".musl-" .. pkginfo.version() .. ".stamp")
+    -- dependent install, and without it each one re-links the tree.
+    local dst_dir = path.join(system.subos_sysrootdir(), dst_rel)
+    local stamp = path.join(dst_dir, ".musl-" .. pkginfo.version() .. ".stamp")
     if os.isfile(stamp) then
-        log.debug("musl headers already in subos rootfs (stamp present), skipping copy.")
+        log.debug("musl %s already in the subos (stamp present), skipping.", dst_rel)
         return
     end
 
-    log.info("Linking musl headers into subos sysroot (usr/include/musl) ...")
-    sysroot.install_headers(include_dir, path.join(sysroot_usrdir, "include", "musl"))
+    log.info("Linking musl %s into the subos (%s) ...", src_rel, dst_rel)
+    sysroot.install_headers(src_dir, dst_dir)
     io.writefile(stamp, pkginfo.version())
 end

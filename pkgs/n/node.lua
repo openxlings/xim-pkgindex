@@ -8,6 +8,14 @@
 -- Every version listed in `xpm` must appear here (windows-only keys are absent
 -- for versions no windows section lists; 18.20.8 has no win-arm64 build at all).
 local _sha256 = {
+    ["26.13.0"] = {
+        linux_x64     = "d28a96af6c38596f6d9d97c0ee531c13d238d757742387d1928de822d959e997",
+        linux_arm64   = "406fe3fbde1c054adff8b297c16fdb5af6659db327c1ac8acd46b56ef1af9a92",
+        darwin_x64    = "525c9b29bb0263d687de60a4cec0e2a6db876a8eb032369e5795eca71e7c358e",
+        darwin_arm64  = "d38bd5e5a2ddce6bbb5ce45e46e208337da4d51fffe611e567fd32073d6439f6",
+        win_x64       = "dcc60d59a0746999f99064a01c020445d54d84228c691cdbf25b49ac3b59150a",
+        win_arm64     = "a9427139595156ef484e1fb08957676e09d4232368dd1743a2a9f93f3d241b14",
+    },
     ["24.21.0"] = {
         linux_x64     = "fd8e59d5a511510f6a298afb548f18c7d2b1be404d8b4a27d94fbe49f56cb2d6",
         linux_arm64   = "6ad1325edbdb5649c379b75a237147a666c95d4f9ae8d340fef2d1575d289ad2",
@@ -227,33 +235,48 @@ package = {
                 CN = {
                     url = {
                         linux = {
-                            x86_64 = "https://mirrors.ustc.edu.cn/node/v${version}/node-v${version}-linux-x64.tar.xz",
-                            aarch64 = "https://mirrors.ustc.edu.cn/node/v${version}/node-v${version}-linux-arm64.tar.xz",
+                            x86_64 = "https://cdn.npmmirror.com/binaries/node/v${version}/node-v${version}-linux-x64.tar.xz",
+                            aarch64 = "https://cdn.npmmirror.com/binaries/node/v${version}/node-v${version}-linux-arm64.tar.xz",
                         },
                         macosx = {
-                            x86_64 = "https://mirrors.ustc.edu.cn/node/v${version}/node-v${version}-darwin-x64.tar.gz",
-                            aarch64 = "https://mirrors.ustc.edu.cn/node/v${version}/node-v${version}-darwin-arm64.tar.gz",
+                            x86_64 = "https://cdn.npmmirror.com/binaries/node/v${version}/node-v${version}-darwin-x64.tar.gz",
+                            aarch64 = "https://cdn.npmmirror.com/binaries/node/v${version}/node-v${version}-darwin-arm64.tar.gz",
                         },
                         windows = {
-                            x86_64 = "https://mirrors.ustc.edu.cn/node/v${version}/node-v${version}-win-x64.zip",
-                            aarch64 = "https://mirrors.ustc.edu.cn/node/v${version}/node-v${version}-win-arm64.zip",
+                            x86_64 = "https://cdn.npmmirror.com/binaries/node/v${version}/node-v${version}-win-x64.zip",
+                            aarch64 = "https://cdn.npmmirror.com/binaries/node/v${version}/node-v${version}-win-arm64.zip",
                         },
                     },
                     required = true,
                 },
             },
-            latest = "keep",
+            latest = "advance",
         },
     },
 
     xpm = {
-        -- `latest` tracks the ACTIVE LTS line (24.x "Krypton"), not the newest
-        -- release: an unpinned `xlings install node` should get the line node
-        -- itself recommends for production. 26.x is Current until it enters LTS
-        -- in Oct 2026; it is listed so `node@26.7.0` resolves, but it is not the
-        -- default. Same rule the 24.15.0 bump followed.
+        -- `latest` tracks the ACTIVE LTS line (26.x "Lithium"), not necessarily
+        -- the newest release: an unpinned `xlings install node` should get the
+        -- line node itself recommends for production. 26.x entered LTS in
+        -- Oct 2026, so it is now the default.
         windows = {
-            ["latest"] = { ref = "24.20.0" },
+            ["latest"] = { ref = "26.13.0" },
+            ["26.13.0"] = {
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://nodejs.org/dist/v26.13.0/node-v26.13.0-win-x64.zip",
+                        CN = "https://cdn.npmmirror.com/binaries/node/v26.13.0/node-v26.13.0-win-x64.zip",
+                    },
+                    sha256 = "dcc60d59a0746999f99064a01c020445d54d84228c691cdbf25b49ac3b59150a",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://nodejs.org/dist/v26.13.0/node-v26.13.0-win-arm64.zip",
+                        CN = "https://cdn.npmmirror.com/binaries/node/v26.13.0/node-v26.13.0-win-arm64.zip",
+                    },
+                    sha256 = "a9427139595156ef484e1fb08957676e09d4232368dd1743a2a9f93f3d241b14",
+                },
+            },
             ["26.11.1"] = _win_url("26.11.1"),
             ["24.21.0"] = _win_url("24.21.0"),
             ["26.7.0"] = _win_url("26.7.0"),
@@ -283,7 +306,23 @@ package = {
             deps = {
                 runtime = { "xim:glibc@>=2.39", "xim:gcc-runtime@15.1.0" },
             },
-            ["latest"] = { ref = "24.20.0" },
+            ["latest"] = { ref = "26.13.0" },
+            ["26.13.0"] = {
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://nodejs.org/dist/v26.13.0/node-v26.13.0-linux-x64.tar.xz",
+                        CN = "https://cdn.npmmirror.com/binaries/node/v26.13.0/node-v26.13.0-linux-x64.tar.xz",
+                    },
+                    sha256 = "d28a96af6c38596f6d9d97c0ee531c13d238d757742387d1928de822d959e997",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://nodejs.org/dist/v26.13.0/node-v26.13.0-linux-arm64.tar.xz",
+                        CN = "https://cdn.npmmirror.com/binaries/node/v26.13.0/node-v26.13.0-linux-arm64.tar.xz",
+                    },
+                    sha256 = "406fe3fbde1c054adff8b297c16fdb5af6659db327c1ac8acd46b56ef1af9a92",
+                },
+            },
             ["26.11.1"] = _linux_url("26.11.1"),
             ["24.21.0"] = _linux_url("24.21.0"),
             ["26.7.0"] = _linux_url("26.7.0"),
@@ -302,7 +341,23 @@ package = {
             ["18.20.8"] = _linux_url("18.20.8"),
         },
         macosx = {
-            ["latest"] = { ref = "24.20.0" },
+            ["latest"] = { ref = "26.13.0" },
+            ["26.13.0"] = {
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://nodejs.org/dist/v26.13.0/node-v26.13.0-darwin-x64.tar.gz",
+                        CN = "https://cdn.npmmirror.com/binaries/node/v26.13.0/node-v26.13.0-darwin-x64.tar.gz",
+                    },
+                    sha256 = "525c9b29bb0263d687de60a4cec0e2a6db876a8eb032369e5795eca71e7c358e",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://nodejs.org/dist/v26.13.0/node-v26.13.0-darwin-arm64.tar.gz",
+                        CN = "https://cdn.npmmirror.com/binaries/node/v26.13.0/node-v26.13.0-darwin-arm64.tar.gz",
+                    },
+                    sha256 = "d38bd5e5a2ddce6bbb5ce45e46e208337da4d51fffe611e567fd32073d6439f6",
+                },
+            },
             ["26.11.1"] = _mac_url("26.11.1"),
             ["24.21.0"] = _mac_url("24.21.0"),
             ["26.7.0"] = _mac_url("26.7.0"),

@@ -37,7 +37,42 @@ package = {
         linux = {
             -- Written by xlings' release (openxlings/xlings tools/bump_index.py):
             -- each version an XLINGS_RES entry with its sha256, and latest.
-            ["latest"] = { ref = "2026.10.24.3" },
+            ["latest"] = { ref = "2026.11.23.1" },
+            ["2026.11.23.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "d45caa93b86ebf50ea31bb5c38e0457ad5a3376dadd63dc608e8e96b7183d40a",
+                    x86_64 = "a0b348ab235e6a48012b133a72498461ad5ea08d09330cb3ee7663383e03b4e5",
+                },
+            },
+            ["2026.11.22.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "6b0c54cc1df7a8a8e90a05aeb41c5795419403372836523764266e58facfad9c",
+                    x86_64 = "62e90a344e9986d7712790b038537c8ffd9efba98bd846c09b9492fb7ba420bc",
+                },
+            },
+            ["2026.11.21.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "ef722d7a51f0947fcd61f92376edfa80818de90c2392b08301656025d449a032",
+                    x86_64 = "8f259c0f1cc4ed8dae9424673f163fdcbc69d24430c672451eb2ab6d59a38b0b",
+                },
+            },
+            ["2026.11.16.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "fc43864dc797e77c7b660b03c2e3aefbff442720e131a84e733a132bf4e19b0b",
+                    x86_64 = "7978b3285b39c349caec386a7b2c35582883815217113415985e52df02aecb32",
+                },
+            },
+            ["2026.10.26.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "b68822885f1c8c2452bd9c2f0ac9b5728a0cbd29f451f9c46cdc6dee4796b430",
+                    x86_64 = "5c6e85a9c2b419e3ab8a35348b1a37abce93dafeba7b8d461970ec97d8c41a64",
+                },
+            },
             ["2026.10.24.3"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -1036,7 +1071,37 @@ package = {
         macosx = {
             -- Written by xlings' release (openxlings/xlings tools/bump_index.py):
             -- each version an XLINGS_RES entry with its sha256, and latest.
-            ["latest"] = { ref = "2026.10.24.3" },
+            ["latest"] = { ref = "2026.11.23.1" },
+            ["2026.11.23.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "f1ec397285cd9e7327a6ca1b25aa2d92afe0d708adc0570e5b0e29bed0b6ee78",
+                },
+            },
+            ["2026.11.22.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "8e69f24091568b0fb40549b262f9441dc7dbd8343180639c0d32f86a87edd05a",
+                },
+            },
+            ["2026.11.21.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "8c5a254ed6666c25a8426b673fdf0c1e9912db0a948dfd5a2d7968340802f2ee",
+                },
+            },
+            ["2026.11.16.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "73110ee8d71f9c9625b7e9e61a00e98a7af283003e736782b2c7245c54cf2154",
+                },
+            },
+            ["2026.10.26.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    aarch64 = "8d30a1a2a059c6006494ab2435f3fa0a37be92b9a7f403c369ce903f6e3e3f38",
+                },
+            },
             ["2026.10.24.3"] = {
                 url = "XLINGS_RES",
                 sha256 = {
@@ -1914,7 +1979,37 @@ package = {
         windows = {
             -- Written by xlings' release (openxlings/xlings tools/bump_index.py):
             -- each version an XLINGS_RES entry with its sha256, and latest.
-            ["latest"] = { ref = "2026.10.24.3" },
+            ["latest"] = { ref = "2026.11.23.1" },
+            ["2026.11.23.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "38dbcef5ed1ce8e4ba860bbfe6d0ce8ad8e49dfadbc90e38009447682bafd0d1",
+                },
+            },
+            ["2026.11.22.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "bfea52372d2845fb82d50b7b3439fc8a6a73885a32c2a866855ce0d790664f5f",
+                },
+            },
+            ["2026.11.21.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "c37479f1bda4f67b8edae02a40ac0e86ed3e7cb0399423e12732a7b2813eb974",
+                },
+            },
+            ["2026.11.16.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "97931ec3b274c76fcf1013accfe751ffd3bbe4fd38188ec01f8564611205174b",
+                },
+            },
+            ["2026.10.26.1"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "d87d93b44f61014dde18952afe7d55f6c1889bfd1d7bf35b3412a1ceff6421bb",
+                },
+            },
             ["2026.10.24.3"] = {
                 url = "XLINGS_RES",
                 sha256 = {

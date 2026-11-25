@@ -14,6 +14,15 @@ package = {
     categories = {"runtime", "lib", "gpu", "nvidia"},
     keywords = {"nvenc", "nvdec", "nvcuvid", "nvidia", "driver", "host-link", "sentinel"},
 
+    -- The host file the links are generated from (xpkg manifest v1 §3.2): the
+    -- version of the NVIDIA kernel module now loaded. A client from xlings
+    -- 2026.11.23.1 records it after config() and runs config() again where it
+    -- reads differently (install, `xlings use`, SubOS entry, `self doctor`),
+    -- which links the driver as it is then. An older client ignores the field.
+    host_facts = {
+        linux = { "/sys/module/nvidia/version" },
+    },
+
     -- ─────────────────────────────────────────────────────────────────────
     -- WHY THIS IS ITS OWN PACKAGE AND NOT TWO MORE NAMES IN
     -- `libcuda-host-link`.
@@ -70,7 +79,6 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
-import("xim.libxpkg.system")
 import("xim.pkgindex.hostlib")
 
 -- The video-codec user-space libraries this sentinel answers for.
@@ -107,37 +115,30 @@ local function __canonical_path_for_distro(soname)
     return path.join(hostlib.canonical_libdir(), soname)
 end
 
-function install()
-    local libdir = path.join(pkginfo.install_dir(), "lib")
-    os.tryrm(pkginfo.install_dir())
-    os.mkdir(libdir)
-
-    -- One link per name, and the same treatment for every name: a probe, a
-    -- canonical fallback, and a link created whether or not its target exists
-    -- yet. Dangling-but-canonical is intentional and self-heals when the distro
-    -- driver package materialises the file.
-    local found = 0
+-- The links, from the host as it is now: one per name, a probe, a canonical
+-- fallback, and a link created whether or not its target exists yet.
+-- Dangling-but-canonical is intentional: when the distro's driver package
+-- later puts the file at the canonical path, the link resolves without this
+-- package running again. Run by install() and by config(), which a changed
+-- driver version runs again (`host_facts`), through the one generation step
+-- of the host-link packages (hostlib.link_set).
+local function __link(libdir)
+    local targets, found = {}, 0
     for _, soname in ipairs(SONAMES) do
-        local host   = __probe_host_lib(soname)
-        local target = host or __canonical_path_for_distro(soname)
-        -- `ln -sf` rather than os.ln: xmake's lua has no os.ln helper, and -f
-        -- is harmless directly after the os.tryrm above.
-        system.exec(string.format([[ln -sf "%s" "%s"]],
-                                  target, path.join(libdir, soname)))
+        local host = __probe_host_lib(soname)
+        targets[soname] = host or __canonical_path_for_distro(soname)
         if host then
             found = found + 1
             log.info("nvidia-video-host-link: %s -> %s", soname, host)
         else
-            log.info("nvidia-video-host-link: %s -> %s (dangling)", soname, target)
+            log.info("nvidia-video-host-link: %s -> %s (dangling)", soname, targets[soname])
         end
     end
+    hostlib.link_set(libdir, targets)
 
-    -- The count, not only the individual lines. A sentinel that resolved some
-    -- of its names is a different machine from one that resolved none, and that
-    -- difference should not have to be read off a scrolled log.
-    log.info("nvidia-video-host-link: %d of %d resolved on this host",
-             found, #SONAMES)
-
+    -- The count, not only the individual lines: a sentinel that resolved some
+    -- of its names is a different machine from one that resolved none.
+    log.info("nvidia-video-host-link: %d of %d resolved on this host", found, #SONAMES)
     if found < #SONAMES then
         log.warn("NVIDIA video-codec user-space not detected on this host.")
         log.warn("  %d of %d libraries are dangling links", #SONAMES - found, #SONAMES)
@@ -145,11 +146,18 @@ function install()
         log.warn("  installed through the distro package manager, at which")
         log.warn("  point these links self-heal.")
     end
+end
 
+function install()
+    local libdir = path.join(pkginfo.install_dir(), "lib")
+    os.tryrm(pkginfo.install_dir())
+    os.mkdir(libdir)
+    __link(libdir)
     return true
 end
 
 function config()
+    __link(path.join(pkginfo.install_dir(), "lib"))
     xvm.add(package.name)
     return true
 end

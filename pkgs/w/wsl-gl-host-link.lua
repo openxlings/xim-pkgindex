@@ -18,6 +18,18 @@ package = {
     categories = {"graphics", "gpu", "wsl", "lib"},
     keywords = {"wsl", "wsl2", "d3d12", "dxcore", "opengl", "host-link", "sentinel"},
 
+    -- The host files the links are generated from (xpkg manifest v1 §3.2): the
+    -- D3D12 userspace and the NVIDIA CUDA library WSL places in
+    -- /usr/lib/wsl/lib, which a Windows graphics-driver update replaces. A
+    -- client from xlings 2026.11.23.1 records them after config() and runs
+    -- config() again where they read differently; config() links the directory
+    -- as it is then (__link_wsl). An absent file is a recorded state too, so a
+    -- host that gains the D3D12 userspace is configured again. An older client
+    -- ignores the field.
+    host_facts = {
+        linux = { "/usr/lib/wsl/lib/libd3d12core.so", "/usr/lib/wsl/lib/libcuda.so.1" },
+    },
+
     -- ─────────────────────────────────────────────────────────────────────
     -- The second userspace dependency the graphics stack keeps on the host,
     -- and the reason is the same as NVIDIA's: it is the half of a driver whose
@@ -161,27 +173,28 @@ local function __wsl_entries(dir)
     return hostlib.entries_with_prefix(dir, { "^lib.*%.so" })
 end
 
-function install()
-    local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mkdir(path.join(dir, "lib"))
-
+-- The links and the recorded state, from the host as it is now: every
+-- Windows-side library in the WSL directory, linked by the generation step
+-- every host-link package uses (hostlib.link_set), and `.wsl-host`, which
+-- config() reads. Run by install() and by config(), which a changed
+-- `host_facts` runs again; on a host that is not WSL2 with the D3D12
+-- userspace it leaves no link and records `no`.
+local function __link_wsl(dir)
     local wsldir = __probe_wsl_dir()
     if not wsldir then
+        hostlib.link_set(path.join(dir, "lib"), {})
         -- NOT a failure, and not silent either. On a non-WSL host this is the
         -- expected outcome and the message has to say so, because this package
         -- is installed everywhere `graphics` is.
         log.info("not a WSL2 host with D3D12 userspace (%s) — nothing to link. "
                  .. "GL uses the native driver or llvmpipe.", WSL_LIBDIR)
         io.writefile(path.join(dir, ".wsl-host"), "no\n")
-        return true
+        return
     end
 
-    local names = __wsl_entries(wsldir)
-    for _, name in ipairs(names) do
-        system.exec(string.format([[ln -sf "%s" "%s"]],
-            path.join(wsldir, name), path.join(dir, "lib", name)))
-    end
+    local names, targets = __wsl_entries(wsldir), {}
+    for _, name in ipairs(names) do targets[name] = path.join(wsldir, name) end
+    hostlib.link_set(path.join(dir, "lib"), targets)
 
     -- The glibc floor of the borrowed set, measured rather than assumed.
     --
@@ -204,6 +217,13 @@ function install()
     if #names == 0 then
         log.warn("no libraries under %s — GL will fall back to llvmpipe", wsldir)
     end
+end
+
+function install()
+    local dir = pkginfo.install_dir()
+    os.tryrm(dir)
+    os.mkdir(path.join(dir, "lib"))
+    __link_wsl(dir)
     return true
 end
 
@@ -231,6 +251,7 @@ function config()
     local tag = package.name .. "@" .. pkginfo.version()
 
     xvm.add(package.name)
+    __link_wsl(dir)
 
     -- Nothing declared on a non-WSL host. W5 in the plan's acceptance table:
     -- this package ships to every machine that installs `graphics`, so "no

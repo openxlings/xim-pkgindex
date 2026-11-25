@@ -34,14 +34,23 @@ package = {
                   .. "libcublas/linux-${arch_alias}/"
                   .. "libcublas-linux-${arch_alias}-${version}-archive.tar.xz",
             arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
+            -- libcublas.so and its siblings name libgcc_s.so.1 (some libstdc++.so.6 too) in DT_NEEDED
+            -- (readelf, the x86_64 archive of the newest version). A toolchain whose runtime is not
+            -- GCC's supplies neither, so the package declares the GCC runtime itself and the
+            -- seal's DT_RUNPATH reaches it.
+            deps = { "xim:gcc-runtime" },
             ["latest"] = { ref = "13.5.1.27" },
             ["13.5.1.27"] = {
+                -- 1: the archive unchanged; the GCC runtime is declared (deps above).
+                revision = 1,
                 sha256 = {
                     aarch64  = "cdcfea21e8a68ce90c87aaf2e424883782dafb4792feb4e6ea903b97e9aeb6a7",
                     x86_64   = "35a898360520d6101ffcaf36c0d04496b54d4fc2afb82f7fce44218c54513808",
                 },
             },
             ["12.9.1.4"] = {
+                -- 1: the archive unchanged; the GCC runtime is declared (deps above).
+                revision = 1,
                 sha256 = {
                     aarch64  = "e99b074e6f66034e563508118804599d7579f73afc8424c55ad5fd8d12e085a5",
                     x86_64   = "546addc4a9d82b8f23aa9ba9274b6bc0429a63008a31c759884ac24880796057",
