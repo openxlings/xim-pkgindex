@@ -223,7 +223,12 @@ class TestBinaryRelocation:
         assert abi == f"linux-{arch}-glibc"
         assert int(revision) >= 2
         assert re.fullmatch(r"[0-9a-f]{64}", digest)
-        suffix = f"/releases/download/{version}-r{revision}/glibc-{version}-r{revision}-linux-{arch}.tar.gz"
+        # A revision that changes only the hooks keeps the previous asset, so
+        # the asset's `-r<N>` is at most the entry's revision, not equal to it.
+        asset = re.search(rf"/download/{re.escape(version)}-r(\d+)/", global_url)
+        assert asset and 2 <= int(asset.group(1)) <= int(revision), global_url
+        tag = f"{version}-r{asset.group(1)}"
+        suffix = f"/releases/download/{tag}/glibc-{tag}-linux-{arch}.tar.gz"
         assert global_url == "https://github.com/xlings-res/glibc" + suffix
         assert cn_url == "https://gitcode.com/xlings-res/glibc" + suffix
         if arch == "aarch64":
@@ -251,6 +256,23 @@ class TestBinaryRelocation:
         assert loader in registered
         assert "libc.so.6" in registered
         assert ({"ld-linux-x86-64.so.2", "ld-linux-aarch64.so.1"} - {loader}).isdisjoint(registered)
+
+    @needs_lua_relocate
+    @pytest.mark.static
+    def test_config_registers_the_archive_libm_a_names(self, tmp_path):
+        """`libm.a` names `libm-2.44.a`, glibc's two-component VERSION, under
+        the 2.44.3 entry: config() links it into the SubOS, or `-static -lm`
+        through the SubOS finds a script whose archive is not there."""
+        payload = tmp_path / "xim-x-glibc" / "2.44.3"
+        (payload / "lib64").mkdir(parents=True)
+        for name in ("ld-linux-x86-64.so.2", "libc.so.6", "libm.a", "libm-2.44.a"):
+            (payload / "lib64" / name).write_bytes(b"fixture")
+        result = subprocess.run([
+            _lua(), str(REPO / "tests/lua/glibc_metadata_harness.lua"),
+            str(REPO / PKG_FILE), "x86_64", "config", str(payload),
+        ], capture_output=True, text=True)
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert "libm-2.44.a" in result.stdout.splitlines()
 
     @needs_lua_relocate
     @pytest.mark.static
@@ -389,50 +411,114 @@ class TestBinaryRelocation:
             result.stdout
 
 
-class TestLinkerScriptQuoting:
-    """After relocation the linker scripts name the install directory. Under a
-    directory holding a space each such name is written in double quotes, the
-    one spelling GNU ld and lld read as a single name (mcpp-community/mcpp#832);
-    under any other directory the scripts are left byte for byte."""
+class TestLinkerScriptNames:
+    """After relocation the linker scripts name their members by file name,
+    not by the install directory. An absolute name inside a SubOS sysroot is
+    read inside the sysroot by lld, which does not resolve the SubOS's link
+    into the payload first: `cannot find <dir>/lib/libm.so.6 inside <subos>`
+    for every Rust program. A file name also has no whitespace to split at
+    under a spaced home (mcpp-community/mcpp#832)."""
 
     @staticmethod
-    def _payload(root):
+    def _payload(root, members=("libm.so.6", "libmvec.so.1", "libc.so.6",
+                                "libc_nonshared.a", "ld-linux-x86-64.so.2",
+                                "libm-2.44.a", "libmvec.a")):
         lib = root / "lib"
         lib.mkdir(parents=True)
+        for m in members:
+            (lib / m).write_bytes(b"\x7fELF")
         (lib / "libm.so").write_text(
             "/* GNU ld script\n*/\nOUTPUT_FORMAT(elf64-x86-64)\n"
             f"GROUP ( {root}/lib/libm.so.6  AS_NEEDED ( {root}/lib/libmvec.so.1 ) )\n")
         (lib / "libc.so").write_text(
-            "/* GNU ld script\n*/\nOUTPUT_FORMAT(elf64-x86-64)\n"
+            "/* GNU ld script\n   Use the shared library, but some functions are only in\n"
+            "   the static library, so try that secondarily.  */\n"
+            "OUTPUT_FORMAT(elf64-x86-64)\n"
             f"GROUP ( {root}/lib/libc.so.6 {root}/lib/libc_nonshared.a "
             f" AS_NEEDED ( {root}/lib/ld-linux-x86-64.so.2 ) )\n")
-        (lib / "libm.a").write_bytes(b"!<arch>\n")
+        (lib / "libm.a").write_text(
+            "/* GNU ld script\n*/\nOUTPUT_FORMAT(elf64-x86-64)\n"
+            f"GROUP ( {root}/lib/libm-2.44.a {root}/lib/libmvec.a )\n")
         return lib
 
     @needs_lua_relocate
     @pytest.mark.static
-    def test_a_spaced_directory_is_quoted_once(self, tmp_path):
-        root = tmp_path / "mc probe" / "glibc"
+    def test_members_are_named_by_file_name(self, tmp_path):
+        root = tmp_path / "plain" / "glibc"
         lib = self._payload(root)
-        result = _run("quote", root)
+        result = _run("names", root)
         assert result.returncode == 0, result.stdout + result.stderr
-        assert "QUOTED 2" in result.stdout
-        libm = (lib / "libm.so").read_text()
-        assert f'GROUP ( "{root}/lib/libm.so.6"  AS_NEEDED ( "{root}/lib/libmvec.so.1" ) )' in libm
+        assert "NAMED 3" in result.stdout
+        assert (lib / "libm.so").read_text().endswith(
+            "GROUP ( libm.so.6  AS_NEEDED ( libmvec.so.1 ) )\n")
         libc = (lib / "libc.so").read_text()
-        assert f'"{root}/lib/libc_nonshared.a"' in libc
-        assert f'( "{root}/lib/ld-linux-x86-64.so.2" )' in libc
-        assert (lib / "libm.a").read_bytes() == b"!<arch>\n"
-        again = _run("quote", root)
-        assert "QUOTED 0" in again.stdout
-        assert (lib / "libm.so").read_text() == libm
+        assert libc.endswith(
+            "GROUP ( libc.so.6 libc_nonshared.a  AS_NEEDED ( ld-linux-x86-64.so.2 ) )\n")
+        assert "Use the shared library" in libc
+        assert (lib / "libm.a").read_text().endswith("GROUP ( libm-2.44.a libmvec.a )\n")
+        assert str(root) not in libc
 
     @needs_lua_relocate
     @pytest.mark.static
-    def test_a_plain_directory_is_left_alone(self, tmp_path):
+    def test_a_second_run_changes_nothing(self, tmp_path):
         root = tmp_path / "plain" / "glibc"
         lib = self._payload(root)
+        _run("names", root)
         before = (lib / "libc.so").read_text()
-        result = _run("quote", root)
-        assert "QUOTED 0" in result.stdout, result.stdout + result.stderr
+        again = _run("names", root)
+        assert "NAMED 0" in again.stdout, again.stdout + again.stderr
         assert (lib / "libc.so").read_text() == before
+
+    @needs_lua_relocate
+    @pytest.mark.static
+    @pytest.mark.parametrize("quoted", [False, True])
+    def test_a_spaced_directory_needs_no_quotes(self, tmp_path, quoted):
+        root = tmp_path / "mc probe" / "glibc"
+        lib = self._payload(root)
+        if quoted:  # what revision 4 wrote under a spaced home
+            text = (lib / "libm.so").read_text()
+            (lib / "libm.so").write_text(text.replace(f"{root}/lib/libm.so.6",
+                                                      f'"{root}/lib/libm.so.6"')
+                                             .replace(f"{root}/lib/libmvec.so.1",
+                                                      f'"{root}/lib/libmvec.so.1"'))
+        result = _run("names", root)
+        assert "NAMED 3" in result.stdout, result.stdout + result.stderr
+        assert (lib / "libm.so").read_text().endswith(
+            "GROUP ( libm.so.6  AS_NEEDED ( libmvec.so.1 ) )\n")
+
+    @needs_lua_relocate
+    @pytest.mark.static
+    def test_an_unrelocated_payload_is_named_too(self, tmp_path):
+        """A client too old to relocate leaves the build prefix in the scripts;
+        the members are beside the script all the same."""
+        root = tmp_path / "glibc"
+        lib = self._payload(root)
+        prefix = PADDED.decode()
+        (lib / "libm.so").write_text(
+            "/* GNU ld script\n*/\nOUTPUT_FORMAT(elf64-x86-64)\n"
+            f"GROUP ( {prefix}/lib/libm.so.6  AS_NEEDED ( {prefix}/lib/libmvec.so.1 ) )\n")
+        result = _run("names", root)
+        assert result.returncode == 0, result.stdout + result.stderr
+        assert (lib / "libm.so").read_text().endswith(
+            "GROUP ( libm.so.6  AS_NEEDED ( libmvec.so.1 ) )\n")
+
+    @needs_lua_relocate
+    @pytest.mark.static
+    def test_a_name_not_beside_the_script_is_left_alone(self, tmp_path):
+        root = tmp_path / "glibc"
+        lib = self._payload(root, members=("libc.so.6", "libc_nonshared.a"))
+        result = _run("names", root)
+        assert result.returncode == 0, result.stdout + result.stderr
+        libc = (lib / "libc.so").read_text()
+        assert "GROUP ( libc.so.6 libc_nonshared.a " in libc
+        assert f"AS_NEEDED ( {root}/lib/ld-linux-x86-64.so.2 )" in libc
+        assert f"{root}/lib/libm.so.6" in (lib / "libm.so").read_text()
+
+    @needs_lua_relocate
+    @pytest.mark.static
+    def test_a_binary_archive_is_left_alone(self, tmp_path):
+        root = tmp_path / "glibc"
+        lib = self._payload(root)
+        (lib / "libm.a").write_bytes(b"!<arch>\n")
+        _run("names", root)
+        assert (lib / "libm.a").read_bytes() == b"!<arch>\n"
