@@ -279,10 +279,13 @@ function install()
         allow,
         pkginfo.version()
     )
-    -- cmd /c drops the first and last quote of a line that starts with one;
-    -- an outer pair is what it drops, so the quoted path stays whole.
+    -- A Windows line must not start with a quote: cmd /c (libxpkg before
+    -- 0.0.67) drops the first and last quote of such a line, and from 0.0.67
+    -- (`cmd /d /s /c "<line>"`) the line runs as written, so an outer pair of
+    -- our own reaches cmd and breaks the program's path. `call` reads the same
+    -- under both, as pnpm.lua's version check does.
     if is_host("windows") then
-        cmd = '"' .. cmd .. '"'
+        cmd = "call " .. cmd
     end
     os.exec(cmd)
 

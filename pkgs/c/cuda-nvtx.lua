@@ -63,14 +63,23 @@ package = {
                   .. "cuda_nvtx/linux-${arch_alias}/"
                   .. "cuda_nvtx-linux-${arch_alias}-${version}-archive.tar.xz",
             arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
+            -- libnvtx3interop.so and its siblings name libgcc_s.so.1 (some libstdc++.so.6 too) in DT_NEEDED
+            -- (readelf, the x86_64 archive of the newest version). A toolchain whose runtime is not
+            -- GCC's supplies neither, so the package declares the GCC runtime itself and the
+            -- seal's DT_RUNPATH reaches it.
+            deps = { "xim:gcc-runtime" },
             ["latest"] = { ref = "13.3.29" },
             ["13.3.29"] = {
+                -- 1: the archive unchanged; the GCC runtime is declared (deps above).
+                revision = 1,
                 sha256 = {
                     aarch64  = "7c5bad2972e8d8fb701fe3f3241bdfd04ea6c78bfdc2c1eff04e03eb8d11153a",
                     x86_64   = "7c7c2567e35de98b5bf92bef06b97ccc90cd472ca44b9b1558b25812a54df64e",
                 },
             },
             ["12.9.79"] = {
+                -- 1: the archive unchanged; the GCC runtime is declared (deps above).
+                revision = 1,
                 sha256 = {
                     aarch64  = "dae359c2c51f83a5cd402468f481a82aeb6d32d79dc707d3625607e83cf97ceb",
                     x86_64   = "819bc39192955e6ba2067de39b85f30e157de462945e54b12bfdeda429d793fb",

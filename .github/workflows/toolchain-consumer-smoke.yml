@@ -76,6 +76,19 @@ jobs:
           for f in $CHANGED; do
             case "$f" in pkgs/l/llvm.lua|pkgs/g/gcc.lua|pkgs/m/musl-gcc.lua) xlings config --add-xpkg "$f" ;; esac
           done
+          # THE OTHER RECIPES THIS CHANGE EDITS, written over the index's
+          # copies as the install test writes them (posix-test.sh
+          # overlay_recipe): a toolchain that this change moves to a
+          # dependency version the same change adds (gcc 16.2.0 revision 1 to
+          # xim:binutils@2.47) otherwise resolves it in the published index,
+          # and the smoke fails on `not found` until after the merge it gates.
+          INDEX_DIR="$HOME/.xlings/data/xim-pkgindex"
+          for f in $CHANGED; do
+            case "$f" in
+              pkgs/l/llvm.lua|pkgs/g/gcc.lua|pkgs/m/musl-gcc.lua) ;;
+              pkgs/*.lua) if [ -d "$INDEX_DIR" ] && [ ! -L "$INDEX_DIR" ] && [ -f "$INDEX_DIR/$f" ]; then cp -f "$f" "$INDEX_DIR/$f" && echo "placed in the index: $f"; fi ;;
+            esac
+          done
           # AND THE SHARED MODULES THE DESCRIPTOR IMPORTS. Without them a
           # `local:` recipe's `import("xim.pkgindex.*")` resolves to the proxy
           # that swallows every call (ci-xpkg-test.yml says the same of

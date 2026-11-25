@@ -43,10 +43,17 @@ package = {
             deps = {
                 build = { "xim:patchelf@0.18.0" },
                 runtime = {
-                "xim:glibc@>=2.39", "xim:binutils@2.42.1",
+                -- The assembler and linker: binutils 2.47, the one 16.2.0
+                -- revision 1 is configured and built against (tools/res/build.sh
+                -- gcc). The older payloads, built against older binutils, run
+                -- with it: a payload runs with the binutils it was built
+                -- against or a newer one.
+                "xim:glibc@>=2.39", "xim:binutils@2.47",
                 -- fix xmake project --project=.  -k compile_commands
                 -- home/xlings/.xlings_data/subos/linux/usr/include/bits/errno.h:26:11: fatal error: linux/errno.h: No such file or directory
-                "xim:linux-headers@5.11.1",
+                -- The kernel headers of the sysroot, the ones 16.2.0
+                -- revision 1 is built with (the 6.18 longterm release).
+                "xim:linux-headers@6.18.64",
                 -- gcc-specs-config rewrites gcc's specs at install-time so
                 -- the install-machine's xim:glibc loader path / lib64 are
                 -- baked in. Without this, direct-invocation of
@@ -57,7 +64,7 @@ package = {
                 "xim:gcc-specs-config@0.0.1",
                 },
             },
-            ["latest"] = { ref = "16.1.0" },
+            ["latest"] = { ref = "16.2.0" },
             -- aarch64: built natively on an arm runner as x86_64's was
             -- (tools/res/build.sh gcc: fromsource:gcc's configure, against a
             -- sysroot of xim:glibc + xim:linux-headers), C++23 `import std`
@@ -82,21 +89,31 @@ package = {
                 },
             },
             -- 16.2.0: the GNU release (signature checked), built as 16.1.0 is
-            -- (tools/res/build.sh gcc). `latest` stays 16.1.0.
+            -- (tools/res/build.sh gcc), and `latest`.
+            -- 1: 16.2.0-r1 -- built again with the binutils and kernel headers
+            -- this recipe declares: binutils 2.47 is the target's assembler
+            -- and linker while gcc is configured and built (GCC decides from
+            -- them which assembler and linker features it emits), the
+            -- sysroot's kernel headers are linux-headers 6.18.64. It needs
+            -- that binutils: on aarch64 it emits the AArch64 build attributes
+            -- (`.aeabi_subsection`), which binutils 2.42's `as` refuses
+            -- (measured). Revision 0 (Debian 12's binutils 2.40) runs with
+            -- binutils 2.47 too, so it stays usable.
             ["16.2.0"] = {
+                revision = 1,
                 x86_64 = {
                     url = {
-                        GLOBAL = "https://github.com/xlings-res/gcc/releases/download/16.2.0/gcc-16.2.0-linux-x86_64.tar.gz",
-                        CN     = "https://gitcode.com/xlings-res/gcc/releases/download/16.2.0/gcc-16.2.0-linux-x86_64.tar.gz",
+                        GLOBAL = "https://github.com/xlings-res/gcc/releases/download/16.2.0-r1/gcc-16.2.0-r1-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/gcc/releases/download/16.2.0-r1/gcc-16.2.0-r1-linux-x86_64.tar.gz",
                     },
-                    sha256 = "f54819f4a2b2bcb332558f4ed4c053711ea34e1e48d3f181edf65299afa8c619",
+                    sha256 = "4ec32c79be6a25f815d83d1d9247495035d64519ed6502afc741ab11ba03118d",
                 },
                 aarch64 = {
                     url = {
-                        GLOBAL = "https://github.com/xlings-res/gcc/releases/download/16.2.0/gcc-16.2.0-linux-aarch64.tar.gz",
-                        CN     = "https://gitcode.com/xlings-res/gcc/releases/download/16.2.0/gcc-16.2.0-linux-aarch64.tar.gz",
+                        GLOBAL = "https://github.com/xlings-res/gcc/releases/download/16.2.0-r1/gcc-16.2.0-r1-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/gcc/releases/download/16.2.0-r1/gcc-16.2.0-r1-linux-aarch64.tar.gz",
                     },
-                    sha256 = "65ff0ee95616fb38c99b0af7a42dd4a2e088640ca5eb555e77c8257759feabac",
+                    sha256 = "0628e9266275dcb8615de4301ba7099a2e30db15ad7fc97b4db9a714122af115",
                 },
             },
             -- 17.0.0-20261108: a GCC trunk snapshot (gcc.gnu.org/pub/gcc/snapshots/
@@ -390,6 +407,16 @@ function __shq(s)
     return "'" .. tostring(s):gsub("'", "'\\''") .. "'"
 end
 
+-- A LINK ENTRY IS ITS OWNER'S (xlings upstreams; mcpp docs/25 §3): this home's version
+-- directory is a link to another home's payload, configured by that home and never written by
+-- this one. Its owner's user can write it, so `__writable` does not tell it apart: a borrowing
+-- home that rewrote the specs wrote its own temporary paths into the owner's toolchain
+-- (measured: mcpp's test homes, mcpp#293).
+function __link_entry(dir)
+    local out = os.iorun(string.format("if [ -L %s ]; then echo link; fi", __shq(dir)))
+    return out ~= nil and out:find("link", 1, true) ~= nil
+end
+
 function __config_linux()
     local gcc_bindir = path.join(pkginfo.install_dir(), "bin")
 
@@ -631,16 +658,17 @@ end
 -- Compile a program in a private directory and run it. The C runtime is this
 -- package's glibc dep, named directly (-B for the crt objects, -L for libc):
 -- the payload's built-in sysroot is the build machine's, and this home's
--- sysroot is filled only after the whole install. Returns ok, reason.
+-- sysroot is filled only after the whole install. The directory is mktemp's:
+-- a name from the clock is shared by two installs within one second, and the
+-- first to finish removes the other's probe (measured in mcpp's CI, two homes
+-- installing gcc at once). Returns ok, reason.
 function __builds_a_program_that_runs(gcc_bin, glibc_lib)
-    local dir = path.join(os.getenv("TMPDIR") or "/tmp", "xlings-gcc-probe-" .. tostring(os.time()))
-    os.mkdir(dir)
-    local src, exe = path.join(dir, "probe.c"), path.join(dir, "probe")
-    io.writefile(src, "int main(void) { return 0; }\n")
     local runtime = glibc_lib and string.format("-B%s -L%s ", __shq(glibc_lib), __shq(glibc_lib)) or ""
-    local out = os.iorun(string.format("%s %s%s -o %s && %s && echo ran", __shq(gcc_bin), runtime,
-        __shq(src), __shq(exe), __shq(exe)))
-    os.tryrm(dir)
+    local out = os.iorun(string.format(
+        'd=$(mktemp -d "${TMPDIR:-/tmp}/xlings-gcc-probe.XXXXXX") || exit 1; ' ..
+        'printf "int main(void) { return 0; }\\n" > "$d/probe.c" && ' ..
+        '%s %s"$d/probe.c" -o "$d/probe" && "$d/probe" && echo ran; rm -rf "$d"',
+        __shq(gcc_bin), runtime))
     if out and out:find("ran", 1, true) then return true, nil end
     return false, "a program compiled with " .. gcc_bin .. " did not run"
 end
@@ -655,14 +683,15 @@ function __rewrite_specs_linux(rpath, dynamic_linker)
     )
     local gcc_bin = path.join(pkginfo.install_dir(), "bin/gcc")
 
-    -- A payload this home borrows -- an upstream's, read-only here (xlings:
-    -- link entries, configured in the borrowing home) -- is its owner's. Its
+    -- A payload this home borrows -- an upstream's (xlings: link entries,
+    -- configured in the borrowing home), read-only here or a link entry of a
+    -- home of the same user -- is its owner's. Its
     -- specs stay as the owner wrote them (inside a Luban system they name the
     -- system's /lib64 loader), and it is judged by what it builds here: a
     -- program that runs. Writing them was refused, and was not this home's
     -- to do.
     local specs_file = __specs_file(gcc_bin)
-    if specs_file and not __writable(specs_file) then
+    if specs_file and (not __writable(specs_file) or __link_entry(pkginfo.install_dir())) then
         local ok, why = __builds_a_program_that_runs(gcc_bin, dynamic_linker and path.directory(dynamic_linker) or nil)
         if ok then
             log.info("gcc: a borrowed payload; its specs are its owner's, and a program it builds runs here")
