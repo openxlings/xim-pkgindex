@@ -34,8 +34,10 @@ package = {
     --
     -- CN MIRROR — every URL in `xpm` is a verified {GLOBAL, CN} pair where
     -- GLOBAL is the Adoptium GitHub release and CN is TUNA (`mirrors.tuna.tsinghua.edu.cn/Adoptium/17`).
-    -- In `extensions.autoupdate`, CN is marked `required = false` because TUNA
-    -- syncs periodically after upstream GitHub releases.
+    -- `extensions.autoupdate.resources` declares GLOBAL only because TUNA's
+    -- Adoptium layout uses `${version:base}_${version:build}` without a literal
+    -- `${version}` or `${tag}` segment, which the pinned updater's URL check
+    -- (`'${version}' not in url and '${tag}' not in url`) rejects.
     --
     -- ARCH COVERAGE — Temurin 17 ships linux + macosx on x86_64/aarch64 and
     -- x86_64 only on windows.
@@ -63,22 +65,6 @@ package = {
                         },
                     },
                     required = true,
-                },
-                CN = {
-                    url = {
-                        linux = {
-                            x86_64 = "https://mirrors.tuna.tsinghua.edu.cn/Adoptium/17/jdk/x64/linux/OpenJDK17U-jdk_x64_linux_hotspot_${version:base}_${version:build}.tar.gz",
-                            aarch64 = "https://mirrors.tuna.tsinghua.edu.cn/Adoptium/17/jdk/aarch64/linux/OpenJDK17U-jdk_aarch64_linux_hotspot_${version:base}_${version:build}.tar.gz",
-                        },
-                        macosx = {
-                            x86_64 = "https://mirrors.tuna.tsinghua.edu.cn/Adoptium/17/jdk/x64/mac/OpenJDK17U-jdk_x64_mac_hotspot_${version:base}_${version:build}.tar.gz",
-                            aarch64 = "https://mirrors.tuna.tsinghua.edu.cn/Adoptium/17/jdk/aarch64/mac/OpenJDK17U-jdk_aarch64_mac_hotspot_${version:base}_${version:build}.tar.gz",
-                        },
-                        windows = {
-                            x86_64 = "https://mirrors.tuna.tsinghua.edu.cn/Adoptium/17/jdk/x64/windows/OpenJDK17U-jdk_x64_windows_hotspot_${version:base}_${version:build}.zip",
-                        },
-                    },
-                    required = false,
                 },
             },
         },
