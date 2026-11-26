@@ -51,117 +51,104 @@ class TestStatic:
         assert_no_typos(PKG_FILE)
 
     @pytest.mark.static
-    def test_all_platforms_pinned_deps_and_sha256(self, meta):
-        assert "BUILD_TLS=no" in meta.description
+    def test_windows_prebuilt_and_sha256_pinned(self, meta):
+        assert set(meta.platforms.keys()) == {"windows"}
         _run_lua('''
 import = function() end
 dofile(arg[1])
-local ldeps = assert(package.xpm.linux.deps and package.xpm.linux.deps.build)
-assert(ldeps[1] == "xim:make@4.3" and ldeps[2] == "xim:musl-gcc@15.1.0",
-       "linux build deps must be pinned")
-
-local expected = {
-    linux = false,
-    macosx = false,
-    windows = {"x86_64"},
-}
-for plat, arches in pairs(expected) do
-    local p = assert(package.xpm[plat], "missing platform: " .. plat)
-    local ref = assert(p.latest and p.latest.ref)
-    local v = assert(p[ref], "missing version " .. ref .. " on " .. plat)
-    if arches then
-        for _, arch in ipairs(arches) do
-            local r = assert(v[arch], "missing " .. plat .. "/" .. arch)
-            assert(type(r.url) == "string" and r.url:find(ref, 1, true))
-            assert(type(r.sha256) == "string" and #r.sha256 == 64 and r.sha256:match("^%x+$"))
-        end
-    else
-        assert(type(v.url) == "string" and v.url:find(ref, 1, true))
-        assert(type(v.sha256) == "string" and #v.sha256 == 64 and v.sha256:match("^%x+$"))
-    end
-end
+assert(package.spec == "2")
+assert(package.name == "redis")
+assert(package.xvm_enable == true)
+assert(package.ci and package.ci.mirror == true)
+assert(#package.archs == 1 and package.archs[1] == "x86_64")
+local win = assert(package.xpm.windows)
+assert(win.latest and win.latest.ref == "8.10.3")
+local v = assert(win["8.10.3"] and win["8.10.3"].x86_64)
+assert(type(v.url) == "string" and v.url == "https://github.com/redis-windows/redis-windows/releases/download/8.10.3/Redis-8.10.3-Windows-x64-msys2.zip")
+assert(type(v.sha256) == "string" and #v.sha256 == 64 and v.sha256:match("^%x+$"))
 ''', PKG_FILE)
 
     @pytest.mark.static
-    def test_nproc_parallelism_and_make_failure_raises_compiler_error(self, tmp_path):
-        src = Path(PKG_FILE).read_text(encoding="utf-8")
-        assert "-j4" not in src
-        assert "nproc" in src and "hw.ncpu" in src
-
-        fake_bin = tmp_path / "musl" / "bin"
-        fake_bin.mkdir(parents=True)
-        fake_make = fake_bin / "make"
-        fake_make.write_text(
-            "#!/bin/sh\necho 'zmalloc.c:1:10: fatal error: synthetic_compile_error.h: No such file or directory' >&2\nexit 2\n",
-            encoding="utf-8",
-        )
-        fake_make.chmod(0o755)
-        (tmp_path / "redis-8.10.3" / "src").mkdir(parents=True)
-
+    def test_installed_install_config_and_uninstall_via_payload_module(self):
         _run_lua('''
 import = function() end
 winpath = assert(loadfile("libs/winpath.lua"))()
 payload = assert(loadfile("libs/payload.lua"))()
 dofile(arg[1])
 
-local root = arg[2]
+local files, dirs, execs, xvm_adds, xvm_rms = {}, {}, {}, {}, {}
+local required = {
+    "redis-server.exe",
+    "redis-cli.exe",
+    "redis-benchmark.exe",
+    "redis-check-aof.exe",
+    "redis-check-rdb.exe",
+    "redis-sentinel.exe",
+    "redis.conf",
+    "sentinel.conf",
+}
+local programs = {
+    "redis-server",
+    "redis-cli",
+    "redis-benchmark",
+    "redis-check-aof",
+    "redis-check-rdb",
+    "redis-sentinel",
+}
+
 pkginfo = {
+    name = function() return "redis" end,
     version = function() return "8.10.3" end,
-    install_file = function() return root .. "/redis-8.10.3.tar.gz" end,
-    install_dir = function() return root .. "/out" end,
-    build_dep = function(name)
-        if name == "make" then return { path = root .. "/musl" } end
-        if name == "musl-gcc" then return { path = root .. "/musl" } end
+    install_file = function() return "C:/cache/Redis-8.10.3-Windows-x64-msys2.zip" end,
+    install_dir = function() return "C:/xpkgs/redis/8.10.3" end,
+}
+os.host = function() return "windows" end
+os.getenv = function(k) return k == "SystemRoot" and "C:\\\\Windows" or nil end
+os.isfile = function(p) return files[p] == true end
+os.isdir = function(p) return dirs[p] == true end
+os.tryrm = function(p) dirs[p] = nil end
+log = { info = function() end }
+fs = { mkdir_p = function() end }
+xvm = {
+    add = function(name, opts) table.insert(xvm_adds, {name, opts}) end,
+    remove = function(name) table.insert(xvm_rms, name) end,
+}
+system = {
+    exec = function(cmd)
+        table.insert(execs, cmd)
+        for _, rel in ipairs(required) do
+            files["C:/xpkgs/redis/8.10.3/" .. rel] = true
+        end
     end,
 }
-os.isdir = function(p) return p == (root .. "/redis-8.10.3") end
-os.isfile = function(p) return p == (root .. "/musl/bin/make") end
-os.tryrm = function() end
 
-local ok, err = pcall(install)
-assert(not ok, "failing make must raise immediately")
-assert(tostring(err):find("make failed", 1, true), "unexpected error: " .. tostring(err))
-assert(tostring(err):find("synthetic_compile_error.h", 1, true), "compiler stderr lost: " .. tostring(err))
-assert(not tostring(err):find("files missing", 1, true), "fell through to payload.require: " .. tostring(err))
-''', PKG_FILE, str(tmp_path))
-
-    @pytest.mark.static
-    def test_installed_checks_all_programs_and_configs(self):
-        _run_lua('''
-import = function() end
-winpath = assert(loadfile("libs/winpath.lua"))()
-payload = assert(loadfile("libs/payload.lua"))()
-dofile(arg[1])
-pkginfo = { install_dir = function() return "/pkg" end }
-local present = {}
-os.isfile = function(p) return present[p] == true end
-
-local posix_files = {
-    "/pkg/bin/redis-server", "/pkg/bin/redis-cli", "/pkg/bin/redis-benchmark",
-    "/pkg/bin/redis-check-aof", "/pkg/bin/redis-check-rdb", "/pkg/bin/redis-sentinel",
-    "/pkg/etc/redis.conf", "/pkg/etc/sentinel.conf",
-}
 assert(not installed())
-for _, f in ipairs(posix_files) do present[f] = true end
+assert(install())
+assert(#execs == 1)
+assert(execs[1]:match('^C:\\\\Windows\\\\System32\\\\tar%.exe %-xf "C:\\\\cache\\\\Redis%-8%.10%.3%-Windows%-x64%-msys2%.zip" %-%-strip%-components=1 %-C "C:\\\\xpkgs\\\\redis\\\\8%.10%.3"$'))
 assert(installed())
-for _, f in ipairs(posix_files) do
-    present[f] = nil
-    assert(not installed(), "accepted missing " .. f)
-    present[f] = true
+
+for _, rel in ipairs(required) do
+    files["C:/xpkgs/redis/8.10.3/" .. rel] = nil
+    assert(not installed(), "accepted missing " .. rel)
+    files["C:/xpkgs/redis/8.10.3/" .. rel] = true
 end
 
-present = {}
-local win_files = {
-    "/pkg/redis-server.exe", "/pkg/redis-cli.exe", "/pkg/redis-benchmark.exe",
-    "/pkg/redis-check-aof.exe", "/pkg/redis-check-rdb.exe", "/pkg/redis-sentinel.exe",
-    "/pkg/redis.conf", "/pkg/sentinel.conf",
-}
-for _, f in ipairs(win_files) do present[f] = true end
-assert(installed())
-for _, f in ipairs(win_files) do
-    present[f] = nil
-    assert(not installed(), "accepted missing " .. f)
-    present[f] = true
+assert(config())
+assert(#xvm_adds == #programs)
+assert(xvm_adds[1][1] == "redis-server")
+assert(xvm_adds[1][2].bindir == "C:/xpkgs/redis/8.10.3")
+assert(xvm_adds[1][2].binding == nil)
+for i = 2, #programs do
+    assert(xvm_adds[i][1] == programs[i])
+    assert(xvm_adds[i][2].bindir == "C:/xpkgs/redis/8.10.3")
+    assert(xvm_adds[i][2].binding == "redis-server@8.10.3")
+end
+
+assert(uninstall())
+assert(#xvm_rms == #programs)
+for i = 1, #programs do
+    assert(xvm_rms[i] == programs[#programs - i + 1])
 end
 ''', PKG_FILE)
 
@@ -193,32 +180,38 @@ class TestIsolation:
     def test_portable_lua_and_libxpkg_only(self):
         src = Path(PKG_FILE).read_text(encoding="utf-8")
         assert set(re.findall(r'import\("([^"]+)"\)', src)) <= {
-            "xim.libxpkg.fs", "xim.libxpkg.pkginfo",
-            "xim.libxpkg.xvm", "xim.pkgindex.payload",
+            "xim.libxpkg.pkginfo", "xim.libxpkg.xvm", "xim.pkgindex.payload",
         }
         assert not re.search(r'\b(?:path\.|is_host\(|os\.host\(|raise\()', src)
 
 
 class TestLifecycle:
     @pytest.mark.lifecycle
-    @skip_if_not("linux")
+    @skip_if_not("windows")
     def test_install(self):
         assert_install_succeeds(under_test(PKG))
 
 
 class TestVerify:
     @pytest.mark.verify
-    @skip_if_not("linux")
+    @skip_if_not("windows")
     def test_server_version(self):
-        assert_command_output("redis-server --version", contains="v=8.10.3")
+        assert_command_output("redis-server --version", contains="8.10.3")
 
     @pytest.mark.verify
-    @skip_if_not("linux")
+    @skip_if_not("windows")
     def test_cli_version(self):
         assert_command_output("redis-cli --version", contains="8.10.3")
 
     @pytest.mark.verify
-    @skip_if_not("linux")
+    @skip_if_not("windows")
     def test_xvm_registered(self):
-        assert_xvm_registered("redis-server")
-        assert_xvm_registered("redis-cli")
+        for prog in (
+            "redis-server",
+            "redis-cli",
+            "redis-benchmark",
+            "redis-check-aof",
+            "redis-check-rdb",
+            "redis-sentinel",
+        ):
+            assert_xvm_registered(prog)
