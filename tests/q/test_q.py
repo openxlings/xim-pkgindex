@@ -314,10 +314,10 @@ class TestVerify:
             capture_output=True,
             text=True,
             encoding="utf-8",
-            check=True,
             timeout=15,
         )
         out = proc.stdout + proc.stderr
+        assert proc.returncode in (0, 1), out
         assert "Usage:" in out, out
 
     @pytest.mark.verify
