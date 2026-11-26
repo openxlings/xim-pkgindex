@@ -84,11 +84,11 @@ package = {
         },
         windows = {
             deps = { runtime = { "xim:vcruntime" } },
-            ["latest"] = { ref = "0.23.6" },
-            ["0.23.6"] = {
+            ["latest"] = { ref = "0.23.5" },
+            ["0.23.5"] = {
                 x86_64 = {
-                    url = "https://github.com/getzola/zola/releases/download/v0.23.6/zola-v0.23.6-x86_64-pc-windows-msvc.zip",
-                    sha256 = "c285748dd5265d2715b952b4ae1c588c91088c24d4e0fca77b7f94d43ff8fda8",
+                    url = "https://github.com/getzola/zola/releases/download/v0.23.5/zola-v0.23.5-x86_64-pc-windows-msvc.zip",
+                    sha256 = "878fccd4ec4f4cfe7babbff1c5bae2abac9c47181ea383ccde2322dcdf445be2",
                 },
             },
         },
