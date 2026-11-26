@@ -1,7 +1,8 @@
 # zola
 
 - **Upstream**: <https://github.com/getzola/zola> (`getzola/zola`)
-- **Latest packaged version**: `0.23.6` (`spec = "2"`, `ci = { mirror = true }`)
+- **Latest packaged version**: `0.23.5` (`spec = "2"`, `ci = { mirror = true }`)
+  (`0.23.6` Windows zip hits `HTTP 404` in `xlings.exe` on CI)
 - **Platforms & artifacts**:
   - `linux` `x86_64`: `zola-v0.23.6-x86_64-unknown-linux-musl.tar.gz` (static musl ELF, no `NEEDED`)
   - `linux` `aarch64`: `zola-v0.23.6-aarch64-unknown-linux-gnu.tar.gz` (dynamic ELF: `GLIBC_2.35`, `GCC_4.2.0`; declares `xim:glibc`, `xim:gcc-runtime`)
