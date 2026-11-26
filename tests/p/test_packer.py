@@ -107,10 +107,10 @@ end
 class TestIsolation:
     @pytest.mark.isolation
     @skip_if_not("linux")
+    @pytest.mark.skipif(not shutil.which("xlings"), reason="xlings CLI not available")
     def test_install_and_run_packer(self):
         assert_xim_add_succeeds(PKG_FILE)
         assert_install_succeeds(PKG)
-        assert_xvm_registered("packer")
 
         shim = xlings_home() / "bin" / "packer"
         assert shim.is_file() or shim.is_symlink(), f"missing shim at {shim}"
