@@ -15,6 +15,9 @@ on:
       closure:
         type: boolean
         default: false
+      xlings_sha:
+        type: string
+        default: ""
   workflow_dispatch: null
 
 jobs:
@@ -80,6 +83,7 @@ jobs:
       - uses: ./.github/actions/setup-xlings
         with:
           version: v2026.11.23.1
+          xlings_sha: ${{ inputs.xlings_sha }}
 
       # Refresh the index. The release tarball bundles a pkgindex snapshot
       # frozen at build time, so without this a package's DEPENDENCIES resolve
@@ -139,6 +143,7 @@ jobs:
       - uses: ./.github/actions/setup-xlings
         with:
           version: v2026.11.23.1
+          xlings_sha: ${{ inputs.xlings_sha }}
 
       # 先 update 再 overlay, 且之后不得再 update —— update 会重拉发布
       # artifact 把覆盖进去的文件盖回去。overlay 让 ncurses 的 deps 按本

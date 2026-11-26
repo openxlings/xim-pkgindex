@@ -17,6 +17,10 @@ on:
         description: 'Explicit full package sweep'
         type: boolean
         default: false
+      xlings_sha:
+        description: 'An openxlings/xlings commit whose CI build installs the packages (the client under test); default: the pinned release'
+        type: string
+        default: ''
 permissions:
   contents: read
   actions: read
@@ -97,6 +101,7 @@ jobs:
     uses: ./.github/workflows/ci-test.yml
     with:
       matrix: ${{ needs.plan.outputs.matrix }}
+      xlings_sha: ${{ inputs.xlings_sha }}
   ci_xpkg_test:
     needs: plan
     if: needs.plan.outputs.ci_xpkg_test == 'true'
@@ -105,6 +110,7 @@ jobs:
       base_sha: ${{ needs.plan.outputs.base_sha }}
       head_sha: ${{ needs.plan.outputs.head_sha }}
       closure: ${{ needs.plan.outputs.closure == 'true' }}
+      xlings_sha: ${{ inputs.xlings_sha }}
   ci_tools:
     needs: plan
     if: needs.plan.outputs.ci_tools == 'true'

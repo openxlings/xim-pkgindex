@@ -5,6 +5,9 @@ on:
       matrix:
         type: string
         required: true
+      xlings_sha:
+        type: string
+        default: ''
 jobs:
   install:
     name: install (${{ matrix.platform }}${{ matrix.shard && format(' {0}', matrix.shard) || '' }})
@@ -21,6 +24,8 @@ jobs:
         with:
           python-version: '3.12'
       - uses: ./.github/actions/setup-xlings
+        with:
+          xlings_sha: ${{ inputs.xlings_sha }}
       - name: ELF and Lua tooling
         if: runner.os == 'Linux'
         timeout-minutes: 12
