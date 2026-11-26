@@ -80,7 +80,17 @@ package = {
     xpm = {
         linux = {
             source = "https://github.com/Ciao1019/ArcMD/releases/download/v${version}/arcmd-${version}-linux-${arch_alias}.tar.gz",
-            ["latest"] = { ref = "0.4.0" },
+            ["latest"] = { ref = "0.5.0" },
+            ["0.5.0"] = {
+                x86_64 = {
+                    url = "https://github.com/Ciao1019/ArcMD/releases/download/v0.5.0/arcmd-0.5.0-linux-amd64.tar.gz",
+                    sha256 = "7ec772be0973115840b8641283d92503b94651cba914d0638605209e30f5d573",
+                },
+                aarch64 = {
+                    url = "https://github.com/Ciao1019/ArcMD/releases/download/v0.5.0/arcmd-0.5.0-linux-arm64.tar.gz",
+                    sha256 = "0cbad646662137ea5846715dbe7ed75d4d2048618656827eb3173f763dae883f",
+                },
+            },
             ["0.4.0"] = {
                 arch_alias = { x86_64 = "amd64", aarch64 = "arm64" },
                 sha256 = {
@@ -91,7 +101,17 @@ package = {
         },
         macosx = {
             source = "https://github.com/Ciao1019/ArcMD/releases/download/v${version}/arcmd-${version}-darwin-${arch_alias}.tar.gz",
-            ["latest"] = { ref = "0.4.0" },
+            ["latest"] = { ref = "0.5.0" },
+            ["0.5.0"] = {
+                x86_64 = {
+                    url = "https://github.com/Ciao1019/ArcMD/releases/download/v0.5.0/arcmd-0.5.0-darwin-amd64.tar.gz",
+                    sha256 = "87f8696ed127c26bb84cf1e3614ab968ea5de8cfa867a954fd85b34381ab41e5",
+                },
+                aarch64 = {
+                    url = "https://github.com/Ciao1019/ArcMD/releases/download/v0.5.0/arcmd-0.5.0-darwin-arm64.tar.gz",
+                    sha256 = "b70deb2953b6ec0dc9d9ad88c84449c5c17277c662a1643341a2c13007ac30c8",
+                },
+            },
             ["0.4.0"] = {
                 arch_alias = { x86_64 = "amd64", aarch64 = "arm64" },
                 sha256 = {
@@ -102,7 +122,13 @@ package = {
         },
         windows = {
             source = "https://github.com/Ciao1019/ArcMD/releases/download/v${version}/arcmd-${version}-windows-${arch_alias}.zip",
-            ["latest"] = { ref = "0.4.0" },
+            ["latest"] = { ref = "0.5.0" },
+            ["0.5.0"] = {
+                x86_64 = {
+                    url = "https://github.com/Ciao1019/ArcMD/releases/download/v0.5.0/arcmd-0.5.0-windows-amd64.zip",
+                    sha256 = "93003a1c706e3ce3a605f881d6dc6f3d699d050b718e7422839baaf3fff57c45",
+                },
+            },
             ["0.4.0"] = {
                 arch_alias = { x86_64 = "amd64" },
                 sha256 = {
