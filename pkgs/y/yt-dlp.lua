@@ -122,7 +122,7 @@ function install()
     fs.mkdir_p(dir)
 
     if tostring(src):lower():match("%.zip$") then
-        fs.unzip(src, dir)
+        system.exec(string.format([[unzip -q -o "%s" -d "%s"]], src, dir))
         local mac_bin = dir .. "/yt-dlp_macos"
         local target = dir .. "/yt-dlp"
         if os.isfile(mac_bin) then
