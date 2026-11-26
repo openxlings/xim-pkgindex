@@ -128,6 +128,8 @@ package = {
             -- unchanged under 2.44.
             ["latest"] = { ref = "2.44.3" },
             ["2.39"] = {
+                -- Revision 1: the hooks of 2.44.3 revision 5 (linker scripts by file name).
+                revision = 1,
                 x86_64 = {
                     url = {
                         GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.39/glibc-2.39-linux-x86_64.tar.gz",
@@ -159,6 +161,8 @@ package = {
             -- entry at a NEW asset under the same version key (2.44.3 below)
             -- and leaves the old asset published for cached indexes.
             ["2.44"] = {
+                -- Revision 1: the hooks of 2.44.3 revision 5 (linker scripts by file name).
+                revision = 1,
                 x86_64 = {
                     url = {
                         GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44/glibc-2.44-linux-x86_64.tar.gz",
@@ -218,6 +222,8 @@ package = {
             -- keep resolving, and on 2026.8.27.5 the declaration outranks
             -- `latest`, so they are not dragged forward.
             ["2.44.2"] = {
+                -- Revision 1: the hooks of 2.44.3 revision 5 (linker scripts by file name).
+                revision = 1,
                 x86_64 = {
                     url = {
                         GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.2/glibc-2.44.2-linux-x86_64.tar.gz",
@@ -291,8 +297,14 @@ package = {
             -- "write_header(.../getconf/POSIX_V6_LP64_OFF64): Can't create"
             -- (mcpp-community/mcpp, Termux). The revision 3 assets stay
             -- published unchanged.
+            -- Revision 5 installs the revision 4 asset and changes the hooks:
+            -- the linker scripts name their members by file name, not by
+            -- absolute path, so lld links through a SubOS sysroot (every
+            -- Rust program: rustc links with its own lld), and config()
+            -- links `libm-2.44.a`, the archive `libm.a` names. Payloads
+            -- installed at revision 4 still link with GNU ld; `floor` stays.
             ["2.44.3"] = {
-                revision = 4,
+                revision = 5,
                 x86_64 = {
                     url = {
                         GLOBAL = "https://github.com/xlings-res/glibc/releases/download/2.44.3-r4/glibc-2.44.3-r4-linux-x86_64.tar.gz",
@@ -509,7 +521,7 @@ function config()
     -- The version-named archive, whatever this release calls it.
     local libs = {}
     for _, l in ipairs(glibc_libs) do table.insert(libs, l) end
-    table.insert(libs, "libm-" .. pkginfo.version() .. ".a")
+    table.insert(libs, __libm_archive())
 
     for _, lib in ipairs(libs) do
         -- Guarded, the way zlib's registration is. A name that is not in this
@@ -537,7 +549,7 @@ function uninstall()
     for _, lib in ipairs(glibc_libs) do
         xvm.remove(lib, glibc_version)
     end
-    xvm.remove("libm-" .. pkginfo.version() .. ".a", glibc_version)
+    xvm.remove(__libm_archive(), glibc_version)
     xvm.remove("ldd", glibc_version)
     xvm.remove("glibc")
     return true
@@ -630,6 +642,17 @@ end
 -- The namespace is not exposed to a hook, but the store directory is:
 -- `<data>/xpkgs/<ns>-x-glibc/<version>`. Deriving it from install_dir() keeps
 -- this to the recipe rather than waiting on a libxpkg field.
+-- `libm.a` is a linker script naming `libm-<x.y>.a`: glibc's own VERSION,
+-- two components, whatever this index calls the entry -- 2.44.3's payload
+-- holds `libm-2.44.a`. `libm-<pkginfo.version()>.a` named a file that is not
+-- there, the existence check in config() skipped it, and a SubOS had a
+-- `libm.a` whose archive was missing (`-static -lm` found it only because the
+-- script named the payload by absolute path).
+function __libm_archive()
+    local v = pkginfo.version()
+    return "libm-" .. (v:match("^(%d+%.%d+)") or v) .. ".a"
+end
+
 function __version_key()
     local store = path.filename(path.directory(pkginfo.install_dir()))
     local ns = store:match("^(.-)%-x%-")
@@ -763,7 +786,7 @@ function __relocate()
         for _, marker in ipairs(markers) do
             elfpatch.relocate_build_paths{ marker = marker }
         end
-        __quote_linker_script_paths(dir)
+        __linker_script_names(dir)
         if relocatable then __assert_no_reserved_prefix(dir, true) end
         return relocatable
     end
@@ -771,34 +794,13 @@ function __relocate()
     -- Older client. Do the ONE substitution that is both needed and safe here,
     -- and say plainly what is left undone.
     --
-    -- Only the linker scripts. In those the path is preceded by `( ` or a
-    -- space, so the greedy match has nothing to swallow, and they are what a
-    -- compiler in this subos actually reads. The `bin/` scripts are left
-    -- ALONE: the old code's output for them was not "imperfect", it was a file
-    -- bash cannot parse, and an `ldd` that still names a nonexistent directory
-    -- is strictly better than an `ldd` that does not run.
-    -- Legacy path only ever saw the legacy marker, and the placeholder prefix
-    -- needs no leftward match at all -- it is already an absolute path token
-    -- with nothing before it. A client this old will simply not relocate a
-    -- payload from the new pipeline, and says so below.
-    local version_escaped = pkginfo.version():gsub("%.", "%%.")
-    local path_pattern = "([^%s)]+)/"
-        .. ("fromsource-x-" .. package.name):gsub("-", "%%-")
-        .. "/" .. version_escaped .. "/lib"
-
-    local base = pkginfo.install_dir()
-    local rewritten = 0
-    for _, f in ipairs({ "lib/libc.so", "lib/libm.so", "lib/libm.a" }) do
-        local abs_f = path.join(base, f)
-        if os.isfile(abs_f) then
-            local content = io.readfile(abs_f)
-            local new_content, count = content:gsub(path_pattern, ".")
-            if count > 0 then
-                io.writefile(abs_f, new_content)
-                rewritten = rewritten + 1
-            end
-        end
-    end
+    -- Only the linker scripts: they are what a compiler in this subos
+    -- actually reads, and naming their members by file name needs no marker
+    -- at all, whichever pipeline built the payload. The `bin/` scripts are
+    -- left ALONE: the old code's output for them was not "imperfect", it was
+    -- a file bash cannot parse, and an `ldd` that still names a nonexistent
+    -- directory is strictly better than an `ldd` that does not run.
+    local rewritten = __linker_script_names(dir)
 
     log.warn("this xlings is too old to relocate glibc's build paths "
              .. "(libxpkg 0.0.51 added elfpatch.relocate_build_paths); "
@@ -939,25 +941,71 @@ function __replace_file(file, content)
     end
 end
 
--- The linker scripts name this directory once relocation has run:
--- `GROUP ( <dir>/lib/libc.so.6 … )`. GNU ld and lld split an unquoted name at
--- whitespace, so under a home whose path holds a space (`/tmp/mc probe/home`)
--- a link opened `/tmp/mc` and failed (mcpp-community/mcpp#832). Both read a
--- name in double quotes as one name. A directory without whitespace, and a
--- script already quoted, are left as they are. Returns the number of scripts
--- rewritten.
-function __quote_linker_script_paths(dir)
-    if not dir:find("%s") then return 0 end
-    local name = dir:gsub("[%^%$%(%)%%%.%[%]%*%+%-%?]", "%%%0") .. "/[^%s()\"]+"
+-- The linker scripts name their members by file name:
+-- `GROUP ( libc.so.6 libc_nonshared.a AS_NEEDED ( ld-linux-x86-64.so.2 ) )`.
+--
+-- Relocation leaves them naming this directory, `<dir>/lib/libc.so.6`, and an
+-- absolute name is not one name to every linker. A SubOS's `lib/libc.so` is a
+-- link into this payload and gcc links with `--sysroot=<subos>`; a script
+-- found inside the sysroot has its absolute names read inside the sysroot.
+-- GNU ld decides "inside" after resolving the link, so it opens
+-- `<dir>/lib/libc.so.6`; lld decides it by the path it opened, looks for
+-- `<subos><dir>/lib/libc.so.6`, and fails -- every Rust program, since rustc
+-- links with its own lld on x86_64 Linux ("cannot find ... inside
+-- <subos>"). The absolute name also split at whitespace under a home whose
+-- path holds one (`/tmp/mc probe/home`, mcpp-community/mcpp#832).
+--
+-- A file name is searched for, and lld and GNU ld (2.42, 2.47) both look in
+-- the directory the script was opened from before the library path: a
+-- `libm.so.6` in an earlier `-L` directory is not taken. Every member is in
+-- the script's directory, here and in the SubOS. A name is rewritten only
+-- when that file exists beside the script; anything else is left as it is.
+-- Returns the number of scripts rewritten; a second call rewrites none.
+function __linker_script_names(dir)
+    local libdir = dir .. "/lib"
+    local function name_of(p)
+        local base = p:match("([^/]+)$")
+        local f = base and io.open(libdir .. "/" .. base, "rb")
+        if not f then return nil end
+        f:close()
+        return base
+    end
+    -- This directory, spelled literally: under a spaced home relocation wrote
+    -- it unquoted, and no token pattern can tell its space from a separator.
+    local here = {}
+    for _, sub in ipairs({ "/lib/", "/lib64/" }) do
+        here[#here + 1] = '"?' .. (dir .. sub):gsub("[%^%$%(%)%%%.%[%]%*%+%-%?]", "%%%0")
+            .. '([^%s()"]+)"?'
+    end
     local rewritten = 0
     for _, f in ipairs({ "lib/libc.so", "lib/libm.so", "lib/libm.a" }) do
         local file = dir .. "/" .. f
         local content = __read_file(file)
-        if content and content:sub(1, 16) == "/* GNU ld script"
-                and not content:find('"' .. dir, 1, true) then
-            local quoted, count = content:gsub(name, '"%0"')
+        if content and content:sub(1, 16) == "/* GNU ld script" then
+            local count = 0
+            local named = content:gsub("[^\n]+", function(line)
+                if not (line:match("^%s*GROUP") or line:match("^%s*INPUT")) then return nil end
+                for _, pattern in ipairs(here) do
+                    line = line:gsub(pattern, function(base)
+                        if not name_of(base) then return nil end
+                        count = count + 1
+                        return base
+                    end)
+                end
+                line = line:gsub('"(/[^"]*)"', function(p)
+                    local base = name_of(p)
+                    if base then count = count + 1 end
+                    return base
+                end)
+                return (line:gsub('([%s(])(/[^%s()"]+)', function(lead, p)
+                    local base = name_of(p)
+                    if not base then return nil end
+                    count = count + 1
+                    return lead .. base
+                end))
+            end)
             if count > 0 then
-                __replace_file(file, quoted)
+                __replace_file(file, named)
                 rewritten = rewritten + 1
             end
         end

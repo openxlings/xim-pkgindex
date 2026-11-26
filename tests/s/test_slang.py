@@ -14,7 +14,7 @@ from tests.lib.platform_utils import skip_if_not
 
 PKG = "slang"
 PKG_FILE = "pkgs/s/slang.lua"
-VERSION = "2026.22"
+VERSION = "2026.22.1"
 
 # 每个平台的资源 URL 都由 platform-scope `source` 模板展开。三平台各有一处
 # 不规则，所以三个模板都要断言，而不是只测宿主平台那一个：
@@ -98,6 +98,25 @@ class TestResources:
         refs = re.findall(r'\["latest"\]\s*=\s*\{\s*ref\s*=\s*"([^"]+)"\s*\}', content)
         assert len(refs) == len(EXPECTED_SOURCES), "每个平台都要有 latest -> 具体版本"
         assert set(refs) == {VERSION}
+
+    @pytest.mark.static
+    def test_flat_archive_extracted_into_payload_alone(self, content):
+        """xlings extracts every flat archive into one shared directory, so
+        its `lib/` is a merge: moving it put ollama's `lib/ollama/`
+        (libggml-cuda.so, which names libcuda.so.1) into slang's payload."""
+        code = "\n".join(ln for ln in content.splitlines()
+                         if not ln.lstrip().startswith("--"))
+        assert 'tar -xf "%s" -C "%s"' in code
+        assert 'os.mv(p, path.join(dir, name))' not in code
+
+    @pytest.mark.static
+    def test_windows_zip_read_by_the_system_tar_by_path(self, content):
+        """a bare `tar` may be Git for Windows' GNU tar (bash puts it first on
+        PATH), which does not read zip: Windows names System32's bsdtar."""
+        code = "\n".join(ln for ln in content.splitlines()
+                         if not ln.lstrip().startswith("--"))
+        assert r'System32\\tar.exe' in code  # the Lua source escapes the backslash
+        assert "-xf" in code and "winpath.native" in code
 
 
 class TestIndex:

@@ -58,18 +58,42 @@ local expected = {
     macosx = {"x86_64", "aarch64"},
     windows = {"x86_64"},
 }
+local aliases = {
+    ["9.7"] = "9.7.4",
+    ["8.4"] = "8.4.11",
+    ["8.0"] = "8.0.46",
+}
+local versions = {"9.7.4", "8.4.11", "8.0.46"}
 local win = assert(package.xpm.windows)
 assert(win.deps and win.deps.runtime and win.deps.runtime[1] == "xim:vcruntime",
        "windows must depend on xim:vcruntime")
 for plat, arches in pairs(expected) do
     local p = assert(package.xpm[plat], "missing platform: " .. plat)
-    assert(p.latest and p.latest.ref == "9.7.4")
-    assert(p["9.7"] and p["9.7"].ref == "9.7.4")
-    local v = assert(p["9.7.4"], "missing 9.7.4 on " .. plat)
-    for _, arch in ipairs(arches) do
-        local r = assert(v[arch], "missing " .. plat .. "/" .. arch)
-        assert(type(r.url) == "string" and r.url:find("mysql%-9%.7%.4", 1, false))
-        assert(type(r.sha256) == "string" and #r.sha256 == 64 and r.sha256:match("^%x+$"))
+    assert(p.latest and p.latest.ref == "9.7.4", plat .. " latest must ref 9.7.4")
+    for branch, target in pairs(aliases) do
+        assert(p[branch] and p[branch].ref == target,
+               plat .. " alias " .. branch .. " must ref " .. target)
+    end
+    for _, ver in ipairs(versions) do
+        local v = assert(p[ver], "missing " .. ver .. " on " .. plat)
+        local series = ver:match("^(%d+%.%d+)%.")
+        local esc_ver = ver:gsub("%.", "%%.")
+        for _, arch in ipairs(arches) do
+            local r = assert(v[arch], "missing " .. ver .. " " .. plat .. "/" .. arch)
+            assert(type(r.url) == "string", "missing url")
+            assert(r.url:match("^https://cdn%.mysql%.com/Downloads/MySQL%-" .. series .. "/mysql%-" .. esc_ver),
+                   "unexpected url format: " .. r.url)
+            if plat == "macosx" then
+                local mac_arch = (arch == "aarch64") and "arm64" or "x86_64"
+                assert(r.url:match("%-macos15%-" .. mac_arch .. "%.tar%.gz$"),
+                       "unexpected macOS tarball suffix: " .. r.url)
+            else
+                assert(r.url:match("%-winx64%.zip$"),
+                       "unexpected Windows archive suffix: " .. r.url)
+            end
+            assert(type(r.sha256) == "string" and #r.sha256 == 64 and r.sha256:match("^%x+$"),
+                   "invalid sha256 for " .. ver .. " " .. plat .. "/" .. arch)
+        end
     end
 end
 ''', PKG_FILE)
