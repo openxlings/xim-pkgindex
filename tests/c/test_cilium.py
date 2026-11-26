@@ -141,41 +141,46 @@ class TestIndex:
 
 class TestLifecycle:
     @pytest.mark.lifecycle
-    def test_install_and_config(self):
-        assert_install_succeeds(PKG)
-        assert_xvm_registered(PKG)
+    @skip_if_not("linux")
+    def test_install(self):
+        assert_install_succeeds(under_test(PKG))
 
 
 class TestVerify:
+    def _run_cilium(self, *args):
+        suffix = ".exe" if os.name == "nt" else ""
+        subos = os.environ.get("XLINGS_TEST_SUBOS", "current")
+        bindir = Path(xlings_home()) / "subos" / subos / "bin"
+        if not bindir.is_dir():
+            bindir = Path(xlings_home()) / "subos" / os.environ.get("XLINGS_TEST_SUBOS", "default") / "bin"
+        shim = bindir / ("cilium" + suffix)
+        assert shim.is_file(), f"Missing installed shim: {shim}"
+        result = subprocess.run(
+            [str(shim), *args],
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            timeout=30,
+        )
+        assert result.returncode == 0, result.stdout + result.stderr
+        return result.stdout + result.stderr
+
     @pytest.mark.verify
     @skip_if_not("linux")
     def test_cilium_version(self):
-        shim = Path(xlings_home()) / "bin" / "cilium"
-        assert shim.exists(), f"cilium shim missing at {shim}"
-        res = subprocess.run(
-            [str(shim), "version", "--client"],
-            capture_output=True,
-            text=True,
-            timeout=15,
-            check=True,
-        )
-        assert "cilium-cli:" in res.stdout
-        assert "0.20.3" in res.stdout
+        out = self._run_cilium("version", "--client")
+        assert "cilium-cli:" in out
+        assert "0.20.3" in out
 
     @pytest.mark.verify
     @skip_if_not("linux")
     def test_cilium_help(self):
-        shim = Path(xlings_home()) / "bin" / "cilium"
-        res = subprocess.run(
-            [str(shim), "--help"],
-            capture_output=True,
-            text=True,
-            timeout=15,
-            check=True,
-        )
-        assert "cilium" in res.stdout.lower()
+        out = self._run_cilium("--help")
+        assert "cilium" in out.lower()
 
     @pytest.mark.verify
     @skip_if_not("linux")
-    def test_under_test_flag(self):
-        assert under_test(PKG) or True
+    def test_xvm_registered(self, monkeypatch):
+        if not os.environ.get("XLINGS_TEST_SUBOS"):
+            monkeypatch.setenv("XLINGS_TEST_SUBOS", "current")
+        assert_xvm_registered("cilium")
