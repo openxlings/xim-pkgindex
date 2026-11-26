@@ -120,7 +120,9 @@ for platform, arches in pairs(expected) do
         local auto = assert(au.resources.GLOBAL.url[platform] and au.resources.GLOBAL.url[platform][arch])
         assert(auto:find("${tag}", 1, true) and auto:find("${version}", 1, true),
                "autoupdate template must use ${tag} and ${version}: " .. platform .. "/" .. arch)
-        local auto_resolved = auto:gsub("%${tag}", "v" .. version):gsub("%${version}", version):gsub("%${arch_alias}", alias)
+        assert(not auto:find("${arch_alias}", 1, true),
+               "autoupdate template must not use runtime placeholder ${arch_alias}: " .. platform .. "/" .. arch)
+        local auto_resolved = auto:gsub("%${tag}", "v" .. version):gsub("%${version}", version)
         local xpm_resolved = p.source:gsub("%${version}", version):gsub("%${arch_alias}", alias)
         assert(auto_resolved == xpm_resolved,
                "installer/updater URLs disagree: " .. platform .. "/" .. arch)

@@ -52,8 +52,8 @@ package = {
                             aarch64 = "https://github.com/getsops/sops/releases/download/${tag}/sops-v${version}.darwin.arm64",
                         },
                         windows = {
-                            x86_64 = "https://github.com/getsops/sops/releases/download/${tag}/sops-v${version}.${arch_alias}.exe",
-                            aarch64 = "https://github.com/getsops/sops/releases/download/${tag}/sops-v${version}.${arch_alias}.exe",
+                            x86_64 = "https://github.com/getsops/sops/releases/download/${tag}/sops-v${version}.amd64.exe",
+                            aarch64 = "https://github.com/getsops/sops/releases/download/${tag}/sops-v${version}.arm64.exe",
                         },
                     },
                 },
