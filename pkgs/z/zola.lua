@@ -56,43 +56,39 @@ package = {
 
     xpm = {
         linux = {
-            source = "https://github.com/getzola/zola/releases/download/v${version}/zola-v${version}-${arch_alias}.tar.gz",
+            deps = { runtime = { "xim:glibc", "xim:gcc-runtime" } },
             ["latest"] = { ref = "0.23.6" },
             ["0.23.6"] = {
-                arch_alias = {
-                    x86_64 = "x86_64-unknown-linux-musl",
-                    aarch64 = "aarch64-unknown-linux-gnu",
+                x86_64 = {
+                    url = "https://github.com/getzola/zola/releases/download/v0.23.6/zola-v0.23.6-x86_64-unknown-linux-musl.tar.gz",
+                    sha256 = "7d77a4220a4f699cba2fc0e0c7859f780e887e269159ad4fab90e11ea16c906f",
                 },
-                deps = {
-                    aarch64 = { "xim:glibc", "xim:gcc-runtime" },
-                },
-                sha256 = {
-                    x86_64 = "7d77a4220a4f699cba2fc0e0c7859f780e887e269159ad4fab90e11ea16c906f",
-                    aarch64 = "266448fffbf7c7004ca399d0e76dd699541771096d8a42aede98cebe2a029d02",
+                aarch64 = {
+                    url = "https://github.com/getzola/zola/releases/download/v0.23.6/zola-v0.23.6-aarch64-unknown-linux-gnu.tar.gz",
+                    sha256 = "266448fffbf7c7004ca399d0e76dd699541771096d8a42aede98cebe2a029d02",
                 },
             },
         },
         macosx = {
-            source = "https://github.com/getzola/zola/releases/download/v${version}/zola-v${version}-${arch_alias}.tar.gz",
             ["latest"] = { ref = "0.23.6" },
             ["0.23.6"] = {
-                arch_alias = {
-                    x86_64 = "x86_64-apple-darwin",
-                    aarch64 = "aarch64-apple-darwin",
+                x86_64 = {
+                    url = "https://github.com/getzola/zola/releases/download/v0.23.6/zola-v0.23.6-x86_64-apple-darwin.tar.gz",
+                    sha256 = "79a4d0ab51a4d863c068e6e594c6fce36f0aa17429a414ea63066f5910d14460",
                 },
-                sha256 = {
-                    x86_64 = "79a4d0ab51a4d863c068e6e594c6fce36f0aa17429a414ea63066f5910d14460",
-                    aarch64 = "cbffbd29b3f59c3f52633507c8cb945a7a02d8b1399b43b235f5932912297aa3",
+                aarch64 = {
+                    url = "https://github.com/getzola/zola/releases/download/v0.23.6/zola-v0.23.6-aarch64-apple-darwin.tar.gz",
+                    sha256 = "cbffbd29b3f59c3f52633507c8cb945a7a02d8b1399b43b235f5932912297aa3",
                 },
             },
         },
         windows = {
-            source = "https://github.com/getzola/zola/releases/download/v${version}/zola-v${version}-x86_64-pc-windows-msvc.zip",
+            deps = { runtime = { "xim:vcruntime" } },
             ["latest"] = { ref = "0.23.6" },
             ["0.23.6"] = {
-                deps = { "xim:vcruntime" },
-                sha256 = {
-                    x86_64 = "c285748dd5265d2715b952b4ae1c588c91088c24d4e0fca77b7f94d43ff8fda8",
+                x86_64 = {
+                    url = "https://github.com/getzola/zola/releases/download/v0.23.6/zola-v0.23.6-x86_64-pc-windows-msvc.zip",
+                    sha256 = "c285748dd5265d2715b952b4ae1c588c91088c24d4e0fca77b7f94d43ff8fda8",
                 },
             },
         },

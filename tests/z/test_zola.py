@@ -86,9 +86,9 @@ assert(package.xvm_enable == true)
 assert(package.programs and #package.programs == 1 and package.programs[1] == "zola")
 
 local expected = {
-    linux = { x86_64 = "x86_64-unknown-linux-musl", aarch64 = "aarch64-unknown-linux-gnu" },
-    macosx = { x86_64 = "x86_64-apple-darwin", aarch64 = "aarch64-apple-darwin" },
-    windows = { x86_64 = "" },
+    linux = { "x86_64", "aarch64" },
+    macosx = { "x86_64", "aarch64" },
+    windows = { "x86_64" },
 }
 local count = 0
 for platform, arches in pairs(expected) do
@@ -96,12 +96,11 @@ for platform, arches in pairs(expected) do
     local version = assert(p.latest and p.latest.ref, "missing latest ref: " .. platform)
     assert(version == "0.23.6", platform .. " latest should be 0.23.6")
     local entry = assert(p[version], "missing version entry: " .. platform)
-    for arch, alias in pairs(arches) do
-        if alias ~= "" then
-            assert(entry.arch_alias and entry.arch_alias[arch] == alias,
-                   platform .. "/" .. arch .. " arch_alias mismatch")
-        end
-        local hash = entry.sha256 and entry.sha256[arch]
+    for _, arch in ipairs(arches) do
+        local item = assert(entry[arch], platform .. "/" .. arch .. " missing entry")
+        assert(type(item.url) == "string" and item.url:match("^https://"),
+               platform .. "/" .. arch .. " missing or invalid url")
+        local hash = item.sha256
         assert(type(hash) == "string" and #hash == 64 and hash:match("^[0-9a-f]+$"),
                platform .. "/" .. arch .. " missing or invalid sha256")
         count = count + 1
