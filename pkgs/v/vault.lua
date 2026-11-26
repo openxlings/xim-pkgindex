@@ -89,7 +89,21 @@ function install()
     local exe = is_win and "vault.exe" or "vault"
 
     os.tryrm(dir)
-    payload.unpack{}
+    if is_win then
+        payload.unpack{}
+    elseif os.isfile(archive) then
+        fs.mkdir_p(dir)
+        system.exec(string.format('unzip -q -o "%s" -d "%s"', normalized, dir))
+    elseif os.isfile(parent .. "/" .. exe) then
+        fs.mkdir_p(dir)
+        for _, f in ipairs({ exe, "LICENSE.txt" }) do
+            if os.isfile(parent .. "/" .. f) then
+                os.mv(parent .. "/" .. f, dir .. "/" .. f)
+            end
+        end
+    else
+        error("vault: archive not found at " .. archive .. " and no extracted " .. exe .. " in " .. parent)
+    end
 
     if not is_win and os.isfile(dir .. "/" .. exe) then
         system.exec(string.format('chmod +x "%s"', dir .. "/" .. exe))
