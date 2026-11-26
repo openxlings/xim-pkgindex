@@ -125,4 +125,4 @@ class TestLifecycle:
         assert_install_succeeds(PKG)
         assert_xvm_registered(PKG)
         assert_xvm_shim_exists(PKG)
-        assert_command_output(["direnv", "version"], VERSION)
+        assert_command_output("direnv version", VERSION)
