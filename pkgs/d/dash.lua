@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "3",
     homepage = "http://gondor.apana.org.au/~herbert/dash/",
     -- base info
     name = "dash",
@@ -27,32 +27,27 @@ package = {
     --   Source:  https://git.kernel.org/.../dash.git/snapshot/dash-<ver>.tar.gz
     --   Mirror:  github.com/xlings-res/dash, gitcode.com/xlings-res/dash
     xpm = {
+        -- The XLINGS_RES tarball holds `dash-<ver>-linux-x86_64/` (bin, share),
+        -- dropped (strip).
         linux = {
+            strip = 1,
             ["latest"] = { ref = "0.5.13.3" },
-            ["0.5.13.3"] = "XLINGS_RES",
+            ["0.5.13.3"] = {
+                url = "XLINGS_RES",
+                sha256 = { x86_64 = "67b2bb7e149a3d6a54e4984c193d2dc865eba8b23ca5852af96a25cf3fcc0c8d" },
+            },
         },
     },
 }
 
+import("xim.libxpkg.path")
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 
-function install()
-    -- XLINGS_RES tarball expands to `dash-<ver>-linux-x86_64/` — same
-    -- layout as the make xpkg, so reuse the same staging idiom.
-    local srcdir = pkginfo.install_file():replace(".tar.gz", "")
-    os.tryrm(pkginfo.install_dir())
-    os.mv(srcdir, pkginfo.install_dir())
-    return true
-end
-
 function config()
-    local bindir = path.join(pkginfo.install_dir(), "bin")
-    xvm.add("dash", { bindir = bindir })
-    return true
+    xvm.add("dash", { bindir = path.join(pkginfo.install_dir(), "bin") })
 end
 
 function uninstall()
     xvm.remove("dash")
-    return true
 end

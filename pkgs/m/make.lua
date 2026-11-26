@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "3",
     homepage = "https://www.gnu.org/software/make",
     -- base info
     name = "make",
@@ -50,7 +50,10 @@ package = {
     },
 
     xpm = {
+        -- XLINGS_RES ships a musl-static tarball (no glibc dependency, so no
+        -- elfpatch step is needed) holding `make-<ver>-linux-<arch>/`: dropped.
         linux = {
+            strip = 1,
             ["latest"] = { ref = "4.3" },
             ["4.3"] = {
                 url = "XLINGS_RES",
@@ -63,29 +66,18 @@ package = {
     },
 }
 
+import("xim.libxpkg.path")
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 
-function install()
-    -- XLINGS_RES ships a musl-static tarball (no glibc dependency, so no
-    -- elfpatch step is needed). It extracts to `make-<ver>-linux-x86_64/`.
-    local srcdir = pkginfo.install_file():replace(".tar.gz", "")
-    os.tryrm(pkginfo.install_dir())
-    os.mv(srcdir, pkginfo.install_dir())
-    return true
-end
-
 function config()
     local bindir = path.join(pkginfo.install_dir(), "bin")
-    local root = "make@" .. pkginfo.version()
     xvm.add("make", { bindir = bindir })
     -- gmake is a symlink to `make` in the same bindir; tie its lifecycle to make@<ver>.
-    xvm.add("gmake", { bindir = bindir, binding = root })
-    return true
+    xvm.add("gmake", { bindir = bindir, binding = "make@" .. pkginfo.version() })
 end
 
 function uninstall()
     xvm.remove("make")
     xvm.remove("gmake")
-    return true
 end

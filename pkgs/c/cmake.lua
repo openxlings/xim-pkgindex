@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "3",
     -- base info
     name = "cmake",
     description = "A Powerful Software Build System",
@@ -59,8 +59,10 @@ package = {
         },
     },
 
+    -- Every archive holds `cmake-<version>-<os>-<arch>/`: dropped (strip).
     xpm = {
         linux = {
+            strip = 1,
             -- Runtime deps, re-measured across the WHOLE 4.5.0 payload rather
             -- than just bin/cmake (readelf on every ELF under bin/; the
             -- closure is identical to 4.4.2):
@@ -115,6 +117,7 @@ package = {
             },
         },
         macosx = {
+            strip = 1,
             ["latest"] = { ref = "4.5.1" },
             ["4.5.0"] = {
                 aarch64 = {
@@ -137,6 +140,7 @@ package = {
             },
         },
         windows = {
+            strip = 1,
             ["latest"] = { ref = "4.5.1" },
             ["4.5.0"] = {
                 x86_64 = {
@@ -161,30 +165,17 @@ package = {
     },
 }
 
+import("xim.libxpkg.path")
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 
-function install()
-    os.tryrm(pkginfo.install_dir())
-    local cmakedir = pkginfo.install_file()
-        :replace(".zip", "")
-        :replace(".tar.gz", "")
-    os.mv(cmakedir, pkginfo.install_dir())
-    return true
-end
-
 function config()
-    local config
-    if os.host() == "macosx" then
-        config = { bindir = path.join(pkginfo.install_dir(), "CMake.app/Contents/bin") }
-    else
-        config = { bindir = path.join(pkginfo.install_dir(), "bin") }
-    end
-    xvm.add("cmake", config)
-    return true
+    local bindir = pkginfo.platform() == "macosx"
+        and path.join(pkginfo.install_dir(), "CMake.app", "Contents", "bin")
+        or path.join(pkginfo.install_dir(), "bin")
+    xvm.add("cmake", { bindir = bindir })
 end
 
 function uninstall()
     xvm.remove("cmake")
-    return true
 end

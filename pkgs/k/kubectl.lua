@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     name = "kubectl",
     description = "Kubernetes command-line tool for controlling Kubernetes clusters",
@@ -96,42 +96,28 @@ package = {
 }
 
 import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 import("xim.libxpkg.pkginfo")
-import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
 
-local function _exe_name()
-    return os.host() == "windows" and "kubectl.exe" or "kubectl"
+-- The download is the program itself, placed in install_dir under its own
+-- name: kubectl, or kubectl.exe on Windows.
+local function _exe()
+    return path.join(pkginfo.install_dir(), pkginfo.platform() == "windows" and "kubectl.exe" or "kubectl")
 end
 
 function installed()
-    return os.isfile(pkginfo.install_dir() .. "/" .. _exe_name())
+    return fs.is_file(_exe())
 end
 
 function install()
-    local dir = pkginfo.install_dir()
-    local target = dir .. "/" .. _exe_name()
-
-    os.tryrm(dir)
-    fs.mkdir_p(dir)
-    os.mv(pkginfo.install_file(), target)
-
-    if os.host() ~= "windows" then
-        system.exec(string.format([[chmod +x "%s"]], target))
-    end
-
-    if not os.isfile(target) then
-        error("kubectl: binary missing after install at " .. target)
-    end
-    return true
+    fs.chmod(_exe(), "+x")
 end
 
 function config()
     xvm.add("kubectl", { bindir = pkginfo.install_dir() })
-    return true
 end
 
 function uninstall()
     xvm.remove("kubectl")
-    return true
 end

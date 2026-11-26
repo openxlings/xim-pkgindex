@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "3",
 
     name = "go",
     description = "The Go programming language",
@@ -13,7 +13,7 @@ package = {
     docs = "https://go.dev/doc",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"language", "compiler", "tools"},
     keywords = {"go", "golang", "language", "compiler"},
@@ -58,108 +58,103 @@ package = {
         },
     },
 
+    -- Every archive holds `go/` (bin, src, pkg, lib, ...): dropped (strip).
     xpm = {
         linux = {
+            strip = 1,
 
             ["latest"] = { ref = "1.27.4" },
             ["1.27.0"] = {
                 url = "https://go.dev/dl/go1.27.0.linux-amd64.tar.gz",
-                sha256 = "675c26c449cbb18fc24b74650de1eabbae6e16f64326fd85a283fb3b58280685",
+                sha256 = { x86_64 = "675c26c449cbb18fc24b74650de1eabbae6e16f64326fd85a283fb3b58280685" },
             },
             ["1.26.2"] = {
                 url = "https://go.dev/dl/go1.26.2.linux-amd64.tar.gz",
-                sha256 = "990e6b4bbba816dc3ee129eaeaf4b42f17c2800b88a2166c265ac1a200262282",
+                sha256 = { x86_64 = "990e6b4bbba816dc3ee129eaeaf4b42f17c2800b88a2166c265ac1a200262282" },
             },
             ["1.27.3"] = {
                 url = {
                     GLOBAL = "https://go.dev/dl/go1.27.3.linux-amd64.tar.gz",
                     CN = "https://mirrors.nju.edu.cn/golang/go1.27.3.linux-amd64.tar.gz",
                 },
-                sha256 = "65efbc80fdc1fa2cd2631cad5b481777a68e8725f34e89f50fc6ac714e379b40",
+                sha256 = { x86_64 = "65efbc80fdc1fa2cd2631cad5b481777a68e8725f34e89f50fc6ac714e379b40" },
             },
             ["1.27.4"] = {
                 url = {
                     GLOBAL = "https://go.dev/dl/go1.27.4.linux-amd64.tar.gz",
                     CN = "https://mirrors.nju.edu.cn/golang/go1.27.4.linux-amd64.tar.gz",
                 },
-                sha256 = "7226736c2339719cda28fbf3a54d71aa63bcefe376e98cef00034268dab24840",
+                sha256 = { x86_64 = "7226736c2339719cda28fbf3a54d71aa63bcefe376e98cef00034268dab24840" },
             },
         },
         macosx = {
+            strip = 1,
 
             ["latest"] = { ref = "1.27.4" },
             ["1.27.0"] = {
                 url = "https://go.dev/dl/go1.27.0.darwin-arm64.tar.gz",
-                sha256 = "90493b3bbd5e10f91d12153198bf1994fd756399b4fec93b49b0c6e2acdeeb3e",
+                sha256 = { aarch64 = "90493b3bbd5e10f91d12153198bf1994fd756399b4fec93b49b0c6e2acdeeb3e" },
             },
             ["1.26.2"] = {
                 url = "https://go.dev/dl/go1.26.2.darwin-arm64.tar.gz",
-                sha256 = "32af1522bf3e3ff3975864780a429cc0b41d190ec7bf90faa661d6d64566e7af",
+                sha256 = { aarch64 = "32af1522bf3e3ff3975864780a429cc0b41d190ec7bf90faa661d6d64566e7af" },
             },
             ["1.27.3"] = {
                 url = {
                     GLOBAL = "https://go.dev/dl/go1.27.3.darwin-arm64.tar.gz",
                     CN = "https://mirrors.nju.edu.cn/golang/go1.27.3.darwin-arm64.tar.gz",
                 },
-                sha256 = "dd3908cf20959d798c1e06ebe5b72213f0505ce01373b40ce3110975a6cd99c2",
+                sha256 = { aarch64 = "dd3908cf20959d798c1e06ebe5b72213f0505ce01373b40ce3110975a6cd99c2" },
             },
             ["1.27.4"] = {
                 url = {
                     GLOBAL = "https://go.dev/dl/go1.27.4.darwin-arm64.tar.gz",
                     CN = "https://mirrors.nju.edu.cn/golang/go1.27.4.darwin-arm64.tar.gz",
                 },
-                sha256 = "91a44a2b8a716600ad94a4f143e156116620db8828086a6e3602291be9bd0bb4",
+                sha256 = { aarch64 = "91a44a2b8a716600ad94a4f143e156116620db8828086a6e3602291be9bd0bb4" },
             },
         },
         windows = {
+            strip = 1,
 
             ["latest"] = { ref = "1.27.4" },
             ["1.27.0"] = {
                 url = "https://go.dev/dl/go1.27.0.windows-amd64.zip",
-                sha256 = "f0c0a0d33ba94f4d2c5dbc887334ce678b21813504ddb3aafcb06e60a5a667c4",
+                sha256 = { x86_64 = "f0c0a0d33ba94f4d2c5dbc887334ce678b21813504ddb3aafcb06e60a5a667c4" },
             },
             ["1.26.2"] = {
                 url = "https://go.dev/dl/go1.26.2.windows-amd64.zip",
-                sha256 = "98eb3570bade15cb826b0909338df6cc6d2cf590bc39c471142002db3832b708",
+                sha256 = { x86_64 = "98eb3570bade15cb826b0909338df6cc6d2cf590bc39c471142002db3832b708" },
             },
             ["1.27.3"] = {
                 url = {
                     GLOBAL = "https://go.dev/dl/go1.27.3.windows-amd64.zip",
                     CN = "https://mirrors.nju.edu.cn/golang/go1.27.3.windows-amd64.zip",
                 },
-                sha256 = "f26081f438319757f8a1b46d7d0b2c5ec7583d4038e485e0aa725cfde7885fff",
+                sha256 = { x86_64 = "f26081f438319757f8a1b46d7d0b2c5ec7583d4038e485e0aa725cfde7885fff" },
             },
             ["1.27.4"] = {
                 url = {
                     GLOBAL = "https://go.dev/dl/go1.27.4.windows-amd64.zip",
                     CN = "https://mirrors.nju.edu.cn/golang/go1.27.4.windows-amd64.zip",
                 },
-                sha256 = "178ab98950ac69ab25069307dc6ade79f3816e414cce95b4da166a115cde1e7e",
+                sha256 = { x86_64 = "178ab98950ac69ab25069307dc6ade79f3816e414cce95b4da166a115cde1e7e" },
             },
         },
     },
 }
 
+import("xim.libxpkg.path")
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
-
-function install()
-    -- Tarball / zip extracts to a `go/` directory containing bin/, src/,
-    -- pkg/, lib/, etc. Move the whole tree into install_dir as-is.
-    os.tryrm(pkginfo.install_dir())
-    os.mv("go", pkginfo.install_dir())
-    return true
-end
 
 function config()
     local bindir = path.join(pkginfo.install_dir(), "bin")
     xvm.add("go",    { bindir = bindir })
     xvm.add("gofmt", { bindir = bindir })
-    return true
 end
 
 function uninstall()
     xvm.remove("go")
     xvm.remove("gofmt")
-    return true
 end

@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     name = "fish",
     description = "Friendly interactive shell — smart, user-friendly, modern command-line",
@@ -12,7 +12,7 @@ package = {
 
     type = "package",
     -- 4.8.1: upstream's static x86_64 and aarch64 builds; older versions
-    -- x86_64 only (an aarch64 reader refuses them, below).
+    -- x86_64 only (their entries name it).
     archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"shell", "cli"},
@@ -57,13 +57,14 @@ package = {
                     sha256 = "a03c8a445570a2a37e114cb13cebe41842cf17c4dd67a6530a57f742db04eee4",
                 },
             },
+            -- x86_64 only: an aarch64 host is refused when it plans them.
             ["4.8.0"] = {
                 url = "https://github.com/fish-shell/fish-shell/releases/download/4.8.0/fish-4.8.0-linux-x86_64.tar.xz",
-                sha256 = "98f7916878fc76be797cabf284f185b56f31a35681e3aec9b9faf7a4a6aa0d74",
+                sha256 = { x86_64 = "98f7916878fc76be797cabf284f185b56f31a35681e3aec9b9faf7a4a6aa0d74" },
             },
             ["4.6.0"] = {
                 url = "https://github.com/fish-shell/fish-shell/releases/download/4.6.0/fish-4.6.0-linux-x86_64.tar.xz",
-                sha256 = "497c9c4e3fb3c006fe9d2c9a5a5447c1c90490b6b4ce6bfaf75e53b495c82f36",
+                sha256 = { x86_64 = "497c9c4e3fb3c006fe9d2c9a5a5447c1c90490b6b4ce6bfaf75e53b495c82f36" },
             },
             ["4.9.3"] = {
                 aarch64 = {
@@ -79,34 +80,16 @@ package = {
     },
 }
 
-local recipe_arch = (os.arch and os.arch())
-if recipe_arch == "aarch64" or recipe_arch == "arm64" then
-    package.xpm.linux["4.8.0"] = nil
-    package.xpm.linux["4.6.0"] = nil
-end
-
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 
 -- The fish-<ver>-linux-<arch>.tar.xz archives are flat: a single `fish`
--- binary lands directly in the runtime download dir, with no enclosing
--- folder. Mirror the fzf pattern: explicitly mv the bare binary into a
--- fresh install_dir so xlings's auto-stage (which sees an empty install_dir
--- otherwise) doesn't pull unrelated runtimedir entries in.
-function install()
-    os.tryrm(pkginfo.install_dir())
-    os.mkdir(pkginfo.install_dir())
-    local download_dir = path.directory(pkginfo.install_file())
-    os.mv(path.join(download_dir, "fish"), path.join(pkginfo.install_dir(), "fish"))
-    return true
-end
+-- binary, placed in install_dir as it is.
 
 function config()
     xvm.add("fish", { bindir = pkginfo.install_dir() })
-    return true
 end
 
 function uninstall()
     xvm.remove("fish")
-    return true
 end
