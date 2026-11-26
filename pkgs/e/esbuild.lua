@@ -85,7 +85,21 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "0.25.12" },
+            ["latest"] = { ref = "0.28.2" },
+            ["0.28.2"] = {
+                x86_64 = {
+                    url = { GLOBAL = "https://registry.npmjs.org/@esbuild/linux-x64/-/linux-x64-0.28.2.tgz" },
+                    sha256 = "9573bb2233aab0f9ea7647d5cca9726113cc1768de61d66b17267f4db84488f6",
+                },
+                aarch64 = {
+                    url = { GLOBAL = "https://registry.npmjs.org/@esbuild/linux-arm64/-/linux-arm64-0.28.2.tgz" },
+                    sha256 = "a96dbfa41d3ef5dbd1ef22b1c10d5187be9267e86093a870f06402a7ec931596",
+                },
+                x86 = {
+                    url = { GLOBAL = "https://registry.npmjs.org/@esbuild/linux-ia32/-/linux-ia32-0.28.2.tgz" },
+                    sha256 = "47540b6a8fce26aac6559630dc232f83fe20642e87f1f1fab47512f0ea425084",
+                },
+            },
             ["0.25.12"] = {
                 x86_64 = {
                     url = { GLOBAL = "https://registry.npmjs.org/@esbuild/linux-x64/-/linux-x64-0.25.12.tgz" },
@@ -102,7 +116,17 @@ package = {
             },
         },
         macosx = {
-            ["latest"] = { ref = "0.25.12" },
+            ["latest"] = { ref = "0.28.2" },
+            ["0.28.2"] = {
+                x86_64 = {
+                    url = { GLOBAL = "https://registry.npmjs.org/@esbuild/darwin-x64/-/darwin-x64-0.28.2.tgz" },
+                    sha256 = "abb6a7a895aaf2cc0df36fecc3bf0042479ffec51a643a056d54e9109f27db55",
+                },
+                aarch64 = {
+                    url = { GLOBAL = "https://registry.npmjs.org/@esbuild/darwin-arm64/-/darwin-arm64-0.28.2.tgz" },
+                    sha256 = "1980cde09749094452b20d36ff267585ccb3f72749c7bc97291cd9996ccf5a2a",
+                },
+            },
             ["0.25.12"] = {
                 x86_64 = {
                     url = { GLOBAL = "https://registry.npmjs.org/@esbuild/darwin-x64/-/darwin-x64-0.25.12.tgz" },
@@ -115,7 +139,21 @@ package = {
             },
         },
         windows = {
-            ["latest"] = { ref = "0.25.12" },
+            ["latest"] = { ref = "0.28.2" },
+            ["0.28.2"] = {
+                x86_64 = {
+                    url = { GLOBAL = "https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-0.28.2.tgz" },
+                    sha256 = "7286c3611b6f1f4c4d9ec90adcbc478407ff0d28ead96567f361d53e67613e19",
+                },
+                aarch64 = {
+                    url = { GLOBAL = "https://registry.npmjs.org/@esbuild/win32-arm64/-/win32-arm64-0.28.2.tgz" },
+                    sha256 = "b3cffeaa165134f7da679c8619266953afd5f41641a254615a57e757f67c7336",
+                },
+                x86 = {
+                    url = { GLOBAL = "https://registry.npmjs.org/@esbuild/win32-ia32/-/win32-ia32-0.28.2.tgz" },
+                    sha256 = "e05a9b0cb0c9c6facfb02222d00064dd37baf5c1163f6c0eea936cb93f87a011",
+                },
+            },
             ["0.25.12"] = {
                 x86_64 = {
                     url = { GLOBAL = "https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-0.25.12.tgz" },
