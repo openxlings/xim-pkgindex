@@ -328,7 +328,23 @@ class TestIsolation:
 class TestLifecycle:
     @pytest.mark.lifecycle
     def test_install(self):
-        assert_install_succeeds(under_test(PKG), timeout=180)
+        target = under_test(PKG)
+        if os.name == "nt":
+            xlings = Path(xlings_home()) / "bin" / "xlings.exe"
+            cmd = str(xlings) if xlings.is_file() else (shutil.which("xlings") or "xlings")
+            r = subprocess.run(
+                [cmd, "install", target, "-y"],
+                capture_output=True,
+                text=True,
+                encoding="utf-8",
+                timeout=180,
+            )
+            out = r.stdout + r.stderr
+            assert r.returncode == 0 and (
+                "installed" in out.lower() or "already installed" in out.lower()
+            ), f"install failed (exit={r.returncode}): {out[-400:]}"
+            return
+        assert_install_succeeds(target, timeout=180)
 
 
 class TestVerify:
