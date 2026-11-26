@@ -359,18 +359,19 @@ class TestVerify:
 
     @pytest.mark.verify
     @skip_if_not("linux")
-    def test_slash_query_exits_immediately(self):
-        result = subprocess.run(
-            [str(self._shim_path()), "/?"],
+    def test_short_help_and_invalid_flag_non_blocking(self):
+        short_out = self._run_gping("-h")
+        assert "Usage: gping" in short_out, short_out
+        bad = subprocess.run(
+            [str(self._shim_path()), "--nonexistent-flag"],
             capture_output=True,
             text=True,
             encoding="utf-8",
             stdin=subprocess.DEVNULL,
             timeout=5,
         )
-        out = result.stdout + result.stderr
-        assert result.returncode != 0
-        assert "Resolving /?" in out, out
+        assert bad.returncode != 0
+        assert "unexpected argument" in (bad.stdout + bad.stderr), bad.stdout + bad.stderr
 
     @pytest.mark.verify
     @skip_if_not("linux")
