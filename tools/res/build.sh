@@ -23,6 +23,7 @@
 #   htop          a static htop (musl; ncurses) and the terminfo it needs
 #   procps-ng     static ps, top, free, pgrep, pkill, pidof, uptime, vmstat, watch (musl; ncurses) and terminfo
 #   sudo          a static sudo and visudo (musl; no PAM, sudoers built in)
+#   redis         static redis-server, redis-cli, redis-benchmark (musl; MALLOC=libc, no TLS/systemd)
 #   gdb           static gdb and gdbserver (musl; GMP, MPFR, expat, zlib, zstd, xz, ncurses: the TUI) and terminfo
 #   wl-clipboard  static wl-copy / wl-paste (musl; libwayland built static)
 #   xsel          a static xsel (musl; libX11/xcb static)
@@ -252,6 +253,27 @@ glibc_only() {    # every ELF given needs nothing but glibc's libraries (and its
             [[ " $allowed " == *" $lib "* ]] || die "$f needs $lib, which no declared dependency provides"
         done
     done
+}
+
+check_elf_hygiene() { # [--strict-tmp] <dir> -> verify no RPATH/RUNPATH, DWARF .debug_* sections, or build-machine paths
+    local strict_tmp=0 dir f found=0 bad
+    if [[ "${1:-}" == --strict-tmp ]]; then strict_tmp=1; shift; fi
+    dir="$1"
+    while IFS= read -r -d '' f; do
+        file -b "$f" | grep -q '^ELF' || continue
+        found=1
+        bad="$(readelf -d "$f" 2>/dev/null | grep -E 'RPATH|RUNPATH' || true)"
+        [[ -z "$bad" ]] || die "$f names RPATH/RUNPATH: $bad"
+        bad="$(readelf -S "$f" 2>/dev/null | grep -E '\.debug_' || true)"
+        [[ -z "$bad" ]] || die "$f retains DWARF debug sections: $bad"
+        bad="$(grep -aoE '/(w|home|Users)/[^[:cntrl:]"'\''[:space:]]+|scratchpad|\.xlings_data|/tmp/(tmp\.|build|res-|cc|agent|runner|xlings)[^[:cntrl:]"'\''[:space:]]*' "$f" || true)"
+        [[ -z "$bad" ]] || die "$f carries build-machine paths: $bad"
+    done < <(find "$dir" -type f -print0)
+    [[ "$found" -eq 1 ]] || die "check_elf_hygiene: no ELF found in $dir"
+    if [[ "$strict_tmp" -eq 1 ]]; then
+        bad="$(grep -rnE '/(w|tmp|home|Users)/' "$dir" || true)"
+        [[ -z "$bad" ]] || die "$dir carries build-machine/tmp paths: $bad"
+    fi
 }
 
 APK_STATIC="build-base linux-headers"
@@ -557,6 +579,27 @@ sudo)
     printf 'root ALL=(ALL:ALL) ALL\n%%wheel ALL=(ALL:ALL) ALL\n' > "$work/sudoers.check"
     "$work/$d/sbin/visudo" -c -q -f "$work/sudoers.check" || die "visudo does not accept a plain sudoers"
     provenance "$d" "sudo $version (www.sudo.ws, sha256 $(input sudo "$version")): static (musl), no PAM (shadow), sudoers built in; Alpine 3.20"
+    pack "$d" ;;
+redis)
+    v="${version%%-r[0-9]*}"
+    d="redis-$version-linux-$arch"
+    source_of redis "$v" "https://github.com/redis/redis/archive/refs/tags/$v.tar.gz" "$work/src.tar.gz"
+    alpine "apk add -q $APK_STATIC \
+        && tar -xzf src.tar.gz && cd redis-$v \
+        && SOURCE_DATE_EPOCH=0 make -s -C src -j\$(nproc) LDFLAGS=-static MALLOC=libc BUILD_TLS=no USE_SYSTEMD=no \
+             CFLAGS='-O2 -g0 -ffile-prefix-map=/w=.' redis-server redis-cli redis-benchmark >/dev/null \
+        && mkdir -p /w/$d/bin /w/$d/etc \
+        && cp src/redis-server src/redis-cli src/redis-benchmark /w/$d/bin/ \
+        && strip /w/$d/bin/redis-server /w/$d/bin/redis-cli /w/$d/bin/redis-benchmark \
+        && ln -s redis-server /w/$d/bin/redis-check-aof \
+        && ln -s redis-server /w/$d/bin/redis-check-rdb \
+        && ln -s redis-server /w/$d/bin/redis-sentinel \
+        && cp redis.conf sentinel.conf /w/$d/etc/"
+    static_only "$work/$d/bin/redis-server" "$work/$d/bin/redis-cli" "$work/$d/bin/redis-benchmark"
+    "$work/$d/bin/redis-server" --version | grep -qF "$v" || die "redis-server does not report $v"
+    "$work/$d/bin/redis-cli" --version | grep -qF "$v" || die "redis-cli does not report $v"
+    check_elf_hygiene "$work/$d"
+    provenance "$d" "redis $v (github.com/redis/redis tag $v, sha256 $(input redis "$v")); static (musl, MALLOC=libc, BUILD_TLS=no, USE_SYSTEMD=no); Alpine 3.20"
     pack "$d" ;;
 gdb)
     # The GNU debugger and its remote server, static (musl): it runs on any
@@ -1108,14 +1151,18 @@ libaio)
     debian "apt-get -qq update && apt-get -qq install -y --no-install-recommends build-essential file >/dev/null \
         && dpkg-query -W -f '\${Package} \${Version}\n' > /w/installed \
         && tar -xzf src.tar.gz && cd libaio-$v/src \
-        && make -s clean >/dev/null && make -s -j\$(nproc) >/dev/null && make -s prefix=/w/$d install >/dev/null \
-        && rm -f /w/$d/lib/libaio.a && strip --strip-unneeded /w/$d/lib/libaio.so.* \
+        && make -s clean >/dev/null \
+        && SOURCE_DATE_EPOCH=0 CFLAGS='-O2 -g0 -fomit-frame-pointer -ffile-prefix-map=/w=.' make -s -j\$(nproc) >/dev/null \
+        && make -s prefix=/w/$d install >/dev/null \
+        && rm -f /w/$d/lib/libaio.a \
+        && find /w/$d/lib -type f -name '*.so*' -exec strip --strip-unneeded {} + \
         && printf '%s\n' '#include <libaio.h>' 'int main(void){ io_context_t ctx = 0; int rc = io_setup(1, &ctx); if (rc == 0) io_destroy(ctx); return 0; }' > /w/t.c \
         && gcc /w/t.c -I/w/$d/include -L/w/$d/lib -Wl,-rpath,/w/$d/lib -laio -o /w/t && /w/t"
     [[ -f "$work/$d/include/libaio.h" && -e "$work/$d/lib/libaio.so.1" ]] || die "libaio: missing expected files"
     GLIBC_ELFS="$(find "$work/$d" -type f -exec sh -c 'file -b "$1" | grep -q "^ELF.*dynamically linked" && echo "$1"' _ {} \;)"
     [[ -n "$GLIBC_ELFS" ]] || die "libaio: no dynamically linked ELF in the payload"
     glibc_only
+    check_elf_hygiene --strict-tmp "$work/$d"
     provenance "$d" "libaio $version (Debian archive snapshot of pagure.io/libaio, sha256 $(input libaio "$v")); libaio.so.1 and libaio.h; built in Debian 12 against $(grep -E '^libc6 ' "$work/installed" | tr '\n' ' ')(an xlings install patches it onto the index's glibc)"
     pack "$d" ;;
 numactl)
@@ -1125,17 +1172,18 @@ numactl)
     debian "apt-get -qq update && apt-get -qq install -y --no-install-recommends build-essential file >/dev/null \
         && dpkg-query -W -f '\${Package} \${Version}\n' > /w/installed \
         && tar -xzf src.tar.gz && mkdir build stage \
-        && (cd build && ../numactl-$v/configure -q --prefix=/usr --libdir=/usr/lib --disable-static \
-            && make -s -j\$(nproc) libnuma.la numa.pc >/dev/null \
+        && (cd build && SOURCE_DATE_EPOCH=0 ../numactl-$v/configure -q --prefix=/usr --libdir=/usr/lib --disable-static CFLAGS='-O2 -g0 -ffile-prefix-map=/w=.' \
+            && SOURCE_DATE_EPOCH=0 make -s -j\$(nproc) libnuma.la numa.pc >/dev/null \
             && make -s install-libLTLIBRARIES install-includeHEADERS install-pkgconfigDATA DESTDIR=/w/stage >/dev/null) \
         && mv /w/stage/usr /w/$d && rm -f /w/$d/lib/libnuma.la \
-        && strip --strip-unneeded /w/$d/lib/libnuma.so.* \
+        && find /w/$d/lib -type f -name '*.so*' -exec strip --strip-unneeded {} + \
         && printf '%s\n' '#include <numa.h>' 'int main(void){ (void)numa_available(); return 0; }' > /w/t.c \
         && gcc /w/t.c -I/w/$d/include -L/w/$d/lib -Wl,-rpath,/w/$d/lib -lnuma -o /w/t && /w/t"
     [[ -f "$work/$d/include/numa.h" && -e "$work/$d/lib/libnuma.so.1" && -f "$work/$d/lib/pkgconfig/numa.pc" ]] || die "numactl: missing expected files"
     GLIBC_ELFS="$(find "$work/$d" -type f -exec sh -c 'file -b "$1" | grep -q "^ELF.*dynamically linked" && echo "$1"' _ {} \;)"
     [[ -n "$GLIBC_ELFS" ]] || die "numactl: no dynamically linked ELF in the payload"
     glibc_only
+    check_elf_hygiene --strict-tmp "$work/$d"
     provenance "$d" "numactl $version (github.com/numactl/numactl tag v$v, sha256 $(input numactl "$v")); libnuma.so.1, headers and numa.pc; built in Debian 12 against $(grep -E '^libc6 ' "$work/installed" | tr '\n' ' ')(an xlings install patches it onto the index's glibc)"
     pack "$d" ;;
 libcurl)
@@ -1145,22 +1193,23 @@ libcurl)
     debian "apt-get -qq update && apt-get -qq install -y --no-install-recommends build-essential pkg-config libssl-dev zlib1g-dev xz-utils file >/dev/null \
         && dpkg-query -W -f '\${Package} \${Version}\n' > /w/installed \
         && tar -xJf src.tar.xz && mkdir build stage \
-        && (cd build && ../curl-$v/configure -q --prefix=/usr --libdir=/usr/lib --disable-static --enable-shared \
+        && (cd build && SOURCE_DATE_EPOCH=0 ../curl-$v/configure -q --prefix=/usr --libdir=/usr/lib --disable-static --enable-shared \
                 --with-openssl --with-zlib \
                 --without-nghttp2 --without-nghttp3 --without-ngtcp2 --without-quiche \
                 --without-libpsl --without-libidn2 --without-brotli --without-zstd \
                 --without-libssh --without-libssh2 --without-libgsasl --without-gssapi --without-libuv \
                 --disable-ares --disable-ldap --disable-ldaps --disable-manual --disable-docs \
                 --with-ca-bundle=/etc/ssl/certs/ca-certificates.crt --with-ca-fallback \
-            && make -s -j\$(nproc) -C lib libcurl.la >/dev/null \
-            && make -s -j\$(nproc) -C include >/dev/null \
+                CFLAGS='-O2 -g0 -ffile-prefix-map=/w=.' \
+            && SOURCE_DATE_EPOCH=0 make -s -j\$(nproc) -C lib libcurl.la >/dev/null \
+            && SOURCE_DATE_EPOCH=0 make -s -j\$(nproc) -C include >/dev/null \
             && make -s libcurl.pc >/dev/null \
             && make -s -C lib install-libLTLIBRARIES DESTDIR=/w/stage >/dev/null \
             && make -s -C include install DESTDIR=/w/stage >/dev/null \
             && make -s install-pkgconfigDATA DESTDIR=/w/stage >/dev/null) \
         && mv /w/stage/usr /w/$d && rm -f /w/$d/lib/libcurl.la \
         && sed -i -E '/^Libs\.private:/s/[[:space:]]-L[^[:space:]]+//g' /w/$d/lib/pkgconfig/libcurl.pc \
-        && strip --strip-unneeded /w/$d/lib/libcurl.so.* \
+        && find /w/$d/lib -type f -name '*.so*' -exec strip --strip-unneeded {} + \
         && printf '%s\n' '#include <curl/curl.h>' '#include <stdio.h>' 'int main(void){ const curl_version_info_data *v = curl_version_info(CURLVERSION_NOW); if (!v) return 1; printf(\"%s %s\n\", v->version, v->ssl_version ? v->ssl_version : \"none\"); return ((v->features & CURL_VERSION_SSL) && (v->features & CURL_VERSION_LIBZ)) ? 0 : 1; }' > /w/t.c \
         && gcc /w/t.c -I/w/$d/include -L/w/$d/lib -Wl,-rpath,/w/$d/lib -lcurl -o /w/t && /w/t > /w/curl.version"
     grep -q "^$v OpenSSL/" "$work/curl.version" || die "libcurl does not report $v with OpenSSL: $(cat "$work/curl.version")"
@@ -1168,6 +1217,7 @@ libcurl)
     GLIBC_ELFS="$(find "$work/$d" -type f -exec sh -c 'file -b "$1" | grep -q "^ELF.*dynamically linked" && echo "$1"' _ {} \;)"
     [[ -n "$GLIBC_ELFS" ]] || die "libcurl: no dynamically linked ELF in the payload"
     glibc_only libssl.so.3 libcrypto.so.3 libz.so.1
+    check_elf_hygiene --strict-tmp "$work/$d"
     provenance "$d" "curl $v (github.com/curl/curl tag curl-${v//./_}, sha256 $(input libcurl "$v")); libcurl.so.4 (OpenSSL, zlib; $(cat "$work/curl.version")), headers and libcurl.pc; built in Debian 12 against $(grep -E '^(libc6|libssl-dev|zlib1g-dev) ' "$work/installed" | tr '\n' ' ')(an xlings install patches it onto the index's glibc)"
     pack "$d" ;;
 gcc)
