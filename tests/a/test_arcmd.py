@@ -29,7 +29,7 @@ from tests.lib.platform_utils import skip_if_not, under_test, xlings_home
 
 PKG = "arcmd"
 PKG_FILE = "pkgs/a/arcmd.lua"
-VERSION = "0.4.0"
+VERSION = "0.5.0"
 REPO = Path(__file__).resolve().parents[2]
 
 
@@ -86,7 +86,7 @@ class TestStatic:
             '''
 import = function() end
 dofile(arg[1])
-local ver = arg[2]
+local ver = assert(package.xpm.linux and package.xpm.linux.latest and package.xpm.linux.latest.ref)
 assert(package.spec == "2")
 assert(package.name == "arcmd")
 assert(package.namespace == nil)
@@ -110,28 +110,46 @@ for plat, aliases in pairs(expected) do
     assert(p.deps == nil, plat .. " stays on the host loader / OS DLLs with no runtime deps")
     assert(type(p.source) == "string")
     assert(p.latest and p.latest.ref == ver, plat .. " latest must ref " .. ver)
-    local v = assert(p[ver], "missing version entry on " .. plat)
-    assert(type(v.arch_alias) == "table", plat .. " must declare arch_alias")
-    assert(type(v.sha256) == "table", plat .. " must declare per-arch sha256 table")
-    for arch, alias in pairs(aliases) do
-        assert(v.arch_alias[arch] == alias, "unexpected arch_alias for " .. plat .. "/" .. arch)
-        local digest = assert(v.sha256[arch], "missing sha256 for " .. plat .. "/" .. arch)
-        assert(type(digest) == "string" and #digest == 64 and digest:match("^%x+$"))
-        local xpm_url = p.source:gsub("%${version}", ver):gsub("%${arch_alias}", alias)
-        local auto_url = assert(auto.resources.GLOBAL.url[plat][arch])
-        local resolved = auto_url:gsub("%${tag}", "v" .. ver):gsub("%${version}", ver)
-        assert(resolved == xpm_url, "autoupdate URL disagrees for " .. plat .. "/" .. arch)
+    local v = assert(p[ver], "missing latest version entry on " .. plat)
+    for k, entry in pairs(p) do
+        if k ~= "source" and k ~= "latest" and k ~= "deps" then
+            assert(type(entry) == "table", plat .. "/" .. k .. " must be a table")
+            local has_per_arch = entry.x86_64 ~= nil or entry.aarch64 ~= nil
+            if has_per_arch then
+                for arch in pairs(aliases) do
+                    local a = assert(entry[arch], "missing per-arch entry for " .. plat .. "/" .. k .. "/" .. arch)
+                    assert(type(a.sha256) == "string" and #a.sha256 == 64 and a.sha256:match("^%x+$"))
+                    local auto_url = assert(auto.resources.GLOBAL.url[plat][arch])
+                    local resolved = auto_url:gsub("%${tag}", "v" .. k):gsub("%${version}", k)
+                    local actual_url = type(a.url) == "table" and a.url.GLOBAL or a.url
+                    assert(resolved == actual_url, "autoupdate URL disagrees for " .. plat .. "/" .. k .. "/" .. arch)
+                end
+            else
+                assert(type(entry.arch_alias) == "table", plat .. "/" .. k .. " must declare arch_alias")
+                assert(type(entry.sha256) == "table", plat .. "/" .. k .. " must declare per-arch sha256 table")
+                for arch, alias in pairs(aliases) do
+                    assert(entry.arch_alias[arch] == alias, "unexpected arch_alias for " .. plat .. "/" .. k .. "/" .. arch)
+                    local digest = assert(entry.sha256[arch], "missing sha256 for " .. plat .. "/" .. k .. "/" .. arch)
+                    assert(type(digest) == "string" and #digest == 64 and digest:match("^%x+$"))
+                    local xpm_url = p.source:gsub("%${version}", k):gsub("%${arch_alias}", alias)
+                    local auto_url = assert(auto.resources.GLOBAL.url[plat][arch])
+                    local resolved = auto_url:gsub("%${tag}", "v" .. k):gsub("%${version}", k)
+                    assert(resolved == xpm_url, "autoupdate URL disagrees for " .. plat .. "/" .. k .. "/" .. arch)
+                end
+                for arch_key in pairs(entry.sha256) do
+                    assert(aliases[arch_key] ~= nil, "unexpected arch in sha256: " .. plat .. "/" .. k .. "/" .. arch_key)
+                end
+            end
+        end
+    end
+    for arch in pairs(aliases) do
         count = count + 1
     end
-    for k in pairs(v.sha256) do
-        assert(aliases[k] ~= nil, "unexpected arch in sha256: " .. plat .. "/" .. k)
-    end
 end
-assert(package.xpm.windows[ver].sha256.aarch64 == nil, "windows/aarch64 is not published upstream")
+assert(package.xpm.windows[ver].aarch64 == nil and (package.xpm.windows[ver].sha256 == nil or package.xpm.windows[ver].sha256.aarch64 == nil), "windows/aarch64 is not published upstream")
 assert(count == 5)
 ''',
             PKG_FILE,
-            VERSION,
         )
 
     @pytest.mark.static
@@ -360,7 +378,10 @@ class TestVerify:
     @skip_if_not("linux")
     def test_status_and_doc_roundtrip(self, tmp_path):
         env = {**os.environ, "ARCMD_HOME": str(tmp_path / "arcmd-home")}
-        expected = os.environ.get("XLINGS_TEST_VERSION", VERSION)
+        expected = os.environ.get("XLINGS_TEST_VERSION") or _run_lua(
+            'import = function() end; dofile(arg[1]); io.write(package.xpm.linux.latest.ref)',
+            PKG_FILE,
+        )
 
         status = json.loads(self._run_arcmd("status", "-json", env=env))
         assert status["ok"] is True
