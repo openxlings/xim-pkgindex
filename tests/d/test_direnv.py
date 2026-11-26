@@ -117,8 +117,8 @@ assert(not global.url.windows, "direnv should not declare windows autoupdate")
         )
 
 
-@pytest.mark.isolation
-class TestIsolation:
+@pytest.mark.lifecycle
+class TestLifecycle:
     @skip_if_not("linux")
     def test_install_and_run_direnv(self):
         assert_xim_add_succeeds(PKG_FILE)
