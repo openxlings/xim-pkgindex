@@ -149,9 +149,9 @@ class TestVerify:
     @pytest.mark.verify
     @skip_if_not("linux")
     def test_version_output(self):
-        assert_command_output(["syncthing", "--version"], f"syncthing v{VERSION}")
+        assert_command_output("syncthing --version", f"syncthing v{VERSION}")
 
     @pytest.mark.verify
     @skip_if_not("linux")
     def test_help_output(self):
-        assert_command_output(["syncthing", "--help"], "Usage: syncthing")
+        assert_command_output("syncthing --help", "Usage: syncthing")
