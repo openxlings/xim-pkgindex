@@ -12,7 +12,7 @@ from tests.lib.assertions import (
     assert_xim_add_succeeds,
     assert_xvm_registered,
 )
-from tests.lib.platform_utils import skip_if_not, under_test
+from tests.lib.platform_utils import skip_if_not
 from tests.lib.xpkg_parser import parse_xpkg
 
 PKG = "yt-dlp"
@@ -30,7 +30,6 @@ def test_yt_dlp_metadata():
 
 
 @skip_if_not("linux")
-@under_test(PKG)
 def test_yt_dlp_install_and_run():
     assert_xim_add_succeeds(PKG_FILE)
     assert_install_succeeds(PKG)
