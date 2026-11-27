@@ -115,8 +115,16 @@ SOFTWARE.
 ]]
 
 function installed()
-    return payload.present({ "onefetch", "LICENSE.md" })
-        or payload.present({ "onefetch.exe", "LICENSE.md", "vcruntime140.dll" })
+    if payload.present({ "onefetch", "LICENSE.md" }) then return true end
+    if not payload.present({ "onefetch.exe", "LICENSE.md" }) then return false end
+    local crt = pkginfo.dep_install_dir("xim:vcruntime")
+    local dlls = crt and fs.files(crt .. "/bin") or {}
+    if not dlls or #dlls == 0 then return false end
+    for _, dll in ipairs(dlls) do
+        local name = dll:match("([^/\\]+)$")
+        if not payload.present({ name }) then return false end
+    end
+    return true
 end
 
 function install()
@@ -150,8 +158,14 @@ function install()
     if is_win then
         local crt = assert(pkginfo.dep_install_dir("xim:vcruntime"),
                            "onefetch: xim:vcruntime payload directory is missing")
-        os.cp(crt .. "/bin/vcruntime140.dll", dir .. "/vcruntime140.dll")
-        required[#required + 1] = "vcruntime140.dll"
+        local dlls = fs.files(crt .. "/bin") or {}
+        if #dlls == 0 then
+            error("onefetch: no CRT DLLs found in " .. crt .. "/bin")
+        end
+        for _, dll in ipairs(dlls) do
+            os.cp(dll, dir)
+            required[#required + 1] = dll:match("([^/\\]+)$")
+        end
     else
         shell.exec({ "chmod", "+x", dir .. "/" .. exe })
     end

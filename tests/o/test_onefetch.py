@@ -22,8 +22,6 @@ from tests.lib.assertions import (
     assert_no_direct_path_modification,
     assert_uses_new_api,
     assert_no_direct_pkg_manager,
-    assert_xim_add_succeeds,
-    assert_install_succeeds,
 )
 from tests.lib.platform_utils import under_test, xlings_home
 
@@ -37,6 +35,24 @@ SUPPORTED = (platform.system(), platform.machine().lower()) in {
 }
 native_only = pytest.mark.skipif(not SUPPORTED, reason="No upstream portable asset for this platform/CPU")
 
+
+def _run_xlings(*args: str, timeout: int = 180) -> str:
+    """Invoke xlings directly so login shells cannot replace XLINGS_HOME."""
+    suffix = ".exe" if os.name == "nt" else ""
+    binary = Path(xlings_home()) / "bin" / ("xlings" + suffix)
+    command = str(binary) if binary.is_file() else shutil.which("xlings")
+    assert command, "xlings is required for package index and lifecycle checks"
+    result = subprocess.run(
+        [command, *args],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=timeout,
+    )
+    output = result.stdout + result.stderr
+    assert result.returncode == 0 and "[error]" not in output.lower(), output
+    return output
 
 def _run_lua(script):
     lua = shutil.which("lua5.4") or shutil.which("lua")
@@ -120,6 +136,8 @@ local real_open = io.open
 local files, execs, adds, removes = {}, {}, {}, {}
 local archive, dir = "/cache/onefetch-linux.tar.gz", "/pkg/onefetch"
 local windows, land_binary, copy_crt = false, true, true
+local crt_sources = { "C:/crt/bin/crt-base.dll", "C:/crt/bin/crt-extra.dll" }
+local copied = {}
 pkginfo = {
     install_file = function() return archive end,
     install_dir = function() return dir end,
@@ -130,10 +148,15 @@ os.isfile = function(p) return files[p] == true end
 os.tryrm = function() files[dir .. "/onefetch"] = nil; files[dir .. "/onefetch.exe"] = nil end
 os.mv = function(src, dst) assert(files[src]); files[src] = nil; files[dst] = true end
 os.cp = function(src, dst)
-    assert(src == "C:/crt/bin/vcruntime140.dll")
-    if copy_crt then files[dst] = true end
+    assert(dst == dir)
+    assert(src == crt_sources[1] or src == crt_sources[2])
+    copied[#copied + 1] = src
+    if copy_crt then files[dst .. "/" .. src:match("([^/]+)$")] = true end
 end
-fs = { mkdir_p = function() end }
+fs = {
+    mkdir_p = function() end,
+    files = function(p) assert(p == "C:/crt/bin"); return crt_sources end,
+}
 system = { exec = function(cmd)
     execs[#execs + 1] = cmd
     if cmd:find("tar", 1, true) and land_binary then
@@ -170,17 +193,21 @@ files, execs, land_binary = { [archive] = true }, {}, false
 assert(not pcall(install))
 files = {}
 assert(not pcall(install))
--- The Windows tarball is also flat; route to system tar and deploy only the
--- actually imported CRT DLL, checking it in installed() as well as install().
+-- The Windows tarball is also flat; route to system tar and copy the runtime
+-- provider's complete file set without hardcoding DLL names in the recipe.
 windows, land_binary = true, true
 archive, dir = "C:/cache/onefetch-win.tar.gz", "C:/pkg/onefetch"
 files, execs = { [archive] = true }, {}
 assert(install() and installed())
+assert(#copied == 2 and copied[1] == crt_sources[1] and copied[2] == crt_sources[2])
 assert(#execs == 1 and execs[1]:find("\\System32\\tar.exe", 1, true))
 assert(execs[1]:find("C:\\cache\\onefetch-win.tar.gz", 1, true))
-files[dir .. "/vcruntime140.dll"] = nil
+files[dir .. "/crt-extra.dll"] = nil
 assert(not installed())
 copy_crt = false
+assert(not pcall(install))
+crt_sources = {}
+assert(not installed())
 assert(not pcall(install))
 io.open = real_open
 ''')
@@ -189,7 +216,7 @@ io.open = real_open
 class TestIndex:
     @pytest.mark.index
     def test_xim_add(self):
-        assert_xim_add_succeeds(PKG_FILE)
+        _run_xlings("config", "--add-xpkg", PKG_FILE, timeout=45)
 
 
 class TestIsolation:
@@ -214,9 +241,9 @@ class TestIsolation:
 
 class TestLifecycle:
     @pytest.mark.lifecycle
-    @native_only
     def test_install(self):
-        assert_install_succeeds(under_test(PKG, os.environ.get("XLINGS_TEST_VERSION", VERSION)))
+        out = _run_xlings("install", under_test(PKG, os.environ.get("XLINGS_TEST_VERSION", VERSION)), "-y")
+        assert "installed" in out.lower() or "already installed" in out.lower(), out
 
 
 class TestVerify:
