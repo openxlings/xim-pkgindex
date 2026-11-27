@@ -24,7 +24,7 @@ from tests.lib.assertions import (
     assert_no_typos, assert_no_exec_xvm, assert_no_bashrc_modification,
     assert_no_direct_path_modification, assert_no_direct_pkg_manager,
     assert_uses_new_api, assert_valid_xvm_node_kinds,
-    assert_xim_add_succeeds, assert_install_succeeds, assert_uninstall_succeeds,
+    assert_xim_add_succeeds, assert_install_succeeds,
     assert_xvm_registered,
 )
 from tests.lib.platform_utils import project_root, skip_if_not, under_test, xlings_home, xpkgs_dir
@@ -248,10 +248,10 @@ class TestLifecycle:
     def test_install(self):
         assert_install_succeeds(under_test(PKG, VERSION), timeout=600)
 
-    @pytest.mark.lifecycle
-    @skip_if_not("linux")
-    def test_uninstall(self):
-        assert_uninstall_succeeds(under_test(PKG, VERSION))
+    # No pytest-level uninstall here: recipe-tests.py runs "lifecycle or verify"
+    # in one invocation, and an uninstall before TestVerify would drop the xvm
+    # registration test_xvm_registered asserts. Uninstall is covered by the
+    # install job's shell lifecycle phase (post-uninstall shim checks).
 
 
 def _installed_root(variable, name, version=None):

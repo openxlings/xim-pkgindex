@@ -418,7 +418,11 @@ def run_native(root: Path, libc_root: Path, arch: str, objects: dict[Path, Elf],
         if not set(critical.values()).issubset(loaded):
             raise Broken("native probe did not actually load all critical GTK runtime providers")
         # A real GIO module, not GLib's dummy backend, must have been loaded.
-        if not any(p.name.startswith("libgio") and "tls" in p.name for p in loaded):
+        # glib-networking names its modules libgioopenssl.so/libgiognutls.so;
+        # the OpenSSL name contains no "tls" substring.
+        if not any(p.name.startswith("libgio")
+                   and any(backend in p.name for backend in ("tls", "openssl", "gnutls"))
+                   for p in loaded):
             raise Broken("no runtime-owned GIO TLS module observed by the loader audit")
         print(stdout, end="")
         if consumer:
