@@ -85,8 +85,6 @@ including across month/year boundaries. PR checks and manual triggers bypass thi
 cadence gate. A due run scans sequential batches and proposes from the same fixed plan. It never executes Lua,
 rewrites published versions, repairs conflicting historical entries, builds payloads, or merges PRs.
 A candidate must pass actual installation, verification and removal on its supported runners.
-Local overlay registration preserves an explicit recipe namespace; recipes without one use
-`local:<name>@<version>` for candidate installation and removal.
 The central configuration is `.github/xpkgindex-update.yml`. `max_packages: 50` is the
 scan batch size. A run scans up to 20 batches under a shared 500-request / 16 GiB
 budget. Each package also has a 50-request / 8 GiB allowance: reaching that local
@@ -173,10 +171,6 @@ commit, descriptor, tag commit or resource bytes change.
 `ci = { mirror = true }` asks CI to copy a package's declared GLOBAL resources to the `xlings-res`
 organisation (GitHub and GitCode). `tools/xpkg_ci.py` provides `inspect`, `materialize`, `verify`,
 `ensure-repo` and `mirror`; `tools/xpkg_mirror_queue.py` batches them.
-
-Materialization supports both per-architecture checksum tables and explicit per-architecture
-`{ url, sha256 }` resources. Each explicit resource uses its own GLOBAL URL, overriding `source`;
-every declared architecture is included in the manifest.
 
 How the batch behaves (`.github/workflows/xpkg-mirror.yml`):
 

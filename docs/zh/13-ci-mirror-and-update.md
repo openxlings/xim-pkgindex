@@ -62,7 +62,6 @@ CN 跳回 GitHub 不算镜像就绪。当前使用 xlings-res 的包，也可为
 PR 检查和人工触发不受该门禁限制。到期运行连续扫描多个批次，propose 消费同一份固定 plan，不重新发现版本。xpkg、base、tag commit
 或资源字节变化会拒绝应用。更新不执行 Lua、不改写历史版本、不自动修复冲突、不构建载荷、不自动合并。
 候选版本必须通过相应 runner 上的真实安装、功能验证和卸载。
-本地覆盖注册会保留配方显式声明的命名空间；未声明时，候选安装和卸载使用 `local:<name>@<version>`。
 
 中央策略位于 `.github/xpkgindex-update.yml`。`max_packages: 50` 是每批扫描数量，
 每轮最多连续扫描 20 批，共用 500 次请求和 16 GiB 下载预算。每个包另有 50 次请求、8 GiB
@@ -127,9 +126,6 @@ xpkgindex-update apply --plan plan.json --package xim:foo
 `ci = { mirror = true }` 要求 CI 把包声明的 GLOBAL 资源复制到 `xlings-res` 组织（GitHub 与 GitCode）。
 `tools/xpkg_ci.py` 提供 `inspect`、`materialize`、`verify`、`ensure-repo`、`mirror`；
 `tools/xpkg_mirror_queue.py` 负责把它们组成批次。
-
-资源物化同时支持逐架构校验和表与逐架构显式 `{ url, sha256 }` 资源。显式资源使用各自的
-GLOBAL URL，优先于 `source`；manifest 会包含该版本声明的每个架构。
 
 批次的行为（`.github/workflows/xpkg-mirror.yml`）：
 

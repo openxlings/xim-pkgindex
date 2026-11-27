@@ -133,7 +133,7 @@ def validate_manifest(manifest: dict[str, Any]) -> list[str]:
 
 
 def find_block(text: str, key: str) -> tuple[int, int] | None:
-    match = re.search(rf'(?:\["{re.escape(key)}"\]|\b{re.escape(key)})\s*=\s*\{{', text)
+    match = re.search(rf'\["{re.escape(key)}"\]\s*=\s*\{{', text)
     if not match:
         return None
     body_start = match.end()
@@ -357,20 +357,15 @@ def materialize(args: argparse.Namespace) -> int:
         if not version_block:
             return fail(f"{platform}: version {version} block missing")
         body = platform_body[version_block[0]:version_block[1]]
-        resources = {}
-        for arch in ("x86_64", "aarch64", "x86"):
-            resource_block = find_block(body, arch)
-            if resource_block:
-                resources[arch] = body[resource_block[0]:resource_block[1]]
-        url = None if resources else entry_url(body)
+        url = entry_url(body)
         source_match = re.search(r'\bsource\s*=\s*"([^"]+)"', platform_body)
         if not source_match:
             source_match = re.search(r'\bsource\s*=\s*"([^"]+)"', xpm_body)
         source_map = source_templates(platform_body) or source_templates(xpm_body) or {}
         template = url or source_map.get("GLOBAL") or (source_match.group(1) if source_match else None)
-        if not resources and (url == "XLINGS_RES" or template == "xlings-res"):
+        if url == "XLINGS_RES" or template == "xlings-res":
             return fail(f"{platform}: cannot materialize an already mirrored XLINGS_RES source")
-        if not template and not resources:
+        if not template:
             return fail(f"{platform}: URL/template missing")
         aliases = arch_aliases(body)
         # Ask the version entry which arches THIS platform ships before falling
@@ -379,7 +374,7 @@ def materialize(args: argparse.Namespace) -> int:
         # declares {x86_64, aarch64} because linux and macosx ship both, while
         # xPack publishes no win32-arm64 -- and the mirror duly tried to fetch
         # `...-win32-aarch64.zip` and died on a 404 (measured, run 32184409615).
-        use_arches = list(resources) or checksum_arches(body)
+        use_arches = checksum_arches(body)
         if use_arches:
             unknown = [a for a in use_arches if arches and a not in arches]
             if unknown:
@@ -390,10 +385,7 @@ def materialize(args: argparse.Namespace) -> int:
             if arch_error:
                 return fail(f"{platform}: {arch_error}")
         for arch in use_arches:
-            arch_template = entry_url(resources[arch]) if resources else template
-            if not arch_template:
-                return fail(f"{platform}/{arch}: URL missing")
-            final_url = expand_template(arch_template, args.package, version, platform, arch, aliases)
+            final_url = expand_template(template, args.package, version, platform, arch, aliases)
             if not final_url.startswith("https://"):
                 return fail(f"{platform}/{arch}: source URL must use https")
             cached = fetched.get(final_url)

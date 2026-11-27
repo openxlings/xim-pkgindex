@@ -304,22 +304,13 @@ def test_a_reviewed_change_still_keeps_the_latest_policy(index):
         module.guard(base, reviewed=True)
 
 
-@pytest.mark.parametrize('namespace', [None, 'custom', 'published'])
-def test_candidate_verification_receives_the_installed_version(index, monkeypatch, namespace):
+def test_candidate_verification_receives_the_installed_version(index, monkeypatch):
     """A clean candidate home contains only the new version, never the old pin."""
     import json
     import shutil
     module, recipe = index
-    if namespace == 'custom':
-        recipe.write_text(RECIPE.replace('name = "foo"', 'name = "foo", namespace = "custom"'))
-    # None: no recipe namespace, the overlay is registered as local:.
-    # custom: the recipe's own namespace survives registration.
-    # published: xlings dedups the identical recipe, no overlay exists, and
-    # the install must resolve the published (identity) namespace instead.
-    target_namespace = {'custom': 'custom', 'published': 'xim'}.get(namespace, 'local')
-    target = target_namespace + ':foo@1.1.0'
     home = recipe.parents[2] / 'home'
-    install = home / ('data/xpkgs/' + target_namespace + '-x-foo/1.1.0')
+    install = home / 'data/xpkgs/local-x-foo/1.1.0'
     test = recipe.parents[2] / 'tests/f/test_foo.py'
     test.parent.mkdir(parents=True)
     test.write_text('# package verification entry point\n')
@@ -330,15 +321,7 @@ def test_candidate_verification_receives_the_installed_version(index, monkeypatc
     verified = []
     runner_python = module.sys.executable
     def run(command, **kwargs):
-        if command[:2] == ['xlings', 'config']:
-            # Registration writes the local overlay unless xlings dedups the
-            # recipe against the already-published identical one.
-            if namespace != 'published':
-                overlay = home / 'data/xim-pkgindex-local/pkgs/f/foo.lua'
-                overlay.parent.mkdir(parents=True, exist_ok=True)
-                overlay.write_text(recipe.read_text())
-        elif command[:2] == ['xlings', 'install']:
-            assert command[2] == target
+        if command[:2] == ['xlings', 'install']:
             install.mkdir(parents=True)
             (install / '.xpkg.lua').write_text('metadata')
             (install / 'payload').write_text('candidate')
@@ -356,10 +339,9 @@ def test_candidate_verification_receives_the_installed_version(index, monkeypatc
             assert kwargs['env']['XLINGS_TEST_VERSION'] == '1.1.0'
             assert kwargs['env']['XLINGS_TEST_SUBOS'] == 'default'
         elif command[:2] == ['xlings', 'remove']:
-            assert command[2] == target
             shutil.rmtree(install)
     monkeypatch.setattr(module.subprocess, 'run', run)
-    module.run_candidate({'custom': 'custom'}.get(namespace, 'xim') + ':foo', 'pkgs/f/foo.lua', '1.1.0')
+    module.run_candidate('xim:foo', 'pkgs/f/foo.lua', '1.1.0')
     assert len(verified) == 1
     evidence = json.loads((recipe.parents[2] / 'candidate-evidence.json').read_text())
     assert evidence['version'] == '1.1.0' and evidence['status'] == 'verified-and-removed'

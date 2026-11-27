@@ -2,9 +2,9 @@
 --
 -- Platform and architecture coverage (upstream v0.4.2 release):
 --   linux    x86_64   `build-linux-x86_64/` (`dbpp`, `dbpp.resources/`, `lib/`)
---   linux    aarch64  `build-linux-arm64/` (`dbpp`, `dbpp.resources/`, `lib/`)
 --   macosx   aarch64  `dbpp.app/` in a DMG (ad-hoc signed bundle)
 --   windows  x86_64   flat zip (`dbpp.exe`, `dbpp.resources/`, DLLs + VC++ CRT)
+--   (linux/aarch64 is omitted from 0.4.2 until the index GTK4 stack supports aarch64)
 --
 -- `programs` is omitted deliberately (`{}`): `dbpp` defaults to launching the
 -- desktop GUI and treats unrecognized positional arguments (such as Windows
@@ -43,7 +43,6 @@ package = {
                     url = {
                         linux = {
                             x86_64 = "https://github.com/FarnaHerry/dbpp/releases/download/${tag}/dbpp-${version}-linux-x86_64.tar.gz",
-                            aarch64 = "https://github.com/FarnaHerry/dbpp/releases/download/${tag}/dbpp-${version}-linux-aarch64.tar.gz",
                         },
                         macosx = {
                             aarch64 = "https://github.com/FarnaHerry/dbpp/releases/download/${tag}/dbpp-${version}-macos-arm64.dmg",
@@ -91,10 +90,6 @@ package = {
                 x86_64 = {
                     url = "https://github.com/FarnaHerry/dbpp/releases/download/v0.4.2/dbpp-0.4.2-linux-x86_64.tar.gz",
                     sha256 = "510a95352142e06f71d3c2811ba0163c6006df8c03fc043a797f209c4c93ece3",
-                },
-                aarch64 = {
-                    url = "https://github.com/FarnaHerry/dbpp/releases/download/v0.4.2/dbpp-0.4.2-linux-aarch64.tar.gz",
-                    sha256 = "0712552a400bd32681379b40936b227a74adc8469a7275db3e4322d185b5cf75",
                 },
             },
             ["0.2.3"] = {
