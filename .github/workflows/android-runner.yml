@@ -9,6 +9,9 @@ name: android runner
 on:
   workflow_call:
     inputs:
+      xlings_sha:
+        type: string
+        default: ""
       base_sha:
         type: string
         default: ""
@@ -33,7 +36,13 @@ jobs:
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
 
+      - name: The client under test, an xlings commit's CI build
+        if: inputs.xlings_sha != ''
+        uses: ./.github/actions/setup-xlings
+        with:
+          xlings_sha: ${{ inputs.xlings_sha }}
       - name: Install xlings
+        if: inputs.xlings_sha == ''
         timeout-minutes: 15
         run: bash .github/scripts/program-checks/install-xlings.sh
 

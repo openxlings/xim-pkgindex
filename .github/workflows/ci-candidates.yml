@@ -2,6 +2,9 @@ name: Candidate validation
 'on':
   workflow_call:
     inputs:
+      xlings_sha:
+        type: string
+        default: ''
       base_sha:
         type: string
         required: true
@@ -115,8 +118,13 @@ jobs:
       run: |
         echo "PYTHONPATH=$(python -c 'from pathlib import Path; print(Path(".updater/src").resolve())')" >> "$GITHUB_ENV"
         python -m pip install pytest pyyaml # host-dep-ok: the runner test harness, not a package runtime dependency
+    - name: The client under test, an xlings commit's CI build
+      if: inputs.xlings_sha != ''
+      uses: ./.github/actions/setup-xlings
+      with:
+        xlings_sha: ${{ inputs.xlings_sha }}
     - name: Install xlings on POSIX
-      if: runner.os != 'Windows'
+      if: runner.os != 'Windows' && inputs.xlings_sha == ''
       shell: bash
       env:
         XLINGS_NON_INTERACTIVE: '1'
@@ -125,7 +133,7 @@ jobs:
         echo "$HOME/.xlings/bin" >> "$GITHUB_PATH"
         echo "$HOME/.xlings/subos/default/bin" >> "$GITHUB_PATH"
     - name: Install xlings on Windows
-      if: runner.os == 'Windows'
+      if: runner.os == 'Windows' && inputs.xlings_sha == ''
       shell: pwsh
       env:
         XLINGS_NON_INTERACTIVE: '1'

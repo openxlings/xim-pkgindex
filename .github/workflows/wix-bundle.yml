@@ -7,6 +7,9 @@ name: wix bundle
 on:
   workflow_call:
     inputs:
+      xlings_sha:
+        type: string
+        default: ""
       base_sha:
         type: string
         default: ""
@@ -22,7 +25,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: The client under test, an xlings commit's CI build
+        if: inputs.xlings_sha != ''
+        uses: ./.github/actions/setup-xlings
+        with:
+          xlings_sha: ${{ inputs.xlings_sha }}
       - name: Install xlings
+        if: inputs.xlings_sha == ''
         timeout-minutes: 15
         shell: pwsh
         run: |

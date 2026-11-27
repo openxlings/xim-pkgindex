@@ -147,6 +147,7 @@ jobs:
     uses: ./.github/workflows/eden-smoke.yml
     with:
       base_sha: ${{ needs.plan.outputs.base_sha }}
+      xlings_sha: ${{ inputs.xlings_sha }}
       head_sha: ${{ needs.plan.outputs.head_sha }}
   android_runner:
     needs: plan
@@ -154,6 +155,7 @@ jobs:
     uses: ./.github/workflows/android-runner.yml
     with:
       base_sha: ${{ needs.plan.outputs.base_sha }}
+      xlings_sha: ${{ inputs.xlings_sha }}
       head_sha: ${{ needs.plan.outputs.head_sha }}
   apple_runners:
     needs: plan
@@ -161,6 +163,7 @@ jobs:
     uses: ./.github/workflows/apple-runners.yml
     with:
       base_sha: ${{ needs.plan.outputs.base_sha }}
+      xlings_sha: ${{ inputs.xlings_sha }}
       head_sha: ${{ needs.plan.outputs.head_sha }}
   baremetal_riscv_smoke:
     needs: plan
@@ -168,6 +171,7 @@ jobs:
     uses: ./.github/workflows/baremetal-riscv-smoke.yml
     with:
       base_sha: ${{ needs.plan.outputs.base_sha }}
+      xlings_sha: ${{ inputs.xlings_sha }}
       head_sha: ${{ needs.plan.outputs.head_sha }}
   bundletool:
     needs: plan
@@ -175,6 +179,7 @@ jobs:
     uses: ./.github/workflows/bundletool.yml
     with:
       base_sha: ${{ needs.plan.outputs.base_sha }}
+      xlings_sha: ${{ inputs.xlings_sha }}
       head_sha: ${{ needs.plan.outputs.head_sha }}
   chatgpt_runtime:
     needs: plan
@@ -182,6 +187,7 @@ jobs:
     uses: ./.github/workflows/chatgpt-runtime.yml
     with:
       base_sha: ${{ needs.plan.outputs.base_sha }}
+      xlings_sha: ${{ inputs.xlings_sha }}
       head_sha: ${{ needs.plan.outputs.head_sha }}
   jvm_build_tools:
     needs: plan
@@ -189,6 +195,7 @@ jobs:
     uses: ./.github/workflows/jvm-build-tools.yml
     with:
       base_sha: ${{ needs.plan.outputs.base_sha }}
+      xlings_sha: ${{ inputs.xlings_sha }}
       head_sha: ${{ needs.plan.outputs.head_sha }}
   node_native_modules:
     needs: plan
@@ -196,6 +203,7 @@ jobs:
     uses: ./.github/workflows/node-native-modules.yml
     with:
       base_sha: ${{ needs.plan.outputs.base_sha }}
+      xlings_sha: ${{ inputs.xlings_sha }}
       head_sha: ${{ needs.plan.outputs.head_sha }}
   wix_bundle:
     needs: plan
@@ -203,6 +211,7 @@ jobs:
     uses: ./.github/workflows/wix-bundle.yml
     with:
       base_sha: ${{ needs.plan.outputs.base_sha }}
+      xlings_sha: ${{ inputs.xlings_sha }}
       head_sha: ${{ needs.plan.outputs.head_sha }}
   toolchain_consumer_smoke:
     needs: plan
@@ -210,6 +219,7 @@ jobs:
     uses: ./.github/workflows/toolchain-consumer-smoke.yml
     with:
       base_sha: ${{ needs.plan.outputs.base_sha }}
+      xlings_sha: ${{ inputs.xlings_sha }}
       head_sha: ${{ needs.plan.outputs.head_sha }}
       files: ${{ needs.plan.outputs.files }}
 
@@ -219,6 +229,7 @@ jobs:
     uses: ./.github/workflows/luban-agent-workspace.yml
     with:
       base_sha: ${{ needs.plan.outputs.base_sha }}
+      xlings_sha: ${{ inputs.xlings_sha }}
       head_sha: ${{ needs.plan.outputs.head_sha }}
   release_owned:
     needs: plan
@@ -254,6 +265,7 @@ jobs:
     uses: ./.github/workflows/ci-sweep.yml
     with:
       base_sha: ${{ needs.plan.outputs.base_sha }}
+      xlings_sha: ${{ inputs.xlings_sha }}
       head_sha: ${{ needs.plan.outputs.head_sha }}
   ci_candidates:
     needs: plan
@@ -261,6 +273,7 @@ jobs:
     uses: ./.github/workflows/ci-candidates.yml
     with:
       base_sha: ${{ needs.plan.outputs.base_sha }}
+      xlings_sha: ${{ inputs.xlings_sha }}
       head_sha: ${{ needs.plan.outputs.head_sha }}
   required:
     if: always()

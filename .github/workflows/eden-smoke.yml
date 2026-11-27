@@ -3,6 +3,9 @@ name: Eden smoke
 on:
   workflow_call:
     inputs:
+      xlings_sha:
+        type: string
+        default: ""
       base_sha:
         type: string
         default: ""
@@ -25,6 +28,8 @@ jobs:
         with:
           python-version: '3.12'
       - uses: ./.github/actions/setup-xlings
+        with:
+          xlings_sha: ${{ inputs.xlings_sha }}
       - name: Install, execute CLI, inspect APK and uninstall
         shell: python
         run: |

@@ -11,6 +11,9 @@ name: node native modules
 on:
   workflow_call:
     inputs:
+      xlings_sha:
+        type: string
+        default: ""
       base_sha:
         type: string
         default: ""
@@ -47,7 +50,13 @@ jobs:
         if: runner.os == 'Linux'
         run: python3 -m pytest tests/n/test_node.py -m static --tb=short -q -rs
 
+      - name: The client under test, an xlings commit's CI build
+        if: inputs.xlings_sha != ''
+        uses: ./.github/actions/setup-xlings
+        with:
+          xlings_sha: ${{ inputs.xlings_sha }}
       - name: Install xlings
+        if: inputs.xlings_sha == ''
         timeout-minutes: 15
         run: bash .github/scripts/program-checks/install-xlings.sh
 
@@ -65,7 +74,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: The client under test, an xlings commit's CI build
+        if: inputs.xlings_sha != ''
+        uses: ./.github/actions/setup-xlings
+        with:
+          xlings_sha: ${{ inputs.xlings_sha }}
       - name: Install xlings
+        if: inputs.xlings_sha == ''
         timeout-minutes: 15
         shell: pwsh
         run: |
