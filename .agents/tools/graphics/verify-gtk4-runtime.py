@@ -431,8 +431,16 @@ def run_native(root: Path, libc_root: Path, arch: str, objects: dict[Path, Elf],
                 raise Broken(f"no real dbpp ELF executable in {consumer}")
             home = work / "consumer-home"
             home.mkdir()
+            drivers = sorted((consumer / "lib").glob("libadbc_driver_sqlite.so*"))
+            if len(drivers) != 1:
+                raise Broken(f"expected one bundled sqlite driver in {consumer}/lib, found {drivers}")
             consumer_env = {**env, "HOME": str(home), "XDG_DATA_HOME": str(home / "data"),
-                            "XDG_CONFIG_HOME": str(home / "config"), "DBPP_DATA_DIR": str(home / "dbpp-data")}
+                            "XDG_CONFIG_HOME": str(home / "config"), "DBPP_DATA_DIR": str(home / "dbpp-data"),
+                            # The explicit loader makes /proc/self/exe name the
+                            # loader, not dbpp, so dbpp's exe-relative bundled
+                            # driver discovery cannot see lib/; its documented
+                            # env override keeps the driver from the payload.
+                            "DBPP_SQLITE_DRIVER": str(drivers[0])}
 
             def dbpp(*args):
                 return execute(executable, list(args), consumer_env)[0]
