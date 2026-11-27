@@ -85,6 +85,8 @@ including across month/year boundaries. PR checks and manual triggers bypass thi
 cadence gate. A due run scans sequential batches and proposes from the same fixed plan. It never executes Lua,
 rewrites published versions, repairs conflicting historical entries, builds payloads, or merges PRs.
 A candidate must pass actual installation, verification and removal on its supported runners.
+Local overlay registration preserves an explicit recipe namespace; recipes without one use
+`local:<name>@<version>` for candidate installation and removal.
 The central configuration is `.github/xpkgindex-update.yml`. `max_packages: 50` is the
 scan batch size. A run scans up to 20 batches under a shared 500-request / 16 GiB
 budget. Each package also has a 50-request / 8 GiB allowance: reaching that local

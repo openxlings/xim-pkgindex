@@ -304,13 +304,17 @@ def test_a_reviewed_change_still_keeps_the_latest_policy(index):
         module.guard(base, reviewed=True)
 
 
-def test_candidate_verification_receives_the_installed_version(index, monkeypatch):
+@pytest.mark.parametrize('namespace', [None, 'custom'])
+def test_candidate_verification_receives_the_installed_version(index, monkeypatch, namespace):
     """A clean candidate home contains only the new version, never the old pin."""
     import json
     import shutil
     module, recipe = index
+    if namespace:
+        recipe.write_text(RECIPE.replace('name = "foo"', 'name = "foo", namespace = "custom"'))
+    target = (namespace or 'local') + ':foo@1.1.0'
     home = recipe.parents[2] / 'home'
-    install = home / 'data/xpkgs/local-x-foo/1.1.0'
+    install = home / ('data/xpkgs/' + (namespace or 'local') + '-x-foo/1.1.0')
     test = recipe.parents[2] / 'tests/f/test_foo.py'
     test.parent.mkdir(parents=True)
     test.write_text('# package verification entry point\n')
@@ -322,6 +326,7 @@ def test_candidate_verification_receives_the_installed_version(index, monkeypatc
     runner_python = module.sys.executable
     def run(command, **kwargs):
         if command[:2] == ['xlings', 'install']:
+            assert command[2] == target
             install.mkdir(parents=True)
             (install / '.xpkg.lua').write_text('metadata')
             (install / 'payload').write_text('candidate')
@@ -339,9 +344,10 @@ def test_candidate_verification_receives_the_installed_version(index, monkeypatc
             assert kwargs['env']['XLINGS_TEST_VERSION'] == '1.1.0'
             assert kwargs['env']['XLINGS_TEST_SUBOS'] == 'default'
         elif command[:2] == ['xlings', 'remove']:
+            assert command[2] == target
             shutil.rmtree(install)
     monkeypatch.setattr(module.subprocess, 'run', run)
-    module.run_candidate('xim:foo', 'pkgs/f/foo.lua', '1.1.0')
+    module.run_candidate((namespace or 'xim') + ':foo', 'pkgs/f/foo.lua', '1.1.0')
     assert len(verified) == 1
     evidence = json.loads((recipe.parents[2] / 'candidate-evidence.json').read_text())
     assert evidence['version'] == '1.1.0' and evidence['status'] == 'verified-and-removed'

@@ -173,8 +173,9 @@ def run_candidate(identity, filename, version, expected_arch=None):
     subprocess.run([xlings, 'update', '--yes', '--agent'], check=True)
     subprocess.run([xlings, 'config', '--add-xpkg', str(path)], check=True)
     name = identity.split(':', 1)[-1]
-    # Overlay registration uses the local namespace; this is a clean runner home.
-    target = 'local:' + name + '@' + version
+    # Explicit recipe namespaces survive local overlay registration.
+    namespace = info['package'].get('namespace')
+    target = (namespace.string() if namespace else 'local') + ':' + name + '@' + version
     subprocess.run([xlings, 'install', target, '-y'], check=True)
     home = Path(os.environ.get('XLINGS_HOME', Path.home() / '.xlings'))
     installs = list((home / 'data/xpkgs').glob('*-x-' + name + '/' + version))
