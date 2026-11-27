@@ -141,6 +141,13 @@ jobs:
           done
           echo "slice $SLICE of $SLICES -- ${#sel[@]} of ${#all[@]} recipes"
           echo "files=${sel[*]}" >> "$GITHUB_OUTPUT"
+          # The index under test is this checkout: every recipe of it is placed
+          # in the index before the slice installs, so a dependency resolves as
+          # this tree has it -- another slice's recipe included -- and not as
+          # the published index has it. Measured 2026-11-27: a branch that gave
+          # mesa's closure aarch64 builds was swept with the published,
+          # x86_64-only dependencies, and rule M refused them.
+          echo "overlay=${all[*]}" >> "$GITHUB_OUTPUT"
       - name: ELF + Lua tooling for the closure check
         if: runner.os == 'Linux'
         run: |
@@ -151,19 +158,22 @@ jobs:
         shell: bash
         env:
           FILES: ${{ steps.files.outputs.files }}
+          OVERLAY: ${{ steps.files.outputs.overlay || steps.files.outputs.files }}
           PLATFORM: ${{ matrix.platform }}
         run: |
           chmod +x .github/scripts/posix-test.sh .github/scripts/dep-closure-check.sh
-          .github/scripts/posix-test.sh "$FILES" "$GITHUB_WORKSPACE" "$PLATFORM"
+          .github/scripts/posix-test.sh "$FILES" "$GITHUB_WORKSPACE" "$PLATFORM" "$OVERLAY"
       - name: Install/uninstall sweep (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         env:
           FILES: ${{ steps.files.outputs.files }}
+          OVERLAY: ${{ steps.files.outputs.overlay || steps.files.outputs.files }}
         run: |
           pwsh -NoProfile -File .github/scripts/windows-test.ps1 `
             -ChangedFiles $env:FILES `
-            -WorkspaceRoot "${{ github.workspace }}"
+            -WorkspaceRoot "${{ github.workspace }}" `
+            -OverlayFiles $env:OVERLAY
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       # What the client recorded while installing the slice: the list P4 and
       # P11 read (rule P, hook-call-failed, closure findings), per recipe.
