@@ -9,7 +9,6 @@ import pytest
 
 from tests.lib.assertions import (
     assert_config_registers_package_name,
-    assert_install_succeeds,
     assert_no_bashrc_modification,
     assert_no_direct_path_modification,
     assert_no_direct_pkg_manager,
@@ -20,7 +19,6 @@ from tests.lib.assertions import (
     assert_valid_spec,
     assert_valid_type,
     assert_valid_xvm_node_kinds,
-    assert_xim_add_succeeds,
     assert_xvm_registered,
 )
 from tests.lib.platform_utils import under_test, xlings_home
@@ -30,6 +28,21 @@ PKG = "adguardhome"
 PKG_FILE = "pkgs/a/adguardhome.lua"
 VERSION = "1.0.0"
 REPO = Path(__file__).resolve().parents[2]
+
+
+def _run_xlings(*args: str, timeout: int = 180) -> str:
+    """Use the native dispatcher, without login profiles or Windows WSL bash."""
+    suffix = ".exe" if os.name == "nt" else ""
+    binary = Path(xlings_home()) / "bin" / ("xlings" + suffix)
+    command = str(binary) if binary.is_file() else shutil.which("xlings")
+    assert command, "xlings is required for package index and lifecycle checks"
+    result = subprocess.run(
+        [command, *args], capture_output=True, text=True,
+        encoding="utf-8", errors="replace", timeout=timeout,
+    )
+    output = result.stdout + result.stderr
+    assert result.returncode == 0 and "[error]" not in output.lower(), output
+    return output
 
 
 @pytest.fixture(scope="module")
@@ -140,13 +153,14 @@ class TestIsolation:
 class TestIndex:
     @pytest.mark.index
     def test_add(self):
-        assert_xim_add_succeeds(PKG_FILE)
+        _run_xlings("config", "--add-xpkg", str(REPO / PKG_FILE), timeout=45)
 
 
 class TestLifecycle:
     @pytest.mark.lifecycle
     def test_install(self):
-        assert_install_succeeds(under_test(PKG))
+        output = _run_xlings("install", under_test(PKG), "-y")
+        assert "installed" in output.lower(), output
 
 
 @pytest.fixture
