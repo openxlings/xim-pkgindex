@@ -68,6 +68,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- No deps: INI text files have no ABI. `compat.libinput` is the
             -- consumer and lives in mcpp-index, which xim does not resolve
             -- against — the two meet through LIBINPUT_QUIRKS_DIR, which is
@@ -86,67 +87,38 @@ package = {
 }
 
 import("xim.libxpkg.pkginfo")
-import("xim.libxpkg.log")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.fs")
 import("xim.libxpkg.path")
 import("xim.pkgindex.graphics")
 
 function install()
-    local dir = pkginfo.install_dir()
-    fs.remove(dir)
-
-    -- `share/libinput`, flat — meson's `install_subdir('quirks', …,
+    -- The landing put libinput's source tree here (`strip = 1` drops its
+    -- `libinput-<version>/`); this package is its quirks/ alone, at
+    -- `share/libinput`, flat -- meson's `install_subdir('quirks', …,
     -- strip_directory : true)` drops the `quirks/` level, and `quirks.c`
     -- scandir()s the directory itself, so the layout is part of the interface
     -- rather than a choice.
+    local dir = pkginfo.install_dir()
+    for _, entry in ipairs(fs.list(dir)) do
+        if entry.name ~= "quirks" then fs.remove(entry.path) end
+    end
     local dst = path.join(dir, graphics.QUIRKS_DIR)
     fs.mkdir(path.directory(dst))
-
-    -- MOVE FIRST, CHECK THE RESULT — do not probe.
-    --
-    -- The obvious recipe is `if os.isdir(x) then os.mv(x, dst) end`, and it
-    -- does not work here: inside an install hook `os.dirs("libinput-*")`
-    -- returns nothing and `os.filedirs("*")` returns nothing, in a working
-    -- directory that demonstrably CONTAINS `libinput-1.31.3/` — the archive is
-    -- extracted into xlings's runtimedir and the relative-path helpers do not
-    -- see it. `os.mv` with the same relative path works fine.
-    --
-    -- So both shapes are attempted and the DESTINATION is what gets checked.
-    -- Two shapes because the layout is xpm's to decide, not this recipe's: the
-    -- tarball's top level is `libinput-1.31.3/`, and a package whose archive
-    -- has no top level (xkeyboard-config) is handed its contents directly.
-    for _, cand in ipairs({"libinput-1.31.3/quirks", "quirks"}) do
-        if not fs.is_dir(dst) then pcall(fs.move, cand, dst) end
-    end
+    fs.move(path.join(dir, "quirks"), dst)
 
     -- Upstream's own `exclude_files` — it is documentation, not a quirk, and
     -- `is_data_file` would skip it anyway. Removed so the directory contains
     -- only what it claims to.
     fs.remove(path.join(dst, "README.md"))
 
-    -- The outcome check, and the only one that means anything.
-    --
-    -- NOT `os.files(dst .. "/*.quirks")`: inside an install hook the `os` table
-    -- is a RESTRICTED SUBSET, and `os.files` is one of the names that is simply
-    -- `nil` there — as are `os.filedirs`, `os.exists`, `os.curdir` and
-    -- `os.iorunv`. Calling one is a hard `attempt to call a nil value`, and
-    -- with `or {}` written around it the same absence reads as "the glob
-    -- matched nothing", which is how the first version of this recipe reported
-    -- a move that had actually succeeded. Available and used here:
-    -- `os.isdir`, `os.isfile`, `os.mv`, `os.mkdir`, `os.tryrm`, `os.dirs`.
-    --
-    -- So a directory test plus one canonical member. `10-generic-keyboard.quirks`
-    -- is the least version-sensitive name in the set — it predates every
-    -- vendor file and is present in libinput releases years apart (this host's
-    -- 1.2x ships it, as does 1.31.3). Coupling to one filename is worse than a
-    -- glob; it is better than no check at all, which is what the restricted
-    -- table otherwise leaves.
-    if not fs.is_dir(dst) or not fs.is_file(path.join(dst, "10-generic-keyboard.quirks")) then
-        log.warn("no quirks landed in %s -- libinput would run on its built-in "
-                 .. "defaults, which is what this package exists to avoid",
-                 graphics.QUIRKS_DIR)
-        return false
+    -- `10-generic-keyboard.quirks` is the least version-sensitive name in the
+    -- set: it predates every vendor file and is in libinput releases years
+    -- apart. Without the quirks libinput runs on its built-in defaults, which
+    -- is what this package exists to avoid.
+    if not fs.is_file(path.join(dst, "10-generic-keyboard.quirks")) then
+        error(string.format("libinput-%s's quirks/ has no 10-generic-keyboard.quirks: nothing usable landed in %s",
+                            pkginfo.version(), graphics.QUIRKS_DIR))
     end
     return true
 end
