@@ -1079,7 +1079,7 @@ package = {
             },
             ["0.4.17"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.17/xlings-0.4.17-linux-x86_64.tar.gz",
-                sha256 = "e34720c0657f010812c0ff4fbb07b23f4f0df9e97078c989c9861720088a8782",
+                sha256 = { x86_64 = "e34720c0657f010812c0ff4fbb07b23f4f0df9e97078c989c9861720088a8782" },
             },
             ["0.4.16"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.16/xlings-0.4.16-linux-x86_64.tar.gz",
