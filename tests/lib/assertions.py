@@ -37,7 +37,9 @@ def assert_valid_spec(meta: XpkgMeta):
     """spec 版本必须是已知值"""
     if meta.is_ref:
         return
-    assert meta.spec in ("0", "1", "2"), f"未知 spec 版本: {meta.spec}"
+    # "3": the hook interface without the compatibility layer, the host landing
+    # the download (libxpkg 0.0.68, xlings design 2026-11-27 §9.6).
+    assert meta.spec in ("0", "1", "2", "3"), f"未知 spec 版本: {meta.spec}"
 
 
 def assert_valid_type(meta: XpkgMeta):
