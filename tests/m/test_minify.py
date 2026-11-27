@@ -10,7 +10,6 @@ import pytest
 
 from tests.lib.assertions import (
     assert_config_registers_package_name,
-    assert_install_succeeds,
     assert_no_bashrc_modification,
     assert_no_direct_path_modification,
     assert_no_direct_pkg_manager,
@@ -21,7 +20,6 @@ from tests.lib.assertions import (
     assert_valid_spec,
     assert_valid_type,
     assert_valid_xvm_node_kinds,
-    assert_xim_add_succeeds,
 )
 from tests.lib.platform_utils import under_test, xlings_home
 from tests.lib.xpkg_parser import parse_xpkg
@@ -39,6 +37,18 @@ def _lua(script):
         [lua, "-", PKG_FILE], input=script, text=True,
         capture_output=True, check=True, cwd=ROOT, timeout=10,
     )
+
+
+def _xlings(*args):
+    name = "xlings.exe" if os.name == "nt" else "xlings"
+    native = Path(xlings_home()) / "bin" / name
+    executable = str(native) if native.is_file() else shutil.which(name)
+    assert executable, f"Native {name} executable unavailable"
+    result = subprocess.run(
+        [executable, *args], capture_output=True, text=True, timeout=180,
+        cwd=ROOT, env=os.environ.copy(),
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 def _minify(*args, source=None):
@@ -197,13 +207,13 @@ class TestIsolation:
 class TestIndex:
     @pytest.mark.index
     def test_register(self):
-        assert_xim_add_succeeds(PKG_FILE)
+        _xlings("config", "--add-xpkg", str(ROOT / PKG_FILE))
 
 
 class TestLifecycle:
     @pytest.mark.lifecycle
     def test_install(self):
-        assert_install_succeeds(under_test(PKG))
+        _xlings("install", under_test(PKG), "-y")
 
 
 class TestVerify:
