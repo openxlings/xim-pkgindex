@@ -34,23 +34,25 @@ package = {
 
 
     extensions = {
+        -- Each URL is the architecture its entries name (design 2026-11-27
+        -- §5.3): the updater writes a new version for those.
         autoupdate = {
             source = "https://github.com/golang/go/tags",
             tag = "go${version}",
             resources = {
                 GLOBAL = {
                     url = {
-                        linux = "https://go.dev/dl/go${version}.linux-amd64.tar.gz",
-                        macosx = "https://go.dev/dl/go${version}.darwin-arm64.tar.gz",
-                        windows = "https://go.dev/dl/go${version}.windows-amd64.zip",
+                        linux = { x86_64 = "https://go.dev/dl/go${version}.linux-amd64.tar.gz" },
+                        macosx = { aarch64 = "https://go.dev/dl/go${version}.darwin-arm64.tar.gz" },
+                        windows = { x86_64 = "https://go.dev/dl/go${version}.windows-amd64.zip" },
                     },
                     required = true,
                 },
                 CN = {
                     url = {
-                        linux = "https://mirrors.nju.edu.cn/golang/go${version}.linux-amd64.tar.gz",
-                        macosx = "https://mirrors.nju.edu.cn/golang/go${version}.darwin-arm64.tar.gz",
-                        windows = "https://mirrors.nju.edu.cn/golang/go${version}.windows-amd64.zip",
+                        linux = { x86_64 = "https://mirrors.nju.edu.cn/golang/go${version}.linux-amd64.tar.gz" },
+                        macosx = { aarch64 = "https://mirrors.nju.edu.cn/golang/go${version}.darwin-arm64.tar.gz" },
+                        windows = { x86_64 = "https://mirrors.nju.edu.cn/golang/go${version}.windows-amd64.zip" },
                     },
                     required = true,
                 },

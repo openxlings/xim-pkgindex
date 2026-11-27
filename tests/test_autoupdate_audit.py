@@ -280,6 +280,36 @@ def test_a_published_version_is_kept_in_every_recipe(index):
         module.guard(base)
 
 
+FORM = '''package = {
+    name = "foo", archs = {"x86_64"},
+    xpm = { linux = {
+        ["latest"] = { ref = "1.0.0" },
+        ["1.0.0"] = { url = "https://example.org/foo-1.0.0.tar.gz", sha256 = "''' + 'a' * 64 + '''" },
+    } },
+}'''
+
+
+def test_a_change_of_form_with_the_same_bytes_keeps_the_published_version(index):
+    """The revision gate loads each architecture's recipe: a digest written per
+    architecture is the same resource, and the guard reads it as unchanged."""
+    module, _ = index
+    if module._lua() is None:
+        pytest.skip('no Lua 5.3+ for the revision gate')
+    per_arch = FORM.replace('sha256 = "' + 'a' * 64 + '"', 'sha256 = { x86_64 = "' + 'a' * 64 + '" }')
+    module, base = _guarded(index, FORM, per_arch)
+    assert module.guard(base)['changed'] == [{'path': 'pkgs/f/foo.lua', 'rules': 'preserved'}]
+
+
+def test_a_change_of_form_that_changes_the_bytes_is_still_a_changed_version(index):
+    module, _ = index
+    if module._lua() is None:
+        pytest.skip('no Lua 5.3+ for the revision gate')
+    changed = FORM.replace('sha256 = "' + 'a' * 64 + '"', 'sha256 = { x86_64 = "' + 'c' * 64 + '" }')
+    module, base = _guarded(index, FORM, changed)
+    with pytest.raises(module.Invalid, match='existing version changed'):
+        module.guard(base)
+
+
 def test_a_recipe_a_bot_writes_keeps_the_automatic_rules(index):
     moved = RECIPE.replace('["latest"] = { ref = "1.0.0" }', '["latest"] = { ref = "0.9.0" }')
     module, base = _guarded(index, RECIPE, moved)

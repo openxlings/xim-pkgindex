@@ -52,10 +52,17 @@
 -- CI runs it through check-revision.sh, which finds the interpreter and the
 -- base ref. Directly:
 --
---     lua check-revision.lua --base <ref> [--head <ref>] [<repo-root>]
+--     lua check-revision.lua --base <ref> [--head <ref>] [--equivalent] [<repo-root>]
 --
 -- Exit 0 = every compared entry is consistent; 1 = a violation or a recipe
 -- that cannot be loaded; 2 = usage error or an unusable base ref.
+--
+-- `--equivalent` also prints `equivalent<TAB><file><TAB><platform><TAB><version>`
+-- for every compared entry whose text may differ while every architecture
+-- still gets the same resource at the same revision and floor: a change of
+-- form only (a digest written per architecture, a URL picked by os.arch()
+-- written as a template). The published-version guard of the updater
+-- (autoupdate-ci.py guard) reads those as unchanged.
 --
 
 local SCRIPT_DIR = (arg and arg[0] or ""):match("^(.*)/[^/]*$") or "."
@@ -412,11 +419,13 @@ local function usage()
 end
 
 local base_ref, head_ref, root = nil, nil, "."
+local list_equivalent = false
 local i = 1
 while arg[i] do
     local a = arg[i]
     if a == "--base" then base_ref = arg[i + 1]; i = i + 2
     elseif a == "--head" then head_ref = arg[i + 1]; i = i + 2
+    elseif a == "--equivalent" then list_equivalent = true; i = i + 1
     elseif a:sub(1, 2) == "--" then usage()
     else root = a; i = i + 1 end
 end
@@ -444,7 +453,7 @@ for line in names:gmatch("[^\n]+") do
 end
 table.sort(changed)
 
-local errors, notes = {}, {}
+local errors, notes, equivalent = {}, {}, {}
 local compared, validated = 0, 0
 
 local function err(file, msg)
@@ -519,8 +528,13 @@ for _, file in ipairs(changed) do
                             .. "increases; a client holding revision %d would take the "
                             .. "entry for a different payload and reinstall it.",
                             where, base_rev, head_rev, base_rev))
-                    elseif resource_changed(old, base_pkg, plat, ver, loaded)
-                       and head_rev <= base_rev then
+                    elseif not resource_changed(old, base_pkg, plat, ver, loaded) then
+                        if head_rev == base_rev
+                           and rawget(type(entry) == "table" and entry or {}, "floor")
+                               == rawget(type(old) == "table" and old or {}, "floor") then
+                            equivalent[#equivalent + 1] = string.format("equivalent\t%s\t%s\t%s", file, plat, ver)
+                        end
+                    elseif head_rev <= base_rev then
                         err(file, string.format(
                             "%s: the resource of a published version changed while its "
                             .. "revision stayed %d. A published url and sha256 are "
@@ -545,6 +559,9 @@ for _, file in ipairs(changed) do
 end
 
 for _, n in ipairs(notes) do io.write("note: " .. n .. "\n") end
+if list_equivalent then
+    for _, e in ipairs(equivalent) do io.write(e .. "\n") end
+end
 for _, e in ipairs(errors) do io.write(e .. "\n") end
 
 if #errors > 0 then

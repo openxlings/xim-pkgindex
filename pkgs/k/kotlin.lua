@@ -59,22 +59,24 @@ package = {
 
 
     extensions = {
+        -- The same archive for every architecture its entries name (JVM),
+        -- listed for each (design 2026-11-27 §5.3).
         autoupdate = {
             source = "https://github.com/JetBrains/kotlin/releases",
             resources = {
                 GLOBAL = {
                     url = {
-                        linux = "https://github.com/JetBrains/kotlin/releases/download/v${version}/kotlin-compiler-${version}.zip",
-                        macosx = "https://github.com/JetBrains/kotlin/releases/download/v${version}/kotlin-compiler-${version}.zip",
-                        windows = "https://github.com/JetBrains/kotlin/releases/download/v${version}/kotlin-compiler-${version}.zip",
+                        linux = { x86_64 = "https://github.com/JetBrains/kotlin/releases/download/v${version}/kotlin-compiler-${version}.zip", aarch64 = "https://github.com/JetBrains/kotlin/releases/download/v${version}/kotlin-compiler-${version}.zip" },
+                        macosx = { x86_64 = "https://github.com/JetBrains/kotlin/releases/download/v${version}/kotlin-compiler-${version}.zip", aarch64 = "https://github.com/JetBrains/kotlin/releases/download/v${version}/kotlin-compiler-${version}.zip" },
+                        windows = { x86_64 = "https://github.com/JetBrains/kotlin/releases/download/v${version}/kotlin-compiler-${version}.zip", aarch64 = "https://github.com/JetBrains/kotlin/releases/download/v${version}/kotlin-compiler-${version}.zip" },
                     },
                     required = true,
                 },
                 CN = {
                     url = {
-                        linux = "https://gitcode.com/xlings-res/kotlin/releases/download/${version}/kotlin-compiler-${version}.zip",
-                        macosx = "https://gitcode.com/xlings-res/kotlin/releases/download/${version}/kotlin-compiler-${version}.zip",
-                        windows = "https://gitcode.com/xlings-res/kotlin/releases/download/${version}/kotlin-compiler-${version}.zip",
+                        linux = { x86_64 = "https://gitcode.com/xlings-res/kotlin/releases/download/${version}/kotlin-compiler-${version}.zip", aarch64 = "https://gitcode.com/xlings-res/kotlin/releases/download/${version}/kotlin-compiler-${version}.zip" },
+                        macosx = { x86_64 = "https://gitcode.com/xlings-res/kotlin/releases/download/${version}/kotlin-compiler-${version}.zip", aarch64 = "https://gitcode.com/xlings-res/kotlin/releases/download/${version}/kotlin-compiler-${version}.zip" },
+                        windows = { x86_64 = "https://gitcode.com/xlings-res/kotlin/releases/download/${version}/kotlin-compiler-${version}.zip", aarch64 = "https://gitcode.com/xlings-res/kotlin/releases/download/${version}/kotlin-compiler-${version}.zip" },
                     },
                     required = true,
                 },
