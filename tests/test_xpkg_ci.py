@@ -229,6 +229,13 @@ def main() -> int:
             tar.add(payload, arcname="payload.txt")
         assert mod.validate_archive(archive) is None
 
+        # Upstream projects such as gron ship .tgz; ARCHIVE_SUFFIXES admits it,
+        # so validate_archive must recognize it as a tar family member too.
+        archive_tgz = root / "payload.tgz"
+        with tarfile.open(archive_tgz, "w:gz") as tar:
+            tar.add(payload, arcname="payload.txt")
+        assert mod.validate_archive(archive_tgz) is None
+
         p = Path(d) / "foo.lua"
         p.write_text(
             'package = { name = "foo", repo = "https://github.com/acme/foo", '
