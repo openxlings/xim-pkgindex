@@ -113,6 +113,89 @@ class TestIsolation:
         assert_uses_new_api(PKG_FILE)
 
 
+def _active_code():
+    """去掉 `--` 行注释后的配方正文。
+
+    注释可以解释"为什么不动 .bashrc"；判断代码行为时只看注释之外的部分。
+    """
+    with open(PKG_FILE, "r", encoding="utf-8") as f:
+        return re.sub(r'(?m)^\s*--.*$', '', f.read())
+
+
+class TestCompletion:
+    """TAB 补全注册契约（`mcpp self completion`，bash/zsh/fish/PowerShell）。
+
+    注册面是 xlings 自己的 profile（~/.xlings/config/shell/xlings-profile.*），
+    系统 shell 配置一行都不碰 —— subos 隔离边界即此 feature 的边界。
+
+    libxpkg 的 system.unix_api().append_to_shell_profile 名义上是专用 API，
+    实测（探针 xpkg）追加目标 = _RUNTIME.run_dir（调用 xlings 的 CWD）而非
+    真实 profile 目录，且只有 posix/fish 两个分支、没有 PowerShell；隔离断言
+    也禁止配方出现该调用名。等 libxpkg 侧修好 API，配方再迁移；在那之前由
+    标记块管理提供同等能力。
+    """
+
+    @pytest.mark.static
+    def test_registers_in_xlings_profiles_only(self):
+        active = _active_code()
+        for surface in ("xlings-profile.sh", "xlings-profile.fish",
+                        "xlings-profile.ps1"):
+            assert surface in active, f"completion surface missing: {surface}"
+        # 系统 shell 配置只能出现在注释里（解释为什么不动它），代码里一个都没有。
+        for forbidden in (".bashrc", "bash_profile", "config.fish",
+                          "PowerShell_profile", "zshrc"):
+            assert forbidden not in active, f"system shell config referenced: {forbidden}"
+
+    @pytest.mark.static
+    def test_scripts_generated_from_the_installed_binary(self):
+        # 脚本来自 `mcpp self completion <shell> --print`（与装上的版本协议一致），
+        # 配方不内嵌脚本内容 —— 内嵌会随上游协议漂移。
+        active = _active_code()
+        assert "self completion" in active
+        assert "--print" in active
+        assert "complete -o default -F _mcpp_complete" not in active, \
+            "mcpp's bash script content is embedded in the recipe; it must come from the binary"
+
+    @pytest.mark.static
+    def test_all_four_shells_supported(self):
+        active = _active_code()
+        for script in ("mcpp.bash", "mcpp.zsh", "mcpp.fish", "mcpp.ps1"):
+            assert script in active, f"missing completion script for: {script}"
+
+    @pytest.mark.static
+    def test_registration_is_best_effort(self):
+        # 生命周期测试装 0.0.56 —— 早于 `self completion` 命令的版本。
+        # 注册失败只损失补全，绝不能让安装/卸载失败。
+        active = _active_code()
+        assert "pcall(register_completions)" in active
+        assert "pcall(remove_completions)" in active
+
+    @pytest.mark.static
+    def test_marked_block_replaced_and_removed_whole(self):
+        # 块用 `# >>> mcpp completion ... >>>` 标记对整体替换/整体删除：
+        # 重复 config() 不累积；uninstall() 干净移除（三个 profile + 脚本）。
+        active = _active_code()
+        assert "# >>> mcpp completion" in active
+        assert "# <<< mcpp completion" in active
+        for profile in ("xlings-profile.sh", "xlings-profile.fish",
+                        "xlings-profile.ps1"):
+            assert re.search(
+                r'update_profile\(\s*path\.join\(sdir,\s*"' +
+                re.escape(profile) + r'"\)\s*,\s*nil\)', active), \
+                f"uninstall must remove the block from {profile}"
+
+    @pytest.mark.static
+    def test_sh_block_guards_mirror_xlings_profile(self):
+        # xlings-profile.sh 会被 bash/zsh/纯 sh 共同 source：mcpp.bash/mcpp.zsh
+        # 含 bash-/zsh-only 语法，守卫必须与 xlings profile 自己的补全分支
+        # 同构，否则纯 sh/dash 解析报错、整个 profile 失效。
+        active = _active_code()
+        assert '${BASH_VERSION-}' in active
+        assert 'command -v complete' in active
+        assert '${ZSH_VERSION-}' in active
+        assert 'typeset -f compdef' in active
+
+
 class TestLifecycle:
     @pytest.mark.lifecycle
     @skip_if_not('linux')
