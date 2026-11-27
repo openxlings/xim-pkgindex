@@ -23,9 +23,9 @@ package = {
     keywords = {"gdu", "disk-usage", "disk", "du", "go"},
     programs = {"gdu"},
     xvm_enable = true,
-    ci = { mirror = true },
 
     -- Official GLOBAL assets only; no CN mirror has been verified.
+    -- Do not opt into ci.mirror: its materializer does not support upstream .tgz.
     extensions = {
         autoupdate = {
             source = "https://github.com/dundee/gdu/releases",

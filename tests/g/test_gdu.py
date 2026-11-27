@@ -20,8 +20,6 @@ from tests.lib.assertions import (
     assert_no_direct_path_modification,
     assert_uses_new_api,
     assert_no_direct_pkg_manager,
-    assert_xim_add_succeeds,
-    assert_install_succeeds,
     assert_xvm_registered,
 )
 from tests.lib.platform_utils import under_test, xlings_home
@@ -30,6 +28,22 @@ PKG = "gdu"
 PKG_FILE = "pkgs/g/gdu.lua"
 VERSION = "5.39.0"
 REPO = Path(__file__).resolve().parents[2]
+
+
+def _run_xlings(*args):
+    # Match the native CLI pattern in test_grpcurl; login bash can select WSL
+    # on Windows or override the explicitly isolated XLINGS_HOME on Linux.
+    suffix = ".exe" if os.name == "nt" else ""
+    binary = Path(xlings_home()) / "bin" / ("xlings" + suffix)
+    command = str(binary) if binary.is_file() else shutil.which("xlings")
+    assert command, "xlings is required for index and lifecycle checks"
+    result = subprocess.run(
+        [command, *args], capture_output=True, text=True, encoding="utf-8",
+        errors="replace", timeout=180,
+    )
+    output = result.stdout + result.stderr
+    assert result.returncode == 0 and "[error]" not in output.lower(), output
+    return output
 
 
 def _run_lua(script):
@@ -180,7 +194,7 @@ end
 class TestIndex:
     @pytest.mark.index
     def test_xim_add(self):
-        assert_xim_add_succeeds(PKG_FILE)
+        _run_xlings("config", "--add-xpkg", str(REPO / PKG_FILE), "--agent")
 
 
 class TestIsolation:
@@ -217,7 +231,8 @@ class TestIsolation:
 class TestLifecycle:
     @pytest.mark.lifecycle
     def test_install(self):
-        assert_install_succeeds(under_test(PKG))
+        out = _run_xlings("install", under_test(PKG), "--yes", "--agent")
+        assert "installed" in out.lower(), out
 
 
 class TestVerify:
