@@ -54,6 +54,7 @@ jobs:
           bash .github/scripts/check-no-blocking-input.sh
           bash .github/scripts/check-dep-namespace.sh
           bash .github/scripts/check-revision.sh
+          bash .github/scripts/check-arch.sh
 
       - name: L0 Static Analysis
         run: pytest tests/ -m static --tb=short -q

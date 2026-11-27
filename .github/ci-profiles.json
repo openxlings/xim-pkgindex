@@ -9,6 +9,7 @@
       ".github/scripts/check-no-blocking-input.sh",
       ".github/scripts/check-no-direct-ld-libpath.sh",
       ".github/scripts/check-no-gnu-only-stat.sh",
+      ".github/scripts/check-arch.sh",
       ".github/scripts/check-revision.sh",
       ".github/scripts/ci-plan.py",
       ".github/scripts/ci-required.py",
@@ -16,7 +17,10 @@
       "libs/**",
       "pkgs/**",
       "tests/**",
-      "tests/n/test_ncurses.py"
+      "tests/n/test_ncurses.py",
+      "tools/xpkg_arch.py",
+      "tools/xpkg_arch_dump.lua",
+      "tools/xpkg_ci.py"
     ]
   },
   "ci_tools": {
@@ -48,7 +52,10 @@
       "README.md",
       "README.zh.md",
       "docs/**",
-      "pkgs/**"
+      "pkgs/**",
+      "tools/arch_census.py",
+      "tools/xpkg_arch.py",
+      "tools/xpkg_arch_dump.lua"
     ]
   },
   "consumer_through_index_override": {

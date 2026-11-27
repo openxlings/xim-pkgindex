@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Mirror-only helper: inspect, materialize, verify and publish declared resources.
+"""Mirror-only helper: inspect, materialize, verify and publish declared resources;
+and the architecture checks K1 and K3 on changed recipes (`arch-check`).
 
 Automatic package updates use the pinned upstream xpkgindex-update tool.
 """
@@ -702,6 +703,68 @@ def cmd_mirror(args: argparse.Namespace) -> int:
     return finalize(f"GitCode assets verified for {gitcode_repo}@{tag}")
 
 
+def changed_recipes(base: str, root: Path) -> list[str]:
+    """The recipes under pkgs/ the work tree adds or modifies against `base`."""
+    run = subprocess.run(["git", "-C", str(root), "diff", "--name-only", "--no-renames",
+                          "--diff-filter=AM", base, "--", "pkgs/"], capture_output=True, text=True)
+    if run.returncode != 0:
+        raise RuntimeError(f"git diff against {base} failed: {run.stderr.strip()}")
+    return sorted(line for line in run.stdout.splitlines() if line.endswith(".lua"))
+
+
+def cmd_arch_check(args: argparse.Namespace) -> int:
+    """K1 and K3 (ecosystem-convergence design §5.6) on the changed recipes.
+
+    K1: a Linux entry with an artifact names the architectures it is for
+    (`sha256 = { x86_64 = h }`, the same hash under each architecture when it
+    has no machine code, or an artifact per architecture). K3: `package.archs`
+    is the union of what the entries list; `--fix` rewrites it.
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import xpkg_arch as xa
+
+    root = Path(args.workspace).resolve()
+    if args.files:
+        files = args.files
+    elif args.all:
+        files = xa.all_recipe_files(root)
+    else:
+        files = changed_recipes(args.base, root)
+    if not files:
+        print("arch check: PASS (no changed recipe)")
+        return 0
+    loaded = xa.load_recipes(files, root=root)
+    findings = []
+    for file in files:
+        item = loaded.get(file, {})
+        pkg = item.get("package")
+        if not isinstance(pkg, dict):
+            print(f"::error file={file}::cannot load the recipe: {item.get('error')}")
+            findings.append(None)
+            continue
+        findings += xa.check_k1(file, pkg)
+        for f in xa.check_k3(file, pkg):
+            if args.fix:
+                path = root / file
+                text = path.read_text(encoding="utf-8")
+                fixed = xa.fix_archs_text(text, f.fix)
+                if fixed is None:
+                    print(f"::error file={file}::K3 {f.message}; --fix found no single `archs = {{...}}` "
+                          f"line: write archs = {{{', '.join(repr(a).replace(chr(39), chr(34)) for a in f.fix)}}}")
+                    findings.append(f)
+                else:
+                    path.write_text(fixed, encoding="utf-8")
+                    print(f"fixed {file}: archs = {{{', '.join(f.fix)}}}")
+                continue
+            findings.append(f)
+    for f in findings:
+        if f is not None:
+            print(f"::error file={f.file}::{f.code} {f.message}")
+    status = "FAIL" if findings else "PASS"
+    print(f"arch check: {status} ({len(findings)} finding(s) in {len(files)} recipe(s))")
+    return 1 if findings else 0
+
+
 def fail(message: str) -> int:
     print(f"error: {message}", file=sys.stderr)
     return 2
@@ -734,6 +797,12 @@ def main() -> int:
     p.add_argument("--version")
     p.add_argument("--output", required=True)
     p.set_defaults(func=materialize)
+    p = sub.add_parser("arch-check", help="K1 and K3 on the recipes changed against --base")
+    p.add_argument("--base", default="origin/main")
+    p.add_argument("--all", action="store_true", help="every recipe, not the changed ones")
+    p.add_argument("--fix", action="store_true", help="K3: rewrite package.archs to the union")
+    p.add_argument("files", nargs="*")
+    p.set_defaults(func=cmd_arch_check)
     args = parser.parse_args()
     return args.func(args)
 

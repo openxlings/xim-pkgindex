@@ -39,6 +39,11 @@ jobs:
           pip install pytest
           pytest -q tests/test_docs.py -m static
 
+      - name: Architecture coverage table
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends lua5.4 # host-dep-ok: the census loads recipes as Lua
+          python3 tools/arch_census.py coverage --output docs/generated/architecture-coverage.md
+
       - name: Build the site
         # --strict turns the growth reconciliation warning into an error: if
         # the replayed history disagrees with the tree, the curve on the site
