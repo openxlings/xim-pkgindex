@@ -27,13 +27,17 @@ SUBOS="${XLINGS_HOME:-$HOME/.xlings}/subos/${XLINGS_GFX_SUBOS:-gfxbuild}"
 . "$HERE/arch.sh"
 ARCH="$(subos_arch "$SUBOS")" || exit 3
 
-# T0 -- what x86_64 takes from the index (expat and libffi there are repacks
-# of a distribution's builds) and aarch64 builds, from upstream's release.
-# libffi 3.4.4 makes libffi.so.8 alone; x86_64's repack also carries the .so.7
-# of libffi 3.3, which nothing in this stack links.
+# T0 -- what x86_64 takes from the index (expat, libffi and fontconfig there
+# are repacks of a distribution's builds; freetype was built before this file
+# knew it) and aarch64 builds, from upstream's release. libffi 3.4.4 makes
+# libffi.so.8 alone; x86_64's repack also carries the .so.7 of libffi 3.3,
+# which nothing in this stack links. freetype and fontconfig are cmake's
+# (cmake-gui links them), built as x86_64's link: freetype on libc alone.
 T0=(
   "expat|2.6.2|https://github.com/libexpat/libexpat/releases/download/R_2_6_2/expat-2.6.2.tar.xz|autotools|--without-docbook --without-examples --without-tests"
   "libffi|3.4.4|https://github.com/libffi/libffi/releases/download/v3.4.4/libffi-3.4.4.tar.gz|autotools|--disable-docs --disable-multi-os-directory"
+  "freetype|2.13.2|https://download-mirror.savannah.gnu.org/releases/freetype/freetype-2.13.2.tar.xz|autotools|--without-zlib --without-bzip2 --without-png --without-harfbuzz --without-brotli"
+  "fontconfig|2.15.0|https://www.freedesktop.org/software/fontconfig/release/fontconfig-2.15.0.tar.xz|autotools|--disable-docs --disable-cache-build --sysconfdir=/etc --localstatedir=/var"
 )
 
 # name|version|url|system|extra-args

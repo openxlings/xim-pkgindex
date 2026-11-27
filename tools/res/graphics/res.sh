@@ -55,7 +55,7 @@ else
     gfx_step="bash /w/graphics/tiers.sh all --to $what --skip '$gfx_skip'"
 fi
 log "graphics: $what $src_version in a SubOS of xlings $gfx_client ($gfx_tools)"
-debian "apt-get -qq update && apt-get -qq install -y --no-install-recommends ca-certificates curl xz-utils bzip2 file patch pkg-config bison flex gawk m4 >/dev/null \
+debian "apt-get -qq update && apt-get -qq install -y --no-install-recommends ca-certificates curl xz-utils bzip2 file patch pkg-config bison flex gawk m4 gperf perl >/dev/null \
     && mkdir -p /w/xl /w/logs && tar -xzf /w/$xl -C /w/xl && export XLINGS_HOME=/w/xh XLINGS_NON_INTERACTIVE=1 \
     && (cd /w/xl/*/ && ./bin/xlings self install) </dev/null >/w/logs/xlings-install.log 2>&1 \
     && /w/xh/bin/xlings install -y $gfx_tools </dev/null >/w/logs/tools.log 2>&1 \
@@ -73,6 +73,10 @@ built="$work/gfx/dist/$what-$src_version-linux-$arch.tar.gz"
 mkdir -p "$work/pay" && tar -xzf "$built" -C "$work/pay"
 d="$(ls "$work/pay")"
 [[ "$d" == "$what-$src_version" ]] || die "the payload's directory is $d, not $what-$src_version"
+# fontconfig's install() moves the directory named as the asset is.
+if [[ "$what" == fontconfig ]]; then
+    mv "$work/pay/$d" "$work/pay/$what-$version-linux-$arch"; d="$what-$version-linux-$arch"
+fi
 
 # Rule M on the static surface, as the client judges an asset before it is
 # registered (xlings docs/specs/payload-rules.md).

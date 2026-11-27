@@ -420,6 +420,16 @@
     "arch": "aarch64"
   },
   {
+    "what": "freetype",
+    "version": "2.13.2",
+    "arch": "aarch64"
+  },
+  {
+    "what": "fontconfig",
+    "version": "2.15.0",
+    "arch": "aarch64"
+  },
+  {
     "what": "libpciaccess",
     "version": "0.18.1",
     "arch": "aarch64"
