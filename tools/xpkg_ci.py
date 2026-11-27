@@ -39,6 +39,44 @@ GITCODE_UPLOAD_ATTEMPTS = 2
 GITCODE_VERIFY_TIMEOUT = 20
 
 
+def lua_code(text: str) -> str:
+    """The recipe without its comments, strings kept as they are.
+
+    The fields below are found by pattern; a comment that quotes one
+    (`ci = { mirror = true }` in a note saying why a recipe does not declare
+    it) was read as the declaration (android-platform, 2026-11-27).
+    """
+    out: list[str] = []
+    i, n = 0, len(text)
+    while i < n:
+        c = text[i]
+        if c in "\"'":
+            j = i + 1
+            while j < n and text[j] != c and text[j] != "\n":
+                j += 2 if text[j] == "\\" else 1
+            out.append(text[i:j + 1])
+            i = j + 1
+            continue
+        if c == "[" or text.startswith("--", i):
+            comment = text.startswith("--", i)
+            m = re.match(r"\[(=*)\[", text[i + 2:] if comment else text[i:])
+            if m:
+                start = i + (2 if comment else 0) + m.end()
+                end = text.find("]" + m.group(1) + "]", start)
+                end = n if end < 0 else end + len(m.group(1)) + 2
+                if not comment:
+                    out.append(text[i:end])
+                i = end
+                continue
+            if comment:
+                end = text.find("\n", i)
+                i = n if end < 0 else end
+                continue
+        out.append(c)
+        i += 1
+    return "".join(out)
+
+
 def ci_block(text: str) -> str:
     m = re.search(r"\bci\s*=\s*\{", text)
     if not m:
@@ -77,7 +115,7 @@ def source_value(text: str) -> str | dict[str, str] | None:
 
 
 def inspect_package(path: Path) -> dict[str, Any]:
-    text = path.read_text(encoding="utf-8")
+    text = lua_code(path.read_text(encoding="utf-8"))
     body = ci_block(text)
     repo = re.search(r"\brepo\s*=\s*\"([^\"]+)\"", text)
     name = re.search(r"\bname\s*=\s*\"([^\"]+)\"", text)
@@ -308,7 +346,7 @@ def materialize(args: argparse.Namespace) -> int:
     recipe = root / "pkgs" / args.package[0] / f"{args.package}.lua"
     if not recipe.is_file():
         return fail(f"package recipe not found: {recipe}")
-    text = recipe.read_text(encoding="utf-8")
+    text = lua_code(recipe.read_text(encoding="utf-8"))
     xpm_match = re.search(r"\bxpm\s*=\s*\{", text)
     if not xpm_match:
         return fail("xpm block not found")
