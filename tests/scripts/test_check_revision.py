@@ -360,3 +360,94 @@ class TestPerArchitectureIdentity:
         code, out = check(head)
         assert code == 0, out
         assert "5 published entries compared" in out
+
+
+# The spike's recipes (spec "3"): the same bytes written the way the client
+# enumerates architectures. A top level that picked its URL with os.arch()
+# gave each architecture its own asset; a per-architecture digest names the
+# architectures an entry serves.
+ARCH_PICKED_BASE = '''local recipe_arch = (os.arch and os.arch())
+if recipe_arch ~= "aarch64" and recipe_arch ~= "arm64" and recipe_arch ~= "x86_64" then
+    recipe_arch = (type(is_arch) == "function" and is_arch("aarch64")) and "aarch64" or "x86_64"
+end
+local linux_arch = (recipe_arch == "aarch64" or recipe_arch == "arm64") and "arm64" or "amd64"
+local sums = { amd64 = "''' + "1" * 64 + '''", arm64 = "''' + "2" * 64 + '''" }
+package = {
+    spec = "1", name = "foo", archs = { "x86_64", "aarch64" },
+    xpm = {
+        linux = {
+            ["1.0.0"] = {
+                url = "https://example.org/foo_1.0.0_linux_" .. linux_arch .. ".tar.gz",
+                sha256 = sums[linux_arch],
+            },
+        },
+        macosx = {
+            ["1.0.0"] = { url = "https://example.org/foo_1.0.0_macOS_arm64.zip", sha256 = "''' + "3" * 64 + '''" },
+        },
+    },
+}
+'''
+
+ARCH_ENUMERATED_HEAD = '''package = {
+    spec = "3", name = "foo", archs = { "x86_64", "aarch64" },
+    xpm = {
+        linux = {
+            strip = 1,
+            ["1.0.0"] = {
+                url = "https://example.org/foo_1.0.0_linux_${arch_alias}.tar.gz",
+                arch_alias = { x86_64 = "amd64", aarch64 = "arm64" },
+                sha256 = { x86_64 = "''' + "1" * 64 + '''", aarch64 = "''' + "2" * 64 + '''" },
+            },
+        },
+        macosx = {
+            strip = 1,
+            ["1.0.0"] = { url = "https://example.org/foo_1.0.0_macOS_arm64.zip", sha256 = { aarch64 = "''' + "3" * 64 + '''" } },
+        },
+    },
+}
+'''
+
+
+@needs_lua
+@pytest.mark.static
+class TestArchitecturesAsTheClientReadsThem:
+    def test_a_top_level_arch_pick_rewritten_as_a_template_is_the_same_bytes(self):
+        code, out = check(ARCH_ENUMERATED_HEAD, ARCH_PICKED_BASE)
+        assert code == 0, out
+        assert "2 published entries compared" in out, out
+
+    def test_the_arm64_asset_changed_for_aarch64_still_needs_revision(self):
+        head = ARCH_ENUMERATED_HEAD.replace('aarch64 = "' + "2" * 64 + '"', 'aarch64 = "' + "4" * 64 + '"')
+        code, out = check(head, ARCH_PICKED_BASE)
+        assert code == 1 and 'xpm.linux["1.0.0"]' in out, out
+        head = ARCH_ENUMERATED_HEAD.replace("${arch_alias}.tar.gz", "${arch_alias}-r1.tar.gz")
+        code, out = check(head, ARCH_PICKED_BASE)
+        assert code == 1 and 'xpm.linux["1.0.0"]' in out, out
+
+    def test_a_single_artifact_no_longer_given_to_another_machine_is_no_change(self):
+        # macOS: the arm64 archive was given to x86_64 too (package.archs); the
+        # head gives it to aarch64 only, with the same digest.
+        code, out = check(ARCH_ENUMERATED_HEAD, ARCH_PICKED_BASE)
+        assert code == 0 and 'xpm.macosx["1.0.0"]' not in out, out
+        # The same digest under a changed URL is a change for aarch64.
+        head = ARCH_ENUMERATED_HEAD.replace("foo_1.0.0_macOS_arm64.zip", "foo_1.0.0_macOS_arm64-r1.zip")
+        code, out = check(head, ARCH_PICKED_BASE)
+        assert code == 1 and 'xpm.macosx["1.0.0"]' in out, out
+
+    def test_a_scalar_digest_turned_per_architecture_is_the_same_bytes(self):
+        base = BASE.replace('name = "foo",', 'name = "foo", archs = {"x86_64"},')
+        head = edit('sha256 = "aaaa",', 'sha256 = { x86_64 = "aaaa" },', base)
+        code, out = check(head, base)
+        assert code == 0, out
+        head = edit('sha256 = "aaaa",', 'sha256 = { x86_64 = "abab" },', base)
+        code, out = check(head, base)
+        assert code == 1 and 'xpm.linux["1.0.0"]' in out, out
+
+    def test_a_published_per_architecture_map_still_cannot_lose_an_architecture(self):
+        # Unlike a single artifact, an entry that named aarch64 gave it its own
+        # bytes; removing it loses a coordinate.
+        base = edit('["2.0.0"] = {', '["2.0.0"] = { sha256 = nil,', BASE)
+        head = edit('                aarch64 = { url = "https://example.org/foo-2.0.0-aarch64.tar.gz", sha256 = "dddd" },\n',
+                    '', base)
+        code, out = check(head, base)
+        assert code == 1 and 'xpm.linux["2.0.0"]' in out, out

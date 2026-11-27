@@ -21,6 +21,7 @@
 --     local sandbox = dofile(<dir> .. "/recipe-sandbox.lua")
 --     local pkg, err = sandbox.load_recipe(path)
 --     local pkg, err = sandbox.load_recipe_text(text, chunkname)
+--     local pkg, err = sandbox.load_recipe_text(text, chunkname, { arch = "aarch64" })
 --
 
 local M = {}
@@ -39,11 +40,26 @@ stub = setmetatable({}, {
 })
 M.stub = stub
 
-function M.sandbox_env()
+-- The canonical name of an architecture spelling (the client's table).
+local ARCH_ALIASES = { arm64 = "aarch64", amd64 = "x86_64", x64 = "x86_64" }
+function M.normalized_arch(name)
+    if type(name) ~= "string" then return name end
+    local lower = name:lower()
+    return ARCH_ALIASES[lower] or lower
+end
+
+-- `opts.arch`: the architecture the recipe is loaded for. A recipe's top level
+-- may choose its URL with `os.arch()` or `is_arch(...)`, and what it chose is
+-- what a client of that architecture saw; without `opts.arch` both are the
+-- permissive stub, as before.
+function M.sandbox_env(opts)
+    opts = opts or {}
+    local arch = opts.arch and M.normalized_arch(opts.arch) or nil
     -- os/io are handed out as safe subsets: a recipe may legitimately read
     -- os.getenv at load time, but nothing here may execute or delete.
     local safe_os = setmetatable(
-        { time = os.time, date = os.date, clock = os.clock, getenv = os.getenv },
+        { time = os.time, date = os.date, clock = os.clock, getenv = os.getenv,
+          arch = arch and function() return arch end or nil },
         { __index = function() return stub end })
     local safe_io = setmetatable({}, { __index = function() return stub end })
 
@@ -56,6 +72,12 @@ function M.sandbox_env()
         unpack = table.unpack, print = function() end,
         string = string, table = table, math = math,
         os = safe_os, io = safe_io,
+        is_arch = arch and function(...)
+            for i = 1, select("#", ...) do
+                if M.normalized_arch(select(i, ...)) == arch then return true end
+            end
+            return false
+        end or nil,
     }
     local env = {}
     setmetatable(env, {
@@ -80,16 +102,16 @@ end
 -- Load one recipe file and return the `package` table it declares (or nil,
 -- err). Running the chunk executes only its top level: the install/config/
 -- uninstall hooks are defined, never called.
-function M.load_recipe(file)
-    local env = M.sandbox_env()
+function M.load_recipe(file, opts)
+    local env = M.sandbox_env(opts)
     local chunk, err = loadfile(file, "t", env)
     return run_chunk(chunk, err, env)
 end
 
 -- The same, for recipe text that is not a file in the work tree -- the
 -- version of a recipe on another commit, read with `git show`.
-function M.load_recipe_text(text, chunkname)
-    local env = M.sandbox_env()
+function M.load_recipe_text(text, chunkname, opts)
+    local env = M.sandbox_env(opts)
     local chunk, err = load(text, "=" .. tostring(chunkname), "t", env)
     return run_chunk(chunk, err, env)
 end
