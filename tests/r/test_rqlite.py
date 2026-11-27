@@ -1,4 +1,5 @@
 """Tests for the rqlite portable client/server package."""
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -42,11 +43,23 @@ def _run_lua(script):
     return subprocess.run([lua, "-", PKG_FILE], input=script, text=True, capture_output=True, check=True, cwd=REPO).stdout
 
 
-def _xlings(*args):
-    result = subprocess.run(["xlings", *args, "--agent"], capture_output=True, text=True, timeout=180, cwd=REPO)
-    assert result.returncode == 0, result.stdout + result.stderr
-    assert "[error]" not in result.stdout + result.stderr, result.stdout + result.stderr
-    return result.stdout + result.stderr
+def _run_xlings(*args: str, timeout: int = 180) -> str:
+    """Invoke xlings directly so login shells cannot replace XLINGS_HOME."""
+    suffix = ".exe" if os.name == "nt" else ""
+    binary = Path(xlings_home()) / "bin" / ("xlings" + suffix)
+    command = str(binary) if binary.is_file() else shutil.which("xlings")
+    assert command, "xlings is required for package index and lifecycle checks"
+    result = subprocess.run(
+        [command, *args],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        timeout=timeout,
+    )
+    output = result.stdout + result.stderr
+    assert result.returncode == 0 and "[error]" not in output.lower(), output
+    return output
 
 
 def _shim(program):
@@ -58,6 +71,13 @@ def _shim(program):
     shim = bindir / (program + (".exe" if os.name == "nt" else ""))
     assert shim.is_file(), f"Missing installed shim: {shim}"
     return shim
+
+
+def _payload(program):
+    namespace = under_test(PKG).split(":")[0]
+    version = os.environ.get("XLINGS_TEST_VERSION", VERSION)
+    suffix = ".exe" if os.name == "nt" else ""
+    return Path(xlings_home()) / "data" / "xpkgs" / f"{namespace}-x-rqlite" / version / (program + suffix)
 
 
 def _run(program, *args, **kwargs):
@@ -197,16 +217,16 @@ class TestIndex:
     @pytest.mark.index
     @SUPPORTED
     def test_register_and_search(self):
-        _xlings("config", "--add-xpkg", PKG_FILE)
-        assert PKG in _xlings("search", under_test(PKG))
+        _run_xlings("config", "--add-xpkg", PKG_FILE, timeout=45)
+        assert PKG in _run_xlings("search", under_test(PKG))
 
 
 class TestLifecycle:
     @pytest.mark.lifecycle
     @SUPPORTED
     def test_install(self):
-        out = _xlings("install", under_test(PKG, os.environ.get("XLINGS_TEST_VERSION", VERSION)), "--yes")
-        assert "installed" in out.lower(), out
+        out = _run_xlings("install", under_test(PKG, os.environ.get("XLINGS_TEST_VERSION", VERSION)), "--yes")
+        assert "installed" in out.lower() or "already installed" in out.lower(), out
         for program in ("rqlite", "rqlited"):
             assert _shim(program).is_file()
 
@@ -216,7 +236,19 @@ class TestVerify:
     @SUPPORTED
     @pytest.mark.parametrize("program", ["rqlite", "rqlited"])
     def test_version_routing(self, program):
-        assert os.environ.get("XLINGS_TEST_VERSION", VERSION) in _run(program, "--version")
+        version = os.environ.get("XLINGS_TEST_VERSION", VERSION)
+        output = _run(program, "--version")
+        if os.name == "nt" and program == "rqlite" and version == "10.8.0":
+            # Upstream build-windows.yml passes release -X flags to the server
+            # only. Prove the shell's exact release identity, not just "10".
+            assert output.strip() == "Version 10, commit unknown, built on unknown", output
+            binary = _payload(program).read_bytes()
+            assert hashlib.sha256(binary).hexdigest() == "37c13d8f10732641b95363425ebc6e1269ec6155fff62485ce00319bc18195eb"
+            assert b"mod\tgithub.com/rqlite/rqlite/v10\tv10.8.0\t" in binary
+            assert b"build\tvcs.revision=bc6efce12319a09380c71e8c4b949ed4b570f7bd\n" in binary
+            assert b"build\tvcs.modified=false\n" in binary
+        else:
+            assert version in output, output
 
     @pytest.mark.verify
     @SUPPORTED
@@ -226,9 +258,7 @@ class TestVerify:
             http.bind(("127.0.0.1", 0))
             raft.bind(("127.0.0.1", 0))
             http_port, raft_port = http.getsockname()[1], raft.getsockname()[1]
-        namespace = under_test(PKG).split(":")[0]
-        version = os.environ.get("XLINGS_TEST_VERSION", VERSION)
-        executable = Path(xlings_home()) / "data" / "xpkgs" / f"{namespace}-x-rqlite" / version / ("rqlited.exe" if os.name == "nt" else "rqlited")
+        executable = _payload("rqlited")
         assert executable.is_file(), executable
         env = {**os.environ, "HOME": str(tmp_path), "USERPROFILE": str(tmp_path)}
         opener = urllib.request.build_opener(urllib.request.ProxyHandler({}))

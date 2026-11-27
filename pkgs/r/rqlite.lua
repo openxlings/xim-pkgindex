@@ -5,6 +5,10 @@
 -- The amd64-musl asset is dynamically linked too, not a static alternative.
 -- Windows x86_64 is PE32+ and uses Windows' UCRT. No macOS or Windows ARM64
 -- portable asset exists in this release. Linux also ships rqbench; retain it.
+-- The v10.8.0 Windows shell omits release-version linker flags and reports
+-- "Version 10, commit unknown, built on unknown". Its embedded Go module is
+-- v10.8.0 at the same clean release commit as rqlited; tests pin its exact
+-- upstream binary hash as well as exercising real SQL through the client.
 
 package = {
     spec = "2",
