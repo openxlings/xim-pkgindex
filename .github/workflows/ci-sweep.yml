@@ -25,7 +25,17 @@
 # the same set.
 #
 # `workflow_dispatch` takes an explicit slice, which is how you re-run the one
-# that failed without waiting for the calendar to come round again.
+# that failed without waiting for the calendar to come round again, or `all`:
+# every slice on every leg at once (with `slices` to size the jobs) -- the
+# whole index under a client under test (`xlings_sha`), as a client release
+# that changes what installs do is checked (xlings design 2026-11-27, P4).
+#
+# LEGS. Linux x86_64 and aarch64, macOS (arm64) and Windows. On aarch64 a
+# recipe whose entry does not list it is refused before the download
+# (E_UNSUPPORTED_TARGET): counted as unsupported, not as a failure -- the
+# index's coverage table is where that is tracked. Each leg uploads the
+# findings the client recorded (<home>/logs/findings.ndjson): rule P,
+# hook-call-failed and the rest, per recipe, over the whole slice.
 name: ci-sweep
 
 on:
@@ -49,128 +59,140 @@ on:
         type: string
         default: ''
       slice:
-        description: Slice index to run (blank = pick from the ISO week)
+        description: 'Slice index to run (blank = pick from the ISO week; all = every slice)'
         required: false
         default: ''
-
-env:
-  # Every recipe every SLICES weeks. Raise it if a run gets too long; lower it
-  # to tighten the loop. Nothing else depends on the value.
-  SLICES: "4"
+      slices:
+        description: 'How many slices the index is cut into'
+        required: false
+        default: '4'
 
 concurrency:
-  group: sweep-${{ github.event.pull_request.number || github.ref }}
+  group: sweep-${{ github.event.pull_request.number || github.ref }}-${{ inputs.xlings_sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   plan:
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    timeout-minutes: 10
     outputs:
-      files: ${{ steps.pick.outputs.files }}
-      slice: ${{ steps.pick.outputs.slice }}
-      count: ${{ steps.pick.outputs.count }}
+      matrix: ${{ steps.pick.outputs.matrix }}
     steps:
       - uses: actions/checkout@v4
       - id: pick
         shell: bash
         env:
           VALIDATION: ${{ inputs.base_sha != '' || github.event_name == 'pull_request' }}
+          SLICE: ${{ inputs.slice }}
+          SLICES: ${{ inputs.slices || '4' }}
         run: |
           set -euo pipefail
-          n="${SLICES}"
+          legs='[{"leg":"linux","os":"ubuntu-latest","platform":"linux"},
+                 {"leg":"linux-aarch64","os":"ubuntu-24.04-arm","platform":"linux"},
+                 {"leg":"macosx","os":"macos-latest","platform":"macosx"},
+                 {"leg":"windows","os":"windows-latest","platform":"windows"}]'
           if [ "$VALIDATION" = true ]; then
+            slices='["validation"]'
+          elif [ "$SLICE" = all ]; then
+            slices=$(python3 -c "import json,sys; print(json.dumps([str(i) for i in range(int(sys.argv[1]))]))" "$SLICES")
+          elif [ -n "$SLICE" ]; then
+            slices="[\"$SLICE\"]"
+          else
+            slices="[\"$(( $(date -u +%V) % SLICES ))\"]"
+          fi
+          matrix=$(python3 -c "import json,sys; print(json.dumps({'include': [dict(l, slice=s, slices=sys.argv[3]) for l in json.loads(sys.argv[1]) for s in json.loads(sys.argv[2])]}))" "$legs" "$slices" "$SLICES")
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "$matrix"
+
+  sweep:
+    needs: plan
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 340
+    name: sweep ${{ matrix.leg }} (slice ${{ matrix.slice }}/${{ matrix.slices }})
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 2 }
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - uses: ./.github/actions/setup-xlings
+        with:
+          xlings_sha: ${{ inputs.xlings_sha }}
+      - name: The slice's recipes
+        id: files
+        shell: bash
+        env:
+          SLICE: ${{ matrix.slice }}
+          SLICES: ${{ matrix.slices }}
+        run: |
+          set -euo pipefail
+          if [ "$SLICE" = validation ]; then
             echo 'files=pkgs/e/eden.lua pkgs/e/eden-android.lua' >> "$GITHUB_OUTPUT"
-            echo 'slice=validation' >> "$GITHUB_OUTPUT"
-            echo 'count=2' >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          if [ -n "${{ inputs.slice }}" ]; then
-            s="${{ inputs.slice }}"
-          else
-            s=$(( $(date -u +%V) % n ))
-          fi
-
           # Sorted so the partition is stable: the same recipe lands in the
           # same slice until the file list itself changes.
           mapfile -t all < <(git ls-files 'pkgs/*/*.lua' | sort)
           sel=()
           for i in "${!all[@]}"; do
-            [ $(( i % n )) -eq "$s" ] && sel+=("${all[$i]}")
+            [ $(( i % SLICES )) -eq "$SLICE" ] && sel+=("${all[$i]}")
           done
-
-          echo "slice $s of $n — ${#sel[@]} of ${#all[@]} recipes"
-          printf '  %s\n' "${sel[@]}"
-          echo "files=${sel[*]}"    >> "$GITHUB_OUTPUT"
-          echo "slice=$s"           >> "$GITHUB_OUTPUT"
-          echo "count=${#sel[@]}"   >> "$GITHUB_OUTPUT"
-
-  linux:
-    needs: plan
-    runs-on: ubuntu-latest
-    timeout-minutes: 180
-    name: sweep linux (slice ${{ needs.plan.outputs.slice }}, ${{ needs.plan.outputs.count }} recipes)
-    steps:
-      - uses: actions/checkout@v4
-        with: { fetch-depth: 2 }
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.12' }
-      - name: The client under test, an xlings commit's CI build
-        if: inputs.xlings_sha != ''
-        uses: ./.github/actions/setup-xlings
-        with:
-          xlings_sha: ${{ inputs.xlings_sha }}
-      - name: Install xlings
-        if: inputs.xlings_sha == ''
-        run: |
-          export XLINGS_NON_INTERACTIVE=1
-          export XLINGS_VERSION=v2026.11.23.1
-          curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash
-          echo "XLINGS_HOME=$HOME/.xlings" >> "$GITHUB_ENV"
-          echo "$HOME/.xlings/bin"               >> "$GITHUB_PATH"
-          echo "$HOME/.xlings/subos/current/bin" >> "$GITHUB_PATH"
-      - name: Refresh package index
-        run: xlings update
+          echo "slice $SLICE of $SLICES -- ${#sel[@]} of ${#all[@]} recipes"
+          echo "files=${sel[*]}" >> "$GITHUB_OUTPUT"
       - name: ELF + Lua tooling for the closure check
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends binutils patchelf lua5.4
-      - name: Install/uninstall sweep
+      - name: Install/uninstall sweep (POSIX)
+        if: runner.os != 'Windows'
+        shell: bash
+        env:
+          FILES: ${{ steps.files.outputs.files }}
+          PLATFORM: ${{ matrix.platform }}
         run: |
           chmod +x .github/scripts/posix-test.sh .github/scripts/dep-closure-check.sh
-          .github/scripts/posix-test.sh "${{ needs.plan.outputs.files }}" "${{ github.workspace }}" linux
-
-  windows:
-    needs: plan
-    runs-on: windows-latest
-    timeout-minutes: 180
-    name: sweep windows (slice ${{ needs.plan.outputs.slice }})
-    steps:
-      - uses: actions/checkout@v4
-        with: { fetch-depth: 2 }
-      - uses: actions/setup-python@v5
-        with: { python-version: '3.12' }
-      - name: The client under test, an xlings commit's CI build
-        if: inputs.xlings_sha != ''
-        uses: ./.github/actions/setup-xlings
-        with:
-          xlings_sha: ${{ inputs.xlings_sha }}
-      - name: Install xlings
-        if: inputs.xlings_sha == ''
+          .github/scripts/posix-test.sh "$FILES" "$GITHUB_WORKSPACE" "$PLATFORM"
+      - name: Install/uninstall sweep (Windows)
+        if: runner.os == 'Windows'
         shell: pwsh
-        run: |
-          $env:XLINGS_NON_INTERACTIVE = "1"
-          $env:XLINGS_VERSION = "v2026.11.23.1"
-          iex (Invoke-WebRequest -Uri "https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.ps1" -UseBasicParsing).Content
-          $h = "$env:USERPROFILE\.xlings"
-          Add-Content $env:GITHUB_PATH "$h\bin"
-          Add-Content $env:GITHUB_PATH "$h\subos\current\bin"
-          Add-Content $env:GITHUB_ENV  "XLINGS_HOME=$h"
-      - name: Refresh package index
-        run: xlings update
-      - name: Install/uninstall sweep
-        shell: pwsh
+        env:
+          FILES: ${{ steps.files.outputs.files }}
         run: |
           pwsh -NoProfile -File .github/scripts/windows-test.ps1 `
-            -ChangedFiles "${{ needs.plan.outputs.files }}" `
+            -ChangedFiles $env:FILES `
             -WorkspaceRoot "${{ github.workspace }}"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      # What the client recorded while installing the slice: the list P4 and
+      # P11 read (rule P, hook-call-failed, closure findings), per recipe.
+      - name: The client's findings
+        if: always()
+        shell: bash
+        run: |
+          f="${XLINGS_HOME:-$HOME/.xlings}/logs/findings.ndjson"
+          mkdir -p sweep-findings
+          if [ -f "$f" ]; then
+            cp "$f" sweep-findings/findings.ndjson
+            python3 - "$f" <<'PY' | tee -a "$GITHUB_STEP_SUMMARY"
+          import collections, json, sys
+          counts = collections.Counter()
+          for line in open(sys.argv[1], encoding="utf-8"):
+              try:
+                  counts[json.loads(line).get("code", "?")] += 1
+              except ValueError:
+                  counts["(unreadable line)"] += 1
+          print("| finding | count |\n|---|---:|")
+          for code, n in counts.most_common():
+              print(f"| `{code}` | {n} |")
+          PY
+          else
+            echo "no findings recorded" | tee -a "$GITHUB_STEP_SUMMARY"
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sweep-findings-${{ matrix.leg }}-${{ matrix.slice }}
+          path: sweep-findings/
+          if-no-files-found: ignore

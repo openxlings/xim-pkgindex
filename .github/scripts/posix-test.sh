@@ -181,6 +181,7 @@ fi
 failures=()
 tested=0
 skipped=0
+unsupported=0
 
 # Deferred uninstalls, retried to a fixed point after the main loop.
 #
@@ -453,10 +454,18 @@ for rel_file in "${files[@]}"; do
     # dialog -- otherwise holds the runner to GitHub's 6-hour ceiling, and no
     # log is served for an in-progress job, so there is nothing to look at
     # while it happens. 124 is timeout(1)'s own code for "killed on time".
-    run_bounded 1200 "$XLINGS_CMD" install "$pkg_spec" -y; rc=$?
+    install_log="$(mktemp)"
+    run_bounded 1200 "$XLINGS_CMD" install "$pkg_spec" -y 2>&1 | tee "$install_log"; rc=${PIPESTATUS[0]}
     if [[ $rc -eq 124 ]]; then
         log_fail "install TIMED OUT after 1200s (a hook is blocking)"
         failures+=("$rel_file (install-timeout)"); continue
+    fi
+    # Off x86_64, an entry that does not list this machine is refused before
+    # the download: not this recipe's failure here -- the index's coverage
+    # table tracks it. On x86_64, the first tier, it is a failure.
+    if [[ $rc -ne 0 && "$(uname -m)" != "x86_64" ]] && grep -q 'E_UNSUPPORTED_TARGET' "$install_log"; then
+        info "unsupported here ($(uname -m)): $(grep -m1 'E_UNSUPPORTED_TARGET' "$install_log")"
+        unsupported=$((unsupported+1)); tested=$((tested-1)); continue
     fi
     if [[ $rc -ne 0 ]]; then
         log_fail "install failed"; failures+=("$rel_file (install)"); continue
@@ -925,6 +934,7 @@ cyan " ${HOST_OS} test summary"
 echo "=================================="
 echo "  tested:   $tested"
 echo "  skipped:  $skipped"
+echo "  unsupported on $(uname -m): $unsupported"
 echo "  failures: ${#failures[@]}"
 if [[ "${#failures[@]}" -gt 0 ]]; then
     for f in "${failures[@]}"; do red "    - $f"; done
