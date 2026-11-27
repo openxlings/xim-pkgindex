@@ -23,13 +23,19 @@ package = {
             resources = {
                 GLOBAL = {
                     url = {
-                        linux = "https://github.com/xlings-res/libllvm/releases/download/${version}/libllvm-${version}-linux-x86_64.tar.gz",
+                        linux = {
+                            aarch64 = "https://github.com/xlings-res/libllvm/releases/download/${version}/libllvm-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://github.com/xlings-res/libllvm/releases/download/${version}/libllvm-${version}-linux-x86_64.tar.gz",
+                        },
                     },
                     required = true,
                 },
                 CN = {
                     url = {
-                        linux = "https://gitcode.com/xlings-res/libllvm/releases/download/${version}/libllvm-${version}-linux-x86_64.tar.gz",
+                        linux = {
+                            aarch64 = "https://gitcode.com/xlings-res/libllvm/releases/download/${version}/libllvm-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://gitcode.com/xlings-res/libllvm/releases/download/${version}/libllvm-${version}-linux-x86_64.tar.gz",
+                        },
                     },
                     required = true,
                 },

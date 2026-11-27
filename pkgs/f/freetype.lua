@@ -22,13 +22,19 @@ package = {
             resources = {
                 GLOBAL = {
                     url = {
-                        linux = "https://github.com/xlings-res/freetype/releases/download/${version}/freetype-${version}-linux-x86_64.tar.gz",
+                        linux = {
+                            aarch64 = "https://github.com/xlings-res/freetype/releases/download/${version}/freetype-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://github.com/xlings-res/freetype/releases/download/${version}/freetype-${version}-linux-x86_64.tar.gz",
+                        },
                     },
                     required = true,
                 },
                 CN = {
                     url = {
-                        linux = "https://gitcode.com/xlings-res/freetype/releases/download/${version}/freetype-${version}-linux-x86_64.tar.gz",
+                        linux = {
+                            aarch64 = "https://gitcode.com/xlings-res/freetype/releases/download/${version}/freetype-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://gitcode.com/xlings-res/freetype/releases/download/${version}/freetype-${version}-linux-x86_64.tar.gz",
+                        },
                     },
                     required = true,
                 },
