@@ -10,7 +10,6 @@ import pytest
 
 from tests.lib.assertions import (
     assert_config_registers_package_name,
-    assert_install_succeeds,
     assert_no_bashrc_modification,
     assert_no_direct_path_modification,
     assert_no_direct_pkg_manager,
@@ -21,7 +20,6 @@ from tests.lib.assertions import (
     assert_valid_spec,
     assert_valid_type,
     assert_valid_xvm_node_kinds,
-    assert_xim_add_succeeds,
     assert_xvm_registered,
 )
 from tests.lib.platform_utils import under_test, xlings_home
@@ -55,6 +53,15 @@ def _lua(script, *args):
         [lua, "-", PKG_FILE, *args], input=script, text=True,
         capture_output=True, check=True, cwd=ROOT,
     ).stdout
+
+
+def _xlings(*args):
+    executable = Path(xlings_home()) / "bin" / ("xlings.exe" if os.name == "nt" else "xlings")
+    result = subprocess.run(
+        [str(executable), *args, "--agent"], env=dict(os.environ),
+        capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=180,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
 
 
 class TestStatic:
@@ -190,13 +197,13 @@ class TestIsolation:
 class TestIndex:
     @pytest.mark.index
     def test_registration(self):
-        assert_xim_add_succeeds(PKG_FILE)
+        _xlings("config", "--add-xpkg", str(ROOT / PKG_FILE))
 
 
 class TestLifecycle:
     @pytest.mark.lifecycle
     def test_install(self):
-        assert_install_succeeds(under_test(PKG))
+        _xlings("install", under_test(PKG), "-y")
 
 
 @pytest.fixture
