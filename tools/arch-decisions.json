@@ -14,5 +14,9 @@
   "pkgs/m/musl.lua": {
     "decision": "x86_64",
     "why": "its lib/libc.so is the x86_64 musl loader the package exports, with x86_64 start files"
+  },
+  "pkgs/x/x86_64-hurd-sysroot.lua": {
+    "decision": "sweep",
+    "why": "a sysroot for x86_64-gnu (Hurd) targets: its x86_64 programs are the target's (the reader cannot tell Hurd's loader from Linux's); no program registered, like the other systems' sysroots"
   }
 }

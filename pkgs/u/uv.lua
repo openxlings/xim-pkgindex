@@ -24,7 +24,10 @@ package = {
             resources = {
                 GLOBAL = {
                     url = {
-                        linux = "https://github.com/astral-sh/uv/releases/download/${version}/uv-x86_64-unknown-linux-musl.tar.gz",
+                        linux = {
+                            x86_64 = "https://github.com/astral-sh/uv/releases/download/${version}/uv-x86_64-unknown-linux-musl.tar.gz",
+                            aarch64 = "https://github.com/astral-sh/uv/releases/download/${version}/uv-aarch64-unknown-linux-musl.tar.gz",
+                        },
                         macosx = "https://github.com/astral-sh/uv/releases/download/${version}/uv-aarch64-apple-darwin.tar.gz",
                         windows = "https://github.com/astral-sh/uv/releases/download/${version}/uv-x86_64-pc-windows-msvc.zip",
                     },
@@ -32,7 +35,10 @@ package = {
                 },
                 CN = {
                     url = {
-                        linux = "https://mirrors.ustc.edu.cn/github-release/astral-sh/uv/${version}/uv-x86_64-unknown-linux-musl.tar.gz",
+                        linux = {
+                            x86_64 = "https://mirrors.ustc.edu.cn/github-release/astral-sh/uv/${version}/uv-x86_64-unknown-linux-musl.tar.gz",
+                            aarch64 = "https://mirrors.ustc.edu.cn/github-release/astral-sh/uv/${version}/uv-aarch64-unknown-linux-musl.tar.gz",
+                        },
                         macosx = "https://mirrors.ustc.edu.cn/github-release/astral-sh/uv/${version}/uv-aarch64-apple-darwin.tar.gz",
                         windows = "https://mirrors.ustc.edu.cn/github-release/astral-sh/uv/${version}/uv-x86_64-pc-windows-msvc.zip",
                     },
@@ -63,27 +69,65 @@ package = {
 
             ["latest"] = { ref = "0.13.9" },
             ["0.12.7"] = {
-                url = "https://github.com/astral-sh/uv/releases/download/0.12.7/uv-x86_64-unknown-linux-musl.tar.gz",
-                sha256 = "3d64d44ed67da7908dc7f5c4d64ebb44bad326fa17f8a0a52fc9a7793017bbe1",
+                x86_64 = {
+                    url = "https://github.com/astral-sh/uv/releases/download/0.12.7/uv-x86_64-unknown-linux-musl.tar.gz",
+                    sha256 = "3d64d44ed67da7908dc7f5c4d64ebb44bad326fa17f8a0a52fc9a7793017bbe1",
+                },
+                aarch64 = {
+                    url = "https://github.com/astral-sh/uv/releases/download/0.12.7/uv-aarch64-unknown-linux-musl.tar.gz",
+                    sha256 = "6dcf60e3c085de88ace3671b949ca99f0652be561ff5627f0d21394140f041db",
+                },
+                revision = 1,
             },
             ["0.11.28"] = {
-                url = "https://github.com/astral-sh/uv/releases/download/0.11.28/uv-x86_64-unknown-linux-musl.tar.gz",
-                sha256 = "f02146b371c35c287d860f003ece7345c86e358a3fd70a9b63700cd141ee7fb4",
+                x86_64 = {
+                    url = "https://github.com/astral-sh/uv/releases/download/0.11.28/uv-x86_64-unknown-linux-musl.tar.gz",
+                    sha256 = "f02146b371c35c287d860f003ece7345c86e358a3fd70a9b63700cd141ee7fb4",
+                },
+                aarch64 = {
+                    url = "https://github.com/astral-sh/uv/releases/download/0.11.28/uv-aarch64-unknown-linux-musl.tar.gz",
+                    sha256 = "da10cdfa7d92212b7acb62021a0fd61bcf8580c58c3632ec915d10c3a1a7906b",
+                },
+                revision = 1,
             },
             ["0.11.8"] = {
-                url = "https://github.com/astral-sh/uv/releases/download/0.11.8/uv-x86_64-unknown-linux-musl.tar.gz",
-                sha256 = "de82507d12e31cfc86c1c776238f7c248e48e40d996dedc812d64fdd31c6ed12",
+                x86_64 = {
+                    url = "https://github.com/astral-sh/uv/releases/download/0.11.8/uv-x86_64-unknown-linux-musl.tar.gz",
+                    sha256 = "de82507d12e31cfc86c1c776238f7c248e48e40d996dedc812d64fdd31c6ed12",
+                },
+                aarch64 = {
+                    url = "https://github.com/astral-sh/uv/releases/download/0.11.8/uv-aarch64-unknown-linux-musl.tar.gz",
+                    sha256 = "29418befb64f926a2dba3473e8e69acd00b36fb845d85344ef11321a993ad8f5",
+                },
+                revision = 1,
             },
             ["0.11.7"] = {
-                url = "https://github.com/astral-sh/uv/releases/download/0.11.7/uv-x86_64-unknown-linux-musl.tar.gz",
-                sha256 = "64ddb5f1087649e3f75aa50d139aa4f36ddde728a5295a141e0fa9697bfb7b0f",
+                x86_64 = {
+                    url = "https://github.com/astral-sh/uv/releases/download/0.11.7/uv-x86_64-unknown-linux-musl.tar.gz",
+                    sha256 = "64ddb5f1087649e3f75aa50d139aa4f36ddde728a5295a141e0fa9697bfb7b0f",
+                },
+                aarch64 = {
+                    url = "https://github.com/astral-sh/uv/releases/download/0.11.7/uv-aarch64-unknown-linux-musl.tar.gz",
+                    sha256 = "46647dc16cbb7d6700f762fdd7a67d220abe18570914732bc310adc91308d272",
+                },
+                revision = 1,
             },
             ["0.13.9"] = {
-                url = {
-                    GLOBAL = "https://github.com/astral-sh/uv/releases/download/0.13.9/uv-x86_64-unknown-linux-musl.tar.gz",
-                    CN = "https://mirrors.ustc.edu.cn/github-release/astral-sh/uv/0.13.9/uv-x86_64-unknown-linux-musl.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/astral-sh/uv/releases/download/0.13.9/uv-x86_64-unknown-linux-musl.tar.gz",
+                        CN = "https://mirrors.ustc.edu.cn/github-release/astral-sh/uv/0.13.9/uv-x86_64-unknown-linux-musl.tar.gz",
+                    },
+                    sha256 = "58ccf5f1792b8a5a88d01bc910ea131a8b3db4a319a17ad5fad75e0845a3e271",
                 },
-                sha256 = "58ccf5f1792b8a5a88d01bc910ea131a8b3db4a319a17ad5fad75e0845a3e271",
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/astral-sh/uv/releases/download/0.13.9/uv-aarch64-unknown-linux-musl.tar.gz",
+                        CN = "https://mirrors.ustc.edu.cn/github-release/astral-sh/uv/0.13.9/uv-aarch64-unknown-linux-musl.tar.gz",
+                    },
+                    sha256 = "37fbb7c5bc66cf99c12aa881949d216181e201dec449772c4329e56487d61179",
+                },
+                revision = 1,
             },
         },
         -- macosx: the upstream ships separate x86_64 and aarch64 builds.

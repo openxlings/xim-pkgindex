@@ -128,10 +128,10 @@ package = {
             },
             ["latest"] = { ref = "3.1.2" },
             ["3.1.1"] = {
-                sha256 = "fe1da8861a5ee5845d4f6c84e499f6f9c6bf5b5a69c9b7b130930ee28355a6d5",
+                sha256 = { x86_64 = "fe1da8861a5ee5845d4f6c84e499f6f9c6bf5b5a69c9b7b130930ee28355a6d5" },
             },
             ["3.1.0"] = {
-                sha256 = "1baab457f3bf11032e82c6210bc5bec04f5b902962da17dab53cae10783170de",
+                sha256 = { x86_64 = "1baab457f3bf11032e82c6210bc5bec04f5b902962da17dab53cae10783170de" },
             },
             -- Last musl-static bundle (verified: `statically linked`, zero
             -- DT_NEEDED). Kept for Alpine / distroless form-H hosts; see the
@@ -141,11 +141,11 @@ package = {
             -- gap to leave open. Resolves through the `source` map above, so it
             -- gets the CN leg too.
             ["3.0.7"] = {
-                sha256 = "59371d344722fd7f2883d1d5ce347a3bac0493d3e80e85a8e438603eaee9b958",
+                sha256 = { x86_64 = "59371d344722fd7f2883d1d5ce347a3bac0493d3e80e85a8e438603eaee9b958" },
             },
             ["3.1.2"] = {
                 url = "https://github.com/xmake-io/xmake/releases/download/v3.1.2/xmake-bundle-v3.1.2.linux.x86_64",
-                sha256 = "ac216aa71f4954cc1129aabf1099571d618211c1ef8db8fba871377ec5fb47cd",
+                sha256 = { x86_64 = "ac216aa71f4954cc1129aabf1099571d618211c1ef8db8fba871377ec5fb47cd" },
             },
         },
         macosx = {

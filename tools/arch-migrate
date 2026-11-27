@@ -500,7 +500,8 @@ def plan_entries(files: list[str] | None = None, root: Path = ROOT) -> list[dict
             else:
                 group = "read"
             out.append({"file": file, "name": pkg.get("name"), "version": version, "group": group,
-                        "url": url, "via_source": not e.url, "sha256": e.sha256, "archs": archs})
+                        "url": url, "via_source": not e.url, "sha256": e.sha256, "archs": archs,
+                        "raw_url": e.mirrors or e.url})
     return out
 
 
@@ -819,7 +820,14 @@ def rewrite_entry(text: str, version: str, hashes: dict[str, str] | None = None,
         lines = []
         for arch in xa.order_archs(per_arch):
             r = per_arch[arch]
-            lines.append(f'{inner}{arch} = {{\n{inner}    url = "{r["url"]}",\n'
+            if isinstance(r["url"], dict):
+                # The entry's mirrors, each for this architecture.
+                url = "{\n" + "".join(f'{inner}        {region} = "{u}",\n'
+                                       for region, u in sorted(r["url"].items(), key=lambda kv: kv[0] != "GLOBAL")) \
+                    + f"{inner}    }}"
+            else:
+                url = f'"{r["url"]}"'
+            lines.append(f'{inner}{arch} = {{\n{inner}    url = {url},\n'
                          f'{inner}    sha256 = "{r["sha256"]}",\n{inner}}},')
         close = body.rstrip()
         assert close.endswith("}")
@@ -962,6 +970,14 @@ def plan_rewrite(ev: dict[str, Any], installs: dict[str, Any]) -> dict[str, Any]
     if d in ("x86_64", "aarch64"):
         return {"hashes": {d: h}}
     if d == "x86_64+aarch64":
+        raw = ev.get("raw_url")
+        if isinstance(raw, dict):
+            swap = _swap_between(ev["read"]["url"], ev["probe"]["url"])
+            if swap is None:
+                return None
+            return {"per_arch": {"x86_64": {"url": raw, "sha256": h},
+                                 "aarch64": {"url": {k: v.replace(*swap) for k, v in raw.items()},
+                                             "sha256": ev["probe"]["sha256"]}}}
         return {"per_arch": {"x86_64": {"url": ev["read"]["url"], "sha256": h},
                              "aarch64": {"url": ev["probe"]["url"], "sha256": ev["probe"]["sha256"]}}}
     if d.startswith("res:"):

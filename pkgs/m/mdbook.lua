@@ -20,7 +20,7 @@ package = {
 
     -- xim pkg info
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable", -- dev, stable, deprecated
     categories = {"book", "markdown"},
     keywords = {"book", "gitbook", "rustbook", "markdown"},
@@ -37,7 +37,10 @@ package = {
                 GLOBAL = {
                     url = {
                         windows = "https://github.com/rust-lang/mdBook/releases/download/v${version}/mdbook-v${version}-x86_64-pc-windows-msvc.zip",
-                        linux = "https://github.com/rust-lang/mdBook/releases/download/v${version}/mdbook-v${version}-x86_64-unknown-linux-musl.tar.gz",
+                        linux = {
+                            x86_64 = "https://github.com/rust-lang/mdBook/releases/download/v${version}/mdbook-v${version}-x86_64-unknown-linux-musl.tar.gz",
+                            aarch64 = "https://github.com/rust-lang/mdBook/releases/download/v${version}/mdbook-v${version}-aarch64-unknown-linux-musl.tar.gz",
+                        },
                         macosx = "https://github.com/rust-lang/mdBook/releases/download/v${version}/mdbook-v${version}-aarch64-apple-darwin.tar.gz",
                     },
                     required = true,
@@ -79,20 +82,44 @@ package = {
             -- both deps.
             ["latest"] = { ref = "0.5.4" },
             ["0.5.2"] = {
-                url = "https://github.com/rust-lang/mdBook/releases/download/v0.5.2/mdbook-v0.5.2-x86_64-unknown-linux-musl.tar.gz",
-                sha256 = nil
+                x86_64 = {
+                    url = "https://github.com/rust-lang/mdBook/releases/download/v0.5.2/mdbook-v0.5.2-x86_64-unknown-linux-musl.tar.gz",
+                    sha256 = "8e9d802bbecea34380aabfc65bec4fdba23c07453ef2c7e06fa34c282082e2c4",
+                },
+                aarch64 = {
+                    url = "https://github.com/rust-lang/mdBook/releases/download/v0.5.2/mdbook-v0.5.2-aarch64-unknown-linux-musl.tar.gz",
+                    sha256 = "fb229bfdc68dd6c93692e64c502a67a8d3d2fc35c37c61fc72768843e6476add",
+                },
             },
             ["0.4.43"] = {
-                url = "https://github.com/rust-lang/mdBook/releases/download/v0.4.43/mdbook-v0.4.43-x86_64-unknown-linux-musl.tar.gz",
-                sha256 = nil
+                x86_64 = {
+                    url = "https://github.com/rust-lang/mdBook/releases/download/v0.4.43/mdbook-v0.4.43-x86_64-unknown-linux-musl.tar.gz",
+                    sha256 = "3058914071a6f22dbd1b8ea734a96d8e86489743ae0bc8d6bbd9e923f191b038",
+                },
+                aarch64 = {
+                    url = "https://github.com/rust-lang/mdBook/releases/download/v0.4.43/mdbook-v0.4.43-aarch64-unknown-linux-musl.tar.gz",
+                    sha256 = "647d71951fc696adc8c499a4363bb1a21045a0c734818f077add8ec4477ad814",
+                },
             },
             ["0.4.40"] = {
-                url = "https://github.com/rust-lang/mdBook/releases/download/v0.4.40/mdbook-v0.4.40-x86_64-unknown-linux-musl.tar.gz",
-                sha256 = nil
+                x86_64 = {
+                    url = "https://github.com/rust-lang/mdBook/releases/download/v0.4.40/mdbook-v0.4.40-x86_64-unknown-linux-musl.tar.gz",
+                    sha256 = "f7520ad60d1a6fe81c667d0da876a9ddd736f874eb61c01b025eafdc83381227",
+                },
+                aarch64 = {
+                    url = "https://github.com/rust-lang/mdBook/releases/download/v0.4.40/mdbook-v0.4.40-aarch64-unknown-linux-musl.tar.gz",
+                    sha256 = "d5ebfd2e31755726f8c0988a423b1ab5d950bb894fbba170355bb7d1cb852586",
+                },
             },
             ["0.5.4"] = {
-                url = "https://github.com/rust-lang/mdBook/releases/download/v0.5.4/mdbook-v0.5.4-x86_64-unknown-linux-musl.tar.gz",
-                sha256 = { x86_64 = "5222beabd3e37dc5be0d18ff99b79058469354db5c220153a1b92db5ba12be89" },
+                x86_64 = {
+                    url = "https://github.com/rust-lang/mdBook/releases/download/v0.5.4/mdbook-v0.5.4-x86_64-unknown-linux-musl.tar.gz",
+                    sha256 = "5222beabd3e37dc5be0d18ff99b79058469354db5c220153a1b92db5ba12be89",
+                },
+                aarch64 = {
+                    url = "https://github.com/rust-lang/mdBook/releases/download/v0.5.4/mdbook-v0.5.4-aarch64-unknown-linux-musl.tar.gz",
+                    sha256 = "753e5c5c363ee8a56972344dcf91466f005a51db84a7aeffe427ae3ef83d6d44",
+                },
             },
         },
         macosx = {

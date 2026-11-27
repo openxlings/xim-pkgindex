@@ -28,7 +28,10 @@ package = {
             resources = {
                 GLOBAL = {
                     url = {
-                        linux = "https://github.com/SagerNet/sing-box/releases/download/v${version}/sing-box-${version}-linux-amd64.tar.gz",
+                        linux = {
+                            x86_64 = "https://github.com/SagerNet/sing-box/releases/download/v${version}/sing-box-${version}-linux-amd64.tar.gz",
+                            aarch64 = "https://github.com/SagerNet/sing-box/releases/download/v${version}/sing-box-${version}-linux-arm64.tar.gz",
+                        },
                         macosx = "https://github.com/SagerNet/sing-box/releases/download/v${version}/sing-box-${version}-darwin-arm64.tar.gz",
                         windows = "https://github.com/SagerNet/sing-box/releases/download/v${version}/sing-box-${version}-windows-amd64.zip",
                     },
@@ -43,16 +46,37 @@ package = {
 
             ["latest"] = { ref = "1.14.4" },
             ["1.13.20"] = {
-                url = "https://github.com/SagerNet/sing-box/releases/download/v1.13.20/sing-box-1.13.20-linux-amd64.tar.gz",
-                sha256 = "646bc01bf128c32a12eb50d8690e387bba7504da7b1d65c704bd53916e38595a",
+                x86_64 = {
+                    url = "https://github.com/SagerNet/sing-box/releases/download/v1.13.20/sing-box-1.13.20-linux-amd64.tar.gz",
+                    sha256 = "646bc01bf128c32a12eb50d8690e387bba7504da7b1d65c704bd53916e38595a",
+                },
+                aarch64 = {
+                    url = "https://github.com/SagerNet/sing-box/releases/download/v1.13.20/sing-box-1.13.20-linux-arm64.tar.gz",
+                    sha256 = "7f8187b1d1d30258cd4fa70892eaa232649f8f28b294078eeac719579e14cf42",
+                },
+                revision = 1,
             },
             ["1.13.11"] = {
-                url = "https://github.com/SagerNet/sing-box/releases/download/v1.13.11/sing-box-1.13.11-linux-amd64.tar.gz",
-                sha256 = "10ff037632165ca4f6472a0ec21393280ef5a33677e05bcde7fbcf6f9737637b",
+                x86_64 = {
+                    url = "https://github.com/SagerNet/sing-box/releases/download/v1.13.11/sing-box-1.13.11-linux-amd64.tar.gz",
+                    sha256 = "10ff037632165ca4f6472a0ec21393280ef5a33677e05bcde7fbcf6f9737637b",
+                },
+                aarch64 = {
+                    url = "https://github.com/SagerNet/sing-box/releases/download/v1.13.11/sing-box-1.13.11-linux-arm64.tar.gz",
+                    sha256 = "6e024ee9d938fde8e05c553cf29c10f02012dba1c4bdbca6aa548653b3ac88e4",
+                },
+                revision = 1,
             },
             ["1.14.4"] = {
-                url = "https://github.com/SagerNet/sing-box/releases/download/v1.14.4/sing-box-1.14.4-linux-amd64.tar.gz",
-                sha256 = "699a1b510aa4396b2176d32d1181920399ebf1e267835da6f3b598d0f7c24968",
+                x86_64 = {
+                    url = "https://github.com/SagerNet/sing-box/releases/download/v1.14.4/sing-box-1.14.4-linux-amd64.tar.gz",
+                    sha256 = "699a1b510aa4396b2176d32d1181920399ebf1e267835da6f3b598d0f7c24968",
+                },
+                aarch64 = {
+                    url = "https://github.com/SagerNet/sing-box/releases/download/v1.14.4/sing-box-1.14.4-linux-arm64.tar.gz",
+                    sha256 = "436441f76ee2f7fe21b5b2d426d3cb261a480455a704865789ad533e4273ec26",
+                },
+                revision = 1,
             },
         },
         macosx = {

@@ -25,7 +25,10 @@ package = {
             resources = {
                 GLOBAL = {
                     url = {
-                        linux = "https://github.com/chenhg5/cc-connect/releases/download/v${version}/cc-connect-v${version}-linux-amd64.tar.gz",
+                        linux = {
+                            x86_64 = "https://github.com/chenhg5/cc-connect/releases/download/v${version}/cc-connect-v${version}-linux-amd64.tar.gz",
+                            aarch64 = "https://github.com/chenhg5/cc-connect/releases/download/v${version}/cc-connect-v${version}-linux-arm64.tar.gz",
+                        },
                         macosx = "https://github.com/chenhg5/cc-connect/releases/download/v${version}/cc-connect-v${version}-darwin-arm64.tar.gz",
                         windows = "https://github.com/chenhg5/cc-connect/releases/download/v${version}/cc-connect-v${version}-windows-amd64.zip",
                     },
@@ -40,20 +43,48 @@ package = {
 
             ["latest"] = { ref = "1.5.3" },
             ["1.5.0"] = {
-                url = "https://github.com/chenhg5/cc-connect/releases/download/v1.5.0/cc-connect-v1.5.0-linux-amd64.tar.gz",
-                sha256 = "72859035a1ee011b710204fc508de711838f919eb2ae6f104f1ddb3e5cd8ca87",
+                x86_64 = {
+                    url = "https://github.com/chenhg5/cc-connect/releases/download/v1.5.0/cc-connect-v1.5.0-linux-amd64.tar.gz",
+                    sha256 = "72859035a1ee011b710204fc508de711838f919eb2ae6f104f1ddb3e5cd8ca87",
+                },
+                aarch64 = {
+                    url = "https://github.com/chenhg5/cc-connect/releases/download/v1.5.0/cc-connect-v1.5.0-linux-arm64.tar.gz",
+                    sha256 = "360916e64c81714b4b295905b7aa95a62d3b5bfba0fb306f29a4560224d07ca3",
+                },
+                revision = 1,
             },
             ["1.3.3-beta.1"] = {
-                url = "https://github.com/chenhg5/cc-connect/releases/download/v1.3.3-beta.1/cc-connect-v1.3.3-beta.1-linux-amd64.tar.gz",
-                sha256 = "8e54e56e9018258fa27f6509c7744313704ad26b093f467c7a458e46f41c07bf",
+                x86_64 = {
+                    url = "https://github.com/chenhg5/cc-connect/releases/download/v1.3.3-beta.1/cc-connect-v1.3.3-beta.1-linux-amd64.tar.gz",
+                    sha256 = "8e54e56e9018258fa27f6509c7744313704ad26b093f467c7a458e46f41c07bf",
+                },
+                aarch64 = {
+                    url = "https://github.com/chenhg5/cc-connect/releases/download/v1.3.3-beta.1/cc-connect-v1.3.3-beta.1-linux-arm64.tar.gz",
+                    sha256 = "74e6b7b5c2aed0cb1124daa0387ddd5ad2376b024e675edcba67a21b8a0c9c6c",
+                },
+                revision = 1,
             },
             ["1.3.2"] = {
-                url = "https://github.com/chenhg5/cc-connect/releases/download/v1.3.2/cc-connect-v1.3.2-linux-amd64.tar.gz",
-                sha256 = "4ed25a62166c1a3a7c41eb3320d9b90172c56749aec5b88d36380829e4c8a182",
+                x86_64 = {
+                    url = "https://github.com/chenhg5/cc-connect/releases/download/v1.3.2/cc-connect-v1.3.2-linux-amd64.tar.gz",
+                    sha256 = "4ed25a62166c1a3a7c41eb3320d9b90172c56749aec5b88d36380829e4c8a182",
+                },
+                aarch64 = {
+                    url = "https://github.com/chenhg5/cc-connect/releases/download/v1.3.2/cc-connect-v1.3.2-linux-arm64.tar.gz",
+                    sha256 = "90e491ee8ea8054b01c6152db72e286b0a6eb491db9babbdf570af2f8700c53e",
+                },
+                revision = 1,
             },
             ["1.5.3"] = {
-                url = "https://github.com/chenhg5/cc-connect/releases/download/v1.5.3/cc-connect-v1.5.3-linux-amd64.tar.gz",
-                sha256 = "bb52caa4d3c601cfa41eece75819623423ce02a8dd554779913040a943fff358",
+                x86_64 = {
+                    url = "https://github.com/chenhg5/cc-connect/releases/download/v1.5.3/cc-connect-v1.5.3-linux-amd64.tar.gz",
+                    sha256 = "bb52caa4d3c601cfa41eece75819623423ce02a8dd554779913040a943fff358",
+                },
+                aarch64 = {
+                    url = "https://github.com/chenhg5/cc-connect/releases/download/v1.5.3/cc-connect-v1.5.3-linux-arm64.tar.gz",
+                    sha256 = "b08104a83fd005abd00c3b5f745ef0b7690d5a61f2711b49b0a1703815ce9e18",
+                },
+                revision = 1,
             },
         },
         macosx = {

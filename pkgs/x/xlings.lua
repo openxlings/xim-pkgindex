@@ -999,83 +999,83 @@ package = {
             },
             ["0.4.39"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.39/xlings-0.4.39-linux-x86_64.tar.gz",
-                sha256 = "beac3c49dc561527e56f62564f9229510389e11379640819c352af17e3567f71",
+                sha256 = { x86_64 = "beac3c49dc561527e56f62564f9229510389e11379640819c352af17e3567f71" },
             },
             ["0.4.38"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.38/xlings-0.4.38-linux-x86_64.tar.gz",
-                sha256 = "55dfca43dcbbef31b20c1fb4aced545fb37ca8119ad816ff8bbbdc286c172129",
+                sha256 = { x86_64 = "55dfca43dcbbef31b20c1fb4aced545fb37ca8119ad816ff8bbbdc286c172129" },
             },
             ["0.4.37"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.37/xlings-0.4.37-linux-x86_64.tar.gz",
-                sha256 = "4b63644ce3b7d17e598b01ce45ce593bf41b0e2f12644d80e20975a6c6448137",
+                sha256 = { x86_64 = "4b63644ce3b7d17e598b01ce45ce593bf41b0e2f12644d80e20975a6c6448137" },
             },
             ["0.4.36"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.36/xlings-0.4.36-linux-x86_64.tar.gz",
-                sha256 = "a818bd7493e24fa83edb8a3f142d5b96a37acf6a34949dd944d61791c0db2513",
+                sha256 = { x86_64 = "a818bd7493e24fa83edb8a3f142d5b96a37acf6a34949dd944d61791c0db2513" },
             },
             ["0.4.35"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.35/xlings-0.4.35-linux-x86_64.tar.gz",
-                sha256 = "f5278472e25282c771b0bc08d00d6355e4b51b6fa7f54e61537dd9a8829a2a38",
+                sha256 = { x86_64 = "f5278472e25282c771b0bc08d00d6355e4b51b6fa7f54e61537dd9a8829a2a38" },
             },
             ["0.4.34"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.34/xlings-0.4.34-linux-x86_64.tar.gz",
-                sha256 = "1ac30caada0045a6d6d2cd100d7e06fce632e8419c46131cc6d1b0bbfe83a599",
+                sha256 = { x86_64 = "1ac30caada0045a6d6d2cd100d7e06fce632e8419c46131cc6d1b0bbfe83a599" },
             },
             ["0.4.33"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.33/xlings-0.4.33-linux-x86_64.tar.gz",
-                sha256 = "d53274818b2c0dcb5b9c5130aeec0402c7df8eb4fc332bc6e109d760db81434e",
+                sha256 = { x86_64 = "d53274818b2c0dcb5b9c5130aeec0402c7df8eb4fc332bc6e109d760db81434e" },
             },
             ["0.4.32"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.32/xlings-0.4.32-linux-x86_64.tar.gz",
-                sha256 = "c897c2c3e9c66e5f1cd48f8505f3211984446b2baec79d3b529c6a8490e39b30",
+                sha256 = { x86_64 = "c897c2c3e9c66e5f1cd48f8505f3211984446b2baec79d3b529c6a8490e39b30" },
             },
             ["0.4.31"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.31/xlings-0.4.31-linux-x86_64.tar.gz",
-                sha256 = "bec1f92e59d2732fdadad2960459d788034468c3885c588b51c3bb1e0c9aa769",
+                sha256 = { x86_64 = "bec1f92e59d2732fdadad2960459d788034468c3885c588b51c3bb1e0c9aa769" },
             },
             ["0.4.30"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.30/xlings-0.4.30-linux-x86_64.tar.gz",
-                sha256 = "3ba999d0940e203a938efa9d122010b83584a7ce1438053fd87b175452b6ea86",
+                sha256 = { x86_64 = "3ba999d0940e203a938efa9d122010b83584a7ce1438053fd87b175452b6ea86" },
             },
             ["0.4.29"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.29/xlings-0.4.29-linux-x86_64.tar.gz",
-                sha256 = "3a2b86bc2e4b94ee9e0826e8d5288f08e17e142feb57501931fb1fd725585b2e",
+                sha256 = { x86_64 = "3a2b86bc2e4b94ee9e0826e8d5288f08e17e142feb57501931fb1fd725585b2e" },
             },
             ["0.4.28"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.28/xlings-0.4.28-linux-x86_64.tar.gz",
-                sha256 = "5b5447d33c483e586f445c56e73288d300f58074a3505be955760d3bf717a985",
+                sha256 = { x86_64 = "5b5447d33c483e586f445c56e73288d300f58074a3505be955760d3bf717a985" },
             },
             ["0.4.26"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.26/xlings-0.4.26-linux-x86_64.tar.gz",
-                sha256 = "3de72252154104db605577ae1a8b5c2be2beb07158379c212188105f2fafe0c4",
+                sha256 = { x86_64 = "3de72252154104db605577ae1a8b5c2be2beb07158379c212188105f2fafe0c4" },
             },
             ["0.4.25"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.25/xlings-0.4.25-linux-x86_64.tar.gz",
-                sha256 = "2471326289be9ccca5a66d80ca827f9aa1d27f108c8b94b6952c859fa3e6b366",
+                sha256 = { x86_64 = "2471326289be9ccca5a66d80ca827f9aa1d27f108c8b94b6952c859fa3e6b366" },
             },
             ["0.4.24"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.24/xlings-0.4.24-linux-x86_64.tar.gz",
-                sha256 = "a68fa8b874c712b9a7f469329cea6574a0d7857f42bdac701f7dbe8fad56f669",
+                sha256 = { x86_64 = "a68fa8b874c712b9a7f469329cea6574a0d7857f42bdac701f7dbe8fad56f669" },
             },
             ["0.4.23"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.23/xlings-0.4.23-linux-x86_64.tar.gz",
-                sha256 = "c123afe8d2576d14bace1400c2403f0d1c9f2d25ff5fc14a2fa98dbe7efee59b",
+                sha256 = { x86_64 = "c123afe8d2576d14bace1400c2403f0d1c9f2d25ff5fc14a2fa98dbe7efee59b" },
             },
             ["0.4.22"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.22/xlings-0.4.22-linux-x86_64.tar.gz",
-                sha256 = "0f14275d57c15b042919d260a28d0c39eac66e593fd39858e8ff7450df3d1b20",
+                sha256 = { x86_64 = "0f14275d57c15b042919d260a28d0c39eac66e593fd39858e8ff7450df3d1b20" },
             },
             ["0.4.21"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.21/xlings-0.4.21-linux-x86_64.tar.gz",
-                sha256 = "f9ddd2b60c998dacdb1ddc6f7af09aa1675854971944dd26f25e307e3853f78f",
+                sha256 = { x86_64 = "f9ddd2b60c998dacdb1ddc6f7af09aa1675854971944dd26f25e307e3853f78f" },
             },
             ["0.4.20"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.20/xlings-0.4.20-linux-x86_64.tar.gz",
-                sha256 = "d7b250bc61019158ff5e1303572d82c2f8e20c36da44bb628cedbc61ebc80748",
+                sha256 = { x86_64 = "d7b250bc61019158ff5e1303572d82c2f8e20c36da44bb628cedbc61ebc80748" },
             },
             ["0.4.19"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.19/xlings-0.4.19-linux-x86_64.tar.gz",
-                sha256 = "fefca02c7aee4f05c4c30b97fca4a5e22b842eab8d8beb802ae1a40d0b442de2",
+                sha256 = { x86_64 = "fefca02c7aee4f05c4c30b97fca4a5e22b842eab8d8beb802ae1a40d0b442de2" },
             },
             ["0.4.17"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.17/xlings-0.4.17-linux-x86_64.tar.gz",
@@ -1083,47 +1083,47 @@ package = {
             },
             ["0.4.16"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.16/xlings-0.4.16-linux-x86_64.tar.gz",
-                sha256 = "2c3f898ba12cb1311bd57c614fd001b52c6f582818723a24d7999960a09c61d9",
+                sha256 = { x86_64 = "2c3f898ba12cb1311bd57c614fd001b52c6f582818723a24d7999960a09c61d9" },
             },
             ["0.4.15"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.15/xlings-0.4.15-linux-x86_64.tar.gz",
-                sha256 = "ee3cddb490e345f02551a9ae16adf47bf0424c13eadb9bea453d8e4dea4d4967",
+                sha256 = { x86_64 = "ee3cddb490e345f02551a9ae16adf47bf0424c13eadb9bea453d8e4dea4d4967" },
             },
             ["0.4.14"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.14/xlings-0.4.14-linux-x86_64.tar.gz",
-                sha256 = "4d5ba18fb5f8b32ec899c43c64719302445fe13eec952629f28cce9d8c400b71",
+                sha256 = { x86_64 = "4d5ba18fb5f8b32ec899c43c64719302445fe13eec952629f28cce9d8c400b71" },
             },
             ["0.4.13"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.13/xlings-0.4.13-linux-x86_64.tar.gz",
-                sha256 = "74be30e988c82b9f2f3c44a48df2ae736aec6ad9ee05558351c3e37ee73088ec",
+                sha256 = { x86_64 = "74be30e988c82b9f2f3c44a48df2ae736aec6ad9ee05558351c3e37ee73088ec" },
             },
             ["0.4.12"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.12/xlings-0.4.12-linux-x86_64.tar.gz",
-                sha256 = "efccd525bfc5259a6387c40b523a23c2803678a48ecd4285efa6badac15d6338",
+                sha256 = { x86_64 = "efccd525bfc5259a6387c40b523a23c2803678a48ecd4285efa6badac15d6338" },
             },
             ["0.4.10"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.10/xlings-0.4.10-linux-x86_64.tar.gz",
-                sha256 = "7308f5d65fb71773f1e3546be86c720e77ee21509b6a66dcee86ebf0239e8faf",
+                sha256 = { x86_64 = "7308f5d65fb71773f1e3546be86c720e77ee21509b6a66dcee86ebf0239e8faf" },
             },
             ["0.4.8"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.8/xlings-0.4.8-linux-x86_64.tar.gz",
-                sha256 = "983b1ce4aa5b0fc4707907a314b5c1944362f141c085e2129a0c0c54cd030451",
+                sha256 = { x86_64 = "983b1ce4aa5b0fc4707907a314b5c1944362f141c085e2129a0c0c54cd030451" },
             },
             ["0.4.7"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.7/xlings-0.4.7-linux-x86_64.tar.gz",
-                sha256 = "e56d7fb5a0a44424ebd48ac4d5cb1f13abe6b296967b910c7ad2ac6e87c79ffd",
+                sha256 = { x86_64 = "e56d7fb5a0a44424ebd48ac4d5cb1f13abe6b296967b910c7ad2ac6e87c79ffd" },
             },
             ["0.4.6"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.6/xlings-0.4.6-linux-x86_64.tar.gz",
-                sha256 = "b7a61b944f784f0865b1874085f1840432b5a5b0f2b994983ab654ddabde5f9c",
+                sha256 = { x86_64 = "b7a61b944f784f0865b1874085f1840432b5a5b0f2b994983ab654ddabde5f9c" },
             },
             ["0.4.5"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.5/xlings-0.4.5-linux-x86_64.tar.gz",
-                sha256 = "2c1e1605376f0e427adbc0b070250af8843a000e1cb575be81265a7d742d75af",
+                sha256 = { x86_64 = "2c1e1605376f0e427adbc0b070250af8843a000e1cb575be81265a7d742d75af" },
             },
             ["0.4.4"] = {
                 url = "https://github.com/openxlings/xlings/releases/download/v0.4.4/xlings-0.4.4-linux-x86_64.tar.gz",
-                sha256 = "bea197fe019dacc7062b54994aaa3d77ae92376eb60220d729d2f8e1de8361a6",
+                sha256 = { x86_64 = "bea197fe019dacc7062b54994aaa3d77ae92376eb60220d729d2f8e1de8361a6" },
             },
             ["0.3.1"] = {
                 url = "XLINGS_RES",

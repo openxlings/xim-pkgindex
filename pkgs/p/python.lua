@@ -91,7 +91,7 @@ package = {
             -- version with no consumer would be work with no reader.
             ["3.12.13"] = {
                 url = "https://gitcode.com/xlings-res/mirror-cn/releases/download/python/cpython-3.12.13%2B20260310-x86_64-unknown-linux-gnu-install_only.tar.gz",
-                sha256 = nil,
+                sha256 = { x86_64 = "eddc8bf40c7fca5032acd5de4b89e748e17b16cf61918320a0506c7e450a8df3" },
             }
         },
         -- macOS, ADDED BECAUSE A DEP CHECK REFUSED THE OMISSION, and the
