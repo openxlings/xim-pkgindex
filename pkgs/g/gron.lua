@@ -25,7 +25,7 @@ package = {
     keywords = {"gron", "json", "grep", "ungron"},
     programs = {"gron"},
     xvm_enable = true,
-    ci = { mirror = true },
+    -- ci = { mirror = true } omitted until #1515 adds .tgz support to tools/xpkg_ci.py
     extensions = {
         autoupdate = {
             source = "https://github.com/tomnomnom/gron/releases",

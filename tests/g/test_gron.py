@@ -91,7 +91,7 @@ function import() end
 assert(loadfile(arg[1]))()
 assert(package.spec == "2")
 assert(package.licenses[1] == "MIT")
-assert(package.ci.mirror and package.xvm_enable)
+assert(package.xvm_enable)
 assert(#package.programs == 1 and package.programs[1] == "gron")
 assert(#package.archs == 2 and package.archs[1] == "x86_64" and package.archs[2] == "aarch64")
 assert(#package.xpm.linux.deps.runtime == 1)
