@@ -289,6 +289,64 @@ def test_a_small_install_plan_is_one_unnamed_job(monkeypatch):
     assert 'shard' not in p['install_matrix']['include'][0]
 
 
+@pytest.mark.parametrize('declaration,runner', [
+    ('archs = {"x86_64"},', 'macos-15-intel'),
+    ('archs = {"amd64"},', 'macos-15-intel'),
+    ('archs = {"aarch64"},', 'macos-latest'),
+    ('archs = {"arm64"},', 'macos-latest'),
+    ('archs = {"x86_64", "aarch64"},', 'macos-latest'),
+    ('archs = {"x86_64", "arm64"},', 'macos-latest'),
+    ('archs = compute_archs(),', 'macos-latest'),
+    ('', 'macos-latest'),
+])
+def test_macos_runner_uses_only_proven_intel_only_metadata(declaration, runner):
+    source = 'package = {' + declaration + 'xpm = {macosx = {["1"] = {}}}}'
+    files = {'pkgs/p/portable.lua': source}
+    entries = planner.plan(list(files), {}, files, PROFILES)['install_matrix']['include']
+    assert len(entries) == 1
+    assert entries[0]['os'] == runner
+    assert entries[0]['platform'] == 'macosx'
+    assert 'shard' not in entries[0]
+
+
+@pytest.mark.parametrize('resource', [
+    'x86_64 = {url = "official"}',
+    'sha256 = {x86_64 = "digest"}',
+])
+def test_macos_runner_reads_latest_per_arch_resource_map(resource):
+    source = ('package = {archs = {"x86_64", "aarch64"}, xpm = {macosx = {'
+              '["latest"] = {ref = "2"}, ["1"] = {aarch64 = {}}, ["2"] = {'
+              + resource + '}}}}')
+    files = {'pkgs/p/portable.lua': source}
+    entry, = planner.plan(list(files), {}, files, PROFILES)['install_matrix']['include']
+    assert entry['os'] == 'macos-15-intel'
+
+
+def test_mixed_macos_targets_keep_native_shards_and_complete_overlays(monkeypatch):
+    monkeypatch.setattr(planner, 'INSTALL_SHARD_SIZE', 1)
+    files = {
+        'pkgs/i/intel.lua': 'package = {archs = {"x86_64"}, xpm = {macosx = {}}}',
+        'pkgs/a/arm.lua': 'package = {archs = {"aarch64"}, xpm = {macosx = {}}}',
+        'pkgs/d/dual.lua': 'package = {archs = {"x86_64", "aarch64"}, xpm = {macosx = {}}}',
+        'pkgs/u/unknown.lua': 'package = {xpm = {macosx = {}}}',
+    }
+    entries = planner.plan(list(files), {}, files, PROFILES)['install_matrix']['include']
+    assert len(entries) == 4
+    intel = [entry for entry in entries if entry['os'] == 'macos-15-intel']
+    assert [entry['files'] for entry in intel] == ['pkgs/i/intel.lua']
+    arm = [entry for entry in entries if entry['os'] == 'macos-latest']
+    assert sorted(entry['files'] for entry in arm) == sorted(set(files) - {'pkgs/i/intel.lua'})
+    assert len({entry['shard'] for entry in entries}) == len(entries)
+    assert all(sorted(entry['overlay'].split()) == sorted(files) for entry in entries)
+    assert sorted(p for entry in entries for p in entry['edited'].split()) == sorted(files)
+
+
+def test_dynamic_macos_metadata_retains_conservative_default():
+    files = {'pkgs/d/dynamic.lua': 'package = make_package()'}
+    entries = planner.plan(list(files), {}, files, PROFILES)['install_matrix']['include']
+    assert {entry['platform']: entry['os'] for entry in entries} == planner.PLATFORMS
+
+
 def versioned(entries, hook='return true'):
     """A provider whose linux table holds `entries` (version -> body) and an install hook."""
     rows = ''.join(f'            ["{v}"] = {{ {body} }},\n' for v, body in entries.items())
