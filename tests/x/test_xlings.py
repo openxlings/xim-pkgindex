@@ -73,7 +73,7 @@ class TestStatic:
             }
             assert set(hashes) == expected_arches[platform]
             for version in stable_versions:
-                assert re.search(rf'\["{re.escape(version)}"\]\s*=\s*"XLINGS_RES"', block)
+                assert re.search(rf'\["{re.escape(version)}"\]\s*=\s*(?:"XLINGS_RES"|\{{\s*url\s*=\s*"XLINGS_RES")', block)
 
 
 class TestIndex:

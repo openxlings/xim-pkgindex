@@ -55,7 +55,7 @@ class TestStatic:
             r'GLOBAL\s*=\s*"https://github\.com/xlings-res/ncurses/[^"]+"', code)
         assert re.search(
             r'CN\s*=\s*"https://gitcode\.com/xlings-res/ncurses/[^"]+"', code)
-        assert len(re.findall(r'sha256 = "[0-9a-f]{64}"', code)) == 1
+        assert len(re.findall(r'sha256 = (?:"[0-9a-f]{64}"|\{ x86_64 = "[0-9a-f]{64}" \})', code)) == 1
 
     @pytest.mark.static
     def test_declares_glibc_dep(self, meta):

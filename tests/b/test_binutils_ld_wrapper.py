@@ -205,7 +205,7 @@ def test_a_new_version_key_exists_so_installed_homes_re_run_config():
     """
     text = _recipe_text()
     assert '["2.42.1"] = {' in text
-    assert '["2.42"] = "XLINGS_RES"' in text, (
+    assert re.search(r'\["2\.42"\] = (?:"XLINGS_RES"|\{\s*url = "XLINGS_RES")', text), (
         "the previous key must stay resolvable: homes pinned to it, and "
         "removing a version key is not an upgrade path"
     )
