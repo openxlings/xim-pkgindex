@@ -412,22 +412,24 @@ def candidate_urls(url: str) -> list[str]:
     return out
 
 
-def exists(url: str) -> bool:
-    for method in ("HEAD", "GET"):
-        req = urllib.request.Request(url, method=method, headers={"User-Agent": USER_AGENT,
-                                                                   "Range": "bytes=0-0"})
-        try:
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                return resp.status in (200, 206)
-        except urllib.error.HTTPError as exc:
-            if exc.code in (404, 410):
-                return False
-            if method == "GET":
-                return False
-        except (urllib.error.URLError, TimeoutError, OSError):
-            if method == "GET":
-                return False
-    return False
+def exists(url: str) -> bool | None:
+    """Whether upstream serves `url`: True, False (404/410), or None when
+    the network did not answer (a failed probe is not an absence)."""
+    for attempt in range(4):
+        for method in ("HEAD", "GET"):
+            req = urllib.request.Request(url, method=method, headers={"User-Agent": USER_AGENT,
+                                                                       "Range": "bytes=0-0"})
+            try:
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    if resp.status in (200, 206):
+                        return True
+            except urllib.error.HTTPError as exc:
+                if exc.code in (404, 410):
+                    return False
+            except (urllib.error.URLError, TimeoutError, OSError):
+                pass
+        time.sleep(2 + 3 * attempt)
+    return None
 
 
 # ── XLINGS_RES ─────────────────────────────────────────────────────────────
@@ -502,7 +504,11 @@ def cmd_plan(args) -> int:
 
 # ── evidence ───────────────────────────────────────────────────────────────
 
-def evidence_for(entry: dict[str, Any]) -> dict[str, Any]:
+def evidence_for(entry: dict[str, Any], prior: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Steps 1 and 3 for one plan row; `prior`: an earlier read of the same
+    URL and bytes, reused (only upstream is asked again)."""
+    if prior and prior.get("read", {}).get("url") == entry["url"] and "error" not in prior["read"]:
+        _READ_CACHE.setdefault(entry["url"], prior["read"])
     ev = dict(entry)
     if entry["group"] == "mechanical":
         ev["decision"] = "x86_64"
@@ -549,8 +555,13 @@ def evidence_for(entry: dict[str, Any]) -> dict[str, Any]:
             ev["decision"] = machine
             ev["why"] = f"its Linux programs are {machine} only"
             if machine == "x86_64":
+                unknown = []
                 for cand in candidate_urls(url):
-                    if exists(cand):
+                    found = exists(cand)
+                    if found is None:
+                        unknown.append(cand)
+                        continue
+                    if found:
                         r2 = read_artifact(cand, Path(tmp))
                         ev["probe"] = r2
                         if "error" in r2:
@@ -563,7 +574,11 @@ def evidence_for(entry: dict[str, Any]) -> dict[str, Any]:
                             ev["why"] += f"; {Path(cand).name} exists but reads {r2.get('verdict')}"
                         break
                 else:
-                    ev["why"] += "; no aarch64 artifact upstream (" + str(len(candidate_urls(url))) + " names tried)"
+                    if unknown:
+                        ev["decision"] = "unresolved"
+                        ev["why"] += "; upstream did not answer for " + ", ".join(Path(u).name for u in unknown)
+                    else:
+                        ev["why"] += "; no aarch64 artifact upstream (" + str(len(candidate_urls(url))) + " names tried)"
         else:
             ev["decision"] = "sweep"
             ev["why"] = v.split(":", 1)[1] if ":" in v else v
@@ -587,13 +602,20 @@ def cmd_evidence(args) -> int:
         for e in json.loads(out.read_text()):
             if e.get("decision") != "unresolved" or args.keep_unresolved:
                 done[f"{e['file']}@{e['version']}"] = e
+    prior: dict[str, Any] = {}
+    if args.reprobe:
+        # Entries step 1 decided as x86_64 only: ask upstream again.
+        for key, e in list(done.items()):
+            if e.get("decision") == "x86_64" and "names tried" in e.get("why", "") \
+                    and not e["why"].endswith("(0 names tried)"):
+                prior[key] = done.pop(key)
     todo = [p for p in plan if f"{p['file']}@{p['version']}" not in done]
     print(f"{len(todo)} entries to read ({len(done)} already in {out})", flush=True)
 
     def save():
         out.write_text(json.dumps(sorted(done.values(), key=lambda e: (e["file"], e["version"])), indent=1) + "\n")
     with cf.ThreadPoolExecutor(max_workers=args.jobs) as pool:
-        futures = {pool.submit(evidence_for, p): p for p in todo}
+        futures = {pool.submit(evidence_for, p, prior.get(f"{p['file']}@{p['version']}")): p for p in todo}
         for fut in cf.as_completed(futures):
             p = futures[fut]
             try:
@@ -1053,6 +1075,7 @@ def main() -> int:
     p.add_argument("--groups", nargs="*")
     p.add_argument("--jobs", type=int, default=2)
     p.add_argument("--keep-unresolved", action="store_true", help="do not retry the unresolved rows of --out")
+    p.add_argument("--reprobe", action="store_true", help="ask upstream again for the x86_64-only rows of --out")
     p.add_argument("--shard", help="i/n: the i-th of n parts of the plan's URLs (0-based), for CI")
     p.set_defaults(func=cmd_evidence)
     p = sub.add_parser("apply")
