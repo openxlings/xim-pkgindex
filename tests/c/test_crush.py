@@ -10,7 +10,6 @@ import pytest
 
 from tests.lib.assertions import (
     assert_config_registers_package_name,
-    assert_install_succeeds,
     assert_no_bashrc_modification,
     assert_no_direct_path_modification,
     assert_no_direct_pkg_manager,
@@ -21,7 +20,6 @@ from tests.lib.assertions import (
     assert_valid_spec,
     assert_valid_type,
     assert_valid_xvm_node_kinds,
-    assert_xim_add_succeeds,
     assert_xvm_registered,
 )
 from tests.lib.platform_utils import under_test, xlings_home
@@ -153,7 +151,11 @@ assert(not pcall(install), "missing executable and license were accepted")
 class TestIndex:
     @pytest.mark.index
     def test_xim_add(self):
-        assert_xim_add_succeeds(PKG_FILE)
+        subprocess.run(
+            ["xlings", "config", "--add-xpkg", str(REPO / PKG_FILE), "--agent"],
+            check=True, capture_output=True, text=True, encoding="utf-8",
+            errors="replace", timeout=45,
+        )
 
 
 class TestIsolation:
@@ -174,7 +176,12 @@ class TestIsolation:
 class TestLifecycle:
     @pytest.mark.lifecycle
     def test_install(self):
-        assert_install_succeeds(under_test(PKG))
+        # Use the native CLI: a bare bash on Windows may be WSL, not Git Bash.
+        subprocess.run(
+            ["xlings", "install", under_test(PKG), "--yes", "--agent"],
+            check=True, capture_output=True, text=True, encoding="utf-8",
+            errors="replace", timeout=180,
+        )
 
 
 class TestVerify:
