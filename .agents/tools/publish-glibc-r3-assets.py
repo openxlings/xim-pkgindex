@@ -33,8 +33,7 @@ def source(run_id):
     if sha != ledger['source_commit']:
         raise ValueError('source commit differs from the reviewed ledger')
     reuse.validate_source_history(sha, repository)
-    subprocess.run(['git', 'diff', '--exit-code', sha, 'HEAD', '--',
-                    '.agents/tools/graphics/build-glibc.sh', '.agents/tools/graphics/patches'], check=True)
+    reuse.require_unchanged_builders(sha, [], glibc=True)
     jobs = json.loads(upload.gh('api', f'repos/{repository}/actions/runs/{run_id}/jobs'))['jobs']
     for name, job_id in ledger['native_jobs'].items():
         job = next(j for j in jobs if j['name'] == name)

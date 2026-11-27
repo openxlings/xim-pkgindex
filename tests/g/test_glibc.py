@@ -152,7 +152,7 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent.parent
 RELOCATE_HARNESS = REPO / "tests" / "lua" / "glibc_relocate_harness.lua"
-BUILD_SCRIPT = REPO / ".agents" / "tools" / "graphics" / "build-glibc.sh"
+BUILD_SCRIPT = REPO / "tools" / "res" / "graphics" / "build-glibc.sh"
 
 RESERVED = b"/nonexistent/xlings-use-rpath-not-default-search"
 PADDING_TAG = b"padding-to-255-bytes-for-install-time-relocation"

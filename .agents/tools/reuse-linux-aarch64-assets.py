@@ -9,8 +9,36 @@ import re
 import subprocess
 
 UNCHANGED_BUILDERS = ['.agents/tools/build-linux-aarch64-deps.sh', '.agents/tools/build-llvm-subpkg.sh']
-BUILDERS = ['.agents/tools/build-linux-aarch64-deps.sh', '.agents/tools/build-llvm-subpkg.sh',
-            '.agents/tools/graphics/build-glibc.sh', '.agents/tools/graphics/patches']
+# glibc's builder moved from .agents/tools/graphics to tools/res/graphics when
+# res-build took it over; a commit before the move keeps it at the old path.
+GLIBC_BUILDER_ROOTS = ('tools/res/graphics', '.agents/tools/graphics')
+
+
+def _blobs(commit, *paths):
+    out = subprocess.run(['git', 'ls-tree', '-r', commit, '--', *paths],
+                         capture_output=True, text=True, check=True).stdout
+    return {line.split('\t', 1)[1]: line.split()[2] for line in out.splitlines()}
+
+
+def glibc_builder(commit):
+    """build-glibc.sh and the glibc patches it applies, by name, wherever the
+    commit keeps them."""
+    for root in GLIBC_BUILDER_ROOTS:
+        found = _blobs(commit, f'{root}/build-glibc.sh', f'{root}/patches')
+        named = {path[len(root) + 1:]: blob for path, blob in found.items()
+                 if path == f'{root}/build-glibc.sh' or Path(path).name.startswith('glibc-')}
+        if 'build-glibc.sh' in named:
+            return named
+    raise ValueError(f'commit {commit} has no glibc builder')
+
+
+def require_unchanged_builders(commit, paths, glibc):
+    """The builders a reused run used are the ones here, compared by content:
+    the given paths, and glibc's builder and patches when glibc is reused."""
+    if paths and _blobs(commit, *paths) != _blobs('HEAD', *paths):
+        raise ValueError(f'a builder changed since {commit}: {", ".join(paths)}')
+    if glibc and glibc_builder(commit) != glibc_builder('HEAD'):
+        raise ValueError(f'the glibc builder or its patches changed since {commit}')
 
 
 def validate(run, repository, workflow='.github/workflows/llvm-linux-aarch64.yml'):
@@ -164,9 +192,16 @@ def replace_published_glibc(directory, source_run, source_sha):
     # Lua or release URL expansion in a second parser.
     values = subprocess.check_output(['lua5.4', 'tests/lua/glibc_metadata_harness.lua',
         'pkgs/g/glibc.lua', 'aarch64'], text=True).strip().split('\t')
-    loader, abi, revision, version, digest, global_url, cn_url, _ = values
+    loader, abi, recipe_revision, version, digest, global_url, cn_url, _ = values
+    # The asset's revision, not the recipe's: a recipe revision may change
+    # only the hooks and keep the asset (revision 5 installs revision 4's).
+    asset = re.fullmatch(r'https://github\.com/xlings-res/glibc/releases/download/'
+                         r'2\.44\.3-r([0-9]+)/glibc-2\.44\.3-r\1-linux-aarch64\.tar\.gz', global_url)
+    if not asset:
+        raise ValueError(f'the recipe (revision {recipe_revision}) names no glibc 2.44.3 release asset')
+    revision = asset.group(1)
     if revision not in ('3', '4'):
-        raise ValueError('only admitted published glibc revisions 3 and 4 are supported')
+        raise ValueError('only admitted published glibc assets of revisions 3 and 4 are supported')
     name = f'glibc-2.44.3-r{revision}-linux-aarch64.tar.gz'
     if (loader, abi, revision, version) != ('lib64/ld-linux-aarch64.so.1',
             'linux-aarch64-glibc', revision, '2.44.3'):
@@ -196,8 +231,7 @@ def replace_published_glibc(directory, source_run, source_sha):
             'openxlings/xim-pkgindex', 'openxlings/xim-pkgindex'):
         raise ValueError('published glibc source build evidence differs')
     validate_source_history(origin_sha, 'openxlings/xim-pkgindex')
-    subprocess.run(['git', 'diff', '--exit-code', origin_sha, 'HEAD', '--',
-                    '.agents/tools/graphics/build-glibc.sh', '.agents/tools/graphics/patches'], check=True)
+    require_unchanged_builders(origin_sha, [], glibc=True)
     checks = []
     for mirror, url in [('GLOBAL', global_url), ('CN', cn_url)]:
         target = directory / (name + '.' + mirror + '.verified')
@@ -242,8 +276,7 @@ def main():
     run = json.loads(subprocess.check_output(['gh', 'api', f'repos/{repository}/actions/runs/{args.run_id}'], text=True))
     sha = validate(run, repository)
     validate_source_history(sha, repository)
-    builders = UNCHANGED_BUILDERS if args.published_glibc_only else BUILDERS
-    subprocess.run(['git', 'diff', '--exit-code', sha, 'HEAD', '--', *builders], check=True)
+    require_unchanged_builders(sha, UNCHANGED_BUILDERS, glibc=not args.published_glibc_only)
     print(f'Reusing successful native run {args.run_id}, commit {sha}; mode='
           f'{"published-glibc-only" if args.published_glibc_only else "identical-builders"}.', flush=True)
     args.directory.mkdir(parents=True, exist_ok=True)
