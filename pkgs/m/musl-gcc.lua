@@ -183,6 +183,23 @@ local function __gcc_flavor_progs(triple)
     }
 end
 
+-- The rest of gcc.lua's group, which `xlings use gcc <ver>-musl` must switch
+-- with the drivers: gcc-ar, gcc-nm and gcc-ranlib load their own gcc's LTO
+-- plugin, and gcov reads its own gcc's coverage format. Left at the glibc
+-- release they mix two compilers, and `self doctor` reports the group as
+-- incoherent (openxlings/xlings#740 §2: a flavor switches as one group).
+-- Archive and coverage tools take no link flags, so no alias_args.
+local function __gcc_flavor_tools(triple)
+    return {
+        ["gcc-ar"]     = triple .. "-gcc-ar",
+        ["gcc-nm"]     = triple .. "-gcc-nm",
+        ["gcc-ranlib"] = triple .. "-gcc-ranlib",
+        ["gcov"]       = triple .. "-gcov",
+        ["gcov-dump"]  = triple .. "-gcov-dump",
+        ["gcov-tool"]  = triple .. "-gcov-tool",
+    }
+end
+
 local function __gcc_flavor_version()
     return pkginfo.version() .. "-musl"
 end
@@ -249,11 +266,26 @@ local function __register_as_gcc_flavor()
             binding = flavor_root,
         })
     end
+    -- Only the tools this payload ships: a name with nothing behind it would
+    -- be a shim that cannot run.
+    for prog, target in pairs(__gcc_flavor_tools(__musl_triple())) do
+        if os.isfile(path.join(gcc_bindir, target)) then
+            xvm.add(prog, {
+                bindir  = gcc_bindir,
+                alias   = target,
+                version = flavor_ver,
+                binding = flavor_root,
+            })
+        end
+    end
 end
 
 local function __unregister_gcc_flavor()
     local flavor_ver = __gcc_flavor_version()
     for prog, _ in pairs(__gcc_flavor_progs(__musl_triple())) do
+        xvm.remove(prog, flavor_ver)
+    end
+    for prog, _ in pairs(__gcc_flavor_tools(__musl_triple())) do
         xvm.remove(prog, flavor_ver)
     end
     -- Drop the virtual root only if no other musl-gcc version still hangs

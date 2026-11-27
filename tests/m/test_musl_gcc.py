@@ -1,4 +1,7 @@
 """测试 musl-gcc 包"""
+import re
+from pathlib import Path
+
 import pytest
 from tests.lib.xpkg_parser import parse_xpkg
 from tests.lib.assertions import (
@@ -35,6 +38,30 @@ class TestStatic:
     @pytest.mark.static
     def test_no_typos(self):
         assert_no_typos(PKG_FILE)
+
+
+def _keys(text: str, function: str) -> set[str]:
+    """The names a `local function <function>(triple)` table maps."""
+    body = text[text.index(f"local function {function}("):]
+    body = body[:body.index("\nend\n")]
+    return set(re.findall(r'\["([^"]+)"\]\s*=', body))
+
+
+class TestFlavorGroup:
+    """`xlings use gcc <ver>-musl` switches gcc.lua's whole group of names:
+    a name left at the glibc release mixes two compilers (gcc-ar loads its
+    own gcc's LTO plugin) and `self doctor` reports the group incoherent
+    (openxlings/xlings#740 §2)."""
+
+    @pytest.mark.static
+    def test_the_flavor_publishes_every_name_of_the_gcc_group(self):
+        repo = Path(__file__).resolve().parents[2]
+        musl = (repo / PKG_FILE).read_text(encoding="utf-8")
+        gcc = (repo / "pkgs/g/gcc.lua").read_text(encoding="utf-8")
+        published = _keys(musl, "__gcc_flavor_progs") | _keys(musl, "__gcc_flavor_tools")
+        common = gcc[gcc.index("local linux_programs_common = {"):]
+        common = set(re.findall(r'"([^"]+)"', common[:common.index("}")]))
+        assert common | {"cc"} <= published, sorted(common | {"cc"} - published)
 
 
 class TestIndex:
@@ -78,4 +105,10 @@ class TestVerify:
     @skip_if_not('linux')
     def test_xvm_musl_gcc(self):
         assert_xvm_registered("musl-gcc")
+
+    @pytest.mark.verify
+    @skip_if_not('linux')
+    def test_xvm_flavor_tools(self):
+        for name in ("gcc-ar", "gcc-nm", "gcc-ranlib", "gcov"):
+            assert_xvm_registered(name)
 
