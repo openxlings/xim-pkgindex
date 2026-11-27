@@ -82,10 +82,12 @@ class TestVerify:
 # farm as its run path, and leaves a host compiler's links, a static link and
 # -shared alone; XLINGS_SUBOS_LD_PATHS=0 keeps the tag only (#532, #540).
 
+import os
 import re
 import tempfile
 from pathlib import Path
 
+from tests.lib.platform_utils import xlings_home
 from tests.lib.xlings_client import _run_xlings
 
 _SOURCES = {
@@ -103,11 +105,14 @@ def _sh(cmd, timeout=900):
 
 
 def _dynamic(binary):
-    """(tag, [paths]) of the binary's run path: ("RPATH"|"RUNPATH"|None, [...])."""
+    """(tag, [paths]) of the binary's run path: ("RPATH"|"RUNPATH"|None, [...]),
+    each path resolved (the shim may name the subos through `current`)."""
     code, out = _sh(f"readelf -d {binary}")
     assert code == 0, out
     m = re.search(r"\((RPATH|RUNPATH)\)\s+Library (?:rpath|runpath): \[([^\]]*)\]", out)
-    return (m.group(1), m.group(2).split(":")) if m else (None, [])
+    if not m:
+        return (None, [])
+    return (m.group(1), [os.path.realpath(p) if p.startswith("/") else p for p in m.group(2).split(":")])
 
 
 @pytest.fixture(scope="module")
@@ -115,12 +120,16 @@ def links():
     for pkg in ("xim:gcc", "xim:zlib", "xim:libglvnd"):
         code, out = _sh(f"xlings install {pkg} -y", timeout=1800)
         assert code == 0, f"{pkg}: {out}"
+    # The farm the shim declares to `ld` (XLINGS_SUBOS_LIB): the test's subos
+    # when the runner names it, else the one the shell's profile declares.
     code, farm = _sh('printf %s "$XLINGS_SUBOS_LIB"')
-    assert code == 0 and farm, "the subos does not declare XLINGS_SUBOS_LIB: " + farm
+    if not farm.strip():
+        subos = os.environ.get("XLINGS_TEST_SUBOS", "current")
+        farm = str(Path(xlings_home()) / "subos" / subos / "lib")
     work = Path(tempfile.mkdtemp(prefix="ld-rows-"))
     for name, text in _SOURCES.items():
         (work / name).write_text(text, encoding="utf-8")
-    return work, farm.strip()
+    return work, os.path.realpath(farm.strip())
 
 
 def _build(work, cmd, out_name, env=""):
