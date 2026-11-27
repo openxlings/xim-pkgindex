@@ -292,13 +292,21 @@ def read_artifact(url: str, workdir: Path) -> dict[str, Any]:
 
 def _read_artifact(url: str, workdir: Path) -> dict[str, Any]:
     target = workdir / "artifact"
-    sha = hashlib.sha256()
-    size = 0
-    for attempt in range(3):
+    sha, size, expected = hashlib.sha256(), 0, None
+    target.write_bytes(b"")
+    failures = 0
+    # A connection that closes early is resumed where it stopped (Range);
+    # one that cannot be is not the artifact: its hash and bytes would be wrong.
+    while True:
+        headers = {"Range": f"bytes={size}-"} if size else {}
         try:
-            with open_url(url, timeout=120) as resp, open(target, "wb") as out:
-                sha, size = hashlib.sha256(), 0
-                expected = resp.headers.get("Content-Length")
+            req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, **headers})
+            with urllib.request.urlopen(req, timeout=120) as resp, open(target, "ab") as out:
+                if size and resp.status != 206:
+                    raise ConnectionError("the server does not resume a download")
+                length = resp.headers.get("Content-Length")
+                if expected is None and length is not None:
+                    expected = int(length)
                 while True:
                     chunk = resp.read(1 << 20)
                     if not chunk:
@@ -306,15 +314,20 @@ def _read_artifact(url: str, workdir: Path) -> dict[str, Any]:
                     sha.update(chunk)
                     size += len(chunk)
                     out.write(chunk)
-            # A connection that closes early is not the artifact: its hash
-            # and its bytes would both be wrong.
-            if expected is not None and int(expected) != size:
-                raise ConnectionError(f"truncated: {size} of {expected} bytes")
-            break
         except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as exc:
-            if attempt == 2:
+            failures += 1
+            if failures > 6 or isinstance(exc, urllib.error.HTTPError) and exc.code in (404, 410) \
+                    or "does not resume" in str(exc):
                 return {"url": url, "error": f"download failed: {exc}"}
-            time.sleep(3 * (attempt + 1))
+            time.sleep(3 * failures)
+            continue
+        if expected is None or size >= expected:
+            break
+        failures += 1
+        if failures > 6:
+            return {"url": url, "error": f"download failed: truncated: {size} of {expected} bytes"}
+    if expected is not None and size != expected:
+        return {"url": url, "error": f"download failed: {size} of {expected} bytes"}
     with open(target, "rb") as f:
         head = f.read(8)
     kind = kind_of(url, head)
@@ -399,6 +412,7 @@ SWAPS = [
     ("x86_64", "aarch64"), ("x86-64", "aarch64"), ("amd64", "arm64"), ("x64", "arm64"),
     ("x86_64", "arm64"), ("amd64", "aarch64"), ("linux64", "linuxarm64"), ("linux64", "linux-arm64"),
     ("x86_64", "aarch_64"),
+    ("x86_64-unknown-linux-musl", "aarch64-unknown-linux-gnu"),
 ]
 
 
@@ -997,8 +1011,11 @@ def cmd_apply(args) -> int:
                 left.append((ev, ev.get("why", ev.get("decision"))))
                 continue
             bump = bool(args.bump and f"{file}@{ev['version']}" in args.bump)
-            text = rewrite_entry(text, ev["version"], hashes=rw.get("hashes"), per_arch=rw.get("per_arch"),
-                                 bump=bump or bool(rw.get("per_arch") and args.bump_per_arch))
+            try:
+                text = rewrite_entry(text, ev["version"], hashes=rw.get("hashes"), per_arch=rw.get("per_arch"),
+                                     bump=bump or bool(rw.get("per_arch") and args.bump_per_arch))
+            except ValueError as exc:
+                left.append((ev, f"{ev.get('decision')}, written by hand: {exc}"))
         swaps = {_swap_between(ev["read"]["url"], ev["probe"]["url"]) for ev in evs
                  if plan_rewrite(ev, installs) and "per_arch" in plan_rewrite(ev, installs)}
         if len(swaps) == 1 and None not in swaps:
@@ -1034,23 +1051,38 @@ def _elf_cell(r: dict[str, Any] | None) -> str:
 
 
 def cmd_table(args) -> int:
+    """The evidence table, one section per outcome."""
     evidence = with_decisions(json.loads(Path(args.evidence).read_text()), None)
-    lines = ["| recipe | version | read | decision | evidence | other architecture |", "|---|---|---|---|---|---|"]
-    for ev in sorted(evidence, key=lambda e: (e["file"], e["version"])):
-        if ev["group"] == "mechanical" and not args.all:
+    sections = [
+        ("Decided by the bytes", lambda e: e["decision"] in ("independent", "x86_64", "aarch64", "x86_64+aarch64")
+         and not e.get("why", "").startswith("decided:")),
+        ("Decided by a person (tools/arch-decisions.json)", lambda e: e.get("why", "").startswith("decided:")),
+        ("XLINGS_RES: the assets xlings-res publishes", lambda e: e["decision"].startswith("res:")),
+        ("Left to the install on each architecture (step 2)", lambda e: e["decision"] == "sweep"),
+        ("Unresolved", lambda e: e["decision"] == "unresolved"),
+    ]
+    out = []
+    for title, pick in sections:
+        rows = [e for e in sorted(evidence, key=lambda e: (e["file"], e["version"]))
+                if pick(e) and (args.all or e["group"] != "mechanical")]
+        if not rows:
             continue
-        name = Path(ev["file"]).stem
-        if ev["group"] == "res":
-            cell = ", ".join(f"{a}: {r.get('sha256', '')[:12]}" for a, r in
-                             sorted((ev.get('res') or {}).items()))
-            probe = ""
-        else:
-            cell = _elf_cell(ev.get("read"))
-            pr = ev.get("probe")
-            probe = f"{Path(pr['url']).name}: {_elf_cell(pr)}" if pr else ""
-        lines.append(f"| `{name}` | {ev['version']} | {cell} | {ev.get('decision')} | "
-                     f"{ev.get('why', '')} | {probe} |")
-    text = "\n".join(lines) + "\n"
+        out += [f"### {title} ({len(rows)})", "",
+                "| recipe | version | what the bytes hold | decision | why | other architecture |",
+                "|---|---|---|---|---|---|"]
+        for ev in rows:
+            name = Path(ev["file"]).stem
+            if ev["group"] == "res":
+                cell = ", ".join(f"linux-{a}: `{r.get('sha256', '')[:12]}`" for a, r in sorted((ev.get("res") or {}).items()))
+                probe = ""
+            else:
+                cell = _elf_cell(ev.get("read"))
+                pr = ev.get("probe")
+                probe = f"`{Path(pr['url']).name}`: {_elf_cell(pr)}" if pr else ""
+            why = ev.get("why", "").replace("|", "/")
+            out.append(f"| `{name}` | {ev['version']} | {cell} | {ev.get('decision')} | {why} | {probe} |")
+        out.append("")
+    text = "\n".join(out)
     if args.output:
         Path(args.output).write_text(text, encoding="utf-8")
     else:
