@@ -545,7 +545,10 @@ def evidence_for(entry: dict[str, Any]) -> dict[str, Any]:
                     if exists(cand):
                         r2 = read_artifact(cand, Path(tmp))
                         ev["probe"] = r2
-                        if r2.get("verdict") == "programs:aarch64":
+                        if "error" in r2:
+                            ev["decision"] = "unresolved"
+                            ev["why"] += f"; {Path(cand).name} exists and could not be read: {r2['error']}"
+                        elif r2.get("verdict") == "programs:aarch64":
                             ev["decision"] = "x86_64+aarch64"
                             ev["why"] += f"; upstream has an aarch64 artifact ({Path(cand).name})"
                         else:
