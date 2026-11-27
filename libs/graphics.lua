@@ -690,10 +690,10 @@ end
 function graphics.vendor_closure_gaps(interposer, host_vendor)
     local out = { ok = false, missing = {}, reason = nil }
 
-    local dyn = system.exec(string.format([[readelf -d "%s"]], host_vendor), { capture = true })
-    -- `os.iorun` returns "" on failure and swallows stderr, so an empty
-    -- result is the ONLY signal the tool did not run. It is not evidence of
-    -- an empty closure.
+    local dyn = system.run(string.format([[readelf -d "%s"]], host_vendor)).out
+    -- A failed command's output is "" here (system.run answers, it does not
+    -- raise), so an empty result is the ONLY signal the tool did not run. It
+    -- is not evidence of an empty closure.
     if dyn == "" then return out end
 
     -- The TAG first, because it decides whether the path is reachable at all.
@@ -708,7 +708,7 @@ function graphics.vendor_closure_gaps(interposer, host_vendor)
     -- `libEGL_nvidia.so.0 state=ok` for a library measured to fail with
     -- `libpthread.so.0: cannot open shared object file`. Presence was true and
     -- reachability was false.
-    local tags = system.exec(string.format([[readelf -d "%s"]], interposer), { capture = true })
+    local tags = system.run(string.format([[readelf -d "%s"]], interposer)).out
     if tags == "" then return out end
     -- The tag on the INTERPOSER decides whether the host driver behind it can
     -- resolve its own DT_NEEDED *from this library alone*. It does not decide
@@ -742,7 +742,7 @@ function graphics.vendor_closure_gaps(interposer, host_vendor)
     end
 
     local search = {}
-    local rp = system.exec(string.format([[patchelf --print-rpath "%s"]], interposer), { capture = true })
+    local rp = system.run(string.format([[patchelf --print-rpath "%s"]], interposer)).out
     for dir in (((rp or "") .. ":"):gmatch("([^:\n]*):")) do
         if dir ~= "" then table.insert(search, dir) end
     end
@@ -798,8 +798,8 @@ end
 --     own build". It is literally the host driver. The verdict was inverted
 --     for precisely the vendors that most needed checking.
 function graphics.host_vendor_behind(interposer)
-    local dyn = system.exec(string.format([[readelf -d "%s"]], interposer), { capture = true })
-    -- "" is the ONLY signal os.iorun gives for a tool that did not run, and
+    local dyn = system.run(string.format([[readelf -d "%s"]], interposer)).out
+    -- "" is the ONLY signal system.run gives for a tool that did not run, and
     -- it is not evidence about the library.
     if dyn == "" then return nil, "unreadable" end
     for soname in dyn:gmatch("Shared library:%s*%[([^%]]+)%]") do
@@ -808,7 +808,7 @@ function graphics.host_vendor_behind(interposer)
     -- No stub in front of it. Follow the file: a vendor that resolves outside
     -- our store is the host's driver wearing our filename, and its closure is
     -- every bit as unchecked as an interposer's.
-    local real = system.exec(string.format([[readlink -f "%s"]], interposer), { capture = true })
+    local real = system.run(string.format([[readlink -f "%s"]], interposer)).out
     real = (real or ""):gsub("%s+$", "")
     if real ~= "" and not real:find("xpkgs", 1, true) then
         return real, "direct"

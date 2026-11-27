@@ -1,7 +1,7 @@
 -- The test harnesses mock the names of spec 1 (os.isfile, os.tryrm, os.iorun,
--- io.readfile, os.host, ...); libs/ calls the modules' names (fs.is_file,
--- fs.remove, system.exec, fs.read, pkginfo.platform, ...), which a recipe of
--- any spec can import. Once a harness loads a file of libs/, each module name
+-- io.readfile, os.host, ...); libs/ and the recipes of spec 3 call the
+-- modules' names (fs.is_file, fs.remove, system.exec, fs.read,
+-- pkginfo.platform, ...). Once a harness loads a file of libs/ or pkgs/, each module name
 -- it did not mock itself is answered by the spec 1 name it did mock, looked up
 -- at the call. Loaded for every Lua the tests start (LUA_INIT, conftest.py).
 local bridge = {
@@ -70,7 +70,7 @@ end
 for _, name in ipairs({ "loadfile", "dofile" }) do
     local original = _G[name]
     _G[name] = function(file, ...)
-        if type(file) == "string" and file:match("libs/[^/]+%.lua$") then arm() end
+        if type(file) == "string" and (file:match("libs/[^/]+%.lua$") or file:match("pkgs/.+%.lua$")) then arm() end
         return original(file, ...)
     end
 end
