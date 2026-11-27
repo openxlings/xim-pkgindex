@@ -36,8 +36,10 @@ gfx_skip="alsa-lib libXi libXcursor libXtst libxkbcommon"
 [[ "$what" == freetype || "$what" == fontconfig ]] || gfx_skip="$gfx_skip freetype fontconfig"
 
 # The upstream version tiers.sh builds, for the version the index publishes:
-# mesa 25.0.7.3 is the index's third build of 25.0.7.
-src_version="$version"
+# mesa 25.0.7.3 is the index's third build of 25.0.7; <version>-r<N> is the
+# Nth rebuild of an asset already published (a published asset is never
+# replaced), under the same payload directory.
+src_version="${version%-r[0-9]*}"
 case "$what" in
     mesa) src_version="${version%.*}" ;;
 esac

@@ -408,11 +408,14 @@ check_payload() {   # <payload dir>; fails on a host reference
 
     # .pc / .la / *-config files carry absolute paths that later builds consume.
     # A host prefix in one of these does not break anything now — it breaks the
-    # NEXT package, by pointing its configure at /usr.
+    # NEXT package, by pointing its configure at /usr. Nor may one name the
+    # home or the work tree the build ran in (a dependency's -I, a scratch dir).
     while IFS= read -r -d '' f; do
-        if grep -qE '(^|[=" ])/usr/(lib|include|share)/' "$f" 2>/dev/null; then
-            grep -nE '(^|[=" ])/usr/(lib|include|share)/' "$f" | head -2 \
-              | sed "s|^|    ${f#$PAYLOAD/}: |" | while read -r l; do report_leak "$l"; done
+        if grep -qE "(^|[=\" ])/usr/(lib|include|share)/|($XHOME|$WORK)/" "$f" 2>/dev/null; then
+            # Not `| while`: a pipeline's loop counts in a subshell, and the
+            # count this check fails on stayed 0.
+            while read -r l; do report_leak "$l"; done < <(
+                grep -nE "(^|[=\" ])/usr/(lib|include|share)/|($XHOME|$WORK)/" "$f" | head -2 | sed "s|^|${f#$PAYLOAD/}: |")
         fi
     done < <(find "$PAYLOAD" \( -name '*.pc' -o -name '*.la' -o -name '*-config' \) -type f -print0)
 
@@ -1089,6 +1092,14 @@ fi
 # distributions settled on, since anything still consuming a .la in 2026 is
 # also consuming the .pc that says the same thing correctly.
 find "$PAYLOAD" -name '*.la' -type f -delete
+
+# A .pc keeps the flags configure was given for its dependencies: libxshmfence
+# writes xproto's `-I<subos>/usr/include` into its Cflags. The dependency's own
+# .pc says that to a consumer; this copy of it names the machine the build ran
+# on. Such a flag is dropped, and the check below fails on any that is left.
+while IFS= read -r -d '' pc; do
+    sed -i -E "s#[[:space:]]-[IL]($XHOME|$WORK)/[^[:space:]]*##g" "$pc"
+done < <(find "$PAYLOAD" -name '*.pc' -type f -print0)
 
 # $ORIGIN so the payload's own libraries resolve each other with no absolute
 # path anywhere. xlings's elfpatch appends each dependency's libdir on top.
