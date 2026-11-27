@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 import shutil
 import subprocess
+from tempfile import TemporaryDirectory
 
 import pytest
 
@@ -116,7 +117,12 @@ class TestVerify:
     @pytest.mark.verify
     def test_local_repository_and_restore(self, tmp_path):
         """在临时仓库中记录更改，再恢复文件以验证实际版本控制操作。"""
-        repo = tmp_path / "repository"
+        # Windows 的索引段文件名长达 128 字符，短路径可容纳完整仓库布局
+        with TemporaryDirectory(prefix="jj") as short_root:
+            self.check_repository(Path(short_root), tmp_path)
+
+    def check_repository(self, repo, tmp_path):
+        """验证本地仓库内修改与恢复文件的行为。"""
         env = os.environ.copy()
         env.update(JJ_CONFIG=str(tmp_path / "empty.toml"), JJ_USER="Package Test",
                    JJ_EMAIL="package-test@example.invalid", GIT_CONFIG_NOSYSTEM="1",
