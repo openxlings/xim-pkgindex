@@ -78,6 +78,8 @@
 
 import("xim.libxpkg.log")
 import("xim.libxpkg.elfpatch")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 local selfcontain = {}
 
@@ -125,7 +127,7 @@ local selfcontain = {}
 -- `xim:` install in a bwrap with no /usr.
 local function _assert_payload(install_dir, libdirs)
     for _, sub in ipairs(libdirs) do
-        if os.isdir(path.join(install_dir, sub)) then return true end
+        if fs.is_dir(path.join(install_dir, sub)) then return true end
     end
     error(string.format(
         "install produced no payload: %s has none of {%s}. The extracted source "

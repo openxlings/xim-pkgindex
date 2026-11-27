@@ -32,6 +32,7 @@
 -- file, or a placeholder that does not occur in its file (the upstream build
 -- changed and the manifest did not) is an error, not a skipped entry.
 
+import("xim.libxpkg.fs")
 import("xim.libxpkg.json")
 
 local relocate = {}
@@ -86,7 +87,8 @@ end
 -- Apply INSTALL_DIR/RELOCATE.json. Returns the number of entries applied.
 function relocate.apply(install_dir, manifest)
     local file = install_dir .. "/" .. (manifest or "RELOCATE.json")
-    local m = json.loadfile(file)
+    local read, m = pcall(function() return json.decode(fs.read(file)) end)
+    if not read then m = nil end
     if type(m) ~= "table" or m.schema ~= 1 or type(m.entries) ~= "table" then
         error("relocate: " .. file .. " is missing or not a schema-1 manifest")
     end
@@ -96,18 +98,14 @@ function relocate.apply(install_dir, manifest)
             error("relocate: path outside the payload: " .. tostring(rel))
         end
         local target = install_dir .. "/" .. rel
-        local f = io.open(target, "rb")
-        if not f then error("relocate: " .. rel .. " is listed but not in the payload") end
-        local data = f:read("*a")
-        f:close()
+        local present, data = pcall(fs.read, target)
+        if not present then error("relocate: " .. rel .. " is listed but not in the payload") end
         if plain_count(data, e.placeholder) == 0 then
             error("relocate: " .. rel .. " does not contain its recorded placeholder")
         end
         local new = relocate.rewrite(data, e.placeholder, install_dir, e.mode == "binary")
         assert(e.mode ~= "binary" or #new == #data, "relocate: binary length changed for " .. rel)
-        local w = assert(io.open(target, "wb"))
-        w:write(new)
-        w:close()
+        fs.write(target, new)
     end
     return #m.entries
 end

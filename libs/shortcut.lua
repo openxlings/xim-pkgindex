@@ -61,7 +61,7 @@ local function ps_quote(s) return (s:gsub("'", "''")) end
 function shortcut.path(opt)
     local folder = FOLDERS[opt.location or "start-menu"]
     if not folder then return nil, "unknown location: " .. tostring(opt.location) end
-    if os.host() ~= "windows" then return nil, "shortcuts exist on Windows only" end
+    if pkginfo.platform() ~= "windows" then return nil, "shortcuts exist on Windows only" end
     local root = os.getenv(folder.env)
     if not root or root == "" then return nil, folder.env .. " is not set" end
     return winpath.native(root) .. "\\" .. folder.tail .. "\\" .. opt.name .. ".lnk"
@@ -74,7 +74,7 @@ local CREATE = [[powershell -NoProfile -ExecutionPolicy Bypass -Command "$s = (N
 function shortcut.create(opt)
     local lnk, why = shortcut.path(opt)
     if not lnk then
-        if os.host() == "windows" then
+        if pkginfo.platform() == "windows" then
             log.warn("%s: no shortcut '%s': %s", pkginfo.name(), opt.name, why)
         end
         return false, why
@@ -89,14 +89,14 @@ function shortcut.create(opt)
         ps_quote(opt.arguments or ""),
     }
     local dir = lnk:match("^(.*)\\[^\\]+$")
-    if dir then fs.mkdir_p(dir) end
+    if dir then fs.mkdir(dir) end
     -- exec-quoting-ok: every interpolated value goes through ps_quote (PowerShell single quotes).
     local ran, err = pcall(system.exec, string.format(CREATE, table.unpack(values)))
     if not ran then
         log.warn("%s: shortcut '%s' was not written: %s", pkginfo.name(), opt.name, tostring(err))
         return false, err
     end
-    if not os.isfile(lnk) then
+    if not fs.is_file(lnk) then
         log.warn("%s: shortcut '%s' was not written at %s", pkginfo.name(), opt.name, lnk)
         return false, "not written: " .. lnk
     end
@@ -106,9 +106,9 @@ end
 -- Removes the entry when it is there. Nothing to remove is not an error.
 function shortcut.remove(opt)
     local lnk = shortcut.path(opt)
-    if not lnk or not os.isfile(lnk) then return false end
-    os.tryrm(lnk)
-    return not os.isfile(lnk)
+    if not lnk or not fs.is_file(lnk) then return false end
+    fs.remove(lnk)
+    return not fs.is_file(lnk)
 end
 
 return shortcut

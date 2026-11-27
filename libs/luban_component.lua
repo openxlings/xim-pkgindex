@@ -25,18 +25,19 @@
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 local M = {}
 
 function M.install(must)
     local dir = pkginfo.install_dir()
     local payload = pkginfo.install_file():replace(".tar.gz", "")
-    if os.isdir(payload) then
-        os.tryrm(dir)
-        os.mv(payload, dir)
+    if fs.is_dir(payload) then
+        fs.remove(dir)
+        fs.move(payload, dir)
     end
     for _, rel in ipairs(must or {}) do
-        if not os.isfile(path.join(dir, rel)) then return false end
+        if not fs.is_file(path.join(dir, rel)) then return false end
     end
     return true
 end
@@ -68,21 +69,35 @@ function M.write_checks(checks)
     end
     local rel = path.join("share", "luban", "checks.d", pkginfo.name() .. ".json")
     local file = path.join(pkginfo.install_dir(), rel)
-    os.mkdir(path.directory(file))
-    io.writefile(file, '{"checks": [' .. table.concat(parts, ", ") .. "]}\n")
+    fs.mkdir(path.directory(file))
+    fs.write(file, '{"checks": [' .. table.concat(parts, ", ") .. "]}\n")
     return rel
 end
 
 -- Every loader the tree holds, its path file beside it (empty: nothing but
 -- the tree's own libraries, which its programs name).
+-- The entries of DIR, none when it is no directory.
+local function entries(dir)
+    return fs.is_dir(dir) and fs.list(dir) or {}
+end
+
+-- The files under DIR, every level, links included.
+local function files_under(dir, out)
+    out = out or {}
+    for _, e in ipairs(entries(dir)) do
+        if e.type == "dir" then files_under(e.path, out) else table.insert(out, e.path) end
+    end
+    return out
+end
+
 function M.close_loaders()
-    for _, tree in ipairs(os.dirs(path.join(pkginfo.install_dir(), "libexec", "*")) or {}) do
-        for _, ldso in ipairs(fs.files(path.join(tree, "lib")) or {}) do
-            local arch = path.filename(ldso):match("^ld%-musl%-(.+)%.so%.1$")
-            local file = arch and path.join(tree, "etc", "ld-musl-" .. arch .. ".path")
-            if file and not os.isfile(file) then
-                os.mkdir(path.directory(file))
-                io.writefile(file, "")
+    for _, tree in ipairs(entries(path.join(pkginfo.install_dir(), "libexec"))) do
+        for _, ldso in ipairs(tree.type == "dir" and entries(path.join(tree.path, "lib")) or {}) do
+            local arch = ldso.type ~= "dir" and ldso.name:match("^ld%-musl%-(.+)%.so%.1$")
+            local file = arch and path.join(tree.path, "etc", "ld-musl-" .. arch .. ".path")
+            if file and not fs.is_file(file) then
+                fs.mkdir(path.directory(file))
+                fs.write(file, "")
             end
         end
     end
@@ -106,7 +121,7 @@ function M.config(programs, shares, checks)
     if xvm.files then
         local root = pkginfo.install_dir()
         for _, rel in ipairs(shares or {}) do
-            local files = fs.files(path.join(root, rel), true) or {}
+            local files = files_under(path.join(root, rel))
             table.sort(files)
             for _, f in ipairs(files) do
                 local name = f:sub(#root + 2)

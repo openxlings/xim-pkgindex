@@ -53,21 +53,21 @@ function payload.unpack(opt)
     local names = type(opt.extracted) == "table" and opt.extracted
                   or (opt.extracted ~= nil and { opt.extracted } or {})
 
-    os.tryrm(dir)
+    fs.remove(dir)
 
     for _, name in ipairs(names) do
         local src = parent .. "/" .. name
-        if os.isdir(src) then
+        if fs.is_dir(src) then
             local dst_parent = dir:match("^(.*)/[^/]+$")
-            if dst_parent then fs.mkdir_p(dst_parent) end
-            os.mv(src, dir)
+            if dst_parent then fs.mkdir(dst_parent) end
+            fs.move(src, dir)
             log.info("%s: moved %s into place", pkginfo.name(), name)
             return true, src
         end
     end
 
-    if normalized:match("%.zip$") and os.host() == "windows" then
-        fs.mkdir_p(dir)
+    if normalized:match("%.zip$") and pkginfo.platform() == "windows" then
+        fs.mkdir(dir)
         local sysroot = winpath.native(os.getenv("SystemRoot") or "C:\\Windows"):gsub("\\+$", "")
         local systar = sysroot .. "\\System32\\tar.exe"
         local strip = (opt.strip and opt.strip > 0)
@@ -90,7 +90,7 @@ function payload.require(files)
     local dir = pkginfo.install_dir()
     local missing = {}
     for _, rel in ipairs(files) do
-        if not os.isfile(dir .. "/" .. rel) then missing[#missing + 1] = rel end
+        if not fs.is_file(dir .. "/" .. rel) then missing[#missing + 1] = rel end
     end
     if #missing > 0 then
         error(string.format("%s: files missing from %s:\n    %s",
@@ -104,7 +104,7 @@ end
 function payload.present(files)
     local dir = pkginfo.install_dir()
     for _, rel in ipairs(files) do
-        if not os.isfile(dir .. "/" .. rel) then return false end
+        if not fs.is_file(dir .. "/" .. rel) then return false end
     end
     return true
 end
