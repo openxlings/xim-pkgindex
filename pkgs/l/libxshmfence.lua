@@ -54,12 +54,14 @@ package = {
                     },
                     sha256 = "dce29073e3225e2001ecba00b115cfee9062b85ef4e15a454db3b671454fdc9f",
                 },
+                -- 1.3.2-r1: the first aarch64 build (in the 1.3.2 release)
+                -- carried its build's include path in the .pc's Cflags.
                 aarch64 = {
                     url = {
-                        GLOBAL = "https://github.com/xlings-res/libxshmfence/releases/download/1.3.2/libxshmfence-1.3.2-linux-aarch64.tar.gz",
-                        CN     = "https://gitcode.com/xlings-res/libxshmfence/releases/download/1.3.2/libxshmfence-1.3.2-linux-aarch64.tar.gz",
+                        GLOBAL = "https://github.com/xlings-res/libxshmfence/releases/download/1.3.2-r1/libxshmfence-1.3.2-r1-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libxshmfence/releases/download/1.3.2-r1/libxshmfence-1.3.2-r1-linux-aarch64.tar.gz",
                     },
-                    sha256 = "624f0ab3c2ba855504cbb503a55ee6e448eafb0009e20737211eb46618670ea1",
+                    sha256 = "eb2a488ce33f3b322f91944bc786d61f14b8f5050fc812e68a8166d2f17f2e36",
                 },
             },
         },
