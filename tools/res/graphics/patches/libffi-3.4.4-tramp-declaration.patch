@@ -1,0 +1,13 @@
+--- a/src/tramp.c
++++ b/src/tramp.c
+@@ -56,6 +56,10 @@
+ #endif
+ #endif
+ 
++/* Defined in closures.c. GCC 14 and later refuse a call to a function
++   that has no declaration. */
++extern int open_temp_exec_file (void);
++
+ /*
+  * Each architecture defines static code for a trampoline code table. The
+  * trampoline code table is mapped into the address space of a process.

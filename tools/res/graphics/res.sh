@@ -87,16 +87,18 @@ done
 log "rule M: $n ELF files on the surface, all $arch"
 
 # What it asks of the C++ runtime and of libgcc, against gcc-runtime 15.1.0.
-rt="$(dirname "$(find "$work/xh/data/xpkgs/xim-x-gcc-runtime/15.1.0" -name 'libstdc++.so.6' | head -1)")"
-[[ -f "$rt/libstdc++.so.6" && -f "$rt/libgcc_s.so.1" ]] || die "no gcc-runtime 15.1.0 in the SubOS's home"
+rt="$(find "$work/xh/data/xpkgs" -path '*gcc-runtime/15.1.0/*' -name 'libstdc++.so.6' 2>/dev/null | head -1 || true)"
+rt="${rt%/*}"
+[[ -f "$rt/libstdc++.so.6" && -f "$rt/libgcc_s.so.1" ]] \
+    || die "no gcc-runtime 15.1.0 in the SubOS's home: $(ls "$work/xh/data/xpkgs" 2>&1 | tr '\n' ' ')"
 have="$(readelf -V --wide "$rt/libstdc++.so.6" "$rt/libgcc_s.so.1" | sed -n '/Version definition/,/Version needs/p' \
-        | grep -oE '(GLIBCXX|CXXABI|GCC)_[0-9.]+' | sort -u)"
+        | grep -oE '(GLIBCXX|CXXABI|GCC)_[0-9.]+' | sort -u || true)"
 need="$(find "$work/pay/$d" -type f -exec sh -c 'head -c4 "$1" | grep -q ELF && readelf -V --wide "$1"' _ {} \; \
-        | sed -n '/Version needs/,$p' | grep -oE '(GLIBCXX|CXXABI|GCC)_[0-9.]+' | sort -u)"
+        | sed -n '/Version needs/,$p' | grep -oE '(GLIBCXX|CXXABI|GCC)_[0-9.]+' | sort -u || true)"
 missing="$(comm -13 <(echo "$have") <(echo "$need") | tr '\n' ' ')"
 [[ -z "${missing// /}" ]] || die "needs $missing, which gcc-runtime 15.1.0 does not define"
 glibc_max="$(find "$work/pay/$d" -type f -exec sh -c 'head -c4 "$1" | grep -q ELF && readelf -V --wide "$1"' _ {} \; \
-        | grep -oE 'GLIBC_2\.[0-9]+' | sort -t. -k2 -n -u | tail -1)"
+        | grep -oE 'GLIBC_2\.[0-9]+' | sort -t. -k2 -n -u | tail -1 || true)"
 log "runtime: every C++ and libgcc symbol version is gcc-runtime 15.1.0's; newest glibc one ${glibc_max:-none}"
 
 provenance "pay/$d" "$what $src_version for linux-$arch, built from upstream's source (sha256 in xim-pkgindex tools/res/inputs.txt) by tools/res/graphics (tiers.sh, build-in-subos.sh$([[ "$what" == libllvm || "$what" == mesa ]] && echo ", build-libllvm.sh")) in a SubOS that xlings $gfx_client made in Debian 12 with the index's $gfx_tools, and cmake $gfx_cmake (Kitware); checked: no input from outside the home, no host path in the payload, rule M on its surface ($n files), no symbol version beyond gcc-runtime 15.1.0 (newest glibc: ${glibc_max:-none})"
