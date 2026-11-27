@@ -49,6 +49,10 @@ readelf -d <install_dir>/bin/<prog> | grep NEEDED
 LD_TRACE_LOADED_OBJECTS=1 <install_dir>/bin/<prog>     # no "not found"
 ```
 
+Every `NEEDED` name must be provided by the payload or by a declared `xim:` dependency. A library
+that resolves only because your own machine has it is a missing dependency, not a pass (see
+`source-selection.md`, "Closing the dependencies").
+
 ## B. The pytest levels
 
 Every xpkg has a mirror: `pkgs/n/mypackage.lua` -> `tests/n/test_mypackage.py` (`-` becomes
