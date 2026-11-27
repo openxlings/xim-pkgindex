@@ -10,7 +10,7 @@ package = {
     repo = "https://gitlab.freedesktop.org/xorg/lib/libXfixes",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"graphics", "lib"},
     keywords = {"libxfixes", "graphics", "x11"},
@@ -50,11 +50,20 @@ package = {
             },
             ["latest"] = { ref = "6.0.1" },
             ["6.0.1"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/libXfixes/releases/download/6.0.1/libXfixes-6.0.1-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/libXfixes/releases/download/6.0.1/libXfixes-6.0.1-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libXfixes/releases/download/6.0.1/libXfixes-6.0.1-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libXfixes/releases/download/6.0.1/libXfixes-6.0.1-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "9e52c227f93b668a2c8fc1ee4c0768226c3e9168010a32466a95339d27dd6974",
                 },
-                sha256 = "9e52c227f93b668a2c8fc1ee4c0768226c3e9168010a32466a95339d27dd6974",
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libXfixes/releases/download/6.0.1/libXfixes-6.0.1-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libXfixes/releases/download/6.0.1/libXfixes-6.0.1-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "fe7020301af88b00979af0d065c8fa55ba053c6bcc0af99906deffcffef69c3c",
+                },
             },
         },
     },

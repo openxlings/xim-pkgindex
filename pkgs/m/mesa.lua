@@ -126,7 +126,14 @@ package = {
             -- One file more (lib/dri/virtio_gpu_dri.so, the megadriver
             -- carrying it); the DT_NEEDED closure and the glibc and libstdc++
             -- symbol versions measured the same as 25.0.7.2's. Built with
-            -- .agents/tools/graphics/build-in-subos.sh as tiers.sh's T5 line.
+            -- tools/res/graphics/build-in-subos.sh as tiers.sh's T5 line.
+            --
+            -- aarch64 (res-build, tools/res/graphics/res.sh): the same
+            -- version, another driver set -- llvmpipe, softpipe, virgl, zink,
+            -- radeonsi, nouveau and RADV. No iris (Intel's GPUs are x86's)
+            -- and no d3d12, so no clc chain; LLVM is xim:libllvm's build for
+            -- aarch64 (AArch64;AMDGPU). The ARM SoC drivers wait for hardware
+            -- to verify them on (xlings design 2026-11-27 §5.8).
             ["25.0.7.3"] = {
                 url = {
                     GLOBAL = "https://github.com/xlings-res/mesa/releases/download/25.0.7.3/mesa-25.0.7.3-linux-x86_64.tar.gz",
@@ -140,7 +147,7 @@ package = {
             -- same set as 25.0.7.1.
             --
             -- The source needed ONE patch to build at all:
-            -- `.agents/tools/graphics/patches/mesa-25.0.7-glibc-2.42-c11-threads.patch`.
+            -- `tools/res/graphics/patches/mesa-25.0.7-glibc-2.42-c11-threads.patch`.
             -- ISO C23 moved once_flag/call_once into <stdlib.h>, glibc >= 2.42
             -- followed, and mesa's own src/c11 shim redefines both -- so 25.0.7
             -- cannot compile against the glibc 2.44 in this index, and 25.0.7 is

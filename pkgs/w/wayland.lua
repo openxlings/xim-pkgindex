@@ -10,7 +10,7 @@ package = {
     repo = "https://gitlab.freedesktop.org/wayland/wayland",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"graphics", "lib"},
     keywords = {"wayland", "graphics", "gl"},
@@ -76,11 +76,20 @@ package = {
             },
             ["latest"] = { ref = "1.23.1" },
             ["1.23.1"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/wayland/releases/download/1.23.1/wayland-1.23.1-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/wayland/releases/download/1.23.1/wayland-1.23.1-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/wayland/releases/download/1.23.1/wayland-1.23.1-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/wayland/releases/download/1.23.1/wayland-1.23.1-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "5132067ff533ea627a0335dfeaab9612889842ffbdd26148c9306993c41f6ea2",
                 },
-                sha256 = "5132067ff533ea627a0335dfeaab9612889842ffbdd26148c9306993c41f6ea2",
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/wayland/releases/download/1.23.1/wayland-1.23.1-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/wayland/releases/download/1.23.1/wayland-1.23.1-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "1ece8d41e72895313e467c0e9d392b888dab4623940214b1a19fe21f9e24b280",
+                },
             },
         },
     },

@@ -10,7 +10,7 @@ package = {
     repo = "https://gitlab.freedesktop.org/xorg/lib/libxshmfence",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"graphics", "lib"},
     keywords = {"libxshmfence", "graphics", "x11"},
@@ -47,11 +47,20 @@ package = {
             },
             ["latest"] = { ref = "1.3.2" },
             ["1.3.2"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/libxshmfence/releases/download/1.3.2/libxshmfence-1.3.2-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/libxshmfence/releases/download/1.3.2/libxshmfence-1.3.2-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libxshmfence/releases/download/1.3.2/libxshmfence-1.3.2-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libxshmfence/releases/download/1.3.2/libxshmfence-1.3.2-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "dce29073e3225e2001ecba00b115cfee9062b85ef4e15a454db3b671454fdc9f",
                 },
-                sha256 = "dce29073e3225e2001ecba00b115cfee9062b85ef4e15a454db3b671454fdc9f",
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libxshmfence/releases/download/1.3.2/libxshmfence-1.3.2-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libxshmfence/releases/download/1.3.2/libxshmfence-1.3.2-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "624f0ab3c2ba855504cbb503a55ee6e448eafb0009e20737211eb46618670ea1",
+                },
             },
         },
     },

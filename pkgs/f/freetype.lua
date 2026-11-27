@@ -9,7 +9,7 @@ package = {
     repo = "https://gitlab.freedesktop.org/freetype/freetype",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"graphics", "font", "library"},
     keywords = {"freetype", "font", "rendering", "lib"},
@@ -62,11 +62,20 @@ package = {
             },
             ["latest"] = { ref = "2.13.2" },
             ["2.13.2"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/freetype/releases/download/2.13.2/freetype-2.13.2-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/freetype/releases/download/2.13.2/freetype-2.13.2-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/freetype/releases/download/2.13.2/freetype-2.13.2-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/freetype/releases/download/2.13.2/freetype-2.13.2-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "a6c64a5008ec26917c769dd9840bf4f8d207e5a41f9ac48a8a9f2dc416af2664",
                 },
-                sha256 = "a6c64a5008ec26917c769dd9840bf4f8d207e5a41f9ac48a8a9f2dc416af2664",
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/freetype/releases/download/2.13.2/freetype-2.13.2-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/freetype/releases/download/2.13.2/freetype-2.13.2-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "8504ae4e573dbba99e6652f1232cb9ff15bc75ec5688c45ebc267d979f6b9c3f",
+                },
             },
         },
     },
