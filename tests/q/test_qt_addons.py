@@ -99,8 +99,8 @@ class TestStatic:
         for plat in ("windows", "macosx"):
             mm = re.search(rf'{plat}\s*=\s*\{{.*?\n        \}},', raw, re.DOTALL)
             assert mm and "revision" not in mm.group(0), f"{plat} 不该变 revision"
-        assert 'os.host() == "linux" then qtsdk.mark_runtime(marker_path())' in raw
-        assert 'os.host() == "linux" and not qtsdk.runtime_current(marker)' in raw
+        assert 'pkginfo.platform() == "linux" then qtsdk.mark_runtime(marker_path())' in raw
+        assert 'pkginfo.platform() == "linux" and not qtsdk.runtime_current(marker)' in raw
 
     @pytest.mark.static
     def test_addons_table_has_every_platform_and_field(self):

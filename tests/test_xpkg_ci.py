@@ -326,6 +326,22 @@ if __name__ == "__main__":
     raise SystemExit(main())
 
 
+def test_a_field_quoted_in_a_comment_is_not_a_declaration():
+    with tempfile.TemporaryDirectory() as d:
+        p = Path(d) / "quiet.lua"
+        p.write_text(
+            '-- not mirrored yet: the `ci = { mirror = true }` omission is deliberate\n'
+            '--[[ repo = "https://example.invalid/wrong" ]]\n'
+            'package = { name = "quiet", repo = "https://github.com/acme/quiet", '
+            'description = "-- a dash pair in a string", xpm = { linux = {} } }\n',
+            encoding="utf-8",
+        )
+        record = mod.inspect_package(p)
+        assert record["mirror"] is False
+        assert record["repo"] == "https://github.com/acme/quiet"
+        assert "-- a dash pair" in mod.lua_code(p.read_text(encoding="utf-8"))
+
+
 def test_arch_alias_is_read_from_its_own_block_not_the_version_body():
     """`sha256` is a per-arch table of the same `<arch> = "<string>"` shape as
     `arch_alias`, so a scan over the whole version body collects both and the

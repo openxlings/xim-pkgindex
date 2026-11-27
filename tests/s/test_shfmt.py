@@ -63,7 +63,7 @@ class TestStatic:
         source = r'''
 function import() end
 assert(loadfile(arg[1]))()
-assert(package.spec == "2", "spec must be 2")
+assert(package.spec == "3", "spec must be 3")
 assert(package.ci and package.ci.mirror == true, "ci.mirror must be true")
 local expected = {
     linux = {x86_64="amd64", aarch64="arm64"},
@@ -102,17 +102,38 @@ assert(count == 5)
         lua = shutil.which("lua5.4") or shutil.which("lua")
         assert lua, "Lua is required to evaluate recipe hooks"
         source = r'''
+-- The hooks of spec "3" (design 2026-11-27 §9.6, §9.7): the host has placed
+-- the downloaded file in install_dir under its own name before install()
+-- runs; install() names it and makes it executable through the fs module.
 local files = {}
-local execs = {}
+local moves, chmods = {}, {}
 local xvm_calls = {}
-local cur_install_file = ""
-local cur_install_dir = ""
+local cur = { file = "", dir = "", platform = "linux" }
 
+local function join(...)
+    return table.concat({...}, "/")
+end
 local mods = {
+    ["xim.libxpkg.fs"] = function()
+        fs = {
+            is_file = function(p) return files[p] == true end,
+            move = function(src, dst)
+                assert(files[src], "missing src: " .. src)
+                files[src] = nil
+                files[dst] = true
+                table.insert(moves, { src, dst })
+            end,
+            chmod = function(p, mode) table.insert(chmods, { p, mode }) end,
+        }
+    end,
+    ["xim.libxpkg.path"] = function()
+        path = { join = join, filename = function(p) return p:match("([^/\\]+)$") end }
+    end,
     ["xim.libxpkg.pkginfo"] = function()
         pkginfo = {
-            install_file = function() return cur_install_file end,
-            install_dir = function() return cur_install_dir end,
+            install_file = function() return cur.file end,
+            install_dir = function() return cur.dir end,
+            platform = function() return cur.platform end,
         }
     end,
     ["xim.libxpkg.xvm"] = function()
@@ -121,58 +142,40 @@ local mods = {
             remove = function(name) table.insert(xvm_calls, {"remove", name}) end,
         }
     end,
-    ["xim.libxpkg.system"] = function()
-        system = {
-            exec = function(cmd) table.insert(execs, cmd) end,
-        }
-    end,
 }
 
 function import(name)
     assert(mods[name], "unexpected import: " .. name)()
 end
 
-os.isfile = function(p) return files[p] == true end
-os.tryrm = function(d)
-    for k in pairs(files) do
-        if k:sub(1, #d) == d then files[k] = nil end
-    end
-end
-os.mkdir = function(d) end
-os.mv = function(src, dst)
-    assert(files[src], "missing src: " .. src)
-    files[src] = nil
-    files[dst] = true
-end
-
 assert(loadfile(arg[1]))()
 
--- Unix case
-cur_install_file = "/tmp/dl/shfmt_v3.14.1_linux_amd64"
-cur_install_dir = "/store/xpkgs/xim-x-shfmt/3.14.1"
-files[cur_install_file] = true
+-- Unix: the landed file becomes <dir>/shfmt, executable.
+cur.file = "/tmp/dl/shfmt_v3.14.1_linux_amd64"
+cur.dir = "/store/xpkgs/xim-x-shfmt/3.14.1"
+cur.platform = "linux"
+files[cur.dir .. "/shfmt_v3.14.1_linux_amd64"] = true
 assert(installed() == false)
-assert(install() == true)
-assert(files["/store/xpkgs/xim-x-shfmt/3.14.1/shfmt"] == true)
-assert(#execs == 1 and execs[1]:match('chmod %+x "/store/xpkgs/xim%-x%-shfmt/3%.14%.1/shfmt"'))
+install()
+assert(files[cur.dir .. "/shfmt"] == true and not files[cur.dir .. "/shfmt_v3.14.1_linux_amd64"])
+assert(#chmods == 1 and chmods[1][1] == cur.dir .. "/shfmt" and chmods[1][2] == "+x")
 assert(installed() == true)
 
--- Windows case
-files = {}
-execs = {}
-cur_install_file = "C:\\dl\\shfmt_v3.14.1_windows_amd64.exe"
-cur_install_dir = "C:\\store\\xpkgs\\xim-x-shfmt\\3.14.1"
-files[cur_install_file] = true
+-- Windows: shfmt.exe (fs.chmod does nothing there, by the module's contract).
+files, moves, chmods = {}, {}, {}
+cur.file = "C:\\dl\\shfmt_v3.14.1_windows_amd64.exe"
+cur.dir = "C:\\store\\xpkgs\\xim-x-shfmt\\3.14.1"
+cur.platform = "windows"
+files[cur.dir .. "/shfmt_v3.14.1_windows_amd64.exe"] = true
 assert(installed() == false)
-assert(install() == true)
-assert(files["C:\\store\\xpkgs\\xim-x-shfmt\\3.14.1/shfmt.exe"] == true)
-assert(#execs == 0, "must not run chmod on Windows")
+install()
+assert(files[cur.dir .. "/shfmt.exe"] == true)
 assert(installed() == true)
 
 -- config & uninstall
-assert(config() == true)
-assert(xvm_calls[1][1] == "add" and xvm_calls[1][2] == "shfmt" and xvm_calls[1][3].bindir == cur_install_dir)
-assert(uninstall() == true)
+config()
+assert(xvm_calls[1][1] == "add" and xvm_calls[1][2] == "shfmt" and xvm_calls[1][3].bindir == cur.dir)
+uninstall()
 assert(xvm_calls[2][1] == "remove" and xvm_calls[2][2] == "shfmt")
 '''
         subprocess.run(
@@ -211,12 +214,19 @@ class TestIsolation:
     @pytest.mark.isolation
     def test_portable_lua_and_libxpkg_only(self):
         src = (REPO_ROOT / PKG_FILE).read_text(encoding="utf-8")
-        assert set(re.findall(r'import\("([^"]+)"\)', src)) <= {
+        imports = set(re.findall(r'import\("([^"]+)"\)', src))
+        assert imports <= {
+            "xim.libxpkg.fs",
+            "xim.libxpkg.path",
             "xim.libxpkg.pkginfo",
-            "xim.libxpkg.xvm",
             "xim.libxpkg.system",
+            "xim.libxpkg.xvm",
         }
-        assert not re.search(r'\b(?:path\.|is_host\(|os\.host\(|raise\()', src)
+        # `path` is libxpkg's module when the recipe imports it (spec "3");
+        # otherwise it is the compatibility layer's global.
+        if "xim.libxpkg.path" not in imports:
+            assert not re.search(r'\bpath\.', src)
+        assert not re.search(r'\b(?:is_host\(|os\.host\(|raise\()', src)
 
 
 class TestLifecycle:

@@ -10,7 +10,7 @@ package = {
     repo = "https://github.com/llvm/llvm-project",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"graphics", "lib"},
     keywords = {"libllvm", "graphics", "gl"},
@@ -23,13 +23,19 @@ package = {
             resources = {
                 GLOBAL = {
                     url = {
-                        linux = "https://github.com/xlings-res/libllvm/releases/download/${version}/libllvm-${version}-linux-x86_64.tar.gz",
+                        linux = {
+                            aarch64 = "https://github.com/xlings-res/libllvm/releases/download/${version}/libllvm-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://github.com/xlings-res/libllvm/releases/download/${version}/libllvm-${version}-linux-x86_64.tar.gz",
+                        },
                     },
                     required = true,
                 },
                 CN = {
                     url = {
-                        linux = "https://gitcode.com/xlings-res/libllvm/releases/download/${version}/libllvm-${version}-linux-x86_64.tar.gz",
+                        linux = {
+                            aarch64 = "https://gitcode.com/xlings-res/libllvm/releases/download/${version}/libllvm-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://gitcode.com/xlings-res/libllvm/releases/download/${version}/libllvm-${version}-linux-x86_64.tar.gz",
+                        },
                     },
                     required = true,
                 },
@@ -49,11 +55,20 @@ package = {
             },
             ["latest"] = { ref = "20.1.7" },
             ["20.1.7"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/libllvm/releases/download/20.1.7/libllvm-20.1.7-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/libllvm/releases/download/20.1.7/libllvm-20.1.7-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libllvm/releases/download/20.1.7/libllvm-20.1.7-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libllvm/releases/download/20.1.7/libllvm-20.1.7-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "1de66726fb14ed043e1f6a17ffb80e03578c2e01da85f024c46689140d31246f",
                 },
-                sha256 = "1de66726fb14ed043e1f6a17ffb80e03578c2e01da85f024c46689140d31246f",
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libllvm/releases/download/20.1.7/libllvm-20.1.7-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libllvm/releases/download/20.1.7/libllvm-20.1.7-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "a8d79cb8d1a4ebd75ae4d75850056a2cec6f42f7b447441947ff42b786b96e80",
+                },
             },
         },
     },

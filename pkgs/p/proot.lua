@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "3",
 
     name = "proot",
     description = "Userspace chroot, mount --bind, and binfmt_misc — no root required",
@@ -59,6 +59,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
 
             ["latest"] = { ref = "5.4.0" },
             ["5.4.0"] = {
@@ -74,15 +75,8 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.path")
 
-function install()
-    os.tryrm(pkginfo.install_dir())
-    local prootdir = pkginfo.install_file()
-        :replace(".zip", "")
-        :replace(".tar.gz", "")
-    os.mv(prootdir, pkginfo.install_dir())
-    return true
-end
 
 function config()
     xvm.add("proot", { bindir = path.join(pkginfo.install_dir(), "bin") })

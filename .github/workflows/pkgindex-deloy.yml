@@ -65,6 +65,14 @@ jobs:
         if: steps.scope.outputs.changed == 'true'
         run: pip install -r .xpkgindex/requirements.txt
 
+      # The coverage table is read from the recipes being published, so the
+      # page never lags them; the committed copy is only the docs tree's.
+      - name: Architecture coverage table
+        if: steps.scope.outputs.changed == 'true'
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends lua5.4 # host-dep-ok: the census loads recipes as Lua
+          python3 tools/arch_census.py coverage --output docs/generated/architecture-coverage.md
+
       - name: Generate static site
         if: steps.scope.outputs.changed == 'true'
         # Hand build provenance to xpkgindex via the env-var contract added

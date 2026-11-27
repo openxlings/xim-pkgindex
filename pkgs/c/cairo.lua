@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://cairographics.org",
     name = "cairo",
     description = "2D graphics library (cairo + cairo-gobject, the GTK rendering base)",
@@ -39,6 +39,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- The X11 entries arrived with 1.18.4. 1.18.0 was an "xcb-free /
             -- headless build for manim" and needed none of them; 1.18.4 has the
             -- xlib and xcb backends on, because GTK 4's X11 backend goes
@@ -89,14 +90,14 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/cairo/releases/download/1.18.4/cairo-1.18.4-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/cairo/releases/download/1.18.4/cairo-1.18.4-linux-x86_64.tar.gz",
                 },
-                sha256 = "d72cf1d45c0812fa9e823058dec8b8c0e17d403d430e01631801fae29ed2ea30",
+                sha256 = { x86_64 = "d72cf1d45c0812fa9e823058dec8b8c0e17d403d430e01631801fae29ed2ea30" },
             },
             ["1.18.0"] = {
                 url = {
                     GLOBAL = "https://github.com/xlings-res/cairo/releases/download/1.18.0/cairo-1.18.0-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/cairo/releases/download/1.18.0/cairo-1.18.0-linux-x86_64.tar.gz",
                 },
-                sha256 = "08e83de84aaef49cb1ab03e91832e0a1e88491337ff1fd3a7843b99e2a885a74",
+                sha256 = { x86_64 = "08e83de84aaef49cb1ab03e91832e0a1e88491337ff1fd3a7843b99e2a885a74" },
             },
         },
     },
@@ -105,11 +106,12 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     -- Fix the payload's own .pc rather than rewriting a copy per subos, which
@@ -127,7 +129,7 @@ function config()
     xvm.add(package.name)
 
     local bindir = path.join(idir, "bin")
-    if os.isfile(path.join(bindir, "cairo-trace")) then
+    if fs.is_file(path.join(bindir, "cairo-trace")) then
         xvm.add("cairo-trace", { bindir = bindir })
     end
 

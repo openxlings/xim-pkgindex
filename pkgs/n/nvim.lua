@@ -112,7 +112,10 @@ package = {
             ["0.12.4"] = {
                 sha256 = { x86_64 = "012bf3fcac5ade43914df3f174668bf64d05e049a4f032a388c027b1ebd78628" },
             },
-            ["0.12.2"] = "XLINGS_RES",
+            ["0.12.2"] = {
+                url = "XLINGS_RES",
+                sha256 = { x86_64 = "31cf85945cb600d96cdf69f88bc68bec814acbff50863c5546adef3a1bcef260" },
+            },
             ["0.11.5"] = {
                 sha256 = { x86_64 = "b2f91117be5b5ea39edd7297156dc2a4a8df4add6c95a90809a8df19e7ab6f52" },
             },

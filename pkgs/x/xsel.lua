@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "3",
 
     name = "xsel",
     description = "xsel: the X11 selections and clipboard from the command line (static)",
@@ -51,6 +51,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             ["latest"] = { ref = "1.2.1" },
             ["1.2.1"] = {
                 url = "XLINGS_RES",
@@ -65,15 +66,12 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 function install()
     local dir = pkginfo.install_dir()
-    local payload = pkginfo.install_file():replace(".tar.gz", "")
-    if os.isdir(payload) then
-        os.tryrm(dir)
-        os.mv(payload, dir)
-    end
-    return os.isfile(path.join(dir, "bin", "xsel"))
+    return fs.is_file(path.join(dir, "bin", "xsel"))
 end
 
 function config()

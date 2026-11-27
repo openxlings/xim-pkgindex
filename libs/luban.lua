@@ -24,27 +24,23 @@
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.log")
+import("xim.libxpkg.fs")
 
 local luban = {}
 
-local function quote(s) return "'" .. s:gsub("'", "'\\''") .. "'" end
-
 local function write(rel, content, mode)
     local file = pkginfo.install_dir() .. "/" .. rel
-    os.mkdir(assert(file:match("^(.*)/[^/]+$")))
-    local f = io.open(file, "wb")
-    if not f then error("cannot write " .. file) end
-    assert(f:write(content))
-    f:close()
+    fs.mkdir(assert(file:match("^(.*)/[^/]+$")))
+    fs.write(file, content)
     if mode then
         if mode ~= "755" and mode ~= "644" then error("luban: mode " .. mode .. " for " .. rel) end
-        system.exec("chmod " .. mode .. " " .. quote(file))
+        fs.chmod(file, mode)
     end
 end
 
 local function fresh()
-    os.tryrm(pkginfo.install_dir())
-    os.mkdir(pkginfo.install_dir())
+    fs.remove(pkginfo.install_dir())
+    fs.mkdir(pkginfo.install_dir())
 end
 
 function luban.os_release(id, variant, version)
@@ -223,11 +219,12 @@ default = "gcc@16.1.0"
 default_target = "%s-linux-gnu"
 ]]
 
--- The machine's: the catalog loader names it (os.arch, is_arch), an install
--- hook's runtime does (_RUNTIME.arch), and uname answers anywhere a command
--- runs. Falling back to x86_64 alone named an x86_64 target on aarch64, which
--- mcpp refused there ("target 'x86_64-linux-gnu' cannot be built on this
--- host"); an edition's packages chosen by it asked for x86_64-only ones.
+-- The install's architecture: pkginfo.arch(), a fact the host gives a hook
+-- (libxpkg 0.0.68, this index's client floor). Falling back to x86_64 alone
+-- named an x86_64 target on aarch64, which mcpp refused there ("target
+-- 'x86_64-linux-gnu' cannot be built on this host"). A recipe reading its
+-- own architecture while it is read states it in its entries (spec 3) or
+-- asks os.arch (spec 1 and 2), not this.
 function luban.arch()
     local function canonical(a)
         a = a and tostring(a):gsub("%s+", "") or ""
@@ -235,11 +232,8 @@ function luban.arch()
         if a == "x64" or a == "amd64" then return "x86_64" end
         return (a == "aarch64" or a == "x86_64") and a or nil
     end
-    return canonical(os.arch and os.arch())
-        or canonical(type(_RUNTIME) == "table" and _RUNTIME.arch)
-        or (type(is_arch) == "function" and (is_arch("aarch64") or is_arch("arm64")) and "aarch64")
-        or canonical(os.iorun and os.iorun("uname -m"))
-        or "x86_64"
+    local ok, a = pcall(pkginfo.arch)
+    return (ok and canonical(a)) or "x86_64"
 end
 
 function luban.mcpp_config()
@@ -333,13 +327,13 @@ function luban.edition(spec)
 end
 
 function luban.policy(json)
-    os.mkdir(pkginfo.install_dir())
+    fs.mkdir(pkginfo.install_dir())
     write("policy.json", json)
-    return os.isfile(pkginfo.install_dir() .. "/policy.json")
+    return fs.is_file(pkginfo.install_dir() .. "/policy.json")
 end
 
 function luban.boot(json)
-    os.mkdir(pkginfo.install_dir())
+    fs.mkdir(pkginfo.install_dir())
     write("share/luban/boot.json", json)
     return true
 end

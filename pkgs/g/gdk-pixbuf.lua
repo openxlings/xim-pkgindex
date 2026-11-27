@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://gitlab.gnome.org/GNOME/gdk-pixbuf",
     name = "gdk-pixbuf",
     description = "Image loading and pixel-buffer manipulation library (the GDK pixel buffer, GTK stack)",
@@ -37,6 +37,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- One of the two libraries #749 named as missing under huxerui.
             --
             -- -Dbuiltin_loaders=all links every enabled loader (png, jpeg,
@@ -78,7 +79,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/gdk-pixbuf/releases/download/2.44.8/gdk-pixbuf-2.44.8-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/gdk-pixbuf/releases/download/2.44.8/gdk-pixbuf-2.44.8-linux-x86_64.tar.gz",
                 },
-                sha256 = "6d67043d56f72400433d45926b410207223348e4e7b0c5dc41698b2c7392b70e",
+                sha256 = { x86_64 = "6d67043d56f72400433d45926b410207223348e4e7b0c5dc41698b2c7392b70e" },
             },
         },
     },
@@ -87,11 +88,12 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")
@@ -109,7 +111,7 @@ function install()
     -- install-time path is known here. Point it at the binary we actually
     -- installed rather than deleting the file and the feature with it.
     local thumbdir = path.join(pkginfo.install_dir(), "share", "thumbnailers")
-    if os.isdir(thumbdir) then
+    if fs.is_dir(thumbdir) then
         system.exec(string.format(  -- exec-quoting-ok: the install dir is inside the double-quoted sed expression
             "sh -c 'for t in \"%s\"/*.thumbnailer; do [ -f \"$t\" ] && "
             .. "sed -i \"s|/usr/bin/|%s/bin/|g\" \"$t\"; done'",

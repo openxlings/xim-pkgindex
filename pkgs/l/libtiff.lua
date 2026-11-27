@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "http://www.simplesystems.org/libtiff/",
     name = "libtiff",
     description = "TIFF library and utilities (libtiff, libtiffxx and the tiff* tools)",
@@ -39,6 +39,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- Measured DT_NEEDED of libtiff.so.6: libjpeg.so.62, libz.so.1,
             -- libm, libc. Nothing else, because every optional codec is off.
             deps = {
@@ -71,7 +72,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libtiff/releases/download/4.7.2/libtiff-4.7.2-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libtiff/releases/download/4.7.2/libtiff-4.7.2-linux-x86_64.tar.gz",
                 },
-                sha256 = "bd5baf88fbb2fb0da9087478bc31b1d7ef12b0512944cd2c7430c2aa44ece940",
+                sha256 = { x86_64 = "bd5baf88fbb2fb0da9087478bc31b1d7ef12b0512944cd2c7430c2aa44ece940" },
             },
         },
     },
@@ -80,11 +81,11 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")

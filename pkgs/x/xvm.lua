@@ -12,7 +12,7 @@ package = {
 
     -- xim pkg info
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable", -- dev, stable, deprecated
     categories = {"tools", "version-management"},
     keywords = {"rust", "cross-platform", "version-management"},
@@ -27,10 +27,22 @@ package = {
         },
         linux = {
             ["latest"] = { ref = "0.0.5" },
-            ["0.0.2"] = "XLINGS_RES",
-            ["0.0.3"] = "XLINGS_RES",
-            ["0.0.4"] = "XLINGS_RES",
-            ["0.0.5"] = "XLINGS_RES",
+            ["0.0.2"] = {
+                url = "XLINGS_RES",
+                sha256 = { x86_64 = "fa66931ddab9cbaa5427f6c7e125b21daa64cae20bc8a2709c65f9617110c6b2" },
+            },
+            ["0.0.3"] = {
+                url = "XLINGS_RES",
+                sha256 = { x86_64 = "c7068ebbd5b24ab27595bc335dc99c5d6ad67aebef8f11cbc3fb882ceb58f5be" },
+            },
+            ["0.0.4"] = {
+                url = "XLINGS_RES",
+                sha256 = { x86_64 = "975c9f16b3697853c8e16561ec90fdeff245c23914c4426472e65e840600576b" },
+            },
+            ["0.0.5"] = {
+                url = "XLINGS_RES",
+                sha256 = { x86_64 = "8fc2a13933124a5baf1322bbc0d7aaf9891a690cc1262767906c7775c89cc017" },
+            },
         },
         macosx = {
             ["latest"] = { ref = "0.0.5" },

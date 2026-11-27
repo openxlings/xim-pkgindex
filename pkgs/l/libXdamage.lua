@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://gitlab.freedesktop.org/xorg/lib/libxdamage",
     name = "libXdamage",
     description = "X11 damaged region extension library",
@@ -35,6 +35,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- The one X11 client library GTK 4's X11 backend needs that this
             -- index did not have. Measured on the host's own libgtk-4.so.1:
             -- `libXdamage.so.1` sits in its DT_NEEDED beside libXi, libXext,
@@ -54,7 +55,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libXdamage/releases/download/1.1.7/libXdamage-1.1.7-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libXdamage/releases/download/1.1.7/libXdamage-1.1.7-linux-x86_64.tar.gz",
                 },
-                sha256 = "f69db67d3c39090a27a69ad5af5ade951c0dc9099ae624be58600c6ab626d9bb",
+                sha256 = { x86_64 = "f69db67d3c39090a27a69ad5af5ade951c0dc9099ae624be58600c6ab626d9bb" },
             },
         },
     },
@@ -63,11 +64,11 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")

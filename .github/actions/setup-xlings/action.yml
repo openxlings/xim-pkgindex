@@ -1,13 +1,86 @@
 name: Set up xlings
-description: Install an explicit xlings version and refresh its bundled index.
+description: Install an explicit xlings version, or the build of an xlings commit under test, and refresh its bundled index.
 inputs:
   version:
     description: Client compatibility version
     default: v2026.11.23.1
+  xlings_sha:
+    description: >-
+      An openxlings/xlings commit whose CI build is the client under test (its
+      xlings-ci-<platform> run's release artifact) in place of `version`: how
+      this index and a client not yet released are tested together.
+    default: ''
 runs:
   using: composite
   steps:
-    - if: runner.os != 'Windows'
+    # The client under test: the artifact the commit's CI run uploaded for this
+    # host, installed the way a release is (`self install` from its directory).
+    - if: inputs.xlings_sha != '' && runner.os != 'Windows'
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        SHA: ${{ inputs.xlings_sha }}
+        XLINGS_NON_INTERACTIVE: '1'
+      run: |
+        set -euo pipefail
+        case "$(uname -s)-$(uname -m)" in
+          Linux-x86_64) wf=xlings-ci-linux.yml; name=xlings-linux-x86_64 ;;
+          Linux-aarch64) wf=xlings-ci-aarch64.yml; name=xlings-linux-aarch64-candidate ;;
+          Darwin-arm64) wf=xlings-ci-macos.yml; name=xlings-macosx-arm64 ;;
+          *) echo "::error::no xlings CI build for $(uname -s)-$(uname -m)"; exit 1 ;;
+        esac
+        dir="$RUNNER_TEMP/xlings-under-test"
+        rm -rf "$dir" && mkdir -p "$dir"
+        # The newest run of that workflow for the commit that has the artifact;
+        # a run still going may already have it (the build is its first job).
+        for run in $(gh run list -R openxlings/xlings -w "$wf" -c "$SHA" -L 10 --json databaseId --jq '.[].databaseId'); do
+          if gh run download "$run" -R openxlings/xlings -n "$name" -D "$dir/artifact" 2>/dev/null; then break; fi
+        done
+        tarball="$(ls "$dir"/artifact/xlings-*.tar.gz 2>/dev/null | grep -v sha256 | head -1 || true)"
+        [[ -n "$tarball" ]] || tarball="$(ls "$dir"/artifact/release.tar.gz 2>/dev/null | head -1 || true)"
+        [[ -n "$tarball" ]] || { echo "::error::no $name artifact for openxlings/xlings@$SHA in $wf"; exit 1; }
+        tar -xzf "$tarball" -C "$dir"
+        cd "$dir"/xlings-*/
+        chmod +x bin/xlings
+        ./bin/xlings self install
+        echo "XLINGS_HOME=$HOME/.xlings" >> "$GITHUB_ENV"
+        echo "$HOME/.xlings/bin" >> "$GITHUB_PATH"
+        echo "$HOME/.xlings/subos/default/bin" >> "$GITHUB_PATH"
+        "$HOME/.xlings/bin/xlings" --version
+        "$HOME/.xlings/bin/xlings" update --yes
+    - if: inputs.xlings_sha != '' && runner.os == 'Windows'
+      shell: pwsh
+      env:
+        GH_TOKEN: ${{ github.token }}
+        SHA: ${{ inputs.xlings_sha }}
+        XLINGS_NON_INTERACTIVE: '1'
+      run: |
+        $ErrorActionPreference = 'Stop'
+        $dir = Join-Path $env:RUNNER_TEMP 'xlings-under-test'
+        if (Test-Path $dir) { Remove-Item -Recurse -Force $dir }
+        New-Item -ItemType Directory -Path $dir | Out-Null
+        $runs = gh run list -R openxlings/xlings -w xlings-ci-windows.yml -c $env:SHA -L 10 --json databaseId --jq '.[].databaseId'
+        foreach ($run in $runs) {
+          gh run download $run -R openxlings/xlings -n xlings-windows-x86_64 -D "$dir\artifact" 2>$null
+          if ($LASTEXITCODE -eq 0) { break }
+        }
+        $zip = Get-ChildItem -Path "$dir\artifact" -Filter '*.zip' -ErrorAction SilentlyContinue | Select-Object -First 1
+        if (-not $zip) { throw "no xlings-windows-x86_64 artifact for openxlings/xlings@$env:SHA" }
+        Expand-Archive -Path $zip.FullName -DestinationPath $dir -Force
+        $extractDir = Get-ChildItem -Path $dir -Directory -Filter 'xlings-*' | Select-Object -First 1
+        Push-Location $extractDir.FullName
+        try {
+          & .\bin\xlings.exe self install
+          if ($LASTEXITCODE -ne 0) { throw "xlings self install failed with exit code $LASTEXITCODE" }
+        } finally { Pop-Location }
+        $homeDir = "$env:USERPROFILE\.xlings"
+        Add-Content $env:GITHUB_ENV "XLINGS_HOME=$homeDir"
+        Add-Content $env:GITHUB_PATH "$homeDir\bin"
+        Add-Content $env:GITHUB_PATH "$homeDir\subos\default\bin"
+        & "$homeDir\bin\xlings.exe" --version
+        & "$homeDir\bin\xlings.exe" update --yes
+        if ($LASTEXITCODE -ne 0) { throw 'xlings update failed' }
+    - if: inputs.xlings_sha == '' && runner.os != 'Windows'
       shell: bash
       env:
         XLINGS_VERSION: ${{ inputs.version }}
@@ -18,7 +91,7 @@ runs:
         echo "$HOME/.xlings/bin" >> "$GITHUB_PATH"
         echo "$HOME/.xlings/subos/default/bin" >> "$GITHUB_PATH"
         "$HOME/.xlings/bin/xlings" update --yes
-    - if: runner.os == 'Windows'
+    - if: inputs.xlings_sha == '' && runner.os == 'Windows'
       shell: pwsh
       env:
         XLINGS_VERSION: ${{ inputs.version }}

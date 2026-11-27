@@ -135,7 +135,7 @@ function config_gcc_specs(cmds)
         { plain = true }
     )
 
-    log.warn(string.format(
+    log.info(string.format(
         "Replacing dynamic linker in specs: %s -> %s",
         old_dynamic_linker, cmds["--with-dynamic-linker"]
     ))
@@ -410,34 +410,34 @@ function xpkg_main(version, ...)
     os.cd(project_dir)
 
     if ret_ok and cmds["--clean"] ~= "false" then
-        log.warn("-> clearing previous build files...")
+        log.info("-> clearing previous build files...")
         ret_ok = __try_run("make clean")
     else
         log.error("Project dir not found, aborting build.")
     end
 
     if ret_ok then
-        log.warn("-> building with musl-cross-make...")
+        log.info("-> building with musl-cross-make...")
         ret_ok = __try_run("make -j8")
     else
         log.error("Failed to clear previous build files, aborting build.")
     end
 
     if ret_ok then
-        log.warn("-> installing to " .. cmds["--output"] .. " ...")
+        log.info("-> installing to " .. cmds["--output"] .. " ...")
         ret_ok = __try_run("make install")
     else
         log.error("Build failed, aborting installation.")
     end
 
     if ret_ok and cmds["--with-dynamic-linker"] then
-        log.warn("-> config compiler specs(dynamic linker, rpath)...")
+        log.info("-> config compiler specs(dynamic linker, rpath)...")
         ret_ok = config_gcc_specs(cmds)
     end
 
     if ret_ok and cmds["--compress"] then
         if os.isfile(cmds["--compress"]) then os.tryrm(cmds["--compress"]) end
-        log.warn("-> start compress...")
+        log.info("-> start compress...")
         local parent_dir = path.directory(cmds["--output"])
         local dir_name = path.filename(cmds["--output"])
         os.exec(string.format('tar -czf "%s" -C "%s" "%s"', cmds["--compress"], parent_dir, dir_name))

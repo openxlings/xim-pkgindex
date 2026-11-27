@@ -133,7 +133,7 @@ package = {
     type = "package",
     -- Host-independent payload -- see EXTRACTION LAYOUT above -- so every
     -- arch this index otherwise serves resolves to the one download.
-    archs = {"x86_64", "aarch64", "x86"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"tool", "android", "sdk"},
     keywords = {"android", "android.jar", "framework.aidl", "platform",
@@ -153,17 +153,26 @@ package = {
             ["36"] = { ref = "36-r2" },
             ["36-r2"] = {
                 url = { GLOBAL = "https://dl.google.com/android/repository/platform-36_r02.zip" },
-                sha256 = "37607369a28c5b640b3a7998868d45898ebcb777565a0e85f9acf36f29631d2e",
+                sha256 = {
+                    x86_64 = "37607369a28c5b640b3a7998868d45898ebcb777565a0e85f9acf36f29631d2e",
+                    aarch64 = "37607369a28c5b640b3a7998868d45898ebcb777565a0e85f9acf36f29631d2e",
+                },
             },
             ["35"] = { ref = "35-r2" },
             ["35-r2"] = {
                 url = { GLOBAL = "https://dl.google.com/android/repository/platform-35_r02.zip" },
-                sha256 = "0988cacad01b38a18a47bac14a0695f246bc76c1b06c0eeb8eb0dc825ab0c8e0",
+                sha256 = {
+                    x86_64 = "0988cacad01b38a18a47bac14a0695f246bc76c1b06c0eeb8eb0dc825ab0c8e0",
+                    aarch64 = "0988cacad01b38a18a47bac14a0695f246bc76c1b06c0eeb8eb0dc825ab0c8e0",
+                },
             },
             ["34"] = { ref = "34-r3" },
             ["34-r3"] = {
                 url = { GLOBAL = "https://dl.google.com/android/repository/platform-34-ext7_r03.zip" },
-                sha256 = "16fdb74c55e59ae3ef52def135aec713508467bd56d7dabcd8c9be31fa8b20f3",
+                sha256 = {
+                    x86_64 = "16fdb74c55e59ae3ef52def135aec713508467bd56d7dabcd8c9be31fa8b20f3",
+                    aarch64 = "16fdb74c55e59ae3ef52def135aec713508467bd56d7dabcd8c9be31fa8b20f3",
+                },
             },
             -- No API level is "latest": a consumer pins the level its
             -- own `compileSdkVersion`/`min_api_level` names (design record

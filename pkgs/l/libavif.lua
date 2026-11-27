@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     homepage = "https://github.com/AOMediaCodec/libavif",
     name = "libavif",
@@ -19,6 +19,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- libavif.so.13 names libaom.so.3 and libc (readelf -d); libaom comes from xim:aom.
             deps = { "xim:glibc", "xim:aom@3.3.0" },
             exports = {
@@ -58,8 +59,6 @@ import("xim.pkgindex.selfcontain")
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mv("libavif-" .. pkginfo.version(), dir)
     selfcontain.seal(dir)
     sysroot.relocate_pkgconfig(dir, "lib/pkgconfig")
     return true

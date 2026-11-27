@@ -14,6 +14,7 @@ package = {
 
     -- xim pkg info
     type = "package",
+    archs = {"x86_64"},
 
     -- xvm: xlings version management
     xvm_enable = true,
@@ -30,7 +31,7 @@ package = {
             ["latest"] = { ref = "pre-v0.0.5" },
             ["pre-v0.0.5"] = {
                 url = "https://github.com/Sunrisepeak/KHistory/releases/download/pre-v0.0.5/khistory-pre-v0.0.5-linux-x86_64",
-                sha256 = nil
+                sha256 = { x86_64 = "7d122a9a9450d202671b03bca0cbf3b22a56d1e0078e32a66953919323cd1b5e" }
             },
         },
     },

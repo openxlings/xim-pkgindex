@@ -11,7 +11,7 @@ local versions = {
 }
 
 package = {
-    spec = "1",
+    spec = "3",
     -- base info
     name = "xlings-project-templates",
     description = "Xlings - Project Templates",

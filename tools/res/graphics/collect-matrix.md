@@ -16,7 +16,7 @@ run it from a clone rather than by piping a single file:
 
 ```sh
 git clone https://github.com/openxlings/xim-pkgindex
-bash xim-pkgindex/.agents/tools/graphics/verify-stack.sh --json --keep | tee gfx-matrix.txt
+bash xim-pkgindex/tools/res/graphics/verify-stack.sh --json --keep | tee gfx-matrix.txt
 ```
 
 You need `xlings` on `PATH` (or `XLINGS_BIN=/path/to/xlings`). Nothing else: the

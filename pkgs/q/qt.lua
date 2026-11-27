@@ -69,7 +69,7 @@
 -- -m` on linux. macosx needs no arch branch at all: one universal payload
 -- serves both Apple arches.
 package = {
-    spec = "2",
+    spec = "3",
 
     name = "qt",
     description = "Qt 6 base modules (qtbase, qtsvg, qtdeclarative, qttools, qttranslations and the platform extras), prebuilt, from the official online-installer repository, extracted into one prefix; documentation and debug symbols excluded",
@@ -153,6 +153,7 @@ import("xim.libxpkg.system")
 import("xim.libxpkg.log")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 import("xim.pkgindex.qtsdk")
 
 local BASE = {
@@ -297,15 +298,15 @@ function install()
     end
 
     local install_dir = pkginfo.install_dir()
-    os.tryrm(install_dir)
-    fs.mkdir_p(install_dir)
+    fs.remove(install_dir)
+    fs.mkdir(install_dir)
 
     if not qtsdk.fetch_and_extract(list, install_dir, marker_path(), "qt") then
         return false
     end
 
     qtsdk.ensure_qt_conf(install_dir)
-    if os.host() == "linux" then qtsdk.prune(install_dir, PRUNE_LINUX) end
+    if pkginfo.platform() == "linux" then qtsdk.prune(install_dir, PRUNE_LINUX) end
     qtsdk.mark_runtime(marker_path())
 
     return installed()
@@ -332,7 +333,7 @@ function installed()
     if not qtsdk.runtime_current(marker) then return false end
 
     local d = pkginfo.install_dir()
-    local osname = os.host()
+    local osname = pkginfo.platform()
     local exe = osname == "windows" and ".exe" or ""
 
     -- qtbase's build-time tools. MEASURED: on linux and macosx Qt 6 puts
@@ -340,26 +341,26 @@ function installed()
     -- windows they stay in bin/ -- this index's windows-test failed this
     -- check against a complete install while it looked in libexec/ there.
     local tools = osname == "windows" and "bin" or "libexec"
-    if not os.isfile(path.join(d, tools, "moc" .. exe)) then return false end
+    if not fs.is_file(path.join(d, tools, "moc" .. exe)) then return false end
     -- qttranslations
-    if not os.isfile(path.join(d, "bin", "lrelease" .. exe)) then return false end
+    if not fs.is_file(path.join(d, "bin", "lrelease" .. exe)) then return false end
 
     -- qtbase headers -- a file unique to the module, not the include/ dir
     if osname == "macosx" then
-        if not os.isfile(path.join(d, "lib", "QtCore.framework", "Headers", "QString")) then
+        if not fs.is_file(path.join(d, "lib", "QtCore.framework", "Headers", "QString")) then
             return false
         end
     else
-        if not os.isfile(path.join(d, "include", "QtCore", "QString")) then
+        if not fs.is_file(path.join(d, "include", "QtCore", "QString")) then
             return false
         end
     end
 
     -- qtbase shared library -- a file, not the lib/ dir
     if osname == "windows" then
-        if not os.isfile(path.join(d, "lib", "Qt6Core.lib")) then return false end
+        if not fs.is_file(path.join(d, "lib", "Qt6Core.lib")) then return false end
     elseif osname == "linux" then
-        if not os.isfile(path.join(d, "lib", "libQt6Core.so.6")) then return false end
+        if not fs.is_file(path.join(d, "lib", "libQt6Core.so.6")) then return false end
         -- icu -- the module whose archive is flat (see FLAT_MODULE_SUBDIR):
         -- libQt6Core.so.6 NEEDS these with RUNPATH=$ORIGIN, so a marker that
         -- says "icu extracted" but a wrong destination directory (the bug
@@ -368,9 +369,9 @@ function installed()
         -- archive's 12 files landed at install_dir root instead of
         -- install_dir/lib, and `qmake --version` failed with
         -- "libicui18n.so.73: cannot open shared object file".
-        if not os.isfile(path.join(d, "lib", "libicuuc.so.73")) then return false end
+        if not fs.is_file(path.join(d, "lib", "libicuuc.so.73")) then return false end
     else
-        if not os.isfile(path.join(d, "lib", "QtCore.framework", "QtCore")) then return false end
+        if not fs.is_file(path.join(d, "lib", "QtCore.framework", "QtCore")) then return false end
     end
 
     return true

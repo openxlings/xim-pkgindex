@@ -60,6 +60,8 @@ import("xim.libxpkg.xvm")
 import("xim.libxpkg.subos")
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
+import("xim.libxpkg.system")
 
 local graphics = {}
 
@@ -409,7 +411,7 @@ graphics.VULKAN_ICD_ONLY = {
 function graphics.declare_opencl_icd_library(install_dir, rel_lib, tag)
     if type(subos.env) ~= "function" then return false end
     local lib = path.join(install_dir, rel_lib)
-    if not os.isfile(lib) then return false end
+    if not fs.is_file(lib) then return false end
     subos.env{ var = "OCL_ICD_FILENAMES", op = "prepend", value = lib, binding = tag }
     return true
 end
@@ -446,7 +448,7 @@ function graphics.declare_egl_vendor(install_dir, rel_json, tag)
                  .. "declaration order. Run `xlings self update`.")
         return false
     end
-    if not os.isfile(path.join(install_dir, rel_json)) then
+    if not fs.is_file(path.join(install_dir, rel_json)) then
         -- Not an error: a sentinel with no host driver writes no vendor JSON.
         return true
     end
@@ -473,14 +475,11 @@ end
 function graphics.declare_vulkan_icd(install_dir, rel_dir, tag)
     if not xvm.files then return false end
     local dir = path.join(install_dir, rel_dir)
-    if not os.isdir(dir) then return true end   -- a build with no Vulkan driver
-    local f = io.popen(string.format([[ls -1 "%s"/*.json 2>/dev/null]], dir))
-    if not f then return false end
+    if not fs.is_dir(dir) then return true end   -- a build with no Vulkan driver
     local n = 0
-    for line in f:lines() do
-        local p = line:gsub("[\r\n]+$", "")
-        if p ~= "" then
-            local base = p:match("([^/]+)$")
+    for _, e in ipairs(fs.list(dir)) do
+        if e.type ~= "dir" and e.name:match("%.json$") then
+            local base = e.name
             xvm.files{
                 src = path.join(rel_dir, base),
                 dst = path.join(graphics.VULKAN_ICD_DIR, base),
@@ -489,7 +488,6 @@ function graphics.declare_vulkan_icd(install_dir, rel_dir, tag)
             n = n + 1
         end
     end
-    f:close()
     return n > 0
 end
 
@@ -505,14 +503,11 @@ end
 function graphics.declare_vulkan_layer(install_dir, rel_dir, tag)
     if not xvm.files then return false end
     local dir = path.join(install_dir, rel_dir)
-    if not os.isdir(dir) then return true end   -- a build that ships no layer
-    local f = io.popen(string.format([[ls -1 "%s"/*.json 2>/dev/null]], dir))
-    if not f then return false end
+    if not fs.is_dir(dir) then return true end   -- a build that ships no layer
     local n = 0
-    for line in f:lines() do
-        local p = line:gsub("[\r\n]+$", "")
-        if p ~= "" then
-            local base = p:match("([^/]+)$")
+    for _, e in ipairs(fs.list(dir)) do
+        if e.type ~= "dir" and e.name:match("%.json$") then
+            local base = e.name
             xvm.files{
                 src = path.join(rel_dir, base),
                 dst = path.join(graphics.VULKAN_LAYER_DIR, base),
@@ -521,7 +516,6 @@ function graphics.declare_vulkan_layer(install_dir, rel_dir, tag)
             n = n + 1
         end
     end
-    f:close()
     return n > 0
 end
 
@@ -537,14 +531,11 @@ end
 function graphics.declare_opencl_icd(install_dir, rel_dir, tag)
     if not xvm.files then return false end
     local dir = path.join(install_dir, rel_dir)
-    if not os.isdir(dir) then return true end   -- a build with no OpenCL ICD
-    local f = io.popen(string.format([[ls -1 "%s"/*.icd 2>/dev/null]], dir))
-    if not f then return false end
+    if not fs.is_dir(dir) then return true end   -- a build with no OpenCL ICD
     local n = 0
-    for line in f:lines() do
-        local p = line:gsub("[\r\n]+$", "")
-        if p ~= "" then
-            local base = p:match("([^/]+)$")
+    for _, e in ipairs(fs.list(dir)) do
+        if e.type ~= "dir" and e.name:match("%.icd$") then
+            local base = e.name
             xvm.files{
                 src = path.join(rel_dir, base),
                 dst = path.join(graphics.OPENCL_VENDOR_DIR, base),
@@ -553,7 +544,6 @@ function graphics.declare_opencl_icd(install_dir, rel_dir, tag)
             n = n + 1
         end
     end
-    f:close()
     return n > 0
 end
 
@@ -570,7 +560,7 @@ end
 -- link targets; mesa's own recipe already says so.
 function graphics.declare_dri(install_dir, rel_dir, tag)
     if not xvm.files then return false end
-    if not os.isdir(path.join(install_dir, rel_dir)) then
+    if not fs.is_dir(path.join(install_dir, rel_dir)) then
         log.warn("no %s in this payload -- LIBGL_DRIVERS_PATH would point at "
                  .. "an empty directory and GL would fall back to software "
                  .. "rendering with no diagnostic", rel_dir)
@@ -594,7 +584,7 @@ end
 -- gbm_create_device() returning NULL with no diagnostic of its own.
 function graphics.declare_gbm(install_dir, rel_dir, tag)
     if not xvm.files then return false end
-    if not os.isdir(path.join(install_dir, rel_dir)) then
+    if not fs.is_dir(path.join(install_dir, rel_dir)) then
         log.warn("no %s in this payload -- GBM_BACKENDS_PATH would point at an "
                  .. "empty directory and gbm_create_device() would find no "
                  .. "backend and return NULL", rel_dir)
@@ -626,7 +616,7 @@ end
 function graphics.declare_xkb(install_dir, rel_dir, tag)
     if not xvm.files then return false end
     local src = path.join(install_dir, rel_dir)
-    if not os.isdir(src) then
+    if not fs.is_dir(src) then
         log.warn("no %s in this payload -- XKB_CONFIG_ROOT would name a "
                  .. "directory that does not exist and every RMLVO keymap "
                  .. "would fail to compile", rel_dir)
@@ -656,8 +646,8 @@ end
 function graphics.declare_quirks(install_dir, rel_dir, tag)
     if not xvm.files then return false end
     local src = path.join(install_dir, rel_dir)
-    if not os.isdir(src)
-       or not os.isfile(path.join(src, "10-generic-keyboard.quirks")) then
+    if not fs.is_dir(src)
+       or not fs.is_file(path.join(src, "10-generic-keyboard.quirks")) then
         log.warn("no quirks in %s -- LIBINPUT_QUIRKS_DIR would name an empty "
                  .. "directory and libinput would fall back to its built-in "
                  .. "defaults without saying so", rel_dir)
@@ -700,10 +690,10 @@ end
 function graphics.vendor_closure_gaps(interposer, host_vendor)
     local out = { ok = false, missing = {}, reason = nil }
 
-    local dyn = os.iorun(string.format([[readelf -d "%s"]], host_vendor))
-    -- `os.iorun` returns "" on failure and swallows stderr, so an empty
-    -- result is the ONLY signal the tool did not run. It is not evidence of
-    -- an empty closure.
+    local dyn = system.run(string.format([[readelf -d "%s"]], host_vendor)).out
+    -- A failed command's output is "" here (system.run answers, it does not
+    -- raise), so an empty result is the ONLY signal the tool did not run. It
+    -- is not evidence of an empty closure.
     if dyn == "" then return out end
 
     -- The TAG first, because it decides whether the path is reachable at all.
@@ -718,7 +708,7 @@ function graphics.vendor_closure_gaps(interposer, host_vendor)
     -- `libEGL_nvidia.so.0 state=ok` for a library measured to fail with
     -- `libpthread.so.0: cannot open shared object file`. Presence was true and
     -- reachability was false.
-    local tags = os.iorun(string.format([[readelf -d "%s"]], interposer))
+    local tags = system.run(string.format([[readelf -d "%s"]], interposer)).out
     if tags == "" then return out end
     -- The tag on the INTERPOSER decides whether the host driver behind it can
     -- resolve its own DT_NEEDED *from this library alone*. It does not decide
@@ -752,7 +742,7 @@ function graphics.vendor_closure_gaps(interposer, host_vendor)
     end
 
     local search = {}
-    local rp = os.iorun(string.format([[patchelf --print-rpath "%s"]], interposer))
+    local rp = system.run(string.format([[patchelf --print-rpath "%s"]], interposer)).out
     for dir in (((rp or "") .. ":"):gmatch("([^:\n]*):")) do
         if dir ~= "" then table.insert(search, dir) end
     end
@@ -765,7 +755,7 @@ function graphics.vendor_closure_gaps(interposer, host_vendor)
         if soname:sub(1, 1) ~= "/" then
             local found = false
             for _, dir in ipairs(search) do
-                if os.isfile(path.join(dir, soname)) then found = true break end
+                if fs.is_file(path.join(dir, soname)) then found = true break end
             end
             if not found then table.insert(out.missing, soname) end
         end
@@ -808,8 +798,8 @@ end
 --     own build". It is literally the host driver. The verdict was inverted
 --     for precisely the vendors that most needed checking.
 function graphics.host_vendor_behind(interposer)
-    local dyn = os.iorun(string.format([[readelf -d "%s"]], interposer))
-    -- "" is the ONLY signal os.iorun gives for a tool that did not run, and
+    local dyn = system.run(string.format([[readelf -d "%s"]], interposer)).out
+    -- "" is the ONLY signal system.run gives for a tool that did not run, and
     -- it is not evidence about the library.
     if dyn == "" then return nil, "unreadable" end
     for soname in dyn:gmatch("Shared library:%s*%[([^%]]+)%]") do
@@ -818,7 +808,7 @@ function graphics.host_vendor_behind(interposer)
     -- No stub in front of it. Follow the file: a vendor that resolves outside
     -- our store is the host's driver wearing our filename, and its closure is
     -- every bit as unchecked as an interposer's.
-    local real = os.iorun(string.format([[readlink -f "%s"]], interposer))
+    local real = system.run(string.format([[readlink -f "%s"]], interposer)).out
     real = (real or ""):gsub("%s+$", "")
     if real ~= "" and not real:find("xpkgs", 1, true) then
         return real, "direct"
@@ -835,8 +825,8 @@ end
 -- parser is a format that can fail to parse.
 function graphics.record_wiring(dispatch_dir, lines)
     local f = path.join(dispatch_dir, graphics.GLX_VENDOR_SUBDIR, ".wiring")
-    io.writefile(f, table.concat(lines, "\n") .. "\n")
-    return os.isfile(f)
+    fs.write(f, table.concat(lines, "\n") .. "\n")
+    return fs.is_file(f)
 end
 
 -- Populate libglvnd's vendor directory from the vendors in this stack.
@@ -866,18 +856,18 @@ end
 -- inside a hook rather than failing a check.
 function graphics.wire_glx_vendors(dispatch_dir, vendors)
     local vendor_dir = path.join(dispatch_dir, graphics.GLX_VENDOR_SUBDIR)
-    fs.mkdir_p(vendor_dir)
+    fs.mkdir(vendor_dir)
 
     -- Rebuild, do not merge. A vendor dropped from the stack must not leave a
     -- dangling entry: glvnd would dlopen it, fail, and swallow the error.
-    for _, stale in ipairs(fs.files(vendor_dir) or {}) do
-        fs.remove(stale)
+    for _, stale in ipairs(fs.list(vendor_dir)) do
+        if stale.type ~= "dir" then fs.remove(stale.path) end
     end
 
     local n = 0
     for _, v in ipairs(vendors) do
         local src = path.join(v.dir, "lib", v.soname)
-        if os.isfile(src) then
+        if fs.is_file(src) then
             -- Absolute symlink: the target is a different payload in the same
             -- home, so a relative one would break if either moved.
             fs.symlink(src, path.join(vendor_dir, v.soname))

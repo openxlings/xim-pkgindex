@@ -8,7 +8,7 @@
 -- program's libthread_db: it follows a program's threads through the kernel.
 -- xlings-res/gdb on GitHub and GitCode (tools/res/publish.py).
 package = {
-    spec = "2",
+    spec = "3",
 
     name = "gdb",
     description = "GNU gdb and gdbserver: the GNU debugger, static, with its TUI and remote server",
@@ -55,6 +55,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             ["latest"] = { ref = "18.1" },
             ["18.1"] = {
                 url = "XLINGS_RES",
@@ -69,15 +70,12 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 function install()
     local dir = pkginfo.install_dir()
-    local payload = pkginfo.install_file():replace(".tar.gz", "")
-    if os.isdir(payload) then
-        os.tryrm(dir)
-        os.mv(payload, dir)
-    end
-    return os.isfile(path.join(dir, "bin", "gdb")) and os.isfile(path.join(dir, "bin", "gdbserver"))
+    return fs.is_file(path.join(dir, "bin", "gdb")) and fs.is_file(path.join(dir, "bin", "gdbserver"))
 end
 
 function config()

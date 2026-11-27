@@ -110,7 +110,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/llvm-dev/releases/download/20.1.7.1/llvm-dev-20.1.7.1-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/llvm-dev/releases/download/20.1.7.1/llvm-dev-20.1.7.1-linux-x86_64.tar.gz",
                 },
-                sha256 = "5a00dd63168c7520d972f142dabf3f3ae79edc38f58a3f4740999e9264c3a99e",
+                sha256 = { x86_64 = "5a00dd63168c7520d972f142dabf3f3ae79edc38f58a3f4740999e9264c3a99e" },
             },
         },
     },

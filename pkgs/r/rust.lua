@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "3",
     -- base info
     homepage = "https://www.rust-lang.org",
 
@@ -45,31 +45,34 @@ package = {
 import("xim.libxpkg.pkgmanager")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
+import("xim.libxpkg.path")
+import("xim.libxpkg.pkginfo")
+import("xim.libxpkg.system")
 
 function installed()
-    os.exec("rustc --version")
-    os.exec("cargo --version")
-    os.exec("rustup --version")
+    system.exec("rustc --version")
+    system.exec("cargo --version")
+    system.exec("rustup --version")
     return true
 end
 
 function install()
-    if os.host() == "windows" then
+    if pkginfo.platform() == "windows" then
         local toolchain_abi = _choice_toolchain()
-        os.exec(
+        system.exec(
             "rustup-init"
             .. " --default-host " .. toolchain_abi
             .. " --default-toolchain stable"
             .. " --profile default -y"
         )
     else
-        os.exec("rustup-init -v -y")
+        system.exec("rustup-init -v -y")
     end
     return true
 end
 
 function config()
-    local home = os.host() == "windows" and os.getenv("USERPROFILE") or os.getenv("HOME")
+    local home = pkginfo.platform() == "windows" and os.getenv("USERPROFILE") or os.getenv("HOME")
     local cargo_bin = path.join(home, ".cargo", "bin")
 
     xvm.add("rustc", { bindir = cargo_bin })
@@ -92,7 +95,8 @@ function config()
 end
 
 function uninstall()
-    os.exec("rustup self uninstall")
+    -- -y: there is nobody to answer its "Continue? (y/N)", and no answer is no.
+    system.exec("rustup self uninstall -y")
     xvm.remove("rustc")
     xvm.remove("cargo")
     xvm.remove("rustup")
@@ -152,7 +156,7 @@ function _choice_toolchain()
         1. x86_64-pc-windows-gnu (default)
         2. x86_64-pc-windows-msvc
     ]])
-    cprint("${dim bright cyan}please input (1 or 2):${clear}")
+    log.info("${dim bright cyan}please input (1 or 2):${clear}")
     io.stdout:flush()
     local confirm = io.read()
 

@@ -10,7 +10,7 @@ package = {
     repo = "https://sourceware.org/git/elfutils.git",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"graphics", "lib"},
     keywords = {"elfutils", "graphics", "gl"},
@@ -21,13 +21,19 @@ package = {
             resources = {
                 GLOBAL = {
                     url = {
-                        linux = "https://github.com/xlings-res/elfutils/releases/download/${version}/elfutils-${version}-linux-x86_64.tar.gz",
+                        linux = {
+                            aarch64 = "https://github.com/xlings-res/elfutils/releases/download/${version}/elfutils-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://github.com/xlings-res/elfutils/releases/download/${version}/elfutils-${version}-linux-x86_64.tar.gz",
+                        },
                     },
                     required = true,
                 },
                 CN = {
                     url = {
-                        linux = "https://gitcode.com/xlings-res/elfutils/releases/download/${version}/elfutils-${version}-linux-x86_64.tar.gz",
+                        linux = {
+                            aarch64 = "https://gitcode.com/xlings-res/elfutils/releases/download/${version}/elfutils-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://gitcode.com/xlings-res/elfutils/releases/download/${version}/elfutils-${version}-linux-x86_64.tar.gz",
+                        },
                     },
                     required = true,
                 },
@@ -49,11 +55,20 @@ package = {
             },
             ["latest"] = { ref = "0.191" },
             ["0.191"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/elfutils/releases/download/0.191/elfutils-0.191-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/elfutils/releases/download/0.191/elfutils-0.191-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/elfutils/releases/download/0.191/elfutils-0.191-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/elfutils/releases/download/0.191/elfutils-0.191-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "30efe8df032b049f47f6067c32fd86c7f0a253795988f2825cc61675a58f2c61",
                 },
-                sha256 = "30efe8df032b049f47f6067c32fd86c7f0a253795988f2825cc61675a58f2c61",
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/elfutils/releases/download/0.191/elfutils-0.191-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/elfutils/releases/download/0.191/elfutils-0.191-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "3cdd881cd4843d02a1f9075c046862f729e10fd1f0278b0d3c4141c319a5c234",
+                },
             },
         },
     },

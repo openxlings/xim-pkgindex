@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     homepage = "https://www.x.org",
     name = "libXcursor",
@@ -38,6 +38,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             deps = { "xim:libXrender@>=0.9", "xim:libXfixes@>=6.0", "xim:glibc", "xim:libX11" },
             -- elfpatch reads this from each dependency and writes the consumer's
             -- RPATH, which is what makes the stack resolve without anyone
@@ -51,7 +52,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libXcursor/releases/download/1.2.3/libXcursor-1.2.3-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libXcursor/releases/download/1.2.3/libXcursor-1.2.3-linux-x86_64.tar.gz",
                 },
-                sha256 = "b85ad01f2ba44265921fd0f5133254b5bd4068e7dfc29368c8b96ad93b332bba",
+                sha256 = { x86_64 = "b85ad01f2ba44265921fd0f5133254b5bd4068e7dfc29368c8b96ad93b332bba" },
             },
         },
     },
@@ -60,13 +61,12 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mv("libXcursor-1.2.3", dir)
 
     -- Stamp this payload's own dependency closure onto its libraries, so
     -- they resolve from our payloads and not from the host's ld.so.cache.

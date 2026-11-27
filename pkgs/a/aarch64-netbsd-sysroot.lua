@@ -39,14 +39,23 @@ package = {
             CN = "https://gitcode.com/xlings-res/aarch64-netbsd-sysroot/releases/download/${version}/aarch64-netbsd-sysroot-${version}.tar.xz",
         },
         linux = {
+            -- Target libraries, which no host loads: exported to no consumer
+            -- and outside what rule M judges (libxpkg 0.0.68 reads {} as none).
+            exports = { runtime = { libdirs = {} } },
             ["latest"] = { ref = "10.2" },
-            ["10.2"] = { sha256 = "37f6eaf3fa9ffe1e821575ac01b3183b313bad48362f8a548f79ce40e3ef7005" },
+            ["10.2"] = { sha256 = { x86_64 = "37f6eaf3fa9ffe1e821575ac01b3183b313bad48362f8a548f79ce40e3ef7005", aarch64 = "37f6eaf3fa9ffe1e821575ac01b3183b313bad48362f8a548f79ce40e3ef7005" } },
         },
         macosx = {
+            -- Target libraries, which no host loads: exported to no consumer
+            -- and outside what rule M judges (libxpkg 0.0.68 reads {} as none).
+            exports = { runtime = { libdirs = {} } },
             ["latest"] = { ref = "10.2" },
             ["10.2"] = { sha256 = "37f6eaf3fa9ffe1e821575ac01b3183b313bad48362f8a548f79ce40e3ef7005" },
         },
         windows = {
+            -- Target libraries, which no host loads: exported to no consumer
+            -- and outside what rule M judges (libxpkg 0.0.68 reads {} as none).
+            exports = { runtime = { libdirs = {} } },
             ["latest"] = { ref = "10.2" },
             ["10.2"] = { sha256 = "37f6eaf3fa9ffe1e821575ac01b3183b313bad48362f8a548f79ce40e3ef7005" },
         },

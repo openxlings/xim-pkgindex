@@ -267,8 +267,12 @@ package = {
         -- the newest release: an unpinned `xlings install node` should get the
         -- line node itself recommends for production. 26.x entered LTS in
         -- Oct 2026, so it is now the default.
+        -- `lts` is an alias for the same line (`xlings install node@lts`); a
+        -- client records it and `xlings update node` follows it. The updater
+        -- moves `latest` only: `lts` moves by review.
         windows = {
             ["latest"] = { ref = "26.13.1" },
+            ["lts"] = { ref = "26.13.1" },
             ["26.13.0"] = {
                 x86_64 = {
                     url = {
@@ -331,6 +335,7 @@ package = {
                 runtime = { "xim:glibc@>=2.39", "xim:gcc-runtime@15.1.0" },
             },
             ["latest"] = { ref = "26.13.1" },
+            ["lts"] = { ref = "26.13.1" },
             ["26.13.0"] = {
                 x86_64 = {
                     url = {
@@ -382,6 +387,7 @@ package = {
         },
         macosx = {
             ["latest"] = { ref = "26.13.1" },
+            ["lts"] = { ref = "26.13.1" },
             ["26.13.0"] = {
                 x86_64 = {
                     url = {

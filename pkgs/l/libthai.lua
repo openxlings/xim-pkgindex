@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://github.com/tlwg/libthai",
     name = "libthai",
     description = "Thai language support library (word breaking, collation, character classification)",
@@ -37,6 +37,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- NOT a new capability -- a missing one. The PUBLISHED pango payload
             -- already needs this: `libpango-1.0.so.0` names `libthai.so.0` in
             -- its DT_NEEDED, and until now nothing in the index provided it, so
@@ -60,7 +61,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libthai/releases/download/0.1.30/libthai-0.1.30-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libthai/releases/download/0.1.30/libthai-0.1.30-linux-x86_64.tar.gz",
                 },
-                sha256 = "18c89e627c24f8bc256be61db8348110ae071564387ea1dea9c98edbbdc7298a",
+                sha256 = { x86_64 = "18c89e627c24f8bc256be61db8348110ae071564387ea1dea9c98edbbdc7298a" },
             },
         },
     },
@@ -69,11 +70,11 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")

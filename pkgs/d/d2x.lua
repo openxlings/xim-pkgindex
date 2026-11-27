@@ -7,7 +7,7 @@ package = {
     -- others -- which reads as `<pkg>@<ver> not found` on the platforms that
     -- lack it, against a file that contains the version string.
     platform_versions_diverge = true,
-    spec = "1",
+    spec = "3",
 
     -- base info
     name = "d2x",
@@ -32,6 +32,7 @@ package = {
 
     xpm = {
         windows = {
+            strip = 1,
             ["latest"] = { ref = "2026.10.21.1" },
             ["2026.10.21.1"] = {
                 url = "XLINGS_RES",
@@ -55,6 +56,7 @@ package = {
             ["0.1.1"] = "XLINGS_RES",
         },
         linux = {
+            strip = 1,
             deps = { "xim:glibc@>=2.39", "xim:openssl@3.1.5" },
             ["latest"] = { ref = "2026.10.21.1" },
             ["2026.10.21.1"] = {
@@ -69,17 +71,45 @@ package = {
                 url = "XLINGS_RES",
                 sha256 = { x86_64 = "e94c66002653a4bb390c1e0f88dcfa4f83631de695e49e91f818a76c772dc2e9" },
             },
-            ["2026.08.02.2"] = "XLINGS_RES",
-            ["2026.08.02.1"] = "XLINGS_RES",
-            ["2026.07.24.1"] = "XLINGS_RES",
-            ["0.1.5"] = "XLINGS_RES",
-            ["0.1.4"] = "XLINGS_RES",
-            ["0.1.3"] = "XLINGS_RES",
-            ["0.1.2"] = "XLINGS_RES",
-            ["0.1.1"] = "XLINGS_RES",
-            ["0.1.0"] = "XLINGS_RES",
+            ["2026.08.02.2"] = {
+                url = "XLINGS_RES",
+                sha256 = { x86_64 = "37f16ef8ee7b6720a440c8da8b4a002211129f761db127643477c639b14a8d96" },
+            },
+            ["2026.08.02.1"] = {
+                url = "XLINGS_RES",
+                sha256 = { x86_64 = "c3ff3eeb02daffa6dfd45073ae6d476ed7ce1b8857013061bb4e34fed41d1147" },
+            },
+            ["2026.07.24.1"] = {
+                url = "XLINGS_RES",
+                sha256 = { x86_64 = "594edfd58e2a733180d5234f2987e3029dc25713dee5ee8a76636809d06dfc2f" },
+            },
+            ["0.1.5"] = {
+                url = "XLINGS_RES",
+                sha256 = { x86_64 = "d98d77a179e0cf7671a8e61321d03055d896855d9fef7ba77d1d82317cc2b37a" },
+            },
+            ["0.1.4"] = {
+                url = "XLINGS_RES",
+                sha256 = { x86_64 = "d0810ae26ca2fb40f241d2328e34340b08cc797715a9c7240046bec65ddd8812" },
+            },
+            ["0.1.3"] = {
+                url = "XLINGS_RES",
+                sha256 = { x86_64 = "844d71c201bd21837132a2c1cd78bbeef204abfdbbf81f5f902748b3ede9149d" },
+            },
+            ["0.1.2"] = {
+                url = "XLINGS_RES",
+                sha256 = { x86_64 = "6585256007647ecb4feebe38a061555bbdd786c1dbb60ed3cb16c92486e1ff4c" },
+            },
+            ["0.1.1"] = {
+                url = "XLINGS_RES",
+                sha256 = { x86_64 = "55dc4ced7969a79e8563fd72d62d9500289e8e97f39f6515838ed186e1f84aaf" },
+            },
+            ["0.1.0"] = {
+                url = "XLINGS_RES",
+                sha256 = { x86_64 = "c38d7c877625d2009a9ca4800cba5d1d4a8a5ae61cbbf1878ef515da5fa61b47" },
+            },
         },
         macosx = {
+            strip = 1,
             ["latest"] = { ref = "2026.10.21.1" },
             ["2026.10.21.1"] = {
                 url = "XLINGS_RES",
@@ -109,15 +139,6 @@ import("xim.libxpkg.xvm")
 -- design) reads glibc.lua's exports.runtime.loader and rewrites our
 -- INTERP / RPATH automatically. No install-hook elfpatch call needed.
 
-function install()
-    local d2xdir = pkginfo.install_file()
-        :replace(".zip", "")
-        :replace(".tar.gz", "")
-    os.tryrm(pkginfo.install_dir())
-    os.mv(d2xdir, pkginfo.install_dir())
-
-    return true
-end
 
 function config()
     xvm.add("d2x")

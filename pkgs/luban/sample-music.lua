@@ -48,7 +48,10 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/sample-music/releases/download/2026.10.22/sample-music-2026.10.22.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/sample-music/releases/download/2026.10.22/sample-music-2026.10.22.tar.gz",
                 },
-                sha256 = "cbcbafb85a607b83b02ec10af1ffbedf9e7a966aa4a6637b47f8d25d80176ab5",
+                sha256 = {
+                    x86_64 = "cbcbafb85a607b83b02ec10af1ffbedf9e7a966aa4a6637b47f8d25d80176ab5",
+                    aarch64 = "cbcbafb85a607b83b02ec10af1ffbedf9e7a966aa4a6637b47f8d25d80176ab5",
+                },
             },
         },
     },

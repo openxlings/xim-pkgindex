@@ -33,15 +33,16 @@ package = {
             source = "https://developer.download.nvidia.com/compute/cuda/redist/"
                   .. "cuda_cuobjdump/linux-${arch_alias}/"
                   .. "cuda_cuobjdump-linux-${arch_alias}-${version}-archive.tar.xz",
-            arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
             ["latest"] = { ref = "13.3.29" },
             ["13.3.29"] = {
+                arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
                 sha256 = {
                     aarch64  = "622ec73dea88876a6e344b4c6ba432bdc51b50de633355253d32a5ce539f9067",
                     x86_64   = "9ac891072c4f9c2079cff8fdc3939ac97c5c5bcdf7cb5cca5a351354c7a8ff21",
                 },
             },
             ["12.9.82"] = {
+                arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
                 sha256 = {
                     aarch64  = "2d39ae9309f81a7980df296a93c0e49215c6fb22d316fd9daae211d29a731d27",
                     x86_64   = "ee0de40e8c18068bfcc53e73510e7e7a1a80555205347940df67fa525d24452f",

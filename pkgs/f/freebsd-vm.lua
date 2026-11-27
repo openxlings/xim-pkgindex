@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://www.freebsd.org/",
 
     name = "freebsd-vm",
@@ -41,7 +41,7 @@ package = {
         },
         linux = {
             ["latest"] = { ref = "14.5" },
-            ["14.5"] = { sha256 = "b4316fabafa6f664599b61050c02b35c4e6bac9832266d796aca707261bbc735" },
+            ["14.5"] = { sha256 = { x86_64 = "b4316fabafa6f664599b61050c02b35c4e6bac9832266d796aca707261bbc735", aarch64 = "b4316fabafa6f664599b61050c02b35c4e6bac9832266d796aca707261bbc735" } },
         },
         macosx = {
             ["latest"] = { ref = "14.5" },

@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     homepage = "https://www.x.org",
     name = "libXtst",
@@ -56,6 +56,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- Exactly the payload's runtime closure, measured:
             --
             --   objdump -p lib/libXtst.so.6.1.0 | grep NEEDED
@@ -83,7 +84,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libXtst/releases/download/1.2.5/libXtst-1.2.5-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libXtst/releases/download/1.2.5/libXtst-1.2.5-linux-x86_64.tar.gz",
                 },
-                sha256 = "5974d03284fd77e379f7790d635ff4b9950c40c1a4b17397444c0431dd13680c",
+                sha256 = { x86_64 = "5974d03284fd77e379f7790d635ff4b9950c40c1a4b17397444c0431dd13680c" },
             },
         },
     },
@@ -92,19 +93,19 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mv("libXtst-1.2.5", dir)
 
     -- The one file the JDK actually opens, asserted by the SONAME it asks for.
     -- `libXtst.so` (the dev symlink) being present says nothing about whether
     -- the runtime name resolves.
-    if not os.isfile(path.join(dir, "lib", "libXtst.so.6")) then
-        raise("libXtst payload has no lib/libXtst.so.6 -- that is the SONAME "
+    if not fs.is_file(path.join(dir, "lib", "libXtst.so.6")) then
+        error("libXtst payload has no lib/libXtst.so.6 -- that is the SONAME "
               .. "libawt_xawt.so has a DT_NEEDED on")
     end
 

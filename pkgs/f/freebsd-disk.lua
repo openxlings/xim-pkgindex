@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://www.freebsd.org/",
 
     name = "freebsd-disk",
@@ -44,7 +44,7 @@ package = {
         },
         linux = {
             ["latest"] = { ref = "14.5" },
-            ["14.5"] = { sha256 = "7844bcb147fc988c26193d6c91b5db9077edae5d64d63f523e97c9d681f58a49" },
+            ["14.5"] = { sha256 = { x86_64 = "7844bcb147fc988c26193d6c91b5db9077edae5d64d63f523e97c9d681f58a49", aarch64 = "7844bcb147fc988c26193d6c91b5db9077edae5d64d63f523e97c9d681f58a49" } },
         },
         macosx = {
             ["latest"] = { ref = "14.5" },

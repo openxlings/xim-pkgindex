@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     homepage = "https://www.hadrons.org/software/libmd/",
     name = "libmd",
@@ -44,6 +44,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             deps = { "xim:glibc" },
             exports = {
                 runtime = { libdirs = { "lib" } },
@@ -103,8 +104,6 @@ import("xim.pkgindex.selfcontain")
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mv("libmd-" .. pkginfo.version(), dir)
 
     selfcontain.seal(dir)
 

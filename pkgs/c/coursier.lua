@@ -88,7 +88,7 @@ package = {
                     GLOBAL = "https://github.com/coursier/coursier/releases/download/v2.1.24/coursier.jar",
                     CN = "https://gitcode.com/xlings-res/coursier/releases/download/2.1.24/coursier.jar",
                 },
-                sha256 = "8c724dc204534353ea8263ba0af624979658f7ab62395f35b04f03ce5714f330",
+                sha256 = { x86_64 = "8c724dc204534353ea8263ba0af624979658f7ab62395f35b04f03ce5714f330", aarch64 = "8c724dc204534353ea8263ba0af624979658f7ab62395f35b04f03ce5714f330" },
             },
         },
         macosx = {

@@ -53,7 +53,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/vbox/releases/download/7.2.8/virtualbox-7.2.8-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/vbox/releases/download/7.2.8/virtualbox-7.2.8-linux-x86_64.tar.gz",
                 },
-                sha256 = "803e7b6b5bb20a7b99cf19613fabf08ed3c5252fc1da629d4684ea8868f39ffc",
+                sha256 = { x86_64 = "803e7b6b5bb20a7b99cf19613fabf08ed3c5252fc1da629d4684ea8868f39ffc" },
             },
         },
         ubuntu = { ref = "linux" },

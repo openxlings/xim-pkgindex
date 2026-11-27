@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -90,6 +91,11 @@ def native_runner(platform, arch):
 
 
 def shared_arches(info, entry, template=None):
+    # One artifact named for its architectures (`sha256 = { x86_64 = h }`):
+    # those, whatever its file name or `package.archs` say.
+    named = xim.named_artifact(entry)
+    if named:
+        return set(named)
     try:
         resource = entry.plain()
     except Invalid:
@@ -215,6 +221,62 @@ def run_candidate(identity, filename, version, expected_arch=None):
     write('candidate-evidence.json', evidence)
 
 
+# The revision gate: it loads each recipe as the clients of each architecture
+# did, so it is what can tell a change of form from a change of resource.
+CHECK_REVISION = Path(__file__).resolve().parent / 'check-revision.lua'
+
+
+def _lua():
+    for name in ('lua5.4', 'lua5.3', 'lua'):
+        path = shutil.which(name)
+        if path and subprocess.run([path, '-e', 'os.exit(math.type ~= nil and 0 or 1)'],
+                                   capture_output=True).returncode == 0:
+            return path
+    return None
+
+
+def equivalent_entries(base):
+    """Published entries whose text changed while every architecture still
+    installs the same resource at the same revision and floor (check-revision.lua
+    --equivalent): a digest written per architecture, a URL a recipe picked with
+    os.arch() written as a template. Empty without Lua 5.3+, and then a changed
+    text is a changed entry, as before."""
+    lua = _lua()
+    if not lua:
+        return set()
+    result = subprocess.run([lua, str(CHECK_REVISION), '--base', base, '--equivalent', str(ROOT)],
+                            capture_output=True, text=True)
+    found = set()
+    for line in result.stdout.splitlines():
+        parts = line.split('\t')
+        if len(parts) == 4 and parts[0] == 'equivalent':
+            found.add((parts[1], parts[2], parts[3]))
+    return found
+
+
+def adopt_equivalent(before, after, filename, equivalent):
+    """`before` with the entries `equivalent` names for `filename` written as
+    `after` writes them, so that the updater's guard -- which compares a
+    published entry as text -- sees what did not change as unchanged. Every
+    other entry, and everything else the guard checks, is left to it."""
+    wanted = sorted((plat, version) for name, plat, version in equivalent if name == filename)
+    if not wanted:
+        return before
+    old_xpm, new_xpm = parse(before).fields.get('xpm'), parse(after).fields.get('xpm')
+    if not old_xpm or not new_xpm:
+        return before
+    edits = []
+    for plat, version in wanted:
+        old_plat, new_plat = old_xpm.fields.get(plat), new_xpm.fields.get(plat)
+        old_node = old_plat.fields.get(version) if old_plat else None
+        new_node = new_plat.fields.get(version) if new_plat else None
+        if old_node is not None and new_node is not None:
+            edits.append((old_node.start, old_node.end, after[new_node.start:new_node.end]))
+    for start, end, text in sorted(edits, reverse=True):
+        before = before[:start] + text + before[end:]
+    return before
+
+
 def declares_autoupdate(text):
     ext = parse(text).fields.get('extensions')
     return bool(ext and ext.fields.get('autoupdate'))
@@ -222,7 +284,8 @@ def declares_autoupdate(text):
 
 def guard(base, reviewed=False):
     """A pull request's recipes against its base. Published versions are kept in
-    every recipe. A recipe declaring extensions.autoupdate also keeps its latest
+    every recipe -- a change of form the revision gate proves to install the same
+    bytes on every architecture is no change (equivalent_entries). A recipe declaring extensions.autoupdate also keeps its latest
     policy: latest moves only by advance, to a newly appended version. What only
     an automatic update must leave alone -- dependencies, other metadata, hooks --
     is frozen unless the change is reviewed (anything but an updater branch,
@@ -231,6 +294,7 @@ def guard(base, reviewed=False):
     release writes: tests/test_release_owned.py) moves its latest by review."""
     files = git('ls-tree', '-r', '--name-only', base, '--', 'pkgs').splitlines()
     changed = []
+    equivalent = equivalent_entries(base)
     for filename in files:
         if not filename.endswith('.lua'):
             continue
@@ -241,6 +305,7 @@ def guard(base, reviewed=False):
         after = path.read_text(encoding='utf-8')
         if before == after:
             continue
+        before = adopt_equivalent(before, after, filename, equivalent)
         try:
             if declares_autoupdate(after):
                 xim.guard(before, after, reviewed=reviewed)
@@ -252,9 +317,38 @@ def guard(base, reviewed=False):
     return {'checked_descriptors': len(files), 'status': 'preserved', 'changed': changed}
 
 
+def verify(base, reviewed=False, output=None):
+    """The updater's verification of the versions a change adds to a recipe that
+    declares autoupdate (`python -m xpkgindex_update verify`: each resource
+    downloaded and hashed, no release discovered), whose own guard reads the
+    base as guard() does: the entries the revision gate proves equivalent are
+    written as the head writes them."""
+    from xpkgindex_update.cli import config as updater_config, write_report
+    from xpkgindex_update.github import GitHub
+    policy = updater_config(ROOT)
+    github = GitHub(None, request_budget=policy['request_budget'], resource_bytes=policy['resource_bytes'],
+                    download_bytes=policy['download_bytes'])
+    equivalent = equivalent_entries(base)
+    records = []
+    for filename in git('diff', '--name-only', '--diff-filter=M', base, 'HEAD', '--', 'pkgs').splitlines():
+        path = ROOT / filename
+        if not filename.endswith('.lua') or not path.exists():
+            continue
+        info = xim.package_info(path, ROOT)
+        if not info['autoupdate']:
+            continue
+        before = subprocess.check_output(['git', 'show', f'{base}:{filename}'], cwd=ROOT, text=True, encoding='utf-8')
+        try:
+            records.extend(xim.verify_candidates(info, adopt_equivalent(before, info['text'], filename, equivalent),
+                                                 github, reviewed=reviewed))
+        except Invalid as e:
+            raise Invalid(f'{filename}: {e}') from e
+    write_report({'packages': records, 'requests': github.requests, 'downloaded_bytes': github.downloaded}, output)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['audit', 'matrix', 'candidate', 'guard'])
+    parser.add_argument('command', choices=['audit', 'matrix', 'candidate', 'guard', 'verify'])
     parser.add_argument('--base', default='origin/main')
     parser.add_argument('--output', default='autoupdate-report.json')
     parser.add_argument('--package')
@@ -270,6 +364,8 @@ def main():
         report = audit()
         write(args.output, report)
         summarize_coverage(report)
+    elif args.command == 'verify':
+        verify(args.base, args.reviewed, args.output)
     else:
         write(args.output, guard(args.base, args.reviewed) if args.command == 'guard'
               else candidates(args.base))

@@ -25,7 +25,10 @@ package = {
             resources = {
                 GLOBAL = {
                     url = {
-                        linux = "https://github.com/ajeetdsouza/zoxide/releases/download/v${version}/zoxide-${version}-x86_64-unknown-linux-musl.tar.gz",
+                        linux = {
+                            x86_64 = "https://github.com/ajeetdsouza/zoxide/releases/download/v${version}/zoxide-${version}-x86_64-unknown-linux-musl.tar.gz",
+                            aarch64 = "https://github.com/ajeetdsouza/zoxide/releases/download/v${version}/zoxide-${version}-aarch64-unknown-linux-musl.tar.gz",
+                        },
                         macosx = "https://github.com/ajeetdsouza/zoxide/releases/download/v${version}/zoxide-${version}-aarch64-apple-darwin.tar.gz",
                         windows = "https://github.com/ajeetdsouza/zoxide/releases/download/v${version}/zoxide-${version}-x86_64-pc-windows-msvc.zip",
                     },
@@ -40,16 +43,37 @@ package = {
 
             ["latest"] = { ref = "0.10.0" },
             ["0.10.0"] = {
-                url = "https://github.com/ajeetdsouza/zoxide/releases/download/v0.10.0/zoxide-0.10.0-x86_64-unknown-linux-musl.tar.gz",
-                sha256 = "2d93385b99f3e82cf2701609a1bffcad863fbeb75aa3fe7eb6be4d29be68b1ae",
+                x86_64 = {
+                    url = "https://github.com/ajeetdsouza/zoxide/releases/download/v0.10.0/zoxide-0.10.0-x86_64-unknown-linux-musl.tar.gz",
+                    sha256 = "2d93385b99f3e82cf2701609a1bffcad863fbeb75aa3fe7eb6be4d29be68b1ae",
+                },
+                aarch64 = {
+                    url = "https://github.com/ajeetdsouza/zoxide/releases/download/v0.10.0/zoxide-0.10.0-aarch64-unknown-linux-musl.tar.gz",
+                    sha256 = "f1f16c5d6298d63dee467eedea1cdcd8490e43e493bea43acd416dc9033ef641",
+                },
+                revision = 1,
             },
             ["0.9.9"] = {
-                url = "https://github.com/ajeetdsouza/zoxide/releases/download/v0.9.9/zoxide-0.9.9-x86_64-unknown-linux-musl.tar.gz",
-                sha256 = "4ff057d3c4d957946937274c2b8be7af2a9bbae7f90a1b5e9baaa7cb65a20caa",
+                x86_64 = {
+                    url = "https://github.com/ajeetdsouza/zoxide/releases/download/v0.9.9/zoxide-0.9.9-x86_64-unknown-linux-musl.tar.gz",
+                    sha256 = "4ff057d3c4d957946937274c2b8be7af2a9bbae7f90a1b5e9baaa7cb65a20caa",
+                },
+                aarch64 = {
+                    url = "https://github.com/ajeetdsouza/zoxide/releases/download/v0.9.9/zoxide-0.9.9-aarch64-unknown-linux-musl.tar.gz",
+                    sha256 = "96e6ea2e47a71db42cb7ad5a36e9209c8cb3708f8ae00f6945573d0d93315cb0",
+                },
+                revision = 1,
             },
             ["0.9.7"] = {
-                url = "https://github.com/ajeetdsouza/zoxide/releases/download/v0.9.7/zoxide-0.9.7-x86_64-unknown-linux-musl.tar.gz",
-                sha256 = "ee53a42c11fe8a175ef7b136bb91f588aef76e1ae7133e58a695b1199588ee7e",
+                x86_64 = {
+                    url = "https://github.com/ajeetdsouza/zoxide/releases/download/v0.9.7/zoxide-0.9.7-x86_64-unknown-linux-musl.tar.gz",
+                    sha256 = "ee53a42c11fe8a175ef7b136bb91f588aef76e1ae7133e58a695b1199588ee7e",
+                },
+                aarch64 = {
+                    url = "https://github.com/ajeetdsouza/zoxide/releases/download/v0.9.7/zoxide-0.9.7-aarch64-unknown-linux-musl.tar.gz",
+                    sha256 = "b8ba8ebd40b37d543480c25b4d66900ffef1a99d06119afaa89a587873bda77f",
+                },
+                revision = 1,
             },
         },
         macosx = {

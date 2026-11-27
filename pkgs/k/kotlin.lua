@@ -36,7 +36,7 @@
 --   bin/kotlinc.bat, bin/kotlin.bat   launchers (Windows)
 
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://kotlinlang.org",
 
     name = "kotlin",
@@ -59,22 +59,24 @@ package = {
 
 
     extensions = {
+        -- The same archive for every architecture its entries name (JVM),
+        -- listed for each (design 2026-11-27 §5.3).
         autoupdate = {
             source = "https://github.com/JetBrains/kotlin/releases",
             resources = {
                 GLOBAL = {
                     url = {
-                        linux = "https://github.com/JetBrains/kotlin/releases/download/v${version}/kotlin-compiler-${version}.zip",
-                        macosx = "https://github.com/JetBrains/kotlin/releases/download/v${version}/kotlin-compiler-${version}.zip",
-                        windows = "https://github.com/JetBrains/kotlin/releases/download/v${version}/kotlin-compiler-${version}.zip",
+                        linux = { x86_64 = "https://github.com/JetBrains/kotlin/releases/download/v${version}/kotlin-compiler-${version}.zip", aarch64 = "https://github.com/JetBrains/kotlin/releases/download/v${version}/kotlin-compiler-${version}.zip" },
+                        macosx = { x86_64 = "https://github.com/JetBrains/kotlin/releases/download/v${version}/kotlin-compiler-${version}.zip", aarch64 = "https://github.com/JetBrains/kotlin/releases/download/v${version}/kotlin-compiler-${version}.zip" },
+                        windows = { x86_64 = "https://github.com/JetBrains/kotlin/releases/download/v${version}/kotlin-compiler-${version}.zip", aarch64 = "https://github.com/JetBrains/kotlin/releases/download/v${version}/kotlin-compiler-${version}.zip" },
                     },
                     required = true,
                 },
                 CN = {
                     url = {
-                        linux = "https://gitcode.com/xlings-res/kotlin/releases/download/${version}/kotlin-compiler-${version}.zip",
-                        macosx = "https://gitcode.com/xlings-res/kotlin/releases/download/${version}/kotlin-compiler-${version}.zip",
-                        windows = "https://gitcode.com/xlings-res/kotlin/releases/download/${version}/kotlin-compiler-${version}.zip",
+                        linux = { x86_64 = "https://gitcode.com/xlings-res/kotlin/releases/download/${version}/kotlin-compiler-${version}.zip", aarch64 = "https://gitcode.com/xlings-res/kotlin/releases/download/${version}/kotlin-compiler-${version}.zip" },
+                        macosx = { x86_64 = "https://gitcode.com/xlings-res/kotlin/releases/download/${version}/kotlin-compiler-${version}.zip", aarch64 = "https://gitcode.com/xlings-res/kotlin/releases/download/${version}/kotlin-compiler-${version}.zip" },
+                        windows = { x86_64 = "https://gitcode.com/xlings-res/kotlin/releases/download/${version}/kotlin-compiler-${version}.zip", aarch64 = "https://gitcode.com/xlings-res/kotlin/releases/download/${version}/kotlin-compiler-${version}.zip" },
                     },
                     required = true,
                 },
@@ -91,7 +93,8 @@ package = {
                     GLOBAL = "https://github.com/JetBrains/kotlin/releases/download/v2.4.20/kotlin-compiler-2.4.20.zip",
                     CN = "https://gitcode.com/xlings-res/kotlin/releases/download/2.4.20/kotlin-compiler-2.4.20.zip",
                 },
-                sha256 = "59e9ca74c7904ef2c122b12114937673ccce68de820a663f0ed66ccf8799e0b7",
+                -- The same bytes for every architecture (JVM).
+                sha256 = { x86_64 = "59e9ca74c7904ef2c122b12114937673ccce68de820a663f0ed66ccf8799e0b7", aarch64 = "59e9ca74c7904ef2c122b12114937673ccce68de820a663f0ed66ccf8799e0b7" },
             },
         },
         macosx = {
@@ -102,7 +105,8 @@ package = {
                     GLOBAL = "https://github.com/JetBrains/kotlin/releases/download/v2.4.20/kotlin-compiler-2.4.20.zip",
                     CN = "https://gitcode.com/xlings-res/kotlin/releases/download/2.4.20/kotlin-compiler-2.4.20.zip",
                 },
-                sha256 = "59e9ca74c7904ef2c122b12114937673ccce68de820a663f0ed66ccf8799e0b7",
+                -- The same bytes for every architecture (JVM).
+                sha256 = { x86_64 = "59e9ca74c7904ef2c122b12114937673ccce68de820a663f0ed66ccf8799e0b7", aarch64 = "59e9ca74c7904ef2c122b12114937673ccce68de820a663f0ed66ccf8799e0b7" },
             },
         },
         windows = {
@@ -113,15 +117,19 @@ package = {
                     GLOBAL = "https://github.com/JetBrains/kotlin/releases/download/v2.4.20/kotlin-compiler-2.4.20.zip",
                     CN = "https://gitcode.com/xlings-res/kotlin/releases/download/2.4.20/kotlin-compiler-2.4.20.zip",
                 },
-                sha256 = "59e9ca74c7904ef2c122b12114937673ccce68de820a663f0ed66ccf8799e0b7",
+                -- The same bytes for every architecture (JVM).
+                sha256 = { x86_64 = "59e9ca74c7904ef2c122b12114937673ccce68de820a663f0ed66ccf8799e0b7", aarch64 = "59e9ca74c7904ef2c122b12114937673ccce68de820a663f0ed66ccf8799e0b7" },
             },
         },
     },
 }
 
-import("xim.libxpkg.pkginfo")
-import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
 import("xim.libxpkg.log")
+import("xim.libxpkg.path")
+import("xim.libxpkg.pkginfo")
+import("xim.libxpkg.system")
+import("xim.libxpkg.xvm")
 
 local LAUNCHED = {"kotlinc", "kotlin"}
 
@@ -181,92 +189,60 @@ end
 
 -- A complete upstream tree: the compiler script and the stdlib it links.
 local function complete(root)
-    return os.isfile(path.join(root, "bin", "kotlinc"))
-       and os.isfile(path.join(root, "lib", "kotlin-stdlib.jar"))
+    return fs.is_file(path.join(root, "bin", "kotlinc"))
+       and fs.is_file(path.join(root, "lib", "kotlin-stdlib.jar"))
 end
 
+-- The archive's own layout is in install_dir: kotlinc/ as upstream ships it.
 function install()
     local dir = pkginfo.install_dir()
     local tree = path.join(dir, "kotlinc")
-
-    -- xim engines differ in whether the archive is extracted into the hook's
-    -- working directory or staged into install_dir() first (see
-    -- `jdk-temurin.lua`'s install hook), so both are looked at, and nothing is
-    -- removed until a complete tree has been found. Compared by location
-    -- rather than with `path.absolute`, which the xpkg sandbox does not bind
-    -- (`windows-sdk.lua`).
     if not complete(tree) then
-        if complete("kotlinc") then
-            os.tryrm(dir)
-            os.mkdir(dir)
-            os.mv("kotlinc", tree)
-        elseif complete(dir) then
-            -- Staged flat: move it one level down, so the launchers under
-            -- bin/ do not collide with upstream's own scripts.
-            local tmp = dir .. ".kotlinc"
-            os.tryrm(tmp)
-            os.mv(dir, tmp)
-            os.mkdir(dir)
-            os.mv(tmp, tree)
-        else
-            raise("kotlin: the archive's kotlinc/ tree (bin/kotlinc and lib/kotlin-stdlib.jar) was not found")
-        end
-    end
-    if not complete(tree) then
-        raise("kotlin: " .. tree .. " is incomplete after staging")
+        error("kotlin: the archive's kotlinc/ tree (bin/kotlinc and lib/kotlin-stdlib.jar) was not found")
     end
 
     local jdk_home = pkginfo.dep_install_dir("xim:jdk-temurin")
     if not jdk_home then
-        raise("kotlin: xim:jdk-temurin payload not found (this package's deps declare it); "
+        error("kotlin: xim:jdk-temurin payload not found (this package's deps declare it); "
               .. "refusing to write a launcher that cannot find java")
     end
 
     local bindir = path.join(dir, "bin")
-    os.mkdir(bindir)
+    fs.mkdir(bindir)
     for _, name in ipairs(LAUNCHED) do
-        if is_host("windows") then
-            local launcher = path.join(bindir, name .. ".bat")
-            local f = io.open(launcher, "w")
-            if not f then raise("kotlin: cannot write " .. launcher) end
-            f:write((string.format(WINDOWS_LAUNCHER, winpath(jdk_home),
-                                   winpath(path.join(tree, "bin", name .. ".bat")),
-                                   winpath(jdk_home)):gsub("\n", "\r\n")))
-            f:close()
-            if not os.isfile(launcher) then raise("kotlin: " .. launcher .. " was not written") end
+        if pkginfo.platform() == "windows" then
+            fs.write(path.join(bindir, name .. ".bat"),
+                     (string.format(WINDOWS_LAUNCHER, winpath(jdk_home),
+                                    winpath(path.join(tree, "bin", name .. ".bat")),
+                                    winpath(jdk_home)):gsub("\n", "\r\n")))
         else
             local upstream = path.join(tree, "bin", name)
-            os.iorun('chmod +x "' .. upstream .. '"')
+            fs.chmod(upstream, "+x")
             local launcher = path.join(bindir, name)
-            local f = io.open(launcher, "w")
-            if not f then raise("kotlin: cannot write " .. launcher) end
-            f:write(string.format(POSIX_LAUNCHER, jdk_home, upstream))
-            f:close()
-            os.iorun('chmod +x "' .. launcher .. '"')
-            local ok = try { function() return os.iorun('bash -n "' .. launcher .. '"') end }
-            if ok == nil then raise("kotlin: " .. launcher .. " is not valid shell") end
+            fs.write(launcher, string.format(POSIX_LAUNCHER, jdk_home, upstream))
+            fs.chmod(launcher, "+x")
+            if not system.run({ "bash", "-n", launcher }).ok then
+                error("kotlin: " .. launcher .. " is not valid shell")
+            end
         end
     end
 
     log.debug("kotlin: staged %s with launchers in %s", tree, bindir)
-    return true
 end
 
 function config()
     local bindir = path.join(pkginfo.install_dir(), "bin")
     for _, name in ipairs(LAUNCHED) do
-        if is_host("windows") then
+        if pkginfo.platform() == "windows" then
             xvm.add(name, { bindir = bindir, filename = name .. ".bat" })
         else
             xvm.add(name, { bindir = bindir })
         end
     end
-    return true
 end
 
 function uninstall()
     for _, name in ipairs(LAUNCHED) do
         xvm.remove(name)
     end
-    return true
 end

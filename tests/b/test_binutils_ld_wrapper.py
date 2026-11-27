@@ -205,7 +205,7 @@ def test_a_new_version_key_exists_so_installed_homes_re_run_config():
     """
     text = _recipe_text()
     assert '["2.42.1"] = {' in text
-    assert '["2.42"] = "XLINGS_RES"' in text, (
+    assert re.search(r'\["2\.42"\] = (?:"XLINGS_RES"|\{\s*url = "XLINGS_RES")', text), (
         "the previous key must stay resolvable: homes pinned to it, and "
         "removing a version key is not an upgrade path"
     )
@@ -216,3 +216,68 @@ def test_a_new_version_key_exists_so_installed_homes_re_run_config():
     entry = m.group(1)
     assert "binutils-2.42-linux-x86_64.tar.gz" in entry
     assert "sha256" in entry
+
+
+# ── which links get the farm as a run path (xlings design 2026-11-27 §8.3) ──
+#
+# Only an executable that runs on the environment's runtime: its
+# -dynamic-linker is not a system path. A host compiler reaching this `ld`
+# through PATH links against the system loader, and the farm's libc.so.6 in
+# its RPATH made its programs crash at start (#532, the prototype's row E12).
+
+def _link(wrapper_and_log, farm, *argv, extra_env=None):
+    w, log = wrapper_and_log
+    env = {"PATH": "/usr/bin:/bin", "XLINGS_SUBOS_LIB": str(farm)}
+    env.update(extra_env or {})
+    r = subprocess.run([str(w), *argv], env=env, capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    return log.read_text().splitlines()
+
+
+@pytest.fixture()
+def farm(tmp_path):
+    f = tmp_path / "subos" / "lib"
+    f.mkdir(parents=True)
+    return f
+
+
+@pytest.mark.static
+def test_an_executable_on_the_environments_runtime_gets_the_farm_last(wrapper, farm):
+    loader = "/home/user/.xlings/data/xpkgs/xim-x-glibc/2.44.3/lib64/ld-linux-x86-64.so.2"
+    args = _link(wrapper, farm, "-dynamic-linker", loader, "-o", "a", "a.o",
+                 "-rpath", "/store/xim-x-gcc/16.2.0/lib64")
+    # The caller's arguments, untouched and first; the farm after its own run path.
+    assert args[:2] == ["-rpath-link", str(farm)]
+    assert args[2:9] == ["-dynamic-linker", loader, "-o", "a", "a.o",
+                         "-rpath", "/store/xim-x-gcc/16.2.0/lib64"]
+    assert args[9:] == ["--disable-new-dtags", "-rpath", str(farm)]
+
+
+@pytest.mark.static
+@pytest.mark.parametrize("linker_args", [
+    ["-dynamic-linker", "/lib64/ld-linux-x86-64.so.2"],
+    ["-dynamic-linker", "/lib/ld-linux-aarch64.so.1"],
+    ["--dynamic-linker=/lib64/ld-linux-x86-64.so.2"],
+    ["-dynamic-linker", "/usr/lib64/ld-linux-x86-64.so.2"],
+])
+def test_a_host_compilers_executable_is_left_alone(wrapper, farm, linker_args):
+    args = _link(wrapper, farm, *linker_args, "-o", "a", "a.o", "-lz")
+    assert "-rpath" not in args and "--disable-new-dtags" not in args, args
+    assert args[:2] == ["-rpath-link", str(farm)]
+
+
+@pytest.mark.static
+@pytest.mark.parametrize("kind", [["-shared"], ["-static"], ["-r"]])
+def test_a_link_naming_no_loader_gets_no_run_path(wrapper, farm, kind):
+    args = _link(wrapper, farm, *kind, "-o", "out", "a.o")
+    assert "-rpath" not in args and "--disable-new-dtags" not in args, args
+
+
+@pytest.mark.static
+def test_declaring_ld_paths_off_keeps_the_tag_and_no_path(wrapper, farm):
+    """mcpp's links and `mcpp pack` (#540): they want DT_RPATH and set the
+    paths themselves."""
+    args = _link(wrapper, farm, "-dynamic-linker", "/opt/env/ld.so", "-o", "a", "a.o",
+                 extra_env={"XLINGS_SUBOS_LD_PATHS": "0"})
+    assert args[-1] == "--disable-new-dtags"
+    assert args.count(str(farm)) == 1, "only -rpath-link names the farm"

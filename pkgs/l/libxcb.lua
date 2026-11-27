@@ -10,7 +10,7 @@ package = {
     repo = "https://gitlab.freedesktop.org/xorg/lib/libxcb",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"graphics", "lib"},
     keywords = {"libxcb", "graphics", "x11"},
@@ -21,13 +21,19 @@ package = {
             resources = {
                 GLOBAL = {
                     url = {
-                        linux = "https://github.com/xlings-res/libxcb/releases/download/${version}/libxcb-${version}-linux-x86_64.tar.gz",
+                        linux = {
+                            aarch64 = "https://github.com/xlings-res/libxcb/releases/download/${version}/libxcb-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://github.com/xlings-res/libxcb/releases/download/${version}/libxcb-${version}-linux-x86_64.tar.gz",
+                        },
                     },
                     required = true,
                 },
                 CN = {
                     url = {
-                        linux = "https://gitcode.com/xlings-res/libxcb/releases/download/${version}/libxcb-${version}-linux-x86_64.tar.gz",
+                        linux = {
+                            aarch64 = "https://gitcode.com/xlings-res/libxcb/releases/download/${version}/libxcb-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://gitcode.com/xlings-res/libxcb/releases/download/${version}/libxcb-${version}-linux-x86_64.tar.gz",
+                        },
                     },
                     required = true,
                 },
@@ -47,11 +53,20 @@ package = {
             },
             ["latest"] = { ref = "1.17.0" },
             ["1.17.0"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/libxcb/releases/download/1.17.0/libxcb-1.17.0-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/libxcb/releases/download/1.17.0/libxcb-1.17.0-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libxcb/releases/download/1.17.0/libxcb-1.17.0-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libxcb/releases/download/1.17.0/libxcb-1.17.0-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "561b2f8f6d1452f211cdb9023efc3ecde8c365f1eba181bd2d183357b85f484a",
                 },
-                sha256 = "561b2f8f6d1452f211cdb9023efc3ecde8c365f1eba181bd2d183357b85f484a",
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libxcb/releases/download/1.17.0/libxcb-1.17.0-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libxcb/releases/download/1.17.0/libxcb-1.17.0-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "2c66cd6ab7acd7f30c8d90226f5e07dc521d3099223b838ebd03b13868601f93",
+                },
             },
         },
     },

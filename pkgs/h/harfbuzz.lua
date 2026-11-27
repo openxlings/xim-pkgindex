@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://harfbuzz.github.io",
     name = "harfbuzz",
     description = "OpenType text shaping engine",
@@ -37,6 +37,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- The full DT_NEEDED closure of libharfbuzz.so.0, enumerated from
             -- the artifact rather than written from memory: libm/libc
             -- (glibc), libfreetype, libglib-2.0 and libgraphite2. The last
@@ -88,14 +89,14 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/harfbuzz/releases/download/14.4.0/harfbuzz-14.4.0-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/harfbuzz/releases/download/14.4.0/harfbuzz-14.4.0-linux-x86_64.tar.gz",
                 },
-                sha256 = "303a1fb54ae787078e70132ac5883d62b9068a7362d8b412533d87bf0f700a7b",
+                sha256 = { x86_64 = "303a1fb54ae787078e70132ac5883d62b9068a7362d8b412533d87bf0f700a7b" },
             },
             ["8.3.0"] = {
                 url = {
                     GLOBAL = "https://github.com/xlings-res/harfbuzz/releases/download/8.3.0/harfbuzz-8.3.0-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/harfbuzz/releases/download/8.3.0/harfbuzz-8.3.0-linux-x86_64.tar.gz",
                 },
-                sha256 = "2a2bee694e8db83263e81d2b9c568583920dc63d13f7738b408b3659d38cc159",
+                sha256 = { x86_64 = "2a2bee694e8db83263e81d2b9c568583920dc63d13f7738b408b3659d38cc159" },
             },
         },
     },
@@ -104,11 +105,11 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     -- 8.3.0's .pc says `libdir=${prefix}/lib/x86_64-linux-gnu` -- a

@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://www.sqlite.org",
     name = "sqlite",
     description = "Self-contained, serverless, zero-configuration SQL database engine (libsqlite3 + sqlite3 CLI)",
@@ -37,6 +37,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- BUILT, not repacked, and that is the exception rather than the
             -- rule here. Upstream does publish a Linux x86_64 binary for this
             -- version -- sqlite-tools-linux-x64-3530400.zip -- and it contains
@@ -64,7 +65,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/sqlite/releases/download/3.53.4/sqlite-3.53.4-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/sqlite/releases/download/3.53.4/sqlite-3.53.4-linux-x86_64.tar.gz",
                 },
-                sha256 = "f4f6fe756174986f0982010b756838b1b8cae362d0cb173e73d2748480614abb",
+                sha256 = { x86_64 = "f4f6fe756174986f0982010b756838b1b8cae362d0cb173e73d2748480614abb" },
             },
         },
     },
@@ -73,11 +74,11 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")

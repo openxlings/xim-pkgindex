@@ -4,8 +4,12 @@
 local function _win_url(ver, sha256)
     return { url = string.format("https://update.code.visualstudio.com/%s/win32-x64-archive/stable", ver), sha256 = sha256 }
 end
-local function _linux_url(ver, sha256)
-    return { url = string.format("https://update.code.visualstudio.com/%s/linux-x64/stable", ver), sha256 = sha256 }
+-- Linux: an archive per architecture (linux-x64, linux-arm64), each with its digest.
+local function _linux_url(ver, x86_64, aarch64)
+    local function asset(token, sha256)
+        return { url = string.format("https://update.code.visualstudio.com/%s/linux-%s/stable", ver, token), sha256 = sha256 }
+    end
+    return { x86_64 = asset("x64", x86_64), aarch64 = asset("arm64", aarch64) }
 end
 local function _mac_url(ver, sha256)
     return { url = string.format("https://update.code.visualstudio.com/%s/darwin-universal/stable", ver), sha256 = sha256 }
@@ -23,6 +27,7 @@ package = {
     docs = "https://code.visualstudio.com/docs",
 
     type = "package",
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = { "editor", "tools" },
     keywords = { "vscode", "cross-platform" },
@@ -67,14 +72,30 @@ package = {
         -- (see jdk-temurin.lua for the measurement). `code` would stop starting.
         linux = {
             ["latest"] = { ref = "1.132.0" },
-            ["1.132.0"] = _linux_url("1.132.0", "acdaf0fa557bda1720956ff65ca0de0965e92d68f97e2db22341984400937aed"),
-            ["1.125.1"] = _linux_url("1.125.1"),
-            ["1.108.1"] = _linux_url("1.108.1"),
-            ["1.108.0"] = _linux_url("1.108.0"),
-            ["1.106.1"] = _linux_url("1.106.1"),
-            ["1.100.1"] = _linux_url("1.100.1"),
-            ["1.96.2"] = _linux_url("1.96.2"),
-            ["1.93.1"] = _linux_url("1.93.1"),
+            ["1.132.0"] = _linux_url("1.132.0",
+                "acdaf0fa557bda1720956ff65ca0de0965e92d68f97e2db22341984400937aed",
+                "203e0959cb1e1f046e970a58b3fdf609c3ad5ecd3bdc22cd621332ed945b7079"),
+            ["1.125.1"] = _linux_url("1.125.1",
+                "119dd60ef898ea1409fb0160ab9508ea09f8ae6c41d3058b936aeb007e2ab223",
+                "f8d2a9c3275edbd11939d224e7a2b670946d5f68870786f1b2e71a7948e85a96"),
+            ["1.108.1"] = _linux_url("1.108.1",
+                "a98b61899962a03e9f582c833df83b61fa393ea087cdc7a793c3638286cb5bb7",
+                "ec3051c307509b4ea7cb144c477c0e1fee03aa59cfbd718bfeb31dabb8e9c53c"),
+            ["1.108.0"] = _linux_url("1.108.0",
+                "db4c9d0df1c5872dc13710bd6c71b52538326c563dcf1c5cf35100a4e561df09",
+                "de66b49beb81b909464e275115b23401cc0672f5bc79b9c99e7ae102e4ba7447"),
+            ["1.106.1"] = _linux_url("1.106.1",
+                "cd0e871dac89cb8f20ff4be26515a6d846b73b2e742cb90b8528ee9baf071139",
+                "631af6260a44ea75b507d882a6ef330c7a4a1e40ebd32cb981046336cabbded7"),
+            ["1.100.1"] = _linux_url("1.100.1",
+                "3d1f28b78b6292501865b17bcd446e46aa8cf5d4fe3c643b0fe96310aadf081f",
+                "45c204103aaf16426b1cbeedaec97785e97828c3fab18d5b0fbaeabe070483de"),
+            ["1.96.2"] = _linux_url("1.96.2",
+                "2681040089faf143bed37246f2b0bc0787f6d342d878b1ec4b3737b38833c088",
+                "33e93e2899f7a9c20d882d07b157d5fde6f1419f21c6bb95cd676d7a0412690e"),
+            ["1.93.1"] = _linux_url("1.93.1",
+                "4a8598a8016630229f26f243b653bc14b0cc28795038f55ea224543f149fe510",
+                "e0bba475bb227f0b25b3b79aec3cc623f3603307db2ce34abc37f44dccb9a591"),
         },
         macosx = {
             ["latest"] = { ref = "1.132.0" },

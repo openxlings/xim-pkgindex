@@ -19,6 +19,16 @@ from tests.lib.assertions import (
 )
 from tests.lib.platform_utils import skip_if_not
 
+
+def _one_digest(text):
+    """An entry names the architectures its one artifact is for
+    (`sha256 = { x86_64 = "<h>", aarch64 = "<h>" }`, the index's check K1):
+    read each such table as the one digest it holds."""
+    def one(m):
+        values = set(re.findall(r'"([0-9a-fA-F]{64})"', m.group(0)))
+        return f'sha256 = "{values.pop()}"' if len(values) == 1 else m.group(0)
+    return re.sub(r'sha256\s*=\s*\{[^{}]*\}', one, text)
+
 PKG = "android-build-tools"
 PKG_FILE = "pkgs/a/android-build-tools.lua"
 
@@ -174,7 +184,7 @@ class TestStatic:
         """Three different archives (linux/macosx/windows) must not share a
         hash -- a repeated value would mean a copy-paste rather than three
         independent downloads."""
-        hashes = re.findall(r'sha256\s*=\s*"([0-9a-f]{64})"', meta.raw_content)
+        hashes = re.findall(r'sha256\s*=\s*"([0-9a-f]{64})"', _one_digest(meta.raw_content))
         assert len(hashes) == 3, f"expected 3 sha256 entries, found {len(hashes)}"
         assert len(set(hashes)) == 3, "two or more sha256 values are identical"
 

@@ -17,7 +17,7 @@
 -- Upstream v3.14.1 publishes no windows/arm64 binary, so windows covers x86_64 only.
 
 package = {
-    spec = "2",
+    spec = "3",
 
     name = "shfmt",
     description = "A shell formatter, parser, and interpreter with bash, POSIX, and zsh support",
@@ -99,43 +99,31 @@ package = {
     },
 }
 
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
-import("xim.libxpkg.system")
 
-local function _is_windows_payload(file)
-    return tostring(file):lower():match("%.exe$") ~= nil
+-- The download is the program, placed in install_dir under the upstream's
+-- name (shfmt_v<version>_<os>_<arch>[.exe]); install() names it shfmt.
+local function _exe()
+    return path.join(pkginfo.install_dir(), pkginfo.platform() == "windows" and "shfmt.exe" or "shfmt")
 end
 
 function installed()
-    local dir = pkginfo.install_dir()
-    return os.isfile(dir .. "/shfmt") or os.isfile(dir .. "/shfmt.exe")
+    return fs.is_file(_exe())
 end
 
 function install()
-    local src = pkginfo.install_file()
-    local dir = pkginfo.install_dir()
-    local is_win = _is_windows_payload(src)
-    local target = dir .. (is_win and "/shfmt.exe" or "/shfmt")
-
-    os.tryrm(dir)
-    os.mkdir(dir)
-    os.mv(src, target)
-    if not is_win then
-        system.exec(string.format([[chmod +x "%s"]], target))
-    end
-    if not os.isfile(target) then
-        error("shfmt: executable missing after install at " .. target)
-    end
-    return true
+    local landed = path.join(pkginfo.install_dir(), path.filename(pkginfo.install_file()))
+    fs.move(landed, _exe())
+    fs.chmod(_exe(), "+x")
 end
 
 function config()
     xvm.add("shfmt", { bindir = pkginfo.install_dir() })
-    return true
 end
 
 function uninstall()
     xvm.remove("shfmt")
-    return true
 end

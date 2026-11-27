@@ -18,6 +18,16 @@ from tests.lib.assertions import (
 from tests.lib.platform_utils import skip_if_not, under_test, xlings_home
 from tests.lib.xlings_client import XlingsClient
 
+
+def _one_digest(text):
+    """An entry names the architectures its one artifact is for
+    (`sha256 = { x86_64 = "<h>", aarch64 = "<h>" }`, the index's check K1):
+    read each such table as the one digest it holds."""
+    def one(m):
+        values = set(re.findall(r'"([0-9a-fA-F]{64})"', m.group(0)))
+        return f'sha256 = "{values.pop()}"' if len(values) == 1 else m.group(0)
+    return re.sub(r'sha256\s*=\s*\{[^{}]*\}', one, text)
+
 PKG = "musl"
 PKG_FILE = "pkgs/m/musl.lua"
 
@@ -105,7 +115,7 @@ class TestDesign:
         assert versions, "没有解析到版本条目"
         # A version is one url + sha256, or one per architecture.
         per_arch = len(re.findall(r'\b(?:x86_64|aarch64)\s*=\s*\{', code))
-        shas = len(re.findall(r'sha256\s*=\s*"[0-9a-f]{64}"', code))
+        shas = len(re.findall(r'sha256\s*=\s*"[0-9a-f]{64}"', _one_digest(code)))
         assert shas >= len(versions) and shas == len(re.findall(r'GLOBAL\s*=', code)), \
             f"{len(versions)} 个版本 ({per_arch} 个按架构), sha256 数量不匹配"
 

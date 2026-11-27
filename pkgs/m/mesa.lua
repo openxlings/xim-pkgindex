@@ -11,7 +11,7 @@ package = {
     docs = "https://docs.mesa3d.org",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"graphics", "opengl", "lib"},
     keywords = {"mesa", "opengl", "vulkan", "gl", "egl", "llvmpipe", "radeonsi", "graphics"},
@@ -54,13 +54,19 @@ package = {
             resources = {
                 GLOBAL = {
                     url = {
-                        linux = "https://github.com/xlings-res/mesa/releases/download/${version}/mesa-${version}-linux-x86_64.tar.gz",
+                        linux = {
+                            aarch64 = "https://github.com/xlings-res/mesa/releases/download/${version}/mesa-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://github.com/xlings-res/mesa/releases/download/${version}/mesa-${version}-linux-x86_64.tar.gz",
+                        },
                     },
                     required = true,
                 },
                 CN = {
                     url = {
-                        linux = "https://gitcode.com/xlings-res/mesa/releases/download/${version}/mesa-${version}-linux-x86_64.tar.gz",
+                        linux = {
+                            aarch64 = "https://gitcode.com/xlings-res/mesa/releases/download/${version}/mesa-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://gitcode.com/xlings-res/mesa/releases/download/${version}/mesa-${version}-linux-x86_64.tar.gz",
+                        },
                     },
                     required = true,
                 },
@@ -126,13 +132,29 @@ package = {
             -- One file more (lib/dri/virtio_gpu_dri.so, the megadriver
             -- carrying it); the DT_NEEDED closure and the glibc and libstdc++
             -- symbol versions measured the same as 25.0.7.2's. Built with
-            -- .agents/tools/graphics/build-in-subos.sh as tiers.sh's T5 line.
+            -- tools/res/graphics/build-in-subos.sh as tiers.sh's T5 line.
+            --
+            -- aarch64 (res-build, tools/res/graphics/res.sh): the same
+            -- version, another driver set -- llvmpipe, softpipe, virgl, zink,
+            -- radeonsi, nouveau and RADV. No iris (Intel's GPUs are x86's)
+            -- and no d3d12, so no clc chain; LLVM is xim:libllvm's build for
+            -- aarch64 (AArch64;AMDGPU). The ARM SoC drivers wait for hardware
+            -- to verify them on (xlings design 2026-11-27 §5.8).
             ["25.0.7.3"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/mesa/releases/download/25.0.7.3/mesa-25.0.7.3-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/mesa/releases/download/25.0.7.3/mesa-25.0.7.3-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/mesa/releases/download/25.0.7.3/mesa-25.0.7.3-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/mesa/releases/download/25.0.7.3/mesa-25.0.7.3-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "ddfa3819df2ad4f34a77d0b2562809554030c3ce3deddc768d47d913c8af1f31",
                 },
-                sha256 = "ddfa3819df2ad4f34a77d0b2562809554030c3ce3deddc768d47d913c8af1f31",
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/mesa/releases/download/25.0.7.3/mesa-25.0.7.3-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/mesa/releases/download/25.0.7.3/mesa-25.0.7.3-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "093f2e58ecb0ab0c7f47ec005cba7a518cbe6264c9c104fcd8f75ee578dbe4a8",
+                },
             },
             -- 25.0.7.2: upstream is 25.0.7, the fourth component is ours. Adds
             -- iris and d3d12 to gallium-drivers; nothing else about the build
@@ -140,7 +162,7 @@ package = {
             -- same set as 25.0.7.1.
             --
             -- The source needed ONE patch to build at all:
-            -- `.agents/tools/graphics/patches/mesa-25.0.7-glibc-2.42-c11-threads.patch`.
+            -- `tools/res/graphics/patches/mesa-25.0.7-glibc-2.42-c11-threads.patch`.
             -- ISO C23 moved once_flag/call_once into <stdlib.h>, glibc >= 2.42
             -- followed, and mesa's own src/c11 shim redefines both -- so 25.0.7
             -- cannot compile against the glibc 2.44 in this index, and 25.0.7 is
@@ -152,7 +174,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/mesa/releases/download/25.0.7.2/mesa-25.0.7.2-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/mesa/releases/download/25.0.7.2/mesa-25.0.7.2-linux-x86_64.tar.gz",
                 },
-                sha256 = "b589513ea1834ba995456680ad57a117428ba38299d8cc37d8fe301e5f6e6c9b",
+                sha256 = { x86_64 = "b589513ea1834ba995456680ad57a117428ba38299d8cc37d8fe301e5f6e6c9b" },
             },
             -- 25.0.7.1: upstream is 25.0.7, the fourth component is ours.
             -- The payload was rebuilt with the full driver set, and a payload
@@ -164,7 +186,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/mesa/releases/download/25.0.7.1/mesa-25.0.7.1-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/mesa/releases/download/25.0.7.1/mesa-25.0.7.1-linux-x86_64.tar.gz",
                 },
-                sha256 = "84789c203ead56343b64d9edb76c1ff4fe7e886ba4194e6bc79e332e66e8867b",
+                sha256 = { x86_64 = "84789c203ead56343b64d9edb76c1ff4fe7e886ba4194e6bc79e332e66e8867b" },
             },
         },
     },

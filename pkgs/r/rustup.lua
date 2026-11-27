@@ -15,7 +15,7 @@ package = {
 
     -- xim pkg info
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable", -- dev, stable, deprecated
     categories = {"rust", "toolchain"},
     keywords = {"rust", "cross-platform", "version-management"},
@@ -27,7 +27,10 @@ package = {
             resources = {
                 GLOBAL = {
                     url = {
-                        linux = "https://static.rust-lang.org/rustup/archive/${version}/x86_64-unknown-linux-gnu/rustup-init",
+                        linux = {
+                            x86_64 = "https://static.rust-lang.org/rustup/archive/${version}/x86_64-unknown-linux-gnu/rustup-init",
+                            aarch64 = "https://static.rust-lang.org/rustup/archive/${version}/aarch64-unknown-linux-gnu/rustup-init",
+                        },
                         macosx = "https://static.rust-lang.org/rustup/archive/${version}/x86_64-apple-darwin/rustup-init",
                         windows = "https://static.rust-lang.org/rustup/archive/${version}/x86_64-pc-windows-msvc/rustup-init.exe",
                     },
@@ -35,7 +38,10 @@ package = {
                 },
                 CN = {
                     url = {
-                        linux = "https://mirrors.ustc.edu.cn/rust-static/rustup/archive/${version}/x86_64-unknown-linux-gnu/rustup-init",
+                        linux = {
+                            x86_64 = "https://mirrors.ustc.edu.cn/rust-static/rustup/archive/${version}/x86_64-unknown-linux-gnu/rustup-init",
+                            aarch64 = "https://mirrors.ustc.edu.cn/rust-static/rustup/archive/${version}/aarch64-unknown-linux-gnu/rustup-init",
+                        },
                         macosx = "https://mirrors.ustc.edu.cn/rust-static/rustup/archive/${version}/x86_64-apple-darwin/rustup-init",
                         windows = "https://mirrors.ustc.edu.cn/rust-static/rustup/archive/${version}/x86_64-pc-windows-msvc/rustup-init.exe",
                     },
@@ -70,22 +76,46 @@ package = {
         linux = {
             ["latest"] = { ref = "1.29.3" },
             ["1.28.2"] = {
-                url = string.format(_rustup_tpl, "1.28.2", "x86_64-unknown-linux-gnu"),
-                sha256 = nil,
+                x86_64 = {
+                    url = "https://static.rust-lang.org/rustup/archive/1.28.2/x86_64-unknown-linux-gnu/rustup-init",
+                    sha256 = "20a06e644b0d9bd2fbdbfd52d42540bdde820ea7df86e92e533c073da0cdd43c",
+                },
+                aarch64 = {
+                    url = "https://static.rust-lang.org/rustup/archive/1.28.2/aarch64-unknown-linux-gnu/rustup-init",
+                    sha256 = "e3853c5a252fca15252d07cb23a1bdd9377a8c6f3efa01531109281ae47f841c",
+                },
             },
             ["1.29.2"] = {
-                url = {
-                    GLOBAL = "https://static.rust-lang.org/rustup/archive/1.29.2/x86_64-unknown-linux-gnu/rustup-init",
-                    CN = "https://mirrors.ustc.edu.cn/rust-static/rustup/archive/1.29.2/x86_64-unknown-linux-gnu/rustup-init",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://static.rust-lang.org/rustup/archive/1.29.2/x86_64-unknown-linux-gnu/rustup-init",
+                        CN = "https://mirrors.ustc.edu.cn/rust-static/rustup/archive/1.29.2/x86_64-unknown-linux-gnu/rustup-init",
+                    },
+                    sha256 = "5be191e8c70a5007074254cb74d78dbfdd25cd5a61c27de7b8e5410122ec24f4",
                 },
-                sha256 = "5be191e8c70a5007074254cb74d78dbfdd25cd5a61c27de7b8e5410122ec24f4",
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://static.rust-lang.org/rustup/archive/1.29.2/aarch64-unknown-linux-gnu/rustup-init",
+                        CN = "https://mirrors.ustc.edu.cn/rust-static/rustup/archive/1.29.2/aarch64-unknown-linux-gnu/rustup-init",
+                    },
+                    sha256 = "a9c168dbea81a84671c6b7a5c1795cb0eb699020110d107ddfca427bd797e697",
+                },
             },
             ["1.29.3"] = {
-                url = {
-                    GLOBAL = "https://static.rust-lang.org/rustup/archive/1.29.3/x86_64-unknown-linux-gnu/rustup-init",
-                    CN = "https://mirrors.ustc.edu.cn/rust-static/rustup/archive/1.29.3/x86_64-unknown-linux-gnu/rustup-init",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://static.rust-lang.org/rustup/archive/1.29.3/x86_64-unknown-linux-gnu/rustup-init",
+                        CN = "https://mirrors.ustc.edu.cn/rust-static/rustup/archive/1.29.3/x86_64-unknown-linux-gnu/rustup-init",
+                    },
+                    sha256 = "b1c8cb14e30889e7e2999e6b69e62d9e9b9ffc0f4df8180564d306d9680e6c55",
                 },
-                sha256 = "b1c8cb14e30889e7e2999e6b69e62d9e9b9ffc0f4df8180564d306d9680e6c55",
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://static.rust-lang.org/rustup/archive/1.29.3/aarch64-unknown-linux-gnu/rustup-init",
+                        CN = "https://mirrors.ustc.edu.cn/rust-static/rustup/archive/1.29.3/aarch64-unknown-linux-gnu/rustup-init",
+                    },
+                    sha256 = "9f608c142e0e38a78957d0661ba1dfaf0b6fb37184cfaa4b9a0aa57af6184282",
+                },
             },
         },
         macosx = {

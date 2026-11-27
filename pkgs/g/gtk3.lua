@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     homepage = "https://www.gtk.org",
     name = "gtk3",
@@ -45,6 +45,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- DT_NEEDED outside the payload (readelf -d): glib, pango, cairo, harfbuzz, fribidi, fontconfig, gdk-pixbuf, atk, atk-bridge, cups, epoxy, wayland, xkbcommon and eight X11 client libraries.
             deps = { "xim:glibc", "xim:glib@>=2.88", "xim:pango", "xim:cairo", "xim:harfbuzz",
                      "xim:fribidi", "xim:fontconfig", "xim:gdk-pixbuf", "xim:atk",
@@ -95,21 +96,20 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 import("xim.pkgindex.relocate")
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mv(package.name .. "-" .. pkginfo.version(), dir)
     relocate.apply(dir)
     selfcontain.seal(dir)
     sysroot.relocate_pkgconfig(dir, "lib/pkgconfig")
     local schemas = dir .. "/share/glib-2.0/schemas"
     local compiler = pkginfo.dep_install_dir("xim:glib") .. "/bin/glib-compile-schemas"
     system.exec(string.format("%q --strict %q", compiler, schemas))
-    return os.isfile(dir .. "/lib/libgtk-3.so.0") and os.isfile(schemas .. "/gschemas.compiled")
+    return fs.is_file(dir .. "/lib/libgtk-3.so.0") and fs.is_file(schemas .. "/gschemas.compiled")
 end
 
 function config()

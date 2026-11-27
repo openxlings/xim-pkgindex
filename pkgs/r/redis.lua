@@ -11,7 +11,7 @@
 -- binaries from official redis/redis sources: upstream distributes source
 -- tarballs only for POSIX, and install-time source compilation is disallowed.
 package = {
-    spec = "2",
+    spec = "3",
 
     name = "redis",
     description = "Redis - in-memory key-value data structure store, cache and message broker (self-contained Windows MSYS2 build with TLS enabled)",
@@ -58,6 +58,7 @@ package = {
 
     xpm = {
         windows = {
+            strip = 1,
             ["latest"] = { ref = "8.10.3" },
             ["8.10.3"] = {
                 x86_64 = {
@@ -98,8 +99,6 @@ function installed()
 end
 
 function install()
-    local ver = pkginfo.version()
-    payload.unpack{ extracted = "Redis-" .. ver .. "-Windows-x64-msys2", strip = 1 }
     payload.require(WIN_REQUIRED)
     return true
 end

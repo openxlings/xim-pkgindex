@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "3",
     -- base info
     name = "xvm-sysdetect",
     description = "XVM - System Package Detect Tools",
@@ -24,6 +24,8 @@ package = {
 
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 local sys_paths = {
     linux = {
@@ -50,7 +52,7 @@ local pkgs = {
 function install()
     for _, pkg in ipairs(pkgs) do
         for _, p in ipairs(sys_paths.linux) do
-            if os.isfile(path.join(p, pkg)) then
+            if fs.is_file(path.join(p, pkg)) then
                 xvm.add(pkg, { version = "system", bindir = p })
                 break
             end

@@ -13,6 +13,9 @@ name: consumer through the index override
 on:
   workflow_call:
     inputs:
+      xlings_sha:
+        type: string
+        default: ""
       files:
         type: string
         default: ""
@@ -34,6 +37,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # The client this index's CI runs (an xlings commit's build, or the
+      # pinned release), not the one the mcpp tarball vendors: see the script.
+      - name: The client under test
+        uses: ./.github/actions/setup-xlings
+        with:
+          xlings_sha: ${{ inputs.xlings_sha }}
+
       - name: Changed files
         id: changed
         uses: tj-actions/changed-files@v46
@@ -43,4 +53,5 @@ jobs:
         env:
           CHANGED_FILES: ${{ inputs.files || steps.changed.outputs.all_changed_files }}
           EVENT: ${{ inputs.files != '' && 'planned' || github.event_name }}
+          XLINGS_UNDER_TEST: ${{ env.XLINGS_HOME }}/bin/xlings
         run: bash .github/scripts/consumer-through-index-override.sh

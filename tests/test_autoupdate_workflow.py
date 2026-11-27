@@ -72,7 +72,7 @@ def test_candidate_bootstrap_uses_its_release_version_and_bounded_concurrency():
 @pytest.mark.parametrize('workflow', ['ci-candidates.yml', 'xpkgindex-update.yml'])
 def test_resource_verification_is_independent_of_native_runner_support(workflow):
     steps = load(workflow)['jobs']['scan']['steps']
-    verify = next(s for s in steps if 'xpkgindex_update verify ' in s.get('run', ''))
+    verify = next(s for s in steps if ' verify --base ' in s.get('run', ''))
     assert 'if' not in verify
     upload = next(s for s in steps if s.get('uses', '').startswith('actions/upload-artifact'))
     assert 'candidate-resources.json' in upload['with']['path']
@@ -90,7 +90,7 @@ def test_only_an_updater_branch_keeps_hooks_frozen_in_candidate_validation():
                              env={'HEAD_REF': ref, 'PATH': '/usr/bin:/bin'}, capture_output=True, text=True, check=True)
         assert out.stdout.strip() == 'REVIEWED=' + flag
     guard = next(s for s in steps if 'autoupdate-ci.py guard ' in s.get('run', ''))
-    verify = next(s for s in steps if 'xpkgindex_update verify ' in s.get('run', ''))
+    verify = next(s for s in steps if ' verify --base ' in s.get('run', ''))
     assert '$REVIEWED' in guard['run'] and '$REVIEWED' in verify['run']
     # The updater's own validation keeps the full guard.
     scan = load('xpkgindex-update.yml')['jobs']['scan']['steps']

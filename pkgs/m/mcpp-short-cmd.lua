@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     name = "mcpp-short-cmd",
     description = "Short command aliases for mcpp (mp/mbuild/mrun/mtest/...)",

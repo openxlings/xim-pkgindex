@@ -60,7 +60,7 @@
 -- platform package is published at the same version as the shim.
 
 package = {
-    spec = "2",
+    spec = "3",
 
     name = "esbuild",
     description = "esbuild - an extremely fast bundler and minifier for JavaScript and TypeScript",
@@ -174,9 +174,11 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 local function binary_name()
-    return is_host("windows") and "esbuild.exe" or "esbuild"
+    return (pkginfo.platform() == "windows") and "esbuild.exe" or "esbuild"
 end
 
 function install()
@@ -188,25 +190,25 @@ function install()
     local exe = binary_name()
     local bindir = path.join(pkginfo.install_dir(), "bin")
     local staged = path.join(bindir, exe)
-    if os.isfile(staged) then return true end
+    if fs.is_file(staged) then return true end
 
     -- npm's tarball root is `package/`; see ARCHIVE LAYOUT above.
-    local inside = is_host("windows") and exe or path.join("bin", exe)
+    local inside = (pkginfo.platform() == "windows") and exe or path.join("bin", exe)
     local candidates = {
         path.join("package", inside),
         path.join(pkginfo.install_dir(), "package", inside),
     }
     for _, src in ipairs(candidates) do
-        if os.isfile(src) then
-            os.mkdir(bindir)
-            os.cp(src, staged)
+        if fs.is_file(src) then
+            fs.mkdir(bindir)
+            fs.copy(src, staged)
             break
         end
     end
     -- The rest of the package (package.json, README.md) is not installed:
     -- the binary is the whole tool.
-    os.tryrm(path.join(pkginfo.install_dir(), "package"))
-    return os.isfile(staged)
+    fs.remove(path.join(pkginfo.install_dir(), "package"))
+    return fs.is_file(staged)
 end
 
 function config()

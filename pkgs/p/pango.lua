@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "3",
     homepage = "https://pango.gnome.org",
     name = "pango",
     description = "Library for layout and rendering of internationalized text",
@@ -35,6 +35,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- fromsource 漏了 glib/fribidi, 这里补全(pango 运行时确需)
             -- Lower bounds, not exact pins. An `@2.80.0` here is not a
             -- statement about compatibility, it is a statement that no sibling
@@ -78,7 +79,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/pango/releases/download/1.52.1/pango-1.52.1-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/pango/releases/download/1.52.1/pango-1.52.1-linux-x86_64.tar.gz",
                 },
-                sha256 = "cb6334fb3e075afc173f23197c6854c1fe42b391c5bae5ee882a914f7f19c31b",
+                sha256 = { x86_64 = "cb6334fb3e075afc173f23197c6854c1fe42b391c5bae5ee882a914f7f19c31b" },
             },
         },
     },
@@ -87,6 +88,8 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 
 local libs = {
@@ -96,7 +99,6 @@ local libs = {
 }
 
 function install()
-    sysroot.adopt_payload()
 
     -- The .pc files in this payload say `libdir=${prefix}/lib/x86_64-linux-gnu`
     -- -- a Debian-family build host -- against a payload with a flat lib/.
@@ -115,16 +117,16 @@ function config()
     local binding = package.name .. "@" .. pkginfo.version()
     xvm.add(package.name)
     for _, lib in ipairs(libs) do
-        if os.isfile(path.join(libdir, lib)) then
+        if fs.is_file(path.join(libdir, lib)) then
             xvm.add(lib, { type = "lib", bindir = libdir, filename = lib, alias = lib, binding = binding })
         end
     end
     local sysroot = system.subos_sysrootdir()
     local sys_inc = path.join(sysroot, "usr/include")
-    os.mkdir(sys_inc)
+    fs.mkdir(sys_inc)
     system.exec(string.format("sh -c 'cp -a \"%s\"/include/* \"%s\"/ 2>/dev/null || true'", idir, sys_inc))
     local sys_pc = path.join(sysroot, "usr/lib/pkgconfig")
-    os.mkdir(sys_pc)
+    fs.mkdir(sys_pc)
     -- The payload's .pc files were already pointed at the payload in
     -- install(); copying them verbatim is what keeps that the only answer.
     system.exec(string.format(

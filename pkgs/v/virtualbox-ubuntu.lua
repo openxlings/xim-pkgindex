@@ -13,7 +13,7 @@ package = {
     -- xim pkg info
     type = "package",
     namespace = "config",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable", -- dev, stable, deprecated
     categories = {"virtualization", "vm", "ubuntu"},
     keywords = {"virtualbox", "ubuntu", "24.04", "vm", "unattended"},
@@ -40,7 +40,7 @@ package = {
                     GLOBAL = "https://releases.ubuntu.com/24.04/ubuntu-24.04.4-desktop-amd64.iso",
                     CN     = "https://mirrors.ustc.edu.cn/ubuntu-releases/24.04/ubuntu-24.04.4-desktop-amd64.iso",
                 },
-                sha256 = "3a4c9877b483ab46d7c3fbe165a0db275e1ae3cfe56a5657e5a47c2f99a99d1e",
+                sha256 = { x86_64 = "3a4c9877b483ab46d7c3fbe165a0db275e1ae3cfe56a5657e5a47c2f99a99d1e" },
             },
         },
         ubuntu = { ref = "linux" },

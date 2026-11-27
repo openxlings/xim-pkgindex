@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://gitlab.gnome.org/GNOME/libsoup",
     name = "libsoup",
     description = "HTTP client/server library for GLib (libsoup-3.0, GTK/GNOME stack)",
@@ -36,6 +36,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- The other library #749 named. 3.6.6 is the newest STABLE
             -- libsoup: GNOME uses odd minors for development series, so 3.7.x
             -- is not a candidate.
@@ -66,7 +67,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libsoup/releases/download/3.6.6/libsoup-3.6.6-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libsoup/releases/download/3.6.6/libsoup-3.6.6-linux-x86_64.tar.gz",
                 },
-                sha256 = "3130630bc202dfde599b5a3608a7b48a64cf4e97225da1d1d5ad2ab080ca624c",
+                sha256 = { x86_64 = "3130630bc202dfde599b5a3608a7b48a64cf4e97225da1d1d5ad2ab080ca624c" },
             },
         },
     },
@@ -75,11 +76,11 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")

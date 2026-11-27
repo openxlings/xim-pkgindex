@@ -17,12 +17,13 @@
 -- Windows quotes for the MSVCRT argument rules cmd.exe passes on.
 
 import("xim.libxpkg.system")
+import("xim.libxpkg.pkginfo")
 
 local shell = {}
 
 function shell.quote(s)
     s = tostring(s)
-    if os.host() == "windows" then
+    if pkginfo.platform() == "windows" then
         return '"' .. s:gsub('(\\*)"', '%1%1\\"'):gsub('(\\+)$', '%1%1') .. '"'
     end
     return "'" .. s:gsub("'", "'\\''") .. "'"

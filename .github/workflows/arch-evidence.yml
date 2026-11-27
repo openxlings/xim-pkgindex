@@ -1,0 +1,55 @@
+name: Architecture evidence
+
+# The first and third steps of the architecture migration (tools/arch-migrate,
+# design 2026-11-27 §5.6), where the downloads are fast: every Linux entry that
+# names no architecture is downloaded and its ELF members read (never unpacked
+# to disk, never run); for one whose programs are x86_64 only, upstream is
+# asked for the aarch64 artifact, which is downloaded and read the same way.
+# The evidence (JSON, one file per shard) is the artifact; `tools/arch-migrate
+# apply --evidence` rewrites the recipes from it, `table` prints it.
+on:
+  workflow_dispatch:
+    inputs:
+      groups:
+        description: 'Plan groups to read (read, res, mechanical), space-separated'
+        type: string
+        default: 'read'
+      only:
+        description: 'Only these recipes or package names, space-separated (default: all)'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  read:
+    name: read (shard ${{ matrix.shard }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Lua for the recipe loader
+        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends lua5.4 zstd # host-dep-ok: the census loads recipes as Lua; .zst archives
+      - name: Read the bytes
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GROUPS: ${{ inputs.groups }}
+          ONLY: ${{ inputs.only }}
+        run: |
+          set -euo pipefail
+          python3 tools/arch-migrate plan --json plan.json
+          args=(--groups $GROUPS)
+          [[ -n "$ONLY" ]] && args+=(--only $ONLY)
+          python3 tools/arch-migrate evidence --plan plan.json --out "evidence-${{ matrix.shard }}.json" \
+            --shard "${{ matrix.shard }}/8" --jobs 4 "${args[@]}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arch-evidence-${{ matrix.shard }}
+          path: evidence-${{ matrix.shard }}.json
+          if-no-files-found: ignore

@@ -10,7 +10,7 @@ package = {
     repo = "https://gitlab.freedesktop.org/xorg/lib/libXau",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"graphics", "lib"},
     keywords = {"libxau", "graphics", "x11"},
@@ -21,13 +21,19 @@ package = {
             resources = {
                 GLOBAL = {
                     url = {
-                        linux = "https://github.com/xlings-res/libXau/releases/download/${version}/libXau-${version}-linux-x86_64.tar.gz",
+                        linux = {
+                            aarch64 = "https://github.com/xlings-res/libXau/releases/download/${version}/libXau-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://github.com/xlings-res/libXau/releases/download/${version}/libXau-${version}-linux-x86_64.tar.gz",
+                        },
                     },
                     required = true,
                 },
                 CN = {
                     url = {
-                        linux = "https://gitcode.com/xlings-res/libXau/releases/download/${version}/libXau-${version}-linux-x86_64.tar.gz",
+                        linux = {
+                            aarch64 = "https://gitcode.com/xlings-res/libXau/releases/download/${version}/libXau-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://gitcode.com/xlings-res/libXau/releases/download/${version}/libXau-${version}-linux-x86_64.tar.gz",
+                        },
                     },
                     required = true,
                 },
@@ -47,11 +53,20 @@ package = {
             },
             ["latest"] = { ref = "1.0.11" },
             ["1.0.11"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/libXau/releases/download/1.0.11/libXau-1.0.11-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/libXau/releases/download/1.0.11/libXau-1.0.11-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libXau/releases/download/1.0.11/libXau-1.0.11-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libXau/releases/download/1.0.11/libXau-1.0.11-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "07df5c69c4e1c9480e0f0e98f18bcb0d9e25990e994f8f77540fb69f6b55dfb5",
                 },
-                sha256 = "07df5c69c4e1c9480e0f0e98f18bcb0d9e25990e994f8f77540fb69f6b55dfb5",
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libXau/releases/download/1.0.11/libXau-1.0.11-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libXau/releases/download/1.0.11/libXau-1.0.11-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "904d1e449ae7cd2f243a4df40c80a99c9953fe364f0e4d7d8fff63e1c3d2ce64",
+                },
             },
         },
     },

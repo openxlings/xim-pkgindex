@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://gitlab.freedesktop.org/xorg/lib/libxft",
     name = "libXft",
     description = "X FreeType client-side font library",
@@ -35,6 +35,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- Packaged for the same reason as libthai: pango's published .pc
             -- names `xft >= 2.0.0` in Requires.private, pkg-config resolves
             -- Requires.private before it answers anything, and nothing in this
@@ -62,7 +63,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libXft/releases/download/2.3.9/libXft-2.3.9-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libXft/releases/download/2.3.9/libXft-2.3.9-linux-x86_64.tar.gz",
                 },
-                sha256 = "1ed4776e4dd641baf74921a71cc8296b67d66ee5c498baf7041628c87d6080f6",
+                sha256 = { x86_64 = "1ed4776e4dd641baf74921a71cc8296b67d66ee5c498baf7041628c87d6080f6" },
             },
         },
     },
@@ -71,11 +72,11 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")

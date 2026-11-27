@@ -45,6 +45,7 @@ package = {
     -- as `SIMCTL_RUN_UDID` in `apple-simulator-tools`.
 
     type = "script",
+    archs = {"aarch64"},
     status = "stable",
     categories = {"apple", "ios", "device", "runner"},
     keywords = {"ios", "device", "devicectl", "runner", "mcpp"},

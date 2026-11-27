@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://github.com/rockdaboot/libpsl",
     name = "libpsl",
     description = "C library for the Public Suffix List (libpsl + psl CLI)",
@@ -38,6 +38,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- libsoup links libpsl.so.5 to decide cookie scope.
             --
             -- Built -Druntime=no, which drops the libidn2/libunistring chain:
@@ -55,7 +56,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libpsl/releases/download/0.23.3/libpsl-0.23.3-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libpsl/releases/download/0.23.3/libpsl-0.23.3-linux-x86_64.tar.gz",
                 },
-                sha256 = "1987dd56df0aab14d516af533de370c97df6b37a167c1b4ef2dce54d7a796988",
+                sha256 = { x86_64 = "1987dd56df0aab14d516af533de370c97df6b37a167c1b4ef2dce54d7a796988" },
             },
         },
     },
@@ -64,11 +65,11 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")

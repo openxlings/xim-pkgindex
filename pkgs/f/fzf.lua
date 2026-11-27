@@ -25,7 +25,10 @@ package = {
             resources = {
                 GLOBAL = {
                     url = {
-                        linux = "https://github.com/junegunn/fzf/releases/download/v${version}/fzf-${version}-linux_amd64.tar.gz",
+                        linux = {
+                            x86_64 = "https://github.com/junegunn/fzf/releases/download/v${version}/fzf-${version}-linux_amd64.tar.gz",
+                            aarch64 = "https://github.com/junegunn/fzf/releases/download/v${version}/fzf-${version}-linux_arm64.tar.gz",
+                        },
                         macosx = "https://github.com/junegunn/fzf/releases/download/v${version}/fzf-${version}-darwin_arm64.tar.gz",
                         windows = "https://github.com/junegunn/fzf/releases/download/v${version}/fzf-${version}-windows_amd64.zip",
                     },
@@ -40,20 +43,48 @@ package = {
 
             ["latest"] = { ref = "0.74.5" },
             ["0.74.3"] = {
-                url = "https://github.com/junegunn/fzf/releases/download/v0.74.3/fzf-0.74.3-linux_amd64.tar.gz",
-                sha256 = "3501a595e4b5c40a6b047340a0e8f805c46fd4e61ef95ef8a136ba8c61cf6f22",
+                x86_64 = {
+                    url = "https://github.com/junegunn/fzf/releases/download/v0.74.3/fzf-0.74.3-linux_amd64.tar.gz",
+                    sha256 = "3501a595e4b5c40a6b047340a0e8f805c46fd4e61ef95ef8a136ba8c61cf6f22",
+                },
+                aarch64 = {
+                    url = "https://github.com/junegunn/fzf/releases/download/v0.74.3/fzf-0.74.3-linux_arm64.tar.gz",
+                    sha256 = "4a17a17b46bd0c4873e995533de508995c11572c0be0664a5dbcf13f60463046",
+                },
+                revision = 1,
             },
             ["0.72.0"] = {
-                url = "https://github.com/junegunn/fzf/releases/download/v0.72.0/fzf-0.72.0-linux_amd64.tar.gz",
-                sha256 = "0e58e4bd0b3c5d68c56b54c460a6863d0de79633ed18d388575a960ab447b006",
+                x86_64 = {
+                    url = "https://github.com/junegunn/fzf/releases/download/v0.72.0/fzf-0.72.0-linux_amd64.tar.gz",
+                    sha256 = "0e58e4bd0b3c5d68c56b54c460a6863d0de79633ed18d388575a960ab447b006",
+                },
+                aarch64 = {
+                    url = "https://github.com/junegunn/fzf/releases/download/v0.72.0/fzf-0.72.0-linux_arm64.tar.gz",
+                    sha256 = "a0a5b50730f568c5f08b8dbba1e6e598db253e1856d371290086786b889b996b",
+                },
+                revision = 1,
             },
             ["0.71.0"] = {
-                url = "https://github.com/junegunn/fzf/releases/download/v0.71.0/fzf-0.71.0-linux_amd64.tar.gz",
-                sha256 = "22639bb38489dbca8acef57850cbb50231ab714d0e8e855ac52fae8b41233df4",
+                x86_64 = {
+                    url = "https://github.com/junegunn/fzf/releases/download/v0.71.0/fzf-0.71.0-linux_amd64.tar.gz",
+                    sha256 = "22639bb38489dbca8acef57850cbb50231ab714d0e8e855ac52fae8b41233df4",
+                },
+                aarch64 = {
+                    url = "https://github.com/junegunn/fzf/releases/download/v0.71.0/fzf-0.71.0-linux_arm64.tar.gz",
+                    sha256 = "98b7d322efae9c37e4bfbbab1cbcd8722eb742d9399511f96375feb40cc35d1d",
+                },
+                revision = 1,
             },
             ["0.74.5"] = {
-                url = "https://github.com/junegunn/fzf/releases/download/v0.74.5/fzf-0.74.5-linux_amd64.tar.gz",
-                sha256 = "d47d7f882972c7d674dbbba998ffa4116e68379616ffac7695d0671e9a722c5f",
+                x86_64 = {
+                    url = "https://github.com/junegunn/fzf/releases/download/v0.74.5/fzf-0.74.5-linux_amd64.tar.gz",
+                    sha256 = "d47d7f882972c7d674dbbba998ffa4116e68379616ffac7695d0671e9a722c5f",
+                },
+                aarch64 = {
+                    url = "https://github.com/junegunn/fzf/releases/download/v0.74.5/fzf-0.74.5-linux_arm64.tar.gz",
+                    sha256 = "cf058001da21724a469b714a29cf4aab9cbe860d218a0d6c1b5b661efad7784c",
+                },
+                revision = 1,
             },
         },
         macosx = {

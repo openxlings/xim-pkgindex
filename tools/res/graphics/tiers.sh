@@ -9,11 +9,36 @@
 # the intended behaviour, since PKG_CONFIG_LIBDIR points only at the subos and
 # a missing dependency cannot be silently satisfied by the host.
 #
-# Usage:  tiers.sh [T1|T2|T3|T4|all] [--from <name>]
+# Usage:  tiers.sh [T0|T1|T2|T3|T4|T5|all] [--to <name>] [--skip '<names>']
+#
+#   --to    stop once <name> is built: res-build builds a package with
+#           everything before it, in one SubOS (tools/res/graphics/res.sh)
+#   --skip  leave these out (what the package asked for does not need them)
+#
+# The architecture is the SubOS's (arch.sh). Where the two differ, this file
+# says so: T0 and libllvm are built here only on aarch64, and mesa's drivers
+# are not the same set (T5).
 set -uo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BUILD="$HERE/build-in-subos.sh"
+SUBOS="${XLINGS_HOME:-$HOME/.xlings}/subos/${XLINGS_GFX_SUBOS:-gfxbuild}"
+# shellcheck source=arch.sh
+. "$HERE/arch.sh"
+ARCH="$(subos_arch "$SUBOS")" || exit 3
+
+# T0 -- what x86_64 takes from the index (expat, libffi and fontconfig there
+# are repacks of a distribution's builds; freetype was built before this file
+# knew it) and aarch64 builds, from upstream's release. libffi 3.4.4 makes
+# libffi.so.8 alone; x86_64's repack also carries the .so.7 of libffi 3.3,
+# which nothing in this stack links. freetype and fontconfig are cmake's
+# (cmake-gui links them), built as x86_64's link: freetype on libc alone.
+T0=(
+  "expat|2.6.2|https://github.com/libexpat/libexpat/releases/download/R_2_6_2/expat-2.6.2.tar.xz|autotools|--without-docbook --without-examples --without-tests"
+  "libffi|3.4.4|https://github.com/libffi/libffi/releases/download/v3.4.4/libffi-3.4.4.tar.gz|autotools|--disable-docs --disable-multi-os-directory"
+  "freetype|2.13.2|https://download-mirror.savannah.gnu.org/releases/freetype/freetype-2.13.2.tar.xz|autotools|--without-zlib --without-bzip2 --without-png --without-harfbuzz --without-brotli"
+  "fontconfig|2.15.0|https://www.freedesktop.org/software/fontconfig/release/fontconfig-2.15.0.tar.xz|autotools|--disable-docs --disable-cache-build --sysconfdir=/etc --localstatedir=/var"
+)
 
 # name|version|url|system|extra-args
 T1=(
@@ -39,7 +64,6 @@ T1=(
 # 'xi', not found` -- an error naming neither libXtst nor libXi. The payload does
 # not link it, so the recipe does not declare it.
 T2=(
-  "libXtst|1.2.5|https://xorg.freedesktop.org/archive/individual/lib/libXtst-1.2.5.tar.xz|autotools||xorgproto libX11 libXext libXi libXfixes libXau libXdmcp libxcb libXrender"
   "alsa-lib|1.2.11|https://www.alsa-project.org/files/pub/lib/alsa-lib-1.2.11.tar.bz2|autotools|--disable-python --disable-topology --disable-ucm"
   "libXau|1.0.11|https://xorg.freedesktop.org/archive/individual/lib/libXau-1.0.11.tar.xz|autotools|"
   "libXdmcp|1.1.5|https://xorg.freedesktop.org/archive/individual/lib/libXdmcp-1.1.5.tar.xz|autotools|"
@@ -52,11 +76,14 @@ T2=(
   "libXxf86vm|1.1.6|https://xorg.freedesktop.org/archive/individual/lib/libXxf86vm-1.1.6.tar.xz|autotools|"
   "libXi|1.8.2|https://xorg.freedesktop.org/archive/individual/lib/libXi-1.8.2.tar.xz|autotools|"
   "libXcursor|1.2.3|https://xorg.freedesktop.org/archive/individual/lib/libXcursor-1.2.3.tar.xz|autotools|"
+  # Last: what it needs is above it, so a run that builds T2 whole has it.
+  "libXtst|1.2.5|https://xorg.freedesktop.org/archive/individual/lib/libXtst-1.2.5.tar.xz|autotools||xorgproto libX11 libXext libXi libXfixes libXau libXdmcp libxcb libXrender"
 )
 
 T3=(
   "wayland|1.23.1|https://gitlab.freedesktop.org/wayland/wayland/-/releases/1.23.1/downloads/wayland-1.23.1.tar.xz|meson|-Ddocumentation=false -Dtests=false|libxml2 expat"
-  "wayland-protocols|1.38|https://gitlab.freedesktop.org/wayland/wayland-protocols/-/releases/1.38/downloads/wayland-protocols-1.38.tar.xz|meson|-Dtests=false"
+  # 1.45: what mesa 25.0.7.2 and .3 were built against (build-wayland-protocols.sh).
+  "wayland-protocols|1.45|https://gitlab.freedesktop.org/wayland/wayland-protocols/-/releases/1.45/downloads/wayland-protocols-1.45.tar.xz|meson|-Dtests=false"
   "libxkbcommon|1.7.0|https://xkbcommon.org/download/libxkbcommon-1.7.0.tar.xz|meson|-Denable-docs=false -Denable-wayland=false -Denable-xkbregistry=false"
 )
 
@@ -162,7 +189,7 @@ T4=(
 # dependency is real but it belongs to a BUILD TOOL from another package, which is
 # why reading mesa's build files could not find it -- it surfaced 1957 targets in,
 # with an error naming neither wayland nor mesa.
-T5=(
+T5_x86_64=(
   "mesa|25.0.7|https://archive.mesa3d.org/mesa-25.0.7.tar.xz|meson|-Dgallium-drivers=llvmpipe,softpipe,radeonsi,nouveau,zink,iris,d3d12,virgl -Dvulkan-drivers=amd -Dglvnd=enabled -Dplatforms=x11,wayland -Dllvm=enabled -Dshared-llvm=enabled -Dmesa-clc=enabled -Dgallium-d3d12-video=disabled -Dlmsensors=disabled -Dvalgrind=disabled -Dbuild-tests=false -Dgallium-extra-hud=false|llvm-dev spirv-tools directx-headers wayland-protocols glslang libglvnd libdrm libX11 libxcb libXext libXfixes libXxf86vm libxshmfence wayland zlib expat elfutils xorgproto libpciaccess libXrandr libXau libXdmcp libXrender"
 )
 
@@ -182,18 +209,37 @@ T5=(
 # gets `libclc found: YES` followed by `Dependency "LLVMSPIRVLib" not found`,
 # which reads like a broken package rather than a missing path.
 
+# aarch64 (xlings design 2026-11-27 §5.8): the drivers a CPU and the GPUs an
+# aarch64 machine takes through PCIe or virtio need. No iris (Intel's GPUs are
+# on x86 alone) and no d3d12, so no clc chain: llvm-dev, spirv-tools and
+# directx-headers are not inputs, mesa_clc is not built, and LLVM is libllvm
+# itself (the L step below), staged whole into the SubOS for the build. The ARM
+# SoC drivers (freedreno, panfrost, v3d, etnaviv, lima, asahi) wait for
+# hardware to verify them on.
+T5_aarch64=(
+  "mesa|25.0.7|https://archive.mesa3d.org/mesa-25.0.7.tar.xz|meson|-Dgallium-drivers=llvmpipe,softpipe,virgl,zink,radeonsi,nouveau -Dvulkan-drivers=amd -Dglvnd=enabled -Dplatforms=x11,wayland -Dllvm=enabled -Dshared-llvm=enabled -Dlmsensors=disabled -Dvalgrind=disabled -Dbuild-tests=false -Dgallium-extra-hud=false|zlib"
+)
+
+TO="" SKIP="" BUILT=" " DONE=0
+
 run_tier() {  # <tier-name> <entries...>
     local tier="$1"; shift
-    local entry name version url system extra deps
+    local entry name version url system extra deps d
     for entry in "$@"; do
+        [[ $DONE -eq 1 ]] && return 0
         # The sixth field is optional: xlings packages whose payload is a build
         # dependency but which do not stage themselves into the subos sysroot.
         # See build-in-subos.sh --deps.
         IFS='|' read -r name version url system extra deps <<<"$entry"
+        [[ " $SKIP " == *" $name "* ]] && continue
         echo "── $tier :: $name $version ──────────────────────────────"
         local args=(--name "$name" --version "$version" --url "$url"
                     --system "$system")
-        [[ -n "${deps:-}" ]] && args+=(--deps "$deps")
+        # A dependency this run built is staged into the subos already;
+        # --deps names what xlings installed.
+        local kept=""
+        for d in ${deps:-}; do [[ "$BUILT" == *" $d "* ]] || kept="$kept $d"; done
+        [[ -n "$kept" ]] && args+=(--deps "${kept# }")
         # `|| return $?`, not `|| return 1`: this is a pass-through, and
         # rewriting the child's status to 1 erases the difference between "the
         # build broke" and "this machine could not start it" (exit 3, see
@@ -204,17 +250,46 @@ run_tier() {  # <tier-name> <entries...>
         else
             bash "$BUILD" "${args[@]}" || return $?
         fi
+        BUILT="$BUILT$name "
+        [[ "$name" == "$TO" ]] && DONE=1
     done
+    return 0
 }
 
-WHICH="${1:-all}"
+# L -- libllvm, built and staged whole (headers, llvm-config) for mesa.
+run_llvm() {
+    [[ $DONE -eq 1 || " $SKIP " == *" libllvm "* ]] && return 0
+    echo "── L :: libllvm 20.1.7 ──────────────────────────────"
+    bash "$HERE/build-libllvm.sh" 20.1.7 || return $?
+    BUILT="${BUILT}libllvm "
+    [[ "$TO" == libllvm ]] && DONE=1
+    return 0
+}
+
+WHICH="${1:-all}"; shift || true
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --to)   TO="$2"; shift 2 ;;
+    --skip) SKIP="$2"; shift 2 ;;
+    *)      echo "usage: $0 [T0|T1|T2|T3|T4|T5|all] [--to <name>] [--skip '<names>']" >&2; exit 2 ;;
+  esac
+done
+T5_name="T5_$ARCH[@]"; T5=("${!T5_name}")
 case "$WHICH" in
+  T0)  run_tier T0 "${T0[@]}" ;;
   T1)  run_tier T1 "${T1[@]}" ;;
   T2)  run_tier T2 "${T2[@]}" ;;
   T3)  run_tier T3 "${T3[@]}" ;;
   T4)  run_tier T4 "${T4[@]}" ;;
   T5)  run_tier T5 "${T5[@]}" ;;
-  all) run_tier T1 "${T1[@]}" && run_tier T2 "${T2[@]}" \
-         && run_tier T4 "${T4[@]}" && run_tier T5 "${T5[@]}" ;;
-  *)   echo "usage: $0 [T1|T2|T3|all]" >&2; exit 2 ;;
+  # T3 too: mesa's wayland platform is built against it.
+  all) { [[ "$ARCH" == x86_64 ]] || run_tier T0 "${T0[@]}"; } \
+         && run_tier T1 "${T1[@]}" && run_tier T2 "${T2[@]}" \
+         && run_tier T3 "${T3[@]}" && run_tier T4 "${T4[@]}" \
+         && { [[ "$ARCH" == x86_64 ]] || run_llvm; } \
+         && run_tier T5 "${T5[@]}" ;;
+  *)   echo "usage: $0 [T0|T1|T2|T3|T4|T5|all] [--to <name>] [--skip '<names>']" >&2; exit 2 ;;
 esac
+status=$?
+[[ $status -ne 0 || -z "$TO" || $DONE -eq 1 ]] || { echo "tiers.sh: $TO is in no tier run for $ARCH" >&2; exit 2; }
+exit $status

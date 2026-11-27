@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     homepage = "https://www.alsa-project.org",
     name = "alsa-lib",
@@ -53,6 +53,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- Just glibc, and measured rather than assumed:
             --
             --   objdump -p lib/libasound.so.2.0.0 | grep NEEDED
@@ -71,7 +72,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/alsa-lib/releases/download/1.2.11/alsa-lib-1.2.11-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/alsa-lib/releases/download/1.2.11/alsa-lib-1.2.11-linux-x86_64.tar.gz",
                 },
-                sha256 = "c95f1535f267608378d115a820e6b4aa29df408df0f8a1d45a866371957fb4e8",
+                sha256 = { x86_64 = "c95f1535f267608378d115a820e6b4aa29df408df0f8a1d45a866371957fb4e8" },
             },
         },
     },
@@ -81,18 +82,18 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mv("alsa-lib-1.2.11", dir)
 
     -- The SONAME libjsound.so asks for. The `.so` dev symlink existing says
     -- nothing about whether the runtime name resolves.
-    if not os.isfile(path.join(dir, "lib", "libasound.so.2")) then
-        raise("alsa-lib payload has no lib/libasound.so.2 -- that is the SONAME "
+    if not fs.is_file(path.join(dir, "lib", "libasound.so.2")) then
+        error("alsa-lib payload has no lib/libasound.so.2 -- that is the SONAME "
               .. "libjsound.so has a DT_NEEDED on")
     end
 

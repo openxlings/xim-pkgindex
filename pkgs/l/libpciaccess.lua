@@ -10,7 +10,7 @@ package = {
     repo = "https://gitlab.freedesktop.org/xorg/lib/libpciaccess",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"graphics", "lib"},
     keywords = {"libpciaccess", "graphics", "gl"},
@@ -21,13 +21,19 @@ package = {
             resources = {
                 GLOBAL = {
                     url = {
-                        linux = "https://github.com/xlings-res/libpciaccess/releases/download/${version}/libpciaccess-${version}-linux-x86_64.tar.gz",
+                        linux = {
+                            aarch64 = "https://github.com/xlings-res/libpciaccess/releases/download/${version}/libpciaccess-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://github.com/xlings-res/libpciaccess/releases/download/${version}/libpciaccess-${version}-linux-x86_64.tar.gz",
+                        },
                     },
                     required = true,
                 },
                 CN = {
                     url = {
-                        linux = "https://gitcode.com/xlings-res/libpciaccess/releases/download/${version}/libpciaccess-${version}-linux-x86_64.tar.gz",
+                        linux = {
+                            aarch64 = "https://gitcode.com/xlings-res/libpciaccess/releases/download/${version}/libpciaccess-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://gitcode.com/xlings-res/libpciaccess/releases/download/${version}/libpciaccess-${version}-linux-x86_64.tar.gz",
+                        },
                     },
                     required = true,
                 },
@@ -47,11 +53,20 @@ package = {
             },
             ["latest"] = { ref = "0.18.1" },
             ["0.18.1"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/libpciaccess/releases/download/0.18.1/libpciaccess-0.18.1-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/libpciaccess/releases/download/0.18.1/libpciaccess-0.18.1-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libpciaccess/releases/download/0.18.1/libpciaccess-0.18.1-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libpciaccess/releases/download/0.18.1/libpciaccess-0.18.1-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "cf45c0441095e92ed8927f0496a9fe1e4ddb1bb606ec61535e9f81e580c6dade",
                 },
-                sha256 = "cf45c0441095e92ed8927f0496a9fe1e4ddb1bb606ec61535e9f81e580c6dade",
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libpciaccess/releases/download/0.18.1/libpciaccess-0.18.1-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libpciaccess/releases/download/0.18.1/libpciaccess-0.18.1-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "c8b93d95aebd2ad7c2e08d4ac729a40033194d38d392e20b4047895993167d79",
+                },
             },
         },
     },

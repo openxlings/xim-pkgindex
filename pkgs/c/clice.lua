@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     name = "clice",
     description = "A C/C++, Objective-C and CUDA language server built on Clang, with a CLI that shares its configuration, caches and index",
@@ -53,6 +53,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- bin/clice is a glibc-linked ELF whose measured DT_NEEDED closure
             -- is libdl/librt/libpthread/libm/libc (libstdc++ is statically
             -- linked in); its own symbol-version floor is GLIBC_2.16, but
@@ -74,6 +75,7 @@ package = {
             },
         },
         macosx = {
+            strip = 1,
             source = "https://github.com/clice-io/clice/releases/download/v${version}/clice-${version}.${arch_alias}-apple-darwin.${ext}",
             ["latest"] = { ref = "1.0.0" },
             ["1.0.0"] = {
@@ -85,6 +87,7 @@ package = {
             },
         },
         windows = {
+            strip = 1,
             source = "https://github.com/clice-io/clice/releases/download/v${version}/clice-${version}.${arch_alias}-w64-mingw32.${ext}",
             ["latest"] = { ref = "1.0.0" },
             ["1.0.0"] = {
@@ -100,16 +103,15 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
 
 -- Every upstream archive (tar.gz and zip alike) extracts to a top-level
 -- `clice/` directory: bin/clice[.exe], the lib/clang resource headers and the
 -- default clice.toml. install() asserts the real payload landed, because a
 -- failed extraction would otherwise still report a successful install.
 function install()
-    os.tryrm(pkginfo.install_dir())
-    os.mv("clice", pkginfo.install_dir())
-    if not os.isfile(pkginfo.install_dir() .. "/bin/clice") and
-       not os.isfile(pkginfo.install_dir() .. "/bin/clice.exe") then
+    if not fs.is_file(pkginfo.install_dir() .. "/bin/clice") and
+       not fs.is_file(pkginfo.install_dir() .. "/bin/clice.exe") then
         error("clice payload missing after install: " .. pkginfo.install_dir() .. "/bin/clice")
     end
     return true

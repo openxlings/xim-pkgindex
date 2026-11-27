@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "3",
 
     name = "syslinux",
     description = "SYSLINUX bootloader collection (isolinux, pxelinux, extlinux + EFI loaders)",
@@ -36,10 +36,13 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             ["latest"] = { ref = "6.03" },
+            -- revision 1: config() binds the installers to extlinux@6.03.
             ["6.03"] = {
+                revision = 1,
                 url = "https://www.kernel.org/pub/linux/utils/boot/syslinux/syslinux-6.03.tar.xz",
-                sha256 = "26d3986d2bea109d5dc0e4f8c4822a459276cf021125e8c9f23c3cca5d8c850e",
+                sha256 = { x86_64 = "26d3986d2bea109d5dc0e4f8c4822a459276cf021125e8c9f23c3cca5d8c850e" },
             },
         },
     },
@@ -48,32 +51,35 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
+import("xim.libxpkg.system")
 
 local host_installers = { "extlinux", "syslinux", "syslinux-nomtools" }
 
 function install()
     -- Tarball extracts to syslinux-<ver>/ at the runtime download dir.
-    local srcdir = pkginfo.install_file():replace(".tar.xz", "")
-    os.tryrm(pkginfo.install_dir())
-    os.mv(srcdir, pkginfo.install_dir())
 
     -- Surface the three host installer ELFs under a single bindir so
     -- xvm can shim them — upstream parks them under bios/extlinux/ and
     -- bios/linux/, neither of which is conventional.
     local bindir = path.join(pkginfo.install_dir(), "bin")
-    os.mkdir(bindir)
-    os.cp(path.join(pkginfo.install_dir(), "bios/extlinux/extlinux"),     path.join(bindir, "extlinux"))
-    os.cp(path.join(pkginfo.install_dir(), "bios/linux/syslinux"),         path.join(bindir, "syslinux"))
-    os.cp(path.join(pkginfo.install_dir(), "bios/linux/syslinux-nomtools"), path.join(bindir, "syslinux-nomtools"))
+    fs.mkdir(bindir)
+    fs.copy(path.join(pkginfo.install_dir(), "bios/extlinux/extlinux"),     path.join(bindir, "extlinux"), { replace = true })
+    fs.copy(path.join(pkginfo.install_dir(), "bios/linux/syslinux"),         path.join(bindir, "syslinux"), { replace = true })
+    fs.copy(path.join(pkginfo.install_dir(), "bios/linux/syslinux-nomtools"), path.join(bindir, "syslinux-nomtools"), { replace = true })
     for _, p in ipairs(host_installers) do
-        os.execute('chmod +x "' .. path.join(bindir, p) .. '"')
+        system.run('chmod +x "' .. path.join(bindir, p) .. '"')
     end
     return true
 end
 
 function config()
     local bindir = path.join(pkginfo.install_dir(), "bin")
-    local root = "syslinux@" .. pkginfo.version()
+    -- The first program is the release the others bind to: a program
+    -- named like the package bound to `syslinux@<version>` was bound to
+    -- itself, which the registration refuses.
+    local root = host_installers[1] .. "@" .. pkginfo.version()
     xvm.add(host_installers[1], { bindir = bindir })
     for i = 2, #host_installers do
         xvm.add(host_installers[i], { bindir = bindir, binding = root })

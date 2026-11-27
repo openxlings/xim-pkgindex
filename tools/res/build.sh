@@ -66,6 +66,10 @@
 #   llvm          a release (23.1.6): the slim toolchain for Linux of this
 #                 architecture and, on x86_64, Windows x86_64
 #
+# From source in a SubOS (graphics/res.sh): mesa's closure -- expat libffi
+#   libpciaccess libdrm libxshmfence libXau libXdmcp libxcb libX11 libXext libXfixes
+#   libXxf86vm wayland elfutils libglvnd libllvm mesa -- and cmake's freetype fontconfig
+#
 # Corrective revisions of a published archive, derived from the archive of the
 # revision before (revision.py; no build):
 #   llvm            the llvm payload for Windows x86_64, with the lld names clang's driver runs
@@ -254,6 +258,9 @@ glibc_only() {    # every ELF given needs nothing but glibc's libraries (and its
 APK_STATIC="build-base linux-headers"
 
 case "$what" in
+expat|libffi|freetype|fontconfig|libpciaccess|libdrm|libxshmfence|libXau|libXdmcp|libxcb|libX11|libXext|libXfixes|libXxf86vm|wayland|elfutils|libglvnd|libllvm|mesa)
+    # shellcheck source=graphics/res.sh
+    . "$here/graphics/res.sh" ;;
 limine)
     sha="$(input limine-binary "$version")"
     fetch "https://github.com/limine-bootloader/limine/releases/download/v$version/limine-binary.tar.gz" "$sha" "$work/src.tar.gz"

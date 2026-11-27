@@ -280,6 +280,69 @@ def test_a_published_version_is_kept_in_every_recipe(index):
         module.guard(base)
 
 
+FORM = '''package = {
+    name = "foo", archs = {"x86_64"},
+    xpm = { linux = {
+        ["latest"] = { ref = "1.0.0" },
+        ["1.0.0"] = { url = "https://example.org/foo-1.0.0.tar.gz", sha256 = "''' + 'a' * 64 + '''" },
+    } },
+}'''
+
+
+def test_a_change_of_form_with_the_same_bytes_keeps_the_published_version(index):
+    """The revision gate loads each architecture's recipe: a digest written per
+    architecture is the same resource, and the guard reads it as unchanged."""
+    module, _ = index
+    if module._lua() is None:
+        pytest.skip('no Lua 5.3+ for the revision gate')
+    per_arch = FORM.replace('sha256 = "' + 'a' * 64 + '"', 'sha256 = { x86_64 = "' + 'a' * 64 + '" }')
+    module, base = _guarded(index, FORM, per_arch)
+    assert module.guard(base)['changed'] == [{'path': 'pkgs/f/foo.lua', 'rules': 'preserved'}]
+
+
+def test_a_change_of_form_that_changes_the_bytes_is_still_a_changed_version(index):
+    module, _ = index
+    if module._lua() is None:
+        pytest.skip('no Lua 5.3+ for the revision gate')
+    changed = FORM.replace('sha256 = "' + 'a' * 64 + '"', 'sha256 = { x86_64 = "' + 'c' * 64 + '" }')
+    module, base = _guarded(index, FORM, changed)
+    with pytest.raises(module.Invalid, match='existing version changed'):
+        module.guard(base)
+
+
+# A recipe a bot writes: its older version's digest is written per architecture.
+AUTO_FORM = RECIPE.replace('["latest"] = { ref = "1.0.0" },', '''["latest"] = { ref = "1.1.0" },
+        ["1.1.0"] = { url = "https://github.com/acme/foo/releases/download/v1.1.0/foo.zip",
+                        sha256 = "''' + 'b' * 64 + '''" },''')
+
+
+def _verified(index, monkeypatch, tmp_path, digest):
+    """The candidate verification of a committed change of 1.0.0's digest."""
+    module, _ = index
+    if module._lua() is None:
+        pytest.skip('no Lua 5.3+ for the revision gate')
+    monkeypatch.delenv('GITHUB_STEP_SUMMARY', raising=False)
+    after = AUTO_FORM.replace('sha256 = "' + 'a' * 64 + '"', 'sha256 = { x86_64 = "' + digest + '" }')
+    module, base = _guarded(index, AUTO_FORM, after)
+    commit_fixture(module.ROOT, 'the digest per architecture')
+    output = tmp_path / 'candidate-resources.json'
+    module.verify(base, reviewed=True, output=str(output))
+    import json
+    return json.loads(output.read_text())
+
+
+def test_the_candidate_verification_reads_a_change_of_form_as_the_guard_does(index, monkeypatch, tmp_path):
+    """The updater's verification guards the base again; it reads the same base."""
+    report = _verified(index, monkeypatch, tmp_path, 'a' * 64)
+    assert report['packages'] == [] and report['requests'] == 0
+
+
+def test_the_candidate_verification_still_refuses_changed_bytes(index, monkeypatch, tmp_path):
+    module, _ = index
+    with pytest.raises(module.Invalid, match='pkgs/f/foo.lua: existing version changed: linux/1.0.0'):
+        _verified(index, monkeypatch, tmp_path, 'c' * 64)
+
+
 def test_a_recipe_a_bot_writes_keeps_the_automatic_rules(index):
     moved = RECIPE.replace('["latest"] = { ref = "1.0.0" }', '["latest"] = { ref = "0.9.0" }')
     module, base = _guarded(index, RECIPE, moved)

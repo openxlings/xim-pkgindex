@@ -16,7 +16,7 @@ from tests.lib.assertions import (
     assert_required_fields, assert_valid_spec, assert_valid_type,
     assert_no_typos, assert_no_exec_xvm, assert_no_bashrc_modification,
     assert_no_direct_path_modification, assert_uses_new_api,
-    assert_xim_add_succeeds,
+    assert_xim_add_succeeds, assert_install_succeeds, assert_uninstall_succeeds,
 )
 from tests.lib.platform_utils import skip_if_not
 
@@ -95,9 +95,12 @@ class TestStatic:
     @pytest.mark.static
     def test_one_archive_for_every_platform(self, code):
         """The compiler is JVM bytecode: every platform section names the same
-        archive and the digest JetBrains publishes beside it."""
+        archive and the digest JetBrains publishes beside it, listed for each
+        architecture it serves (the same bytes for both, design 2026-11-27 §5.3)."""
         urls = re.findall(r'GLOBAL = "([^"]+)"', code)
-        digests = re.findall(r'sha256 = "([0-9a-f]{64})"', code)
+        listed = re.findall(r'sha256 = \{ x86_64 = "([0-9a-f]{64})", aarch64 = "([0-9a-f]{64})" \}', code)
+        assert all(x86 == arm for x86, arm in listed), listed
+        digests = [x86 for x86, _ in listed]
         mirrors = re.findall(r'CN = "([^"]+)"', code)
         assert mirrors == ["https://gitcode.com/xlings-res/kotlin/releases/download/2.4.20/kotlin-compiler-2.4.20.zip"] * 3, mirrors
         assert len(urls) == 3 and len(set(urls)) == 1, urls
@@ -183,6 +186,17 @@ class TestIndex:
         assert_xim_add_succeeds(PKG_FILE)
 
 
+# The install job installs the planned packages and removes each one again
+# before these tests run (posix-test.sh); the verify test reads the payload, so
+# the package is installed here first and removed after it -- pytest runs the
+# classes of a module in the order they are written.
+class TestLifecycle:
+    @pytest.mark.lifecycle
+    @skip_if_not('linux')
+    def test_install(self):
+        assert_install_succeeds(PKG)
+
+
 class TestVerify:
     @pytest.mark.verify
     @skip_if_not('linux')
@@ -194,3 +208,10 @@ class TestVerify:
             hits += sorted(glob.glob(os.path.join(xpkgs_dir(), f"{ns}-x-kotlin", "*", "bin", "kotlinc")))
         assert hits, "no installed bin/kotlinc found"
         assert os.access(hits[-1], os.X_OK), f"{hits[-1]} is not executable"
+
+
+class TestRemoval:
+    @pytest.mark.lifecycle
+    @skip_if_not('linux')
+    def test_uninstall(self):
+        assert_uninstall_succeeds(PKG)

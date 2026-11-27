@@ -7,7 +7,7 @@ package = {
     licenses = {"MIT"},
     repo = "https://gitlab.freedesktop.org/fontconfig/fontconfig",
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"graphics", "font", "library"},
     keywords = {"fontconfig", "font", "lib"},
@@ -41,18 +41,36 @@ package = {
             -- pierces pin-to-active on a machine holding an old active
             -- 2.15.0.
             ["2.15.0.1"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/fontconfig/releases/download/2.15.0/fontconfig-2.15.0-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/fontconfig/releases/download/2.15.0/fontconfig-2.15.0-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/fontconfig/releases/download/2.15.0/fontconfig-2.15.0-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/fontconfig/releases/download/2.15.0/fontconfig-2.15.0-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "dfe6869d6b615414deb0c818a195a9f2b8cb8ad10789376dfa6ce9c2a1e3135f",
                 },
-                sha256 = "dfe6869d6b615414deb0c818a195a9f2b8cb8ad10789376dfa6ce9c2a1e3135f",
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/fontconfig/releases/download/2.15.0/fontconfig-2.15.0-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/fontconfig/releases/download/2.15.0/fontconfig-2.15.0-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "0e38270be83c50cf60617386ade4ca81573b1b134560af95f265f124cd591260",
+                },
             },
             ["2.15.0"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/fontconfig/releases/download/2.15.0/fontconfig-2.15.0-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/fontconfig/releases/download/2.15.0/fontconfig-2.15.0-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/fontconfig/releases/download/2.15.0/fontconfig-2.15.0-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/fontconfig/releases/download/2.15.0/fontconfig-2.15.0-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "dfe6869d6b615414deb0c818a195a9f2b8cb8ad10789376dfa6ce9c2a1e3135f",
                 },
-                sha256 = "dfe6869d6b615414deb0c818a195a9f2b8cb8ad10789376dfa6ce9c2a1e3135f",
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/fontconfig/releases/download/2.15.0/fontconfig-2.15.0-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/fontconfig/releases/download/2.15.0/fontconfig-2.15.0-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "0e38270be83c50cf60617386ade4ca81573b1b134560af95f265f124cd591260",
+                },
             },
         },
     },

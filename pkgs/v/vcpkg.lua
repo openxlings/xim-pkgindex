@@ -34,7 +34,7 @@
 -- of the tool, but it is NOT what xlings-res/vcpkg publishes here -- this
 -- package assumes a glibc host and does not attempt musl compatibility.
 package = {
-    spec = "2",
+    spec = "3",
 
     name = "vcpkg",
     description = "Microsoft's C/C++ package manager -- carries the vcpkg tool and its matching scripts/triplets, so the install directory is a ready-made VCPKG_ROOT",
@@ -115,6 +115,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             ["latest"] = { ref = "2026.7.27" },
             ["2026.7.27"] = {
                 url = "XLINGS_RES",
@@ -125,6 +126,7 @@ package = {
             },
         },
         macosx = {
+            strip = 1,
             ["latest"] = { ref = "2026.7.27" },
             ["2026.7.27"] = {
                 url = "XLINGS_RES",
@@ -135,6 +137,7 @@ package = {
             },
         },
         windows = {
+            strip = 1,
             ["latest"] = { ref = "2026.7.27" },
             ["2026.7.27"] = {
                 url = "XLINGS_RES",
@@ -149,11 +152,13 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 -- The binary this recipe's own `installed()` checks for -- named per host,
 -- matching cmake.lua's/ninja.lua's os.host()-branch shape.
 local function vcpkg_exe()
-    return os.host() == "windows" and "vcpkg.exe" or "vcpkg"
+    return pkginfo.platform() == "windows" and "vcpkg.exe" or "vcpkg"
 end
 
 function install()
@@ -161,12 +166,7 @@ function install()
     -- is the download's basename with the archive extension stripped, and
     -- that directory already IS the install layout (binary + .vcpkg-root +
     -- scripts/ + triplets/ at its root) -- move it in as-is.
-    os.tryrm(pkginfo.install_dir())
-    local extracted = pkginfo.install_file()
-        :replace(".zip", "")
-        :replace(".tar.gz", "")
-    os.mv(extracted, pkginfo.install_dir())
-    return os.isfile(path.join(pkginfo.install_dir(), vcpkg_exe()))
+    return fs.is_file(path.join(pkginfo.install_dir(), vcpkg_exe()))
 end
 
 function installed()
@@ -174,9 +174,9 @@ function installed()
     -- The binary alone is not "installed" in the sense this recipe means:
     -- `.vcpkg-root` and `scripts/buildsystems/vcpkg.cmake` are what make the
     -- directory a working VCPKG_ROOT rather than just a copy of the tool.
-    if not os.isfile(path.join(d, vcpkg_exe())) then return false end
-    if not os.isfile(path.join(d, ".vcpkg-root")) then return false end
-    if not os.isfile(path.join(d, "scripts", "buildsystems", "vcpkg.cmake")) then
+    if not fs.is_file(path.join(d, vcpkg_exe())) then return false end
+    if not fs.is_file(path.join(d, ".vcpkg-root")) then return false end
+    if not fs.is_file(path.join(d, "scripts", "buildsystems", "vcpkg.cmake")) then
         return false
     end
     return true

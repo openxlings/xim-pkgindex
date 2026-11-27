@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://github.com/anholt/libepoxy",
     name = "libepoxy",
     description = "Library for handling OpenGL function pointer management",
@@ -37,6 +37,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- GTK 4's GL renderer talks to the driver through epoxy rather
             -- than dlopen-ing libGL itself. Built with glx and egl on, against
             -- the index's libglvnd -- epoxy dispatches at runtime, so the
@@ -56,7 +57,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libepoxy/releases/download/1.5.10/libepoxy-1.5.10-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libepoxy/releases/download/1.5.10/libepoxy-1.5.10-linux-x86_64.tar.gz",
                 },
-                sha256 = "238b011baa5ed7b2f7118c0b04c22c20872a41c480a566a882bc4c4b115f6fdb",
+                sha256 = { x86_64 = "238b011baa5ed7b2f7118c0b04c22c20872a41c480a566a882bc4c4b115f6fdb" },
             },
         },
     },
@@ -65,11 +66,11 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")

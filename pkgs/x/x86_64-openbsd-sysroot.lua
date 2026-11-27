@@ -42,14 +42,23 @@ package = {
             CN = "https://gitcode.com/xlings-res/x86_64-openbsd-sysroot/releases/download/${version}/x86_64-openbsd-sysroot-${version}.tar.xz",
         },
         linux = {
+            -- Target libraries, which no host loads: exported to no consumer
+            -- and outside what rule M judges (libxpkg 0.0.68 reads {} as none).
+            exports = { runtime = { libdirs = {} } },
             ["latest"] = { ref = "8.0" },
-            ["8.0"] = { sha256 = "1f9d125aadb8ec9ac1334e1616120307ab8517699981030d9b77283483d4454c" },
+            ["8.0"] = { sha256 = { x86_64 = "1f9d125aadb8ec9ac1334e1616120307ab8517699981030d9b77283483d4454c", aarch64 = "1f9d125aadb8ec9ac1334e1616120307ab8517699981030d9b77283483d4454c" } },
         },
         macosx = {
+            -- Target libraries, which no host loads: exported to no consumer
+            -- and outside what rule M judges (libxpkg 0.0.68 reads {} as none).
+            exports = { runtime = { libdirs = {} } },
             ["latest"] = { ref = "8.0" },
             ["8.0"] = { sha256 = "1f9d125aadb8ec9ac1334e1616120307ab8517699981030d9b77283483d4454c" },
         },
         windows = {
+            -- Target libraries, which no host loads: exported to no consumer
+            -- and outside what rule M judges (libxpkg 0.0.68 reads {} as none).
+            exports = { runtime = { libdirs = {} } },
             ["latest"] = { ref = "8.0" },
             ["8.0"] = { sha256 = "1f9d125aadb8ec9ac1334e1616120307ab8517699981030d9b77283483d4454c" },
         },

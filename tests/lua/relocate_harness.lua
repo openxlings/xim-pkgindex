@@ -4,16 +4,34 @@
 --     lua5.4 relocate_harness.lua <relocate.lua> apply <install_dir> <manifest.lua>
 --
 -- `rewrite` runs the pure function against fixed cases and prints OK.
--- `apply` loads a manifest expressed as a Lua table (json.loadfile is stubbed
--- to return it) and runs relocate.apply over INSTALL_DIR, printing
--- `APPLIED <n>` or `ERROR <message>`.
+-- `apply` loads a manifest expressed as a Lua table (json.decode is stubbed
+-- to return it for the manifest's text) and runs relocate.apply over
+-- INSTALL_DIR, printing `APPLIED <n>` or `ERROR <message>`.
 
 local lib, mode, install_dir, manifest = ...
 
 function import(name)
     local short = name:match("[^.]+$")
     if short == "json" then
-        _G.json = { loadfile = function() return manifest and dofile(manifest) or nil end }
+        _G.json = { decode = function(text)
+            assert(text == "<manifest>", "decode of something other than the manifest")
+            return manifest and dofile(manifest) or nil
+        end }
+    elseif short == "fs" then
+        local function slurp(p)
+            local f = assert(io.open(p, "rb")); local s = f:read("a"); f:close(); return s
+        end
+        _G.fs = {
+            read = function(p)
+                if p:match("RELOCATE%.json$") then
+                    if not manifest then error("cannot read " .. p) end
+                    return "<manifest>"
+                end
+                return slurp(p)
+            end,
+            write = function(p, s) local f = assert(io.open(p, "wb")); assert(f:write(s)); f:close() end,
+            is_file = function(p) local f = io.open(p, "rb"); if f then f:close() return true end return false end,
+        }
     end
 end
 

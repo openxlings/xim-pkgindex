@@ -45,7 +45,10 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/openbsd-disk-image/releases/download/8.0/openbsd-disk-image-8.0-aarch64.tar.xz",
                     CN     = "https://gitcode.com/xlings-res/openbsd-disk-image/releases/download/8.0/openbsd-disk-image-8.0-aarch64.tar.xz",
                 },
-                sha256 = "c0c1f7b847316d32796bbb68e4fbc1e75e54ecc91c2fdbd41da77aa314fba3fd",
+                sha256 = {
+                    x86_64 = "c0c1f7b847316d32796bbb68e4fbc1e75e54ecc91c2fdbd41da77aa314fba3fd",
+                    aarch64 = "c0c1f7b847316d32796bbb68e4fbc1e75e54ecc91c2fdbd41da77aa314fba3fd",
+                },
             },
         },
         macosx = {

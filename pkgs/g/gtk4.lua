@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://www.gtk.org",
     name = "gtk4",
     description = "GTK 4 — cross-platform widget toolkit for graphical user interfaces",
@@ -39,6 +39,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- The third and last of the libraries #749 recorded as missing
             -- under huxerui, and the reason the other twelve packages in this
             -- change exist.
@@ -112,7 +113,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/gtk4/releases/download/4.16.13/gtk4-4.16.13-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/gtk4/releases/download/4.16.13/gtk4-4.16.13-linux-x86_64.tar.gz",
                 },
-                sha256 = "d0231c393bdec7a4df5fde2b4657a9e666051f4e17ceb5d41360a3e2099c73f2",
+                sha256 = { x86_64 = "d0231c393bdec7a4df5fde2b4657a9e666051f4e17ceb5d41360a3e2099c73f2" },
             },
         },
     },
@@ -121,11 +122,11 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")

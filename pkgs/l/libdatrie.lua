@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://github.com/tlwg/libdatrie",
     name = "libdatrie",
     description = "Double-array trie library (the trie engine behind libthai)",
@@ -38,6 +38,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- Here for libthai, which is here for pango. Upstream ships source
             -- only; built from the release tarball in an xlings subos.
             deps = {
@@ -52,7 +53,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libdatrie/releases/download/0.2.14/libdatrie-0.2.14-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libdatrie/releases/download/0.2.14/libdatrie-0.2.14-linux-x86_64.tar.gz",
                 },
-                sha256 = "5c509113023cbe90de4681d4f9b78cedc2adc495b7562c1c6e4a498a38b8b40c",
+                sha256 = { x86_64 = "5c509113023cbe90de4681d4f9b78cedc2adc495b7562c1c6e4a498a38b8b40c" },
             },
         },
     },
@@ -61,11 +62,11 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")

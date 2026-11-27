@@ -57,7 +57,7 @@ class TestStatic:
             '''
 import = function() end
 dofile(arg[1])
-assert(package.spec == "2", "expected spec = 2")
+assert(package.spec == "3", "expected spec = 3")
 assert(package.ci and package.ci.mirror == true, "expected ci.mirror = true")
 local expected_ext = { linux = "tar.xz", macosx = "tar.xz", windows = "zip" }
 for plat, ext in pairs(expected_ext) do
@@ -82,9 +82,14 @@ end
             '''
 import = function() end
 dofile(arg[1])
-pkginfo = { install_dir = function() return "/pkg" end }
+-- The modules of spec "3": fs, path, pkginfo.
 local present = {}
-os.isfile = function(p) return present[p] == true end
+fs = { is_file = function(p) return present[p] == true end }
+path = { join = function(...) return table.concat({...}, "/") end }
+pkginfo = {
+    install_dir = function() return "/pkg" end,
+    platform = function() return arg[2] == "zig.exe" and "windows" or "linux" end,
+}
 assert(not installed(), "empty dir must not satisfy installed()")
 local req = { "/pkg/" .. arg[2], "/pkg/lib/std/std.zig", "/pkg/lib/zig.h" }
 for _, f in ipairs(req) do present[f] = true end
@@ -126,13 +131,19 @@ class TestIsolation:
     @pytest.mark.isolation
     def test_portable_lua_only(self):
         src = Path(PKG_FILE).read_text(encoding="utf-8")
-        assert set(re.findall(r'import\("([^"]+)"\)', src)) <= {
+        imports = set(re.findall(r'import\("([^"]+)"\)', src))
+        assert imports <= {
             "xim.libxpkg.fs",
+            "xim.libxpkg.path",
             "xim.libxpkg.pkginfo",
             "xim.libxpkg.system",
             "xim.libxpkg.xvm",
         }
-        assert not re.search(r'\b(?:path\.|is_host\(|os\.host\(|raise\()', src)
+        # `path` is libxpkg's module when the recipe imports it (spec "3");
+        # otherwise it is the compatibility layer's global.
+        if "xim.libxpkg.path" not in imports:
+            assert not re.search(r'\bpath\.', src)
+        assert not re.search(r'\b(?:is_host\(|os\.host\(|raise\()', src)
 
 
 class TestLifecycle:

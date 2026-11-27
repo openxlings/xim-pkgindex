@@ -21,6 +21,9 @@ name: baremetal riscv smoke
 on:
   workflow_call:
     inputs:
+      xlings_sha:
+        type: string
+        default: ""
       base_sha:
         type: string
         default: ""
@@ -43,7 +46,13 @@ jobs:
       - name: Install pytest
         run: pip install pytest
 
+      - name: The client under test, an xlings commit's CI build
+        if: inputs.xlings_sha != ''
+        uses: ./.github/actions/setup-xlings
+        with:
+          xlings_sha: ${{ inputs.xlings_sha }}
       - name: Install xlings
+        if: inputs.xlings_sha == ''
         run: |
           export XLINGS_NON_INTERACTIVE=1
           curl -fsSL https://raw.githubusercontent.com/openxlings/xlings/main/tools/other/quick_install.sh | bash

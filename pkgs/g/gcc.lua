@@ -137,10 +137,22 @@ package = {
                     sha256 = "71bde27ffa5566bf91e49bf0f93296d52f82c73d5ccf4072f9225bc6533dfb3f",
                 },
             },
-            ["15.1.0"] = "XLINGS_RES",
-            ["13.3.0"] = "XLINGS_RES",
-            ["11.5.0"] = "XLINGS_RES",
-            ["9.4.0"] = "XLINGS_RES",
+            ["15.1.0"] = {
+                url = "XLINGS_RES",
+                sha256 = { x86_64 = "b42ae0051dce8ea718b733e569a8516a418003c43bc366e965e69f1d6dbd2b59" },
+            },
+            ["13.3.0"] = {
+                url = "XLINGS_RES",
+                sha256 = { x86_64 = "cea00bd896e61fab45d7c71418058248f809e122124b66ce6bf9bf419f7c830d" },
+            },
+            ["11.5.0"] = {
+                url = "XLINGS_RES",
+                sha256 = { x86_64 = "9c8aec30d50e0509d368f1495fae3d377c6ff129e3adce3f6bac0dc7f84fa73e" },
+            },
+            ["9.4.0"] = {
+                url = "XLINGS_RES",
+                sha256 = { x86_64 = "0605a8c2cd6c06982dcb31a0f7edb17bd926da2fe476ed42453ca415fc0261d8" },
+            },
         },
         windows = {
             ["latest"] = { ref = "15.1.0" },

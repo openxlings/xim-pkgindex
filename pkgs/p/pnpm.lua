@@ -10,7 +10,7 @@ package = {
     docs = "https://pnpm.io/motivation",
 
     -- xim pkg info
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"package-manager", "typescript"},
     keywords = {"pnpm", "javascript", "typescript", "package-manager", "node"},
@@ -69,57 +69,57 @@ package = {
                     GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v12.22.0/pnpm-linux-x64.tar.gz",
                     CN = "https://gitcode.com/xlings-res/pnpm/releases/download/12.22.0/pnpm-linux-x64.tar.gz",
                 },
-                sha256 = "07ee196f91af1e21edb0c794401f4152932c74b0dba5d415dc4dbd5783f3c7af",
+                sha256 = { x86_64 = "07ee196f91af1e21edb0c794401f4152932c74b0dba5d415dc4dbd5783f3c7af" },
             },
             ["12.1.0"] = {
                 url = {
                     GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v12.1.0/pnpm-linux-x64.tar.gz",
                     CN = "https://gitcode.com/xlings-res/pnpm/releases/download/12.1.0/pnpm-linux-x64.tar.gz",
                 },
-                sha256 = "ef4c3e31c8f6e587c9f04ca4b42b63d47f331247930617304ffa63354c11db79",
+                sha256 = { x86_64 = "ef4c3e31c8f6e587c9f04ca4b42b63d47f331247930617304ffa63354c11db79" },
             },
             ["12.0.0"] = {
                 url = "https://github.com/pnpm/pnpm/releases/download/v12.0.0/pnpm-linux-x64.tar.gz",
-                sha256 = "d93497ba07d5dfc7d527b30905fdd24f55c87618ea23ea3af287cdff061510e0",
+                sha256 = { x86_64 = "d93497ba07d5dfc7d527b30905fdd24f55c87618ea23ea3af287cdff061510e0" },
             },
             ["11.28.13"] = {
                 url = {
                     GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v11.28.13/pnpm-linux-x64.tar.gz",
                     CN = "https://gitcode.com/xlings-res/pnpm/releases/download/11.28.13/pnpm-linux-x64.tar.gz",
                 },
-                sha256 = "b1a0f00fa001fc88c9d76abca12f1eb2641d66ba599cd64cf68e7e66c8dd0a69",
+                sha256 = { x86_64 = "b1a0f00fa001fc88c9d76abca12f1eb2641d66ba599cd64cf68e7e66c8dd0a69" },
             },
             ["11.12.0"] = {
                 url = {
                     GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v11.12.0/pnpm-linux-x64.tar.gz",
                     CN = "https://gitcode.com/xlings-res/pnpm/releases/download/11.12.0/pnpm-linux-x64.tar.gz",
                 },
-                sha256 = "dd19bfd8bcd33a3b38dcce335e8d233194c0a61ffe1f5bcf5047f60f6d4978b8",
+                sha256 = { x86_64 = "dd19bfd8bcd33a3b38dcce335e8d233194c0a61ffe1f5bcf5047f60f6d4978b8" },
             },
             ["11.0.5"] = {
                 url = "https://github.com/pnpm/pnpm/releases/download/v11.0.5/pnpm-linux-x64.tar.gz",
-                sha256 = "c1b55f53f5344cf0e26441d97b9ee2ee3b81791503c5cbd4bb93ae1898b8d211",
+                sha256 = { x86_64 = "c1b55f53f5344cf0e26441d97b9ee2ee3b81791503c5cbd4bb93ae1898b8d211" },
             },
             ["10.34.9"] = {
                 url = {
                     GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v10.34.9/pnpm-linuxstatic-x64",
                     CN = "https://gitcode.com/xlings-res/pnpm/releases/download/10.34.9/pnpm-linuxstatic-x64",
                 },
-                sha256 = "ead812f772f08c1abecc5ffca99277af2927dc2e96aecb1cdb22b88f323dc683",
+                sha256 = { x86_64 = "ead812f772f08c1abecc5ffca99277af2927dc2e96aecb1cdb22b88f323dc683" },
             },
             ["9.15.9"] = {
                 url = {
                     GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v9.15.9/pnpm-linuxstatic-x64",
                     CN = "https://gitcode.com/xlings-res/pnpm/releases/download/9.15.9/pnpm-linuxstatic-x64",
                 },
-                sha256 = "038f2a41ccdabc823d09e5697fff85f2e74d5c37591f6d58dfd33a59ffa17fc0",
+                sha256 = { x86_64 = "038f2a41ccdabc823d09e5697fff85f2e74d5c37591f6d58dfd33a59ffa17fc0" },
             },
             ["8.15.9"] = {
                 url = {
                     GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v8.15.9/pnpm-linuxstatic-x64",
                     CN = "https://gitcode.com/xlings-res/pnpm/releases/download/8.15.9/pnpm-linuxstatic-x64",
                 },
-                sha256 = "387f027c7604976051a317bea1bf21fcf798736b72fe0c338d465b6003cc14a8",
+                sha256 = { x86_64 = "387f027c7604976051a317bea1bf21fcf798736b72fe0c338d465b6003cc14a8" },
             },
             -- 8.15.9 - 10.34.9 above and 7.33.7 below: the last release of each
             -- major before the archive, one bare executable per platform. Each
@@ -166,7 +166,7 @@ package = {
                     GLOBAL = "https://github.com/pnpm/pnpm/releases/download/v7.33.7/pnpm-linuxstatic-x64",
                     CN = "https://gitcode.com/xlings-res/pnpm/releases/download/7.33.7/pnpm-linuxstatic-x64",
                 },
-                sha256 = "69f63324da4776dafb2f2bdfcf3e69687f26280e37a55cb25f7ede15045d0c29",
+                sha256 = { x86_64 = "69f63324da4776dafb2f2bdfcf3e69687f26280e37a55cb25f7ede15045d0c29" },
             },
         },
         macosx = {

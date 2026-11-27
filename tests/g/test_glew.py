@@ -13,6 +13,16 @@ from tests.lib.assertions import (
 )
 from tests.lib.platform_utils import skip_if_not
 
+
+def _one_digest(text):
+    """An entry names the architectures its one artifact is for
+    (`sha256 = { x86_64 = "<h>", aarch64 = "<h>" }`, the index's check K1):
+    read each such table as the one digest it holds."""
+    def one(m):
+        values = set(re.findall(r'"([0-9a-fA-F]{64})"', m.group(0)))
+        return f'sha256 = "{values.pop()}"' if len(values) == 1 else m.group(0)
+    return re.sub(r'sha256\s*=\s*\{[^{}]*\}', one, text)
+
 PKG = "glew"
 PKG_FILE = "pkgs/g/glew.lua"
 VERSION = "2.2.0"
@@ -75,7 +85,7 @@ class TestStatic:
             assert re.search(host + r'\s*=\s*\{', code), f"no {host} table"
         urls = re.findall(r'releases/download/glew-' + re.escape(VERSION) + r'/glew-' + re.escape(VERSION) + r'\.tgz', code)
         assert len(urls) == 3
-        hashes = re.findall(r'sha256 = "([0-9a-f]{64})"', code)
+        hashes = re.findall(r'sha256 = "([0-9a-f]{64})"', _one_digest(code))
         assert len(hashes) == 3 and len(set(hashes)) == 1
 
     @pytest.mark.static

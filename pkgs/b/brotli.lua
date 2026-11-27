@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     homepage = "https://github.com/google/brotli",
     name = "brotli",
@@ -48,6 +48,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- The libraries need libc.so.6 (libbrotlidec and libbrotlienc also name libbrotlicommon.so.1, in this payload);
             -- GLIBC_2.17 at most (readelf -d, objdump -T).
             deps = { "xim:glibc" },
@@ -87,8 +88,6 @@ import("xim.pkgindex.selfcontain")
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mv("brotli-" .. pkginfo.version(), dir)
     selfcontain.seal(dir)
     sysroot.relocate_pkgconfig(dir, "lib/pkgconfig")
     return true

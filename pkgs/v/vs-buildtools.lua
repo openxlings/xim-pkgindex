@@ -10,11 +10,12 @@
 -- Kept, not deleted, so an existing `xlings install vs-buildtools` keeps
 -- resolving. Nothing in this index depends on it any more.
 package = {
-    spec = "1",
+    spec = "3",
     name = "vs-buildtools",
     description = "Visual Studio Build Tools bootstrapper (DEPRECATED -- use xim:msvc)",
 
     type = "config",
+    archs = {"x86_64"},
     status = "deprecated",
     maintainers = {"Microsoft"},
     categories = { "build-tools" },
@@ -32,14 +33,15 @@ package = {
 }
 
 import("xim.libxpkg.pkginfo")
+import("xim.libxpkg.fs")
 
 function installed()
-    return os.isfile(pkginfo.install_file())
+    return fs.is_file(pkginfo.install_file())
 end
 
 function install() return true end
 
 function uninstall()
-    os.tryrm(pkginfo.install_file())
+    fs.remove(pkginfo.install_file())
     return true
 end

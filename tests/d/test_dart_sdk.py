@@ -39,13 +39,22 @@ def meta():
 
 class TestStatic:
     @pytest.mark.static
+    def test_the_host_lands_the_archive(self):
+        # spec "3": the archive's one top-level directory is dropped by the
+        # entry's strip as the host lands it; the hook does not land it
+        # (payload.unpack is for recipes of spec 1 and 2).
+        src = Path(PKG_FILE).read_text(encoding="utf-8")
+        assert "payload.unpack" not in src
+        assert re.search(r"\bstrip = 1,", src)
+
+    @pytest.mark.static
     def test_required_fields(self, meta):
         assert_required_fields(meta)
 
     @pytest.mark.static
     def test_valid_spec(self, meta):
         assert_valid_spec(meta)
-        assert meta.spec == "2"
+        assert meta.spec == "3"
 
     @pytest.mark.static
     def test_valid_type(self, meta):
@@ -135,12 +144,15 @@ pkginfo = {
     install_dir = function() return install_dir end,
 }
 
-dirs["/tmp/cache/dart-sdk"] = true
-files["/tmp/cache/dart-sdk/bin/dart"] = true
-files["/tmp/cache/dart-sdk/bin/dartaotruntime"] = true
-files["/tmp/cache/dart-sdk/bin/snapshots/dartdev_aot.dart.snapshot"] = true
-files["/tmp/cache/dart-sdk/version"] = true
+-- spec "3": the host has landed the zip in the install directory before
+-- install() (the entry's strip = 1 drops its dart-sdk/); install() makes the
+-- programs executable and asserts what landed.
 assert(not installed())
+assert(not pcall(install))
+files[install_dir .. "/bin/dart"] = true
+files[install_dir .. "/bin/dartaotruntime"] = true
+files[install_dir .. "/bin/snapshots/dartdev_aot.dart.snapshot"] = true
+files[install_dir .. "/version"] = true
 assert(install())
 assert(installed())
 assert(#execs >= 2 and execs[1]:find("chmod +x", 1, true))
@@ -151,24 +163,18 @@ assert(adds[2][2].binding == "dart-sdk@3.14.1")
 assert(uninstall())
 assert(#rms == 2 and rms[1] == "dart" and rms[2] == "dart-sdk")
 
--- Case 2: Windows .zip not pre-extracted -> System32 tar.exe with --strip-components=1
+-- Case 2: Windows -- the same landing, and nothing to run.
 files, dirs, execs = {}, {}, {}
 host = "windows"
 install_file = "C:/cache/dartsdk-windows-x64-release.zip"
 install_dir = "C:/xpkgs/dart-sdk/3.14.1"
-os.getenv = function(k) return k == "SystemRoot" and "C:\\\\Windows" or nil end
-system.exec = function(cmd)
-    execs[#execs + 1] = cmd
-    files["C:/xpkgs/dart-sdk/3.14.1/bin/dart.exe"] = true
-    files["C:/xpkgs/dart-sdk/3.14.1/bin/dartaotruntime.exe"] = true
-    files["C:/xpkgs/dart-sdk/3.14.1/bin/snapshots/dartdev_aot.dart.snapshot"] = true
-    files["C:/xpkgs/dart-sdk/3.14.1/version"] = true
-end
-assert(not installed())
-assert(install())
+files["C:/xpkgs/dart-sdk/3.14.1/bin/dart.exe"] = true
+files["C:/xpkgs/dart-sdk/3.14.1/bin/dartaotruntime.exe"] = true
+files["C:/xpkgs/dart-sdk/3.14.1/bin/snapshots/dartdev_aot.dart.snapshot"] = true
+files["C:/xpkgs/dart-sdk/3.14.1/version"] = true
 assert(installed())
-assert(#execs == 1 and execs[1]:find("System32\\\\tar.exe", 1, true))
-assert(execs[1]:find("--strip-components=1", 1, true))
+assert(install())
+assert(#execs == 0)
 ''', PKG_FILE)
 
 
@@ -204,7 +210,7 @@ class TestIsolation:
         src = Path(PKG_FILE).read_text(encoding="utf-8")
         assert set(re.findall(r'import\("([^"]+)"\)', src)) <= {
             "xim.libxpkg.pkginfo", "xim.libxpkg.system",
-            "xim.libxpkg.xvm", "xim.pkgindex.payload",
+            "xim.libxpkg.xvm", "xim.libxpkg.fs", "xim.pkgindex.payload",
         }
         assert not re.search(r'\b(?:path\.|is_host\(|os\.host\(|raise\()', src)
 

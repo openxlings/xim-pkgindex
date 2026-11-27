@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     homepage = "https://github.com/SELinuxProject/selinux",
     name = "libselinux",
@@ -40,6 +40,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- pcre2 is a real runtime dependency: libselinux.so.1 names
             -- libpcre2-8.so.0 in DT_NEEDED. libsepol is NOT here -- it is
             -- linked statically (-l:libsepol.a), which is why this stack
@@ -54,7 +55,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libselinux/releases/download/3.11/libselinux-3.11-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libselinux/releases/download/3.11/libselinux-3.11-linux-x86_64.tar.gz",
                 },
-                sha256 = "7902c5d5c70df855d0b435382d322276911b8aa9c7ea78eb394af47ec201e975",
+                sha256 = { x86_64 = "7902c5d5c70df855d0b435382d322276911b8aa9c7ea78eb394af47ec201e975" },
             },
         },
     },
@@ -72,13 +73,12 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mv("libselinux-" .. pkginfo.version(), dir)
 
     selfcontain.seal(dir)
     sysroot.relocate_pkgconfig(dir, "lib/pkgconfig")

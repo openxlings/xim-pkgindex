@@ -10,6 +10,16 @@ from tests.lib.assertions import (
 )
 from tests.lib.platform_utils import project_root
 
+
+def _one_digest(text):
+    """An entry names the architectures its one artifact is for
+    (`sha256 = { x86_64 = "<h>", aarch64 = "<h>" }`, the index's check K1):
+    read each such table as the one digest it holds."""
+    def one(m):
+        values = set(re.findall(r'"([0-9a-fA-F]{64})"', m.group(0)))
+        return f'sha256 = "{values.pop()}"' if len(values) == 1 else m.group(0)
+    return re.sub(r'sha256\s*=\s*\{[^{}]*\}', one, text)
+
 PKG_FILE = "pkgs/a/adwaita-cursors.lua"
 
 
@@ -35,7 +45,7 @@ class TestStatic:
     @pytest.mark.static
     def test_one_archive_for_every_architecture(self, source):
         assert "adwaita-cursors-49.0.tar.gz" in source and "-linux-" not in source
-        assert re.search(r'sha256 = "[0-9a-f]{64}"', source)
+        assert re.search(r'sha256 = "[0-9a-f]{64}"', _one_digest(source))
 
     @pytest.mark.static
     def test_it_is_the_default_theme(self, source):

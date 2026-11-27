@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "3",
     -- base info
     name = "cmake",
     description = "A Powerful Software Build System",
@@ -12,7 +12,7 @@ package = {
 
     -- xim pkg info
     type = "package",
-    archs = {"x86_64", "arm64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable", -- dev, stable, deprecated
     categories = {"build", "system", "cmake"},
     keywords = {"build", "system", "cmake", "make", "generator", "cross-platform"},
@@ -46,6 +46,7 @@ package = {
                     url = {
                         linux = {
                             x86_64 = "https://github.com/Kitware/CMake/releases/download/v${version}/cmake-${version}-linux-x86_64.tar.gz",
+                            aarch64 = "https://github.com/Kitware/CMake/releases/download/v${version}/cmake-${version}-linux-aarch64.tar.gz",
                         },
                         macosx = {
                             aarch64 = "https://github.com/Kitware/CMake/releases/download/v${version}/cmake-${version}-macos-universal.tar.gz",
@@ -59,8 +60,10 @@ package = {
         },
     },
 
+    -- Every archive holds `cmake-<version>-<os>-<arch>/`: dropped (strip).
     xpm = {
         linux = {
+            strip = 1,
             -- Runtime deps, re-measured across the WHOLE 4.5.0 payload rather
             -- than just bin/cmake (readelf on every ELF under bin/; the
             -- closure is identical to 4.4.2):
@@ -99,6 +102,10 @@ package = {
                     url = "https://github.com/Kitware/CMake/releases/download/v4.5.0/cmake-4.5.0-linux-x86_64.tar.gz",
                     sha256 = "81f0d5b0960fb6adc8197030ffc827fba937640d51e73e39e0e9e40d88c66f6f",
                 },
+                aarch64 = {
+                    url = "https://github.com/Kitware/CMake/releases/download/v4.5.0/cmake-4.5.0-linux-aarch64.tar.gz",
+                    sha256 = "0c8447e7bba9701467b5ac6155d157aa9e309e71af4981f78bd4b9176107f553",
+                },
             },
             ["4.4.2"] = {
                 url = "XLINGS_RES",
@@ -106,15 +113,23 @@ package = {
                     x86_64 = "3ada9a3f5d8a85413579bdd0ea6aa8e8da86efdd6d15c91a1afa517f2021956c",
                 },
             },
-            ["4.0.2"] = "XLINGS_RES",
+            ["4.0.2"] = {
+                url = "XLINGS_RES",
+                sha256 = { x86_64 = "80940e81de61584fe4eedd3c40adc597d7c5b76ad8709668007b467a3c2a36c7" },
+            },
             ["4.5.1"] = {
                 x86_64 = {
                     url = "https://github.com/Kitware/CMake/releases/download/v4.5.1/cmake-4.5.1-linux-x86_64.tar.gz",
                     sha256 = "83b71181fb62b4fe8f26067a9321448572e7a43bd04ff6c7f54a24c33698f16d",
                 },
+                aarch64 = {
+                    url = "https://github.com/Kitware/CMake/releases/download/v4.5.1/cmake-4.5.1-linux-aarch64.tar.gz",
+                    sha256 = "3bec208f11ed96c173032eeaf97937c54dd246acefee22acd7794a6b4e70d536",
+                },
             },
         },
         macosx = {
+            strip = 1,
             ["latest"] = { ref = "4.5.1" },
             ["4.5.0"] = {
                 aarch64 = {
@@ -137,6 +152,7 @@ package = {
             },
         },
         windows = {
+            strip = 1,
             ["latest"] = { ref = "4.5.1" },
             ["4.5.0"] = {
                 x86_64 = {
@@ -161,30 +177,17 @@ package = {
     },
 }
 
+import("xim.libxpkg.path")
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 
-function install()
-    os.tryrm(pkginfo.install_dir())
-    local cmakedir = pkginfo.install_file()
-        :replace(".zip", "")
-        :replace(".tar.gz", "")
-    os.mv(cmakedir, pkginfo.install_dir())
-    return true
-end
-
 function config()
-    local config
-    if os.host() == "macosx" then
-        config = { bindir = path.join(pkginfo.install_dir(), "CMake.app/Contents/bin") }
-    else
-        config = { bindir = path.join(pkginfo.install_dir(), "bin") }
-    end
-    xvm.add("cmake", config)
-    return true
+    local bindir = pkginfo.platform() == "macosx"
+        and path.join(pkginfo.install_dir(), "CMake.app", "Contents", "bin")
+        or path.join(pkginfo.install_dir(), "bin")
+    xvm.add("cmake", { bindir = bindir })
 end
 
 function uninstall()
     xvm.remove("cmake")
-    return true
 end

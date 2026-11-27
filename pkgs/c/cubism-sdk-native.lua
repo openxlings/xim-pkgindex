@@ -112,7 +112,7 @@ package = {
             ["latest"] = { ref = "5-r.5" },
             ["5-r.5"] = {
                 url = "https://cubism.live2d.com/sdk-native/bin/CubismSdkForNative-5-r.5.zip",
-                sha256 = "7ff3a4bbc19c0a8728965aa522ab77eb11b252916453e68a8a78d3b71188bb12",
+                sha256 = { x86_64 = "7ff3a4bbc19c0a8728965aa522ab77eb11b252916453e68a8a78d3b71188bb12", aarch64 = "7ff3a4bbc19c0a8728965aa522ab77eb11b252916453e68a8a78d3b71188bb12" },
             },
         },
         macosx = {

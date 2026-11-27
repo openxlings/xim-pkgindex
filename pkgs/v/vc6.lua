@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "3",
 
     name = "vc6",
     description = "Visual C++ 6.0: Classic C/C++ IDE (portable for Windows 10/11)",
@@ -26,6 +26,7 @@ package = {
 
     xpm = {
         windows = {
+            strip = 1,
             deps = { "xim:shortcut-tool" },
             -- 默认安装简体中文版; 英文版: xlings install vc6@english
             ["latest"] = { ref = "chinese" },
@@ -46,6 +47,8 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.system")
 import("xim.libxpkg.log")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 local function __shortcut_name()
     if pkginfo.version() == "english" or pkginfo.version() == "6.0" then
@@ -57,18 +60,12 @@ local MSDEV_REL = path.join("Common", "MSDev98", "BIN", "MSDEV.EXE")
 
 function installed()
     local msdev = path.join(pkginfo.install_dir(), MSDEV_REL)
-    if os.isfile(msdev) then
+    if fs.is_file(msdev) then
         return pkginfo.version()
     end
     return nil
 end
 
-function install()
-    os.tryrm(pkginfo.install_dir())
-    local extracted = pkginfo.install_file():replace(".zip", "")
-    os.mv(extracted, pkginfo.install_dir())
-    return true
-end
 
 -- Traced step by step, because this hook stalls on a CI runner and three
 -- guesses at which call did it were all wrong.
@@ -142,7 +139,7 @@ function uninstall()
     __cleanup_compat_mode(msdev_path)
 
     -- Remove install directory
-    os.tryrm(pkginfo.install_dir())
+    fs.remove(pkginfo.install_dir())
 
     return true
 end

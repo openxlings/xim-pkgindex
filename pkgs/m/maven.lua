@@ -86,7 +86,10 @@ package = {
                     GLOBAL = "https://archive.apache.org/dist/maven/maven-3/3.9.16/binaries/apache-maven-3.9.16-bin.zip",
                     CN = "https://mirrors.cloud.tencent.com/apache/maven/maven-3/3.9.16/binaries/apache-maven-3.9.16-bin.zip",
                 },
-                sha256 = "5af3b743dd8b876b5c45da33b676251e5f1687712644abb4ee519ca56e1d89ce",
+                sha256 = {
+                    x86_64 = "5af3b743dd8b876b5c45da33b676251e5f1687712644abb4ee519ca56e1d89ce",
+                    aarch64 = "5af3b743dd8b876b5c45da33b676251e5f1687712644abb4ee519ca56e1d89ce",
+                },
             },
         },
         macosx = {

@@ -477,14 +477,20 @@ package = {
                     GLOBAL = "https://dl.google.com/android/repository/sys-img/android/x86_64-34_r04.zip",
                     CN     = "https://gitcode.com/xlings-res/android-system-image/releases/download/34-default-x86_64/x86_64-34_r04.zip",
                 },
-                sha256 = "b57f6386af25b0fe5488e77196b43c03778c6760e6f4311611d090391b9cb2b3",
+                sha256 = {
+                    x86_64 = "b57f6386af25b0fe5488e77196b43c03778c6760e6f4311611d090391b9cb2b3",
+                    aarch64 = "b57f6386af25b0fe5488e77196b43c03778c6760e6f4311611d090391b9cb2b3",
+                },
             },
             ["34-default-arm64-v8a"] = {
                 url = {
                     GLOBAL = "https://dl.google.com/android/repository/sys-img/android/arm64-v8a-34_r04.zip",
                     CN     = "https://gitcode.com/xlings-res/android-system-image/releases/download/34-default-arm64-v8a/arm64-v8a-34_r04.zip",
                 },
-                sha256 = "1447958a4c6747c44390ac5f5f4c894be6d1dfce93868a0385a95c5f0ae4c339",
+                sha256 = {
+                    x86_64 = "1447958a4c6747c44390ac5f5f4c894be6d1dfce93868a0385a95c5f0ae4c339",
+                    aarch64 = "1447958a4c6747c44390ac5f5f4c894be6d1dfce93868a0385a95c5f0ae4c339",
+                },
             },
             ["24-default-x86_64"] = {
                 -- Measured 2026-09-11 against
@@ -494,7 +500,10 @@ package = {
                     GLOBAL = "https://dl.google.com/android/repository/sys-img/android/x86_64-24_r08.zip",
                     CN     = "https://gitcode.com/xlings-res/android-system-image/releases/download/24-default-x86_64/x86_64-24_r08.zip",
                 },
-                sha256 = "c122b69f70a229186314ec9a6f7abedcc7a6ff7ed52cb6fdce0d4f1585c09f92",
+                sha256 = {
+                    x86_64 = "c122b69f70a229186314ec9a6f7abedcc7a6ff7ed52cb6fdce0d4f1585c09f92",
+                    aarch64 = "c122b69f70a229186314ec9a6f7abedcc7a6ff7ed52cb6fdce0d4f1585c09f92",
+                },
             },
             ["24-default-arm64-v8a"] = {
                 -- Same manifest, same measurement. Downloads and extracts
@@ -510,7 +519,10 @@ package = {
                     GLOBAL = "https://dl.google.com/android/repository/sys-img/android/arm64-v8a-24_r09.zip",
                     CN     = "https://gitcode.com/xlings-res/android-system-image/releases/download/24-default-arm64-v8a/arm64-v8a-24_r09.zip",
                 },
-                sha256 = "3c3a70dcffe8c162984ec190fc3388bf237b241b3ba80bf7aa5c86e130d8f59b",
+                sha256 = {
+                    x86_64 = "3c3a70dcffe8c162984ec190fc3388bf237b241b3ba80bf7aa5c86e130d8f59b",
+                    aarch64 = "3c3a70dcffe8c162984ec190fc3388bf237b241b3ba80bf7aa5c86e130d8f59b",
+                },
             },
         },
         -- The image bytes are a property of the GUEST, not of the host:

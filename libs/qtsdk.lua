@@ -17,6 +17,7 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.log")
 import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 local qtsdk = {}
 
@@ -50,7 +51,7 @@ end
 -- prints the digest on its own line -- no quoting gymnastics like
 -- Get-FileHash needs).
 local function sha256_of_windows(file)
-    local ok, out = pcall(os.iorun, string.format('certutil -hashfile "%s" SHA256', file))
+    local ok, out = pcall(system.exec, string.format('certutil -hashfile "%s" SHA256', file), { capture = true })
     if not ok or not out then return nil end
     for line in out:gmatch("[^\r\n]+") do
         local hex = line:gsub("%s+", ""):lower()
@@ -63,12 +64,12 @@ end
 -- (macOS's own, no sha256sum by default). Whichever answers wins; a missing
 -- command is just a pcall failure, not a hook crash.
 local function sha256_of_posix(file)
-    local ok, out = pcall(os.iorun, string.format('sha256sum "%s"', file))
+    local ok, out = pcall(system.exec, string.format('sha256sum "%s"', file), { capture = true })
     if ok and out then
         local hex = out:match("(%x+)")
         if hex and #hex == 64 then return hex:lower() end
     end
-    ok, out = pcall(os.iorun, string.format('shasum -a 256 "%s"', file))
+    ok, out = pcall(system.exec, string.format('shasum -a 256 "%s"', file), { capture = true })
     if ok and out then
         local hex = out:match("(%x+)")
         if hex and #hex == 64 then return hex:lower() end
@@ -77,7 +78,7 @@ local function sha256_of_posix(file)
 end
 
 local function sha256_of(file)
-    if os.host() == "windows" then return sha256_of_windows(file) end
+    if pkginfo.platform() == "windows" then return sha256_of_windows(file) end
     return sha256_of_posix(file)
 end
 
@@ -85,7 +86,7 @@ end
 -- "macosx", ...). Fails closed (returns nil) rather than guessing -- see the
 -- header comment for why os.arch() cannot be used here.
 function qtsdk.host_key()
-    local osname = os.host()
+    local osname = pkginfo.platform()
     if osname == "macosx" then
         -- one universal payload serves both Apple arches -- no branch needed
         return "macosx"
@@ -99,7 +100,7 @@ function qtsdk.host_key()
             arch = "x86_64"
         end
     elseif osname == "linux" then
-        local ok, out = pcall(os.iorun, "uname -m")
+        local ok, out = pcall(system.exec, "uname -m", { capture = true })
         local m = ok and (out or ""):gsub("%s+$", "") or ""
         if m == "aarch64" or m == "arm64" then
             arch = "aarch64"
@@ -130,9 +131,9 @@ local function sevenzip_bin()
     if type(pkginfo.build_dep) ~= "function" then return nil end
     local bd = pkginfo.build_dep("7zip")
     if not bd or not bd.path then return nil end
-    local rel = os.host() == "windows" and "7z.exe" or "7zz"
+    local rel = pkginfo.platform() == "windows" and "7z.exe" or "7zz"
     local p = path.join(bd.path, rel)
-    if os.isfile(p) then return p end
+    if fs.is_file(p) then return p end
     return nil
 end
 
@@ -151,9 +152,9 @@ local function fetch_verified(e, dst, tag)
     else
         for _, m in ipairs(MIRRORS) do table.insert(urls, m .. e.path) end
     end
-    if os.isfile(dst) then
+    if fs.is_file(dst) then
         if sha256_of(dst) == want then return true end
-        os.tryrm(dst)
+        fs.remove(dst)
     end
     local why = {}
     for i, url in ipairs(urls) do
@@ -167,11 +168,11 @@ local function fetch_verified(e, dst, tag)
         -- non-zero exit -- without this the first missing mirror would abort
         -- the whole install instead of falling through to the next one.
         pcall(system.exec, string.format('curl -fsSL --retry 3 -o "%s" "%s"', dst, url))
-        if os.isfile(dst) then
+        if fs.is_file(dst) then
             local got = sha256_of(dst)
             if got == want then return true end
             table.insert(why, host_of(url) .. ": sha256 " .. tostring(got))
-            os.tryrm(dst)
+            fs.remove(dst)
         else
             table.insert(why, host_of(url) .. ": no file")
         end
@@ -216,9 +217,9 @@ local function so_repair_dirs(dest_dir)
 end
 
 local function repair_broken_so_symlinks(dest_dir)
-    if os.host() == "windows" then return end
+    if pkginfo.platform() == "windows" then return end
     for _, libdir in ipairs(so_repair_dirs(dest_dir)) do
-        if os.isdir(libdir) then
+        if fs.is_dir(libdir) then
             pcall(system.exec, string.format(
                 [[sh -c 'cd "%s" && for f in *.so; do [ -f "$f" ] || continue; [ -s "$f" ] && continue; cand=$(ls -1 "$f".* 2>/dev/null | grep -E "\.so\.[0-9]+$" | sort -V | head -1); [ -n "$cand" ] && ln -sf "$(basename "$cand")" "$f"; done']],
                 libdir))
@@ -234,9 +235,9 @@ end
 local function count_broken_so_placeholders(dest_dir)
     local n = 0
     for _, libdir in ipairs(so_repair_dirs(dest_dir)) do
-        if os.isdir(libdir) then
-            local ok, out = pcall(os.iorun, string.format(
-                'find "%s" -maxdepth 1 -name "*.so" -size 0 -type f', libdir))
+        if fs.is_dir(libdir) then
+            local ok, out = pcall(system.exec, string.format(
+                'find "%s" -maxdepth 1 -name "*.so" -size 0 -type f', libdir), { capture = true })
             if ok and out then
                 for line in out:gmatch("[^\r\n]+") do
                     if line:match("%S") then n = n + 1 end
@@ -273,15 +274,15 @@ end
 -- space, so the quote sits right after `-o`. Every path is winpath()'d.
 -- POSIX: no such hazard, quote everything normally.
 local function extract_7z(zbin, archive, dest_dir, tag)
-    if os.host() == "windows" then
+    if pkginfo.platform() == "windows" then
         return pcall(system.exec, string.format('%s x -y -bso0 -bsp0 "-o%s" "%s"',
             winpath(zbin), winpath(dest_dir), winpath(archive)))
     end
     local out_file = archive .. ".out"
     local ok = pcall(system.exec, string.format('"%s" x -y -bso0 -bsp0 "-o%s" "%s" >"%s" 2>&1',
         zbin, dest_dir, archive, out_file))
-    local said = os.isfile(out_file) and (io.readfile(out_file) or "") or ""
-    os.tryrm(out_file)
+    local said = fs.is_file(out_file) and (fs.read(out_file) or "") or ""
+    fs.remove(out_file)
     if ok then return true end
     -- See repair_broken_so_symlinks() above for what this is and is not.
     local refused = count_broken_so_placeholders(dest_dir)
@@ -333,20 +334,13 @@ local FLAT_MODULE_SUBDIR = {
     opengl32sw = "bin",
 }
 
--- The names of the regular files directly in `dir`. libxpkg's prelude has
--- `os.dirs` and no `os.files`, so the listing is the shell's, as os.dirs does.
+-- The names of the regular files directly in `dir`.
 local function files_in(dir)
     local names = {}
-    local cmd = os.host() == "windows"
-        and ('dir /B /A-D "' .. winpath(dir) .. '" 2>nul')
-        or  ('ls -1 "' .. dir .. '" 2>/dev/null')
-    local f = io.popen(cmd)
-    if not f then return names end
-    for line in f:lines() do
-        local name = line:gsub("[\r\n]+$", "")
-        if name ~= "" and os.isfile(path.join(dir, name)) then table.insert(names, name) end
+    if not fs.is_dir(dir) then return names end
+    for _, e in ipairs(fs.list(dir)) do
+        if fs.is_file(e.path) then table.insert(names, e.name) end
     end
-    f:close()
     return names
 end
 
@@ -365,8 +359,8 @@ function qtsdk.fetch_and_extract(list, install_dir, marker, tag)
         return false
     end
     local work = path.join(install_dir, ".dl")
-    fs.mkdir_p(work)
-    fs.mkdir_p(install_dir)
+    fs.mkdir(work)
+    fs.mkdir(install_dir)
 
     local marker_lines = {}
     for _, e in ipairs(list) do
@@ -378,52 +372,52 @@ function qtsdk.fetch_and_extract(list, install_dir, marker, tag)
         local sub = FLAT_MODULE_SUBDIR[e.module]
         if sub then
             dest = path.join(install_dir, sub)
-            fs.mkdir_p(dest)
+            fs.mkdir(dest)
         end
         if e.pick then
             -- An archive of which one directory's files are wanted (the VC++
             -- redistributable): extracted beside the download, the files of
             -- `pick.from` copied into `pick.to`, the rest discarded.
             local scratch = path.join(work, "x-" .. e.module)
-            fs.mkdir_p(scratch)
+            fs.mkdir(scratch)
             if not extract_7z(zbin, dst, scratch, tag) then
                 log.error(tag .. ": 7zip extraction failed for " .. e.name)
                 return false
             end
             local from = path.join(scratch, e.pick.from)
             local into = path.join(install_dir, e.pick.to)
-            fs.mkdir_p(into)
+            fs.mkdir(into)
             local picked = files_in(from)
             if #picked == 0 then
                 log.error(tag .. ": " .. e.name .. " has no files under " .. e.pick.from)
                 return false
             end
             for _, name in ipairs(picked) do
-                if not os.cp(path.join(from, name), path.join(into, name)) then
+                if not fs.copy(path.join(from, name), path.join(into, name)) then
                     log.error(tag .. ": could not copy " .. name .. " into " .. into)
                     return false
                 end
             end
-            os.tryrm(scratch)
+            fs.remove(scratch)
         elseif not extract_7z(zbin, dst, dest, tag) then
             log.error(tag .. ": 7zip extraction failed for " .. e.name)
             return false
         end
-        os.tryrm(dst)
+        fs.remove(dst)
         table.insert(marker_lines, e.module .. " " .. e.sha256)
         -- Written after EVERY archive, not just at the end -- a hook that
         -- dies partway through still leaves a marker naming what is really
         -- there.
-        io.writefile(marker, table.concat(marker_lines, "\n") .. "\n")
+        fs.write(marker, table.concat(marker_lines, "\n") .. "\n")
     end
-    os.tryrm(work)
+    fs.remove(work)
     return true
 end
 
 -- Parses the marker `fetch_and_extract` wrote: "<module> <sha256>" per line.
 function qtsdk.read_marker(marker)
-    if not os.isfile(marker) then return nil end
-    local content = io.readfile(marker) or ""
+    if not fs.is_file(marker) then return nil end
+    local content = fs.read(marker) or ""
     local map = {}
     for line in content:gmatch("[^\n]+") do
         local mod, sha = line:match("^(%S+)%s+(%x+)$")
@@ -453,8 +447,8 @@ end
 local RUNTIME_REV = "1"
 
 function qtsdk.mark_runtime(marker)
-    local text = os.isfile(marker) and (io.readfile(marker) or "") or ""
-    io.writefile(marker, text .. "runtime " .. RUNTIME_REV .. "\n")
+    local text = fs.is_file(marker) and (fs.read(marker) or "") or ""
+    fs.write(marker, text .. "runtime " .. RUNTIME_REV .. "\n")
 end
 
 function qtsdk.runtime_current(marker_map)
@@ -470,10 +464,10 @@ function qtsdk.prune(install_dir, list)
             local dir = path.join(install_dir, path.directory(rel))
             local stem = path.filename(rel):sub(1, -2)
             for _, name in ipairs(files_in(dir)) do
-                if name:sub(1, #stem) == stem then os.tryrm(path.join(dir, name)) end
+                if name:sub(1, #stem) == stem then fs.remove(path.join(dir, name)) end
             end
         else
-            os.tryrm(path.join(install_dir, rel))
+            fs.remove(path.join(install_dir, rel))
         end
     end
 end
@@ -485,9 +479,9 @@ end
 -- existing one.
 function qtsdk.ensure_qt_conf(install_dir)
     local conf = path.join(install_dir, "bin", "qt.conf")
-    if os.isfile(conf) then return end
-    fs.mkdir_p(path.join(install_dir, "bin"))
-    io.writefile(conf, "[Paths]\nPrefix = ..\n")
+    if fs.is_file(conf) then return end
+    fs.mkdir(path.join(install_dir, "bin"))
+    fs.write(conf, "[Paths]\nPrefix = ..\n")
 end
 
 return qtsdk

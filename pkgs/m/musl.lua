@@ -136,7 +136,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/musl/releases/download/1.2.6/musl-1.2.6-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/musl/releases/download/1.2.6/musl-1.2.6-linux-x86_64.tar.gz",
                 },
-                sha256 = "44f6b63ddd6fcb3e668d76fe336cf91e42d4aa1c538bd228b09a298065284c49",
+                sha256 = { x86_64 = "44f6b63ddd6fcb3e668d76fe336cf91e42d4aa1c538bd228b09a298065284c49" },
             },
             ["1.2.5"] = {
                 -- 1: libc.so (the loader) no longer names the build

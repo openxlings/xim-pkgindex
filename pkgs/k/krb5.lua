@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     homepage = "https://web.mit.edu/kerberos/",
     name = "krb5",
@@ -48,6 +48,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- The libraries need libc.so.6, libresolv.so.2, libdl.so.2, libkeyutils.so.1 (xim:keyutils) and libcrypto.so.3 at OPENSSL_3.0.0 (xim:openssl);
             -- GLIBC_2.17 at most (readelf -d, objdump -T).
             deps = { "xim:glibc", "xim:keyutils", "xim:openssl" },
@@ -94,8 +95,6 @@ import("xim.pkgindex.selfcontain")
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mv("krb5-" .. pkginfo.version(), dir)
     selfcontain.seal(dir)
     sysroot.relocate_pkgconfig(dir, "lib/pkgconfig")
     return true

@@ -26,7 +26,10 @@ package = {
             ["latest"] = { ref = "0.3.0" },
             ["0.3.0"] = {
                 url = "https://files.pythonhosted.org/packages/6c/d5/4aca2c05481a0fb74bd2660b14b0dd0ea975e4f38bc150511a64c55af986/vcstool-0.3.0-py3-none-any.whl",
-                sha256 = "ad73309e83b67344efb1f6cf9f556b2d75e297b4b137f643378ba75f930a6ecb",
+                sha256 = {
+                    x86_64 = "ad73309e83b67344efb1f6cf9f556b2d75e297b4b137f643378ba75f930a6ecb",
+                    aarch64 = "ad73309e83b67344efb1f6cf9f556b2d75e297b4b137f643378ba75f930a6ecb",
+                },
             },
         },
         macosx = {

@@ -29,7 +29,10 @@ package = {
             resources = {
                 GLOBAL = {
                     url = {
-                        linux = "https://github.com/sharkdp/bat/releases/download/v${version}/bat-v${version}-x86_64-unknown-linux-musl.tar.gz",
+                        linux = {
+                            x86_64 = "https://github.com/sharkdp/bat/releases/download/v${version}/bat-v${version}-x86_64-unknown-linux-musl.tar.gz",
+                            aarch64 = "https://github.com/sharkdp/bat/releases/download/v${version}/bat-v${version}-aarch64-unknown-linux-musl.tar.gz",
+                        },
                         macosx = "https://github.com/sharkdp/bat/releases/download/v${version}/bat-v${version}-aarch64-apple-darwin.tar.gz",
                         windows = "https://github.com/sharkdp/bat/releases/download/v${version}/bat-v${version}-x86_64-pc-windows-msvc.zip",
                     },
@@ -44,8 +47,15 @@ package = {
 
             ["latest"] = { ref = "0.26.1" },
             ["0.26.1"] = {
-                url = "https://github.com/sharkdp/bat/releases/download/v0.26.1/bat-v0.26.1-x86_64-unknown-linux-musl.tar.gz",
-                sha256 = "0dcd8ac79732c0d5b136f11f4ee00e581440e16a44eab5b3105b611bbf2cf191",
+                x86_64 = {
+                    url = "https://github.com/sharkdp/bat/releases/download/v0.26.1/bat-v0.26.1-x86_64-unknown-linux-musl.tar.gz",
+                    sha256 = "0dcd8ac79732c0d5b136f11f4ee00e581440e16a44eab5b3105b611bbf2cf191",
+                },
+                aarch64 = {
+                    url = "https://github.com/sharkdp/bat/releases/download/v0.26.1/bat-v0.26.1-aarch64-unknown-linux-musl.tar.gz",
+                    sha256 = "6369242c584065f195fb20cb36fbd7cb63ae690605bbe89868a7596b596c2c23",
+                },
+                revision = 1,
             },
         },
         macosx = {

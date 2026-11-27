@@ -1,0 +1,36 @@
+name: Install on one host architecture
+
+# The second step of the architecture migration (tools/arch-migrate, design
+# 2026-11-27 §5.6): what the bytes of an artifact leave open -- only
+# libraries, another system's ELF files -- an install on each architecture
+# decides, with a client that checks the machine of the files a payload
+# exposes (rule M: an xlings commit's CI build, `xlings_sha`). The same
+# install and remove as a pull request's package test (ci-test.yml,
+# posix-test.sh), for the recipes given, on the runner given.
+on:
+  workflow_dispatch:
+    inputs:
+      files:
+        description: 'Recipes to install and remove, space-separated (pkgs/b/bat.lua ...)'
+        type: string
+        required: true
+      runner:
+        description: 'The host: ubuntu-24.04-arm (aarch64) or ubuntu-latest (x86_64)'
+        type: choice
+        options: [ubuntu-24.04-arm, ubuntu-latest]
+        default: ubuntu-24.04-arm
+      xlings_sha:
+        description: 'An openxlings/xlings commit whose CI build is the client under test; default: the pinned release'
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  install:
+    uses: ./.github/workflows/ci-test.yml
+    with:
+      matrix: ${{ format('{{"include":[{{"os":"{0}","platform":"linux","files":"{1}"}}]}}', inputs.runner, inputs.files) }}
+      xlings_sha: ${{ inputs.xlings_sha }}

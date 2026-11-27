@@ -1,0 +1,22 @@
+{
+  "pkgs/a/aarch64-linux-gnu-sysroot.lua": {
+    "decision": "independent",
+    "why": "a sysroot for aarch64-linux-gnu targets: its aarch64 programs (bin/getconf, sbin/ldconfig) are the target's, no host runs them and the recipe registers none; an x86_64 host cross-compiles with it"
+  },
+  "pkgs/a/android-ndk.lua": {
+    "decision": "x86_64",
+    "why": "the host toolchain is toolchains/llvm/prebuilt/linux-x86_64 (x86_64 programs); the aarch64, arm, riscv64 and x86 ELF files are its targets' (Android, lldb-server, simpleperf); Google publishes no linux-aarch64 NDK"
+  },
+  "pkgs/m/mcpp-ide.lua": {
+    "decision": "independent",
+    "why": "the archive carries the runtime and the module for each machine (libexec/okrun/linux-x86_64 and linux-aarch64, lib/<arch>/mcpp-ide.oke): one artifact for both"
+  },
+  "pkgs/m/musl.lua": {
+    "decision": "x86_64",
+    "why": "its lib/libc.so is the x86_64 musl loader the package exports, with x86_64 start files"
+  },
+  "pkgs/x/x86_64-hurd-sysroot.lua": {
+    "decision": "sweep",
+    "why": "a sysroot for x86_64-gnu (Hurd) targets: its x86_64 programs are the target's (the reader cannot tell Hurd's loader from Linux's); no program registered, like the other systems' sysroots"
+  }
+}

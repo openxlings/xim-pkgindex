@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "3",
     homepage = "https://www.npmjs.com",
     name = "npm",
     description = "The package manager for JavaScript",
@@ -35,10 +35,12 @@ package.xpm.macosx = os_common
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
+import("xim.libxpkg.path")
+import("xim.libxpkg.system")
 
 function install()
     local npm_installcmd_template = "npm install -g npm@%s --prefix %s"
-    os.iorun(string.format(npm_installcmd_template, pkginfo.version(), pkginfo.install_dir()))
+    system.run(string.format(npm_installcmd_template, pkginfo.version(), pkginfo.install_dir()))
     return true
 end
 
@@ -46,7 +48,7 @@ function config()
     log.debug("config xvm...")
 
     config = {}
-    if os.host() == "windows" then
+    if pkginfo.platform() == "windows" then
         config.alias = "npm.cmd"
         --config.bindir = pkginfo.install_dir() -- default
     else

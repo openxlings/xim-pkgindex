@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://gitlab.gnome.org/GNOME/glib",
     name = "glib",
     description = "Low-level core library (GLib/GObject/GIO)",
@@ -39,6 +39,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             deps = {
                 "xim:glibc@>=2.38",
                 -- libgio-2.0.so.0 names libmount.so.1 and libselinux.so.1 in
@@ -86,14 +87,14 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/glib/releases/download/2.88.3/glib-2.88.3-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/glib/releases/download/2.88.3/glib-2.88.3-linux-x86_64.tar.gz",
                 },
-                sha256 = "0d0c462b71320fe710f4c8e46982a035d7b40758f3a970b041fe7745e6695153",
+                sha256 = { x86_64 = "0d0c462b71320fe710f4c8e46982a035d7b40758f3a970b041fe7745e6695153" },
             },
             ["2.80.0"] = {
                 url = {
                     GLOBAL = "https://github.com/xlings-res/glib/releases/download/2.80.0/glib-2.80.0-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/glib/releases/download/2.80.0/glib-2.80.0-linux-x86_64.tar.gz",
                 },
-                sha256 = "acc0a845d0591d3cf178d0ca140254563024dd087d34e19b324f21799180ccb6",
+                sha256 = { x86_64 = "acc0a845d0591d3cf178d0ca140254563024dd087d34e19b324f21799180ccb6" },
             },
         },
     },
@@ -102,11 +103,12 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     -- The payload ships gmodule-2.0.pc but NOT the gmodule-no-export-2.0.pc it
@@ -142,8 +144,8 @@ function install()
     -- real file from its own build.
     local pcdir = path.join(pkginfo.install_dir(), "lib", "pkgconfig")
     local noexport = path.join(pcdir, "gmodule-no-export-2.0.pc")
-    if os.isdir(pcdir) and not os.isfile(noexport) then
-        io.writefile(noexport, string.format([[
+    if fs.is_dir(pcdir) and not fs.is_file(noexport) then
+        fs.write(noexport, string.format([[
 prefix=/usr
 includedir=${prefix}/include
 libdir=${prefix}/lib
@@ -184,9 +186,9 @@ function config()
     -- and a version test here would have to be updated for every payload that
     -- follows.
     local bindir = path.join(idir, "bin")
-    if os.isdir(bindir) then
+    if fs.is_dir(bindir) then
         for _, tool in ipairs(package.programs or {}) do
-            if os.isfile(path.join(bindir, tool)) then
+            if fs.is_file(path.join(bindir, tool)) then
                 xvm.add(tool, { bindir = bindir })
             end
         end

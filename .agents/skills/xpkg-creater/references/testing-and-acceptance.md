@@ -70,6 +70,7 @@ Before you open the pull request, also run the repository-wide static checks:
 pytest tests/ -m "static or isolation" --tb=short -q
 bash .github/scripts/check-revision.sh        # a hook/payload change needs a revision
 bash .github/scripts/check-dep-namespace.sh   # dependencies carry the right namespace
+bash .github/scripts/check-arch.sh            # every Linux entry names its architectures (K1, K3)
 ```
 
 They need a Lua 5.3+ interpreter and `origin/main` fetched as the base ref; a missing one is an

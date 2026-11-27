@@ -8,7 +8,7 @@
 -- nginx.org sources: upstream distributes source tarballs only for POSIX, and
 -- third-party static prebuilts without reproducible provenance are avoided.
 package = {
-    spec = "2",
+    spec = "3",
 
     name = "nginx",
     description = "nginx - high-performance HTTP web server, reverse proxy and load balancer (official stable build)",
@@ -32,6 +32,7 @@ package = {
 
     xpm = {
         windows = {
+            strip = 1,
             ["latest"] = { ref = "1.30.7" },
             ["1.30"] = { ref = "1.30.7" },
             ["1.30.7"] = {
@@ -60,8 +61,6 @@ function installed()
 end
 
 function install()
-    local ver = pkginfo.version()
-    payload.unpack{ extracted = "nginx-" .. ver, strip = 1 }
     payload.require(REQUIRED_FILES)
     return true
 end

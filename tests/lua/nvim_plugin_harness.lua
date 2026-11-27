@@ -62,6 +62,10 @@ local _stub_log = { info = _logger("info"), warn = _logger("warn"), error = _log
 function import(name)
     if name == "xim.libxpkg.log" then log = _stub_log; return _stub_log end
     if name == "xim.libxpkg.pkgmanager" then pkgmanager = _stub_pkgmanager; return _stub_pkgmanager end
+    -- fs, system and pkginfo are answered by this sandbox's os.* below
+    -- (tests/lua/module_names.lua); path is the prelude's, above.
+    if name == "xim.libxpkg.fs" or name == "xim.libxpkg.system"
+        or name == "xim.libxpkg.pkginfo" or name == "xim.libxpkg.path" then return end
     error("unexpected import: " .. name)
 end
 

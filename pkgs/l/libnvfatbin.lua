@@ -62,15 +62,16 @@ package = {
             source = "https://developer.download.nvidia.com/compute/cuda/redist/"
                   .. "libnvfatbin/linux-${arch_alias}/"
                   .. "libnvfatbin-linux-${arch_alias}-${version}-archive.tar.xz",
-            arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
             ["latest"] = { ref = "13.3.29" },
             ["13.3.29"] = {
+                arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
                 sha256 = {
                     aarch64  = "d53e2c95f6817bfce9b7665ba29f47b5909aab6f3416c3b106e1ed7a575022c7",
                     x86_64   = "f3e933b61a26f7b1f8b053bac4a66193e115b006911e2e493623ca01ec8560d4",
                 },
             },
             ["12.9.82"] = {
+                arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
                 sha256 = {
                     aarch64  = "87bf71288ea7390d039b246fa794cad2ddd3b164ce9566f8542bb15039432cdb",
                     x86_64   = "315be969a303437329bf72d7141babed024fc54f90a10aa748b03be8f826d57b",

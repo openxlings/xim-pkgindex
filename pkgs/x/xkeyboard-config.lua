@@ -70,7 +70,7 @@ package = {
                     GLOBAL = "https://github.com/mcpplibs/xkeyboard-config/releases/download/2.48/xkeyboard-config-2.48-data.tar.gz",
                     CN     = "https://gitcode.com/mcpp-res/xkeyboard-config/releases/download/2.48/xkeyboard-config-2.48-data.tar.gz",
                 },
-                sha256 = "7368528012f9756ba96ec5fc347b452dfd809770a9d59fbd10da6a8b6e52165f",
+                sha256 = { x86_64 = "7368528012f9756ba96ec5fc347b452dfd809770a9d59fbd10da6a8b6e52165f" },
             },
         },
     },

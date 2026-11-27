@@ -78,7 +78,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/ncurses/releases/download/6.5/ncurses-6.5-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/ncurses/releases/download/6.5/ncurses-6.5-linux-x86_64.tar.gz",
                 },
-                sha256 = "8023553b73691daad972e5d4f2aae7088c78dd8b1d2d5e53e2953c09587189a0",
+                sha256 = { x86_64 = "8023553b73691daad972e5d4f2aae7088c78dd8b1d2d5e53e2953c09587189a0" },
             },
         },
     },

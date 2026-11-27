@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "3",
     homepage = "https://clang.llvm.org/extra/",
 
     name = "llvm-tools",
@@ -51,6 +51,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- These three are the payload's ENTIRE external closure, measured
             -- rather than guessed: every bin/ ELF here needs exactly
             -- libm/libc/ld-linux (glibc), libstdc++/libgcc_s (gcc-runtime) and
@@ -108,6 +109,7 @@ package = {
             },
         },
         windows = {
+            strip = 1,
             ["latest"] = { ref = "22.1.8" },
             ["20.1.7"] = {
                 url = {
@@ -139,6 +141,7 @@ package = {
         -- headers) so clangd's derived resource-dir resolves stddef.h etc.
         -- for files that include libc++ headers (e.g. #include <gtest/gtest.h>).
         macosx = {
+            strip = 1,
             ["latest"] = { ref = "22.1.8" },
             ["20.1.7"] = {
                 url = {
@@ -168,18 +171,11 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 local tools = { "clang-format", "clang-tidy", "clangd" }
 
-function install()
-    local srcdir = pkginfo.install_file()
-        :replace(".tar.xz", "")
-        :replace(".tar.gz", "")
-        :replace(".zip", "")
-    os.tryrm(pkginfo.install_dir())
-    os.mv(srcdir, pkginfo.install_dir())
-    return true
-end
 
 function config()
     local bindir = path.join(pkginfo.install_dir(), "bin")
@@ -189,10 +185,10 @@ function config()
 
     for _, tool in ipairs(tools) do
         local filename = tool
-        if os.host() == "windows" then
+        if pkginfo.platform() == "windows" then
             filename = tool .. ".exe"
         end
-        if os.isfile(path.join(bindir, filename)) then
+        if fs.is_file(path.join(bindir, filename)) then
             xvm.add(tool, {
                 bindir = bindir,
                 binding = binding,

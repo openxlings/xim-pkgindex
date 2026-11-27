@@ -82,7 +82,7 @@ sudo rm -f "$HOST_SENTINEL"
 trap - EXIT
 printf 'Host header shadow: control reachable, managed search rejects it.\n' > "$OUT/managed-header-negative-admission.log"
 # Re-run the default-data probe against the relocated final archive content.
-python3 - .agents/tools/graphics/build-glibc.sh "$WORK/data.c" <<'PY'
+python3 - tools/res/graphics/build-glibc.sh "$WORK/data.c" <<'PY'
 import pathlib, sys
 script = pathlib.Path(sys.argv[1]).read_text()
 source = script.split('cat > "$TPROBE/main.c" <<\'C\'\n', 1)[1].split('\nC\n', 1)[0]

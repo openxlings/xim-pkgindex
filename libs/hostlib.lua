@@ -44,6 +44,9 @@
 -- Design: xlings/.agents/docs/2026-08-07-graphics-experience-industry-survey-and-plan.md §9.2
 
 import("xim.libxpkg.log")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
+import("xim.libxpkg.system")
 
 local hostlib = {}
 
@@ -54,10 +57,9 @@ local hostlib = {}
 -- and a probe that answers "cannot tell" by falling through to "looks fine" is
 -- the failure this module exists to remove.
 function hostlib.elf_class(file)
-    local f = io.open(file, "rb")
-    if not f then return nil end
-    local head = f:read(5)
-    f:close()
+    -- The first five bytes only: a driver library is tens of megabytes.
+    local r = system.run({ "head", "-c", "5", file })
+    local head = r.ok and r.out or nil
     if not head or #head < 5 then return nil end
     if head:sub(1, 4) ~= "\127ELF" then return nil end
     local class = head:byte(5)
@@ -124,9 +126,8 @@ function hostlib.dirs_of(soname, opt)
     -- Parsed for the ABI token as well as the name: on a biarch host both the
     -- 32- and 64-bit entries are present under one soname, and taking the
     -- first line is how you get a 32-bit answer from an authoritative source.
-    local listing = try {
-        function() return os.iorun("ldconfig -p 2>/dev/null") end
-    }
+    local listed, listing = pcall(system.exec, "ldconfig -p 2>/dev/null", { capture = true })
+    if not listed then listing = nil end
     if listing and listing ~= "" then
         for line in listing:gmatch("[^\n]+") do
             if line:find(soname, 1, true)
@@ -135,7 +136,7 @@ function hostlib.dirs_of(soname, opt)
                 -- Verified on disk, not merely listed: the cache outlives the
                 -- files it names, and a stale entry is exactly the shape that
                 -- makes a probe succeed and the dlopen fail.
-                if p and os.isfile(p) and hostlib.elf_class(p) == class then
+                if p and fs.is_file(p) and hostlib.elf_class(p) == class then
                     push(path.directory(p))
                 end
             end
@@ -149,7 +150,7 @@ function hostlib.dirs_of(soname, opt)
     for _, d in ipairs(default_dirs(arch))   do table.insert(dirs, d) end
     for _, d in ipairs(dirs) do
         local p = path.join(d, soname)
-        if os.isfile(p) and hostlib.elf_class(p) == class then push(d) end
+        if fs.is_file(p) and hostlib.elf_class(p) == class then push(d) end
     end
 
     return out
@@ -179,11 +180,9 @@ end
 -- directory (Fedora ships both) must not be linked into a 64-bit payload.
 function hostlib.entries_with_prefix(dir, prefixes)
     local names = {}
-    if not dir or not os.isdir(dir) then return names end
-    local f = io.popen(string.format([[ls -1 "%s" 2>/dev/null]], dir))
-    if not f then return names end
-    for line in f:lines() do
-        local name = line:gsub("[\r\n]+$", "")
+    if not dir or not fs.is_dir(dir) then return names end
+    for _, entry in ipairs(fs.list(dir)) do
+        local name = entry.name
         if name ~= "" then
             for _, p in ipairs(prefixes) do
                 if name:find(p) then
@@ -199,7 +198,6 @@ function hostlib.entries_with_prefix(dir, prefixes)
             end
         end
     end
-    f:close()
     return names
 end
 
@@ -221,8 +219,8 @@ function hostlib.canonical_libdir(arch)
     arch = arch or "x86_64"
     local triplet = (arch == "aarch64") and "aarch64-linux-gnu"
                                         or  "x86_64-linux-gnu"
-    if os.isfile("/etc/os-release") then
-        local content = io.readfile("/etc/os-release") or ""
+    if fs.is_file("/etc/os-release") then
+        local content = fs.read("/etc/os-release") or ""
         local idl = ((content:match("ID=([^\n]*)") or "") .. " " ..
                      (content:match("ID_LIKE=([^\n]*)") or "")):lower()
         idl = idl:gsub('"', '')
@@ -246,11 +244,7 @@ end
 -- A shell command's output, or "" when it cannot be run, by the same means
 -- the probes above read ldconfig.
 local function __sh(cmd)
-    local f = io.popen(cmd .. " 2>/dev/null")
-    if not f then return "" end
-    local out = f:read("*a") or ""
-    f:close()
-    return out
+    return system.run(cmd .. " 2>/dev/null").out or ""
 end
 
 -- The links of a host-link package, generated from the host as it is now.

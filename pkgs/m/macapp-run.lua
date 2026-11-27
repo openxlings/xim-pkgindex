@@ -40,6 +40,7 @@ package = {
     -- macOS ONLY: an application bundle is a macOS structure and the program
     -- reads it with macOS tools (`plutil`, `PlistBuddy`).
     type = "script",
+    archs = {"aarch64"},
     status = "stable",
     programs = {"macapp-run"},
     categories = {"apple", "macos", "runner"},

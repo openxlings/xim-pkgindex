@@ -1,0 +1,1151 @@
+#!/usr/bin/env python3
+"""Migrate the index's Linux entries to entries that name their architectures.
+
+The design (ecosystem-convergence, §5.6) moves every Linux entry with one
+artifact and no architecture named to one of the three forms of §5.3:
+
+    sha256 = { x86_64 = "<h>" }                       only x86_64
+    sha256 = { x86_64 = "<h>", aarch64 = "<h>" }      no machine code: the
+                                                       same bytes for each
+    x86_64 = { url = ..., sha256 = ... },              an artifact for each
+    aarch64 = { url = ..., sha256 = ... }
+
+and decides which one from the bytes, not from file names or `package.archs`
+(§2.7: names say the target as often as the host). Three steps:
+
+1. read the bytes (`evidence`): download each artifact, list every ELF member
+   of the archive (machine, class, OS, program or library) without unpacking
+   to disk or executing anything. No machine code: architecture-independent.
+   Linux programs of one machine only: a candidate "only that machine".
+   Anything else (only libraries, another system's ELF files, programs of
+   several machines) is left to step 2.
+2. install on each architecture (the index's full install sweep with the
+   client under test, rule M): what step 1 left. `apply --installs` reads its
+   outcome (a JSON map "file@version" -> {"x86_64": "pass"|"fail",
+   "aarch64": ...}).
+3. find the other architecture's artifact (`evidence` does it for the "only
+   x86_64" candidates): the URL with its architecture word swapped is
+   requested upstream; one that exists is downloaded, its sha256 taken from
+   the real download and its bytes read like step 1. Found and aarch64:
+   the entry gets an artifact per architecture.
+
+`XLINGS_RES` entries (one name, an asset per architecture on xlings-res)
+are written with the checksums of the assets that exist, from the release's
+API digest, else from a download.
+
+    tools/arch-migrate plan [--files ...] [--json plan.json]
+    tools/arch-migrate read <url>...                  step 1 on URLs
+    tools/arch-migrate evidence --plan plan.json --out evidence.json [--only <file>...] [--jobs N]
+    tools/arch-migrate apply --evidence evidence.json [--installs installs.json] [--only <file>...]
+    tools/arch-migrate table --evidence evidence.json [--output <md>]
+
+`plan` lists the Linux entries K1 reports (tools/xpkg_arch.py), each with its
+group: `mechanical` (the recipe declares only x86_64 and the entry has a
+digest: rewritten as only x86_64 without reading anything, §5.6), `res`
+(an XLINGS_RES entry) or `read` (decided by the bytes). `apply` rewrites the
+recipes in place and prints what it did; a published entry keeps its bytes
+for every architecture it served (the revision gate checks it).
+"""
+
+from __future__ import annotations
+
+import argparse
+import bz2
+import concurrent.futures as cf
+import gzip
+import hashlib
+import io
+import json
+import lzma
+import re
+import shutil
+import struct
+import subprocess
+import sys
+import tarfile
+import tempfile
+import time
+import urllib.error
+import urllib.request
+import zipfile
+from pathlib import Path
+from typing import Any
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import xpkg_arch as xa  # noqa: E402
+
+ROOT = xa.ROOT
+USER_AGENT = "xim-pkgindex-arch-migrate"
+
+# ── ELF ────────────────────────────────────────────────────────────────────
+
+EM = {62: "x86_64", 183: "aarch64", 3: "x86", 40: "arm", 243: "riscv64", 258: "loongarch64",
+      8: "mips", 20: "ppc", 21: "ppc64", 22: "s390", 2: "sparc", 43: "sparcv9"}
+OSABI_OTHER = {9: "freebsd", 12: "openbsd", 2: "netbsd", 6: "solaris", 1: "hpux"}
+INTERP_OS = (("ld-linux", "linux"), ("ld-musl", "linux"), ("ld64.so", "linux"),
+             ("ld-elf.so", "freebsd"), ("/libexec/ld.so", "bsd"), ("ld.so.1", "solaris"),
+             ("ld.elf_so", "netbsd"), ("/system/bin/linker", "android"), ("runtime_loader", "haiku"),
+             ("/lib/ld.so", "hurd"))
+PT_INTERP, PT_DYNAMIC, PT_NOTE = 3, 2, 4
+DT_FLAGS_1, DF_1_PIE = 0x6FFFFFFB, 0x08000000
+
+
+def read_elf(data: bytes) -> dict[str, Any] | None:
+    """What an ELF file's headers say, or None when `data` is not ELF.
+
+    `data` is the file's beginning (the whole file when it is small enough):
+    the program headers are read when they are in it.
+    """
+    if len(data) < 52 or data[:4] != b"\x7fELF":
+        return None
+    cls, end, osabi = data[4], data[5], data[7]
+    bits = 64 if cls == 2 else 32
+    e = "<" if end == 1 else ">"
+    try:
+        e_type, e_machine = struct.unpack_from(e + "HH", data, 16)
+        if bits == 64:
+            e_phoff = struct.unpack_from(e + "Q", data, 32)[0]
+            e_phentsize, e_phnum = struct.unpack_from(e + "HH", data, 54)
+        else:
+            e_phoff = struct.unpack_from(e + "I", data, 28)[0]
+            e_phentsize, e_phnum = struct.unpack_from(e + "HH", data, 42)
+    except struct.error:
+        return None
+    info: dict[str, Any] = {"machine": EM.get(e_machine, f"em{e_machine}"), "bits": bits,
+                            "type": {1: "rel", 2: "exec", 3: "dyn", 4: "core"}.get(e_type, str(e_type)),
+                            "interp": None, "pie": False, "os": OSABI_OTHER.get(osabi)}
+    dynamic = None
+    for i in range(min(e_phnum, 64)):
+        off = e_phoff + i * e_phentsize
+        if off + e_phentsize > len(data):
+            info["truncated"] = True
+            break
+        if bits == 64:
+            p_type, _flags, p_offset, _va, _pa, p_filesz = struct.unpack_from(e + "IIQQQQ", data, off)
+        else:
+            p_type, p_offset, _va, _pa, p_filesz = struct.unpack_from(e + "IIIII", data, off)
+        if p_type == PT_INTERP and p_offset + p_filesz <= len(data):
+            info["interp"] = data[p_offset:p_offset + p_filesz].split(b"\0", 1)[0].decode("latin-1")
+        elif p_type == PT_DYNAMIC:
+            dynamic = (p_offset, p_filesz)
+    if dynamic and info["type"] == "dyn" and not info["interp"]:
+        off, size = dynamic
+        step = 16 if bits == 64 else 8
+        if off + size <= len(data):
+            for pos in range(off, off + size, step):
+                if bits == 64:
+                    tag, val = struct.unpack_from(e + "qQ", data, pos)
+                else:
+                    tag, val = struct.unpack_from(e + "iI", data, pos)
+                if tag == 0:
+                    break
+                if tag == DT_FLAGS_1 and val & DF_1_PIE:
+                    info["pie"] = True
+        else:
+            info["truncated"] = True
+    if info["interp"]:
+        for needle, os_name in INTERP_OS:
+            if needle in info["interp"]:
+                info["os"] = info["os"] or os_name
+                break
+    # A program: an executable, a PIE with a loader, or a static PIE.
+    info["program"] = info["type"] == "exec" or (info["type"] == "dyn" and (bool(info["interp"]) or info["pie"]))
+    return info
+
+
+# ── archives ───────────────────────────────────────────────────────────────
+
+MAX_MEMBER = 512 << 20     # a member read whole up to this; its head beyond
+HEAD = 1 << 20
+
+
+class Hashing(io.RawIOBase):
+    """A readable stream that hashes what passes through it."""
+
+    def __init__(self, raw):
+        self.raw, self.sha, self.size = raw, hashlib.sha256(), 0
+
+    def readable(self):
+        return True
+
+    def readinto(self, b):
+        chunk = self.raw.read(len(b))
+        if not chunk:
+            return 0
+        self.sha.update(chunk)
+        self.size += len(chunk)
+        b[:len(chunk)] = chunk
+        return len(chunk)
+
+
+def _member_bytes(read, size: int) -> bytes:
+    if size <= MAX_MEMBER:
+        return read(size)
+    return read(HEAD)
+
+
+def scan_tar(fileobj, mode: str = "r|*") -> list[dict[str, Any]]:
+    out = []
+    with tarfile.open(fileobj=fileobj, mode=mode) as tf:
+        for m in tf:
+            if not m.isfile():
+                continue
+            f = tf.extractfile(m)
+            if f is None:
+                continue
+            head = f.read(4)
+            if head != b"\x7fELF":
+                if head[:4] in (b"PK\x03\x04",) or m.name.endswith((".jar", ".zip", ".whl")):
+                    pass
+                continue
+            data = head + _member_bytes(f.read, m.size - 4)
+            info = read_elf(data)
+            if info:
+                info["path"] = m.name
+                info["exec_bit"] = bool(m.mode & 0o111)
+                out.append(info)
+    return out
+
+
+def scan_zip(path: Path) -> list[dict[str, Any]]:
+    out = []
+    with zipfile.ZipFile(path) as zf:
+        for zi in zf.infolist():
+            if zi.is_dir():
+                continue
+            with zf.open(zi) as f:
+                head = f.read(4)
+                if head != b"\x7fELF":
+                    continue
+                data = head + _member_bytes(f.read, zi.file_size - 4)
+            info = read_elf(data)
+            if info:
+                info["path"] = zi.filename
+                info["exec_bit"] = bool((zi.external_attr >> 16) & 0o111)
+                out.append(info)
+    return out
+
+
+def scan_ar_deb(path: Path) -> list[dict[str, Any]]:
+    out = []
+    with open(path, "rb") as f:
+        if f.read(8) != b"!<arch>\n":
+            return out
+        while True:
+            hdr = f.read(60)
+            if len(hdr) < 60:
+                break
+            name = hdr[:16].decode().strip().rstrip("/")
+            size = int(hdr[48:58].decode().strip())
+            body = f.read(size)
+            if size % 2:
+                f.read(1)
+            if name.startswith("data.tar"):
+                out += scan_bytes_as_tar(body, name)
+    return out
+
+
+def scan_bytes_as_tar(body: bytes, name: str) -> list[dict[str, Any]]:
+    if name.endswith(".zst"):
+        body = zstd_decompress(body)
+        return scan_tar(io.BytesIO(body), "r|")
+    return scan_tar(io.BytesIO(body), "r|*")
+
+
+def zstd_decompress(body: bytes) -> bytes:
+    tool = shutil.which("zstd")
+    if not tool:
+        raise RuntimeError("a .zst archive and no zstd program (xlings install zstd)")
+    return subprocess.run([tool, "-dc"], input=body, capture_output=True, check=True).stdout
+
+
+def kind_of(url: str, head: bytes) -> str:
+    u = url.lower().split("?", 1)[0]
+    if head[:4] == b"\x7fELF":
+        return "elf"
+    if head[:4] == b"PK\x03\x04" or u.endswith((".zip", ".jar", ".whl", ".vsix", ".nupkg")):
+        return "zip"
+    if head[:8] == b"!<arch>\n":
+        return "deb"
+    if head[:4] == b"\x28\xb5\x2f\xfd" or u.endswith((".zst", ".tzst")):
+        return "zst"
+    if head[:3] == b"\x1f\x8b\x08" or head[:6] == b"\xfd7zXZ\x00" or head[:3] == b"BZh" \
+            or u.endswith((".tar", ".tgz", ".tar.gz", ".tar.xz", ".tar.bz2", ".txz")):
+        return "tar?"
+    return "other"
+
+
+def open_url(url: str, timeout: int = 60):
+    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    return urllib.request.urlopen(req, timeout=timeout)
+
+
+_READ_CACHE: dict[str, dict[str, Any]] = {}
+
+
+def read_artifact(url: str, workdir: Path) -> dict[str, Any]:
+    """Step 1 for one URL (read once per run): its sha256, size, format and ELF members."""
+    if url not in _READ_CACHE or "error" in _READ_CACHE[url]:
+        _READ_CACHE[url] = _read_artifact(url, workdir)
+    return _READ_CACHE[url]
+
+
+def _read_artifact(url: str, workdir: Path) -> dict[str, Any]:
+    target = workdir / "artifact"
+    sha, size, expected = hashlib.sha256(), 0, None
+    target.write_bytes(b"")
+    failures = 0
+    # A connection that closes early is resumed where it stopped (Range);
+    # one that cannot be is not the artifact: its hash and bytes would be wrong.
+    while True:
+        headers = {"Range": f"bytes={size}-"} if size else {}
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT, **headers})
+            with urllib.request.urlopen(req, timeout=120) as resp, open(target, "ab") as out:
+                if size and resp.status != 206:
+                    raise ConnectionError("the server does not resume a download")
+                length = resp.headers.get("Content-Length")
+                if expected is None and length is not None:
+                    expected = int(length)
+                while True:
+                    chunk = resp.read(1 << 20)
+                    if not chunk:
+                        break
+                    sha.update(chunk)
+                    size += len(chunk)
+                    out.write(chunk)
+        except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as exc:
+            failures += 1
+            if failures > 6 or isinstance(exc, urllib.error.HTTPError) and exc.code in (404, 410) \
+                    or "does not resume" in str(exc):
+                return {"url": url, "error": f"download failed: {exc}"}
+            time.sleep(3 * failures)
+            continue
+        if expected is None or size >= expected:
+            break
+        failures += 1
+        if failures > 6:
+            return {"url": url, "error": f"download failed: truncated: {size} of {expected} bytes"}
+    if expected is not None and size != expected:
+        return {"url": url, "error": f"download failed: {size} of {expected} bytes"}
+    with open(target, "rb") as f:
+        head = f.read(8)
+    kind = kind_of(url, head)
+    result: dict[str, Any] = {"url": url, "sha256": sha.hexdigest(), "size": size, "format": kind}
+    try:
+        if kind == "elf":
+            data = target.read_bytes() if size <= MAX_MEMBER else target.open("rb").read(HEAD)
+            info = read_elf(data)
+            info["path"] = Path(url.split("?", 1)[0]).name
+            elfs = [info]
+        elif kind == "zip":
+            elfs = scan_zip(target)
+        elif kind == "deb":
+            elfs = scan_ar_deb(target)
+        elif kind == "zst":
+            elfs = scan_bytes_as_tar(target.read_bytes(), "x.tar.zst")
+        elif kind == "tar?":
+            try:
+                with open(target, "rb") as f:
+                    elfs = scan_tar(f, "r|*")
+            except tarfile.ReadError:
+                # One compressed file, not a tar: what it holds is its head.
+                # A tar that ends early is an error, not a compressed file.
+                opener = {b"\x1f\x8b": gzip.open, b"\xfd7": lzma.open, b"BZ": bz2.open}.get(head[:2])
+                inner = opener(target).read(HEAD) if opener else b""
+                if inner[257:262] == b"ustar":
+                    raise
+                info = read_elf(inner)
+                elfs = [dict(info, path="(compressed file)")] if info else []
+                result["format"] = "compressed file"
+        else:
+            elfs = []
+    except Exception as exc:   # an archive this reader cannot walk is a finding, not a crash
+        result["error"] = f"read failed: {type(exc).__name__}: {exc}"
+        elfs = []
+    finally:
+        target.unlink(missing_ok=True)
+    result["elf"] = summarize(elfs)
+    result["verdict"] = verdict(result["elf"]) if "error" not in result else "unread"
+    return result
+
+
+def summarize(elfs: list[dict[str, Any]]) -> dict[str, Any]:
+    """Counts by machine and kind, with a few paths for the evidence table."""
+    by: dict[str, dict[str, Any]] = {}
+    for info in elfs:
+        m = info["machine"] + ("" if info["bits"] == 64 or info["machine"] in ("x86", "arm") else f"/{info['bits']}")
+        os_name = info.get("os") or "linux?"
+        kind = "program" if info["program"] else "library" if info["type"] == "dyn" else info["type"]
+        key = f"{m} {os_name} {kind}"
+        slot = by.setdefault(key, {"count": 0, "examples": [], "static_pie": 0})
+        slot["count"] += 1
+        if info.get("pie") and not info.get("interp"):
+            slot["static_pie"] += 1
+        if len(slot["examples"]) < 3:
+            slot["examples"].append(info["path"])
+    return {"total": len(elfs), "by": by}
+
+
+def verdict(elf: dict[str, Any]) -> str:
+    """What step 1 decides: `none`, `programs:<machine>`, or `undecided:<why>`."""
+    if elf["total"] == 0:
+        return "none"
+    linux_programs = set()
+    other = []
+    for key, slot in elf["by"].items():
+        machine, os_name, kind = key.split(" ")
+        if kind == "program" and os_name in ("linux", "linux?"):
+            linux_programs.add(machine)
+        else:
+            other.append(key)
+    if len(linux_programs) == 1:
+        return "programs:" + next(iter(linux_programs))
+    if len(linux_programs) > 1:
+        return "undecided:programs of " + "+".join(sorted(linux_programs))
+    return "undecided:no Linux program (" + "; ".join(sorted(other)) + ")"
+
+
+# ── step 3: the other architecture upstream ────────────────────────────────
+
+SWAPS = [
+    ("x86_64", "aarch64"), ("x86-64", "aarch64"), ("amd64", "arm64"), ("x64", "arm64"),
+    ("x86_64", "arm64"), ("amd64", "aarch64"), ("linux64", "linuxarm64"), ("linux64", "linux-arm64"),
+    ("x86_64", "aarch_64"),
+    ("x86_64-unknown-linux-musl", "aarch64-unknown-linux-gnu"),
+]
+
+
+def candidate_urls(url: str) -> list[str]:
+    out = []
+    for a, b in SWAPS:
+        if a in url:
+            cand = url.replace(a, b)
+            if cand != url and cand not in out:
+                out.append(cand)
+    return out
+
+
+def exists(url: str) -> bool | None:
+    """Whether upstream serves `url`: True, False (404/410), or None when
+    the network did not answer (a failed probe is not an absence)."""
+    for attempt in range(4):
+        for method in ("HEAD", "GET"):
+            req = urllib.request.Request(url, method=method, headers={"User-Agent": USER_AGENT,
+                                                                       "Range": "bytes=0-0"})
+            try:
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    if resp.status in (200, 206):
+                        return True
+            except urllib.error.HTTPError as exc:
+                if exc.code in (404, 410):
+                    return False
+            except (urllib.error.URLError, TimeoutError, OSError):
+                pass
+        time.sleep(2 + 3 * attempt)
+    return None
+
+
+# ── XLINGS_RES ─────────────────────────────────────────────────────────────
+
+def res_assets(name: str, version: str) -> dict[str, dict[str, Any]]:
+    """arch -> {"url", "sha256"} of xlings-res/<name>@<version>'s Linux assets."""
+    out: dict[str, dict[str, Any]] = {}
+    for attempt in range(4):
+        run = subprocess.run(["gh", "api", f"repos/xlings-res/{name}/releases/tags/{version}",
+                              "--jq", ".assets[] | [.name, (.digest // \"\"), .browser_download_url] | @tsv"],
+                             capture_output=True, text=True)
+        if run.returncode == 0:
+            break
+        if "Not Found" in run.stderr or "404" in run.stderr:
+            return {"error": "no release xlings-res/%s@%s" % (name, version)}  # type: ignore[dict-item]
+        time.sleep(2 + attempt * 3)
+    else:
+        return {"error": run.stderr.strip()}  # type: ignore[dict-item]
+    for line in run.stdout.splitlines():
+        asset, digest, url = (line.split("\t") + ["", "", ""])[:3]
+        for arch in xa.HOST_ARCHS["linux"]:
+            if asset == f"{name}-{version}-linux-{arch}.tar.gz":
+                out[arch] = {"url": url, "sha256": digest.removeprefix("sha256:") if digest else ""}
+    return out
+
+
+# ── plan ───────────────────────────────────────────────────────────────────
+
+def plan_entries(files: list[str] | None = None, root: Path = ROOT) -> list[dict[str, Any]]:
+    files = files or xa.all_recipe_files(root)
+    loaded = xa.load_recipes(files, root=root)
+    out = []
+    for file in files:
+        pkg = loaded[file].get("package")
+        if not isinstance(pkg, dict) or xa.is_subos(pkg):
+            continue
+        linux = xa.platforms(pkg).get("linux")
+        if not linux:
+            continue
+        archs = sorted(set(xa.package_archs(pkg)))
+        for version, e in sorted(linux.entries.items()):
+            if e.ref or xa.declares_no_download_source(pkg, linux, e):
+                continue
+            if xa.classify(pkg, e) not in ("Weak", "None") or xa.is_git_repository(e):
+                continue
+            url = e.url or linux.source or xa.matrix_source(pkg)
+            if not e.url:
+                # The platform's or the matrix's `source`, as the client expands it.
+                url = url.replace("${version}", version).replace("${name}", str(pkg.get("name")))
+            if e.url == "XLINGS_RES":
+                group = "res"
+            elif archs == ["x86_64"] and e.sha256:
+                group = "mechanical"
+            else:
+                group = "read"
+            out.append({"file": file, "name": pkg.get("name"), "version": version, "group": group,
+                        "url": url, "via_source": not e.url, "sha256": e.sha256, "archs": archs,
+                        "raw_url": e.mirrors or e.url})
+    return out
+
+
+def cmd_plan(args) -> int:
+    entries = plan_entries(args.files or None)
+    if args.json:
+        Path(args.json).write_text(json.dumps(entries, indent=1) + "\n")
+    counts: dict[str, int] = {}
+    for e in entries:
+        counts[e["group"]] = counts.get(e["group"], 0) + 1
+    print(f"{len(entries)} Linux entries name no architecture in {len({e['file'] for e in entries})} recipes: "
+          + ", ".join(f"{g} {n}" for g, n in sorted(counts.items())))
+    return 0
+
+
+# ── evidence ───────────────────────────────────────────────────────────────
+
+def evidence_for(entry: dict[str, Any], prior: dict[str, Any] | None = None) -> dict[str, Any]:
+    """Steps 1 and 3 for one plan row; `prior`: an earlier read of the same
+    URL and bytes, reused (only upstream is asked again)."""
+    if prior and prior.get("read", {}).get("url") == entry["url"] and "error" not in prior["read"]:
+        _READ_CACHE.setdefault(entry["url"], prior["read"])
+    ev = dict(entry)
+    if entry["group"] == "mechanical":
+        ev["decision"] = "x86_64"
+        ev["why"] = "the recipe declares only x86_64 (mechanical, §5.6)"
+        return ev
+    if entry["group"] == "res":
+        assets = res_assets(entry["name"], entry["version"])
+        if "error" in assets:
+            ev["decision"] = "unresolved"
+            ev["why"] = assets["error"]
+            return ev
+        with tempfile.TemporaryDirectory(prefix="arch-migrate-") as tmp:
+            for arch, a in assets.items():
+                if not a["sha256"]:
+                    r = read_artifact(a["url"], Path(tmp))
+                    a["sha256"] = r.get("sha256", "")
+                    a["read"] = r
+        ev["res"] = assets
+        ev["decision"] = "res:" + "+".join(xa.order_archs(a for a in assets if assets[a]["sha256"])) if assets else "unresolved"
+        ev["why"] = "xlings-res publishes " + (", ".join(f"linux-{a}" for a in xa.order_archs(assets)) or "no Linux asset")
+        return ev
+    url = entry["url"]
+    if not url or url.startswith(("git", "http")) is False or url.endswith(".git"):
+        ev["decision"] = "unresolved"
+        ev["why"] = "no downloadable artifact URL"
+        return ev
+    with tempfile.TemporaryDirectory(prefix="arch-migrate-") as tmp:
+        r = read_artifact(url, Path(tmp))
+        ev["read"] = r
+        if "error" in r and r.get("verdict", "unread") == "unread":
+            ev["decision"] = "unresolved"
+            ev["why"] = r["error"]
+            return ev
+        if entry["sha256"] and r.get("sha256") != entry["sha256"].lower():
+            ev["decision"] = "unresolved"
+            ev["why"] = f"the download's sha256 {r['sha256']} is not the recipe's"
+            return ev
+        v = r["verdict"]
+        if v == "none":
+            ev["decision"] = "independent"
+            ev["why"] = "no ELF file in the artifact"
+        elif v.startswith("programs:"):
+            machine = v.split(":", 1)[1]
+            ev["decision"] = machine
+            ev["why"] = f"its Linux programs are {machine} only"
+            if machine == "x86_64":
+                unknown = []
+                for cand in candidate_urls(url):
+                    found = exists(cand)
+                    if found is None:
+                        unknown.append(cand)
+                        continue
+                    if found:
+                        r2 = read_artifact(cand, Path(tmp))
+                        ev["probe"] = r2
+                        if "error" in r2:
+                            ev["decision"] = "unresolved"
+                            ev["why"] += f"; {Path(cand).name} exists and could not be read: {r2['error']}"
+                        elif r2.get("verdict") == "programs:aarch64":
+                            ev["decision"] = "x86_64+aarch64"
+                            ev["why"] += f"; upstream has an aarch64 artifact ({Path(cand).name})"
+                        else:
+                            ev["why"] += f"; {Path(cand).name} exists but reads {r2.get('verdict')}"
+                        break
+                else:
+                    if unknown:
+                        ev["decision"] = "unresolved"
+                        ev["why"] += "; upstream did not answer for " + ", ".join(Path(u).name for u in unknown)
+                    else:
+                        ev["why"] += "; no aarch64 artifact upstream (" + str(len(candidate_urls(url))) + " names tried)"
+        else:
+            ev["decision"] = "sweep"
+            ev["why"] = v.split(":", 1)[1] if ":" in v else v
+    return ev
+
+
+def cmd_evidence(args) -> int:
+    plan = json.loads(Path(args.plan).read_text())
+    if args.only:
+        plan = [p for p in plan if p["file"] in args.only or p["name"] in args.only]
+    if args.groups:
+        plan = [p for p in plan if p["group"] in args.groups]
+    if args.shard:
+        i, n = (int(x) for x in args.shard.split("/"))
+        urls = sorted({p["url"] for p in plan})
+        mine = {u for k, u in enumerate(urls) if k % n == i}
+        plan = [p for p in plan if p["url"] in mine]
+    done: dict[str, Any] = {}
+    out = Path(args.out)
+    if out.exists():
+        for e in json.loads(out.read_text()):
+            if e.get("decision") != "unresolved" or args.keep_unresolved:
+                done[f"{e['file']}@{e['version']}"] = e
+    prior: dict[str, Any] = {}
+    if args.reprobe:
+        # Entries step 1 decided as x86_64 only: ask upstream again.
+        for key, e in list(done.items()):
+            if e.get("decision") == "x86_64" and "names tried" in e.get("why", "") \
+                    and not e["why"].endswith("(0 names tried)"):
+                prior[key] = done.pop(key)
+    todo = [p for p in plan if f"{p['file']}@{p['version']}" not in done]
+    print(f"{len(todo)} entries to read ({len(done)} already in {out})", flush=True)
+
+    def save():
+        out.write_text(json.dumps(sorted(done.values(), key=lambda e: (e["file"], e["version"])), indent=1) + "\n")
+    with cf.ThreadPoolExecutor(max_workers=args.jobs) as pool:
+        futures = {pool.submit(evidence_for, p, prior.get(f"{p['file']}@{p['version']}")): p for p in todo}
+        for fut in cf.as_completed(futures):
+            p = futures[fut]
+            try:
+                ev = fut.result()
+            except Exception as exc:
+                ev = dict(p, decision="unresolved", why=f"{type(exc).__name__}: {exc}")
+            done[f"{p['file']}@{p['version']}"] = ev
+            print(f"{p['file']}@{p['version']}: {ev['decision']} -- {ev.get('why', '')}", flush=True)
+            save()
+    save()
+    return 0
+
+
+def cmd_read(args) -> int:
+    with tempfile.TemporaryDirectory(prefix="arch-migrate-") as tmp:
+        for url in args.urls:
+            print(json.dumps(read_artifact(url, Path(tmp)), indent=1))
+    return 0
+
+
+# ── apply: the recipe text ─────────────────────────────────────────────────
+
+def _skip_string(text: str, i: int) -> int:
+    q = text[i]
+    if q == "[":
+        m = re.match(r"\[(=*)\[", text[i:])
+        close = "]" + m.group(1) + "]"
+        j = text.find(close, i + len(m.group(0)))
+        return len(text) if j < 0 else j + len(close)
+    j = i + 1
+    while j < len(text):
+        if text[j] == "\\":
+            j += 2
+            continue
+        if text[j] == q:
+            return j + 1
+        j += 1
+    return j
+
+
+def _skip_comment(text: str, i: int) -> int:
+    m = re.match(r"--\[(=*)\[", text[i:])
+    if m:
+        close = "]" + m.group(1) + "]"
+        j = text.find(close, i)
+        return len(text) if j < 0 else j + len(close)
+    j = text.find("\n", i)
+    return len(text) if j < 0 else j
+
+
+def _match_brace(text: str, i: int) -> int:
+    """Index just past the `}` matching the `{` at i (strings and comments skipped)."""
+    depth = 0
+    j = i
+    while j < len(text):
+        c = text[j]
+        if c in "\"'" or (c == "[" and re.match(r"\[=*\[", text[j:])):
+            j = _skip_string(text, j)
+            continue
+        if text.startswith("--", j):
+            j = _skip_comment(text, j)
+            continue
+        if c == "{":
+            depth += 1
+        elif c == "}":
+            depth -= 1
+            if depth == 0:
+                return j + 1
+        j += 1
+    raise ValueError("unbalanced braces")
+
+
+def _fields(text: str, start: int, end: int):
+    """(key, key_start, value_start, value_end) of each `key = value` at depth 1 of a table body."""
+    j = start
+    out = []
+    while j < end:
+        c = text[j]
+        if text.startswith("--", j):
+            j = _skip_comment(text, j)
+            continue
+        m = re.compile(r'\[\s*"([^"]+)"\s*\]\s*=\s*|([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(?!=)').match(text, j)
+        if m and (j == start or not (text[j - 1].isalnum() or text[j - 1] == "_")):
+            key = m.group(1) or m.group(2)
+            vs = m.end()
+            k = vs
+            depth = 0
+            while k < end:
+                ch = text[k]
+                if ch in "\"'" or (ch == "[" and re.match(r"\[=*\[", text[k:])):
+                    k = _skip_string(text, k)
+                    continue
+                if text.startswith("--", k):
+                    if depth == 0:
+                        break
+                    k = _skip_comment(text, k)
+                    continue
+                if ch in "{(":
+                    depth += 1
+                elif ch in "})":
+                    if depth == 0:
+                        break
+                    depth -= 1
+                elif ch in ",;" and depth == 0:
+                    break
+                k += 1
+            ve = k
+            while ve > vs and text[ve - 1] in " \t\r\n":
+                ve -= 1
+            out.append((key, j, vs, ve))
+            j = k + 1
+            continue
+        if c in "\"'":
+            j = _skip_string(text, j)
+            continue
+        if c == "{":
+            j = _match_brace(text, j)
+            continue
+        j += 1
+    return out
+
+
+def locate_entry(text: str, version: str) -> tuple[int, int] | None:
+    """(start, end) of the value of xpm.linux[version] in the recipe text."""
+    m = re.search(r"\bxpm\s*=\s*\{", text)
+    if not m:
+        return None
+    xs = m.end() - 1
+    xe = _match_brace(text, xs)
+    for key, _ks, vs, ve in _fields(text, xs + 1, xe - 1):
+        if key == "linux" and text[vs] == "{":
+            for k2, _k2s, v2s, v2e in _fields(text, vs + 1, ve - 1):
+                if k2 == version:
+                    return v2s, v2e
+    return None
+
+
+def _indent_of(text: str, pos: int) -> str:
+    line_start = text.rfind("\n", 0, pos) + 1
+    return re.match(r"[ \t]*", text[line_start:]).group(0)
+
+
+def sha_table(hashes: dict[str, str], indent: str | None = None) -> str:
+    """`{ x86_64 = "<h>" }`; one line per architecture when there are several
+    and `indent` (that of the `sha256 =` line) is given."""
+    pairs = [(a, hashes[a]) for a in xa.order_archs(hashes)]
+    if len(pairs) > 1 and indent is not None:
+        return "{\n" + "".join(f'{indent}    {a} = "{h}",\n' for a, h in pairs) + indent + "}"
+    return "{ " + ", ".join(f'{a} = "{h}"' for a, h in pairs) + " }"
+
+
+def rewrite_entry(text: str, version: str, hashes: dict[str, str] | None = None,
+                  per_arch: dict[str, dict[str, Any]] | None = None, bump: bool = False) -> str:
+    """The text with xpm.linux[version] naming its architectures.
+
+    `hashes`: arch -> sha256 of the one artifact (the entry keeps its URL).
+    `per_arch`: arch -> {"url", "sha256"}: an artifact for each (the entry's
+    URL and digest move under each architecture). `bump`: raise `revision`.
+    """
+    loc = locate_entry(text, version)
+    if loc is None:
+        raise ValueError(f"xpm.linux[\"{version}\"] not found in the text")
+    vs, ve = loc
+    value = text[vs:ve]
+    ind = _indent_of(text, vs)
+    inner = ind + "    "
+    if value.startswith('"'):                         # ["v"] = "XLINGS_RES"
+        new = "{\n" + f'{inner}url = {value},\n{inner}sha256 = {sha_table(hashes, inner)},\n' + ind + "}"
+        return text[:vs] + new + text[ve:]
+    if not value.startswith("{"):
+        raise ValueError(f"xpm.linux[\"{version}\"] is not a table literal")
+    fields = _fields(text, vs + 1, ve - 1)
+    keys = {k: (ks, fvs, fve) for k, ks, fvs, fve in fields}
+    if per_arch:
+        drop = [k for k in ("url", "sha256") if k in keys]
+        body = value
+        # Remove url and sha256 (with their trailing comma), then add the per-arch map.
+        for k in sorted(drop, key=lambda k: -keys[k][0]):
+            ks, _fvs, fve = keys[k]
+            rel_s, rel_e = ks - vs, fve - vs
+            tail = re.match(r"\s*,?[ \t]*(--[^\n]*)?", body[rel_e:])
+            rel_e += tail.end()
+            line_s = body.rfind("\n", 0, rel_s) + 1
+            if body[line_s:rel_s].strip() == "" and rel_e < len(body) and body[rel_e] == "\n":
+                rel_s, rel_e = line_s, rel_e + 1
+            body = body[:rel_s] + body[rel_e:]
+        lines = []
+        for arch in xa.order_archs(per_arch):
+            r = per_arch[arch]
+            if isinstance(r["url"], dict):
+                # The entry's mirrors, each for this architecture.
+                url = "{\n" + "".join(f'{inner}        {region} = "{u}",\n'
+                                       for region, u in sorted(r["url"].items(), key=lambda kv: kv[0] != "GLOBAL")) \
+                    + f"{inner}    }}"
+            else:
+                url = f'"{r["url"]}"'
+            lines.append(f'{inner}{arch} = {{\n{inner}    url = {url},\n'
+                         f'{inner}    sha256 = "{r["sha256"]}",\n{inner}}},')
+        close = body.rstrip()
+        assert close.endswith("}")
+        head = close[:-1].rstrip()
+        if head == "{":
+            body = "{\n" + "\n".join(lines) + "\n" + ind + "}"
+        else:
+            if not head.endswith((",", "{")):
+                head += ","
+            body = head + "\n" + "\n".join(lines) + "\n" + ind + "}"
+        if bump:
+            body = _bump(body, inner)
+        return text[:vs] + body + text[ve:]
+    if "sha256" in keys:
+        ks, fvs, fve = keys["sha256"]
+        multiline = "\n" in value
+        new_text = text[:fvs] + sha_table(hashes, _indent_of(text, ks) if multiline else None) + text[fve:]
+    else:
+        _ks, fvs, fve = keys["url"]
+        nl = "\n" in value
+        sep = f",\n{inner}" if nl else ", "
+        new_text = text[:fve] + sep + "sha256 = " + sha_table(hashes, inner if nl else None) + text[fve:]
+    if bump:
+        loc = locate_entry(new_text, version)
+        body = _bump(new_text[loc[0]:loc[1]], inner)
+        new_text = new_text[:loc[0]] + body + new_text[loc[1]:]
+    return new_text
+
+
+def _bump(body: str, inner: str) -> str:
+    m = re.search(r"\brevision\s*=\s*(\d+)", body)
+    if m:
+        return body[:m.start(1)] + str(int(m.group(1)) + 1) + body[m.end(1):]
+    head = body.rstrip()[:-1].rstrip()
+    ind = inner[:-4]
+    if "\n" in body:
+        sep = "" if head.endswith((",", "{")) else ","
+        return head + sep + f"\n{inner}revision = 1,\n{ind}}}"
+    return head + ", revision = 1 }"
+
+
+def _swap_between(a: str, b: str) -> tuple[str, str] | None:
+    """The architecture-word swap that turns URL a into URL b."""
+    for x, y in SWAPS:
+        if a.replace(x, y) == b:
+            return x, y
+    return None
+
+
+def _field(text: str, start: int, end: int, key: str):
+    for k, ks, vs, ve in _fields(text, start, end):
+        if k == key:
+            return ks, vs, ve
+    return None
+
+
+def fix_autoupdate(text: str, swap: tuple[str, str]) -> tuple[str, str]:
+    """The text with each autoupdate target's Linux URL written per architecture.
+
+    K4 (design §5.6): the updater writes a new version in the form of the
+    platform's entries; once they carry an artifact per architecture, so
+    does the declaration (the aarch64 URL is the x86_64 one with the same
+    word swapped as upstream's aarch64 artifact). Returns (text, what was
+    done or why not).
+    """
+    m = re.search(r"\bautoupdate\s*=\s*\{", text)
+    if not m:
+        return text, "no autoupdate"
+    a_s = m.end() - 1
+    a_e = _match_brace(text, a_s)
+    res = _field(text, a_s + 1, a_e - 1, "resources")
+    if not res or text[res[1]] != "{":
+        return text, "autoupdate.resources is not a table literal"
+    edits = []
+    for region, _rs, rvs, rve in _fields(text, res[1] + 1, res[2] - 1):
+        if text[rvs] != "{":
+            continue
+        url = _field(text, rvs + 1, rve - 1, "url")
+        if not url or text[url[1]] != "{":
+            return text, f"autoupdate {region}.url is not a per-platform table"
+        linux = _field(text, url[1] + 1, url[2] - 1, "linux")
+        if not linux:
+            continue
+        value = text[linux[1]:linux[2]]
+        if not value.startswith('"'):
+            return text, f"autoupdate {region}.url.linux is already a table"
+        template = value[1:-1]
+        x, y = swap
+        if x not in template:
+            return text, f"autoupdate {region}.url.linux has no `{x}` to swap"
+        ind = _indent_of(text, linux[0])
+        new = ("{\n" + f'{ind}    x86_64 = "{template}",\n'
+               + f'{ind}    aarch64 = "{template.replace(x, y)}",\n' + ind + "}")
+        edits.append((linux[1], linux[2], new))
+    if not edits:
+        return text, "no Linux URL in autoupdate"
+    for s, e, new in sorted(edits, reverse=True):
+        text = text[:s] + new + text[e:]
+    return text, f"autoupdate Linux URLs per architecture ({len(edits)} target(s))"
+
+
+def cmd_bump_flagged(args) -> int:
+    """Raise `revision` on each entry the revision gate reports as changed.
+
+    An entry that now gives aarch64 upstream's aarch64 artifact, where the
+    one artifact it had was given to every architecture the package listed,
+    changed what an aarch64 client installs: the gate asks for a higher
+    revision, and a client that installed x86_64 bytes on aarch64 is offered
+    the right ones (`floor` stays: x86_64 payloads remain current).
+    """
+    gate = ROOT / ".github/scripts/check-revision.sh"
+    run = subprocess.run(["bash", str(gate)], cwd=ROOT, capture_output=True, text=True,
+                         env={**__import__("os").environ, "REVISION_BASE_REF": args.base})
+    flagged = re.findall(r'::error file=([^:]+)::\S+ xpm\.(\w+)\["([^"]+)"\]: the resource of a published '
+                         r'version changed while its revision stayed', run.stdout)
+    for file, plat, version in flagged:
+        if plat != "linux":
+            print(f"not bumped (not Linux): {file} {plat} {version}")
+            continue
+        path = ROOT / file
+        text = path.read_text(encoding="utf-8")
+        vs, ve = locate_entry(text, version)
+        inner = _indent_of(text, vs) + "    "
+        path.write_text(text[:vs] + _bump(text[vs:ve], inner) + text[ve:], encoding="utf-8")
+        print(f"revision raised: {file} xpm.linux[\"{version}\"]")
+    return 0
+
+
+def plan_rewrite(ev: dict[str, Any], installs: dict[str, Any]) -> dict[str, Any] | None:
+    """What to write for one evidence row: {"hashes": ...} or {"per_arch": ...}, or None."""
+    d = ev.get("decision", "")
+    key = f"{ev['file']}@{ev['version']}"
+    if d == "sweep" and key in installs:
+        res = installs[key]
+        passed = [a for a in xa.HOST_ARCHS["linux"] if res.get(a) == "pass"]
+        d = "independent" if len(passed) == 2 else passed[0] if len(passed) == 1 else "unresolved"
+    h = ev.get("sha256") or (ev.get("read") or {}).get("sha256")
+    if d == "independent":
+        return {"hashes": {a: h for a in xa.HOST_ARCHS["linux"]}}
+    if d in ("x86_64", "aarch64"):
+        return {"hashes": {d: h}}
+    if d == "x86_64+aarch64":
+        raw = ev.get("raw_url")
+        if isinstance(raw, dict):
+            swap = _swap_between(ev["read"]["url"], ev["probe"]["url"])
+            if swap is None:
+                return None
+            return {"per_arch": {"x86_64": {"url": raw, "sha256": h},
+                                 "aarch64": {"url": {k: v.replace(*swap) for k, v in raw.items()},
+                                             "sha256": ev["probe"]["sha256"]}}}
+        return {"per_arch": {"x86_64": {"url": ev["read"]["url"], "sha256": h},
+                             "aarch64": {"url": ev["probe"]["url"], "sha256": ev["probe"]["sha256"]}}}
+    if d.startswith("res:"):
+        return {"hashes": {a: r["sha256"] for a, r in ev["res"].items() if r.get("sha256")}}
+    return None
+
+
+DECISIONS = Path(__file__).resolve().parent / "arch-decisions.json"
+
+
+def with_decisions(evidence: list[dict[str, Any]], path: str | None) -> list[dict[str, Any]]:
+    """The evidence with the decisions people made (tools/arch-decisions.json):
+    `"<file>@<version>"` or `"<file>"` -> {"decision", "why"}. Those are the
+    cases §5.6 leaves to a person: the bytes say one machine's programs and
+    the package is target data (a Linux sysroot), or a host toolchain beside
+    its targets' binaries (android-ndk)."""
+    source = Path(path) if path else DECISIONS
+    if not source.exists():
+        return evidence
+    decided = json.loads(source.read_text())
+    out = []
+    for ev in evidence:
+        d = decided.get(f"{ev['file']}@{ev['version']}") or decided.get(ev["file"])
+        if d:
+            ev = dict(ev, decision=d["decision"], why=f"decided: {d['why']} (bytes: {ev.get('decision')})")
+        out.append(ev)
+    return out
+
+
+def cmd_apply(args) -> int:
+    evidence = json.loads(Path(args.evidence).read_text())
+    installs = json.loads(Path(args.installs).read_text()) if args.installs else {}
+    evidence = with_decisions(evidence, args.decisions)
+    if args.only:
+        evidence = [e for e in evidence if e["file"] in args.only or e.get("name") in args.only]
+    by_file: dict[str, list] = {}
+    for ev in evidence:
+        by_file.setdefault(ev["file"], []).append(ev)
+    changed = 0
+    left = []
+    for file, evs in sorted(by_file.items()):
+        path = ROOT / file
+        text = path.read_text(encoding="utf-8")
+        for ev in evs:
+            rw = plan_rewrite(ev, installs)
+            if rw is None:
+                left.append((ev, ev.get("why", ev.get("decision"))))
+                continue
+            bump = bool(args.bump and f"{file}@{ev['version']}" in args.bump)
+            try:
+                text = rewrite_entry(text, ev["version"], hashes=rw.get("hashes"), per_arch=rw.get("per_arch"),
+                                     bump=bump or bool(rw.get("per_arch") and args.bump_per_arch))
+            except ValueError as exc:
+                left.append((ev, f"{ev.get('decision')}, written by hand: {exc}"))
+        swaps = {_swap_between(ev["read"]["url"], ev["probe"]["url"]) for ev in evs
+                 if plan_rewrite(ev, installs) and "per_arch" in plan_rewrite(ev, installs)}
+        if len(swaps) == 1 and None not in swaps:
+            text, note = fix_autoupdate(text, swaps.pop())
+            if note != "no autoupdate":
+                print(f"{file}: {note}")
+        elif swaps:
+            print(f"{file}: autoupdate left as is (swaps {swaps}): write it per architecture by hand")
+        if text != path.read_text(encoding="utf-8"):
+            path.write_text(text, encoding="utf-8")
+            changed += 1
+    print(f"{changed} recipes rewritten; {len(left)} entries left:")
+    for ev, why in left:
+        print(f"  {ev['file']}@{ev['version']}: {ev.get('decision')} -- {why}")
+    return 0
+
+
+# ── the evidence table ─────────────────────────────────────────────────────
+
+def _elf_cell(r: dict[str, Any] | None) -> str:
+    if not r:
+        return ""
+    if r.get("error") and r.get("verdict") == "unread":
+        return "unread: " + r["error"][:80]
+    by = r.get("elf", {}).get("by", {})
+    if not by:
+        return f"no ELF ({r.get('format')})"
+    parts = []
+    for key, slot in sorted(by.items(), key=lambda kv: -kv[1]["count"]):
+        sp = f", {slot['static_pie']} static-pie" if slot.get("static_pie") else ""
+        parts.append(f"{slot['count']} {key}{sp}")
+    return "; ".join(parts[:4]) + (" ..." if len(parts) > 4 else "")
+
+
+def cmd_table(args) -> int:
+    """The evidence table, one section per outcome."""
+    evidence = with_decisions(json.loads(Path(args.evidence).read_text()), None)
+    sections = [
+        ("Decided by the bytes", lambda e: e["decision"] in ("independent", "x86_64", "aarch64", "x86_64+aarch64")
+         and not e.get("why", "").startswith("decided:")),
+        ("Decided by a person (tools/arch-decisions.json)", lambda e: e.get("why", "").startswith("decided:")),
+        ("XLINGS_RES: the assets xlings-res publishes", lambda e: e["decision"].startswith("res:")),
+        ("Left to the install on each architecture (step 2)", lambda e: e["decision"] == "sweep"),
+        ("Unresolved", lambda e: e["decision"] == "unresolved"),
+    ]
+    out = []
+    for title, pick in sections:
+        rows = [e for e in sorted(evidence, key=lambda e: (e["file"], e["version"]))
+                if pick(e) and (args.all or e["group"] != "mechanical")]
+        if not rows:
+            continue
+        out += [f"### {title} ({len(rows)})", "",
+                "| recipe | version | what the bytes hold | decision | why | other architecture |",
+                "|---|---|---|---|---|---|"]
+        for ev in rows:
+            name = Path(ev["file"]).stem
+            if ev["group"] == "res":
+                cell = ", ".join(f"linux-{a}: `{r.get('sha256', '')[:12]}`" for a, r in sorted((ev.get("res") or {}).items()))
+                probe = ""
+            else:
+                cell = _elf_cell(ev.get("read"))
+                pr = ev.get("probe")
+                probe = f"`{Path(pr['url']).name}`: {_elf_cell(pr)}" if pr else ""
+            why = ev.get("why", "").replace("|", "/")
+            out.append(f"| `{name}` | {ev['version']} | {cell} | {ev.get('decision')} | {why} | {probe} |")
+        out.append("")
+    text = "\n".join(out)
+    if args.output:
+        Path(args.output).write_text(text, encoding="utf-8")
+    else:
+        sys.stdout.write(text)
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    sub = parser.add_subparsers(dest="command", required=True)
+    p = sub.add_parser("plan")
+    p.add_argument("--files", nargs="*")
+    p.add_argument("--json")
+    p.set_defaults(func=cmd_plan)
+    p = sub.add_parser("read")
+    p.add_argument("urls", nargs="+")
+    p.set_defaults(func=cmd_read)
+    p = sub.add_parser("evidence")
+    p.add_argument("--plan", required=True)
+    p.add_argument("--out", required=True)
+    p.add_argument("--only", nargs="*")
+    p.add_argument("--groups", nargs="*")
+    p.add_argument("--jobs", type=int, default=2)
+    p.add_argument("--keep-unresolved", action="store_true", help="do not retry the unresolved rows of --out")
+    p.add_argument("--reprobe", action="store_true", help="ask upstream again for the x86_64-only rows of --out")
+    p.add_argument("--shard", help="i/n: the i-th of n parts of the plan's URLs (0-based), for CI")
+    p.set_defaults(func=cmd_evidence)
+    p = sub.add_parser("apply")
+    p.add_argument("--evidence", required=True)
+    p.add_argument("--installs")
+    p.add_argument("--decisions", help="default: tools/arch-decisions.json")
+    p.add_argument("--only", nargs="*")
+    p.add_argument("--bump", nargs="*", help="file@version entries whose revision rises")
+    p.add_argument("--bump-per-arch", action="store_true",
+                   help="raise the revision of an entry that gains an artifact per architecture")
+    p.set_defaults(func=cmd_apply)
+    p = sub.add_parser("bump-flagged", help="raise the revision of the entries the revision gate reports")
+    p.add_argument("--base", default="origin/main")
+    p.set_defaults(func=cmd_bump_flagged)
+    p = sub.add_parser("table")
+    p.add_argument("--evidence", required=True)
+    p.add_argument("--output")
+    p.add_argument("--all", action="store_true")
+    p.set_defaults(func=cmd_table)
+    args = parser.parse_args()
+    return args.func(args)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

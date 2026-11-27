@@ -56,9 +56,10 @@
 #       [-- <extra configure/meson args>]
 #
 #   build-in-subos.sh --check-inputs <builddir>      # just the input check
+#   build-in-subos.sh --check-payload <payloaddir>   # just the payload check
 set -uo pipefail
 
-NAME= VERSION= URL= SYSTEM=auto DEPS= EXTRA=() CHECK_INPUTS=
+NAME= VERSION= URL= SYSTEM=auto DEPS= EXTRA=() CHECK_INPUTS= CHECK_PAYLOAD=
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --name)    NAME="$2"; shift 2 ;;
@@ -73,13 +74,17 @@ while [[ $# -gt 0 ]]; do
         # already sitting in $XLINGS_GFX_WORK/src. Being able to point it at
         # one of those is what makes its verdict evidence rather than a claim.
         --check-inputs) CHECK_INPUTS="$2"; NAME="${NAME:-inputs}"; shift 2 ;;
+        # The payload check alone, for a payload another script made
+        # (build-libllvm.sh): the same rules, one implementation.
+        --check-payload) CHECK_PAYLOAD="$2"; NAME="${NAME:-payload}"; shift 2 ;;
         --)        shift; EXTRA=("$@"); break ;;
         *) echo "unknown argument: $1" >&2; exit 2 ;;
     esac
 done
-[[ -n "$CHECK_INPUTS" || ( -n "$NAME" && -n "$VERSION" && -n "$URL" ) ]] || {
+[[ -n "$CHECK_INPUTS" || -n "$CHECK_PAYLOAD" || ( -n "$NAME" && -n "$VERSION" && -n "$URL" ) ]] || {
     echo "usage: $0 --name N --version V --url U [--system auto|autotools|meson|cmake] [--deps '...'] [-- args]" >&2
     echo "       $0 --check-inputs <builddir>" >&2
+    echo "       $0 --check-payload <payloaddir>" >&2
     exit 2
 }
 
@@ -291,12 +296,16 @@ check_build_inputs() {   # <builddir> → 0 clean, 1 host input, 2 no record rea
     # variables that carry compiler or linker arguments — which is why
     # `oldincludedir='/usr/include'`, an install default no build ever uses,
     # does not come through: it is lowercase and it is not a flags variable.
-    if [[ -f "$bd/config.log" ]]; then
-        awk '/^## Cache variables/{s=1} /^## confdefs.h/{s=0} s' "$bd/config.log" \
+    # libffi's configure builds in a directory named for the target
+    # (aarch64-unknown-linux-gnu/) and writes its record there; freetype's
+    # runs in builds/unix/.
+    for f in "$bd/config.log" "$bd"/*-linux-gnu/config.log "$bd/builds/unix/config.log"; do
+        [[ -f "$f" ]] || continue
+        awk '/^## Cache variables/{s=1} /^## confdefs.h/{s=0} s' "$f" \
             | grep -E '^[A-Za-z_][A-Za-z0-9_]*(CFLAGS|CPPFLAGS|CXXFLAGS|LDFLAGS|LIBS|INCLUDES)[A-Za-z0-9_]*=' \
             > "$tmpd/config-log"
-        used+=("$tmpd/config-log"); origin+=("$bd/config.log"); mode+=(flags)
-    fi
+        used+=("$tmpd/config-log"); origin+=("$f"); mode+=(flags); break
+    done
 
     if [[ ${#used[@]} -eq 0 ]]; then
         echo "[gfx-build:$NAME] INCONCLUSIVE: no configure record under $bd" >&2
@@ -358,6 +367,64 @@ check_build_inputs() {   # <builddir> → 0 clean, 1 host input, 2 no record rea
     return 0
 }
 
+is_elf() { [[ "$(head -c4 "$1" 2>/dev/null)" == $'\x7fELF' ]]; }
+
+# ── the check on the OUTPUT ─────────────────────────────────────────────
+# The inputs were checked above. This is the payload: what a host path in here
+# breaks is the NEXT machine, not this one.
+check_payload() {   # <payload dir>; fails on a host reference
+    local PAYLOAD="$1" f rp need
+    leaks=0
+    report_leak() { echo "    $*"; leaks=$((leaks+1)); }
+
+    log "checking for host leakage"
+    while IFS= read -r -d '' f; do
+        is_elf "$f" || continue
+        rp="$(patchelf --print-rpath "$f" 2>/dev/null || true)"
+        case "$rp" in
+            ''|'$ORIGIN'*) ;;
+            *) report_leak "RPATH names a path outside the payload: ${f#$PAYLOAD/} → $rp" ;;
+        esac
+    done < <(find "$PAYLOAD" -type f ! -type l -print0)
+
+    # DT_NEEDED that is a PATH rather than a soname. This is the check the header
+    # of this file records as a KNOWN GAP, and it is here now because it caught a
+    # real one: libsoup, linked against a sqlite payload with no DT_SONAME, shipped
+    #
+    #     DT_NEEDED  <subos>/usr/lib/libsqlite3.so
+    #
+    # The RPATH check above cannot see it -- the RPATH was fine -- and the .pc check
+    # cannot either, because nothing is written in a .pc. The soname pass above
+    # prevents the cause; this catches the effect, including any cause nobody has
+    # thought of yet.
+    while IFS= read -r -d '' f; do
+        is_elf "$f" || continue
+        while read -r need; do
+            case "$need" in
+                /*) report_leak "DT_NEEDED is an absolute path: ${f#$PAYLOAD/} -> $need" ;;
+            esac
+        done < <(readelf -d "$f" 2>/dev/null | sed -n 's/.*(NEEDED).*\[\(.*\)\]/\1/p')
+    done < <(find "$PAYLOAD" -type f ! -type l -print0)
+
+    # .pc / .la / *-config files carry absolute paths that later builds consume.
+    # A host prefix in one of these does not break anything now — it breaks the
+    # NEXT package, by pointing its configure at /usr. Nor may one name the
+    # home or the work tree the build ran in (a dependency's -I, a scratch dir).
+    while IFS= read -r -d '' f; do
+        if grep -qE "(^|[=\" ])/usr/(lib|include|share)/|($XHOME|$WORK)/" "$f" 2>/dev/null; then
+            # Not `| while`: a pipeline's loop counts in a subshell, and the
+            # count this check fails on stayed 0.
+            while read -r l; do report_leak "$l"; done < <(
+                grep -nE "(^|[=\" ])/usr/(lib|include|share)/|($XHOME|$WORK)/" "$f" | head -2 | sed "s|^|${f#$PAYLOAD/}: |")
+        fi
+    done < <(find "$PAYLOAD" \( -name '*.pc' -o -name '*.la' -o -name '*-config' \) -type f -print0)
+
+    if [[ $leaks -gt 0 ]]; then
+        fail "$leaks host reference(s) in the payload — this would work here and fail elsewhere"
+    fi
+    log "  no host references"
+}
+
 # --check-inputs: just that, against a tree already on disk. Before the subos
 # and fetch preconditions below, because none of them apply.
 if [[ -n "$CHECK_INPUTS" ]]; then
@@ -365,10 +432,18 @@ if [[ -n "$CHECK_INPUTS" ]]; then
     check_build_inputs "$CHECK_INPUTS"
     exit $?
 fi
+if [[ -n "$CHECK_PAYLOAD" ]]; then
+    [[ -d "$CHECK_PAYLOAD" ]] || skip "no such payload directory: $CHECK_PAYLOAD"
+    check_payload "$CHECK_PAYLOAD"
+    exit 0
+fi
 
 # A missing subos is not a broken package — it is this machine not being set up
 # to answer the question, which is exit 3.
 [[ -d "$SUBOS" ]] || skip "subos '$SUBOS_NAME' not found — xlings subos new $SUBOS_NAME"
+# shellcheck source=arch.sh
+. "$HERE/arch.sh"
+ARCH="$(subos_arch "$SUBOS")" || skip "cannot tell which architecture subos '$SUBOS_NAME' is for"
 # And patchelf, before anything relies on it. Every use of it below is
 # `patchelf … 2>/dev/null || true`, which is right for a file it cannot rewrite
 # and disastrous for a machine that does not have it: the payload check reads
@@ -399,6 +474,14 @@ TARBALL="$SRC/${NAME}-${VERSION}-$(basename "$URL")"
     log "fetching $(basename "$URL")"
     curl -fsSL --retry 3 -o "$TARBALL" "$URL" || fail "download failed"
 }
+# Checked against a recorded digest when the caller keeps a list of them
+# (res-build: tools/res/inputs.txt, `<name> <version> <sha256>`).
+if [[ -n "${XLINGS_GFX_INPUTS:-}" ]]; then
+    want="$(awk -v n="$NAME" -v v="$VERSION" '$1 == n && $2 == v { print $3 }' "$XLINGS_GFX_INPUTS")"
+    [[ -n "$want" ]] || fail "no digest for $NAME $VERSION in $XLINGS_GFX_INPUTS"
+    echo "$want  $TARBALL" | sha256sum -c - >/dev/null 2>&1 \
+        || fail "$(basename "$URL") is not the source $XLINGS_GFX_INPUTS records (sha256 $want)"
+fi
 BUILDDIR="$SRC/$NAME-$VERSION"
 rm -rf "$BUILDDIR"; mkdir -p "$BUILDDIR"
 tar xf "$TARBALL" -C "$BUILDDIR" --strip-components=1 || fail "extract failed"
@@ -467,7 +550,7 @@ PREFIX=/usr
 # --libdir still lands in the distro multiarch path and its .pc would then be
 # invisible to the next package — which surfaces as "dependency not found" for
 # something that was just built successfully.
-export PKG_CONFIG_LIBDIR="$SUBOS/usr/lib/pkgconfig:$SUBOS/usr/share/pkgconfig:$SUBOS/usr/lib/x86_64-linux-gnu/pkgconfig"
+export PKG_CONFIG_LIBDIR="$SUBOS/usr/lib/pkgconfig:$SUBOS/usr/share/pkgconfig:$SUBOS/usr/lib/$ARCH-linux-gnu/pkgconfig"
 export PKG_CONFIG_PATH="$PKG_CONFIG_LIBDIR"
 export CPPFLAGS="-I$SUBOS/usr/include"
 # -rpath-link, not just -L: `-L` resolves what this link line names directly,
@@ -813,6 +896,10 @@ __resolve_meson() {
         [[ -f "$tb" ]] || curl -fsSL --retry 3 -o "$tb" \
             "https://github.com/mesonbuild/meson/releases/download/$MESON_PIN/meson-$MESON_PIN.tar.gz" \
             || fail "fetching pinned meson $MESON_PIN"
+        if [[ -n "${XLINGS_GFX_INPUTS:-}" ]]; then
+            echo "$(awk -v v="$MESON_PIN" '$1 == "meson" && $2 == v { print $3 }' "$XLINGS_GFX_INPUTS")  $tb" \
+                | sha256sum -c - >/dev/null 2>&1 || fail "meson $MESON_PIN is not the tarball $XLINGS_GFX_INPUTS records"
+        fi
         tar -C "$WORK/tools" -xzf "$tb" || fail "extracting meson $MESON_PIN"
     fi
     [[ -f "$root/meson.py" ]] || fail "meson $MESON_PIN tarball has no meson.py"
@@ -891,10 +978,10 @@ import yaml
 
     if [[ ! -d "$vendor/mako" || ! -d "$vendor/packaging" || ! -d "$vendor/yaml" ]]; then
         log "python: vendoring mako $MAKO_PIN + packaging $PACKAGING_PIN + PyYAML $PYYAML_PIN into $vendor"
-        "$py" -m pip install --quiet --disable-pip-version-check \
-              --target "$vendor" "Mako==$MAKO_PIN" "packaging==$PACKAGING_PIN" "PyYAML==$PYYAML_PIN" \
-              >"$WORK/pyvendor.log" 2>&1 \
-            || { tail -20 "$WORK/pyvendor.log" >&2; fail "vendoring python modules (see $WORK/pyvendor.log)"; }
+        local pins=("Mako==$MAKO_PIN" "packaging==$PACKAGING_PIN" "PyYAML==$PYYAML_PIN")
+        if ! "$py" -m pip install --quiet --disable-pip-version-check --target "$vendor" "${pins[@]}" >"$WORK/pyvendor.log" 2>&1; then  # host-dep-ok: the SubOS's python, pinned modules into the build's work tree
+            tail -20 "$WORK/pyvendor.log" >&2; fail "vendoring python modules (see $WORK/pyvendor.log)"
+        fi
     fi
     export PYTHONPATH="${vendor}${PYTHONPATH:+:$PYTHONPATH}"
 
@@ -956,9 +1043,12 @@ case "$SYSTEM" in
         || { tail -30 "$WORK/$NAME-build.log"; fail "meson install"; }
     ;;
   cmake)
+    # The subos's cmake, else the one on PATH: res-build's pinned upstream
+    # release where the index has no cmake for this architecture yet.
+    CMAKE="$SUBOS/bin/cmake"; [[ -x "$CMAKE" ]] || CMAKE="$(command -v cmake)" || skip "no cmake"
     # Out-of-tree, and CMAKE_INSTALL_PREFIX=/usr with DESTDIR so the staged
     # layout matches what the other two systems produce.
-    "$SUBOS/bin/cmake" -S . -B _b -G Ninja \
+    "$CMAKE" -S . -B _b -G Ninja \
         -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_INSTALL_PREFIX="$PREFIX" \
         -DCMAKE_INSTALL_LIBDIR=lib \
@@ -968,7 +1058,7 @@ case "$SYSTEM" in
         || { tail -30 "$WORK/$NAME-configure.log"; fail "cmake configure"; }
     "${BUILD_ENV[@]}" "$SUBOS/bin/ninja" -C _b > "$WORK/$NAME-build.log" 2>&1 \
         || { tail -30 "$WORK/$NAME-build.log"; fail "ninja"; }
-    DESTDIR="$STAGE" "$SUBOS/bin/cmake" --install _b >> "$WORK/$NAME-build.log" 2>&1 \
+    DESTDIR="$STAGE" "$CMAKE" --install _b >> "$WORK/$NAME-build.log" 2>&1 \
         || { tail -30 "$WORK/$NAME-build.log"; fail "cmake install"; }
     ;;
   *) fail "unknown build system '$SYSTEM'" ;;
@@ -1003,6 +1093,14 @@ fi
 # also consuming the .pc that says the same thing correctly.
 find "$PAYLOAD" -name '*.la' -type f -delete
 
+# A .pc keeps the flags configure was given for its dependencies: libxshmfence
+# writes xproto's `-I<subos>/usr/include` into its Cflags. The dependency's own
+# .pc says that to a consumer; this copy of it names the machine the build ran
+# on. Such a flag is dropped, and the check below fails on any that is left.
+while IFS= read -r -d '' pc; do
+    sed -i -E "s#[[:space:]]-[IL]($XHOME|$WORK)/[^[:space:]]*##g" "$pc"
+done < <(find "$PAYLOAD" -name '*.pc' -type f -print0)
+
 # $ORIGIN so the payload's own libraries resolve each other with no absolute
 # path anywhere. xlings's elfpatch appends each dependency's libdir on top.
 #
@@ -1011,7 +1109,6 @@ find "$PAYLOAD" -name '*.la' -type f -delete
 # linked with the build-time rpath above. Matching on the name missed them
 # entirely — both here and in the leak check below — so a subos path could ship
 # in a binary while every library came out clean.
-is_elf() { [[ "$(head -c4 "$1" 2>/dev/null)" == $'\x7fELF' ]]; }
 while IFS= read -r -d '' f; do
     is_elf "$f" || continue
     case "${f#"$PAYLOAD"/}" in
@@ -1057,55 +1154,7 @@ while IFS= read -r -d '' real; do
         || fail "could not stamp a soname on $base"
 done < <(find "$PAYLOAD" -name '*.so.*' -type f ! -type l -print0)
 
-# ── the check on the OUTPUT ─────────────────────────────────────────────
-# The inputs were checked above. This is the payload: what a host path in here
-# breaks is the NEXT machine, not this one.
-leaks=0
-report_leak() { echo "    $*"; leaks=$((leaks+1)); }
-
-log "checking for host leakage"
-while IFS= read -r -d '' f; do
-    is_elf "$f" || continue
-    rp="$(patchelf --print-rpath "$f" 2>/dev/null || true)"
-    case "$rp" in
-        ''|'$ORIGIN'*) ;;
-        *) report_leak "RPATH names a path outside the payload: ${f#$PAYLOAD/} → $rp" ;;
-    esac
-done < <(find "$PAYLOAD" -type f ! -type l -print0)
-
-# DT_NEEDED that is a PATH rather than a soname. This is the check the header
-# of this file records as a KNOWN GAP, and it is here now because it caught a
-# real one: libsoup, linked against a sqlite payload with no DT_SONAME, shipped
-#
-#     DT_NEEDED  <subos>/usr/lib/libsqlite3.so
-#
-# The RPATH check above cannot see it -- the RPATH was fine -- and the .pc check
-# cannot either, because nothing is written in a .pc. The soname pass above
-# prevents the cause; this catches the effect, including any cause nobody has
-# thought of yet.
-while IFS= read -r -d '' f; do
-    is_elf "$f" || continue
-    while read -r need; do
-        case "$need" in
-            /*) report_leak "DT_NEEDED is an absolute path: ${f#$PAYLOAD/} -> $need" ;;
-        esac
-    done < <(readelf -d "$f" 2>/dev/null | sed -n 's/.*(NEEDED).*\[\(.*\)\]/\1/p')
-done < <(find "$PAYLOAD" -type f ! -type l -print0)
-
-# .pc / .la / *-config files carry absolute paths that later builds consume.
-# A host prefix in one of these does not break anything now — it breaks the
-# NEXT package, by pointing its configure at /usr.
-while IFS= read -r -d '' f; do
-    if grep -qE '(^|[=" ])/usr/(lib|include|share)/' "$f" 2>/dev/null; then
-        grep -nE '(^|[=" ])/usr/(lib|include|share)/' "$f" | head -2 \
-          | sed "s|^|    ${f#$PAYLOAD/}: |" | while read -r l; do report_leak "$l"; done
-    fi
-done < <(find "$PAYLOAD" \( -name '*.pc' -o -name '*.la' -o -name '*-config' \) -type f -print0)
-
-if [[ $leaks -gt 0 ]]; then
-    fail "$leaks host reference(s) in the payload — this would work here and fail elsewhere"
-fi
-log "  no host references"
+check_payload "$PAYLOAD"
 
 # ── strip ───────────────────────────────────────────────────────────────
 # AFTER the leak check, never before, and that ordering is the whole point.
@@ -1140,7 +1189,7 @@ if [[ "${XLINGS_GFX_NO_STRIP:-0}" != "1" ]]; then
 fi
 
 # ── package ─────────────────────────────────────────────────────────────
-OUT="$WORK/dist/$NAME-$VERSION-linux-x86_64.tar.gz"
+OUT="$WORK/dist/$NAME-$VERSION-linux-$ARCH.tar.gz"
 mkdir -p "$(dirname "$OUT")"
 
 # Reproducible: same inputs -> same bytes. contributing.md §5.2.3 asks for it

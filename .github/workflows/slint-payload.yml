@@ -5,7 +5,7 @@ name: slint payload
 # .agents/tools/slint/build-slint.sh, which also checks the run-time closure,
 # and keeps the archives as artifacts. Publication to xlings-res (GitHub and
 # GitCode, byte-identical) is a maintainer step after admission, like the other
-# payloads (.agents/tools/graphics/publish.sh); the recipe pkgs/s/slint.lua
+# payloads (tools/res/graphics/publish.sh); the recipe pkgs/s/slint.lua
 # names the published bytes.
 #
 # Plan: mcpp-index/.agents/docs/2026-11-20-add-slint-mwrap-plan.md.

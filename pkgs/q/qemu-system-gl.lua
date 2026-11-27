@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://www.qemu.org/",
 
     name = "qemu-system-gl",
@@ -60,6 +60,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             deps = {
                 "xim:glibc@>=2.44",
                 "xim:gcc-runtime",
@@ -84,7 +85,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/qemu-system-gl/releases/download/9.2.4-r1/qemu-system-gl-9.2.4-r1-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/qemu-system-gl/releases/download/9.2.4-r1/qemu-system-gl-9.2.4-r1-linux-x86_64.tar.gz",
                 },
-                sha256 = "efcf2d061d6c84d82eeb4295ef02d48a999cb74b64cee8d81a3e94d48080769c",
+                sha256 = { x86_64 = "efcf2d061d6c84d82eeb4295ef02d48a999cb74b64cee8d81a3e94d48080769c" },
             },
         },
     },
@@ -93,15 +94,12 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.elfpatch")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 function install()
     local dir = pkginfo.install_dir()
     -- The archive's root is its own name: qemu-system-gl-<version>-linux-x86_64/.
-    local payload = pkginfo.install_file():replace(".tar.gz", "")
-    if os.isdir(payload) then
-        os.tryrm(dir)
-        os.mv(payload, dir)
-    end
     -- glibc's loader, the deps' libraries and its own virglrenderer.
     elfpatch.set({
         interp_from = "linux-x86_64-glibc",
@@ -109,8 +107,8 @@ function install()
     })
     for _, f in ipairs({"bin/qemu-system-x86_64", "lib/libvirglrenderer.so.1",
                         "share/qemu/bios-256k.bin", "share/qemu/edk2-x86_64-code.fd"}) do
-        if not os.isfile(path.join(dir, f)) then
-            raise("qemu-system-gl payload is missing " .. f)
+        if not fs.is_file(path.join(dir, f)) then
+            error("qemu-system-gl payload is missing " .. f)
         end
     end
     return true

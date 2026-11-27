@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     homepage = "https://firefox-source-docs.mozilla.org/security/nss/",
     name = "nss",
@@ -45,6 +45,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- DT_NEEDED outside the payload (readelf -d): libnspr4, libplc4, libplds4, libsqlite3.
             deps = { "xim:glibc", "xim:nspr", "xim:sqlite" },
             exports = {
@@ -84,16 +85,15 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mv(package.name .. "-" .. pkginfo.version(), dir)
     selfcontain.seal(dir)
     sysroot.relocate_pkgconfig(dir, "lib/pkgconfig")
-    return os.isfile(dir .. "/lib/libnss3.so")
+    return fs.is_file(dir .. "/lib/libnss3.so")
 end
 
 function config()

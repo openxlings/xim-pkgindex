@@ -5,7 +5,7 @@
 -- owner -- with this machine's own network. It does not hide who or where the
 -- machine is: for that, agent-private.
 package = {
-    spec = "2",
+    spec = "3",
     name = "agent-confined",
     description = "Agent isolation from the host, with this machine's network (not private)",
     type = "subos-policy",

@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     homepage = "https://www.x.org",
     name = "libXi",
@@ -38,6 +38,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             deps = { "xim:libXext@>=1.3", "xim:libXfixes@>=6.0", "xim:glibc", "xim:libX11" },
             -- elfpatch reads this from each dependency and writes the consumer's
             -- RPATH, which is what makes the stack resolve without anyone
@@ -51,7 +52,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libXi/releases/download/1.8.2/libXi-1.8.2-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libXi/releases/download/1.8.2/libXi-1.8.2-linux-x86_64.tar.gz",
                 },
-                sha256 = "3f297ef4c3519797570f3420c4ce08c0b085efa80d6c04c97eea586990c19ee5",
+                sha256 = { x86_64 = "3f297ef4c3519797570f3420c4ce08c0b085efa80d6c04c97eea586990c19ee5" },
             },
         },
     },
@@ -60,13 +61,12 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mv("libXi-1.8.2", dir)
 
     -- Stamp this payload's own dependency closure onto its libraries, so
     -- they resolve from our payloads and not from the host's ld.so.cache.

@@ -4,7 +4,7 @@
 -- shim names in TERMINFO_DIRS (an environment may have no terminfo of its
 -- own). xlings-res/tmux on GitHub and GitCode (tools/res/publish.py).
 package = {
-    spec = "1",
+    spec = "3",
 
     name = "tmux",
     description = "tmux: a terminal multiplexer -- sessions that outlive the terminal, windows and panes",
@@ -52,6 +52,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             ["latest"] = { ref = "3.8" },
             ["3.8"] = {
                 url = "XLINGS_RES",
@@ -66,15 +67,12 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 function install()
     local dir = pkginfo.install_dir()
-    local payload = pkginfo.install_file():replace(".tar.gz", "")
-    if os.isdir(payload) then
-        os.tryrm(dir)
-        os.mv(payload, dir)
-    end
-    return os.isfile(path.join(dir, "bin", "tmux"))
+    return fs.is_file(path.join(dir, "bin", "tmux"))
 end
 
 function config()

@@ -11,7 +11,7 @@
 -- Data, not code: what xlings enforces. The proxy is the instance's
 -- (`luban new <n> agent-workspace --proxy ...`, `luban config <n> proxy ...`).
 package = {
-    spec = "2",
+    spec = "3",
     name = "agent-private",
     description = "Fail-closed agent isolation: the proxy as the only network, a persona of its own",
     type = "subos-policy",

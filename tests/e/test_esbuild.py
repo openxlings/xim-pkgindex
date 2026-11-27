@@ -113,7 +113,7 @@ class TestStatic:
         """POSIX tarballs carry package/bin/esbuild, win32 ones package/esbuild.exe."""
         assert '"esbuild.exe"' in code
         assert 'path.join("bin", exe)' in code
-        assert 'os.isfile(staged)' in code
+        assert 'fs.is_file(staged)' in code
 
 
 class TestIndex:

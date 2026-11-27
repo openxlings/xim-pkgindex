@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://github.com/Sunrisepeak/svr4-386-src",
     name = "svr4-disk-image",
     description = "EXPERIMENTAL, technical verification only: AT&T UNIX System V/386 Release 4.0 Version 3.0, installed from its floppy set (proprietary, re-hosted unchanged) into a qcow2 disk with a root shell on the serial line, for emulator runners; with the dirun profile that boots it",
@@ -32,6 +32,7 @@ package = {
     -- an image, so `floor = 1`.
     xpm = {
         linux = {
+            strip = 1,
             ["latest"] = { ref = "4.0.3-20261119" },
             ["4.0.3-20261119"] = {
                 revision = 1,
@@ -40,7 +41,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/svr4-disk-image/releases/download/4.0.3-20261119-r1/svr4-disk-image-4.0.3-20261119-r1.tar.xz",
                     CN = "https://gitcode.com/xlings-res/svr4-disk-image/releases/download/4.0.3-20261119-r1/svr4-disk-image-4.0.3-20261119-r1.tar.xz",
                 },
-                sha256 = "c8cfc82adf2333bb3b711826436a7975ef10d7138291f4f9611dc4e5c1cb3282",
+                sha256 = { x86_64 = "c8cfc82adf2333bb3b711826436a7975ef10d7138291f4f9611dc4e5c1cb3282" },
             },
         },
     },
@@ -49,6 +50,8 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 local profile = [=[
 # AT&T UNIX System V/386 Release 4.0 Version 3.0 (the package svr4-disk-image). TECHNICAL
@@ -97,14 +100,8 @@ report = "/tmp/dirun-mtest.ndjson"
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    local extracted = pkginfo.install_file():replace(".tar.xz", "")
-    if not os.isdir(extracted) then
-        raise("svr4-disk-image: the payload was not found at " .. extracted)
-    end
-    os.mv(extracted, dir)
-    io.writefile(path.join(dir, "dirun.toml"), profile)
-    return os.isfile(path.join(dir, "svr4.qcow2")) and os.isfile(path.join(dir, "files-label.bin"))
+    fs.write(path.join(dir, "dirun.toml"), profile)
+    return fs.is_file(path.join(dir, "svr4.qcow2")) and fs.is_file(path.join(dir, "files-label.bin"))
 end
 
 -- Data, not a program: the package name is registered so a home knows it has it; a runner names

@@ -17,7 +17,7 @@ package = {
     repo = "https://github.com/andrewwutw/build-djgpp",
     docs = "https://www.delorie.com/djgpp/doc/",
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "dev",
     categories = {"compiler", "gnu", "cross", "dos"},
     keywords = {"djgpp", "dos", "gcc", "cross", "i586", "msdos"},
@@ -37,7 +37,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/i586-pc-msdosdjgpp-gcc/releases/download/12.2.0/i586-pc-msdosdjgpp-gcc-12.2.0-linux-x86_64.tar.gz",
                     CN = "https://gitcode.com/xlings-res/i586-pc-msdosdjgpp-gcc/releases/download/12.2.0/i586-pc-msdosdjgpp-gcc-12.2.0-linux-x86_64.tar.gz",
                 },
-                sha256 = "897ef56d2d2acc42f7196f1af60ac5eaa05679cb1e3da2b09017b276582ae6e6",
+                sha256 = { x86_64 = "897ef56d2d2acc42f7196f1af60ac5eaa05679cb1e3da2b09017b276582ae6e6" },
             },
         },
         macosx = {

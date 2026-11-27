@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "3",
 
     name = "passt",
     description = "passt and pasta: user-mode networking for VMs and network namespaces (static)",
@@ -23,6 +23,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             ["latest"] = { ref = "2026_10_02.cba3570" },
             ["2026_10_02.cba3570"] = {
                 url = "XLINGS_RES",
@@ -37,15 +38,12 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 function install()
     local dir = pkginfo.install_dir()
-    local payload = pkginfo.install_file():replace(".tar.gz", "")
-    if os.isdir(payload) then
-        os.tryrm(dir)
-        os.mv(payload, dir)
-    end
-    return os.isfile(path.join(dir, "bin", "pasta"))
+    return fs.is_file(path.join(dir, "bin", "pasta"))
 end
 
 function config()

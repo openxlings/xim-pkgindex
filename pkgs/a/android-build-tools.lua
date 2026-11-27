@@ -272,7 +272,7 @@ package = {
                 url = {
                     GLOBAL = "https://dl.google.com/android/repository/build-tools_r37_linux.zip",
                 },
-                sha256 = "01af179347cbcd9c208b7f8171f7b21f6dd1d2f85bcd15e88caa51d5d7b86060",
+                sha256 = { x86_64 = "01af179347cbcd9c208b7f8171f7b21f6dd1d2f85bcd15e88caa51d5d7b86060" },
             },
         },
         macosx = {

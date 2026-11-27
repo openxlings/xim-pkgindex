@@ -31,7 +31,7 @@
 --   the declared upstream archives to xlings-res.
 
 package = {
-    spec = "2",
+    spec = "3",
 
     name = "zig",
     description = "General-purpose programming language and toolchain for maintaining robust, optimal, and reusable software",
@@ -54,8 +54,10 @@ package = {
     programs = {"zig"},
     xvm_enable = true,
 
+    -- Each archive holds `zig-<arch>-<os>-<version>/` (zig, lib/): dropped.
     xpm = {
         linux = {
+            strip = 1,
             source = "https://zig.vortan.dev/zig/zig-${arch}-linux-${version}.tar.xz",
             ["latest"] = { ref = "0.17.1" },
             ["0.17.1"] = {
@@ -66,6 +68,7 @@ package = {
             },
         },
         macosx = {
+            strip = 1,
             source = "https://zig.vortan.dev/zig/zig-${arch}-macos-${version}.tar.xz",
             ["latest"] = { ref = "0.17.1" },
             ["0.17.1"] = {
@@ -76,6 +79,7 @@ package = {
             },
         },
         windows = {
+            strip = 1,
             source = "https://zig.vortan.dev/zig/zig-${arch}-windows-${version}.zip",
             ["latest"] = { ref = "0.17.1" },
             ["0.17.1"] = {
@@ -89,88 +93,40 @@ package = {
 }
 
 import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 import("xim.libxpkg.pkginfo")
-import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
 
-local function has_zig_binary(dir)
-    return os.isfile(dir .. "/zig") or os.isfile(dir .. "/zig.exe")
-end
-
-local function stdlib_files(dir)
+-- What a zig install is: the compiler and the standard library beside it.
+local function required(dir)
     return {
-        dir .. "/lib/std/std.zig",
-        dir .. "/lib/zig.h",
+        path.join(dir, pkginfo.platform() == "windows" and "zig.exe" or "zig"),
+        path.join(dir, "lib", "std", "std.zig"),
+        path.join(dir, "lib", "zig.h"),
     }
 end
 
 function installed()
-    local dir = tostring(pkginfo.install_dir()):gsub("\\", "/")
-    if not has_zig_binary(dir) then
-        return false
-    end
-    for _, file in ipairs(stdlib_files(dir)) do
-        if not os.isfile(file) then
-            return false
-        end
+    for _, file in ipairs(required(pkginfo.install_dir())) do
+        if not fs.is_file(file) then return false end
     end
     return true
 end
 
 function install()
-    local archive = tostring(pkginfo.install_file())
-    local normalized = archive:gsub("\\", "/")
-    local dir = tostring(pkginfo.install_dir()):gsub("\\", "/")
-    local stem = normalized:match("([^/]+)$"):gsub("%.tar%.xz$", ""):gsub("%.zip$", "")
-    local parent = normalized:match("^(.*)/[^/]+$") or "."
-    local extracted = parent .. "/" .. stem
-
-    os.tryrm(dir)
-
-    if stem ~= normalized:match("([^/]+)$") and os.isdir(extracted) then
-        local dst_parent = dir:match("^(.*)/[^/]+$")
-        if dst_parent then
-            fs.mkdir_p(dst_parent)
-        end
-        os.mv(extracted, dir)
-    elseif normalized:match("%.zip$") then
-        fs.mkdir_p(dir)
-        local sysroot = (os.getenv("SystemRoot") or "C:\\Windows"):gsub("[\\/]+$", "")
-        local systar = sysroot .. "\\System32\\tar.exe"
-        -- exec-quoting-ok: systar is the system's tar.exe, which cmd.exe must see unquoted
-        system.exec(string.format('%s -xf "%s" --strip-components=1 -C "%s"',
-            systar, archive:gsub("/", "\\"), dir:gsub("/", "\\")))
-    elseif normalized:match("%.tar%.xz$") then
-        fs.mkdir_p(dir)
-        system.exec(string.format('tar -xf "%s" --strip-components=1 -C "%s"', normalized, dir))
-    else
-        error("zig: extracted payload directory not found: " .. extracted)
-    end
-
-    local expected_exe = normalized:match("%.zip$") and (dir .. "/zig.exe") or (dir .. "/zig")
-    local required = { expected_exe }
-    for _, file in ipairs(stdlib_files(dir)) do
-        table.insert(required, file)
-    end
-
     local missing = {}
-    for _, file in ipairs(required) do
-        if not os.isfile(file) then
-            table.insert(missing, file)
-        end
+    for _, file in ipairs(required(pkginfo.install_dir())) do
+        if not fs.is_file(file) then table.insert(missing, file) end
     end
     if #missing > 0 then
         error("zig: required payload files missing after install:\n    " .. table.concat(missing, "\n    "))
     end
-    return true
 end
 
 function config()
     xvm.add("zig", { bindir = pkginfo.install_dir() })
-    return true
 end
 
 function uninstall()
     xvm.remove("zig")
-    return true
 end

@@ -11,9 +11,13 @@
 -- already has, in every `xpm` platform section:
 --
 --   * its effective URL, mirrors and digest are compared for each previously
---     supported architecture. Equivalent scalar/per-arch shapes, new
---     architectures and adding a complete digest to an unchanged URL preserve
---     existing payload identity;
+--     supported architecture, in the recipe as a client of that architecture
+--     loads it (os.arch() and is_arch() answer for it: a top level that picks
+--     the URL by architecture gave each its own asset). Equivalent scalar/
+--     per-arch shapes, new architectures and adding a complete digest to an
+--     unchanged URL preserve existing payload identity; so does no longer
+--     giving an architecture the one artifact the old entry gave every
+--     architecture the package listed (an arm64 archive given to x86_64);
 --   * if the resource differs, the head's revision must be HIGHER than the
 --     base's. A client that implements revision reinstalls a payload whose
 --     recorded revision differs from the recipe's; one whose revision did not
@@ -48,10 +52,17 @@
 -- CI runs it through check-revision.sh, which finds the interpreter and the
 -- base ref. Directly:
 --
---     lua check-revision.lua --base <ref> [--head <ref>] [<repo-root>]
+--     lua check-revision.lua --base <ref> [--head <ref>] [--equivalent] [<repo-root>]
 --
 -- Exit 0 = every compared entry is consistent; 1 = a violation or a recipe
 -- that cannot be loaded; 2 = usage error or an unusable base ref.
+--
+-- `--equivalent` also prints `equivalent<TAB><file><TAB><platform><TAB><version>`
+-- for every compared entry whose text may differ while every architecture
+-- still gets the same resource at the same revision and floor: a change of
+-- form only (a digest written per architecture, a URL picked by os.arch()
+-- written as a template). The published-version guard of the updater
+-- (autoupdate-ci.py guard) reads those as unchanged.
 --
 
 local SCRIPT_DIR = (arg and arg[0] or ""):match("^(.*)/[^/]*$") or "."
@@ -159,9 +170,41 @@ local function arch_map(entry)
     return next(out) and out or nil
 end
 
+-- The architectures a per-architecture digest names (`sha256 = { x86_64 =
+-- h }`, the same hash under several when the bytes have no machine code):
+-- the entry serves those, as the client reads it (libxpkg's
+-- entry_architectures), whatever `package.archs` says.
+local function digest_archs(entry)
+    if type(entry) ~= "table" then return nil end
+    local hash = rawget(entry, "sha256") or rawget(entry, "sha256_by_arch")
+    if type(hash) ~= "table" or hash == sandbox.stub then return nil end
+    local out = {}
+    for key in pairs(hash) do
+        if ARCH_NAMES[key] then out[normalized_arch(key)] = entry end
+    end
+    return next(out) and out or nil
+end
+
+-- One artifact for every architecture the package lists: no per-architecture
+-- map, no per-architecture digest, no `${arch}` in the URL.
+local function single_artifact(entry)
+    if arch_map(entry) or digest_archs(entry) then return false end
+    local url = type(entry) == "table" and entry.url or entry
+    local function templated(u)
+        return type(u) == "string" and (u:find("${arch}", 1, true) or u:find("${arch_alias}", 1, true))
+    end
+    if templated(url) then return false end
+    if type(url) == "table" then
+        for _, u in pairs(url) do if templated(u) then return false end end
+    end
+    return true
+end
+
 local function resource_archs(entry, pkg, platform)
     local mapped = arch_map(entry)
     if mapped then return mapped end
+    local digested = digest_archs(entry)
+    if digested then return digested end
     local out = {}
     local url = type(entry) == "table" and entry.url or entry
     if type(url) == "table" then url = url.GLOBAL or url.CN end
@@ -226,33 +269,62 @@ local function effective_resource(entry, pkg, platform, version, arch)
     return { url=canon(url), hash=hash, extra=canon(extra) }
 end
 
-local function resource_changed(old, new, base_pkg, head_pkg, platform, version)
-    local before = resource_archs(old, base_pkg, platform)
-    local after = resource_archs(new, head_pkg, platform)
-    local old_url = type(old) == "table" and old.url or old
-    local old_source = base_pkg.xpm[platform].source or base_pkg.xpm.source
-    local old_official = not arch_map(old) and
-        (old_url == "XLINGS_RES" or old_url == "xlings-res"
-         or (not old_url and (old_source == "xlings-res" or old_source == "XLINGS_RES"
-              or type(old) == "table" and old.res == true)))
-    for arch, resource in pairs(before) do
-        if after[arch] ~= nil then
-            local a = effective_resource(resource, base_pkg, platform, version, arch)
-            local b = effective_resource(after[arch], head_pkg, platform, version, arch)
-            if a.url ~= b.url or a.extra ~= b.extra then return true end
-            if a.hash ~= b.hash then
-                -- Adding a complete digest to an unchanged URL strengthens
-                -- identity. Replacing or removing an existing digest changes it.
-                if a.hash ~= nil or type(b.hash) ~= "string"
-                   or #b.hash ~= 64 or not b.hash:match("^[0-9a-fA-F]+$") then
+-- The entry `version` of `platform` in a package loaded for an architecture.
+local function entry_in(pkg, platform, version)
+    local xpm = type(pkg) == "table" and rawget(pkg, "xpm") or nil
+    local section = type(xpm) == "table" and rawget(xpm, platform) or nil
+    return type(section) == "table" and rawget(section, version) or nil
+end
+
+-- Did the resource some architecture installs change? Each architecture is
+-- compared in the recipe as a client of that architecture loaded it
+-- (`loaded(arch)` -> base and head packages): a recipe whose top level picks
+-- its URL with os.arch() gave an aarch64 client the arm64 asset, which one
+-- load for every architecture would read as the amd64 one.
+local function resource_changed(old, base_pkg, platform, version, loaded)
+    local archs = {}
+    for arch in pairs(resource_archs(old, base_pkg, platform)) do archs[arch] = true end
+    archs.x86_64, archs.aarch64 = true, true
+    for _, arch in ipairs(sorted_keys(archs)) do
+        local base_a, head_a = loaded(arch)
+        local old_a = entry_in(base_a, platform, version)
+        local new_a = entry_in(head_a, platform, version)
+        if old_a ~= nil and not is_alias(old_a) and new_a ~= nil and not is_alias(new_a) then
+            local before = resource_archs(old_a, base_a, platform)
+            local after = resource_archs(new_a, head_a, platform)
+            if before[arch] ~= nil then
+                local old_url = type(old_a) == "table" and old_a.url or old_a
+                local old_source = base_a.xpm[platform].source or base_a.xpm.source
+                local old_official = not arch_map(old_a) and
+                    (old_url == "XLINGS_RES" or old_url == "xlings-res"
+                     or (not old_url and (old_source == "xlings-res" or old_source == "XLINGS_RES"
+                          or type(old_a) == "table" and old_a.res == true)))
+                if after[arch] ~= nil then
+                    local a = effective_resource(before[arch], base_a, platform, version, arch)
+                    local b = effective_resource(after[arch], head_a, platform, version, arch)
+                    if a.url ~= b.url or a.extra ~= b.extra then return true end
+                    if a.hash ~= b.hash then
+                        -- Adding a complete digest to an unchanged URL strengthens
+                        -- identity. Replacing or removing an existing digest changes it.
+                        if a.hash ~= nil or type(b.hash) ~= "string"
+                           or #b.hash ~= 64 or not b.hash:match("^[0-9a-fA-F]+$") then
+                            return true
+                        end
+                    end
+                elseif single_artifact(old_a) then
+                    -- One artifact the old entry gave every architecture the
+                    -- package listed, and the new entry no longer gives this
+                    -- one: the bytes of the architectures it still gives are
+                    -- compared above; this one was given another machine's
+                    -- (an arm64 archive to an x86_64 host). Refusing it from
+                    -- now on changes nothing anyone installed correctly.
+                elseif not old_official then
+                    -- A finite published resource map loses a usable coordinate.
+                    -- Legacy official source tokens are parametric (Open in xlings),
+                    -- so narrowing those records does not prove a payload was removed.
                     return true
                 end
             end
-        elseif not old_official then
-            -- A finite published resource map loses a usable coordinate.
-            -- Legacy official source tokens are parametric (Open in xlings),
-            -- so narrowing those records does not prove a payload was removed.
-            return true
         end
     end
     return false
@@ -347,11 +419,13 @@ local function usage()
 end
 
 local base_ref, head_ref, root = nil, nil, "."
+local list_equivalent = false
 local i = 1
 while arg[i] do
     local a = arg[i]
     if a == "--base" then base_ref = arg[i + 1]; i = i + 2
     elseif a == "--head" then head_ref = arg[i + 1]; i = i + 2
+    elseif a == "--equivalent" then list_equivalent = true; i = i + 1
     elseif a:sub(1, 2) == "--" then usage()
     else root = a; i = i + 1 end
 end
@@ -379,7 +453,7 @@ for line in names:gmatch("[^\n]+") do
 end
 table.sort(changed)
 
-local errors, notes = {}, {}
+local errors, notes, equivalent = {}, {}, {}
 local compared, validated = 0, 0
 
 local function err(file, msg)
@@ -418,6 +492,20 @@ for _, file in ipairs(changed) do
         local head_entries = entries_of(head_pkg)
         local base_entries = entries_of(base_pkg)
 
+        -- The recipe as a client of each architecture loads it, on demand.
+        local per_arch = {}
+        local function loaded(arch)
+            local cached = per_arch[arch]
+            if not cached then
+                local b = base_pkg and base_text
+                    and sandbox.load_recipe_text(base_text, file .. "@base", { arch = arch }) or nil
+                local h = sandbox.load_recipe_text(head_text, file, { arch = arch })
+                cached = { base = b, head = h }
+                per_arch[arch] = cached
+            end
+            return cached.base, cached.head
+        end
+
         for _, plat in ipairs(sorted_keys(head_entries)) do
             local section = head_entries[plat]
             for _, ver in ipairs(sorted_keys(section)) do
@@ -440,8 +528,13 @@ for _, file in ipairs(changed) do
                             .. "increases; a client holding revision %d would take the "
                             .. "entry for a different payload and reinstall it.",
                             where, base_rev, head_rev, base_rev))
-                    elseif resource_changed(old, entry, base_pkg, head_pkg, plat, ver)
-                       and head_rev <= base_rev then
+                    elseif not resource_changed(old, base_pkg, plat, ver, loaded) then
+                        if head_rev == base_rev
+                           and rawget(type(entry) == "table" and entry or {}, "floor")
+                               == rawget(type(old) == "table" and old or {}, "floor") then
+                            equivalent[#equivalent + 1] = string.format("equivalent\t%s\t%s\t%s", file, plat, ver)
+                        end
+                    elseif head_rev <= base_rev then
                         err(file, string.format(
                             "%s: the resource of a published version changed while its "
                             .. "revision stayed %d. A published url and sha256 are "
@@ -466,6 +559,9 @@ for _, file in ipairs(changed) do
 end
 
 for _, n in ipairs(notes) do io.write("note: " .. n .. "\n") end
+if list_equivalent then
+    for _, e in ipairs(equivalent) do io.write(e .. "\n") end
+end
 for _, e in ipairs(errors) do io.write(e .. "\n") end
 
 if #errors > 0 then

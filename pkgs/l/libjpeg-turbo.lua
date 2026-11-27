@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://libjpeg-turbo.org",
     name = "libjpeg-turbo",
     description = "High-speed JPEG codec (libjpeg API/ABI compatible, SIMD-accelerated)",
@@ -39,6 +39,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- UPSTREAM'S OWN BINARY, not a rebuild. libjpeg-turbo publishes a
             -- signed `libjpeg-turbo-official_<version>_amd64.deb` on its
             -- release page carrying libjpeg.so.62 and libturbojpeg.so.0 --
@@ -77,7 +78,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libjpeg-turbo/releases/download/3.2.0/libjpeg-turbo-3.2.0-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libjpeg-turbo/releases/download/3.2.0/libjpeg-turbo-3.2.0-linux-x86_64.tar.gz",
                 },
-                sha256 = "5588469c53ddc2eaafdbf6e2c889ebbd4fa22111901103162e754a936718eb83",
+                sha256 = { x86_64 = "5588469c53ddc2eaafdbf6e2c889ebbd4fa22111901103162e754a936718eb83" },
             },
         },
     },
@@ -86,11 +87,11 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")

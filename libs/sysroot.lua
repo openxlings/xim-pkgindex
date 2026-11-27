@@ -13,6 +13,7 @@ import("xim.libxpkg.fs")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.system")
 import("xim.libxpkg.pkginfo")
+import("xim.libxpkg.path")
 
 local sysroot = {}
 
@@ -23,13 +24,9 @@ local sysroot = {}
 -- directory is enough to poison the talloc pool.
 function sysroot.entries(dir)
     local names = {}
-    local f = io.popen(string.format([[ls -1 "%s" 2>/dev/null]], dir))
-    if not f then return names end
-    for line in f:lines() do
-        local name = line:gsub("[\r\n]+$", "")
-        if name ~= "" then table.insert(names, name) end
-    end
-    f:close()
+    local listed, out = pcall(system.exec, { "ls", "-1", dir }, { capture = true })
+    if not listed or not out then return names end
+    for name in out:gmatch("[^\r\n]+") do table.insert(names, name) end
     return names
 end
 
@@ -55,7 +52,7 @@ end
 -- instead ("unsupported registration node kind").
 function sysroot.require_capability(present, what, since)
     if present then return end
-    raise(string.format(
+    error(string.format(
         "this package needs xlings >= %s (this client has no %s); "
         .. "run: xlings self update", since, what))
 end
@@ -161,7 +158,7 @@ end
 function sysroot.declare_headers(install_dir, src_rel, dst_rel, binding, opts)
     if not xvm.files then return false end
     local src_dir = path.join(install_dir, src_rel)
-    if not os.isdir(src_dir) then return true end
+    if not fs.is_dir(src_dir) then return true end
     local merge = {}
     for _, name in ipairs((opts or {}).merge or {}) do merge[name] = true end
     for _, name in ipairs(sysroot.entries(src_dir)) do
@@ -203,7 +200,7 @@ end
 -- POSIX only by construction: the shape it repairs is a symlink, and on
 -- Windows a declared asset is a hard link or a copy.
 function sysroot.unwrap_directory_asset(dst_rel)
-    if os.host() == "windows" then return end
+    if pkginfo.platform() == "windows" then return end
     local target = path.join(system.subos_sysrootdir(), dst_rel)
     system.exec(string.format(
         [[sh -c "t=\"%s\"; [ -L \"$t\" ] || exit 0; ]] ..
@@ -239,7 +236,7 @@ end
 -- and this when they are not.
 function sysroot.declare_headers_tree(install_dir, src_rel, dst_rel, binding)
     if not xvm.files then return false end
-    if not os.isdir(path.join(install_dir, src_rel)) then return true end
+    if not fs.is_dir(path.join(install_dir, src_rel)) then return true end
     sysroot.__declare_tree(install_dir, src_rel, dst_rel, binding, 0)
     return true
 end
@@ -251,7 +248,7 @@ function sysroot.__declare_tree(install_dir, src_rel, dst_rel, binding, depth)
     if depth > 8 then return end
     for _, name in ipairs(sysroot.entries(path.join(install_dir, src_rel))) do
         local child = path.join(src_rel, name)
-        if os.isdir(path.join(install_dir, child)) then
+        if fs.is_dir(path.join(install_dir, child)) then
             sysroot.__declare_tree(install_dir, child,
                                    path.join(dst_rel, name), binding, depth + 1)
         else
@@ -287,8 +284,8 @@ end
 --     (e.g. sys/ alone has 87 host entries), poisoning proot's talloc
 --     pool and crashing npm install in the same session.
 function sysroot.install_headers(src_dir, dst_dir)
-    if not os.isdir(src_dir) then return end
-    fs.mkdir_p(dst_dir)
+    if not fs.is_dir(src_dir) then return end
+    fs.mkdir(dst_dir)
     -- Enumerate source entries via a single shell `ls` (one fork, one
     -- readdir — proot-safe). Then for each name, use `os.isdir` /
     -- `os.isfile` (the old runtime APIs that proot translates correctly)
@@ -308,7 +305,7 @@ function sysroot.install_headers(src_dir, dst_dir)
         -- Skip if anything already exists at dst (host bind-mount,
         -- prior package, or prior install). os.isdir/os.isfile cover
         -- real entries + symlinks that resolve to dirs/files.
-        if os.isdir(dst) or os.isfile(dst) then
+        if fs.is_dir(dst) or fs.is_file(dst) then
             -- already present, skip
         else
             local src = path.join(src_dir, name)
@@ -327,15 +324,15 @@ end
 -- -- from the host bind-mount or from whichever package installed first --
 -- hides every other package's X11 headers.
 function sysroot.install_headers_tree(src_dir, dst_dir, depth)
-    if not os.isdir(src_dir) then return end
+    if not fs.is_dir(src_dir) then return end
     if (depth or 0) > 8 then return end
-    fs.mkdir_p(dst_dir)
+    fs.mkdir(dst_dir)
     for _, name in ipairs(sysroot.entries(src_dir)) do
         local src = path.join(src_dir, name)
         local dst = path.join(dst_dir, name)
-        if os.isdir(src) then
+        if fs.is_dir(src) then
             sysroot.install_headers_tree(src, dst, (depth or 0) + 1)
-        elseif not (os.isdir(dst) or os.isfile(dst)) then
+        elseif not (fs.is_dir(dst) or fs.is_file(dst)) then
             fs.symlink(src, dst)
         end
     end
@@ -360,10 +357,10 @@ end
 -- for anything to link against by accident.
 function sysroot.declare_libs(install_dir, src_rel, binding, version)
     local libdir = path.join(install_dir, src_rel)
-    if not os.isdir(libdir) then return end
+    if not fs.is_dir(libdir) then return end
     for _, name in ipairs(sysroot.entries(libdir)) do
         if (name:find("%.so$") or name:find("%.so%."))
-           and os.isfile(path.join(libdir, name)) then
+           and fs.is_file(path.join(libdir, name)) then
             xvm.add(name, {
                 version = version,
                 type = "lib",
@@ -404,7 +401,7 @@ end
 -- Idempotent: a second run rewrites the same lines to the same values.
 function sysroot.relocate_pkgconfig(install_dir, src_rel)
     local pcdir = path.join(install_dir, src_rel or "lib/pkgconfig")
-    if not os.isdir(pcdir) then return true end
+    if not fs.is_dir(pcdir) then return true end
 
     -- Two rewrites, because .pc files come in two shapes and the second one
     -- has no variables to rewrite at all. graphite2 1.3.14 ships:
@@ -452,7 +449,7 @@ function sysroot.relocate_pkgconfig(install_dir, src_rel)
                                :gsub("%${prefix}", old_prefix)
         end
         local tail = resolved:match("/" .. base .. "/(.+)$")
-        if tail and os.isdir(path.join(install_dir, base, tail)) then
+        if tail and fs.is_dir(path.join(install_dir, base, tail)) then
             return path.join(install_dir, base, tail)
         end
         return path.join(install_dir, base)
@@ -461,7 +458,7 @@ function sysroot.relocate_pkgconfig(install_dir, src_rel)
     for _, name in ipairs(sysroot.entries(pcdir)) do
         if name:find("%.pc$") then
             local pc = path.join(pcdir, name)
-            local text = io.readfile(pc)
+            local text = fs.read(pc)
             if text then
                 text = "\n" .. text
                 local old_prefix = text:match("\nprefix=([^\n]*)")
@@ -523,7 +520,7 @@ function sysroot.relocate_pkgconfig(install_dir, src_rel)
     for _, name in ipairs(sysroot.entries(pcdir)) do
         if name:find("%.pc$") then
             local pc = path.join(pcdir, name)
-            local text = io.readfile(pc)
+            local text = fs.read(pc)
             if text then
                 -- Collect every variable first: the interesting ones are
                 -- written against each other, not as absolute paths --
@@ -550,7 +547,7 @@ function sysroot.relocate_pkgconfig(install_dir, src_rel)
                        and var ~= "libdir" and var ~= "includedir" then
                         local full = resolve(value, 0)
                         if full:sub(1, 1) == "/" and not full:find("%${")
-                           and not os.isfile(full) and not os.isdir(full) then
+                           and not fs.is_file(full) and not fs.is_dir(full) then
                             drop[#drop + 1] = var
                         end
                     end
@@ -574,17 +571,17 @@ function sysroot.relocate_pkgconfig(install_dir, src_rel)
     -- .pc to have any particular variable.
     for _, name in ipairs(sysroot.entries(pcdir)) do
         if name:find("%.pc$") then
-            local pc = "\n" .. (io.readfile(path.join(pcdir, name)) or "")
+            local pc = "\n" .. (fs.read(path.join(pcdir, name)) or "")
             local bad = nil
 
             for _, flag in ipairs({"L", "I"}) do
                 for dir in pc:gmatch("%-" .. flag .. "(/[^%s\"\']*)") do
-                    if not os.isdir(dir) then bad = "-" .. flag .. dir end
+                    if not fs.is_dir(dir) then bad = "-" .. flag .. dir end
                 end
             end
             for _, var in ipairs({"libdir", "includedir"}) do
                 local dir = pc:match("\n" .. var .. "=(/[^\n]*)")
-                if dir and not os.isdir(dir) then bad = var .. "=" .. dir end
+                if dir and not fs.is_dir(dir) then bad = var .. "=" .. dir end
             end
 
             if bad then
@@ -592,7 +589,7 @@ function sysroot.relocate_pkgconfig(install_dir, src_rel)
                 -- message through verbatim, so a %s left for it to fill
                 -- reaches the user as a literal "%s". Verified by making the
                 -- check fail on purpose.
-                raise(string.format(
+                error(string.format(
                     "pkgconfig relocation left %s pointing at %s, which does "
                     .. "not exist under %s -- a consumer would link against a "
                     .. "directory that is not there, or worse, the host's",
@@ -636,7 +633,7 @@ end
 -- Four different consumers, one missing step in a dependency of each.
 function sysroot.declare_pkgconfig(install_dir, src_rel, binding)
     src_rel = src_rel or "lib/pkgconfig"
-    if not os.isdir(path.join(install_dir, src_rel)) then return true end
+    if not fs.is_dir(path.join(install_dir, src_rel)) then return true end
 
     if sysroot.declare_headers(install_dir, src_rel, "usr/lib/pkgconfig", binding) then
         return true
@@ -646,7 +643,7 @@ function sysroot.declare_pkgconfig(install_dir, src_rel, binding)
     -- what the six hand-written versions did -- a reinstall of the same
     -- package must refresh its own .pc rather than keep the stale one.
     local sysroot_pc = path.join(system.subos_sysrootdir(), "usr/lib/pkgconfig")
-    os.mkdir(sysroot_pc)
+    fs.mkdir(sysroot_pc)
     system.exec(string.format(
         "sh -c 'for pc in \"%s\"/\"%s\"/*.pc; do [ -f \"$pc\" ] && cp -f \"$pc\" \"%s\"/; done'",
         install_dir, src_rel, sysroot_pc))
@@ -688,14 +685,14 @@ function sysroot.adopt_payload(...)
     for _, extra in ipairs({...}) do candidates[#candidates + 1] = extra end
 
     for _, c in ipairs(candidates) do
-        if os.isdir(c) then
-            os.tryrm(dir)
-            os.mv(c, dir)
+        if fs.is_dir(c) then
+            fs.remove(dir)
+            fs.move(c, dir)
             return c
         end
     end
 
-    raise(string.format(
+    error(string.format(
         "no extracted payload directory found for %s@%s -- looked for %s. "
         .. "The archive's top-level directory is none of these, or it was "
         .. "already consumed by another install of the same version.",

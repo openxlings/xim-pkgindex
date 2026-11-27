@@ -70,12 +70,12 @@ function xpkg_main(...)
     local xpk_glibc = "glibc@" .. cmds["--glibc"]
     local xpk_linux_header = "linux-headers@" .. cmds["--linux-headers"]
 
-    log.warn("1 - installing dependencies ...")
+    log.info("1 - installing dependencies ...")
 
     pkgmanager.install(xpk_glibc)
     pkgmanager.install(xpk_linux_header)
 
-    log.warn("2 - checking dependencies ...")
+    log.info("2 - checking dependencies ...")
     if not xvm.has("glibc", cmds["--glibc"]) then
         log.error("missing glibc: " .. xpk_glibc)
         return
@@ -86,7 +86,7 @@ function xpkg_main(...)
         return
     end
 
-    log.warn("3 - creating sysroot ...")
+    log.info("3 - creating sysroot ...")
 
     if os.isdir(cmds["--output"]) then
         if cmds["--force"] then
@@ -112,7 +112,7 @@ function xpkg_main(...)
 
     os.cp(path.join(linuxheader_dir, "include"), "usr", { force = true, symlink = true })
 
-    log.warn("3 - relocate glibc path...")
+    log.info("3 - relocate glibc path...")
 
     local relocate_files = {
         "lib/libc.so",

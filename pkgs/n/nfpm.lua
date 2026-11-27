@@ -15,7 +15,7 @@
 -- same staged tree produce byte-identical deb and rpm files, and `dpkg-deb
 -- --contents` and `rpm -qlp` list the same paths.
 package = {
-    spec = "2",
+    spec = "3",
 
     homepage = "https://nfpm.goreleaser.com",
     name = "nfpm",

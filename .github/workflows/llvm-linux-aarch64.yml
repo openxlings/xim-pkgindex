@@ -75,7 +75,7 @@ jobs:
           GLIBC_BUILD_HEADERS: /tmp/aarch64-deps/linux-headers-5.11.1-linux-aarch64/include
           XLINGS_GFX_WORK: /tmp/glibc-build
         run: |
-          bash .agents/tools/graphics/build-glibc.sh 2.44 2.44.3 3
+          bash tools/res/graphics/build-glibc.sh 2.44 2.44.3 3
           cp /tmp/glibc-build/dist/*.tar.gz /tmp/aarch64-assets/
       - name: Verify and carve the upstream LLVM release
         if: github.event_name == 'workflow_dispatch' && inputs.base_sha == '' && inputs.source_run_id == ''

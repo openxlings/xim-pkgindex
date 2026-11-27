@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "3",
 
     name = "wl-clipboard",
     description = "wl-copy and wl-paste: the Wayland clipboard from the command line (static)",
@@ -52,6 +52,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             ["latest"] = { ref = "2.3.0" },
             ["2.3.0"] = {
                 url = "XLINGS_RES",
@@ -66,15 +67,12 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 function install()
     local dir = pkginfo.install_dir()
-    local payload = pkginfo.install_file():replace(".tar.gz", "")
-    if os.isdir(payload) then
-        os.tryrm(dir)
-        os.mv(payload, dir)
-    end
-    return os.isfile(path.join(dir, "bin", "wl-copy")) and os.isfile(path.join(dir, "bin", "wl-paste"))
+    return fs.is_file(path.join(dir, "bin", "wl-copy")) and fs.is_file(path.join(dir, "bin", "wl-paste"))
 end
 
 function config()

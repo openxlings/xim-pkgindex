@@ -140,7 +140,8 @@
         "migrations"
       ],
       "untranslated": [
-        "specs"
+        "specs",
+        "generated"
       ]
     },
     "landing": "quick-start",

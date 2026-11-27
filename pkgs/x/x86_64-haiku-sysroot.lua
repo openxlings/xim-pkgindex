@@ -29,6 +29,9 @@ package = {
             CN = "https://gitcode.com/xlings-res/x86_64-haiku-sysroot/releases/download/${version}/x86_64-haiku-sysroot-${version}.tar.xz",
         },
         linux = {
+            -- Target libraries, which no host loads: exported to no consumer
+            -- and outside what rule M judges (libxpkg 0.0.68 reads {} as none).
+            exports = { runtime = { libdirs = {} } },
             ["latest"] = { ref = "hrev60431" },
             ["hrev60431"] = {
                 -- r1: the std module (GCC's sources, libstdc++'s include directories), libstdc++
@@ -40,10 +43,13 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/x86_64-haiku-sysroot/releases/download/hrev60431-r1/x86_64-haiku-sysroot-hrev60431-r1.tar.xz",
                     CN = "https://gitcode.com/xlings-res/x86_64-haiku-sysroot/releases/download/hrev60431-r1/x86_64-haiku-sysroot-hrev60431-r1.tar.xz",
                 },
-                sha256 = "4c72ec4137d95cb82e5b8f9d2bf1ef8967dc41f1a72f7e7814f42215bab102e2",
+                sha256 = { x86_64 = "4c72ec4137d95cb82e5b8f9d2bf1ef8967dc41f1a72f7e7814f42215bab102e2", aarch64 = "4c72ec4137d95cb82e5b8f9d2bf1ef8967dc41f1a72f7e7814f42215bab102e2" },
             },
         },
         macosx = {
+            -- Target libraries, which no host loads: exported to no consumer
+            -- and outside what rule M judges (libxpkg 0.0.68 reads {} as none).
+            exports = { runtime = { libdirs = {} } },
             ["latest"] = { ref = "hrev60431" },
             ["hrev60431"] = {
                 -- r1: the std module (GCC's sources, libstdc++'s include directories), libstdc++
@@ -59,6 +65,9 @@ package = {
             },
         },
         windows = {
+            -- Target libraries, which no host loads: exported to no consumer
+            -- and outside what rule M judges (libxpkg 0.0.68 reads {} as none).
+            exports = { runtime = { libdirs = {} } },
             ["latest"] = { ref = "hrev60431" },
             ["hrev60431"] = {
                 -- r1: the std module (GCC's sources, libstdc++'s include directories), libstdc++

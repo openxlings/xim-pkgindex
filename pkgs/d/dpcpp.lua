@@ -82,7 +82,9 @@ package = {
             -- programs. A BUILD dep so the install order is deterministic
             -- instead of trusting patchelf to be on the shim PATH already --
             -- the reason godot.lua and libglvnd.lua declare it the same way.
-            build = { "xim:patchelf@0.18.0" },
+            -- (`deps.build`: a `build` key of the platform is no field, and was read
+            -- as a version named "build", the dependency dropped.)
+            deps = { build = { "xim:patchelf@0.18.0" } },
             source = "https://github.com/intel/llvm/releases/download/v${version}/sycl_linux.tar.gz",
             ["latest"] = { ref = "7.1.0" },
             ["7.1.0"] = {

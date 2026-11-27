@@ -24,7 +24,7 @@ package = {
     -- at a missing asset. Adding aarch64 is a follow-up gated on aarch64 payloads
     -- for glibc + gcc-runtime; the macOS and Windows arm64 assets have no such
     -- blocker and can be added independently.
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"build-system", "tools"},
     keywords = {"bazel", "build", "buildsystem", "starlark", "monorepo"},
@@ -113,7 +113,7 @@ package = {
                     GLOBAL = "https://github.com/bazelbuild/bazel/releases/download/9.2.0/bazel-9.2.0-linux-x86_64",
                     CN     = "https://gitcode.com/xlings-res/bazel/releases/download/9.2.0/bazel-9.2.0-linux-x86_64",
                 },
-                sha256 = "7668a95db1250f12c40407251e4e203b4ec8bf39bc495d2f485b2d8c99048694",
+                sha256 = { x86_64 = "7668a95db1250f12c40407251e4e203b4ec8bf39bc495d2f485b2d8c99048694" },
             },
         },
         macosx = {

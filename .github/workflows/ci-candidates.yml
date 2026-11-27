@@ -2,6 +2,9 @@ name: Candidate validation
 'on':
   workflow_call:
     inputs:
+      xlings_sha:
+        type: string
+        default: ''
       base_sha:
         type: string
         required: true
@@ -12,7 +15,7 @@ permissions:
   contents: read
 env:
   PYTHONUTF8: '1'
-  UPDATER_COMMIT: c60835a1f00f902dd02f85739d5be9680cd52754
+  UPDATER_COMMIT: 3b2e8f30446b3b6a4d6e5ea21781d6228f4c2e44
   XLINGS_VERSION: v2026.11.23.1
 jobs:
   scan:
@@ -36,6 +39,11 @@ jobs:
         persist-credentials: false
     - name: Use the pinned updater source
       run: echo "PYTHONPATH=$PWD/.updater/src" >> "$GITHUB_ENV"
+    # The published-version guard and the candidate verification ask the
+    # revision gate which entries only changed form (check-revision.lua
+    # --equivalent), which loads recipes as Lua.
+    - name: Install Lua
+      run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends lua5.4 # host-dep-ok: the recipe sandbox loads recipes as Lua, as check-revision does
     - name: Test audit generation and admission rules
       run: |
         python -m pip install pytest pyyaml # host-dep-ok: the runner test harness
@@ -73,7 +81,7 @@ jobs:
         BASE: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
       run: |
         resolved=$(git rev-parse --verify "$BASE^{commit}" 2>/dev/null || git rev-parse --verify "origin/$BASE^{commit}")
-        python -m xpkgindex_update verify --base "$resolved" $REVIEWED --output candidate-resources.json
+        python .github/scripts/autoupdate-ci.py verify --base "$resolved" $REVIEWED --output candidate-resources.json
     - uses: actions/upload-artifact@v4
       if: always()
       with:
@@ -111,8 +119,13 @@ jobs:
       run: |
         echo "PYTHONPATH=$(python -c 'from pathlib import Path; print(Path(".updater/src").resolve())')" >> "$GITHUB_ENV"
         python -m pip install pytest pyyaml # host-dep-ok: the runner test harness, not a package runtime dependency
+    - name: The client under test, an xlings commit's CI build
+      if: inputs.xlings_sha != ''
+      uses: ./.github/actions/setup-xlings
+      with:
+        xlings_sha: ${{ inputs.xlings_sha }}
     - name: Install xlings on POSIX
-      if: runner.os != 'Windows'
+      if: runner.os != 'Windows' && inputs.xlings_sha == ''
       shell: bash
       env:
         XLINGS_NON_INTERACTIVE: '1'
@@ -121,7 +134,7 @@ jobs:
         echo "$HOME/.xlings/bin" >> "$GITHUB_PATH"
         echo "$HOME/.xlings/subos/default/bin" >> "$GITHUB_PATH"
     - name: Install xlings on Windows
-      if: runner.os == 'Windows'
+      if: runner.os == 'Windows' && inputs.xlings_sha == ''
       shell: pwsh
       env:
         XLINGS_NON_INTERACTIVE: '1'

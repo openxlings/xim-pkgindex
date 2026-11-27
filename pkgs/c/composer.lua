@@ -55,11 +55,17 @@ package = {
             ["2.11.2"] = {
                 revision = 1,
                 url = "https://github.com/composer/composer/releases/download/2.11.2/composer.phar",
-                sha256 = "dd158c0afd41d15fac89e1b4e47b5d42911fe316c3687cd5edac98319b25d028",
+                sha256 = {
+                    x86_64 = "dd158c0afd41d15fac89e1b4e47b5d42911fe316c3687cd5edac98319b25d028",
+                    aarch64 = "dd158c0afd41d15fac89e1b4e47b5d42911fe316c3687cd5edac98319b25d028",
+                },
             },
             ["2.11.3"] = {
                 url = "https://github.com/composer/composer/releases/download/2.11.3/composer.phar",
-                sha256 = "04f8b003da4e3a2459056591fbfebd02b4dc3e5adeb158616b90cf55a65113ec",
+                sha256 = {
+                    x86_64 = "04f8b003da4e3a2459056591fbfebd02b4dc3e5adeb158616b90cf55a65113ec",
+                    aarch64 = "04f8b003da4e3a2459056591fbfebd02b4dc3e5adeb158616b90cf55a65113ec",
+                },
             },
         },
         macosx = {

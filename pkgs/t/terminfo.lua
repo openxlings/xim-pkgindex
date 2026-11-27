@@ -54,7 +54,10 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/terminfo/releases/download/6.6.20261010/terminfo-6.6.20261010.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/terminfo/releases/download/6.6.20261010/terminfo-6.6.20261010.tar.gz",
                 },
-                sha256 = "4e661726e9f7d2fefc8ee142a2442fbf080ec91642cfdc6af4d6499b61779394",
+                sha256 = {
+                    x86_64 = "4e661726e9f7d2fefc8ee142a2442fbf080ec91642cfdc6af4d6499b61779394",
+                    aarch64 = "4e661726e9f7d2fefc8ee142a2442fbf080ec91642cfdc6af4d6499b61779394",
+                },
             },
         },
     },

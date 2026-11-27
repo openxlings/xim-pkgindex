@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     -- base info
     name = "griddycode",
@@ -39,6 +39,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- Runtime deps. Godot-built executable is dynamically
             -- linked: NEEDED libc.so.6 / libdl.so.2 / libm.so.6 /
             -- libpthread.so.0 (glibc). Godot statically links its C++
@@ -54,9 +55,10 @@ package = {
             },
 
             ["latest"] = { ref = "1.2.2" },
-            ["1.2.2"] = { url = "https://github.com/face-hh/griddycode/releases/download/v1.2.2/Linux.zip" },
+            ["1.2.2"] = { url = "https://github.com/face-hh/griddycode/releases/download/v1.2.2/Linux.zip", sha256 = { x86_64 = "7e346fd98f10a0a0bcc334adb38b10bf725ec4a9dc405b3b1d8b7a283dc48f7c" } },
         },
         windows = {
+            strip = 1,
 
             ["latest"] = { ref = "1.2.2" },
             ["1.2.2"] = { url = "https://github.com/face-hh/griddycode/releases/download/v1.2.2/Windows.zip" },
@@ -66,13 +68,12 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 function install()
-    os.tryrm(pkginfo.install_dir())
-    if os.host() == "windows" then
-        os.mv("Windows", pkginfo.install_dir())
+    if pkginfo.platform() == "windows" then
     else
-        os.mv("Linux", pkginfo.install_dir())
     end
     return true
 end
@@ -82,14 +83,15 @@ function config()
     local bin_file = "GriddyCode.sh"
     local target_name = "griddycode"
 
-    if os.host() == "windows" then
+    if pkginfo.platform() == "windows" then
         bin_file = "GriddyCode.exe"
         target_name = "griddycode.exe"
     end
 
     local src = path.join(pkginfo.install_dir(), string.format("Bussin %s", bin_file))
     local dst = path.join(pkginfo.install_dir(), target_name)
-    os.mv(src, dst)
+    -- config() runs again (a reinstall, `xlings use`): the file is moved once.
+    if fs.is_file(src) then fs.move(src, dst, { replace = true }) end
 
     xvm.add("griddycode")
 

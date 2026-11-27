@@ -18,7 +18,7 @@ package = {
 
     -- xim pkg info
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable", -- dev, stable, deprecated
     categories = {"dotnet"},
     keywords = {"cross-platform", ".net", "dotnet"},
@@ -31,8 +31,8 @@ package = {
         },
         linux = {
             ["latest"] = { ref = "9.0" },
-            ["9.0"] = { url = linux_install_script, sha256 = nil },
-            ["8.0"] = { url = linux_install_script, sha256 = nil },
+            ["9.0"] = { url = linux_install_script, sha256 = { x86_64 = "082f7685e156738a1b2e2ed8381a621870d4ce8e8c59278034556f05c186eb2e", aarch64 = "082f7685e156738a1b2e2ed8381a621870d4ce8e8c59278034556f05c186eb2e" } },
+            ["8.0"] = { url = linux_install_script, sha256 = { x86_64 = "082f7685e156738a1b2e2ed8381a621870d4ce8e8c59278034556f05c186eb2e", aarch64 = "082f7685e156738a1b2e2ed8381a621870d4ce8e8c59278034556f05c186eb2e" } },
         },
     },
 }

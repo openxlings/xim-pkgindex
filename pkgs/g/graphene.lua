@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://ebassi.github.io/graphene/",
     name = "graphene",
     description = "Thin layer of graphic data types (points, vectors, matrices) with SIMD support",
@@ -38,6 +38,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- GTK 4 requires graphene >= 1.10 and uses it for every point,
             -- rect and matrix in the render node tree. Built with the gobject
             -- half enabled (graphene-gobject-1.0.pc), which is the half gtk4
@@ -55,7 +56,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/graphene/releases/download/1.10.8/graphene-1.10.8-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/graphene/releases/download/1.10.8/graphene-1.10.8-linux-x86_64.tar.gz",
                 },
-                sha256 = "f57d7059b2bba93dfb2a7b77e974bdd1943f3d461d917430ee2734f1f85427cb",
+                sha256 = { x86_64 = "f57d7059b2bba93dfb2a7b77e974bdd1943f3d461d917430ee2734f1f85427cb" },
             },
         },
     },
@@ -64,11 +65,11 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")

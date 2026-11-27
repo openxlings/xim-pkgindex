@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     homepage = "https://github.com/util-linux/util-linux",
     name = "util-linux",
@@ -40,6 +40,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             deps = { "xim:glibc@>=2.38" },
             -- elfpatch reads this from each dependency and writes the
             -- consumer's RPATH, which is what makes the stack resolve without
@@ -53,7 +54,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/util-linux/releases/download/2.40.2/util-linux-2.40.2-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/util-linux/releases/download/2.40.2/util-linux-2.40.2-linux-x86_64.tar.gz",
                 },
-                sha256 = "f449a2f3c518c94058bbbfff9d8230a1b82293b0586954a730bf988734c0e551",
+                sha256 = { x86_64 = "f449a2f3c518c94058bbbfff9d8230a1b82293b0586954a730bf988734c0e551" },
             },
         },
     },
@@ -75,13 +76,12 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mv("util-linux-" .. pkginfo.version(), dir)
 
     -- Stamp this payload's own dependency closure onto its libraries, so they
     -- resolve from our payloads and not from the host's ld.so.cache.

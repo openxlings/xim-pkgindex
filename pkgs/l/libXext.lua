@@ -10,7 +10,7 @@ package = {
     repo = "https://gitlab.freedesktop.org/xorg/lib/libXext",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"graphics", "lib"},
     keywords = {"libxext", "graphics", "x11"},
@@ -21,13 +21,19 @@ package = {
             resources = {
                 GLOBAL = {
                     url = {
-                        linux = "https://github.com/xlings-res/libXext/releases/download/${version}/libXext-${version}-linux-x86_64.tar.gz",
+                        linux = {
+                            aarch64 = "https://github.com/xlings-res/libXext/releases/download/${version}/libXext-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://github.com/xlings-res/libXext/releases/download/${version}/libXext-${version}-linux-x86_64.tar.gz",
+                        },
                     },
                     required = true,
                 },
                 CN = {
                     url = {
-                        linux = "https://gitcode.com/xlings-res/libXext/releases/download/${version}/libXext-${version}-linux-x86_64.tar.gz",
+                        linux = {
+                            aarch64 = "https://gitcode.com/xlings-res/libXext/releases/download/${version}/libXext-${version}-linux-aarch64.tar.gz",
+                            x86_64 = "https://gitcode.com/xlings-res/libXext/releases/download/${version}/libXext-${version}-linux-x86_64.tar.gz",
+                        },
                     },
                     required = true,
                 },
@@ -47,11 +53,20 @@ package = {
             },
             ["latest"] = { ref = "1.3.6" },
             ["1.3.6"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/libXext/releases/download/1.3.6/libXext-1.3.6-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/libXext/releases/download/1.3.6/libXext-1.3.6-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libXext/releases/download/1.3.6/libXext-1.3.6-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libXext/releases/download/1.3.6/libXext-1.3.6-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "d7593a61cf640612f0b9af2a2b789913fef8f5717decdee8af0e487859d49f5d",
                 },
-                sha256 = "d7593a61cf640612f0b9af2a2b789913fef8f5717decdee8af0e487859d49f5d",
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libXext/releases/download/1.3.6/libXext-1.3.6-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libXext/releases/download/1.3.6/libXext-1.3.6-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "ab20730cbbdd24edeeec8d96a6be4f61ab0f7d6d753ee162c5b3136f61bda901",
+                },
             },
         },
     },

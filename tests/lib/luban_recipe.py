@@ -42,7 +42,19 @@ function import(name)
     if lib then _G[lib] = dofile(libs .. "/" .. lib .. ".lua"); return end
     local bare = name:match("xim%.libxpkg%.(.+)")
     assert(bare, "unexpected import " .. name)
-    if bare == "pkginfo" then pkginfo = {install_dir=function() return target end, version=function() return version end}
+    if bare == "pkginfo" then pkginfo = {install_dir=function() return target end, version=function() return version end,
+                                          arch=function() return arch and arch ~= "" and arch or "x86_64" end}
+    elseif bare == "fs" then fs = {
+        mkdir = os.mkdir, remove = os.tryrm, is_file = os.isfile, is_dir = os.isdir,
+        move = function(a, b) exec("mv " .. q(a) .. " " .. q(b)) end,
+        chmod = function(p, mode) exec("chmod " .. mode .. " " .. q(p)) end,
+        write = function(p, s) local f = assert(io.open(p, "wb")); assert(f:write(s)); f:close() end,
+        list = function(d)
+            local out, h = {}, io.popen("ls -1A " .. q(d) .. " 2>/dev/null")
+            for line in h:lines() do out[#out + 1] = line end
+            h:close(); return out
+        end,
+    }
     elseif bare == "system" then system = {exec=exec, subos_sysrootdir=function() return target .. "/subos/agent" end}
     elseif bare == "xvm" then xvm = {add=function() end, remove=function() end}
     elseif bare == "log" then log = {info=function() end, warn=function() end}

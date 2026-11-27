@@ -9,18 +9,16 @@
 --     function install() return policy.write(json) end
 
 import("xim.libxpkg.pkginfo")
+import("xim.libxpkg.fs")
 
 local policy = {}
 
 function policy.write(json)
     local dir = pkginfo.install_dir()
-    os.mkdir(dir)
+    fs.mkdir(dir)
     local file = dir .. "/policy.json"
-    local f = io.open(file, "wb")
-    if not f then error("cannot write " .. file) end
-    assert(f:write(json))
-    f:close()
-    return os.isfile(file)
+    fs.write(file, json)
+    return fs.is_file(file)
 end
 
 return policy

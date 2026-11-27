@@ -47,7 +47,7 @@ package = {
     type = "package",
     -- Source only, so every arch this index serves resolves to the one
     -- download.
-    archs = {"x86_64", "aarch64", "x86"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"graphics", "lib", "opengl"},
     keywords = {"glew", "opengl", "gl", "extension", "loader", "graphics"},
@@ -63,7 +63,10 @@ package = {
             ["latest"] = { ref = "2.2.0" },
             ["2.2.0"] = {
                 url = { GLOBAL = "https://github.com/nigels-com/glew/releases/download/glew-2.2.0/glew-2.2.0.tgz" },
-                sha256 = "d4fc82893cfb00109578d0a1a2337fb8ca335b3ceccf97b97e5cc7f08e4353e1",
+                sha256 = {
+                    x86_64 = "d4fc82893cfb00109578d0a1a2337fb8ca335b3ceccf97b97e5cc7f08e4353e1",
+                    aarch64 = "d4fc82893cfb00109578d0a1a2337fb8ca335b3ceccf97b97e5cc7f08e4353e1",
+                },
             },
         },
         macosx = {

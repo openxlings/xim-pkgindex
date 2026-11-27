@@ -65,8 +65,14 @@ package = {
                 },
             },
             ["2.53.0"] = {
-                url = "https://github.com/supriyo-biswas/static-builds/releases/download/git-2.53.0/git-2.53.0-linux-x86_64.tar.gz",
-                sha256 = "948a9bb92e74e9a5e5bdd6d8a19e49712f46d9709ddcda924bf17828a794d297",
+                x86_64 = {
+                    url = "https://github.com/supriyo-biswas/static-builds/releases/download/git-2.53.0/git-2.53.0-linux-x86_64.tar.gz",
+                    sha256 = "948a9bb92e74e9a5e5bdd6d8a19e49712f46d9709ddcda924bf17828a794d297",
+                },
+                aarch64 = {
+                    url = "https://github.com/supriyo-biswas/static-builds/releases/download/git-2.53.0/git-2.53.0-linux-aarch64.tar.gz",
+                    sha256 = "aba6d9d11ee8a1dc0f1721d54a785ae7d3bc65f92c7034659b3a01207c5d87e4",
+                },
             },
         },
     },
