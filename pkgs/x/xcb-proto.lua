@@ -10,7 +10,7 @@ package = {
     repo = "https://gitlab.freedesktop.org/xorg/proto/xcb-proto",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"graphics", "lib"},
     keywords = {"xcb-proto", "graphics", "x11"},
@@ -45,7 +45,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/xcb-proto/releases/download/1.17.0/xcb-proto-1.17.0-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/xcb-proto/releases/download/1.17.0/xcb-proto-1.17.0-linux-x86_64.tar.gz",
                 },
-                sha256 = "73bf364289efe8791bb4a8a3046cb2256a9953021797ee730a2678d429d3f2e4",
+                sha256 = { x86_64 = "73bf364289efe8791bb4a8a3046cb2256a9953021797ee730a2678d429d3f2e4", aarch64 = "73bf364289efe8791bb4a8a3046cb2256a9953021797ee730a2678d429d3f2e4" },
             },
         },
     },
