@@ -8,7 +8,6 @@ import subprocess
 import pytest
 
 from tests.lib.assertions import (
-    assert_install_succeeds,
     assert_no_bashrc_modification,
     assert_no_direct_path_modification,
     assert_no_direct_pkg_manager,
@@ -20,7 +19,6 @@ from tests.lib.assertions import (
     assert_valid_spec,
     assert_valid_type,
     assert_valid_xvm_node_kinds,
-    assert_xim_add_succeeds,
 )
 from tests.lib.platform_utils import under_test, xlings_home
 from tests.lib.xpkg_parser import parse_xpkg
@@ -37,6 +35,16 @@ def _lua(script):
     subprocess.run(
         [interpreter, "-", PKG_FILE], input=script, text=True,
         capture_output=True, check=True, cwd=ROOT,
+    )
+
+
+def _xlings(*arguments):
+    executable = "xlings.exe" if os.name == "nt" else "xlings"
+    binary = Path(xlings_home()) / "bin" / executable
+    assert binary.is_file(), binary
+    return subprocess.run(
+        [str(binary), *arguments], capture_output=True, text=True,
+        check=True, timeout=120,
     )
 
 
@@ -151,7 +159,7 @@ files[dir .. "/vcruntime140.dll"] = nil
 assert(not installed())
 fs.files = function() return {} end
 ok, err = pcall(install)
-assert(not ok and err:find("vcruntime140.dll", 1, true))
+assert(not ok and err:find("xim:vcruntime payload", 1, true))
 assert(config() and uninstall())
 assert(table.concat(registrations, ",") == "add,remove")
 ''')
@@ -180,13 +188,13 @@ class TestIsolation:
 class TestIndex:
     @pytest.mark.index
     def test_register(self):
-        assert_xim_add_succeeds(PKG_FILE)
+        _xlings("config", "--add-xpkg", str(ROOT / PKG_FILE))
 
 
 class TestLifecycle:
     @pytest.mark.lifecycle
     def test_install(self):
-        assert_install_succeeds(under_test(PKG), timeout=120)
+        _xlings("install", under_test(PKG), "-y")
 
 
 class TestVerify:

@@ -90,13 +90,23 @@ import("xim.pkgindex.payload")
 import("xim.pkgindex.shell")
 
 local function required_files(exe)
-    if exe == "grex.exe" then return { exe, "vcruntime140.dll" } end
-    return { exe }
+    local files, crt = { exe }, nil
+    if exe == "grex.exe" then
+        crt = pkginfo.dep_install_dir("xim:vcruntime")
+        local dlls = crt and fs.files(crt .. "/bin") or {}
+        if not dlls or #dlls == 0 then return nil end
+        -- The runtime provider owns its filenames; require its complete set.
+        for _, dll in ipairs(dlls) do
+            files[#files + 1] = dll:gsub("\\", "/"):match("([^/]+)$")
+        end
+    end
+    return files, crt
 end
 
 function installed()
-    return payload.present(required_files("grex"))
-        or payload.present(required_files("grex.exe"))
+    if payload.present(required_files("grex")) then return true end
+    local required = required_files("grex.exe")
+    return required ~= nil and payload.present(required)
 end
 
 function install()
@@ -107,14 +117,14 @@ function install()
     local parent = normalized:match("^(.*)/[^/]+$") or "."
     local is_win = normalized:match("%.zip$") ~= nil
     local exe = is_win and "grex.exe" or "grex"
+    local required, crt = required_files(exe)
+    assert(required, "grex: xim:vcruntime payload directory is missing or empty")
 
     -- Extract just this archive, never move the shared download directory.
     if is_win then
         payload.unpack{}
-        local crt = assert(pkginfo.dep_install_dir("xim:vcruntime"),
-                           "grex: xim:vcruntime payload directory is missing")
-        for _, dll in ipairs(fs.files(crt .. "/bin") or {}) do
-            os.cp(dll, dir)
+        for i = 2, #required do
+            os.cp(crt .. "/bin/" .. required[i], dir)
         end
     else
         os.tryrm(dir)
@@ -129,7 +139,7 @@ function install()
         end
         shell.exec({ "chmod", "+x", dir .. "/" .. exe })
     end
-    payload.require(required_files(exe))
+    payload.require(required)
     return true
 end
 
