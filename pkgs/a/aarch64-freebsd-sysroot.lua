@@ -58,6 +58,9 @@ package = {
             CN = "https://gitcode.com/xlings-res/aarch64-freebsd-sysroot/releases/download/${version}/aarch64-freebsd-sysroot-${version}.tar.xz",
         },
         linux = {
+            -- Target libraries, which no host loads: exported to no consumer
+            -- and outside what rule M judges (libxpkg 0.0.68 reads {} as none).
+            exports = { runtime = { libdirs = {} } },
             ["latest"] = { ref = "14.5" },
             ["14.5"] = {
                 revision = 3,
@@ -65,10 +68,13 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/aarch64-freebsd-sysroot/releases/download/14.5-r3/aarch64-freebsd-sysroot-14.5-r3.tar.xz",
                     CN = "https://gitcode.com/xlings-res/aarch64-freebsd-sysroot/releases/download/14.5-r3/aarch64-freebsd-sysroot-14.5-r3.tar.xz",
                 },
-                sha256 = "b73f2f0f9b9569c162674b141babc427292b9cdbeb8041dfb882261e60484115",
+                sha256 = { x86_64 = "b73f2f0f9b9569c162674b141babc427292b9cdbeb8041dfb882261e60484115", aarch64 = "b73f2f0f9b9569c162674b141babc427292b9cdbeb8041dfb882261e60484115" },
             },
         },
         macosx = {
+            -- Target libraries, which no host loads: exported to no consumer
+            -- and outside what rule M judges (libxpkg 0.0.68 reads {} as none).
+            exports = { runtime = { libdirs = {} } },
             ["latest"] = { ref = "14.5" },
             ["14.5"] = {
                 revision = 3,
@@ -80,6 +86,9 @@ package = {
             },
         },
         windows = {
+            -- Target libraries, which no host loads: exported to no consumer
+            -- and outside what rule M judges (libxpkg 0.0.68 reads {} as none).
+            exports = { runtime = { libdirs = {} } },
             ["latest"] = { ref = "14.5" },
             ["14.5"] = {
                 revision = 3,

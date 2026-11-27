@@ -86,6 +86,9 @@ package = {
             CN = "https://gitcode.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/${version}/aarch64-linux-gnu-sysroot-${version}.tar.xz",
         },
         linux = {
+            -- Target libraries, which no host loads: exported to no consumer
+            -- and outside what rule M judges (libxpkg 0.0.68 reads {} as none).
+            exports = { runtime = { libdirs = {} } },
             strip = 1,
             ["latest"] = { ref = "2.44.3" },
             ["2.44.3"] = {
@@ -101,6 +104,9 @@ package = {
             },
         },
         macosx = {
+            -- Target libraries, which no host loads: exported to no consumer
+            -- and outside what rule M judges (libxpkg 0.0.68 reads {} as none).
+            exports = { runtime = { libdirs = {} } },
             strip = 1,
             ["latest"] = { ref = "2.44.3" },
             ["2.44.3"] = {
@@ -113,6 +119,9 @@ package = {
             },
         },
         windows = {
+            -- Target libraries, which no host loads: exported to no consumer
+            -- and outside what rule M judges (libxpkg 0.0.68 reads {} as none).
+            exports = { runtime = { libdirs = {} } },
             strip = 1,
             ["latest"] = { ref = "2.44.3" },
             ["2.44.3"] = {

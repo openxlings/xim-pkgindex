@@ -93,9 +93,13 @@ class TestStatic:
     @pytest.mark.static
     def test_one_jar_for_every_platform(self, code):
         """The native launchers do not cover linux aarch64 or windows aarch64;
-        the jar covers every host, so every platform names the same file."""
+        the jar covers every host, so every platform names the same file --
+        on Linux listed for both architectures, as a file with no machine code
+        is (the install sweep installed it on both)."""
         urls = re.findall(r'GLOBAL = "([^"]+)"', code)
         digests = re.findall(r'sha256 = "([0-9a-f]{64})"', code)
+        assert re.search(r'sha256 = \{ x86_64 = "([0-9a-f]{64})", aarch64 = "\1" \}', code)
+        digests += re.findall(r'sha256 = \{ x86_64 = "([0-9a-f]{64})"', code)
         mirrors = re.findall(r'CN = "([^"]+)"', code)
         assert mirrors == ["https://gitcode.com/xlings-res/coursier/releases/download/2.1.24/coursier.jar"] * 3, mirrors
         assert len(urls) == 3 and len(set(urls)) == 1, urls

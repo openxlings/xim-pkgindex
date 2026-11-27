@@ -45,14 +45,23 @@ package = {
             CN = "https://gitcode.com/xlings-res/freebsd-sysroot/releases/download/${version}/freebsd-sysroot-${version}.tar.xz",
         },
         linux = {
+            -- Target libraries, which no host loads: exported to no consumer
+            -- and outside what rule M judges (libxpkg 0.0.68 reads {} as none).
+            exports = { runtime = { libdirs = {} } },
             ["latest"] = { ref = "14.5" },
-            ["14.5"] = { sha256 = "64aea3ebb229e6f27f93397631f5504a2a25868daab604bbf4d8e6ad9c653b8d" },
+            ["14.5"] = { sha256 = { x86_64 = "64aea3ebb229e6f27f93397631f5504a2a25868daab604bbf4d8e6ad9c653b8d", aarch64 = "64aea3ebb229e6f27f93397631f5504a2a25868daab604bbf4d8e6ad9c653b8d" } },
         },
         macosx = {
+            -- Target libraries, which no host loads: exported to no consumer
+            -- and outside what rule M judges (libxpkg 0.0.68 reads {} as none).
+            exports = { runtime = { libdirs = {} } },
             ["latest"] = { ref = "14.5" },
             ["14.5"] = { sha256 = "64aea3ebb229e6f27f93397631f5504a2a25868daab604bbf4d8e6ad9c653b8d" },
         },
         windows = {
+            -- Target libraries, which no host loads: exported to no consumer
+            -- and outside what rule M judges (libxpkg 0.0.68 reads {} as none).
+            exports = { runtime = { libdirs = {} } },
             ["latest"] = { ref = "14.5" },
             ["14.5"] = { sha256 = "64aea3ebb229e6f27f93397631f5504a2a25868daab604bbf4d8e6ad9c653b8d" },
         },

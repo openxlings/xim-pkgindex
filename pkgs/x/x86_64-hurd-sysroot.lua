@@ -30,16 +30,25 @@ package = {
             CN = "https://gitcode.com/xlings-res/x86_64-hurd-sysroot/releases/download/${version}/x86_64-hurd-sysroot-${version}.tar.xz",
         },
         linux = {
+            -- Target libraries, which no host loads: exported to no consumer
+            -- and outside what rule M judges (libxpkg 0.0.68 reads {} as none).
+            exports = { runtime = { libdirs = {} } },
             ["latest"] = { ref = "20260314" },
-            ["20260314"] = { sha256 = "2ed3688e7b6c8f8a49a868e8c1c618f52b10ed522505a6274a5dc516963d49da" },
-            ["20261118"] = { sha256 = "69263c78c58498723fbf232b7ec52eb22d8dd9f9eb2c8ab181d5cd875db54b6f" },
+            ["20260314"] = { sha256 = { x86_64 = "2ed3688e7b6c8f8a49a868e8c1c618f52b10ed522505a6274a5dc516963d49da", aarch64 = "2ed3688e7b6c8f8a49a868e8c1c618f52b10ed522505a6274a5dc516963d49da" } },
+            ["20261118"] = { sha256 = { x86_64 = "69263c78c58498723fbf232b7ec52eb22d8dd9f9eb2c8ab181d5cd875db54b6f", aarch64 = "69263c78c58498723fbf232b7ec52eb22d8dd9f9eb2c8ab181d5cd875db54b6f" } },
         },
         macosx = {
+            -- Target libraries, which no host loads: exported to no consumer
+            -- and outside what rule M judges (libxpkg 0.0.68 reads {} as none).
+            exports = { runtime = { libdirs = {} } },
             ["latest"] = { ref = "20260314" },
             ["20260314"] = { sha256 = "2ed3688e7b6c8f8a49a868e8c1c618f52b10ed522505a6274a5dc516963d49da" },
             ["20261118"] = { sha256 = "69263c78c58498723fbf232b7ec52eb22d8dd9f9eb2c8ab181d5cd875db54b6f" },
         },
         windows = {
+            -- Target libraries, which no host loads: exported to no consumer
+            -- and outside what rule M judges (libxpkg 0.0.68 reads {} as none).
+            exports = { runtime = { libdirs = {} } },
             ["latest"] = { ref = "20260314" },
             ["20260314"] = { sha256 = "2ed3688e7b6c8f8a49a868e8c1c618f52b10ed522505a6274a5dc516963d49da" },
             ["20261118"] = { sha256 = "69263c78c58498723fbf232b7ec52eb22d8dd9f9eb2c8ab181d5cd875db54b6f" },
