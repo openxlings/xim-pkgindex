@@ -74,7 +74,7 @@ jobs:
           mapfile -t headers < <(find "$RUNNER_TEMP/glibc-uapi" -type f -path '*/include/linux/limits.h')
           [[ ${#headers[@]} == 1 ]]
           export GLIBC_BUILD_HEADERS="${headers[0]%/linux/limits.h}"
-          bash .agents/tools/graphics/build-glibc.sh 2.44 2.44.3 3
+          bash tools/res/graphics/build-glibc.sh 2.44 2.44.3 3
           python3 .agents/tools/check-glibc-data-inventory.py "$XLINGS_GFX_WORK/dist/glibc-2.44.3-r3-linux-$XLINGS_GFX_ARCH.tar.gz" --arch "$XLINGS_GFX_ARCH" --revision 3
           cd "$XLINGS_GFX_WORK/dist"
           sha256sum *.tar.gz > SHA256SUMS

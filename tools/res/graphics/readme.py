@@ -226,7 +226,7 @@ xlings subos use gfxbuild --global
 xlings install gcc make ninja python cmake zlib expat -y
 
 export XLINGS_GFX_SUBOS=gfxbuild
-bash .agents/tools/graphics/tiers.sh {tier}     # or build-libllvm.sh for libllvm
+bash tools/res/graphics/tiers.sh {tier}     # or build-libllvm.sh for libllvm
 ```
 
 {flags_section}
@@ -248,7 +248,7 @@ host copy.
 ## Verifying the stack
 
 ```bash
-bash .agents/tools/graphics/selfcontained-check.sh
+bash tools/res/graphics/selfcontained-check.sh
 ```
 
 Runs a GL client under bwrap with **no `/usr` and no `/lib`** — only the subos,

@@ -408,5 +408,90 @@
     "what": "gdb",
     "version": "18.1",
     "arch": "aarch64"
+  },
+  {
+    "what": "expat",
+    "version": "2.6.2",
+    "arch": "aarch64"
+  },
+  {
+    "what": "libffi",
+    "version": "3.4.4",
+    "arch": "aarch64"
+  },
+  {
+    "what": "libpciaccess",
+    "version": "0.18.1",
+    "arch": "aarch64"
+  },
+  {
+    "what": "libdrm",
+    "version": "2.4.123",
+    "arch": "aarch64"
+  },
+  {
+    "what": "libxshmfence",
+    "version": "1.3.2",
+    "arch": "aarch64"
+  },
+  {
+    "what": "libXau",
+    "version": "1.0.11",
+    "arch": "aarch64"
+  },
+  {
+    "what": "libXdmcp",
+    "version": "1.1.5",
+    "arch": "aarch64"
+  },
+  {
+    "what": "libxcb",
+    "version": "1.17.0",
+    "arch": "aarch64"
+  },
+  {
+    "what": "libX11",
+    "version": "1.8.10",
+    "arch": "aarch64"
+  },
+  {
+    "what": "libXext",
+    "version": "1.3.6",
+    "arch": "aarch64"
+  },
+  {
+    "what": "libXfixes",
+    "version": "6.0.1",
+    "arch": "aarch64"
+  },
+  {
+    "what": "libXxf86vm",
+    "version": "1.1.6",
+    "arch": "aarch64"
+  },
+  {
+    "what": "wayland",
+    "version": "1.23.1",
+    "arch": "aarch64"
+  },
+  {
+    "what": "elfutils",
+    "version": "0.191",
+    "arch": "aarch64"
+  },
+  {
+    "what": "libglvnd",
+    "version": "1.7.0",
+    "arch": "aarch64"
+  },
+  {
+    "what": "libllvm",
+    "version": "20.1.7",
+    "arch": "aarch64"
+  },
+  {
+    "what": "mesa",
+    "version": "25.0.7.3",
+    "arch": "aarch64"
   }
 ]

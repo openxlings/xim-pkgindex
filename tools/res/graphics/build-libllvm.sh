@@ -11,12 +11,13 @@
 #
 # Two build choices, both measured rather than assumed:
 #
-#   LLVM_TARGETS_TO_BUILD=X86;AMDGPU
+#   LLVM_TARGETS_TO_BUILD=<native>;AMDGPU  (X86;AMDGPU, AArch64;AMDGPU)
 #       Undefined-symbol analysis of libgallium finds LLVMInitializeX86* (the
-#       llvmpipe/lavapipe JIT) and 27 AMDGPU symbols (radeonsi's shader
-#       compiler). Intel and NVIDIA-open go through NIR backends and never
-#       reach LLVM, so the other dozen-plus targets are dead weight — the
-#       distro build ships them and costs 137 MB.
+#       llvmpipe/lavapipe JIT, which emits code for the machine it runs on)
+#       and 27 AMDGPU symbols (radeonsi's shader compiler). Intel and
+#       NVIDIA-open go through NIR backends and never reach LLVM, so the other
+#       dozen-plus targets are dead weight — the distro build ships them and
+#       costs 137 MB.
 #
 #   LLVM_LINK_LLVM_DYLIB=ON
 #       Produces the single libLLVM.so mesa links against. Without it LLVM
@@ -41,6 +42,14 @@ fail() { echo "[libllvm] FAIL: $*" >&2; exit 1; }
 skip() { echo "[libllvm] SKIP: $*" >&2; exit 3; }
 
 [[ -d "$SUBOS" ]] || skip "subos '$SUBOS_NAME' not found — xlings subos new $SUBOS_NAME"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=arch.sh
+. "$HERE/arch.sh"
+ARCH="$(subos_arch "$SUBOS")" || skip "cannot tell which architecture subos '$SUBOS_NAME' is for"
+case "$ARCH" in
+    x86_64)  NATIVE=X86 ;;
+    aarch64) NATIVE=AArch64 ;;
+esac
 mkdir -p "$WORK/src" "$WORK/dist"
 
 SRC="$WORK/src/llvm-$VERSION"
@@ -52,6 +61,11 @@ if [[ ! -d "$SRC" ]]; then
           "https://github.com/llvm/llvm-project/releases/download/llvmorg-$VERSION/llvm-project-$VERSION.src.tar.xz" \
           || fail "download failed"
     }
+    if [[ -n "${XLINGS_GFX_INPUTS:-}" ]]; then
+        want="$(awk -v v="$VERSION" '$1 == "llvm-project" && $2 == v { print $3 }' "$XLINGS_GFX_INPUTS")"
+        [[ -n "$want" ]] || fail "no digest for llvm-project $VERSION in $XLINGS_GFX_INPUTS"
+        echo "$want  $TARBALL" | sha256sum -c - >/dev/null 2>&1 || fail "$TARBALL is not the source $XLINGS_GFX_INPUTS records"
+    fi
     log "extracting"
     mkdir -p "$SRC"
     tar xf "$TARBALL" -C "$SRC" --strip-components=1 || fail "extract failed"
@@ -77,7 +91,9 @@ NINJA="$SUBOS/bin/ninja";  [[ -x "$NINJA" ]] || NINJA="$(command -v ninja)"  || 
 #
 # So: build with the compiler whose runtime the ecosystem actually ships.
 # `gcc-runtime` is 15.1.0, so gcc 15.1.0 makes the C++ ABI consistent by
-# construction rather than by a flag.
+# construction rather than by a flag. On aarch64 the index has no gcc 15
+# (16.1.0 is its oldest there): the build uses 16.2.0, and res-build checks
+# that the payload needs no symbol version gcc-runtime 15.1.0 lacks.
 # Through the subos's shim, not the payload's bin/ directly. The shim is what
 # carries the elfpatch'd interpreter and RPATH; invoking the payload binary by
 # absolute path bypasses that and cmake's compiler probe fails to link.
@@ -87,14 +103,14 @@ BUILD_CXX="$SUBOS/bin/g++"
 [[ -x "$BUILD_CC" ]] || skip "no gcc shim in the subos (xlings install gcc, then xlings use gcc 15.1.0)"
 log "compiler: $("$BUILD_CC" --version | head -1)"
 
-log "configuring (X86;AMDGPU, shared libLLVM)"
+log "configuring ($NATIVE;AMDGPU, shared libLLVM, $ARCH)"
 "$CMAKE" -S "$SRC/llvm" -B "$BUILD" -G Ninja \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_INSTALL_PREFIX="$SUBOS/usr" \
   -DCMAKE_C_COMPILER="$BUILD_CC" \
   -DCMAKE_CXX_COMPILER="$BUILD_CXX" \
   -DCMAKE_MAKE_PROGRAM="$NINJA" \
-  -DLLVM_TARGETS_TO_BUILD="X86;AMDGPU" \
+  -DLLVM_TARGETS_TO_BUILD="$NATIVE;AMDGPU" \
   -DLLVM_BUILD_LLVM_DYLIB=ON \
   -DLLVM_LINK_LLVM_DYLIB=ON \
   -DLLVM_ENABLE_RTTI=ON \
@@ -138,7 +154,13 @@ patchelf --set-rpath '$ORIGIN' "$PAYLOAD/lib/$(basename "$SO")" 2>/dev/null || t
 log "closure:"
 readelf -d "$PAYLOAD/lib/$(basename "$SO")" | sed -n 's/.*\[\(lib[^]]*\)\].*/    \1/p'
 
-OUT="$WORK/dist/libllvm-$VERSION-linux-x86_64.tar.gz"
+# The two checks build-in-subos.sh makes of every payload: nothing the build
+# was configured against came from the host, and nothing in the payload names
+# a path outside it.
+bash "$HERE/build-in-subos.sh" --name libllvm --check-inputs "$BUILD" || fail "the input check"
+bash "$HERE/build-in-subos.sh" --name libllvm --check-payload "$PAYLOAD" || fail "the payload check"
+
+OUT="$WORK/dist/libllvm-$VERSION-linux-$ARCH.tar.gz"
 tar czf "$OUT" -C "$WORK/payload" "libllvm-$VERSION"
 log "→ $OUT  ($(du -h "$OUT" | cut -f1), unpacked $(du -sh "$PAYLOAD" | cut -f1))"
 sha256sum "$OUT" | sed 's/^/[libllvm] sha256: /'
