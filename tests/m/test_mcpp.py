@@ -125,25 +125,40 @@ def _active_code():
 class TestCompletion:
     """TAB 补全注册契约（`mcpp self completion`，bash/zsh/fish/PowerShell）。
 
-    注册面是 xlings 自己的 profile（~/.xlings/config/shell/xlings-profile.*），
-    系统 shell 配置一行都不碰 —— subos 隔离边界即此 feature 的边界。
-
-    libxpkg 的 system.unix_api().append_to_shell_profile 名义上是专用 API，
-    实测（探针 xpkg）追加目标 = _RUNTIME.run_dir（调用 xlings 的 CWD）而非
-    真实 profile 目录，且只有 posix/fish 两个分支、没有 PowerShell；隔离断言
-    也禁止配方出现该调用名。等 libxpkg 侧修好 API，配方再迁移；在那之前由
-    标记块管理提供同等能力。
+    配方只做两件事：让刚装好的二进制生成各 shell 的脚本，再交给
+    libs/shell_profile.lua 写进 xlings 自己的 profile（标记块、整体替换/删除、
+    保留换行风格、引用 $XLINGS_HOME 而非绝对路径）。标记块与各 shell 守卫的行为
+    契约在 tests/test_shell_profile.py；系统 shell 配置一行都不碰 —— subos
+    隔离边界即此 feature 的边界。
     """
 
     @pytest.mark.static
-    def test_registers_in_xlings_profiles_only(self):
+    def test_goes_through_the_shared_profile_module(self):
         active = _active_code()
-        for surface in ("xlings-profile.sh", "xlings-profile.fish",
-                        "xlings-profile.ps1"):
-            assert surface in active, f"completion surface missing: {surface}"
-        # 系统 shell 配置只能出现在注释里（解释为什么不动它），代码里一个都没有。
+        assert 'import("xim.pkgindex.shell_profile")' in active
+        assert "shell_profile.add_completion(" in active
+        assert "shell_profile.remove(" in active
+        # profile 文件名与标记块逻辑属于模块，不再在配方里重复一份。
+        for owned in ("xlings-profile", "# >>>", "# <<<", "BASH_VERSION"):
+            assert owned not in active, f"profile handling duplicated in the recipe: {owned}"
+
+    @pytest.mark.static
+    def test_the_module_is_imported_inside_the_hooks(self):
+        # xlings runs uninstall() from a snapshot of the recipe in the install
+        # directory; a top-level import() of an index module is a silent stub
+        # there and the profile block would never be cut. Import at hook time.
+        active = _active_code()
+        top_level = [l for l in active.splitlines() if l.startswith("import(")]
+        assert not any("shell_profile" in l for l in top_level), \
+            "import xim.pkgindex.shell_profile inside the hook, not at the top of the file"
+        assert "local lib = import(\"xim.pkgindex.shell_profile\")" in active
+        assert 'type(lib.remove) ~= "function"' in active, "a stub module must be refused loudly"
+
+    @pytest.mark.static
+    def test_no_system_shell_config(self):
+        active = _active_code()
         for forbidden in (".bashrc", "bash_profile", "config.fish",
-                          "PowerShell_profile", "zshrc"):
+                          "PowerShell_profile", "zshrc", "append_to_shell_profile"):
             assert forbidden not in active, f"system shell config referenced: {forbidden}"
 
     @pytest.mark.static
@@ -151,8 +166,8 @@ class TestCompletion:
         # 脚本来自 `mcpp self completion <shell> --print`（与装上的版本协议一致），
         # 配方不内嵌脚本内容 —— 内嵌会随上游协议漂移。
         active = _active_code()
-        assert "self completion" in active
-        assert "--print" in active
+        assert '"self", "completion"' in active
+        assert '"--print"' in active
         assert "complete -o default -F _mcpp_complete" not in active, \
             "mcpp's bash script content is embedded in the recipe; it must come from the binary"
 
@@ -163,37 +178,18 @@ class TestCompletion:
             assert script in active, f"missing completion script for: {script}"
 
     @pytest.mark.static
+    def test_the_command_line_is_quoted(self):
+        # 二进制路径与输出路径来自 XLINGS_HOME，可含空格（mcpp#832）：必须经 shell.quote。
+        active = _active_code()
+        assert "shell.quote(out)" in active and "shell.join(" in active
+
+    @pytest.mark.static
     def test_registration_is_best_effort(self):
         # 生命周期测试装 0.0.56 —— 早于 `self completion` 命令的版本。
         # 注册失败只损失补全，绝不能让安装/卸载失败。
         active = _active_code()
         assert "pcall(register_completions)" in active
         assert "pcall(remove_completions)" in active
-
-    @pytest.mark.static
-    def test_marked_block_replaced_and_removed_whole(self):
-        # 块用 `# >>> mcpp completion ... >>>` 标记对整体替换/整体删除：
-        # 重复 config() 不累积；uninstall() 干净移除（三个 profile + 脚本）。
-        active = _active_code()
-        assert "# >>> mcpp completion" in active
-        assert "# <<< mcpp completion" in active
-        for profile in ("xlings-profile.sh", "xlings-profile.fish",
-                        "xlings-profile.ps1"):
-            assert re.search(
-                r'update_profile\(\s*path\.join\(sdir,\s*"' +
-                re.escape(profile) + r'"\)\s*,\s*nil\)', active), \
-                f"uninstall must remove the block from {profile}"
-
-    @pytest.mark.static
-    def test_sh_block_guards_mirror_xlings_profile(self):
-        # xlings-profile.sh 会被 bash/zsh/纯 sh 共同 source：mcpp.bash/mcpp.zsh
-        # 含 bash-/zsh-only 语法，守卫必须与 xlings profile 自己的补全分支
-        # 同构，否则纯 sh/dash 解析报错、整个 profile 失效。
-        active = _active_code()
-        assert '${BASH_VERSION-}' in active
-        assert 'command -v complete' in active
-        assert '${ZSH_VERSION-}' in active
-        assert 'typeset -f compdef' in active
 
 
 class TestLifecycle:
