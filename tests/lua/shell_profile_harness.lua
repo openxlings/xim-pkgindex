@@ -3,6 +3,7 @@
 -- (profile files held in a table) are forged per case.
 
 local LIB = assert(os.getenv("SHELL_PROFILE_LIB"), "SHELL_PROFILE_LIB required")
+local SHELL_LIB = assert(os.getenv("SHELL_LIB"), "SHELL_LIB required")
 local DUMP = os.getenv("SNIPPET_DIR")
 
 local ENV, FILES, DIRS, WRITES = {}, {}, {}, 0
@@ -18,6 +19,23 @@ os.mkdir = function(p) DIRS[p] = true end
 io.readfile = function(p) return FILES[p] end
 io.writefile = function(p, s) FILES[p] = s; WRITES = WRITES + 1 end
 pkginfo = { install_dir = function() return "/h/data/xpkgs/xim-x-demo/1.0" end }
+os.host = function() return "linux" end
+os.tryrm = function(p) FILES[p] = nil end
+LOGS = {}
+local function logger(level) return function(fmt, ...) LOGS[#LOGS + 1] = level .. ": " .. string.format(fmt, ...) end end
+log = { info = logger("info"), warn = logger("warn"), error = logger("error") }
+-- system.exec forges the binary: `<bin> <args> > '<out>'`. BIN_MODE decides what it prints.
+EXECS, BIN_MODE = {}, "ok"
+system = { exec = function(cmd)
+    EXECS[#EXECS + 1] = cmd
+    local out = assert(cmd:match(" > '([^']*)'$"), "redirect to a quoted file: " .. cmd)
+    if BIN_MODE == "old" then error("exit 2") end
+    if BIN_MODE == "empty" then FILES[out] = ""; return end
+    if BIN_MODE == "foreign" then FILES[out] = string.rep("# a script for another program\n", 4); return end
+    local sh = cmd:match("completion '([a-z]+)'") or "?"
+    FILES[out] = "# " .. sh .. " completion for demo\n_demo_complete() { :; }\n# padding padding padding\n"
+end }
+shell = assert(loadfile(SHELL_LIB))()
 
 local sp = assert(loadfile(LIB))()
 
@@ -120,6 +138,52 @@ local only = sp.completion_snippets({ zsh = "z" })
 check(only.sh:find("^if %[ %-n \"%${ZSH_VERSION") ~= nil and only.fish == nil and only.ps1 == nil, "a lone zsh script opens with `if`, not `elif`")
 local odd = sp.completion_snippets({ bash = "it's/odd.bash", fish = "it's/odd.fish", powershell = "it's/odd.ps1" })
 check(has(odd.sh, "it'\\''s") and has(odd.fish, "it\\'s") and has(odd.ps1, "it''s"), "a quote in a name is escaped per shell")
+
+-- 10. register_completion: the declarative path
+local SPEC = { name = "demo", bin = "/h/data/xpkgs/xim-x-demo/1.0/bin/demo", args = { "self", "completion", "{shell}", "--print" } }
+local P = "/h/config/shell/"
+local function prof(k) return FILES[P .. "xlings-profile." .. k] end
+reset(); EXECS, BIN_MODE = {}, "ok"
+local okr, why = sp.register_completion(SPEC)
+check(okr == true and why == nil, "registered")
+check(#EXECS == 4 and has(EXECS[1], "'self' 'completion' 'bash' '--print' > '/h/config/shell/completions/demo.bash'"), "one quoted run per shell, {shell} replaced, stdout parked in completions/")
+check(FILES[P .. "completions/demo.zsh"] and FILES[P .. "completions/demo.fish"] and FILES[P .. "completions/demo.ps1"], "four scripts")
+check(has(prof("sh"), "# >>> demo completion (xlings xim) >>>") and has(prof("fish"), "demo.fish") and has(prof("ps1"), "demo.ps1"), "a block in each profile")
+local snap = { prof("sh"), prof("fish"), prof("ps1") }
+sp.register_completion(SPEC)
+check(prof("sh") == snap[1] and prof("fish") == snap[2] and prof("ps1") == snap[3], "registering again changes nothing")
+check(sp.unregister_completion("demo") == true, "unregister answers true")
+check(prof("sh") == "# xlings-profile-version: 13\nexport A=1\n" and prof("ps1") == "# xlings-profile-version: 13\r\n$env:A = 1\r\n", "profiles restored exactly")
+check(FILES[P .. "completions/demo.bash"] == nil and FILES[P .. "completions/demo.ps1"] == nil, "scripts deleted")
+check(sp.unregister_completion("demo") == true, "unregister twice is fine")
+
+-- an older binary: one probe, no profile touched, an earlier block cut, never an error
+reset(); BIN_MODE = "ok"; sp.register_completion(SPEC)
+EXECS, BIN_MODE, LOGS = {}, "old", {}
+local okold, whyold = sp.register_completion(SPEC)
+check(okold == false and has(whyold, "prints no completion script"), "old binary: false, reason")
+check(#EXECS == 1, "old binary: only the first shell is probed")
+check(not has(prof("sh"), "demo completion") and not has(prof("ps1"), "demo completion"), "old binary: the block an earlier version left is cut")
+check(#LOGS == 1 and LOGS[1]:find("^warn:") ~= nil, "old binary: exactly one warning")
+for _, mode in ipairs({ "empty", "foreign" }) do
+    reset(); EXECS, BIN_MODE = {}, mode
+    local okm = sp.register_completion(SPEC)
+    check(okm == false and prof("sh") == "# xlings-profile-version: 13\nexport A=1\n", mode .. " output is not a script: nothing registered")
+    check(FILES[P .. "completions/demo.bash"] == nil, mode .. " output is not left on disk")
+end
+
+-- no shell layout, bad specs: false and a warning, never an exception
+reset(); DIRS["/h/config/shell"] = nil; EXECS, BIN_MODE = {}, "ok"
+local okn, whyn = sp.register_completion(SPEC)
+check(okn == false and has(whyn, "no xlings shell config dir") and #EXECS == 0, "no shell layout: nothing run")
+local okb = sp.register_completion({ name = "demo" })
+check(okb == false, "an incomplete spec is answered, not raised")
+check(sp.register_completion(nil) == false, "nil spec is answered, not raised")
+
+-- shells = {...} limits the run; a partial result still registers what worked
+reset(); EXECS, BIN_MODE = {}, "ok"
+sp.register_completion({ name = "demo", bin = SPEC.bin, args = SPEC.args, shells = { "fish" } })
+check(#EXECS == 1 and has(prof("fish"), "demo.fish") and not has(prof("sh"), "demo completion"), "shells = { fish }: only fish")
 
 if DUMP then
     for kind, text in pairs(s) do

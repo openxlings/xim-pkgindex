@@ -25,6 +25,7 @@ LUA = shutil.which("lua5.4") or shutil.which("lua")
 def _run_harness(dump=None):
     env = dict(os.environ)
     env["SHELL_PROFILE_LIB"] = str(LIB)
+    env["SHELL_LIB"] = str(REPO / "libs" / "shell.lua")
     if dump:
         env["SNIPPET_DIR"] = str(dump)
     return subprocess.run([LUA, str(HARNESS)], capture_output=True, text=True, env=env)

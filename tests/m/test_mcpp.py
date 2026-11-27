@@ -125,34 +125,36 @@ def _active_code():
 class TestCompletion:
     """TAB 补全注册契约（`mcpp self completion`，bash/zsh/fish/PowerShell）。
 
-    配方只做两件事：让刚装好的二进制生成各 shell 的脚本，再交给
-    libs/shell_profile.lua 写进 xlings 自己的 profile（标记块、整体替换/删除、
-    保留换行风格、引用 $XLINGS_HOME 而非绝对路径）。标记块与各 shell 守卫的行为
-    契约在 tests/test_shell_profile.py；系统 shell 配置一行都不碰 —— subos
-    隔离边界即此 feature 的边界。
+    配方只声明意图：`register_completion{ name, bin, args }` 与
+    `unregister_completion(name)`。生成脚本、校验、放置、写入 xlings 自己的 profile
+    （标记块、整体替换/删除、换行风格、$XLINGS_HOME 引用、各 shell 守卫、旧版本
+    一次探测即短路）的行为契约在 tests/test_shell_profile.py。系统 shell 配置一行
+    都不碰 —— subos 隔离边界即此 feature 的边界。
     """
 
     @pytest.mark.static
-    def test_goes_through_the_shared_profile_module(self):
+    def test_declares_intent_through_the_shared_module(self):
         active = _active_code()
-        assert 'import("xim.pkgindex.shell_profile")' in active
-        assert "shell_profile.add_completion(" in active
-        assert "shell_profile.remove(" in active
-        # profile 文件名与标记块逻辑属于模块，不再在配方里重复一份。
-        for owned in ("xlings-profile", "# >>>", "# <<<", "BASH_VERSION"):
-            assert owned not in active, f"profile handling duplicated in the recipe: {owned}"
+        assert "lib.register_completion{" in active
+        assert "lib.unregister_completion(" in active
+        assert '"self", "completion", "{shell}", "--print"' in active
+        # profile 文件名、标记块、各 shell 守卫、脚本表都属于模块，不在配方里重复。
+        for owned in ("xlings-profile", "# >>>", "# <<<", "BASH_VERSION",
+                      "mcpp.bash", "mcpp.zsh", "system.exec"):
+            assert owned not in active, f"completion machinery duplicated in the recipe: {owned}"
 
     @pytest.mark.static
     def test_the_module_is_imported_inside_the_hooks(self):
         # xlings runs uninstall() from a snapshot of the recipe in the install
         # directory; a top-level import() of an index module is a silent stub
-        # there and the profile block would never be cut. Import at hook time.
+        # there and the profile block would never be cut (openxlings/xlings#743).
         active = _active_code()
         top_level = [l for l in active.splitlines() if l.startswith("import(")]
         assert not any("shell_profile" in l for l in top_level), \
             "import xim.pkgindex.shell_profile inside the hook, not at the top of the file"
-        assert "local lib = import(\"xim.pkgindex.shell_profile\")" in active
-        assert 'type(lib.remove) ~= "function"' in active, "a stub module must be refused loudly"
+        assert 'local lib = import("xim.pkgindex.shell_profile")' in active
+        assert 'type(lib.register_completion) ~= "function"' in active, \
+            "a stub module must be refused"
 
     @pytest.mark.static
     def test_no_system_shell_config(self):
@@ -162,34 +164,13 @@ class TestCompletion:
             assert forbidden not in active, f"system shell config referenced: {forbidden}"
 
     @pytest.mark.static
-    def test_scripts_generated_from_the_installed_binary(self):
-        # 脚本来自 `mcpp self completion <shell> --print`（与装上的版本协议一致），
-        # 配方不内嵌脚本内容 —— 内嵌会随上游协议漂移。
+    def test_both_hooks_use_it(self):
+        # 注册在 config()，清理在 uninstall()；缺一则 profile 里留下无主的块。
         active = _active_code()
-        assert '"self", "completion"' in active
-        assert '"--print"' in active
-        assert "complete -o default -F _mcpp_complete" not in active, \
-            "mcpp's bash script content is embedded in the recipe; it must come from the binary"
-
-    @pytest.mark.static
-    def test_all_four_shells_supported(self):
-        active = _active_code()
-        for script in ("mcpp.bash", "mcpp.zsh", "mcpp.fish", "mcpp.ps1"):
-            assert script in active, f"missing completion script for: {script}"
-
-    @pytest.mark.static
-    def test_the_command_line_is_quoted(self):
-        # 二进制路径与输出路径来自 XLINGS_HOME，可含空格（mcpp#832）：必须经 shell.quote。
-        active = _active_code()
-        assert "shell.quote(out)" in active and "shell.join(" in active
-
-    @pytest.mark.static
-    def test_registration_is_best_effort(self):
-        # 生命周期测试装 0.0.56 —— 早于 `self completion` 命令的版本。
-        # 注册失败只损失补全，绝不能让安装/卸载失败。
-        active = _active_code()
-        assert "pcall(register_completions)" in active
-        assert "pcall(remove_completions)" in active
+        config = active[active.index("function config()"):active.index("function uninstall()")]
+        uninstall = active[active.index("function uninstall()"):]
+        assert "register_completion" in config and "unregister_completion" not in config
+        assert "unregister_completion" in uninstall
 
 
 class TestLifecycle:

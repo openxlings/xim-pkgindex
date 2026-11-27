@@ -1,21 +1,43 @@
 -- Putting a package's shell integration into xlings' own shell profiles.
 --
--- Loaded by package config()/uninstall() hooks via:
---     import("xim.pkgindex.shell_profile")
+-- Loaded by package hooks via:
+--     local lib = import("xim.pkgindex.shell_profile")      -- INSIDE the hook, see below
 --
 --     function config()
---         -- scripts the package generated under <XLINGS_HOME>/config/shell/completions/
---         shell_profile.add_completion("mcpp completion", {
---             bash = "completions/mcpp.bash", zsh = "completions/mcpp.zsh",
---             fish = "completions/mcpp.fish", powershell = "completions/mcpp.ps1",
---         })
+--         local lib = import("xim.pkgindex.shell_profile")
+--         -- the binary prints the script for each shell; one probe, one call, never raises
+--         lib.register_completion{ name = "mcpp", bin = mcpp_bin(),
+--                                  args = { "self", "completion", "{shell}", "--print" } }
 --         return true
 --     end
 --
 --     function uninstall()
---         shell_profile.remove("mcpp completion")
+--         local lib = import("xim.pkgindex.shell_profile")
+--         lib.unregister_completion("mcpp")
 --         return true
 --     end
+--
+-- register_completion{ name, bin, args, shells? } -> true | false, reason
+--   Runs `bin` with `args` (`{shell}` becomes bash, zsh, fish, powershell) with stdout parked
+--   in <XLINGS_HOME>/config/shell/completions/<name>.{bash,zsh,fish,ps1}, accepts a script
+--   that is non-empty and names the package, then puts the guarded `source` into the xlings
+--   profiles. Idempotent. Best-effort by contract: a binary without the command (an older
+--   release), a home without a shell layout, any error -> `false, reason` and one warning,
+--   never an exception, so the install it runs in never fails. Only the FIRST shell is
+--   probed on failure: if it produces nothing the binary has no such command and the other
+--   three are not run. A block an earlier, newer version left behind is cut in that case.
+-- unregister_completion(name)
+--   Cuts the block from every profile and deletes the scripts. Nothing to cut is not an error.
+--
+-- The lower level (add / remove / add_completion / splice) is public for a package whose
+-- integration is not a completion script; the recipes above need none of it.
+--
+-- Import it INSIDE the hook, not at the top of the recipe. xlings runs uninstall() from a
+-- snapshot of the recipe in the install directory, where no index libs/ is visible while
+-- the file loads, and a top-level import("xim.pkgindex.*") of a missing module answers
+-- with a silent stub (every call a no-op, nothing logged): openxlings/xlings#743. An
+-- import made when the hook runs resolves through the index the package came from.
+-- A recipe should refuse a stub: `type(lib.add) ~= "function"`.
 --
 -- The surface is xlings' OWN profile (`<XLINGS_HOME>/config/shell/xlings-profile.{sh,fish,ps1}`),
 -- the one file per shell the xlings installer wires into the user's shell with a
@@ -37,14 +59,22 @@
 --     never to an absolute path, so a moved home and Windows separators are not our problem;
 --   * the file's own line endings (LF or CRLF) are kept.
 --
--- Known limit, by xlings' design and not fixable here: `write_or_upgrade_profile_`
--- (xlings src/core/xself/init.cpp) rewrites a profile whose version marker is older than
--- the binary's, and the block goes with it. `xlings install <pkg>` / `--reconfig` runs
--- config() again and puts it back. A drop-in directory the profile sources
--- (config/shell/profile.d/) would remove the class; that is an xlings change, and only
--- the body of `add`/`remove` here would then change, not the recipes.
+-- Known limits, by xlings' design and not fixable here (openxlings/xlings#744):
+--   * `write_or_upgrade_profile_` (xlings src/core/xself/init.cpp) rewrites a profile whose
+--     version marker is older than the binary's, and the blocks go with it.
+--     `xlings install <pkg> --reconfig` runs config() again and puts them back.
+--   * the scripts live at a version-stable path and belong to whichever version ran
+--     config() last: `xlings use <pkg>@<other>` does not regenerate them, and removing one
+--     of several installed versions removes what the others still use.
+-- A drop-in directory the profiles source (config/shell/profile.d/), with xlings owning
+-- the per-version part, removes both; then only the bodies of `add`/`remove` change, not
+-- the recipes. libxpkg's own `append_to_shell_profile` is unusable meanwhile
+-- (openxlings/libxpkg#55).
 
 import("xim.libxpkg.pkginfo")
+import("xim.libxpkg.log")
+import("xim.libxpkg.system")
+import("xim.pkgindex.shell")
 
 local M = {}
 
@@ -263,6 +293,99 @@ end
 -- script per shell (bash, zsh, fish, powershell), relative to <home>/config/shell.
 function M.add_completion(id, files)
     return M.add(id, M.completion_snippets(files))
+end
+
+-- ── register_completion: generate, validate, place, register ──────────────
+
+local COMPLETION_SHELLS = {
+    { shell = "bash",       ext = "bash" },
+    { shell = "zsh",        ext = "zsh"  },
+    { shell = "fish",       ext = "fish" },
+    { shell = "powershell", ext = "ps1"  },
+}
+
+local function completion_id(name) return name .. " completion" end
+
+-- The script `bin` prints for one shell, parked in `out`; true when it is one.
+local function generate(spec, entry, out)
+    local argv = { spec.bin }
+    for _, a in ipairs(spec.args) do
+        argv[#argv + 1] = (tostring(a):gsub("{shell}", entry.shell))
+    end
+    local cmd = shell.join(argv) .. " > " .. shell.quote(out)
+    -- A failing binary must not abort the shells that still work, and the redirect can
+    -- leave an empty file behind: remove it either way.
+    if not pcall(system.exec, cmd) then
+        os.tryrm(out)
+        return false
+    end
+    local content = io.readfile(out)
+    if not content or #content < 40 or not content:find(spec.name, 1, true) then
+        os.tryrm(out)
+        return false
+    end
+    return true
+end
+
+local function register(spec)
+    assert(type(spec) == "table" and type(spec.name) == "string" and spec.name ~= "", "name required")
+    assert(type(spec.bin) == "string" and type(spec.args) == "table", "bin and args required")
+    local dir = M.data_dir("completions")
+    if not dir then
+        return false, "no xlings shell config dir in this home"
+    end
+    local want = {}
+    for _, s in ipairs(spec.shells or {}) do want[s] = true end
+    local files, tried = {}, 0
+    for _, entry in ipairs(COMPLETION_SHELLS) do
+        if not spec.shells or want[entry.shell] then
+            tried = tried + 1
+            local out = path.join(dir, spec.name .. "." .. entry.ext)
+            if generate(spec, entry, out) then
+                files[entry.shell] = "completions/" .. spec.name .. "." .. entry.ext
+            elseif tried == 1 then
+                -- The first shell gave nothing: the binary has no such command. One
+                -- probe, not four failing runs; and drop what an earlier version left.
+                M.remove(completion_id(spec.name))
+                return false, "this version of " .. spec.name .. " prints no completion script"
+            end
+        end
+    end
+    if next(files) == nil then
+        M.remove(completion_id(spec.name))
+        return false, "no shell produced a completion script"
+    end
+    M.add_completion(completion_id(spec.name), files)
+    return true
+end
+
+function M.register_completion(spec)
+    local ok, res, why = pcall(register, spec)
+    if not ok then
+        res, why = false, tostring(res)
+    end
+    if not res then
+        log.warn("%s: tab completion not registered: %s", tostring(type(spec) == "table" and spec.name), tostring(why))
+        return false, why
+    end
+    log.info("%s: tab completion registered; restart the shell or re-source the xlings profile", spec.name)
+    return true
+end
+
+function M.unregister_completion(name)
+    local ok, err = pcall(function()
+        M.remove(completion_id(name))
+        local dir = M.dir()
+        if dir then
+            for _, entry in ipairs(COMPLETION_SHELLS) do
+                os.tryrm(path.join(dir, "completions", name .. "." .. entry.ext))
+            end
+        end
+    end)
+    if not ok then
+        log.warn("%s: tab completion not cleaned up: %s", tostring(name), tostring(err))
+    end
+    return ok
 end
 
 return M
