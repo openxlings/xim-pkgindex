@@ -19,10 +19,10 @@
 --   https://downloads.claude.ai/claude-code-releases/<version>/manifest.json
 --     carries the authoritative per-platform sha256. Every hash below was
 --     taken from there; the ones for the mirrored versions (2.1.222,
---     2.1.258, 2.1.281, 2.1.317, 2.1.322) were re-verified against the
---     downloaded bytes before the CN mirror was published.
+--     2.1.258, 2.1.281, 2.1.317, 2.1.322, 2.1.332) were re-verified
+--     against the downloaded bytes before the CN mirror was published.
 --
---   https://downloads.claude.ai/claude-code-releases/latest  -> "2.1.322"
+--   https://downloads.claude.ai/claude-code-releases/latest  -> "2.1.332"
 --   https://downloads.claude.ai/claude-code-releases/stable  -> "2.1.311"
 --
 -- Linux deliberately uses the **glibc** asset, not `linux-x64-musl`: the
@@ -76,11 +76,11 @@
 --          all six platform binaries can live in one release), published
 --          so mainland-China installs don't have to reach
 --          downloads.claude.ai. Only the version `latest` points at gets a
---          new mirror — each asset is ~310-340 MB, and older pins are rare
---          enough not to be worth ~2 GB of mirror per release. Previously
+--          new mirror — each asset is ~380-405 MB, and older pins are rare
+--          enough not to be worth ~2.3 GB of mirror per release. Previously
 --          mirrored versions keep their CN entry (the assets stay up), so
---          2.1.222, 2.1.258, 2.1.281 and 2.1.317 still resolve through the
---          mirror too.
+--          2.1.222, 2.1.258, 2.1.281, 2.1.317 and 2.1.322 still resolve
+--          through the mirror too.
 
 local _CC_GLOBAL = "https://downloads.claude.ai/claude-code-releases"
 local _CC_CN = "https://gitcode.com/xlings-res/claude/releases/download"
@@ -157,7 +157,10 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "2.1.322" },
+            ["latest"] = { ref = "2.1.332" },
+            ["2.1.332"] = _linux("2.1.332",
+                "a2df1f41bb00250992926420d0063f89b127cb81abdd284dbefb80c50ff1d026",
+                "50c305fcb8912851ce774429131d94ed6f84edbe3d8d0ed7a59dade5d893acc0", true),
             ["2.1.322"] = _linux("2.1.322",
                 "bfb3703ad5380242328459bc62ada4bde8ae7ba57c6e1eeadb9c00e08874c478",
                 "f220ca50ea4f3222043ff83cc224a1262e0196e9897acc0871efa94235b0c1fd", true),
@@ -213,7 +216,10 @@ package = {
                 "1fec8c8369606b4a6c00af963354b7d48aee793ed5db378fe4cf280149f3190a"),
         },
         macosx = {
-            ["latest"] = { ref = "2.1.322" },
+            ["latest"] = { ref = "2.1.332" },
+            ["2.1.332"] = _macosx("2.1.332",
+                "3ceb285194091d45b150561ac5d58ab5a58cddcdc6d086f883039a652c037cfa",
+                "5b8214f8f082f3187420b27b4063b9b4f4d9412cd66ea436d6d1966ad582700f", true),
             ["2.1.322"] = _macosx("2.1.322",
                 "b513d15117cbf1bb05095dab41963fd394ff40de1fa99dcc6d7d1033bf292e9b",
                 "a9d237949db816a0b7afd88a9a8e1df36b3a597a30f5a41d1c0539eb180a3450", true),
@@ -264,7 +270,10 @@ package = {
                 "2e8667322e0bd104087df2a8857f176acc75d7091aa02828825dfeb4a5708531"),
         },
         windows = {
-            ["latest"] = { ref = "2.1.322" },
+            ["latest"] = { ref = "2.1.332" },
+            ["2.1.332"] = _windows("2.1.332",
+                "e6652f9170a07df45f1db3e0520f1df0f7b385181ff74f70f49398a67b5fd320",
+                "3e5f5a60279364592f2be7b35a7812f8474e5c8ac809203ceb0a4b12bcd02f32", true),
             ["2.1.322"] = _windows("2.1.322",
                 "345996b4bdbae21d817f750fae2f34cbf8d81224a5444c78136091d121beb298",
                 "8e32c3f2fee1e5c17f0ae9a544fedf0951c4d0482268bb47c06c229fc62894c4", true),
