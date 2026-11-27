@@ -565,6 +565,11 @@ def cmd_evidence(args) -> int:
         plan = [p for p in plan if p["file"] in args.only or p["name"] in args.only]
     if args.groups:
         plan = [p for p in plan if p["group"] in args.groups]
+    if args.shard:
+        i, n = (int(x) for x in args.shard.split("/"))
+        urls = sorted({p["url"] for p in plan})
+        mine = {u for k, u in enumerate(urls) if k % n == i}
+        plan = [p for p in plan if p["url"] in mine]
     done: dict[str, Any] = {}
     out = Path(args.out)
     if out.exists():
@@ -919,6 +924,7 @@ def main() -> int:
     p.add_argument("--groups", nargs="*")
     p.add_argument("--jobs", type=int, default=2)
     p.add_argument("--keep-unresolved", action="store_true", help="do not retry the unresolved rows of --out")
+    p.add_argument("--shard", help="i/n: the i-th of n parts of the plan's URLs (0-based), for CI")
     p.set_defaults(func=cmd_evidence)
     p = sub.add_parser("apply")
     p.add_argument("--evidence", required=True)
