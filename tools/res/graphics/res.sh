@@ -59,7 +59,9 @@ else
     gfx_step="bash /w/graphics/tiers.sh all --to $what --skip '$gfx_skip'"
 fi
 log "graphics: $what $src_version in a SubOS of xlings $gfx_client ($gfx_tools)"
-debian "apt-get -qq update && apt-get -qq install -y --no-install-recommends ca-certificates curl xz-utils bzip2 file patch pkg-config bison flex gawk m4 gperf perl >/dev/null \
+# The container's programs: they generate sources and run scripts, and leave nothing in a payload.
+gfx_prep="apt-get -qq update && apt-get -qq install -y --no-install-recommends ca-certificates curl xz-utils bzip2 file patch pkg-config bison flex gawk m4 gperf perl >/dev/null"  # host-dep-ok: the pinned build container's recipe
+debian "$gfx_prep \
     && mkdir -p /w/xl /w/logs && tar -xzf /w/$xl -C /w/xl && export XLINGS_HOME=/w/xh XLINGS_NON_INTERACTIVE=1 \
     && (cd /w/xl/*/ && ./bin/xlings self install) </dev/null >/w/logs/xlings-install.log 2>&1 \
     && /w/xh/bin/xlings install -y $gfx_tools </dev/null >/w/logs/tools.log 2>&1 \

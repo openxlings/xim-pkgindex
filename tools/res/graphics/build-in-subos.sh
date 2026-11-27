@@ -978,10 +978,10 @@ import yaml
 
     if [[ ! -d "$vendor/mako" || ! -d "$vendor/packaging" || ! -d "$vendor/yaml" ]]; then
         log "python: vendoring mako $MAKO_PIN + packaging $PACKAGING_PIN + PyYAML $PYYAML_PIN into $vendor"
-        "$py" -m pip install --quiet --disable-pip-version-check \
-              --target "$vendor" "Mako==$MAKO_PIN" "packaging==$PACKAGING_PIN" "PyYAML==$PYYAML_PIN" \
-              >"$WORK/pyvendor.log" 2>&1 \
-            || { tail -20 "$WORK/pyvendor.log" >&2; fail "vendoring python modules (see $WORK/pyvendor.log)"; }
+        local pins=("Mako==$MAKO_PIN" "packaging==$PACKAGING_PIN" "PyYAML==$PYYAML_PIN")
+        if ! "$py" -m pip install --quiet --disable-pip-version-check --target "$vendor" "${pins[@]}" >"$WORK/pyvendor.log" 2>&1; then  # host-dep-ok: the SubOS's python, pinned modules into the build's work tree
+            tail -20 "$WORK/pyvendor.log" >&2; fail "vendoring python modules (see $WORK/pyvendor.log)"
+        fi
     fi
     export PYTHONPATH="${vendor}${PYTHONPATH:+:$PYTHONPATH}"
 
