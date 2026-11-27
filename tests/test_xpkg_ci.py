@@ -6,6 +6,7 @@ import json
 import subprocess
 import tarfile
 import tempfile
+import zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -212,6 +213,48 @@ def test_archive_suffix_gate():
     assert "xmake-bundle-v3.0.7.win64.exe".endswith(mod.ARCHIVE_SUFFIXES) is False
     assert "bat-v0.26.1-x86_64-unknown-linux-musl.tar.gz".endswith(mod.ARCHIVE_SUFFIXES) is True
     assert "foo.zip".endswith(mod.ARCHIVE_SUFFIXES) is True
+    assert "foo.tgz".endswith(mod.ARCHIVE_SUFFIXES) is True
+
+
+def test_validate_archive_accepts_supported_containers():
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        payload = root / "payload.txt"
+        payload.write_text("payload\n", encoding="utf-8")
+        for suffix, mode in ((".tar.gz", "w:gz"), (".tar.xz", "w:xz"),
+                             (".tar.bz2", "w:bz2"), (".tgz", "w:gz")):
+            archive = root / ("payload" + suffix)
+            with tarfile.open(archive, mode) as container:
+                container.add(payload, arcname="payload.txt")
+            assert mod.validate_archive(archive) is None, suffix
+        archive = root / "payload.zip"
+        with zipfile.ZipFile(archive, "w") as container:
+            container.write(payload, arcname="payload.txt")
+        assert mod.validate_archive(archive) is None
+
+
+def test_validate_archive_rejects_empty_containers():
+    with tempfile.TemporaryDirectory() as directory:
+        root = Path(directory)
+        for suffix, mode in ((".tar.gz", "w:gz"), (".tar.xz", "w:xz"),
+                             (".tar.bz2", "w:bz2"), (".tgz", "w:gz")):
+            archive = root / ("empty" + suffix)
+            with tarfile.open(archive, mode):
+                pass
+            assert mod.validate_archive(archive) == "tar archive is empty", suffix
+        archive = root / "empty.zip"
+        with zipfile.ZipFile(archive, "w"):
+            pass
+        assert mod.validate_archive(archive) == "zip archive is empty"
+
+
+def test_validate_archive_rejects_corrupt_containers():
+    with tempfile.TemporaryDirectory() as directory:
+        for suffix in (".tar.gz", ".tar.xz", ".tar.bz2", ".tgz", ".zip"):
+            archive = Path(directory) / ("corrupt" + suffix)
+            archive.write_bytes(b"not an archive")
+            error = mod.validate_archive(archive)
+            assert error and error != "unsupported archive extension", suffix
 
 
 def main() -> int:
@@ -220,6 +263,9 @@ def main() -> int:
     test_cmd_mirror_execute_content_gate()
     test_resolve_platform_arches()
     test_archive_suffix_gate()
+    test_validate_archive_accepts_supported_containers()
+    test_validate_archive_rejects_empty_containers()
+    test_validate_archive_rejects_corrupt_containers()
     with tempfile.TemporaryDirectory() as d:
         root = Path(d)
         payload = root / "payload.txt"
