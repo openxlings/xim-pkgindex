@@ -14,6 +14,11 @@
 --         return payload.present{ "conf/nginx.conf", "html/index.html" }
 --     end
 --
+-- A recipe of spec "3" does not call payload.unpack: the host has landed the
+-- download in the install directory before install() runs, laid out by the
+-- entry's `strip` (xpkg spec §4.6, §5.2). payload.require and payload.present
+-- serve every spec.
+--
 -- payload.unpack answers, once, the questions five recipes each answered
 -- their own way:
 --

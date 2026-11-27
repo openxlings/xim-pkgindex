@@ -32,6 +32,7 @@ package = {
 
     xpm = {
         windows = {
+            strip = 1,
             ["latest"] = { ref = "1.30.7" },
             ["1.30"] = { ref = "1.30.7" },
             ["1.30.7"] = {
@@ -60,8 +61,6 @@ function installed()
 end
 
 function install()
-    local ver = pkginfo.version()
-    payload.unpack{ extracted = "nginx-" .. ver, strip = 1 }
     payload.require(REQUIRED_FILES)
     return true
 end

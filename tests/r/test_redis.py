@@ -33,6 +33,15 @@ def meta():
 
 class TestStatic:
     @pytest.mark.static
+    def test_the_host_lands_the_archive(self):
+        # spec "3": the archive's one top-level directory is dropped by the
+        # entry's strip as the host lands it; the hook does not land it
+        # (payload.unpack is for recipes of spec 1 and 2).
+        src = Path(PKG_FILE).read_text(encoding="utf-8")
+        assert "payload.unpack" not in src
+        assert re.search(r"\bstrip = 1,", src)
+
+    @pytest.mark.static
     def test_required_fields(self, meta):
         assert_required_fields(meta)
 
@@ -120,10 +129,16 @@ system = {
     end,
 }
 
+-- spec "3": the host lands the zip in the install directory (the entry's
+-- strip = 1) before install(); install() extracts nothing and only asserts
+-- what landed, naming what is missing.
 assert(not installed())
+assert(not pcall(install))
+for _, rel in ipairs(required) do
+    files["C:/xpkgs/redis/8.10.3/" .. rel] = true
+end
 assert(install())
-assert(#execs == 1)
-assert(execs[1]:match('^C:\\\\Windows\\\\System32\\\\tar%.exe %-xf "C:\\\\cache\\\\Redis%-8%.10%.3%-Windows%-x64%-msys2%.zip" %-%-strip%-components=1 %-C "C:\\\\xpkgs\\\\redis\\\\8%.10%.3"$'))
+assert(#execs == 0)
 assert(installed())
 
 for _, rel in ipairs(required) do

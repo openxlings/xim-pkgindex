@@ -53,6 +53,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             deps = {
                 runtime = { "xim:glibc@>=2.39" },
             },
@@ -67,6 +68,7 @@ package = {
             },
         },
         macosx = {
+            strip = 1,
             source = "https://storage.googleapis.com/dart-archive/channels/stable/release/${version}/sdk/dartsdk-macos-${arch_alias}-release.zip",
             ["latest"] = { ref = "3.14.1" },
             ["3.14.1"] = {
@@ -78,6 +80,7 @@ package = {
             },
         },
         windows = {
+            strip = 1,
             source = "https://storage.googleapis.com/dart-archive/channels/stable/release/${version}/sdk/dartsdk-windows-${arch_alias}-release.zip",
             ["latest"] = { ref = "3.14.1" },
             ["3.14.1"] = {
@@ -131,8 +134,6 @@ function installed()
 end
 
 function install()
-    payload.unpack{ extracted = "dart-sdk", strip = 1 }
-
     local dir = pkginfo.install_dir()
     if fs.is_file(dir .. "/bin/dart.exe") then
         payload.require(REQUIRED_WINDOWS)
