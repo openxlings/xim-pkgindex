@@ -10,7 +10,7 @@ package = {
     repo = "https://gitlab.freedesktop.org/xorg/lib/libXdmcp",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"graphics", "lib"},
     keywords = {"libxdmcp", "graphics", "x11"},
@@ -47,11 +47,20 @@ package = {
             },
             ["latest"] = { ref = "1.1.5" },
             ["1.1.5"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/libXdmcp/releases/download/1.1.5/libXdmcp-1.1.5-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/libXdmcp/releases/download/1.1.5/libXdmcp-1.1.5-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libXdmcp/releases/download/1.1.5/libXdmcp-1.1.5-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libXdmcp/releases/download/1.1.5/libXdmcp-1.1.5-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "d7f0c96723d92af1275e43c39cd66e64802409aa5c4f2f9aba43aaf0b113de08",
                 },
-                sha256 = { x86_64 = "d7f0c96723d92af1275e43c39cd66e64802409aa5c4f2f9aba43aaf0b113de08" },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libXdmcp/releases/download/1.1.5/libXdmcp-1.1.5-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libXdmcp/releases/download/1.1.5/libXdmcp-1.1.5-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "57060471b508c64aff67f87962cf56feaf7c73dc8e40db9364bb8189d960d7fa",
+                },
             },
         },
     },

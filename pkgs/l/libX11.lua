@@ -10,7 +10,7 @@ package = {
     repo = "https://gitlab.freedesktop.org/xorg/lib/libX11",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"graphics", "lib"},
     keywords = {"libx11", "graphics", "x11"},
@@ -47,11 +47,20 @@ package = {
             },
             ["latest"] = { ref = "1.8.10" },
             ["1.8.10"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/libX11/releases/download/1.8.10/libX11-1.8.10-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/libX11/releases/download/1.8.10/libX11-1.8.10-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libX11/releases/download/1.8.10/libX11-1.8.10-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libX11/releases/download/1.8.10/libX11-1.8.10-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "03d9242551aef99f920ec1ce7aaa36227b9034f7f9b1d8d3ea44b21759f0bbe5",
                 },
-                sha256 = { x86_64 = "03d9242551aef99f920ec1ce7aaa36227b9034f7f9b1d8d3ea44b21759f0bbe5" },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libX11/releases/download/1.8.10/libX11-1.8.10-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libX11/releases/download/1.8.10/libX11-1.8.10-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "17b1663e93b6e479e501b1a26ac0064f64b84c047ce331072cebc53a420325a2",
+                },
             },
         },
     },

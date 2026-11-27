@@ -10,7 +10,7 @@ package = {
     repo = "https://gitlab.freedesktop.org/xorg/lib/xtrans",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"graphics", "lib"},
     keywords = {"xtrans", "graphics", "x11"},
@@ -45,7 +45,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/xtrans/releases/download/1.5.2/xtrans-1.5.2-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/xtrans/releases/download/1.5.2/xtrans-1.5.2-linux-x86_64.tar.gz",
                 },
-                sha256 = { x86_64 = "c05a3fe4fd9aa17b2599a016b13c9209ab9fd7d4e0fc660fe3cdea3469d30fc5" },
+                sha256 = { x86_64 = "c05a3fe4fd9aa17b2599a016b13c9209ab9fd7d4e0fc660fe3cdea3469d30fc5", aarch64 = "c05a3fe4fd9aa17b2599a016b13c9209ab9fd7d4e0fc660fe3cdea3469d30fc5" },
             },
         },
     },

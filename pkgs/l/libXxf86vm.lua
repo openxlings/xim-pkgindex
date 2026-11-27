@@ -10,7 +10,7 @@ package = {
     repo = "https://gitlab.freedesktop.org/xorg/lib/libXxf86vm",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"graphics", "lib"},
     keywords = {"libxxf86vm", "graphics", "x11"},
@@ -49,11 +49,20 @@ package = {
             },
             ["latest"] = { ref = "1.1.6" },
             ["1.1.6"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/libXxf86vm/releases/download/1.1.6/libXxf86vm-1.1.6-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/libXxf86vm/releases/download/1.1.6/libXxf86vm-1.1.6-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libXxf86vm/releases/download/1.1.6/libXxf86vm-1.1.6-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libXxf86vm/releases/download/1.1.6/libXxf86vm-1.1.6-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "916046759e93059d8ec042009d55de5c488e63573677b76b7e919876ead9a5bb",
                 },
-                sha256 = { x86_64 = "916046759e93059d8ec042009d55de5c488e63573677b76b7e919876ead9a5bb" },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libXxf86vm/releases/download/1.1.6/libXxf86vm-1.1.6-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libXxf86vm/releases/download/1.1.6/libXxf86vm-1.1.6-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "d328f950b7eb55700c960fc8ded83c875d4e8313e3d304faf0e1c3ebe64e1fe6",
+                },
             },
         },
     },

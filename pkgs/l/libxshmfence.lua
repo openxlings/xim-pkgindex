@@ -10,7 +10,7 @@ package = {
     repo = "https://gitlab.freedesktop.org/xorg/lib/libxshmfence",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"graphics", "lib"},
     keywords = {"libxshmfence", "graphics", "x11"},
@@ -38,7 +38,7 @@ package = {
 
     xpm = {
         linux = {
-            deps = {},
+            deps = { "xim:glibc" },
             -- elfpatch reads this from each dependency and writes the consumer's
             -- RPATH, which is what makes the stack resolve without anyone
             -- setting LD_LIBRARY_PATH. Same mechanism `gcc-runtime` uses.
@@ -47,11 +47,22 @@ package = {
             },
             ["latest"] = { ref = "1.3.2" },
             ["1.3.2"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/libxshmfence/releases/download/1.3.2/libxshmfence-1.3.2-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/libxshmfence/releases/download/1.3.2/libxshmfence-1.3.2-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libxshmfence/releases/download/1.3.2/libxshmfence-1.3.2-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libxshmfence/releases/download/1.3.2/libxshmfence-1.3.2-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "dce29073e3225e2001ecba00b115cfee9062b85ef4e15a454db3b671454fdc9f",
                 },
-                sha256 = { x86_64 = "dce29073e3225e2001ecba00b115cfee9062b85ef4e15a454db3b671454fdc9f" },
+                -- 1.3.2-r1: the first aarch64 build (in the 1.3.2 release)
+                -- carried its build's include path in the .pc's Cflags.
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libxshmfence/releases/download/1.3.2-r1/libxshmfence-1.3.2-r1-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libxshmfence/releases/download/1.3.2-r1/libxshmfence-1.3.2-r1-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "eb2a488ce33f3b322f91944bc786d61f14b8f5050fc812e68a8166d2f17f2e36",
+                },
             },
         },
     },

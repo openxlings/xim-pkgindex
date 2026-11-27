@@ -7,7 +7,7 @@ package = {
     licenses = {"MIT"},
     repo = "https://github.com/libffi/libffi",
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"library", "ffi"},
     keywords = {"libffi", "ffi", "lib"},
@@ -40,11 +40,20 @@ package = {
             deps = { "xim:glibc" },
             ["latest"] = { ref = "3.4.4" },
             ["3.4.4"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/libffi/releases/download/3.4.4/libffi-3.4.4-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/libffi/releases/download/3.4.4/libffi-3.4.4-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libffi/releases/download/3.4.4/libffi-3.4.4-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libffi/releases/download/3.4.4/libffi-3.4.4-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "04797df0fa33a869a6093ee7238b2cf25d478eddb03658db76fd7f5c01f1ebef",
                 },
-                sha256 = { x86_64 = "04797df0fa33a869a6093ee7238b2cf25d478eddb03658db76fd7f5c01f1ebef" },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libffi/releases/download/3.4.4/libffi-3.4.4-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libffi/releases/download/3.4.4/libffi-3.4.4-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "46289ba2023d003ddbf649c50e25a134c3a608b5c82098b170db0aeefe8db38a",
+                },
             },
         },
     },

@@ -10,7 +10,7 @@ package = {
     repo = "https://gitlab.freedesktop.org/wayland/wayland-protocols",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"graphics", "lib"},
     keywords = {"wayland-protocols", "graphics", "gl"},
@@ -59,8 +59,8 @@ package = {
         linux = {
             deps = {},
             -- Content is architecture-independent -- XML and one .pc, no object
-            -- code. `archs` is x86_64 because that is what this index publishes
-            -- for; a second arch should be given this same tarball.
+            -- code -- so each entry lists the same tarball for both
+            -- architectures (its `-linux-x86_64` name is a convention).
             ["latest"] = { ref = "1.45" },
             -- 1.45 alongside 1.38 rather than replacing it. Protocol XML is
             -- purely additive, so a newer set only offers mesa more interfaces --
@@ -75,14 +75,14 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/wayland-protocols/releases/download/1.45/wayland-protocols-1.45-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/wayland-protocols/releases/download/1.45/wayland-protocols-1.45-linux-x86_64.tar.gz",
                 },
-                sha256 = { x86_64 = "b1d0e8ede6e66a04c39ef113e78ce067ea293d1cd826278004db799d05e40516" },
+                sha256 = { x86_64 = "b1d0e8ede6e66a04c39ef113e78ce067ea293d1cd826278004db799d05e40516", aarch64 = "b1d0e8ede6e66a04c39ef113e78ce067ea293d1cd826278004db799d05e40516" },
             },
             ["1.38"] = {
                 url = {
                     GLOBAL = "https://github.com/xlings-res/wayland-protocols/releases/download/1.38/wayland-protocols-1.38-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/wayland-protocols/releases/download/1.38/wayland-protocols-1.38-linux-x86_64.tar.gz",
                 },
-                sha256 = { x86_64 = "41df27e9b1ad57d7bbf5ed47eade4f71495ddd132417590c0c39185c5559ac0c" },
+                sha256 = { x86_64 = "41df27e9b1ad57d7bbf5ed47eade4f71495ddd132417590c0c39185c5559ac0c", aarch64 = "41df27e9b1ad57d7bbf5ed47eade4f71495ddd132417590c0c39185c5559ac0c" },
             },
         },
     },

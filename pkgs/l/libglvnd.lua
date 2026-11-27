@@ -10,7 +10,7 @@ package = {
     repo = "https://gitlab.freedesktop.org/glvnd/libglvnd",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"graphics", "lib"},
     keywords = {"libglvnd", "graphics", "gl"},
@@ -44,18 +44,36 @@ package = {
             -- lower bound pull it, so the hook re-runs. The fontconfig
             -- 2.15.0.1 pattern; the payload bytes and sha256 are unchanged.
             ["1.7.0.1"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/libglvnd/releases/download/1.7.0/libglvnd-1.7.0-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/libglvnd/releases/download/1.7.0/libglvnd-1.7.0-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libglvnd/releases/download/1.7.0/libglvnd-1.7.0-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libglvnd/releases/download/1.7.0/libglvnd-1.7.0-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "07366016ef25ec20436df65bf94f0dee758d41ec34d0723056690d5c899bf8c8",
                 },
-                sha256 = { x86_64 = "07366016ef25ec20436df65bf94f0dee758d41ec34d0723056690d5c899bf8c8" },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libglvnd/releases/download/1.7.0/libglvnd-1.7.0-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libglvnd/releases/download/1.7.0/libglvnd-1.7.0-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "4e629e6344ad6075df269ee2748c7ab5e6c5ad26053cb04dd95bab0fc6d1c9c6",
+                },
             },
             ["1.7.0"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/libglvnd/releases/download/1.7.0/libglvnd-1.7.0-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/libglvnd/releases/download/1.7.0/libglvnd-1.7.0-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libglvnd/releases/download/1.7.0/libglvnd-1.7.0-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libglvnd/releases/download/1.7.0/libglvnd-1.7.0-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "07366016ef25ec20436df65bf94f0dee758d41ec34d0723056690d5c899bf8c8",
                 },
-                sha256 = { x86_64 = "07366016ef25ec20436df65bf94f0dee758d41ec34d0723056690d5c899bf8c8" },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libglvnd/releases/download/1.7.0/libglvnd-1.7.0-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libglvnd/releases/download/1.7.0/libglvnd-1.7.0-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "4e629e6344ad6075df269ee2748c7ab5e6c5ad26053cb04dd95bab0fc6d1c9c6",
+                },
             },
         },
     },
@@ -88,7 +106,7 @@ end
 --
 -- It used to live on the CONSUMER instead, via DT_RPATH searched transitively
 -- up the load chain -- which works, and which every probe in
--- `.agents/tools/graphics/` bought with `-Wl,--disable-new-dtags`. Real build
+-- `tools/res/graphics/` bought with `-Wl,--disable-new-dtags`. Real build
 -- systems emit DT_RUNPATH (the default), DT_RUNPATH is not transitive, and
 -- the whole thing collapses: openxlings/xlings#525, where mcpp's imgui
 -- template got `GLX: No GLXFBConfigs returned` on a host whose own glxinfo

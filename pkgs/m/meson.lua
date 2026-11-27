@@ -10,9 +10,9 @@ package = {
     docs = "https://mesonbuild.com/Manual.html",
 
     type = "package",
-    -- Architecture-independent content. `x86_64` is what this index publishes
-    -- for; a second arch should be given this same tarball.
-    archs = {"x86_64"},
+    -- Architecture-independent content (pure Python): the same tarball is
+    -- each architecture's.
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"build", "tool"},
     keywords = {"meson", "build", "ninja", "buildsystem"},
@@ -73,7 +73,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/meson/releases/download/1.8.2/meson-1.8.2-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/meson/releases/download/1.8.2/meson-1.8.2-linux-x86_64.tar.gz",
                 },
-                sha256 = { x86_64 = "6afe6e96f53771b2c3810a7861e5b80de034ee306242877846de470f520b44e6" },
+                sha256 = { x86_64 = "6afe6e96f53771b2c3810a7861e5b80de034ee306242877846de470f520b44e6", aarch64 = "6afe6e96f53771b2c3810a7861e5b80de034ee306242877846de470f520b44e6" },
             },
         },
     },

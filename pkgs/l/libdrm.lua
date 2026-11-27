@@ -10,7 +10,7 @@ package = {
     repo = "https://gitlab.freedesktop.org/mesa/drm",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"graphics", "lib"},
     keywords = {"libdrm", "graphics", "gl"},
@@ -47,11 +47,20 @@ package = {
             },
             ["latest"] = { ref = "2.4.123" },
             ["2.4.123"] = {
-                url = {
-                    GLOBAL = "https://github.com/xlings-res/libdrm/releases/download/2.4.123/libdrm-2.4.123-linux-x86_64.tar.gz",
-                    CN     = "https://gitcode.com/xlings-res/libdrm/releases/download/2.4.123/libdrm-2.4.123-linux-x86_64.tar.gz",
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libdrm/releases/download/2.4.123/libdrm-2.4.123-linux-x86_64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libdrm/releases/download/2.4.123/libdrm-2.4.123-linux-x86_64.tar.gz",
+                    },
+                    sha256 = "8f70c903b3cd593c6b42f9621aacff2c6f6dcd96732cc91e5aad4a00357c53c1",
                 },
-                sha256 = { x86_64 = "8f70c903b3cd593c6b42f9621aacff2c6f6dcd96732cc91e5aad4a00357c53c1" },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/xlings-res/libdrm/releases/download/2.4.123/libdrm-2.4.123-linux-aarch64.tar.gz",
+                        CN     = "https://gitcode.com/xlings-res/libdrm/releases/download/2.4.123/libdrm-2.4.123-linux-aarch64.tar.gz",
+                    },
+                    sha256 = "9924500b269cc9038de82bee04118ec494e8c3e1d9a951b840e605ae173b326e",
+                },
             },
         },
     },
