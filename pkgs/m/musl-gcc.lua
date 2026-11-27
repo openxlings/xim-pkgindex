@@ -47,10 +47,13 @@ package = {
 
             -- toolchain build based on musl-gcc-static
             ["latest"] = { ref = "15.1.0" },
+            -- revision 1 (every version): the gcc flavor registers gcc-ar,
+            -- gcc-nm, gcc-ranlib and gcov with the drivers (config()).
             -- gcc 16: fixes the GCC-15 module-instantiation link bug
             -- (mcpp remediation doc A2/R5b); stripped ~105MB assets.
             ["16.1.0"] = {
                 url = "XLINGS_RES",
+                revision = 1,
                 sha256 = {
                     x86_64 = "8ee9f65816249760c2fe1e37af218a0d56987035f4fb288edea8cd1f1ae5cdd3",
                     aarch64 = "cefb261c7ef371326d82c47350bc46baad0c0bfba969ab26829616df937d2f53",
@@ -60,6 +63,7 @@ package = {
                 -- musl-cross-make, built natively on each architecture and
                 -- stripped (xlings-res/musl-gcc build-native.yml).
                 url = "XLINGS_RES",
+                revision = 1,
                 sha256 = {
                     x86_64  = "ae24c48af92105dd26867fd2195de358d3a335759aaf9772a7514723bb15657f",
                     aarch64 = "e9692cc3353553db50fa00a767af600ae30dfd1c9c3a95c822c932be4d422a94",
@@ -67,6 +71,7 @@ package = {
             },
             ["15.1.0"] = {
                 url = "XLINGS_RES",
+                revision = 1,
                 sha256 = {
                     x86_64 = "5f45eca0992c468052fc2df39393c76e01d01a1a9de1973f8755883297a1acda",
                     aarch64 = "2277f07cd4fff2111f37182ad49dc331ccc13b6aef7dde31c704bf7dbdb0f326",
@@ -74,14 +79,17 @@ package = {
             }, -- deps musl-gcc
             ["13.3.0"] = {
                 url = "XLINGS_RES",
+                revision = 1,
                 sha256 = { x86_64 = "1f9c221b601a0ffec9d8dcd30c6d041053bab6507dd0af2bfaaeb62c2fef8749" },
             },
             ["11.5.0"] = {
                 url = "XLINGS_RES",
+                revision = 1,
                 sha256 = { x86_64 = "8281b29326232b9c9ffe47cd6e6436928e220cf6aa8ee0377444f3dea4c8be65" },
             },
             ["9.4.0"] = {
                 url = "XLINGS_RES",
+                revision = 1,
                 sha256 = { x86_64 = "8cef0681b88da5fe2fd0286483e39200a9034ed042a9ec02083172ba84348d4e" },
             },
         },
