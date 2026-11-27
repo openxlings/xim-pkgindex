@@ -62,9 +62,9 @@ package = {
             source = "https://developer.download.nvidia.com/compute/cuda/redist/"
                   .. "libnvptxcompiler/linux-${arch_alias}/"
                   .. "libnvptxcompiler-linux-${arch_alias}-${version}-archive.tar.xz",
-            arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
             ["latest"] = { ref = "13.3.33" },
             ["13.3.33"] = {
+                arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
                 sha256 = {
                     aarch64  = "3d61e77b3c1317bfc8d6807eee1137b232fdd109d5c7c9b91d0d3e1e05ea38c3",
                     x86_64   = "6c362578a8de750d28ae52efe5b3d2927983584293a9be24d40893e0f6ed73dd",

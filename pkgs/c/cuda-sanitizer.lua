@@ -33,15 +33,16 @@ package = {
             source = "https://developer.download.nvidia.com/compute/cuda/redist/"
                   .. "cuda_sanitizer_api/linux-${arch_alias}/"
                   .. "cuda_sanitizer_api-linux-${arch_alias}-${version}-archive.tar.xz",
-            arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
             ["latest"] = { ref = "13.3.27" },
             ["13.3.27"] = {
+                arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
                 sha256 = {
                     aarch64  = "0624446464032a03f07a786330986b7d9148526258efedb1684ffe3bfa8e3d0d",
                     x86_64   = "bed47e6b465653a8d4138bce412733131536f1a0e8ab306bb2b0a15f92fc68ff",
                 },
             },
             ["12.9.79"] = {
+                arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
                 sha256 = {
                     aarch64  = "281538927b6818d4687fad102c0603ab7b389513c9c129f3e0de8c61ac7f474d",
                     x86_64   = "e23aad21132ff58b92a22aad372a7048793400b79c625665d325d4ecec6979bf",

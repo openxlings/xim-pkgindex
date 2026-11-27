@@ -84,15 +84,16 @@ package = {
             source = "https://developer.download.nvidia.com/compute/cuda/redist/"
                   .. "cuda_nvcc/linux-${arch_alias}/"
                   .. "cuda_nvcc-linux-${arch_alias}-${version}-archive.tar.xz",
-            arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
             ["latest"] = { ref = "13.3.33" },
             ["13.3.33"] = {
+                arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
                 sha256 = {
                     aarch64  = "b5dde44aadd52234af3944ae3b2e74e811ad8e71fb600bcc9dfe6d8540353499",
                     x86_64   = "93b098bda4a562ebf3541523ce82adc43f106a81dcf28bcbf8f0d8e093d1c66f",
                 },
             },
             ["12.9.86"] = {
+                arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
                 sha256 = {
                     aarch64  = "0aa1fce92dbae76c059c27eefb9d0ffb58e1291151e44ff7c7f1fc2dd9376c0d",
                     x86_64   = "7a1a5b652e5ef85c82b721d10672fc9a2dbaab44e9bd3c65a69517bf53998c35",

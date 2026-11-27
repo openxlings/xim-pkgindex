@@ -33,15 +33,16 @@ package = {
             source = "https://developer.download.nvidia.com/compute/cuda/redist/"
                   .. "cuda_cuxxfilt/linux-${arch_alias}/"
                   .. "cuda_cuxxfilt-linux-${arch_alias}-${version}-archive.tar.xz",
-            arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
             ["latest"] = { ref = "13.3.29" },
             ["13.3.29"] = {
+                arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
                 sha256 = {
                     aarch64  = "e68d8dcf348e8c8edcedac949f513138d62fb83cfea0a111c2571c602046ab56",
                     x86_64   = "3f15ed0e6b9673d30c4085e7d3819d1e4c17b09056ba5e8aa8eda351c27f5849",
                 },
             },
             ["12.9.82"] = {
+                arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
                 sha256 = {
                     aarch64  = "2175ef96b523eb8fea5d6ccfd21b70d6afaee623d00dbab70f11e8aa892c2828",
                     x86_64   = "833d7e56351d032717f217212577d369d230e284b2ded4bf151403cc11213add",

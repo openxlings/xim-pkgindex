@@ -34,9 +34,9 @@ package = {
             source = "https://developer.download.nvidia.com/compute/cuda/redist/"
                   .. "nsight_compute/linux-${arch_alias}/"
                   .. "nsight_compute-linux-${arch_alias}-${version}-archive.tar.xz",
-            arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
             ["latest"] = { ref = "2026.2.0.7" },
             ["2026.2.0.7"] = {
+                arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
                 sha256 = {
                     aarch64  = "bda13a2a34ca046f25879afe58abd344708f9139cb6c01771c4f9b4016f8fe3b",
                     x86_64   = "706dec9b2fcf2cda2bc7af9d6f133ea544e6acb2d5b479e3dbe6ef45254d991c",

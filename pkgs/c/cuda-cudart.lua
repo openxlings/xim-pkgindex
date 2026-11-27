@@ -79,7 +79,6 @@ package = {
             source = "https://developer.download.nvidia.com/compute/cuda/redist/"
                   .. "cuda_cudart/linux-${arch_alias}/"
                   .. "cuda_cudart-linux-${arch_alias}-${version}-archive.tar.xz",
-            arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
             -- libcudart.so and its siblings name libgcc_s.so.1 (some libstdc++.so.6 too) in DT_NEEDED
             -- (readelf, the x86_64 archive of the newest version). A toolchain whose runtime is not
             -- GCC's supplies neither, so the package declares the GCC runtime itself and the
@@ -87,6 +86,7 @@ package = {
             deps = { "xim:gcc-runtime" },
             ["latest"] = { ref = "13.3.29" },
             ["13.3.29"] = {
+                arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
                 -- 1: the archive unchanged; the GCC runtime is declared (deps above).
                 revision = 1,
                 sha256 = {
@@ -95,6 +95,7 @@ package = {
                 },
             },
             ["12.9.79"] = {
+                arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
                 -- 1: the archive unchanged; the GCC runtime is declared (deps above).
                 revision = 1,
                 sha256 = {

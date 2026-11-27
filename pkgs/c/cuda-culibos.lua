@@ -62,9 +62,9 @@ package = {
             source = "https://developer.download.nvidia.com/compute/cuda/redist/"
                   .. "cuda_culibos/linux-${arch_alias}/"
                   .. "cuda_culibos-linux-${arch_alias}-${version}-archive.tar.xz",
-            arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
             ["latest"] = { ref = "13.3.33" },
             ["13.3.33"] = {
+                arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
                 sha256 = {
                     aarch64  = "af8e930c3527b8eeddea755b40d77e505691ca389f3135d04f46718aec3f45cb",
                     x86_64   = "db36b1381bb3105f2f13591393131d93f501958ebd44e9d0d52234cbbaf8cbd0",

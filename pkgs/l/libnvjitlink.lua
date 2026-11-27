@@ -62,15 +62,16 @@ package = {
             source = "https://developer.download.nvidia.com/compute/cuda/redist/"
                   .. "libnvjitlink/linux-${arch_alias}/"
                   .. "libnvjitlink-linux-${arch_alias}-${version}-archive.tar.xz",
-            arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
             ["latest"] = { ref = "13.3.33" },
             ["13.3.33"] = {
+                arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
                 sha256 = {
                     aarch64  = "6ed3a14646bd53e25ccf03a52586cdd12b07ad48cf81fe79deac49b5d64c2ce6",
                     x86_64   = "f79e25bb1ef2f22f26c09897f6cb8719634f38e7330bd4700a1ea9ec9591eaff",
                 },
             },
             ["12.9.86"] = {
+                arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
                 sha256 = {
                     aarch64  = "9c9227c1e9122fd8448cafced3b32bc69f40d3c041d25034ea23611a1262852f",
                     x86_64   = "392cac3144b52ba14900bc7259ea6405ae6da88a8c704eab9bbbcc9ba4824b07",

@@ -62,15 +62,16 @@ package = {
             source = "https://developer.download.nvidia.com/compute/cuda/redist/"
                   .. "cuda_profiler_api/linux-${arch_alias}/"
                   .. "cuda_profiler_api-linux-${arch_alias}-${version}-archive.tar.xz",
-            arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
             ["latest"] = { ref = "13.3.27" },
             ["13.3.27"] = {
+                arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
                 sha256 = {
                     aarch64  = "527d1c76abe450d110af6404da6db18fd507b8e47af69cb2ed69348925b95fa8",
                     x86_64   = "5aa4df91651f19c2c7c3ac0531cdcd96e18f5227a60efb81b18ca282be719780",
                 },
             },
             ["12.9.79"] = {
+                arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
                 sha256 = {
                     aarch64  = "e07f47ef3aeb3a3ca995e9070d77d98ad79460216bf2075c9f9018962ae1d03b",
                     x86_64   = "8c50636bfb97e9420905aa795b9fa6e3ad0b30ec6a6c8b0b8db519beb9241ce6",

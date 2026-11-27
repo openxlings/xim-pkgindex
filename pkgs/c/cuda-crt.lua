@@ -62,9 +62,9 @@ package = {
             source = "https://developer.download.nvidia.com/compute/cuda/redist/"
                   .. "cuda_crt/linux-${arch_alias}/"
                   .. "cuda_crt-linux-${arch_alias}-${version}-archive.tar.xz",
-            arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
             ["latest"] = { ref = "13.3.33" },
             ["13.3.33"] = {
+                arch_alias = { x86_64 = "x86_64", aarch64 = "sbsa" },
                 sha256 = {
                     aarch64  = "6f6194918c00b980d8fd2111bf0aa004977760855c6e1528e0653bf4c889fbef",
                     x86_64   = "4755d36d24c6ef7697a2d3e1dbb23c4562c9c0d97d48390d4cbd8ab32dec5b5f",
