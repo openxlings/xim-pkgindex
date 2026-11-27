@@ -57,3 +57,4 @@ Both macOS binaries link only system AppKit/Foundation, libSystem, libobjc and l
 ## Revision log
 
 - 2026-11-27 — added at 0.9.0: upstream singleton ZIPs, sealed Linux dependencies, three-target autoupdate and native PTY coverage.
+- 2026-11-27 — index/lifecycle/UI tests resolve `local:` only when a local recipe exists; after publication they use `xim:`, matching xlings registration deduplication.
