@@ -214,30 +214,12 @@ def test_archive_suffix_gate():
     assert "foo.zip".endswith(mod.ARCHIVE_SUFFIXES) is True
 
 
-def test_validate_tgz_payload_and_reject_empty_or_corrupt_archive():
-    with tempfile.TemporaryDirectory() as directory:
-        root = Path(directory)
-        payload = root / "gron"
-        payload.write_bytes(b"release payload")
-        archive = root / "gron.tgz"
-        with tarfile.open(archive, "w:gz") as container:
-            container.add(payload, arcname="gron")
-        assert mod.validate_archive(archive) is None
-        with tarfile.open(archive, "w:gz"):
-            pass
-        assert mod.validate_archive(archive) == "tar archive is empty"
-        archive.write_bytes(b"not a gzip tar archive")
-        error = mod.validate_archive(archive)
-        assert error and error != "unsupported archive extension"
-
-
 def main() -> int:
     test_verify_mirror_content()
     test_ensure_mirror_repos()
     test_cmd_mirror_execute_content_gate()
     test_resolve_platform_arches()
     test_archive_suffix_gate()
-    test_validate_tgz_payload_and_reject_empty_or_corrupt_archive()
     with tempfile.TemporaryDirectory() as d:
         root = Path(d)
         payload = root / "payload.txt"

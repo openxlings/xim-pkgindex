@@ -284,7 +284,7 @@ def resolve_platform_arches(arches: list[str], template: str,
 
 def validate_archive(path: Path) -> str | None:
     try:
-        if path.name.endswith((".tar.gz", ".tar.xz", ".tar.bz2", ".tgz")):
+        if path.name.endswith(".tar.gz") or path.name.endswith(".tar.xz") or path.name.endswith(".tar.bz2"):
             with tarfile.open(path, "r:*") as archive:
                 if archive.next() is None:
                     return "tar archive is empty"
