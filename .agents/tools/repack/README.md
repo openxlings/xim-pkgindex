@@ -29,6 +29,17 @@ Repeat `--src` to merge several artefacts into one payload (tpm2-tss merges
 four Debian packages). Debian sources must be `snapshot.debian.org` URLs: the
 regular pool deletes a version as soon as its suite moves on.
 
+Conda metadata under `info/` is pruned per input before merging, after its
+provenance and licenses have been captured. Distinct inputs can therefore have
+their own `info/index.json` and `info/paths.json`; conflicting actual payload
+files still fail the merge.
+
+The locked private GTK runtime uses `tools/res/gtk4_runtime.py --arch aarch64
+--output dist/` (or `--arch x86_64`). It supplies `build(args, prepare=...)` to
+generate MIME data before the placeholder audit and final packaging. The
+resource's `BUILD-METADATA.json` records the complete builder command and tool
+versions; the bare repacker command alone does not reproduce generated data.
+
 Then publish both mirrors and verify them byte for byte:
 
 ```bash

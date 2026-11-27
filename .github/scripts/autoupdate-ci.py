@@ -6,6 +6,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import subprocess
 from pathlib import Path
 
@@ -159,6 +160,19 @@ def summarize_coverage(report):
                      'See coverage.json for each package and candidate-evidence.json for actual installations.\n')
 
 
+def _stage_local_libraries(home):
+    libraries = ROOT / 'libs'
+    if not libraries.is_dir():
+        return
+    indexes = [p for p in home.glob('data/**/xim-pkgindex-local') if p.is_dir()]
+    if len(indexes) != 1:
+        raise Invalid('cannot locate one registered local index for shared libraries')
+    target = indexes[0] / 'libs'
+    if not target.resolve().is_relative_to(home.resolve()):
+        raise Invalid('local index libraries escape the isolated xlings home')
+    shutil.copytree(libraries, target, dirs_exist_ok=True)
+
+
 def run_candidate(identity, filename, version, expected_arch=None):
     path = ROOT / filename
     info = xim.package_info(path, ROOT)
@@ -172,11 +186,12 @@ def run_candidate(identity, filename, version, expected_arch=None):
     xlings = 'xlings'
     subprocess.run([xlings, 'update', '--yes', '--agent'], check=True)
     subprocess.run([xlings, 'config', '--add-xpkg', str(path)], check=True)
+    home = Path(os.environ.get('XLINGS_HOME', Path.home() / '.xlings'))
+    _stage_local_libraries(home)
     name = identity.split(':', 1)[-1]
     # Overlay registration uses the local namespace; this is a clean runner home.
     target = 'local:' + name + '@' + version
     subprocess.run([xlings, 'install', target, '-y'], check=True)
-    home = Path(os.environ.get('XLINGS_HOME', Path.home() / '.xlings'))
     installs = list((home / 'data/xpkgs').glob('*-x-' + name + '/' + version))
     if not installs or not any((d / '.xpkg.lua').exists() for d in installs):
         raise Invalid('candidate installation metadata not found')
@@ -189,7 +204,6 @@ def run_candidate(identity, filename, version, expected_arch=None):
         program = node.string()
         # Only flags explicitly supported by the package's own verification are used below.
         # Generic smoke checks prove registered executable presence; package tests prove behavior.
-        import shutil
         executable = shutil.which(program)
         if not executable or not Path(executable).absolute().is_relative_to(home):
             raise Invalid('candidate executable is not registered in the isolated home: ' + program)
