@@ -16,8 +16,7 @@ from tests.lib.assertions import (
     assert_valid_xvm_node_kinds, assert_config_registers_package_name,
     assert_no_exec_xvm, assert_no_bashrc_modification,
     assert_no_direct_path_modification, assert_uses_new_api,
-    assert_no_direct_pkg_manager, assert_xim_add_succeeds,
-    assert_install_succeeds, assert_xvm_registered,
+    assert_no_direct_pkg_manager, assert_xvm_registered,
 )
 from tests.lib.platform_utils import under_test, xlings_home
 
@@ -25,6 +24,21 @@ PKG = "fq"
 PKG_FILE = "pkgs/f/fq.lua"
 VERSION = "0.18.0"
 REPO = Path(__file__).resolve().parents[2]
+
+
+def _run_xlings(*args: str, timeout: int = 180) -> str:
+    """Invoke xlings directly so login shells cannot redirect it through WSL."""
+    suffix = ".exe" if os.name == "nt" else ""
+    binary = Path(xlings_home()) / "bin" / ("xlings" + suffix)
+    command = str(binary) if binary.is_file() else shutil.which("xlings")
+    assert command, "xlings is required for package index and lifecycle checks"
+    result = subprocess.run(
+        [command, *args], capture_output=True, text=True,
+        encoding="utf-8", errors="replace", timeout=timeout,
+    )
+    output = result.stdout + result.stderr
+    assert result.returncode == 0 and "[error]" not in output.lower(), output
+    return output
 
 
 def _run_lua(script):
@@ -180,13 +194,18 @@ class TestIsolation:
 class TestIndex:
     @pytest.mark.index
     def test_register(self):
-        assert_xim_add_succeeds(PKG_FILE)
+        _run_xlings("config", "--add-xpkg", str(REPO / PKG_FILE), timeout=45)
 
 
 class TestLifecycle:
     @pytest.mark.lifecycle
     def test_install(self):
-        assert_install_succeeds(under_test(PKG, os.environ.get("XLINGS_TEST_VERSION", VERSION)))
+        _run_xlings(
+            "install",
+            under_test(PKG, os.environ.get("XLINGS_TEST_VERSION", VERSION)),
+            "-y",
+            timeout=180,
+        )
 
 
 class TestVerify:
