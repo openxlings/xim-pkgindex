@@ -417,8 +417,15 @@ ARCHS_LINE = re.compile(r'^(\s*archs\s*=\s*)\{[^}\n]*\}', re.MULTILINE)
 def fix_archs_text(text: str, archs: list[str]) -> str | None:
     """The recipe text with its `archs = {...}` set to `archs`; None when it has no one such line."""
     matches = list(ARCHS_LINE.finditer(text))
+    value = "{" + ", ".join(f'"{a}"' for a in archs) + "}"
+    if not matches:
+        # No `archs` yet: after the package's `type` (else `name`) line.
+        for key in ("type", "name"):
+            m = re.search(r'^([ \t]*)' + key + r'\s*=\s*"[^"\n]*",[^\n]*\n', text, re.MULTILINE)
+            if m:
+                return text[:m.end()] + f"{m.group(1)}archs = {value},\n" + text[m.end():]
+        return None
     if len(matches) != 1:
         return None
     m = matches[0]
-    value = "{" + ", ".join(f'"{a}"' for a in archs) + "}"
     return text[:m.start()] + m.group(1) + value + text[m.end():]

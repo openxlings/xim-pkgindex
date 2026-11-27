@@ -298,6 +298,7 @@ def _read_artifact(url: str, workdir: Path) -> dict[str, Any]:
         try:
             with open_url(url, timeout=120) as resp, open(target, "wb") as out:
                 sha, size = hashlib.sha256(), 0
+                expected = resp.headers.get("Content-Length")
                 while True:
                     chunk = resp.read(1 << 20)
                     if not chunk:
@@ -305,6 +306,10 @@ def _read_artifact(url: str, workdir: Path) -> dict[str, Any]:
                     sha.update(chunk)
                     size += len(chunk)
                     out.write(chunk)
+            # A connection that closes early is not the artifact: its hash
+            # and its bytes would both be wrong.
+            if expected is not None and int(expected) != size:
+                raise ConnectionError(f"truncated: {size} of {expected} bytes")
             break
         except (urllib.error.URLError, TimeoutError, ConnectionError, OSError) as exc:
             if attempt == 2:
@@ -332,8 +337,11 @@ def _read_artifact(url: str, workdir: Path) -> dict[str, Any]:
                     elfs = scan_tar(f, "r|*")
             except tarfile.ReadError:
                 # One compressed file, not a tar: what it holds is its head.
+                # A tar that ends early is an error, not a compressed file.
                 opener = {b"\x1f\x8b": gzip.open, b"\xfd7": lzma.open, b"BZ": bz2.open}.get(head[:2])
                 inner = opener(target).read(HEAD) if opener else b""
+                if inner[257:262] == b"ustar":
+                    raise
                 info = read_elf(inner)
                 elfs = [dict(info, path="(compressed file)")] if info else []
                 result["format"] = "compressed file"
