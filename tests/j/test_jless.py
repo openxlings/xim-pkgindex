@@ -197,6 +197,12 @@ def _run(argv, env, **kwargs):
     return result
 
 
+def _package(env, version=""):
+    local = Path(env["XLINGS_HOME"]) / "data/xim-pkgindex-local/pkgs/j/jless.lua"
+    name = ("local:" if local.is_file() else "xim:") + "jless"
+    return name + ("@" + version if version else "")
+
+
 @pytest.fixture(scope="module")
 def sandbox(tmp_path_factory):
     executable = shutil.which("xlings")
@@ -232,23 +238,36 @@ def sandbox(tmp_path_factory):
 @pytest.fixture(scope="module")
 def installed(sandbox):
     executable, env, bindir = sandbox
-    _run([executable, "install", "local:jless@" + VERSION, "-y"], env)
-    _run([executable, "use", "jless", "local:" + VERSION], env)
+    package = _package(env, VERSION)
+    _run([executable, "install", package, "-y"], env)
+    _run([executable, "use", "jless", package.split(":", 1)[0] + ":" + VERSION], env)
     binary = bindir / "jless"
     assert binary.exists(), "installation did not create the jless shim"
     try:
         yield binary, env
     finally:
-        _run([executable, "remove", "local:jless", "-y"], env)
+        _run([executable, "remove", package, "-y"], env)
         assert not binary.exists(), "uninstall left the jless shim behind"
 
 
 class TestIndex:
+    @pytest.mark.static
+    @pytest.mark.parametrize("registered", [False, True])
+    def test_registered_and_published_package_identity(self, tmp_path, registered):
+        env = {"XLINGS_HOME": str(tmp_path)}
+        if registered:
+            recipe = tmp_path / "data/xim-pkgindex-local/pkgs/j/jless.lua"
+            recipe.parent.mkdir(parents=True)
+            recipe.write_text("registered recipe")
+        expected = ("local:" if registered else "xim:") + "jless"
+        assert _package(env) == expected
+        assert _package(env, VERSION) == expected + "@" + VERSION
+
     @pytest.mark.index
     def test_register_and_search(self, sandbox):
         executable, env, _ = sandbox
         result = _run([executable, "search", "jless"], env)
-        assert "local:jless" in result.stdout
+        assert _package(env) in result.stdout
 
 
 class TestLifecycle:
@@ -284,7 +303,8 @@ class TestVerify:
         # Shim routing is exercised by the version/JSON checks. Give the native
         # UI direct ownership of this controlling terminal, not xlings' macOS
         # child-process wrapper, so q and terminal cleanup belong to jless.
-        native_binary = Path(env["XLINGS_HOME"]) / "data/xpkgs/local-x-jless" / VERSION / "bin/jless"
+        namespace = _package(env).split(":", 1)[0]
+        native_binary = Path(env["XLINGS_HOME"]) / "data/xpkgs" / (namespace + "-x-jless") / VERSION / "bin/jless"
         assert native_binary.is_file()
         fixture = tmp_path / "fixture.json"
         rows = [{"value": f"row-{index:02}"} for index in range(60)]
