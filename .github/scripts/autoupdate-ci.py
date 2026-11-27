@@ -173,11 +173,19 @@ def run_candidate(identity, filename, version, expected_arch=None):
     subprocess.run([xlings, 'update', '--yes', '--agent'], check=True)
     subprocess.run([xlings, 'config', '--add-xpkg', str(path)], check=True)
     name = identity.split(':', 1)[-1]
+    home = Path(os.environ.get('XLINGS_HOME', Path.home() / '.xlings'))
     # Explicit recipe namespaces survive local overlay registration.
     namespace = info['package'].get('namespace')
-    target = (namespace.string() if namespace else 'local') + ':' + name + '@' + version
+    if namespace:
+        target_namespace = namespace.string()
+    else:
+        overlay = home / 'data/xim-pkgindex-local/pkgs' / path.parent.name / (name + '.lua')
+        # xlings dedups a recipe byte-identical to the published one: no local
+        # overlay is written and local: stays empty, so the published
+        # namespace is the only resolvable target (same rule as the tests).
+        target_namespace = 'local' if overlay.is_file() else identity.split(':', 1)[0]
+    target = target_namespace + ':' + name + '@' + version
     subprocess.run([xlings, 'install', target, '-y'], check=True)
-    home = Path(os.environ.get('XLINGS_HOME', Path.home() / '.xlings'))
     installs = list((home / 'data/xpkgs').glob('*-x-' + name + '/' + version))
     if not installs or not any((d / '.xpkg.lua').exists() for d in installs):
         raise Invalid('candidate installation metadata not found')
