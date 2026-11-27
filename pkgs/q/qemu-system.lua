@@ -95,8 +95,6 @@ import("xim.libxpkg.path")
 function install()
     local dir = pkginfo.install_dir()
     -- The archive's root is its own name: qemu-system-<version>-linux-<arch>/.
-    if fs.is_dir(payload) then
-    end
     -- Both emulators and the firmware they boot with, or it is not the payload:
     -- qemu finds share/qemu relative to itself, and an emulator without it
     -- answers --version and boots nothing.

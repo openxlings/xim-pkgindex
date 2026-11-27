@@ -39,6 +39,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             ["latest"] = { ref = "0.42.2" },
             ["0.42.2"] = {
                 url = {
@@ -62,7 +63,6 @@ import("xim.pkgindex.sysroot")
 local libs = { "libpixman-1.so", "libpixman-1.so.0" }
 
 function install()
-    sysroot.adopt_payload()
 
     -- The .pc files in this payload say `libdir=${prefix}/lib/x86_64-linux-gnu`
     -- -- a Debian-family build host -- against a payload with a flat lib/.

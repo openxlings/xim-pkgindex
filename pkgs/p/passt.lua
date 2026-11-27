@@ -43,8 +43,6 @@ import("xim.libxpkg.path")
 
 function install()
     local dir = pkginfo.install_dir()
-    if fs.is_dir(payload) then
-    end
     return fs.is_file(path.join(dir, "bin", "pasta"))
 end
 

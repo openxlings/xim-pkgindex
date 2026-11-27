@@ -35,6 +35,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- The one X11 client library GTK 4's X11 backend needs that this
             -- index did not have. Measured on the host's own libgtk-4.so.1:
             -- `libXdamage.so.1` sits in its DT_NEEDED beside libXi, libXext,
@@ -68,7 +69,6 @@ import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")

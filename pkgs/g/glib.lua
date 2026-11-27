@@ -39,6 +39,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             deps = {
                 "xim:glibc@>=2.38",
                 -- libgio-2.0.so.0 names libmount.so.1 and libselinux.so.1 in
@@ -108,7 +109,6 @@ import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     -- The payload ships gmodule-2.0.pc but NOT the gmodule-no-export-2.0.pc it

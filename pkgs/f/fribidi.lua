@@ -37,6 +37,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             ["latest"] = { ref = "1.0.13" },
             ["1.0.13"] = {
                 url = {
@@ -59,7 +60,6 @@ import("xim.pkgindex.sysroot")
 local libs = { "libfribidi.so", "libfribidi.so.0" }
 
 function install()
-    sysroot.adopt_payload()
 
     -- The .pc files in this payload say `libdir=${prefix}/lib/x86_64-linux-gnu`
     -- -- a Debian-family build host -- against a payload with a flat lib/.

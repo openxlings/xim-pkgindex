@@ -37,6 +37,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             ["latest"] = { ref = "10.42" },
             ["10.42"] = {
                 url = {
@@ -59,7 +60,6 @@ import("xim.pkgindex.sysroot")
 local libs = { "libpcre2-8.so", "libpcre2-8.so.0" }
 
 function install()
-    sysroot.adopt_payload()
 
     -- The .pc files in this payload say `libdir=${prefix}/lib/x86_64-linux-gnu`
     -- -- a Debian-family build host -- against a payload with a flat lib/.

@@ -32,7 +32,7 @@
 -- License: GPL-3.0-only OR LicenseRef-Slint-Royalty-free-2.0 OR
 -- LicenseRef-Slint-Software-3.0, at the user's choice (licenses/LICENSE.md).
 package = {
-    spec = "3",
+    spec = "2",
     homepage = "https://slint.dev",
     name = "slint",
     description = "Slint C++ SDK (libslint_cpp, headers, slint-compiler; upstream CMake's default features)",
@@ -46,7 +46,6 @@ package = {
     keywords = {"slint", "gui", "ui"},
     xpm = {
         linux = {
-            strip = 1,
             deps = {
                 "xim:fontconfig@2.15.0.1", "xim:gcc-runtime@15.1.0", "xim:glibc",
                 "xim:libX11", "xim:libxcb", "xim:libXcursor", "xim:libXrandr", "xim:libXrender", "xim:libXi",
@@ -73,7 +72,6 @@ package = {
             },
         },
         macosx = {
-            strip = 1,
             exports = {
                 runtime = { libdirs = { "lib" } },
             },
@@ -87,7 +85,6 @@ package = {
             },
         },
         windows = {
-            strip = 1,
             exports = {
                 runtime = { libdirs = { "bin" } },
             },
@@ -105,20 +102,21 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
-import("xim.libxpkg.fs")
-import("xim.libxpkg.path")
 import("xim.pkgindex.selfcontain")
 
 function install()
     local dir = pkginfo.install_dir()
+    local top = pkginfo.install_file():replace(".tar.gz", ""):replace(".zip", "")
     top = path.filename(top)
-    if not fs.is_dir(top) then
+    if not os.isdir(top) then
         return false
     end
-    if pkginfo.platform() == "linux" then
+    os.tryrm(dir)
+    os.mv(top, dir)
+    if os.host() == "linux" then
         selfcontain.seal(dir)
     end
-    return fs.is_file(path.join(dir, "include", "slint", "slint.h"))
+    return os.isfile(path.join(dir, "include", "slint", "slint.h"))
 end
 
 function config()

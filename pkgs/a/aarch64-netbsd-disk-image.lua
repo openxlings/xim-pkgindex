@@ -120,9 +120,6 @@ report = "/tmp/dirun-mtest.ndjson"
 
 function install()
     local dir = pkginfo.install_dir()
-    if not fs.is_dir(extracted) then
-        error("aarch64-netbsd-disk-image: the payload was not found at " .. extracted)
-    end
     fs.write(path.join(dir, "dirun.toml"), profile)
     return fs.is_file(path.join(dir, "netbsd-10.2-aarch64.qcow2"))
 end

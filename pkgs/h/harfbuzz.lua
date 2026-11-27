@@ -37,6 +37,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- The full DT_NEEDED closure of libharfbuzz.so.0, enumerated from
             -- the artifact rather than written from memory: libm/libc
             -- (glibc), libfreetype, libglib-2.0 and libgraphite2. The last
@@ -109,7 +110,6 @@ import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     -- 8.3.0's .pc says `libdir=${prefix}/lib/x86_64-linux-gnu` -- a

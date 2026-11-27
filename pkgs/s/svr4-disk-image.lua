@@ -100,9 +100,6 @@ report = "/tmp/dirun-mtest.ndjson"
 
 function install()
     local dir = pkginfo.install_dir()
-    if not fs.is_dir(extracted) then
-        error("svr4-disk-image: the payload was not found at " .. extracted)
-    end
     fs.write(path.join(dir, "dirun.toml"), profile)
     return fs.is_file(path.join(dir, "svr4.qcow2")) and fs.is_file(path.join(dir, "files-label.bin"))
 end

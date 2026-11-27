@@ -130,9 +130,6 @@ function install()
 
     -- One fixed archive name, so unlike a per-host package there is nothing to
     -- derive from the platform here.
-    if not fs.is_dir(extracted) then
-        error("libcxx-headers payload not found at " .. extracted)
-    end
 
     -- ⚠️ ASSERT THE TWO HALVES SEPARATELY, BECAUSE A CONSUMER NEEDS BOTH AND
     -- THE SECOND IS EASY TO LEAVE OUT WHEN REPACKAGING.

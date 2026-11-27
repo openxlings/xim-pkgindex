@@ -37,6 +37,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- NOT a new capability -- a missing one. The PUBLISHED pango payload
             -- already needs this: `libpango-1.0.so.0` names `libthai.so.0` in
             -- its DT_NEEDED, and until now nothing in the index provided it, so
@@ -74,7 +75,6 @@ import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")

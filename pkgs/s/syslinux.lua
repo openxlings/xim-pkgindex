@@ -38,7 +38,9 @@ package = {
         linux = {
             strip = 1,
             ["latest"] = { ref = "6.03" },
+            -- revision 1: config() binds the installers to extlinux@6.03.
             ["6.03"] = {
+                revision = 1,
                 url = "https://www.kernel.org/pub/linux/utils/boot/syslinux/syslinux-6.03.tar.xz",
                 sha256 = { x86_64 = "26d3986d2bea109d5dc0e4f8c4822a459276cf021125e8c9f23c3cca5d8c850e" },
             },
@@ -74,7 +76,10 @@ end
 
 function config()
     local bindir = path.join(pkginfo.install_dir(), "bin")
-    local root = "syslinux@" .. pkginfo.version()
+    -- The first program is the release the others bind to: a program
+    -- named like the package bound to `syslinux@<version>` was bound to
+    -- itself, which the registration refuses.
+    local root = host_installers[1] .. "@" .. pkginfo.version()
     xvm.add(host_installers[1], { bindir = bindir })
     for i = 2, #host_installers do
         xvm.add(host_installers[i], { bindir = bindir, binding = root })

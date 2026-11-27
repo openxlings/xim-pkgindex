@@ -100,8 +100,6 @@ import("xim.libxpkg.path")
 function install()
     local dir = pkginfo.install_dir()
     -- The archive's root is its own name: qemu-system-gl-<version>-linux-x86_64/.
-    if fs.is_dir(payload) then
-    end
     -- glibc's loader, the deps' libraries and its own virglrenderer.
     elfpatch.set({
         interp_from = "linux-x86_64-glibc",

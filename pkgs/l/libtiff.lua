@@ -39,6 +39,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- Measured DT_NEEDED of libtiff.so.6: libjpeg.so.62, libz.so.1,
             -- libm, libc. Nothing else, because every optional codec is off.
             deps = {
@@ -85,7 +86,6 @@ import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")

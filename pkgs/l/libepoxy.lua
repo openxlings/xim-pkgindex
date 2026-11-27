@@ -37,6 +37,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- GTK 4's GL renderer talks to the driver through epoxy rather
             -- than dlopen-ing libGL itself. Built with glx and egl on, against
             -- the index's libglvnd -- epoxy dispatches at runtime, so the
@@ -70,7 +71,6 @@ import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")

@@ -37,6 +37,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             deps = { "xim:zlib@1.3.1" },
             ["latest"] = { ref = "1.6.43" },
             ["1.6.43"] = {
@@ -60,7 +61,6 @@ import("xim.pkgindex.sysroot")
 local libs = { "libpng16.so", "libpng16.so.16" }
 
 function install()
-    sysroot.adopt_payload()
 
     -- The .pc files in this payload say `libdir=${prefix}/lib/x86_64-linux-gnu`
     -- -- a Debian-family build host -- against a payload with a flat lib/.

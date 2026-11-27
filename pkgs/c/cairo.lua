@@ -39,6 +39,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- The X11 entries arrived with 1.18.4. 1.18.0 was an "xcb-free /
             -- headless build for manim" and needed none of them; 1.18.4 has the
             -- xlib and xcb backends on, because GTK 4's X11 backend goes
@@ -111,7 +112,6 @@ import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     -- Fix the payload's own .pc rather than rewriting a copy per subos, which

@@ -88,9 +88,6 @@ local required = {
 
 function install()
     local dir = pkginfo.install_dir()
-    if not fs.is_dir(extracted) then
-        error("mingw-w64-sysroot payload not found at " .. extracted)
-    end
     for _, f in ipairs(required) do
         if not fs.is_file(path.join(dir, f)) then
             error("mingw-w64-sysroot payload is missing " .. f)

@@ -36,6 +36,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- The other library #749 named. 3.6.6 is the newest STABLE
             -- libsoup: GNOME uses odd minors for development series, so 3.7.x
             -- is not a candidate.
@@ -80,7 +81,6 @@ import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")

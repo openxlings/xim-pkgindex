@@ -38,6 +38,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- GTK 4 requires graphene >= 1.10 and uses it for every point,
             -- rect and matrix in the render node tree. Built with the gobject
             -- half enabled (graphene-gobject-1.0.pc), which is the half gtk4
@@ -69,7 +70,6 @@ import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")

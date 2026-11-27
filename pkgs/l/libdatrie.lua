@@ -38,6 +38,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- Here for libthai, which is here for pango. Upstream ships source
             -- only; built from the release tarball in an xlings subos.
             deps = {
@@ -66,7 +67,6 @@ import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")

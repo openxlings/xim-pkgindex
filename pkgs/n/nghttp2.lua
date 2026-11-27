@@ -38,6 +38,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- libsoup >= 3.2 requires libnghttp2.so.14 for its HTTP/2 support.
             --
             -- Built --enable-lib-only: the nghttp/nghttpd/h2load executables
@@ -69,7 +70,6 @@ import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")

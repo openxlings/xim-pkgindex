@@ -154,9 +154,6 @@ local required = {
 -- too deep, and only the recipe's own verify tests said so).
 function install()
     local dir = pkginfo.install_dir()
-    if not fs.is_dir(extracted) then
-        error("aarch64-linux-gnu-sysroot payload not found at " .. extracted)
-    end
     for _, f in ipairs(required) do
         if not fs.is_file(path.join(dir, f)) then
             error("aarch64-linux-gnu-sysroot payload is missing " .. f)

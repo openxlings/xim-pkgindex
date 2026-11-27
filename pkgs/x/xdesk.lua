@@ -291,8 +291,6 @@ end
 
 function install()
     local dir = pkginfo.install_dir()
-    if fs.is_dir(payload) then
-    end
     -- glibc's loader, and the private libraries on the RPATH too.
     elfpatch.set({
         interp_from = "linux-x86_64-glibc",

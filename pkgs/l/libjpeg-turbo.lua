@@ -39,6 +39,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- UPSTREAM'S OWN BINARY, not a rebuild. libjpeg-turbo publishes a
             -- signed `libjpeg-turbo-official_<version>_amd64.deb` on its
             -- release page carrying libjpeg.so.62 and libturbojpeg.so.0 --
@@ -91,7 +92,6 @@ import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")

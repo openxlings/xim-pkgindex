@@ -37,6 +37,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- BUILT, not repacked, and that is the exception rather than the
             -- rule here. Upstream does publish a Linux x86_64 binary for this
             -- version -- sqlite-tools-linux-x64-3530400.zip -- and it contains
@@ -78,7 +79,6 @@ import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
-    sysroot.adopt_payload()
 
     selfcontain.seal(pkginfo.install_dir())
     sysroot.relocate_pkgconfig(pkginfo.install_dir(), "lib/pkgconfig")
