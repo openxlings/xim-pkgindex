@@ -89,7 +89,7 @@ function xpkg_main(installdir, ...)
 
     if cmds["--xpkg-scode"] then
         abs_srcdir = download_scode(cmds)
-        log.warn("use [xpkg - scode:%s] project-dir: %s", cmds["--xpkg-scode"], abs_srcdir)
+        log.info("use [xpkg - scode:%s] project-dir: %s", cmds["--xpkg-scode"], abs_srcdir)
     end
 
     configure_args = string.format("%s --prefix=%s", configure_args, installdir)
