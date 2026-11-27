@@ -108,7 +108,10 @@ package = {
                     x86_64 = "3ada9a3f5d8a85413579bdd0ea6aa8e8da86efdd6d15c91a1afa517f2021956c",
                 },
             },
-            ["4.0.2"] = "XLINGS_RES",
+            ["4.0.2"] = {
+                url = "XLINGS_RES",
+                sha256 = { x86_64 = "80940e81de61584fe4eedd3c40adc597d7c5b76ad8709668007b467a3c2a36c7" },
+            },
             ["4.5.1"] = {
                 x86_64 = {
                     url = "https://github.com/Kitware/CMake/releases/download/v4.5.1/cmake-4.5.1-linux-x86_64.tar.gz",

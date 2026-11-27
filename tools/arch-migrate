@@ -720,8 +720,13 @@ def _indent_of(text: str, pos: int) -> str:
     return re.match(r"[ \t]*", text[line_start:]).group(0)
 
 
-def sha_table(hashes: dict[str, str]) -> str:
-    return "{ " + ", ".join(f'{a} = "{h}"' for a, h in ((a, hashes[a]) for a in xa.order_archs(hashes))) + " }"
+def sha_table(hashes: dict[str, str], indent: str | None = None) -> str:
+    """`{ x86_64 = "<h>" }`; one line per architecture when there are several
+    and `indent` (that of the `sha256 =` line) is given."""
+    pairs = [(a, hashes[a]) for a in xa.order_archs(hashes)]
+    if len(pairs) > 1 and indent is not None:
+        return "{\n" + "".join(f'{indent}    {a} = "{h}",\n' for a, h in pairs) + indent + "}"
+    return "{ " + ", ".join(f'{a} = "{h}"' for a, h in pairs) + " }"
 
 
 def rewrite_entry(text: str, version: str, hashes: dict[str, str] | None = None,
@@ -740,7 +745,7 @@ def rewrite_entry(text: str, version: str, hashes: dict[str, str] | None = None,
     ind = _indent_of(text, vs)
     inner = ind + "    "
     if value.startswith('"'):                         # ["v"] = "XLINGS_RES"
-        new = "{\n" + f'{inner}url = {value},\n{inner}sha256 = {sha_table(hashes)},\n' + ind + "}"
+        new = "{\n" + f'{inner}url = {value},\n{inner}sha256 = {sha_table(hashes, inner)},\n' + ind + "}"
         return text[:vs] + new + text[ve:]
     if not value.startswith("{"):
         raise ValueError(f"xpm.linux[\"{version}\"] is not a table literal")
@@ -777,13 +782,14 @@ def rewrite_entry(text: str, version: str, hashes: dict[str, str] | None = None,
             body = _bump(body, inner)
         return text[:vs] + body + text[ve:]
     if "sha256" in keys:
-        _ks, fvs, fve = keys["sha256"]
-        new_text = text[:fvs] + sha_table(hashes) + text[fve:]
+        ks, fvs, fve = keys["sha256"]
+        multiline = "\n" in value
+        new_text = text[:fvs] + sha_table(hashes, _indent_of(text, ks) if multiline else None) + text[fve:]
     else:
         _ks, fvs, fve = keys["url"]
         nl = "\n" in value
         sep = f",\n{inner}" if nl else ", "
-        new_text = text[:fve] + sep + "sha256 = " + sha_table(hashes) + text[fve:]
+        new_text = text[:fve] + sep + "sha256 = " + sha_table(hashes, inner if nl else None) + text[fve:]
     if bump:
         loc = locate_entry(new_text, version)
         body = _bump(new_text[loc[0]:loc[1]], inner)

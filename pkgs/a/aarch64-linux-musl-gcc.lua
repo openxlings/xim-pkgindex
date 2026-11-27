@@ -58,8 +58,20 @@ package = {
             ["latest"] = { ref = "15.1.0" },
             -- gcc 16: fixes the GCC-15 module-instantiation link bug that
             -- forced an anchor workaround in mcpp (remediation doc A2).
-            ["16.1.0"] = "XLINGS_RES",
-            ["15.1.0"] = "XLINGS_RES",
+            ["16.1.0"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "e08c2d58ff6dab704a733b4749a7b4c112c5a6b4a717e3fbbbb2240980ff8987",
+                    aarch64 = "12ce9a1a5cd72588efbbe7e68cf1ed9de21bb2eaa4029d11081e7c2ef2ea09e1",
+                },
+            },
+            ["15.1.0"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "b40e2c66d98959babffb8329b36a910d7c35ba958ea323b9ce08efa49395ab39",
+                    aarch64 = "e25fb0a2813a4e3323a089a13daeb1f49a2b3325598f4f35a2aa354b047534e2",
+                },
+            },
         },
     },
 }

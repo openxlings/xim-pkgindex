@@ -111,7 +111,13 @@ package = {
                 -- 2: an aarch64 payload (the x86_64 one unchanged).
                 revision = 2,
             },
-            ["2.42"] = "XLINGS_RES",
+            ["2.42"] = {
+                url = "XLINGS_RES",
+                sha256 = {
+                    x86_64 = "32ec131327cd10624f70741fc553ad369f8f53ee4b79276a44f572c6d8190fd7",
+                    aarch64 = "6d74f5678595e42007ad959d1cf4fab881f47bea73d21e5c9fea0f63390d75b3",
+                },
+            },
         },
     },
 }
