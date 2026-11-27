@@ -20,12 +20,12 @@ itself, or a dependency).
 
 | | x86_64 | aarch64 |
 |---|---|---|
-| installable | 410 | 385 |
-| not provided | 0 | 25 |
-| unstated | 165 | 165 |
+| installable | 555 | 434 |
+| not provided | 0 | 121 |
+| unstated | 20 | 20 |
 | no Linux entry | 26 | 26 |
-| closure installable | 318 | 302 |
-| closure not installable | 257 | 273 |
+| closure installable | 549 | 399 |
+| closure not installable | 26 | 176 |
 
 ## What to add for aarch64
 
@@ -34,7 +34,6 @@ in its own closure):
 
 | package | closures it is missing from |
 |---|---|
-| `patchelf` | 93 |
 | `xorgproto` | 54 |
 | `libXau` | 52 |
 | `libXdmcp` | 52 |
@@ -64,38 +63,39 @@ in its own closure):
 | `pixman` | 11 |
 | `libjpeg-turbo` | 11 |
 | `libtiff` | 10 |
+| `graphite2` | 10 |
 
 ## Packages
 
 | package | x86_64 | aarch64 | closure on aarch64 |
 |---|---|---|---|
 | `7zip` | yes | yes | yes |
-| `aarch64-freebsd-disk-image` | unstated | unstated | missing: `aarch64-freebsd-disk-image` |
+| `aarch64-freebsd-disk-image` | yes | yes | yes |
 | `aarch64-freebsd-sysroot` | unstated | unstated | missing: `aarch64-freebsd-sysroot` |
-| `aarch64-linux-gnu-sysroot` | unstated | unstated | missing: `aarch64-linux-gnu-sysroot` |
-| `aarch64-linux-musl-gcc` | unstated | unstated | missing: `aarch64-linux-musl-gcc` |
-| `aarch64-netbsd-disk-image` | unstated | unstated | missing: `aarch64-netbsd-disk-image` |
+| `aarch64-linux-gnu-sysroot` | yes | yes | yes |
+| `aarch64-linux-musl-gcc` | yes | yes | yes |
+| `aarch64-netbsd-disk-image` | yes | yes | yes |
 | `aarch64-netbsd-sysroot` | unstated | unstated | missing: `aarch64-netbsd-sysroot` |
-| `aarch64-openbsd-disk-image` | unstated | unstated | missing: `aarch64-openbsd-disk-image` |
+| `aarch64-openbsd-disk-image` | yes | yes | yes |
 | `aarch64-openbsd-sysroot` | unstated | unstated | missing: `aarch64-openbsd-sysroot` |
 | `act` | yes | yes | yes |
 | `actionlint` | yes | yes | yes |
-| `adwaita-cursors` | unstated | unstated | missing: `adwaita-cursors` |
+| `adwaita-cursors` | yes | yes | yes |
 | `age` | yes | yes | yes |
 | `agent-confined` | yes | yes | yes |
 | `agent-private` | yes | yes | yes |
 | `agent-workspace` | yes | yes | yes |
-| `agg` | yes | yes | missing: `patchelf` |
+| `agg` | yes | yes | yes |
 | `aichat` | yes | yes | yes |
-| `alsa-lib` | unstated | unstated | missing: `alsa-lib` |
-| `android-build-tools` | unstated | unstated | missing: `android-build-tools` |
-| `android-debug-keystore` | unstated | unstated | missing: `android-debug-keystore` |
-| `android-emulator` | unstated | unstated | missing: `android-emulator`, `android-platform-tools`, `libX11`, `libxcb`, `libXau`, `xorgproto` and 2 more |
-| `android-ndk` | unstated | unstated | missing: `android-ndk` |
-| `android-ndk-libcxx-modules` | unstated | unstated | missing: `android-ndk-libcxx-modules` |
-| `android-platform` | unstated | unstated | missing: `android-platform` |
-| `android-platform-tools` | unstated | unstated | missing: `android-platform-tools` |
-| `android-system-image` | unstated | unstated | missing: `android-system-image` |
+| `alsa-lib` | yes | no | missing: `alsa-lib` |
+| `android-build-tools` | yes | no | missing: `android-build-tools` |
+| `android-debug-keystore` | yes | yes | yes |
+| `android-emulator` | yes | no | missing: `android-emulator`, `android-platform-tools`, `libX11`, `libxcb`, `libXau`, `xorgproto` and 2 more |
+| `android-ndk` | yes | no | missing: `android-ndk` |
+| `android-ndk-libcxx-modules` | yes | yes | yes |
+| `android-platform` | yes | yes | yes |
+| `android-platform-tools` | yes | no | missing: `android-platform-tools` |
+| `android-system-image` | yes | yes | yes |
 | `aom` | yes | yes | yes |
 | `apitab` | yes | no | missing: `apitab` |
 | `appimagetool` | yes | yes | yes |
@@ -104,198 +104,198 @@ in its own closure):
 | `arcmd` | yes | yes | yes |
 | `argocd` | yes | yes | yes |
 | `aria2-next` | yes | yes | yes |
-| `ast-grep` | yes | yes | missing: `patchelf` |
+| `ast-grep` | yes | yes | yes |
 | `at-spi2-atk` | yes | yes | missing: `glib`, `libffi`, `libselinux`, `pcre2`, `util-linux`, `libX11` and 7 more |
 | `at-spi2-core` | yes | yes | missing: `glib`, `libffi`, `libselinux`, `pcre2`, `util-linux`, `libX11` and 7 more |
 | `atk` | yes | yes | missing: `glib`, `libffi`, `libselinux`, `pcre2`, `util-linux` |
 | `atuin` | yes | yes | yes |
-| `audacious` | yes | yes | missing: `patchelf` |
+| `audacious` | yes | yes | yes |
 | `audio` | yes | yes | yes |
 | `bash` | yes | yes | yes |
-| `bat` | unstated | unstated | missing: `bat` |
-| `bazel` | unstated | unstated | missing: `bazel`, `patchelf` |
-| `binutils` | yes | yes | missing: `patchelf` |
+| `bat` | yes | yes | yes |
+| `bazel` | yes | no | missing: `bazel` |
+| `binutils` | yes | yes | yes |
 | `biome` | yes | yes | yes |
 | `blender` | yes | no | missing: `blender` |
 | `bottom` | yes | yes | yes |
 | `brew` | unstated | unstated | missing: `brew` |
 | `brotli` | yes | yes | yes |
 | `buf` | yes | yes | yes |
-| `bun` | yes | yes | missing: `patchelf` |
-| `bundletool` | unstated | unstated | missing: `bundletool` |
+| `bun` | yes | yes | yes |
+| `bundletool` | yes | no | missing: `bundletool` |
 | `busybox` | yes | yes | yes |
 | `bwrap` | yes | yes | yes |
-| `ca-certificates` | unstated | unstated | missing: `ca-certificates` |
+| `ca-certificates` | yes | yes | yes |
 | `caddy` | yes | yes | yes |
-| `cairo` | unstated | unstated | missing: `cairo`, `fontconfig`, `expat`, `freetype`, `glib`, `libffi` and 12 more |
+| `cairo` | yes | no | missing: `cairo`, `fontconfig`, `expat`, `freetype`, `glib`, `libffi` and 12 more |
 | `cann-toolkit` | yes | yes | yes |
 | `carapace` | yes | yes | yes |
-| `cc-connect` | unstated | unstated | missing: `cc-connect` |
+| `cc-connect` | yes | yes | yes |
 | `cc-switch` | yes | yes | yes |
-| `chatgpt` | yes | no | missing: `chatgpt`, `alsa-lib`, `glib`, `libffi`, `libselinux`, `pcre2` and 44 more |
+| `chatgpt` | yes | no | missing: `chatgpt`, `alsa-lib`, `glib`, `libffi`, `libselinux`, `pcre2` and 43 more |
 | `cilium` | yes | yes | yes |
-| `clash-flux` | yes | yes | missing: `cairo`, `fontconfig`, `expat`, `freetype`, `glib`, `libffi` and 40 more |
+| `clash-flux` | yes | yes | missing: `cairo`, `fontconfig`, `expat`, `freetype`, `glib`, `libffi` and 39 more |
 | `claude` | yes | yes | yes |
 | `claude-llm` | yes | yes | yes |
 | `clice` | yes | yes | yes |
 | `cloudflared` | yes | yes | yes |
 | `cmake` | yes | no | missing: `cmake`, `fontconfig`, `expat`, `freetype`, `libxcb`, `libXau` and 2 more |
-| `code` | unstated | unstated | missing: `code` |
+| `code` | yes | yes | yes |
 | `codex` | yes | yes | yes |
-| `composer` | unstated | unstated | missing: `composer` |
+| `composer` | yes | yes | yes |
 | `compositor` | yes | yes | yes |
-| `configure-project-installer` | yes | yes | missing: `patchelf` |
+| `configure-project-installer` | yes | yes | yes |
 | `consul` | yes | yes | yes |
 | `container-structure-test` | yes | yes | yes |
 | `core` | yes | yes | yes |
 | `coreutils` | yes | yes | yes |
 | `cosign` | yes | yes | yes |
 | `coursier` | unstated | unstated | missing: `coursier` |
-| `cpp` | yes | yes | missing: `patchelf` |
+| `cpp` | yes | yes | yes |
 | `crane` | yes | yes | yes |
 | `croc` | yes | yes | yes |
 | `cubism-sdk-native` | unstated | unstated | missing: `cubism-sdk-native` |
-| `cubism-sdk-web` | unstated | unstated | missing: `cubism-sdk-web` |
+| `cubism-sdk-web` | yes | yes | yes |
 | `cuda-cccl` | yes | yes | yes |
 | `cuda-crt` | yes | yes | yes |
-| `cuda-cudart` | yes | yes | missing: `patchelf` |
+| `cuda-cudart` | yes | yes | yes |
 | `cuda-culibos` | yes | yes | yes |
 | `cuda-cuobjdump` | yes | yes | yes |
 | `cuda-cuxxfilt` | yes | yes | yes |
 | `cuda-gdb` | yes | yes | yes |
 | `cuda-nvcc` | yes | yes | yes |
 | `cuda-nvdisasm` | yes | yes | yes |
-| `cuda-nvrtc` | yes | yes | missing: `patchelf` |
-| `cuda-nvtx` | yes | yes | missing: `patchelf` |
+| `cuda-nvrtc` | yes | yes | yes |
+| `cuda-nvtx` | yes | yes | yes |
 | `cuda-profiler-api` | yes | yes | yes |
 | `cuda-sanitizer` | yes | yes | yes |
 | `cue` | yes | yes | yes |
 | `curl` | yes | yes | yes |
 | `cursors` | unstated | unstated | missing: `cursors` |
-| `d2x` | yes | no | missing: `d2x`, `patchelf` |
+| `d2x` | yes | no | missing: `d2x` |
 | `dagger` | yes | yes | yes |
 | `dart-sdk` | yes | yes | yes |
 | `dasel` | yes | yes | yes |
 | `dash` | yes | no | missing: `dash` |
 | `dbmate` | yes | yes | yes |
-| `dbpp` | yes | yes | missing: `cairo`, `fontconfig`, `expat`, `freetype`, `glib`, `libffi` and 39 more |
+| `dbpp` | yes | yes | missing: `cairo`, `fontconfig`, `expat`, `freetype`, `glib`, `libffi` and 38 more |
 | `dbus` | yes | yes | yes |
-| `delta` | yes | yes | missing: `patchelf` |
-| `deno` | yes | yes | missing: `patchelf` |
+| `delta` | yes | yes | yes |
+| `deno` | yes | yes | yes |
 | `desktop` | yes | yes | yes |
 | `devcpp` | - | - | - |
 | `devspace` | yes | yes | yes |
-| `difftastic` | yes | yes | missing: `patchelf` |
-| `directx-headers` | unstated | unstated | missing: `directx-headers` |
+| `difftastic` | yes | yes | yes |
+| `directx-headers` | yes | no | missing: `directx-headers` |
 | `direnv` | yes | yes | yes |
 | `dirun` | yes | yes | yes |
 | `dive` | yes | yes | yes |
 | `doggo` | yes | yes | yes |
 | `dolt` | yes | yes | yes |
 | `dosbox-staging` | yes | no | missing: `dosbox-staging` |
-| `dotnet` | unstated | unstated | missing: `dotnet` |
+| `dotnet` | yes | yes | yes |
 | `dpcpp` | yes | no | missing: `dpcpp` |
 | `dprint` | yes | yes | yes |
-| `dsh` | yes | yes | missing: `patchelf`, `pnpm` |
+| `dsh` | yes | yes | missing: `pnpm` |
 | `dua` | yes | yes | yes |
-| `duckdb` | yes | yes | missing: `patchelf` |
+| `duckdb` | yes | yes | yes |
 | `dufs` | yes | yes | yes |
 | `dust` | yes | yes | yes |
 | `e2fsprogs` | yes | yes | yes |
 | `earthly` | yes | yes | yes |
 | `eden` | yes | yes | yes |
 | `eden-android` | yes | yes | yes |
-| `edk2-firmware` | unstated | unstated | missing: `edk2-firmware` |
-| `elfutils` | unstated | unstated | missing: `elfutils`, `patchelf` |
-| `emsdk` | yes | yes | missing: `patchelf` |
+| `edk2-firmware` | yes | yes | yes |
+| `elfutils` | yes | no | missing: `elfutils` |
+| `emsdk` | yes | yes | yes |
 | `esbuild` | yes | yes | yes |
 | `etcd` | yes | yes | yes |
 | `evans` | yes | yes | yes |
 | `everything` | - | - | - |
-| `expat` | unstated | unstated | missing: `expat` |
-| `eza` | yes | yes | missing: `patchelf` |
-| `falkon` | yes | yes | missing: `luban-fonts`, `patchelf` |
+| `expat` | yes | no | missing: `expat` |
+| `eza` | yes | yes | yes |
+| `falkon` | yes | yes | missing: `luban-fonts` |
 | `fastfetch` | yes | yes | yes |
-| `fd` | unstated | unstated | missing: `fd` |
+| `fd` | yes | yes | yes |
 | `ffuf` | yes | yes | yes |
 | `filezilla` | - | - | - |
 | `fish` | yes | yes | yes |
 | `flutter` | yes | no | missing: `flutter` |
 | `flux` | yes | yes | yes |
-| `fontconfig` | unstated | unstated | missing: `fontconfig`, `expat`, `freetype` |
+| `fontconfig` | yes | no | missing: `fontconfig`, `expat`, `freetype` |
 | `fontconfig-user-moyingji` | yes | yes | yes |
 | `foot` | yes | yes | missing: `luban-fonts` |
-| `freebsd-disk` | unstated | unstated | missing: `freebsd-disk` |
-| `freebsd-disk-image` | unstated | unstated | missing: `freebsd-disk-image` |
+| `freebsd-disk` | yes | yes | yes |
+| `freebsd-disk-image` | yes | no | missing: `freebsd-disk-image` |
 | `freebsd-sysroot` | unstated | unstated | missing: `freebsd-sysroot` |
-| `freebsd-vm` | unstated | unstated | missing: `freebsd-vm` |
-| `freetype` | unstated | unstated | missing: `freetype` |
-| `fribidi` | unstated | unstated | missing: `fribidi` |
+| `freebsd-vm` | yes | yes | yes |
+| `freetype` | yes | no | missing: `freetype` |
+| `fribidi` | yes | no | missing: `fribidi` |
 | `frp` | yes | yes | yes |
 | `fx` | yes | yes | yes |
-| `fzf` | unstated | unstated | missing: `fzf` |
-| `gcc` | yes | yes | missing: `patchelf` |
-| `gcc-runtime` | yes | yes | missing: `patchelf` |
+| `fzf` | yes | yes | yes |
+| `gcc` | yes | yes | yes |
+| `gcc-runtime` | yes | yes | yes |
 | `gcc-specs-config` | yes | yes | yes |
 | `gdb` | yes | yes | yes |
-| `gdk-pixbuf` | unstated | unstated | missing: `gdk-pixbuf`, `glib`, `libffi`, `libselinux`, `pcre2`, `util-linux` and 3 more |
+| `gdk-pixbuf` | yes | no | missing: `gdk-pixbuf`, `glib`, `libffi`, `libselinux`, `pcre2`, `util-linux` and 3 more |
 | `gh` | yes | yes | yes |
 | `git` | yes | yes | yes |
 | `git-autosync` | yes | yes | yes |
 | `git-lfs` | yes | yes | yes |
 | `gitcode-hosts` | yes | yes | yes |
-| `github-gh` | unstated | unstated | missing: `github-gh` |
+| `github-gh` | yes | yes | yes |
 | `github-notifications-clear` | yes | yes | yes |
 | `gitleaks` | yes | yes | yes |
-| `gitui` | yes | yes | missing: `patchelf` |
+| `gitui` | yes | yes | yes |
 | `glab` | yes | yes | yes |
 | `gleam` | yes | yes | yes |
-| `glew` | unstated | unstated | missing: `glew` |
-| `glib` | unstated | unstated | missing: `glib`, `libffi`, `libselinux`, `pcre2`, `util-linux` |
+| `glew` | yes | yes | yes |
+| `glib` | yes | no | missing: `glib`, `libffi`, `libselinux`, `pcre2`, `util-linux` |
 | `glibc` | yes | yes | yes |
 | `glow` | yes | yes | yes |
-| `glslang` | unstated | unstated | missing: `glslang`, `patchelf` |
+| `glslang` | yes | no | missing: `glslang` |
 | `go` | yes | no | missing: `go` |
-| `godot` | yes | yes | missing: `expat`, `freetype`, `fontconfig`, `libXcursor`, `libX11`, `libxcb` and 22 more |
+| `godot` | yes | yes | missing: `expat`, `freetype`, `fontconfig`, `libXcursor`, `libX11`, `libxcb` and 21 more |
 | `gojq` | yes | yes | yes |
 | `golangci-lint` | yes | yes | yes |
 | `goose` | yes | yes | yes |
 | `goreleaser` | yes | yes | yes |
 | `gost` | yes | yes | yes |
 | `gping` | yes | yes | yes |
-| `gradle` | unstated | unstated | missing: `gradle` |
-| `graphene` | unstated | unstated | missing: `graphene`, `glib`, `libffi`, `libselinux`, `pcre2`, `util-linux` |
-| `graphics` | yes | yes | missing: `fontconfig`, `expat`, `freetype`, `libXcursor`, `libX11`, `libxcb` and 22 more |
-| `graphite2` | unstated | unstated | missing: `graphite2` |
-| `griddycode` | unstated | unstated | missing: `griddycode` |
+| `gradle` | yes | yes | yes |
+| `graphene` | yes | no | missing: `graphene`, `glib`, `libffi`, `libselinux`, `pcre2`, `util-linux` |
+| `graphics` | yes | yes | missing: `fontconfig`, `expat`, `freetype`, `libXcursor`, `libX11`, `libxcb` and 21 more |
+| `graphite2` | yes | no | missing: `graphite2` |
+| `griddycode` | yes | no | missing: `griddycode` |
 | `grpcurl` | yes | yes | yes |
 | `grype` | yes | yes | yes |
-| `gtk3` | yes | yes | missing: `glib`, `libffi`, `libselinux`, `pcre2`, `util-linux`, `libX11` and 33 more |
-| `gtk4` | unstated | unstated | missing: `gtk4`, `cairo`, `fontconfig`, `expat`, `freetype`, `glib` and 35 more |
+| `gtk3` | yes | yes | missing: `glib`, `libffi`, `libselinux`, `pcre2`, `util-linux`, `libX11` and 32 more |
+| `gtk4` | yes | no | missing: `gtk4`, `cairo`, `fontconfig`, `expat`, `freetype`, `glib` and 34 more |
 | `gum` | yes | yes | yes |
 | `hadolint` | yes | yes | yes |
-| `haiku-disk-image` | unstated | unstated | missing: `haiku-disk-image` |
-| `harfbuzz` | unstated | unstated | missing: `harfbuzz`, `freetype`, `glib`, `libffi`, `libselinux`, `pcre2` and 3 more |
-| `helix` | yes | yes | missing: `patchelf` |
+| `haiku-disk-image` | yes | no | missing: `haiku-disk-image` |
+| `harfbuzz` | yes | no | missing: `harfbuzz`, `freetype`, `glib`, `libffi`, `libselinux`, `pcre2` and 3 more |
+| `helix` | yes | yes | yes |
 | `helm` | yes | yes | yes |
 | `helmfile` | yes | yes | yes |
-| `hermes-agent` | unstated | unstated | missing: `hermes-agent`, `patchelf` |
+| `hermes-agent` | yes | yes | yes |
 | `hex` | yes | yes | yes |
-| `hexyl` | yes | yes | missing: `patchelf` |
-| `hip-nvidia` | unstated | unstated | missing: `hip-nvidia` |
+| `hexyl` | yes | yes | yes |
+| `hip-nvidia` | yes | yes | yes |
 | `htop` | yes | yes | yes |
 | `httpx` | yes | yes | yes |
 | `hugo` | yes | yes | yes |
-| `hurd-disk-image` | unstated | unstated | missing: `hurd-disk-image` |
-| `huxerui` | yes | yes | missing: `cmake`, `fontconfig`, `expat`, `freetype`, `libxcb`, `libXau` and 40 more |
+| `hurd-disk-image` | yes | no | missing: `hurd-disk-image` |
+| `huxerui` | yes | yes | missing: `cmake`, `fontconfig`, `expat`, `freetype`, `libxcb`, `libXau` and 39 more |
 | `hxlings` | yes | no | missing: `hxlings` |
 | `hyperfine` | yes | yes | yes |
-| `i586-pc-msdosdjgpp-gcc` | unstated | unstated | missing: `i586-pc-msdosdjgpp-gcc` |
+| `i586-pc-msdosdjgpp-gcc` | yes | no | missing: `i586-pc-msdosdjgpp-gcc` |
 | `ibcs-us` | yes | no | missing: `ibcs-us` |
-| `icu` | yes | yes | missing: `patchelf` |
+| `icu` | yes | yes | yes |
 | `infracost` | yes | yes | yes |
 | `interposer-stub` | yes | yes | yes |
-| `iphoneos-sdk` | unstated | unstated | missing: `iphoneos-sdk` |
+| `iphoneos-sdk` | yes | yes | yes |
 | `jdk-corretto` | yes | yes | yes |
 | `jdk-temurin` | yes | yes | yes |
 | `jdk-zulu` | yes | yes | yes |
@@ -303,7 +303,7 @@ in its own closure):
 | `jdk17-temurin` | yes | yes | yes |
 | `jdk21-temurin` | yes | yes | yes |
 | `jdk8-temurin` | yes | yes | yes |
-| `jetbrainsmono-nerd-font` | unstated | unstated | missing: `jetbrainsmono-nerd-font` |
+| `jetbrainsmono-nerd-font` | yes | yes | yes |
 | `jq` | yes | yes | yes |
 | `julia` | yes | yes | yes |
 | `just` | yes | yes | yes |
@@ -311,14 +311,14 @@ in its own closure):
 | `k3d` | yes | yes | yes |
 | `k6` | yes | yes | yes |
 | `k9s` | yes | yes | yes |
-| `kde` | yes | no | missing: `kde`, `luban-fonts`, `patchelf`, `xkeyboard-config` |
+| `kde` | yes | no | missing: `kde`, `luban-fonts`, `xkeyboard-config` |
 | `keyutils` | yes | yes | yes |
-| `khistory` | unstated | unstated | missing: `khistory` |
+| `khistory` | yes | no | missing: `khistory` |
 | `kind` | yes | yes | yes |
 | `ko` | yes | yes | yes |
 | `kopia` | yes | yes | yes |
 | `kotlin` | yes | yes | yes |
-| `krb5` | yes | yes | missing: `patchelf` |
+| `krb5` | yes | yes | yes |
 | `kubecolor` | yes | yes | yes |
 | `kubeconform` | yes | yes | yes |
 | `kubectl` | yes | yes | yes |
@@ -330,73 +330,73 @@ in its own closure):
 | `lazygit` | yes | yes | yes |
 | `lazysql` | yes | yes | yes |
 | `lefthook` | yes | yes | yes |
-| `libX11` | unstated | unstated | missing: `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` |
-| `libXau` | unstated | unstated | missing: `libXau`, `xorgproto` |
+| `libX11` | yes | no | missing: `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` |
+| `libXau` | yes | no | missing: `libXau`, `xorgproto` |
 | `libXcomposite` | yes | yes | missing: `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` |
-| `libXcursor` | unstated | unstated | missing: `libXcursor`, `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` and 2 more |
-| `libXdamage` | unstated | unstated | missing: `libXdamage`, `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` and 1 more |
-| `libXdmcp` | unstated | unstated | missing: `libXdmcp`, `xorgproto` |
-| `libXext` | unstated | unstated | missing: `libXext`, `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` |
-| `libXfixes` | unstated | unstated | missing: `libXfixes`, `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` |
-| `libXft` | unstated | unstated | missing: `libXft`, `fontconfig`, `expat`, `freetype`, `libX11`, `libxcb` and 4 more |
-| `libXi` | unstated | unstated | missing: `libXi`, `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` and 2 more |
-| `libXinerama` | unstated | unstated | missing: `libXinerama`, `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` and 1 more |
-| `libXrandr` | unstated | unstated | missing: `libXrandr`, `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` and 2 more |
-| `libXrender` | unstated | unstated | missing: `libXrender`, `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` |
-| `libXtst` | unstated | unstated | missing: `libXtst`, `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` and 3 more |
-| `libXxf86vm` | unstated | unstated | missing: `libXxf86vm`, `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` and 1 more |
+| `libXcursor` | yes | no | missing: `libXcursor`, `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` and 2 more |
+| `libXdamage` | yes | no | missing: `libXdamage`, `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` and 1 more |
+| `libXdmcp` | yes | no | missing: `libXdmcp`, `xorgproto` |
+| `libXext` | yes | no | missing: `libXext`, `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` |
+| `libXfixes` | yes | no | missing: `libXfixes`, `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` |
+| `libXft` | yes | no | missing: `libXft`, `fontconfig`, `expat`, `freetype`, `libX11`, `libxcb` and 4 more |
+| `libXi` | yes | no | missing: `libXi`, `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` and 2 more |
+| `libXinerama` | yes | no | missing: `libXinerama`, `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` and 1 more |
+| `libXrandr` | yes | no | missing: `libXrandr`, `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` and 2 more |
+| `libXrender` | yes | no | missing: `libXrender`, `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` |
+| `libXtst` | yes | no | missing: `libXtst`, `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` and 3 more |
+| `libXxf86vm` | yes | no | missing: `libXxf86vm`, `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` and 1 more |
 | `libavif` | yes | yes | yes |
-| `libbsd` | unstated | unstated | missing: `libbsd` |
+| `libbsd` | yes | no | missing: `libbsd` |
 | `libcap` | yes | yes | yes |
-| `libcublas` | yes | yes | missing: `patchelf` |
+| `libcublas` | yes | yes | yes |
 | `libcuda-host-link` | yes | yes | yes |
-| `libcufft` | yes | yes | missing: `patchelf` |
-| `libcups` | yes | yes | missing: `patchelf` |
-| `libcurand` | yes | yes | missing: `patchelf` |
-| `libcusolver` | yes | yes | missing: `patchelf` |
-| `libcusparse` | yes | yes | missing: `patchelf` |
-| `libcxx-headers` | unstated | unstated | missing: `libcxx-headers` |
-| `libdatrie` | unstated | unstated | missing: `libdatrie` |
-| `libdrm` | unstated | unstated | missing: `libdrm`, `libpciaccess` |
+| `libcufft` | yes | yes | yes |
+| `libcups` | yes | yes | yes |
+| `libcurand` | yes | yes | yes |
+| `libcusolver` | yes | yes | yes |
+| `libcusparse` | yes | yes | yes |
+| `libcxx-headers` | yes | yes | yes |
+| `libdatrie` | yes | no | missing: `libdatrie` |
+| `libdrm` | yes | no | missing: `libdrm`, `libpciaccess` |
 | `libedit` | yes | yes | missing: `ncurses` |
-| `libepoxy` | unstated | unstated | missing: `libepoxy`, `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` and 3 more |
-| `libffi` | unstated | unstated | missing: `libffi` |
+| `libepoxy` | yes | no | missing: `libepoxy`, `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` and 2 more |
+| `libffi` | yes | no | missing: `libffi` |
 | `libgcrypt` | yes | yes | yes |
-| `libglvnd` | unstated | unstated | missing: `libglvnd`, `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` and 2 more |
+| `libglvnd` | yes | no | missing: `libglvnd`, `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` and 1 more |
 | `libgpg-error` | yes | yes | yes |
-| `libinput-quirks` | unstated | unstated | missing: `libinput-quirks` |
-| `libjpeg-turbo` | unstated | unstated | missing: `libjpeg-turbo` |
-| `libllvm` | unstated | unstated | missing: `libllvm`, `patchelf` |
+| `libinput-quirks` | yes | no | missing: `libinput-quirks` |
+| `libjpeg-turbo` | yes | no | missing: `libjpeg-turbo` |
+| `libllvm` | yes | no | missing: `libllvm` |
 | `libmd` | yes | yes | yes |
 | `libnotify` | yes | yes | missing: `gdk-pixbuf`, `glib`, `libffi`, `libselinux`, `pcre2`, `util-linux` and 3 more |
 | `libnvfatbin` | yes | yes | yes |
 | `libnvjitlink` | yes | yes | yes |
 | `libnvptxcompiler` | yes | yes | yes |
 | `libnvvm` | yes | yes | yes |
-| `libpciaccess` | unstated | unstated | missing: `libpciaccess` |
-| `libpng` | unstated | unstated | missing: `libpng` |
-| `libpsl` | unstated | unstated | missing: `libpsl` |
+| `libpciaccess` | yes | no | missing: `libpciaccess` |
+| `libpng` | yes | no | missing: `libpng` |
+| `libpsl` | yes | no | missing: `libpsl` |
 | `libsecret` | yes | yes | missing: `glib`, `libffi`, `libselinux`, `pcre2`, `util-linux` |
-| `libselinux` | unstated | unstated | missing: `libselinux`, `pcre2` |
-| `libsoup` | unstated | unstated | missing: `libsoup`, `glib`, `libffi`, `libselinux`, `pcre2`, `util-linux` and 3 more |
-| `libthai` | unstated | unstated | missing: `libthai`, `libdatrie` |
-| `libtiff` | unstated | unstated | missing: `libtiff`, `libjpeg-turbo` |
+| `libselinux` | yes | no | missing: `libselinux`, `pcre2` |
+| `libsoup` | yes | no | missing: `libsoup`, `glib`, `libffi`, `libselinux`, `pcre2`, `util-linux` and 3 more |
+| `libthai` | yes | no | missing: `libthai`, `libdatrie` |
+| `libtiff` | yes | no | missing: `libtiff`, `libjpeg-turbo` |
 | `libudev` | yes | yes | yes |
 | `libusb` | yes | yes | yes |
-| `libxcb` | unstated | unstated | missing: `libxcb`, `libXau`, `xorgproto`, `libXdmcp` |
-| `libxkbcommon` | unstated | unstated | missing: `libxkbcommon`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` |
+| `libxcb` | yes | no | missing: `libxcb`, `libXau`, `xorgproto`, `libXdmcp` |
+| `libxkbcommon` | yes | no | missing: `libxkbcommon`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` |
 | `libxml2` | yes | yes | yes |
-| `libxshmfence` | unstated | unstated | missing: `libxshmfence` |
+| `libxshmfence` | yes | no | missing: `libxshmfence` |
 | `limine` | yes | yes | yes |
 | `linux-headers` | yes | yes | yes |
 | `linux-kernel` | yes | no | missing: `linux-kernel` |
 | `linux-kernel-virt` | yes | yes | yes |
 | `linux-sysroot-create` | yes | yes | yes |
-| `llama.cpp` | yes | yes | missing: `patchelf` |
+| `llama.cpp` | yes | yes | yes |
 | `llm-switch` | yes | no | missing: `llm-switch` |
-| `llvm` | yes | no | missing: `llvm`, `patchelf` |
-| `llvm-dev` | unstated | unstated | missing: `llvm-dev`, `patchelf` |
-| `llvm-tools` | yes | no | missing: `llvm-tools`, `patchelf` |
+| `llvm` | yes | no | missing: `llvm` |
+| `llvm-dev` | yes | no | missing: `llvm-dev` |
+| `llvm-tools` | yes | no | missing: `llvm-tools` |
 | `lsd` | yes | yes | yes |
 | `luban` | yes | yes | yes |
 | `luban-agent-workspace` | yes | yes | yes |
@@ -407,18 +407,18 @@ in its own closure):
 | `luban-desktop-xdesk` | yes | yes | yes |
 | `luban-fonts` | unstated | unstated | missing: `luban-fonts` |
 | `luban-nano` | yes | yes | yes |
-| `luban-os` | yes | no | missing: `luban-os`, `patchelf`, `fontconfig`, `expat`, `freetype`, `libXcursor` and 24 more |
+| `luban-os` | yes | no | missing: `luban-os`, `fontconfig`, `expat`, `freetype`, `libXcursor`, `libX11` and 23 more |
 | `luban-tiny` | yes | yes | yes |
 | `luban-tiny-musl` | yes | yes | yes |
-| `lxqt` | yes | yes | missing: `luban-fonts`, `patchelf`, `xkeyboard-config` |
+| `lxqt` | yes | yes | missing: `luban-fonts`, `xkeyboard-config` |
 | `lychee` | yes | yes | yes |
 | `macapp-run` | - | - | - |
 | `magpie` | yes | yes | yes |
 | `magpie-cli` | yes | yes | yes |
 | `make` | yes | yes | yes |
-| `maven` | unstated | unstated | missing: `maven` |
+| `maven` | yes | yes | yes |
 | `mcpp` | yes | yes | yes |
-| `mcpp-android-runner` | unstated | unstated | missing: `mcpp-android-runner` |
+| `mcpp-android-runner` | yes | yes | yes |
 | `mcpp-hooks-audioplayer` | yes | no | missing: `mcpp-hooks-audioplayer` |
 | `mcpp-ide` | yes | yes | yes |
 | `mcpp-ide-nvim` | yes | yes | yes |
@@ -426,18 +426,18 @@ in its own closure):
 | `mcpp-vscode-clangd` | yes | yes | yes |
 | `mcppls` | yes | yes | yes |
 | `mcppls-nvim` | yes | yes | yes |
-| `mdbook` | unstated | unstated | missing: `mdbook` |
-| `media-crawler` | unstated | unstated | missing: `media-crawler`, `patchelf`, `uv` |
-| `meilisearch` | yes | yes | missing: `patchelf` |
-| `mesa` | unstated | unstated | missing: `mesa`, `elfutils`, `patchelf`, `expat`, `libX11`, `libxcb` and 13 more |
+| `mdbook` | yes | yes | yes |
+| `media-crawler` | yes | yes | yes |
+| `meilisearch` | yes | yes | yes |
+| `mesa` | yes | no | missing: `mesa`, `elfutils`, `expat`, `libX11`, `libxcb`, `libXau` and 12 more |
 | `mesa-lavapipe` | yes | yes | yes |
-| `meson` | unstated | unstated | missing: `meson`, `patchelf` |
+| `meson` | yes | no | missing: `meson` |
 | `migrate` | yes | yes | yes |
 | `miller` | yes | yes | yes |
 | `mingw-cross-gcc` | yes | no | missing: `mingw-cross-gcc` |
 | `mingw-gcc` | - | - | - |
 | `mingw-w64` | - | - | - |
-| `mingw-w64-sysroot` | unstated | unstated | missing: `mingw-w64-sysroot` |
+| `mingw-w64-sysroot` | yes | yes | yes |
 | `miniserve` | yes | yes | yes |
 | `mise` | yes | yes | yes |
 | `mkcert` | yes | yes | yes |
@@ -445,22 +445,22 @@ in its own closure):
 | `moltenvk` | - | - | - |
 | `msvc` | - | - | - |
 | `mtest` | yes | yes | yes |
-| `musl` | yes | yes | missing: `patchelf` |
-| `musl-cross-make` | unstated | unstated | missing: `musl-cross-make`, `patchelf` |
-| `musl-gcc` | unstated | unstated | missing: `musl-gcc`, `patchelf` |
+| `musl` | yes | yes | yes |
+| `musl-cross-make` | unstated | unstated | missing: `musl-cross-make` |
+| `musl-gcc` | yes | yes | yes |
 | `mysql` | - | - | - |
 | `nano` | yes | yes | yes |
 | `nasm` | yes | yes | yes |
 | `nats` | yes | yes | yes |
 | `nats-server` | yes | yes | yes |
-| `ncurses` | unstated | unstated | missing: `ncurses` |
-| `netbsd-disk-image` | unstated | unstated | missing: `netbsd-disk-image` |
+| `ncurses` | yes | no | missing: `ncurses` |
+| `netbsd-disk-image` | yes | no | missing: `netbsd-disk-image` |
 | `nfpm` | yes | yes | yes |
-| `nghttp2` | unstated | unstated | missing: `nghttp2` |
+| `nghttp2` | yes | no | missing: `nghttp2` |
 | `nginx` | - | - | - |
 | `ninja` | yes | yes | yes |
-| `node` | yes | yes | missing: `patchelf` |
-| `npm` | yes | yes | missing: `patchelf` |
+| `node` | yes | yes | yes |
+| `npm` | yes | yes | yes |
 | `nsight-compute` | yes | yes | yes |
 | `nsight-systems` | yes | yes | yes |
 | `nspr` | yes | yes | yes |
@@ -468,32 +468,32 @@ in its own closure):
 | `nuclei` | yes | yes | yes |
 | `numbat` | yes | yes | yes |
 | `nushell` | yes | yes | yes |
-| `nvidia-gl-host-link` | yes | yes | missing: `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp`, `libXext` and 2 more |
+| `nvidia-gl-host-link` | yes | yes | missing: `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp`, `libXext` and 1 more |
 | `nvidia-video-host-link` | yes | yes | yes |
-| `nvim` | yes | yes | missing: `patchelf` |
-| `nvm` | unstated | unstated | missing: `nvm` |
+| `nvim` | yes | yes | yes |
+| `nvm` | yes | yes | yes |
 | `oh-my-pi` | yes | yes | yes |
 | `oha` | yes | yes | yes |
 | `okld` | yes | yes | yes |
 | `okprof` | yes | yes | yes |
 | `okrun` | yes | yes | yes |
-| `ollama` | unstated | unstated | missing: `ollama`, `patchelf` |
-| `openbsd-disk-image` | unstated | unstated | missing: `openbsd-disk-image` |
-| `openclaw` | yes | yes | missing: `patchelf` |
+| `ollama` | yes | no | missing: `ollama` |
+| `openbsd-disk-image` | yes | no | missing: `openbsd-disk-image` |
+| `openclaw` | yes | yes | yes |
 | `opencode` | yes | yes | yes |
-| `openssl` | yes | yes | missing: `patchelf` |
+| `openssl` | yes | yes | yes |
 | `opentofu` | yes | yes | yes |
 | `oras` | yes | yes | yes |
 | `osv-scanner` | yes | yes | yes |
-| `ovmf` | unstated | unstated | missing: `ovmf` |
+| `ovmf` | yes | yes | yes |
 | `oxlint` | yes | yes | yes |
 | `packer` | yes | yes | yes |
 | `pandoc` | yes | yes | yes |
-| `pango` | unstated | unstated | missing: `pango`, `cairo`, `fontconfig`, `expat`, `freetype`, `glib` and 19 more |
+| `pango` | yes | no | missing: `pango`, `cairo`, `fontconfig`, `expat`, `freetype`, `glib` and 19 more |
 | `passt` | yes | yes | yes |
-| `pastel` | yes | yes | missing: `patchelf` |
-| `patchelf` | unstated | unstated | missing: `patchelf` |
-| `pcre2` | unstated | unstated | missing: `pcre2` |
+| `pastel` | yes | yes | yes |
+| `patchelf` | yes | yes | yes |
+| `pcre2` | yes | no | missing: `pcre2` |
 | `perl` | yes | yes | yes |
 | `php` | yes | yes | yes |
 | `pi` | yes | yes | yes |
@@ -501,13 +501,13 @@ in its own closure):
 | `picolibc-arm` | unstated | unstated | missing: `picolibc-arm` |
 | `picolibc-riscv` | unstated | unstated | missing: `picolibc-riscv` |
 | `picolibc-x86` | unstated | unstated | missing: `picolibc-x86` |
-| `pixman` | unstated | unstated | missing: `pixman` |
+| `pixman` | yes | no | missing: `pixman` |
 | `pkl` | yes | yes | yes |
 | `playwright-chromium` | yes | yes | yes |
 | `playwright-chromium-headless-shell` | yes | yes | yes |
 | `playwright-firefox` | yes | yes | yes |
 | `playwright-webkit` | yes | yes | yes |
-| `pnpm` | unstated | unstated | missing: `pnpm`, `patchelf` |
+| `pnpm` | yes | no | missing: `pnpm` |
 | `pocketbase` | yes | yes | yes |
 | `pocl` | yes | yes | yes |
 | `podman` | yes | yes | yes |
@@ -517,85 +517,85 @@ in its own closure):
 | `probe-rs` | yes | yes | yes |
 | `procps-ng` | yes | yes | yes |
 | `procs` | yes | yes | yes |
-| `project-graph` | unstated | unstated | missing: `project-graph` |
+| `project-graph` | yes | no | missing: `project-graph` |
 | `proot` | yes | yes | yes |
 | `protoc` | yes | yes | yes |
-| `puredarwin-disk-image` | unstated | unstated | missing: `puredarwin-disk-image` |
-| `python` | yes | yes | missing: `patchelf` |
+| `puredarwin-disk-image` | yes | no | missing: `puredarwin-disk-image` |
+| `python` | yes | yes | yes |
 | `q` | yes | yes | yes |
 | `qdrant` | yes | yes | yes |
 | `qemu-arm` | yes | yes | yes |
 | `qemu-riscv` | yes | yes | yes |
 | `qemu-system` | yes | yes | yes |
-| `qemu-system-gl` | unstated | unstated | missing: `qemu-system-gl`, `patchelf`, `glib`, `libffi`, `libselinux`, `pcre2` and 29 more |
-| `qemu-user-aarch64` | unstated | unstated | missing: `qemu-user-aarch64` |
-| `qemu-user-riscv64` | unstated | unstated | missing: `qemu-user-riscv64` |
+| `qemu-system-gl` | yes | no | missing: `qemu-system-gl`, `glib`, `libffi`, `libselinux`, `pcre2`, `util-linux` and 28 more |
+| `qemu-user-aarch64` | yes | no | missing: `qemu-user-aarch64` |
+| `qemu-user-riscv64` | yes | no | missing: `qemu-user-riscv64` |
 | `qemu-x86` | yes | yes | yes |
-| `qt` | yes | yes | missing: `fontconfig`, `expat`, `freetype`, `patchelf`, `glib`, `libffi` and 14 more |
-| `qt-addons` | yes | yes | missing: `patchelf`, `glib`, `libffi`, `libselinux`, `pcre2`, `util-linux` and 16 more |
-| `qt-base` | yes | yes | missing: `fontconfig`, `expat`, `freetype`, `patchelf`, `glib`, `libffi` and 14 more |
+| `qt` | yes | yes | missing: `fontconfig`, `expat`, `freetype`, `glib`, `libffi`, `libselinux` and 13 more |
+| `qt-addons` | yes | yes | missing: `glib`, `libffi`, `libselinux`, `pcre2`, `util-linux`, `libX11` and 15 more |
+| `qt-base` | yes | yes | missing: `fontconfig`, `expat`, `freetype`, `glib`, `libffi`, `libselinux` and 13 more |
 | `qt-runtime` | yes | yes | yes |
-| `qt5` | yes | yes | missing: `glib`, `libffi`, `libselinux`, `pcre2`, `util-linux`, `cairo` and 35 more |
+| `qt5` | yes | yes | missing: `glib`, `libffi`, `libselinux`, `pcre2`, `util-linux`, `cairo` and 34 more |
 | `rclone` | yes | yes | yes |
 | `redis` | - | - | - |
 | `restic` | yes | yes | yes |
-| `ripgrep` | unstated | unstated | missing: `ripgrep` |
+| `ripgrep` | yes | yes | yes |
 | `riscv64-linux-musl-gcc` | yes | no | missing: `riscv64-linux-musl-gcc` |
 | `ros2-jazzy-ubnutu` | yes | yes | yes |
-| `rosdep` | unstated | unstated | missing: `rosdep`, `patchelf` |
+| `rosdep` | yes | yes | yes |
 | `ruff` | yes | yes | yes |
-| `rust` | yes | yes | missing: `rustup` |
+| `rust` | yes | yes | yes |
 | `rust-crates-mirror` | yes | yes | yes |
-| `rustup` | unstated | unstated | missing: `rustup` |
+| `rustup` | yes | yes | yes |
 | `rustup-mirror` | yes | yes | yes |
-| `sample-music` | unstated | unstated | missing: `sample-music` |
+| `sample-music` | yes | yes | yes |
 | `sccache` | yes | yes | yes |
 | `sd` | yes | yes | yes |
 | `seeme-report` | - | - | - |
 | `seeme-server` | - | - | - |
-| `shaderc` | yes | yes | missing: `patchelf` |
+| `shaderc` | yes | yes | yes |
 | `shellcheck` | yes | yes | yes |
 | `shfmt` | yes | yes | yes |
 | `shortcut-tool` | yes | yes | yes |
-| `sing-box` | unstated | unstated | missing: `sing-box` |
-| `sing-box-helper` | yes | yes | missing: `sing-box` |
+| `sing-box` | yes | yes | yes |
+| `sing-box-helper` | yes | yes | yes |
 | `skaffold` | yes | yes | yes |
 | `skeema` | yes | yes | yes |
-| `slang` | yes | yes | missing: `patchelf`, `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` |
-| `slint` | yes | no | missing: `slint`, `fontconfig`, `expat`, `freetype`, `patchelf`, `libX11` and 14 more |
+| `slang` | yes | yes | missing: `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` |
+| `slint` | yes | no | missing: `slint`, `fontconfig`, `expat`, `freetype`, `libX11`, `libxcb` and 13 more |
 | `soft-serve` | yes | yes | yes |
 | `sops` | yes | yes | yes |
-| `sourcetrail` | unstated | unstated | missing: `sourcetrail` |
-| `spirv-tools` | unstated | unstated | missing: `spirv-tools`, `patchelf` |
+| `sourcetrail` | yes | no | missing: `sourcetrail` |
+| `spirv-tools` | yes | no | missing: `spirv-tools` |
 | `sqlc` | yes | yes | yes |
-| `sqlite` | unstated | unstated | missing: `sqlite` |
+| `sqlite` | yes | no | missing: `sqlite` |
 | `starship` | yes | yes | yes |
 | `step` | yes | yes | yes |
 | `stern` | yes | yes | yes |
 | `subfinder` | yes | yes | yes |
 | `sudo` | yes | yes | yes |
-| `surrealdb` | yes | yes | missing: `patchelf` |
-| `svr4-disk-image` | unstated | unstated | missing: `svr4-disk-image` |
+| `surrealdb` | yes | yes | yes |
+| `svr4-disk-image` | yes | no | missing: `svr4-disk-image` |
 | `syft` | yes | yes | yes |
 | `syncthing` | yes | yes | yes |
-| `syslinux` | unstated | unstated | missing: `syslinux` |
+| `syslinux` | yes | no | missing: `syslinux` |
 | `taplo` | yes | yes | yes |
 | `task` | yes | yes | yes |
 | `temporal` | yes | yes | yes |
-| `terminfo` | unstated | unstated | missing: `terminfo` |
+| `terminfo` | yes | yes | yes |
 | `terraform` | yes | yes | yes |
 | `tilt` | yes | yes | yes |
 | `tiny` | yes | yes | yes |
 | `tiny-musl` | yes | yes | yes |
-| `tinynext` | yes | no | missing: `tinynext`, `patchelf`, `glib`, `libffi`, `libselinux`, `pcre2` and 13 more |
+| `tinynext` | yes | no | missing: `tinynext`, `glib`, `libffi`, `libselinux`, `pcre2`, `util-linux` and 12 more |
 | `tmux` | yes | yes | yes |
-| `tokei` | yes | yes | missing: `patchelf` |
-| `tools-agent` | yes | yes | missing: `patchelf`, `pnpm` |
-| `tools-cli` | yes | yes | missing: `fd`, `fzf`, `ripgrep` |
-| `tools-dev` | yes | yes | missing: `patchelf`, `uv` |
-| `tpm2-tss` | yes | yes | missing: `patchelf` |
+| `tokei` | yes | yes | yes |
+| `tools-agent` | yes | yes | missing: `pnpm` |
+| `tools-cli` | yes | yes | yes |
+| `tools-dev` | yes | yes | yes |
+| `tpm2-tss` | yes | yes | yes |
 | `traefik` | yes | yes | yes |
-| `trendradar` | unstated | unstated | missing: `trendradar`, `patchelf` |
+| `trendradar` | yes | yes | yes |
 | `trippy` | yes | yes | yes |
 | `trivy` | yes | yes | yes |
 | `trufflehog` | yes | yes | yes |
@@ -603,27 +603,27 @@ in its own closure):
 | `typos` | yes | yes | yes |
 | `typst` | yes | yes | yes |
 | `usql` | yes | yes | yes |
-| `util-linux` | unstated | unstated | missing: `util-linux` |
-| `uv` | unstated | unstated | missing: `uv` |
+| `util-linux` | yes | no | missing: `util-linux` |
+| `uv` | yes | yes | yes |
 | `vale` | yes | yes | yes |
 | `vault` | yes | yes | yes |
 | `vc6` | - | - | - |
 | `vcpkg` | yes | yes | yes |
 | `vcruntime` | - | - | - |
-| `vcstool` | unstated | unstated | missing: `vcstool`, `patchelf` |
+| `vcstool` | yes | yes | yes |
 | `vegeta` | yes | yes | yes |
 | `viddy` | yes | yes | yes |
 | `vim` | yes | yes | yes |
 | `virtiofsd` | yes | yes | yes |
-| `virtualbox` | unstated | unstated | missing: `virtualbox` |
-| `virtualbox-ubuntu` | unstated | unstated | missing: `virtualbox-ubuntu`, `virtualbox` |
+| `virtualbox` | yes | no | missing: `virtualbox` |
+| `virtualbox-ubuntu` | yes | no | missing: `virtualbox-ubuntu`, `virtualbox` |
 | `vs-buildtools` | - | - | - |
-| `vulkan-headers` | unstated | unstated | missing: `vulkan-headers` |
-| `vulkan-loader` | unstated | unstated | missing: `vulkan-loader`, `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` and 6 more |
-| `vulkan-validation-layers` | unstated | unstated | missing: `vulkan-validation-layers` |
+| `vulkan-headers` | yes | no | missing: `vulkan-headers` |
+| `vulkan-loader` | yes | no | missing: `vulkan-loader`, `libX11`, `libxcb`, `libXau`, `xorgproto`, `libXdmcp` and 6 more |
+| `vulkan-validation-layers` | yes | no | missing: `vulkan-validation-layers` |
 | `watchexec` | yes | yes | yes |
-| `wayland` | unstated | unstated | missing: `wayland`, `expat`, `libffi` |
-| `wayland-protocols` | unstated | unstated | missing: `wayland-protocols` |
+| `wayland` | yes | no | missing: `wayland`, `expat`, `libffi` |
+| `wayland-protocols` | yes | no | missing: `wayland-protocols` |
 | `websocat` | yes | yes | yes |
 | `windows-acp` | - | - | - |
 | `windows-sdk` | - | - | - |
@@ -631,7 +631,7 @@ in its own closure):
 | `winscp` | - | - | - |
 | `wix` | - | - | - |
 | `wl-clipboard` | yes | yes | yes |
-| `wsl-gl-host-link` | yes | yes | missing: `mesa`, `elfutils`, `patchelf`, `expat`, `libX11`, `libxcb` and 13 more |
+| `wsl-gl-host-link` | yes | yes | missing: `mesa`, `elfutils`, `expat`, `libX11`, `libxcb`, `libXau` and 12 more |
 | `wsl-installer` | - | - | - |
 | `wsl-ubuntu` | - | - | - |
 | `x86_64-freebsd-sysroot` | unstated | unstated | missing: `x86_64-freebsd-sysroot` |
@@ -640,27 +640,27 @@ in its own closure):
 | `x86_64-linux-musl-gcc` | - | - | - |
 | `x86_64-netbsd-sysroot` | unstated | unstated | missing: `x86_64-netbsd-sysroot` |
 | `x86_64-openbsd-sysroot` | unstated | unstated | missing: `x86_64-openbsd-sysroot` |
-| `xcb-proto` | unstated | unstated | missing: `xcb-proto` |
+| `xcb-proto` | yes | no | missing: `xcb-proto` |
 | `xcb-util` | yes | yes | missing: `libxcb`, `libXau`, `xorgproto`, `libXdmcp` |
 | `xcb-util-cursor` | yes | yes | missing: `libxcb`, `libXau`, `xorgproto`, `libXdmcp` |
 | `xcb-util-image` | yes | yes | missing: `libxcb`, `libXau`, `xorgproto`, `libXdmcp` |
 | `xcb-util-keysyms` | yes | yes | missing: `libxcb`, `libXau`, `xorgproto`, `libXdmcp` |
 | `xcb-util-renderutil` | yes | yes | missing: `libxcb`, `libXau`, `xorgproto`, `libXdmcp` |
 | `xcb-util-wm` | yes | yes | missing: `libxcb`, `libXau`, `xorgproto`, `libXdmcp` |
-| `xdesk` | yes | no | missing: `xdesk`, `patchelf`, `fontconfig`, `expat`, `freetype`, `libXcursor` and 23 more |
+| `xdesk` | yes | no | missing: `xdesk`, `fontconfig`, `expat`, `freetype`, `libXcursor`, `libX11` and 22 more |
 | `xh` | yes | yes | yes |
-| `xkeyboard-config` | unstated | unstated | missing: `xkeyboard-config` |
+| `xkeyboard-config` | yes | no | missing: `xkeyboard-config` |
 | `xlings` | yes | yes | yes |
 | `xlings-project-templates` | unstated | unstated | missing: `xlings-project-templates` |
-| `xmake` | unstated | unstated | missing: `xmake`, `ncurses` |
-| `xorgproto` | unstated | unstated | missing: `xorgproto` |
+| `xmake` | yes | no | missing: `xmake`, `ncurses` |
+| `xorgproto` | yes | no | missing: `xorgproto` |
 | `xpkg-helper` | yes | yes | yes |
 | `xsel` | yes | yes | yes |
-| `xtrans` | unstated | unstated | missing: `xtrans` |
-| `xvm` | unstated | unstated | missing: `xvm` |
+| `xtrans` | yes | no | missing: `xtrans` |
+| `xvm` | yes | no | missing: `xvm` |
 | `xvm-sysdetect` | yes | yes | yes |
 | `xwayland` | yes | yes | missing: `xkeyboard-config` |
-| `xz` | yes | yes | missing: `patchelf` |
+| `xz` | yes | yes | yes |
 | `yazi` | yes | yes | yes |
 | `yq` | yes | yes | yes |
 | `yt-dlp` | yes | yes | yes |
@@ -668,5 +668,5 @@ in its own closure):
 | `zellij` | yes | yes | yes |
 | `zig` | yes | yes | yes |
 | `zlib` | yes | yes | yes |
-| `zoxide` | unstated | unstated | missing: `zoxide` |
+| `zoxide` | yes | yes | yes |
 | `zstd` | yes | yes | yes |
