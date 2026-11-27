@@ -1,9 +1,9 @@
 -- dbpp (db++): SQLite-first ADBC database manager & CLI built with HuxerUI.
 --
--- Platform and architecture coverage (upstream v0.2.3 release):
+-- Platform and architecture coverage (upstream v0.4.1 release):
 --   linux    x86_64   `build-linux-x86_64/` (`dbpp`, `dbpp.resources/`, `lib/`)
 --   linux    aarch64  `build-linux-arm64/` (`dbpp`, `dbpp.resources/`, `lib/`)
---   macosx   aarch64  `build-macos-arm64/dbpp.app/` (ad-hoc signed bundle)
+--   macosx   aarch64  `dbpp.app/` in a DMG (ad-hoc signed bundle)
 --   windows  x86_64   flat zip (`dbpp.exe`, `dbpp.resources/`, DLLs + VC++ CRT)
 --
 -- `programs` is omitted deliberately (`{}`): `dbpp` defaults to launching the
@@ -46,7 +46,7 @@ package = {
                             aarch64 = "https://github.com/FarnaHerry/dbpp/releases/download/${tag}/dbpp-${version}-linux-aarch64.tar.gz",
                         },
                         macosx = {
-                            aarch64 = "https://github.com/FarnaHerry/dbpp/releases/download/${tag}/dbpp-${version}-macos-arm64.tar.gz",
+                            aarch64 = "https://github.com/FarnaHerry/dbpp/releases/download/${tag}/dbpp-${version}-macos-arm64.dmg",
                         },
                         windows = {
                             x86_64 = "https://github.com/FarnaHerry/dbpp/releases/download/${tag}/dbpp-${version}-windows-x86_64.zip",
@@ -80,10 +80,19 @@ package = {
                     "xim:libsoup@>=3.0",
                     "xim:glib@>=2.88",
                     "xim:libX11@>=1.8",
+                    "xim:harfbuzz@>=14.4.0",
+                    "xim:freetype@>=2.13.2",
+                    "xim:vulkan-loader@>=1.4.313",
                 },
             },
             source = "https://github.com/FarnaHerry/dbpp/releases/download/v${version}/dbpp-${version}-linux-${arch}.${ext}",
-            ["latest"] = { ref = "0.2.3" },
+            ["latest"] = { ref = "0.4.1" },
+            ["0.4.1"] = {
+                sha256 = {
+                    x86_64 = "bdae8f62b650d8699ecf8d4af749464e930f406bc4d7af104814bcd069aa43ef",
+                    aarch64 = "c11158fe69d9bc4b0757c43f8b18de66ffcacf9122d0c3649b42599300a17783",
+                },
+            },
             ["0.2.3"] = {
                 sha256 = {
                     x86_64 = "790d64127a3d7e4b0a9ed76f3d1f38eb193dbd55171da1be3d57d5ef5ce9183c",
@@ -93,7 +102,13 @@ package = {
         },
         macosx = {
             source = "https://github.com/FarnaHerry/dbpp/releases/download/v${version}/dbpp-${version}-macos-${arch_alias}.${ext}",
-            ["latest"] = { ref = "0.2.3" },
+            ["latest"] = { ref = "0.4.1" },
+            ["0.4.1"] = {
+                url = "https://github.com/FarnaHerry/dbpp/releases/download/v0.4.1/dbpp-0.4.1-macos-arm64.dmg",
+                sha256 = {
+                    aarch64 = "643c000e3ac02f35b9bf3178ca26a6d6359e400c29be136cc7d11ad357cb665f",
+                },
+            },
             ["0.2.3"] = {
                 arch_alias = { aarch64 = "arm64" },
                 sha256 = {
@@ -103,7 +118,12 @@ package = {
         },
         windows = {
             source = "https://github.com/FarnaHerry/dbpp/releases/download/v${version}/dbpp-${version}-windows-${arch}.${ext}",
-            ["latest"] = { ref = "0.2.3" },
+            ["latest"] = { ref = "0.4.1" },
+            ["0.4.1"] = {
+                sha256 = {
+                    x86_64 = "4459eeafdab69358f51d465e8a43056ea9d0a1a2c3eca15bc850e384aa65fe8b",
+                },
+            },
             ["0.2.3"] = {
                 sha256 = {
                     x86_64 = "61a508888d730b134f6d827133512194e330facd69b44cae5df144ba22ffc58d",
@@ -126,6 +146,10 @@ import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
 import("xim.pkgindex.payload")
 import("xim.pkgindex.selfcontain")
+
+local function quote(value)
+    return "'" .. value:gsub("'", "'\\''") .. "'"
+end
 
 local function chmod_x(file)
     if os.isfile(file) then
@@ -153,8 +177,23 @@ function installed()
 end
 
 function install()
-    local dir = pkginfo.install_dir()
-    payload.unpack{ extracted = { "build-linux-x86_64", "build-linux-arm64", "build-macos-arm64" } }
+    local archive, dir = pkginfo.install_file(), pkginfo.install_dir()
+    if archive:match("%.dmg$") then
+        os.mkdir(dir)
+        local mount = dir .. "/.mount"
+        os.mkdir(mount)
+        system.exec("/usr/bin/hdiutil attach -readonly -nobrowse -mountpoint " ..
+            quote(mount) .. " " .. quote(archive))
+        local ok, err = pcall(function()
+            system.exec("/usr/bin/ditto " .. quote(mount .. "/dbpp.app") ..
+                " " .. quote(dir .. "/dbpp.app"))
+        end)
+        system.exec("/usr/bin/hdiutil detach " .. quote(mount))
+        os.tryrm(mount)
+        if not ok then error(err) end
+    else
+        payload.unpack{ extracted = { "build-linux-x86_64", "build-linux-arm64", "build-macos-arm64" } }
+    end
 
     if os.isfile(dir .. "/dbpp.exe") then
         payload.require({
