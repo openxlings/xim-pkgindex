@@ -312,9 +312,38 @@ def guard(base, reviewed=False):
     return {'checked_descriptors': len(files), 'status': 'preserved', 'changed': changed}
 
 
+def verify(base, reviewed=False, output=None):
+    """The updater's verification of the versions a change adds to a recipe that
+    declares autoupdate (`python -m xpkgindex_update verify`: each resource
+    downloaded and hashed, no release discovered), whose own guard reads the
+    base as guard() does: the entries the revision gate proves equivalent are
+    written as the head writes them."""
+    from xpkgindex_update.cli import config as updater_config, write_report
+    from xpkgindex_update.github import GitHub
+    policy = updater_config(ROOT)
+    github = GitHub(None, request_budget=policy['request_budget'], resource_bytes=policy['resource_bytes'],
+                    download_bytes=policy['download_bytes'])
+    equivalent = equivalent_entries(base)
+    records = []
+    for filename in git('diff', '--name-only', '--diff-filter=M', base, 'HEAD', '--', 'pkgs').splitlines():
+        path = ROOT / filename
+        if not filename.endswith('.lua') or not path.exists():
+            continue
+        info = xim.package_info(path, ROOT)
+        if not info['autoupdate']:
+            continue
+        before = subprocess.check_output(['git', 'show', f'{base}:{filename}'], cwd=ROOT, text=True, encoding='utf-8')
+        try:
+            records.extend(xim.verify_candidates(info, adopt_equivalent(before, info['text'], filename, equivalent),
+                                                 github, reviewed=reviewed))
+        except Invalid as e:
+            raise Invalid(f'{filename}: {e}') from e
+    write_report({'packages': records, 'requests': github.requests, 'downloaded_bytes': github.downloaded}, output)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('command', choices=['audit', 'matrix', 'candidate', 'guard'])
+    parser.add_argument('command', choices=['audit', 'matrix', 'candidate', 'guard', 'verify'])
     parser.add_argument('--base', default='origin/main')
     parser.add_argument('--output', default='autoupdate-report.json')
     parser.add_argument('--package')
@@ -330,6 +359,8 @@ def main():
         report = audit()
         write(args.output, report)
         summarize_coverage(report)
+    elif args.command == 'verify':
+        verify(args.base, args.reviewed, args.output)
     else:
         write(args.output, guard(args.base, args.reviewed) if args.command == 'guard'
               else candidates(args.base))

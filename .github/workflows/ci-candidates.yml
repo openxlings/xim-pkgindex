@@ -39,8 +39,9 @@ jobs:
         persist-credentials: false
     - name: Use the pinned updater source
       run: echo "PYTHONPATH=$PWD/.updater/src" >> "$GITHUB_ENV"
-    # The published-version guard asks the revision gate which entries only
-    # changed form (check-revision.lua --equivalent), which loads recipes as Lua.
+    # The published-version guard and the candidate verification ask the
+    # revision gate which entries only changed form (check-revision.lua
+    # --equivalent), which loads recipes as Lua.
     - name: Install Lua
       run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends lua5.4 # host-dep-ok: the recipe sandbox loads recipes as Lua, as check-revision does
     - name: Test audit generation and admission rules
@@ -80,7 +81,7 @@ jobs:
         BASE: ${{ inputs.base_sha || github.event.pull_request.base.sha }}
       run: |
         resolved=$(git rev-parse --verify "$BASE^{commit}" 2>/dev/null || git rev-parse --verify "origin/$BASE^{commit}")
-        python -m xpkgindex_update verify --base "$resolved" $REVIEWED --output candidate-resources.json
+        python .github/scripts/autoupdate-ci.py verify --base "$resolved" $REVIEWED --output candidate-resources.json
     - uses: actions/upload-artifact@v4
       if: always()
       with:
