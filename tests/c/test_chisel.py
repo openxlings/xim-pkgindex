@@ -168,9 +168,25 @@ def test_register():
     assert_xim_add_succeeds(PKG_FILE)
 
 
+def _native_xlings(*args, timeout=180):
+    suffix = ".exe" if os.name == "nt" else ""
+    candidate = Path(xlings_home()) / "bin" / ("xlings" + suffix)
+    executable = str(candidate) if candidate.is_file() else shutil.which("xlings" + suffix)
+    assert executable, "xlings executable is missing from the isolated home"
+    env = os.environ.copy()
+    env["XLINGS_HOME"] = xlings_home()
+    subos = os.environ.get("XLINGS_TEST_SUBOS", "default")
+    env["XLINGS_BIN"] = str(Path(xlings_home()) / "subos" / subos / "bin")
+    env["XLINGS_SUBOS_LIB"] = str(Path(xlings_home()) / "subos" / subos / "lib")
+    result = subprocess.run([executable, *args], capture_output=True, text=True,
+                            timeout=timeout, env=env)
+    return result.returncode, result.stdout + result.stderr
+
+
 @pytest.mark.lifecycle
 def test_install():
-    assert_install_succeeds(under_test(PKG), timeout=180)
+    code, output = _native_xlings("install", under_test(PKG), "-y")
+    assert code == 0 and ("installed" in output.lower() or "already installed" in output.lower()), output[-500:]
 
 
 def _shim():
