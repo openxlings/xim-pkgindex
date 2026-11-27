@@ -289,6 +289,14 @@ def test_a_small_install_plan_is_one_unnamed_job(monkeypatch):
     assert 'shard' not in p['install_matrix']['include'][0]
 
 
+@pytest.fixture
+def lua_ast():
+    # The production planner has the workflow-pinned updater; lightweight
+    # tooling callers may intentionally use its no-parser conservative path.
+    return pytest.importorskip('xpkgindex_update.lua_edit',
+                              reason='literal target tests require the pinned updater Lua parser')
+
+
 @pytest.mark.parametrize('declaration,runner', [
     ('archs = {"x86_64"},', 'macos-15-intel'),
     ('archs = {"amd64"},', 'macos-15-intel'),
@@ -299,7 +307,7 @@ def test_a_small_install_plan_is_one_unnamed_job(monkeypatch):
     ('archs = compute_archs(),', 'macos-latest'),
     ('', 'macos-latest'),
 ])
-def test_macos_runner_uses_only_proven_intel_only_metadata(declaration, runner):
+def test_macos_runner_uses_only_proven_intel_only_metadata(declaration, runner, lua_ast):
     source = 'package = {' + declaration + 'xpm = {macosx = {["1"] = {}}}}'
     files = {'pkgs/p/portable.lua': source}
     entries = planner.plan(list(files), {}, files, PROFILES)['install_matrix']['include']
@@ -313,7 +321,7 @@ def test_macos_runner_uses_only_proven_intel_only_metadata(declaration, runner):
     'x86_64 = {url = "official"}',
     'sha256 = {x86_64 = "digest"}',
 ])
-def test_macos_runner_reads_latest_per_arch_resource_map(resource):
+def test_macos_runner_reads_latest_per_arch_resource_map(resource, lua_ast):
     source = ('package = {archs = {"x86_64", "aarch64"}, xpm = {macosx = {'
               '["latest"] = {ref = "2"}, ["1"] = {aarch64 = {}}, ["2"] = {'
               + resource + '}}}}')
@@ -322,7 +330,7 @@ def test_macos_runner_reads_latest_per_arch_resource_map(resource):
     assert entry['os'] == 'macos-15-intel'
 
 
-def test_mixed_macos_targets_keep_native_shards_and_complete_overlays(monkeypatch):
+def test_mixed_macos_targets_keep_native_shards_and_complete_overlays(monkeypatch, lua_ast):
     monkeypatch.setattr(planner, 'INSTALL_SHARD_SIZE', 1)
     files = {
         'pkgs/i/intel.lua': 'package = {archs = {"x86_64"}, xpm = {macosx = {}}}',
@@ -343,6 +351,14 @@ def test_mixed_macos_targets_keep_native_shards_and_complete_overlays(monkeypatc
 
 def test_dynamic_macos_metadata_retains_conservative_default():
     files = {'pkgs/d/dynamic.lua': 'package = make_package()'}
+    entries = planner.plan(list(files), {}, files, PROFILES)['install_matrix']['include']
+    assert {entry['platform']: entry['os'] for entry in entries} == planner.PLATFORMS
+
+
+def test_missing_optional_parser_keeps_conservative_platform_and_runner_defaults(monkeypatch):
+    import sys
+    monkeypatch.setitem(sys.modules, 'xpkgindex_update.lua_edit', None)
+    files = {'pkgs/i/intel.lua': 'package = {archs = {"x86_64"}, xpm = {macosx = {}}}'}
     entries = planner.plan(list(files), {}, files, PROFILES)['install_matrix']['include']
     assert {entry['platform']: entry['os'] for entry in entries} == planner.PLATFORMS
 
