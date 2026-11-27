@@ -10,7 +10,7 @@ package = {
     docs = "https://github.com/Sunrisepeak/dirun/blob/main/docs/profiles.md",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "dev",
     categories = {"runner", "hurd"},
     keywords = {"hurd", "gnu", "disk-image", "qcow2", "dirun", "runner"},

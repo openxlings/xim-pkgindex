@@ -81,6 +81,7 @@ package = {
     -- fresh installation under either key writes the 0.3.0 program; an
     -- installation made before this change keeps the program it wrote.
     type = "script",
+    archs = {"aarch64"},
     status = "stable",
     categories = {"apple", "ios", "simulator", "runner"},
     keywords = {"ios", "simulator", "simctl", "runner", "mcpp"},

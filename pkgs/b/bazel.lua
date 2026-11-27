@@ -24,7 +24,7 @@ package = {
     -- at a missing asset. Adding aarch64 is a follow-up gated on aarch64 payloads
     -- for glibc + gcc-runtime; the macOS and Windows arm64 assets have no such
     -- blocker and can be added independently.
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"build-system", "tools"},
     keywords = {"bazel", "build", "buildsystem", "starlark", "monorepo"},

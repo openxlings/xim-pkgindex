@@ -9,6 +9,7 @@ package = {
 
     -- xim pkg info
     type = "bugfix",
+    archs = {"x86_64"},
     namespace = "config",
 
     xpm = {

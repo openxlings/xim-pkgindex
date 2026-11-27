@@ -15,6 +15,7 @@ package = {
     description = "Visual Studio Build Tools bootstrapper (DEPRECATED -- use xim:msvc)",
 
     type = "config",
+    archs = {"x86_64"},
     status = "deprecated",
     maintainers = {"Microsoft"},
     categories = { "build-tools" },

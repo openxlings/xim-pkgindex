@@ -10,7 +10,7 @@ package = {
     docs = "https://pnpm.io/motivation",
 
     -- xim pkg info
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"package-manager", "typescript"},
     keywords = {"pnpm", "javascript", "typescript", "package-manager", "node"},

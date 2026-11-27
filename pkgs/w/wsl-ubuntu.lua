@@ -7,6 +7,7 @@ package = {
 
     -- xim pkg info
     type = "config",
+    archs = {"x86_64"},
     status = "stable", -- dev, stable, deprecated
     categories = {"windows", "subsystem", "ubuntu"},
     keywords = {"linux", "subsystem", "ubuntu"},

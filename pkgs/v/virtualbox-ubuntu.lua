@@ -13,7 +13,7 @@ package = {
     -- xim pkg info
     type = "package",
     namespace = "config",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable", -- dev, stable, deprecated
     categories = {"virtualization", "vm", "ubuntu"},
     keywords = {"virtualbox", "ubuntu", "24.04", "vm", "unattended"},

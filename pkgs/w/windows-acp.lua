@@ -10,6 +10,7 @@ package = {
 
     -- xim pkg info
     type = "package",
+    archs = {"x86_64"},
     status = "dev", -- dev, stable, deprecated
     categories = {"encode", "lang", "windows" },
     keywords = {"encode", "lang"},

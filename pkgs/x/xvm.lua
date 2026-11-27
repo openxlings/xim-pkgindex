@@ -12,7 +12,7 @@ package = {
 
     -- xim pkg info
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable", -- dev, stable, deprecated
     categories = {"tools", "version-management"},
     keywords = {"rust", "cross-platform", "version-management"},

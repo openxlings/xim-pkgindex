@@ -10,7 +10,7 @@ package = {
     docs = "https://github.com/ollama/ollama/blob/main/docs/README.md",
 
     type = "package",
-    archs = {"x86_64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable",
     categories = {"ai", "llm", "tools"},
     keywords = {"ollama", "llama", "llm", "ai", "inference", "gguf"},
