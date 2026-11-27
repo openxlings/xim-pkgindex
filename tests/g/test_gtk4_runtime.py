@@ -16,6 +16,7 @@ import shutil
 import struct
 import subprocess
 import sys
+import time
 
 import pytest
 
@@ -341,7 +342,14 @@ end
         assert registered, output
         assert under_test(name, "0.4.2") == coordinate
         installation_attempted = True
-        installed, output = XlingsClient.install(coordinate, timeout=600)
+        # GitHub's release CDN can answer a freshly (re-)uploaded asset with a
+        # transient 404 from some PoPs while other assets of the same release
+        # already work; retry only that signature, never real failures.
+        for _ in range(3):
+            installed, output = XlingsClient.install(coordinate, timeout=600)
+            if installed or "download failed" not in output:
+                break
+            time.sleep(20)
         assert installed, output
         yield _installed_root("GTK4_CONSUMER_ROOT", name, "0.4.2")
     finally:
