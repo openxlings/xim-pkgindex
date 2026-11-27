@@ -130,6 +130,7 @@ jobs:
     if: needs.plan.outputs.consumer_through_index_override == 'true'
     uses: ./.github/workflows/consumer-through-index-override.yml
     with:
+      xlings_sha: ${{ inputs.xlings_sha }}
       base_sha: ${{ needs.plan.outputs.base_sha }}
       head_sha: ${{ needs.plan.outputs.head_sha }}
       files: ${{ needs.plan.outputs.files }}

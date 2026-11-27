@@ -4,7 +4,18 @@
 # as the `xim` index, then runs each fixture's check.sh.
 #
 # Environment: CHANGED_FILES (space-separated repository paths), EVENT (the
-# GitHub event name; `workflow_dispatch` builds every fixture), MCPP_VERSION.
+# GitHub event name; `workflow_dispatch` builds every fixture), MCPP_VERSION,
+# XLINGS_UNDER_TEST (the xlings binary this index's CI names: an xlings
+# commit's build, or the client the workflows pin).
+#
+# THE CLIENT IS THE INDEX'S, NOT THE TARBALL'S. A released mcpp vendors the
+# xlings of its own release (mcpp 2026.11.12.1: xlings 2026.10.26.1), and that
+# client may be older than this index's floor (`index-compat.json`): through
+# the published index it is served the last snapshot it can read, but a
+# checkout named as the index is read as it is. Measured 2026-11-27, when
+# recipes moved to spec "3": the vendored client could not land patchelf
+# (`patchelf missing`), a combination the index itself declares unsupported.
+# mcpp is run with the client this index's CI runs (MCPP_VENDORED_XLINGS).
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -47,9 +58,12 @@ curl -fsSL --retry 3 --retry-all-errors -o mcpp.tar.gz \
     || fail "could not download mcpp $MCPP_VERSION"
 tar -xzf mcpp.tar.gz || fail "could not unpack mcpp $MCPP_VERSION"
 MCPP="$RUNNER_TEMP/$asset/bin/mcpp"
-export MCPP_VENDORED_XLINGS="$RUNNER_TEMP/$asset/registry/bin/xlings"
-[ -x "$MCPP" ] && [ -x "$MCPP_VENDORED_XLINGS" ] || fail "the mcpp tarball lacks bin/mcpp or its xlings"
+[ -x "$MCPP" ] || fail "the mcpp tarball lacks bin/mcpp"
+: "${XLINGS_UNDER_TEST:?XLINGS_UNDER_TEST names the xlings binary this index's CI runs}"
+[ -x "$XLINGS_UNDER_TEST" ] || fail "no xlings binary at $XLINGS_UNDER_TEST"
+export MCPP_VENDORED_XLINGS="$XLINGS_UNDER_TEST"
 reading mcpp "$("$MCPP" --version | head -1)"
+reading xlings "$("$MCPP_VENDORED_XLINGS" --version | head -1)"
 
 export MCPP
 
