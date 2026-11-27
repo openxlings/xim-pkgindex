@@ -297,8 +297,9 @@ check_build_inputs() {   # <builddir> → 0 clean, 1 host input, 2 no record rea
     # `oldincludedir='/usr/include'`, an install default no build ever uses,
     # does not come through: it is lowercase and it is not a flags variable.
     # libffi's configure builds in a directory named for the target
-    # (aarch64-unknown-linux-gnu/) and writes its record there.
-    for f in "$bd/config.log" "$bd"/*-linux-gnu/config.log; do
+    # (aarch64-unknown-linux-gnu/) and writes its record there; freetype's
+    # runs in builds/unix/.
+    for f in "$bd/config.log" "$bd"/*-linux-gnu/config.log "$bd/builds/unix/config.log"; do
         [[ -f "$f" ]] || continue
         awk '/^## Cache variables/{s=1} /^## confdefs.h/{s=0} s' "$f" \
             | grep -E '^[A-Za-z_][A-Za-z0-9_]*(CFLAGS|CPPFLAGS|CXXFLAGS|LDFLAGS|LIBS|INCLUDES)[A-Za-z0-9_]*=' \

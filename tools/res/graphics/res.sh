@@ -30,8 +30,10 @@ gfx_tools="glibc@2.44.3 gcc@16.2.0 gcc-runtime@15.1.0 binutils@2.47 ninja@1.12.1
 # cmake: Kitware's release for this architecture (inputs.txt), until the
 # index's cmake entry for it is published.
 gfx_cmake=4.5.1
-# Built by tiers.sh but not in mesa's closure (the JDK's, the keyboard's).
+# Built by tiers.sh but not in mesa's closure (the JDK's, the keyboard's,
+# cmake-gui's).
 gfx_skip="alsa-lib libXi libXcursor libXtst libxkbcommon"
+[[ "$what" == freetype || "$what" == fontconfig ]] || gfx_skip="$gfx_skip freetype fontconfig"
 
 # The upstream version tiers.sh builds, for the version the index publishes:
 # mesa 25.0.7.3 is the index's third build of 25.0.7.
