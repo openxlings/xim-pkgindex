@@ -65,38 +65,6 @@ def supported_platforms(source):
     return set(PLATFORMS)
 
 
-def install_runner(source, platform):
-    """Use Intel macOS only when literal metadata proves an x86_64-only target."""
-    default = PLATFORMS[platform]
-    if platform != 'macosx':
-        return default
-    try:
-        from xpkgindex_update.lua_edit import parse
-        root = parse(source).fields
-        declared = root.get('archs')
-        aliases = {'amd64': 'x86_64', 'arm64': 'aarch64'}
-        archs = None if declared is None else {
-            aliases.get(node.string(), node.string()) for node in declared.table().values()
-        }
-        if archs == {'x86_64'}:
-            return 'macos-15-intel'
-        macos = root['xpm'].fields['macosx'].table()
-        latest = macos[macos['latest'].fields['ref'].string()]
-        # Spec 2 records target keys either on the version or its hash map.
-        for node in (latest, latest.fields.get('sha256')):
-            if node is None:
-                continue
-            targets = {aliases.get(key, key) for key in node.fields
-                       if key in {'x86_64', 'amd64', 'aarch64', 'arm64'}}
-            if targets:
-                if archs is not None:
-                    targets &= archs
-                return 'macos-15-intel' if targets == {'x86_64'} else default
-    except (ImportError, ValueError, KeyError, AttributeError):
-        pass
-    return default
-
-
 # A dependency is named by its coordinate, `<namespace>:<name>[@<version or range>]`, anywhere in a
 # recipe (a `deps` table, or an expression such as pkginfo.dep_install_dir("xim:jdk")); a bare name
 # is one only inside a `deps` table. Other bare strings -- keywords, categories, program names,
@@ -230,27 +198,22 @@ def plan(changed, before, after, profiles, *, force=False):
     if force:
         packages = sorted(p for p in after if p.startswith('pkgs/'))
     matrix = []
-    for platform in PLATFORMS:
+    for platform, runner in PLATFORMS.items():
         files = [p for p in packages if platform in supported_platforms(after[p])]
-        # Keep incompatible native targets out of each other's install shards.
-        groups = {}
-        for path in files:
-            runner = install_runner(after[path], platform)
-            groups.setdefault(runner, []).append(path)
-        for runner, native_files in groups.items():
-            shards = -(-len(native_files) // INSTALL_SHARD_SIZE)
-            for i in range(shards):
-                selected = native_files[i::shards]
-                # Overlay every platform recipe, even dependencies assigned to
-                # another shard; merely placing a recipe does not install it.
-                entry = {'platform': platform, 'os': runner, 'files': ' '.join(selected),
-                         'overlay': ' '.join(files),
-                         'edited': ' '.join(p for p in selected if p in runtime)}
-                if len(groups) > 1:
-                    entry['shard'] = runner + (f' {i + 1}/{shards}' if shards > 1 else '')
-                elif shards > 1:
-                    entry['shard'] = f'{i + 1}/{shards}'
-                matrix.append(entry)
+        # The recipes this change edits itself, as opposed to the ones it reaches: each runs its
+        # own lifecycle and verify tests after the install (recipe-tests.py). The reverse closure
+        # is installed and removed, which is what a consumer of the change does.
+        edited = [p for p in files if p in runtime]
+        shards = -(-len(files) // INSTALL_SHARD_SIZE)
+        for i in range(shards):
+            # Each shard installs its own files, and places all of the platform's first: a
+            # dependency the PR changes or adds may sit in another shard.
+            entry = {'platform': platform, 'os': runner, 'files': ' '.join(files[i::shards]),
+                     'overlay': ' '.join(files),
+                     'edited': ' '.join(p for p in files[i::shards] if p in edited)}
+            if shards > 1:
+                entry['shard'] = f'{i + 1}/{shards}'
+            matrix.append(entry)
     flags = {}
     for name, config in profiles.items():
         # direct_only: the profile fires on directly edited files only. Its

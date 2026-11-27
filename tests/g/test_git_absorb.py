@@ -80,6 +80,11 @@ def test_metadata(check):
     check(parse_xpkg(PKG_FILE))
 
 
+@pytest.mark.static
+def test_supported_platforms():
+    assert set(parse_xpkg(PKG_FILE).platforms) == {"linux", "windows"}
+
+
 @pytest.mark.isolation
 @pytest.mark.parametrize("check", [
     assert_no_exec_xvm, assert_no_bashrc_modification,

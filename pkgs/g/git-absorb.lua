@@ -1,7 +1,8 @@
 -- Core fixup creation uses bundled libgit2, not an external git process.
 -- `git absorb` dispatch and optional --and-rebase require the user's Git.
--- The x86_64 musl build is static; Darwin links only system libraries;
--- the MSVC executable imports only Windows OS DLLs (no compiler runtime).
+-- The x86_64 musl build is static; the MSVC executable imports only
+-- Windows OS DLLs (no compiler runtime). macOS Intel is omitted this batch:
+-- upstream ships it, but current official xlings lacks its Intel bootstrap.
 package = {
     spec = "2",
     name = "git-absorb",
@@ -29,9 +30,6 @@ package = {
                     linux = {
                         x86_64 = "https://github.com/tummychow/git-absorb/releases/download/${tag}/git-absorb-${version}-x86_64-unknown-linux-musl.tar.gz",
                     },
-                    macosx = {
-                        x86_64 = "https://github.com/tummychow/git-absorb/releases/download/${tag}/git-absorb-${version}-x86_64-apple-darwin.tar.gz",
-                    },
                     windows = {
                         x86_64 = "https://github.com/tummychow/git-absorb/releases/download/${tag}/git-absorb-${version}-x86_64-pc-windows-msvc.zip",
                     },
@@ -47,15 +45,6 @@ package = {
                 x86_64 = {
                     url = "https://github.com/tummychow/git-absorb/releases/download/0.9.0/git-absorb-0.9.0-x86_64-unknown-linux-musl.tar.gz",
                     sha256 = "517b442260a38617b05df0078b9e659b95068fabe8d0a83a33589d15f198d9a7",
-                },
-            },
-        },
-        macosx = {
-            ["latest"] = { ref = "0.9.0" },
-            ["0.9.0"] = {
-                x86_64 = {
-                    url = "https://github.com/tummychow/git-absorb/releases/download/0.9.0/git-absorb-0.9.0-x86_64-apple-darwin.tar.gz",
-                    sha256 = "1df9ad9206b2a2f0ce312a89188f80d3bace8471ca2799533beec6d83371f760",
                 },
             },
         },
