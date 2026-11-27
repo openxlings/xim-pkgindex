@@ -278,28 +278,28 @@ package = {
                     GLOBAL = "https://dl.google.com/android/repository/platform-tools_r37.0.1-linux.zip",
                     CN     = "https://gitcode.com/xlings-res/android-platform-tools/releases/download/37.0.1/platform-tools_r37.0.1-linux.zip",
                 },
-                sha256 = "d230f13842f60f782a8645f9c813f8f845bf36089ea7289f28c48f17979313f1",
+                sha256 = { x86_64 = "d230f13842f60f782a8645f9c813f8f845bf36089ea7289f28c48f17979313f1" },
             },
             ["37.0.1-3"] = {
                 url = {
                     GLOBAL = "https://dl.google.com/android/repository/platform-tools_r37.0.1-linux.zip",
                     CN     = "https://gitcode.com/xlings-res/android-platform-tools/releases/download/37.0.1/platform-tools_r37.0.1-linux.zip",
                 },
-                sha256 = "d230f13842f60f782a8645f9c813f8f845bf36089ea7289f28c48f17979313f1",
+                sha256 = { x86_64 = "d230f13842f60f782a8645f9c813f8f845bf36089ea7289f28c48f17979313f1" },
             },
             ["37.0.1-2"] = {
                 url = {
                     GLOBAL = "https://dl.google.com/android/repository/platform-tools_r37.0.1-linux.zip",
                     CN     = "https://gitcode.com/xlings-res/android-platform-tools/releases/download/37.0.1/platform-tools_r37.0.1-linux.zip",
                 },
-                sha256 = "d230f13842f60f782a8645f9c813f8f845bf36089ea7289f28c48f17979313f1",
+                sha256 = { x86_64 = "d230f13842f60f782a8645f9c813f8f845bf36089ea7289f28c48f17979313f1" },
             },
             ["37.0.1"] = {
                 url = {
                     GLOBAL = "https://dl.google.com/android/repository/platform-tools_r37.0.1-linux.zip",
                     CN     = "https://gitcode.com/xlings-res/android-platform-tools/releases/download/37.0.1/platform-tools_r37.0.1-linux.zip",
                 },
-                sha256 = "d230f13842f60f782a8645f9c813f8f845bf36089ea7289f28c48f17979313f1",
+                sha256 = { x86_64 = "d230f13842f60f782a8645f9c813f8f845bf36089ea7289f28c48f17979313f1" },
             },
         },
         macosx = {

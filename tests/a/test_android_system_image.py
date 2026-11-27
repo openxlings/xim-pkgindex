@@ -14,6 +14,16 @@ from tests.lib.assertions import (
 )
 from tests.lib.platform_utils import skip_if_not, xpkgs_dir
 
+
+def _one_digest(text):
+    """An entry names the architectures its one artifact is for
+    (`sha256 = { x86_64 = "<h>", aarch64 = "<h>" }`, the index's check K1):
+    read each such table as the one digest it holds."""
+    def one(m):
+        values = set(re.findall(r'"([0-9a-fA-F]{64})"', m.group(0)))
+        return f'sha256 = "{values.pop()}"' if len(values) == 1 else m.group(0)
+    return re.sub(r'sha256\s*=\s*\{[^{}]*\}', one, text)
+
 PKG = "android-system-image"
 PKG_FILE = "pkgs/a/android-system-image.lua"
 VERSIONS = ["34-default-x86_64", "34-default-arm64-v8a", "24-default-x86_64", "24-default-arm64-v8a"]
@@ -175,7 +185,7 @@ class TestPinnedFacts:
         # Two images, stated on every host row that carries them: the bytes
         # are a property of the guest, so each host block repeats the same
         # hashes, and the count is per-block, not per-file.
-        hashes = re.findall(r'sha256\s*=\s*"([0-9a-fA-F]{64})"', source_text)
+        hashes = re.findall(r'sha256\s*=\s*"([0-9a-fA-F]{64})"', _one_digest(source_text))
         blocks = len(re.findall(r"^        (?:linux|macosx|windows) = \{", source_text, re.M))
         n = len(VERSIONS)
         assert blocks >= 1, "no host block found"
@@ -220,8 +230,10 @@ class TestPinnedFacts:
         # arm64-v8a = ... }` would claim these two images are
         # interchangeable builds of one release, which they are not (one
         # of them does not even boot on the host class this was measured
-        # on -- see android-emulator.lua).
-        code = re.sub(r'--.*', '', source_text)
+        # on -- see android-emulator.lua). A table naming the host
+        # architectures one image serves, with the same digest under each
+        # (the index's check K1), is that one image.
+        code = _one_digest(re.sub(r'--.*', '', source_text))
         assert not re.search(r'sha256\s*=\s*\{', code)
 
     @pytest.mark.static

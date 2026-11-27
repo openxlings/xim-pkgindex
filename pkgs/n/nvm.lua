@@ -64,11 +64,17 @@ package = {
             ["latest"] = { ref = "0.40.7" },
             ["0.40.7"] = {
                 url = "https://github.com/nvm-sh/nvm/archive/refs/tags/v0.40.7.tar.gz",
-                sha256 = "d2fb84dba9914b02cd69b97df35dfca8695b8f22df6128667034d85b69b52d57",
+                sha256 = {
+                    x86_64 = "d2fb84dba9914b02cd69b97df35dfca8695b8f22df6128667034d85b69b52d57",
+                    aarch64 = "d2fb84dba9914b02cd69b97df35dfca8695b8f22df6128667034d85b69b52d57",
+                },
             },
             ["0.40.6"] = {
                 url = "https://github.com/nvm-sh/nvm/archive/refs/tags/v0.40.6.tar.gz",
-                sha256 = "17302cad7feedb1ad33ba738f93d2176a90970724f22de119603624fcbdec1a2",
+                sha256 = {
+                    x86_64 = "17302cad7feedb1ad33ba738f93d2176a90970724f22de119603624fcbdec1a2",
+                    aarch64 = "17302cad7feedb1ad33ba738f93d2176a90970724f22de119603624fcbdec1a2",
+                },
             },
             -- Was `"XLINGS_RES"`, which resolved only to a linux-x86_64 and a
             -- macosx-arm64 asset -- so it could not serve the aarch64/x86_64
@@ -78,7 +84,10 @@ package = {
             -- arch-independent. `ci.mirror` re-publishes it for CN.
             ["0.40.4"] = {
                 url = "https://github.com/nvm-sh/nvm/archive/refs/tags/v0.40.4.tar.gz",
-                sha256 = "5949b50e4640f2be2263f963952673d7f1a8745a83f05365e99f032fe78307fd",
+                sha256 = {
+                    x86_64 = "5949b50e4640f2be2263f963952673d7f1a8745a83f05365e99f032fe78307fd",
+                    aarch64 = "5949b50e4640f2be2263f963952673d7f1a8745a83f05365e99f032fe78307fd",
+                },
             },
         },
         macosx = {

@@ -54,7 +54,7 @@ package = {
             },
 
             ["latest"] = { ref = "1.2.2" },
-            ["1.2.2"] = { url = "https://github.com/face-hh/griddycode/releases/download/v1.2.2/Linux.zip" },
+            ["1.2.2"] = { url = "https://github.com/face-hh/griddycode/releases/download/v1.2.2/Linux.zip", sha256 = { x86_64 = "7e346fd98f10a0a0bcc334adb38b10bf725ec4a9dc405b3b1d8b7a283dc48f7c" } },
         },
         windows = {
 

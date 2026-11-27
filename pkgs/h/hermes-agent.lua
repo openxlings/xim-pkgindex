@@ -39,11 +39,17 @@ package = {
             ["latest"] = { ref = "2026.4.23" },
             ["2026.4.23"] = {
                 url = "https://github.com/NousResearch/hermes-agent/archive/refs/tags/v2026.4.23.tar.gz",
-                sha256 = "1ee1be80a2112b7edc581770cee8858e725ba110cc423979cd7102492504bc6b",
+                sha256 = {
+                    x86_64 = "1ee1be80a2112b7edc581770cee8858e725ba110cc423979cd7102492504bc6b",
+                    aarch64 = "1ee1be80a2112b7edc581770cee8858e725ba110cc423979cd7102492504bc6b",
+                },
             },
             ["2026.4.16"] = {
                 url = "https://github.com/NousResearch/hermes-agent/archive/refs/tags/v2026.4.16.tar.gz",
-                sha256 = "ef999b93b487532c50f8ed42c3ac0141a52d128052ba0a0d0e90c6edc02e97fe",
+                sha256 = {
+                    x86_64 = "ef999b93b487532c50f8ed42c3ac0141a52d128052ba0a0d0e90c6edc02e97fe",
+                    aarch64 = "ef999b93b487532c50f8ed42c3ac0141a52d128052ba0a0d0e90c6edc02e97fe",
+                },
             },
         },
         macosx = {

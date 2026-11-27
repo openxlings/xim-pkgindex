@@ -19,6 +19,16 @@ from tests.lib.assertions import (
 )
 from tests.lib.platform_utils import skip_if_not, xpkgs_dir, under_test
 
+
+def _one_digest(text):
+    """An entry names the architectures its one artifact is for
+    (`sha256 = { x86_64 = "<h>", aarch64 = "<h>" }`, the index's check K1):
+    read each such table as the one digest it holds."""
+    def one(m):
+        values = set(re.findall(r'"([0-9a-fA-F]{64})"', m.group(0)))
+        return f'sha256 = "{values.pop()}"' if len(values) == 1 else m.group(0)
+    return re.sub(r'sha256\s*=\s*\{[^{}]*\}', one, text)
+
 PKG = "hip-nvidia"
 PKG_FILE = "pkgs/h/hip-nvidia.lua"
 
@@ -59,15 +69,15 @@ class TestStatic:
     @pytest.mark.static
     def test_one_architecture_independent_resource(self, meta):
         """Headers are the same bytes everywhere, so this recipe declares ONE
-        url pair and ONE sha256 -- not a per-arch table with the same digest
-        written twice, which would read as two artefacts that happen to
-        match."""
+        url pair and ONE digest, listed for each architecture it serves
+        (`sha256 = { x86_64 = h, aarch64 = h }`: one artifact named for both,
+        not a resource per architecture)."""
         code = _code(meta.raw_content)
         assert re.search(
             r'GLOBAL\s*=\s*"https://github\.com/xlings-res/hip-nvidia/[^"]+noarch\.tar\.gz"', code)
         assert re.search(
             r'CN\s*=\s*"https://gitcode\.com/xlings-res/hip-nvidia/[^"]+noarch\.tar\.gz"', code)
-        assert len(re.findall(r'sha256 = "[0-9a-f]{64}"', code)) == 1
+        assert len(re.findall(r'sha256 = "[0-9a-f]{64}"', _one_digest(code))) == 1
         assert "x86_64 = {" not in code and "aarch64 = {" not in code
 
     @pytest.mark.static

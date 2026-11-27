@@ -109,7 +109,10 @@ package = {
             ["latest"] = { ref = "5-r.5" },
             ["5-r.5"] = {
                 url = "https://cubism.live2d.com/sdk-web/bin/CubismSdkForWeb-5-r.5.zip",
-                sha256 = "67064a7fb1812cf502f5c4a03bfe12cc638c75a621bb4acf06bb28763df06ba0",
+                sha256 = {
+                    x86_64 = "67064a7fb1812cf502f5c4a03bfe12cc638c75a621bb4acf06bb28763df06ba0",
+                    aarch64 = "67064a7fb1812cf502f5c4a03bfe12cc638c75a621bb4acf06bb28763df06ba0",
+                },
             },
         },
         macosx = {

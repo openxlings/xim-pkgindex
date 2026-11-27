@@ -158,7 +158,7 @@ package = {
         },
         linux = {
             ["latest"] = { ref = "1.0.0" },
-            ["1.0.0"] = { sha256 = "f5394989198294ac164f88d612f9971c64135b7d86df590d5afbc9c1810e9aa0" },
+            ["1.0.0"] = { sha256 = { x86_64 = "f5394989198294ac164f88d612f9971c64135b7d86df590d5afbc9c1810e9aa0", aarch64 = "f5394989198294ac164f88d612f9971c64135b7d86df590d5afbc9c1810e9aa0" } },
         },
         macosx = {
             ["latest"] = { ref = "1.0.0" },

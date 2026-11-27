@@ -17,6 +17,16 @@ from tests.lib.assertions import (
 )
 from tests.lib.xpkg_parser import parse_xpkg
 
+
+def _one_digest(text):
+    """An entry names the architectures its one artifact is for
+    (`sha256 = { x86_64 = "<h>", aarch64 = "<h>" }`, the index's check K1):
+    read each such table as the one digest it holds."""
+    def one(m):
+        values = set(re.findall(r'"([0-9a-fA-F]{64})"', m.group(0)))
+        return f'sha256 = "{values.pop()}"' if len(values) == 1 else m.group(0)
+    return re.sub(r'sha256\s*=\s*\{[^{}]*\}', one, text)
+
 PKG = "jetbrainsmono-nerd-font"
 PKG_FILE = "pkgs/j/jetbrainsmono-nerd-font.lua"
 VERSION = "3.4.0"
@@ -67,7 +77,7 @@ class TestStatic:
             assert re.search(rf'\["latest"\]\s*=\s*\{{\s*ref\s*=\s*"{VERSION}"\s*\}}', block)
             assert f"github.com/ryanoasis/nerd-fonts/releases/download/v{VERSION}/JetBrainsMono.zip" in block
             assert f"gitcode.com/xlings-res/{PKG}/releases/download/{VERSION}/JetBrainsMono.zip" in block
-            assert f'sha256 = "{SHA256}"' in block
+            assert f'sha256 = "{SHA256}"' in _one_digest(block)
 
     @pytest.mark.static
     def test_font_package_only_registers_empty_xvm_entry(self, meta):

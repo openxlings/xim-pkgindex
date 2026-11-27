@@ -54,7 +54,10 @@ package = {
                     GLOBAL = "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.4.0/JetBrainsMono.zip",
                     CN = "https://gitcode.com/xlings-res/jetbrainsmono-nerd-font/releases/download/3.4.0/JetBrainsMono.zip",
                 },
-                sha256 = "76f05ff3ace48a464a6ca57977998784ff7bdbb65a6d915d7e401cd3927c493c",
+                sha256 = {
+                    x86_64 = "76f05ff3ace48a464a6ca57977998784ff7bdbb65a6d915d7e401cd3927c493c",
+                    aarch64 = "76f05ff3ace48a464a6ca57977998784ff7bdbb65a6d915d7e401cd3927c493c",
+                },
             },
         },
         macosx = {

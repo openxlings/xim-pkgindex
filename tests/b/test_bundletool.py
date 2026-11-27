@@ -20,6 +20,16 @@ from tests.lib.assertions import (
 )
 from tests.lib.platform_utils import skip_if_not
 
+
+def _one_digest(text):
+    """An entry names the architectures its one artifact is for
+    (`sha256 = { x86_64 = "<h>", aarch64 = "<h>" }`, the index's check K1):
+    read each such table as the one digest it holds."""
+    def one(m):
+        values = set(re.findall(r'"([0-9a-fA-F]{64})"', m.group(0)))
+        return f'sha256 = "{values.pop()}"' if len(values) == 1 else m.group(0)
+    return re.sub(r'sha256\s*=\s*\{[^{}]*\}', one, text)
+
 PKG = "bundletool"
 PKG_FILE = "pkgs/b/bundletool.lua"
 
@@ -97,7 +107,7 @@ class TestStatic:
         """The jar has no per-host variant: every platform section names the
         same url and the same digest."""
         urls = re.findall(r'GLOBAL = "([^"]+)"', code)
-        digests = re.findall(r'sha256 = "([0-9a-f]{64})"', code)
+        digests = re.findall(r'sha256 = "([0-9a-f]{64})"', _one_digest(code))
         assert len(urls) == 3 and len(set(urls)) == 1, urls
         assert len(digests) == 3 and len(set(digests)) == 1, digests
         assert urls[0].endswith("/1.18.3/bundletool-all-1.18.3.jar")

@@ -19,6 +19,16 @@ from tests.lib.assertions import (
 )
 from tests.lib.platform_utils import skip_if_not
 
+
+def _one_digest(text):
+    """An entry names the architectures its one artifact is for
+    (`sha256 = { x86_64 = "<h>", aarch64 = "<h>" }`, the index's check K1):
+    read each such table as the one digest it holds."""
+    def one(m):
+        values = set(re.findall(r'"([0-9a-fA-F]{64})"', m.group(0)))
+        return f'sha256 = "{values.pop()}"' if len(values) == 1 else m.group(0)
+    return re.sub(r'sha256\s*=\s*\{[^{}]*\}', one, text)
+
 PKG = "gradle"
 PKG_FILE = "pkgs/g/gradle.lua"
 
@@ -86,7 +96,7 @@ class TestStatic:
         and the digest Gradle publishes beside it."""
         urls = re.findall(r'GLOBAL = "([^"]+)"', code)
         mirrors = re.findall(r'CN = "([^"]+)"', code)
-        digests = re.findall(r'sha256 = "([0-9a-f]{64})"', code)
+        digests = re.findall(r'sha256 = "([0-9a-f]{64})"', _one_digest(code))
         expected = {
             "9.7.1": "acd53f1edaf02f1a8ff99879f8a34b302661a057d9b063ae9e35b552f804d20a",
             "9.8.2": "21bd5da2de49b642904077f38c0efdc7778e92b3ed0889392dca61b97e389607",

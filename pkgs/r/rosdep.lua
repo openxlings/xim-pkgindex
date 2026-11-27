@@ -26,7 +26,10 @@ package = {
             ["latest"] = { ref = "0.26.0" },
             ["0.26.0"] = {
                 url = "https://files.pythonhosted.org/packages/bd/c1/15c5c296f41e6a290e6c3515316b2676be580c66b10e26372200a0ecbdd7/rosdep-0.26.0-py3-none-any.whl",
-                sha256 = "3b666053929e802afb70870c694d4095fff355a2c20e07abee4e1390b9f53925",
+                sha256 = {
+                    x86_64 = "3b666053929e802afb70870c694d4095fff355a2c20e07abee4e1390b9f53925",
+                    aarch64 = "3b666053929e802afb70870c694d4095fff355a2c20e07abee4e1390b9f53925",
+                },
             },
         },
         macosx = {

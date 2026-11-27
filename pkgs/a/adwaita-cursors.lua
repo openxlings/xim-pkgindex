@@ -51,7 +51,10 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/adwaita-cursors/releases/download/49.0/adwaita-cursors-49.0.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/adwaita-cursors/releases/download/49.0/adwaita-cursors-49.0.tar.gz",
                 },
-                sha256 = "79038d203015ae78e29f84277be556216b490ce0c8586ed0783e0ce97e893e94",
+                sha256 = {
+                    x86_64 = "79038d203015ae78e29f84277be556216b490ce0c8586ed0783e0ce97e893e94",
+                    aarch64 = "79038d203015ae78e29f84277be556216b490ce0c8586ed0783e0ce97e893e94",
+                },
             },
         },
     },

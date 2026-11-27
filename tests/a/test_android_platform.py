@@ -14,6 +14,16 @@ from tests.lib.assertions import (
 )
 from tests.lib.platform_utils import skip_if_not
 
+
+def _one_digest(text):
+    """An entry names the architectures its one artifact is for
+    (`sha256 = { x86_64 = "<h>", aarch64 = "<h>" }`, the index's check K1):
+    read each such table as the one digest it holds."""
+    def one(m):
+        values = set(re.findall(r'"([0-9a-fA-F]{64})"', m.group(0)))
+        return f'sha256 = "{values.pop()}"' if len(values) == 1 else m.group(0)
+    return re.sub(r'sha256\s*=\s*\{[^{}]*\}', one, text)
+
 PKG = "android-platform"
 PKG_FILE = "pkgs/a/android-platform.lua"
 
@@ -88,7 +98,7 @@ class TestStatic:
             assert len(urls) == 3, f"the API {level} URL must appear once per host (3 total)"
             hashes = re.findall(
                 r'\["' + revision + r'"\]\s*=\s*\{\s*url = \{ GLOBAL = "[^"]+" \},\s*sha256 = "([0-9a-f]{64})"',
-                code)
+                _one_digest(code))
             assert len(hashes) == 3 and len(set(hashes)) == 1, \
                 f"API {level}'s sha256 must be identical across all three host tables"
 

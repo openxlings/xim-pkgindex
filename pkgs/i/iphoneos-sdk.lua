@@ -180,7 +180,10 @@ package = {
                 -- ONE REGION, NO MIRROR. See the header: a `CN` entry would
                 -- make this index a redistributor of Apple's SDK.
                 url = "https://github.com/xybp888/iOS-SDKs/releases/download/iOS26.5-SDKs/iPhoneOS26.5.sdk.zip",
-                sha256 = "bed0f155d84e98ad8273b3bd57a0816ae5e772e1aa8539e6d79476221ce33173",
+                sha256 = {
+                    x86_64 = "bed0f155d84e98ad8273b3bd57a0816ae5e772e1aa8539e6d79476221ce33173",
+                    aarch64 = "bed0f155d84e98ad8273b3bd57a0816ae5e772e1aa8539e6d79476221ce33173",
+                },
             },
         },
         macosx = {

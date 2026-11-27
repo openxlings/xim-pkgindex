@@ -43,7 +43,7 @@ package = {
             ["latest"] = { ref = "2021.4.19" },
             ["2021.4.19"] = {
                 url = "https://github.com/CoatiSoftware/Sourcetrail/releases/download/2021.4.19/Sourcetrail_2021_4_19_Linux_64bit.tar.gz",
-                sha256 = nil,
+                sha256 = { x86_64 = "f65a401daad8e16f29f7b2ff062a559999b6a8d44606db36cdf803de0cd7816d" },
             },
         },
     },

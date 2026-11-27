@@ -27,7 +27,10 @@ package = {
             ["latest"] = { ref = "2026.4.30" },
             ["2026.4.30"] = {
                 url = "https://github.com/NanmiCoder/MediaCrawler/archive/f328ee35b55e25e8aaeb9c847fe8b622e3f3447f.tar.gz",
-                sha256 = "f11b00a9425cc89488054a395e27fc86d846372854b2d5d684cec6b5ce6576b2",
+                sha256 = {
+                    x86_64 = "f11b00a9425cc89488054a395e27fc86d846372854b2d5d684cec6b5ce6576b2",
+                    aarch64 = "f11b00a9425cc89488054a395e27fc86d846372854b2d5d684cec6b5ce6576b2",
+                },
             },
         },
         macosx = {

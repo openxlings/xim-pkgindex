@@ -24,11 +24,17 @@ package = {
             ["latest"] = { ref = "2026.03.19" },
             ["2026.03.19"] = {
                 url = "https://curl.se/ca/cacert-2026-03-19.pem",
-                sha256 = "b6e66569cc3d438dd5abe514d0df50005d570bfc96c14dca8f768d020cb96171",
+                sha256 = {
+                    x86_64 = "b6e66569cc3d438dd5abe514d0df50005d570bfc96c14dca8f768d020cb96171",
+                    aarch64 = "b6e66569cc3d438dd5abe514d0df50005d570bfc96c14dca8f768d020cb96171",
+                },
             },
             ["2025.07.15"] = {
                 url = "https://curl.se/ca/cacert-2025-07-15.pem",
-                sha256 = "7430e90ee0cdca2d0f02b1ece46fbf255d5d0408111f009638e3b892d6ca089c",
+                sha256 = {
+                    x86_64 = "7430e90ee0cdca2d0f02b1ece46fbf255d5d0408111f009638e3b892d6ca089c",
+                    aarch64 = "7430e90ee0cdca2d0f02b1ece46fbf255d5d0408111f009638e3b892d6ca089c",
+                },
             },
         },
     },

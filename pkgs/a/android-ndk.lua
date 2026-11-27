@@ -258,7 +258,7 @@ package = {
                     GLOBAL = "https://dl.google.com/android/repository/android-ndk-r30-linux.zip",
                     CN     = "https://gitcode.com/xlings-res/android-ndk/releases/download/30.0.16248370/android-ndk-r30-linux.zip",
                 },
-                sha256 = "753611f410d002cfcd3f3dc2ef49aad532089d3180b436c060a90bf0fcb64df2",
+                sha256 = { x86_64 = "753611f410d002cfcd3f3dc2ef49aad532089d3180b436c060a90bf0fcb64df2" },
             },
         },
         -- macOS AND WINDOWS. Upstream publishes an NDK for every host this

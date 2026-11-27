@@ -75,7 +75,7 @@ package = {
             },
             ["8.1.1045"] = {
                 url = "https://github.com/dtschan/vim-static/releases/download/v8.1.1045/vim",
-                sha256 = "376d7044d00cfc02bcad0570af7ff543ebd46d95175f82b8102a7ca1e9f75a71",
+                sha256 = { x86_64 = "376d7044d00cfc02bcad0570af7ff543ebd46d95175f82b8102a7ca1e9f75a71" },
             },
         },
     },

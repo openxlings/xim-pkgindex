@@ -9,7 +9,7 @@ package = {
 
     -- xim pkg info
     type = "package",
-    archs = {"x86_64", "aarch64", "riscv64", "loongarch64", "i686"},
+    archs = {"x86_64", "aarch64"},
     status = "stable", -- dev, stable, deprecated
 
     -- xvm: xlings version management
@@ -34,7 +34,10 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/linux-headers/releases/download/7.3.5/linux-headers-7.3.5.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/linux-headers/releases/download/7.3.5/linux-headers-7.3.5.tar.gz",
                 },
-                sha256 = "b9ed727b50aa92cab72f99474fcd64f93e0470341163a93806caf38d5cc2009e",
+                sha256 = {
+                    x86_64 = "b9ed727b50aa92cab72f99474fcd64f93e0470341163a93806caf38d5cc2009e",
+                    aarch64 = "b9ed727b50aa92cab72f99474fcd64f93e0470341163a93806caf38d5cc2009e",
+                },
             },
             -- Revision 1: the same headers in the layout above, as the
             -- corrective asset `6.18.64-r1` (the revision-0 archives of each

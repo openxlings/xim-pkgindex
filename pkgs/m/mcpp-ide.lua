@@ -112,7 +112,10 @@ package = {
                     GLOBAL = "https://github.com/mcpp-community/mcpp-ide/releases/download/v0.1.0/mcpp-ide-0.1.0-openkal.tar.gz",
                     CN = "https://gitcode.com/xlings-res/mcpp-ide/releases/download/v0.1.0/mcpp-ide-0.1.0-openkal.tar.gz",
                 },
-                sha256 = "4c033c3decaabb90fc87786dc6b0e1ba01becddf457f1eb1f1c3a28066256149",
+                sha256 = {
+                    x86_64 = "4c033c3decaabb90fc87786dc6b0e1ba01becddf457f1eb1f1c3a28066256149",
+                    aarch64 = "4c033c3decaabb90fc87786dc6b0e1ba01becddf457f1eb1f1c3a28066256149",
+                },
             },
         },
         macosx = {

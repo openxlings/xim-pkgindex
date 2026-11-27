@@ -87,7 +87,10 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/hip-nvidia/releases/download/7.2.4/hip-nvidia-7.2.4-noarch.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/hip-nvidia/releases/download/7.2.4/hip-nvidia-7.2.4-noarch.tar.gz",
                 },
-                sha256 = "74e7483776409ec358b7d265ec3752a3466f326b007d8b1922b5f4bad47e3bc1",
+                sha256 = {
+                    x86_64 = "74e7483776409ec358b7d265ec3752a3466f326b007d8b1922b5f4bad47e3bc1",
+                    aarch64 = "74e7483776409ec358b7d265ec3752a3466f326b007d8b1922b5f4bad47e3bc1",
+                },
             },
         },
     },

@@ -74,8 +74,15 @@ for _, plat in ipairs({"linux", "macosx", "windows"}) do
     assert(ref == arg[2])
     local entry = assert(p[ref], "missing version entry for " .. plat)
     assert(type(entry.url) == "string" and entry.url:find("composer/releases/download/" .. ref .. "/composer.phar", 1, false))
-    assert(type(entry.sha256) == "string" and #entry.sha256 == 64 and entry.sha256:match("^%x+$"))
-    if sha then assert(entry.sha256 == sha) else sha = entry.sha256 end
+    -- One artifact for every host: a digest, or on Linux the same digest
+    -- under each architecture it is named for.
+    local digest = entry.sha256
+    if type(digest) == "table" then
+        digest = digest.x86_64
+        for _, h in pairs(entry.sha256) do assert(h == digest) end
+    end
+    assert(type(digest) == "string" and #digest == 64 and digest:match("^%x+$"))
+    if sha then assert(digest == sha) else sha = digest end
 end
 ''', PKG_FILE, _latest())
 

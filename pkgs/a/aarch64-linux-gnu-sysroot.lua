@@ -93,7 +93,10 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r3/aarch64-linux-gnu-sysroot-2.44.3-r3.tar.xz",
                     CN = "https://gitcode.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/2.44.3-r3/aarch64-linux-gnu-sysroot-2.44.3-r3.tar.xz",
                 },
-                sha256 = "4202782881a8349c78951259b3191d92964ffa62419d9912895ce2a8d4c6f9c1",
+                sha256 = {
+                    x86_64 = "4202782881a8349c78951259b3191d92964ffa62419d9912895ce2a8d4c6f9c1",
+                    aarch64 = "4202782881a8349c78951259b3191d92964ffa62419d9912895ce2a8d4c6f9c1",
+                },
             },
         },
         macosx = {
