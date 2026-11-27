@@ -118,6 +118,7 @@ class TestVerify:
         import errno
         import fcntl
         import pty
+        import signal
         import struct
         import termios
 
@@ -170,6 +171,20 @@ class TestVerify:
             for excluded in ("DROP_ROW", "OTHER_ROW", "HiddenHeader", "WRONG_CELL_124", "WRONG_CELL_826"):
                 assert excluded not in screen, screen
             os.write(master, key)
+            # Keep draining stderr's PTY while the app restores its screen.
+            # macOS PTY buffers are small: waiting only on stdout can deadlock
+            # the real child behind the xlings shim during its final draw.
+            deadline = time.monotonic() + 10
+            while proc.poll() is None and time.monotonic() < deadline:
+                ready, _, _ = select.select([master], [], [], 0.1)
+                if ready:
+                    try:
+                        if not os.read(master, 65536):
+                            break
+                    except OSError as error:
+                        if error.errno == errno.EIO:
+                            break
+                        raise
             stdout, _ = proc.communicate(timeout=10)
             assert proc.returncode == 0, screen
             # The non-first column in the filtered row must be selected,
@@ -177,7 +192,7 @@ class TestVerify:
             assert stdout.decode("utf-8").replace("\r\n", "\n") == expected
         finally:
             if proc is not None and proc.poll() is None:
-                proc.kill()
+                os.killpg(proc.pid, signal.SIGKILL)
                 proc.communicate(timeout=5)
             os.close(master)
             if slave is not None:
