@@ -91,6 +91,11 @@ def native_runner(platform, arch):
 
 
 def shared_arches(info, entry, template=None):
+    # One artifact named for its architectures (`sha256 = { x86_64 = h }`):
+    # those, whatever its file name or `package.archs` say.
+    named = xim.named_artifact(entry)
+    if named:
+        return set(named)
     try:
         resource = entry.plain()
     except Invalid:

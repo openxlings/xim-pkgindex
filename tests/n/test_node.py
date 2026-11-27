@@ -184,6 +184,15 @@ class TestStatic:
             assert ref in versions, f"{plat} 的 latest -> {ref} 在该平台没有版本块"
 
 
+    @pytest.mark.static
+    def test_lts_names_one_listed_version_on_every_platform(self, meta):
+        """`node@lts` 是别名 (带 ref 的非版本键): 三个平台指向同一个已列出的版本"""
+        refs = re.findall(r'\["lts"\]\s*=\s*\{\s*ref\s*=\s*"([^"]+)"\s*\}', _code(meta.raw_content))
+        assert len(refs) == 3 and len(set(refs)) == 1, f"lts: {refs}"
+        for plat, versions in _listed_versions(meta.raw_content).items():
+            assert refs[0] in versions, f"{plat} 的 lts -> {refs[0]} 在该平台没有版本块"
+
+
 @pytest.mark.skipif(
     shutil.which("lua5.4") is None and shutil.which("lua") is None,
     reason="no lua interpreter on this machine",
@@ -407,6 +416,11 @@ class TestLifecycle:
     @skip_if_not('linux')
     def test_install(self):
         assert_install_succeeds(PKG)
+
+    @pytest.mark.lifecycle
+    @skip_if_not('linux')
+    def test_install_lts(self):
+        assert_install_succeeds(PKG + "@lts")
 
 
 class TestVerify:
