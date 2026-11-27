@@ -214,6 +214,12 @@ deps = {
 - **A hook does not guess the architecture from its environment** on clients
   before 2026.10.8.1, where `os.arch()` is absent in hooks: detect from the
   payload's content (`os.isfile` on the loader it ships).
+- **Shell completion is declared, not written into a profile.**
+  `xvm.add("tool", { bindir = ..., completion = { bash = "share/completion/tool.bash", zsh = "share/completion/_tool", fish = "share/completion/tool.fish", pwsh = "share/completion/tool.ps1" } })`
+  (libxpkg 0.0.68): each file is linked where its shell looks, follows
+  `xlings use` and goes with the version, and xlings' profile loads it. xlings
+  rewrites its profile (`config/shell/xlings-profile.*`) at each upgrade, and
+  `tests/test_no_recipe_profile_write.py` refuses a recipe that names it.
 
 ## Test it locally
 

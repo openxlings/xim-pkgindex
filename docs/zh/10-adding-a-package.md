@@ -177,6 +177,11 @@ deps = {
   上游归档按原样镜像；本索引自建的载荷仍用 `tar --hard-dereference` 打包（`tools/res/build.sh`）。
 - **钩子不从环境猜测架构**：2026.10.8.1 之前的客户端在钩子中没有 `os.arch()`，要从载荷
   内容判断（对它带的 loader 用 `os.isfile`）。
+- **shell 补全用声明，不写进 profile。**
+  `xvm.add("tool", { bindir = ..., completion = { bash = "share/completion/tool.bash", zsh = "share/completion/_tool", fish = "share/completion/tool.fish", pwsh = "share/completion/tool.ps1" } })`
+  （libxpkg 0.0.68）：每个文件链接到对应 shell 查找的位置，随 `xlings use` 切换、随版本卸载，由 xlings 的 profile 加载。
+  xlings 在每次升级时重写自己的 profile（`config/shell/xlings-profile.*`），`tests/test_no_recipe_profile_write.py`
+  拒绝提到它的 recipe。
 
 ## 在本地测试
 
