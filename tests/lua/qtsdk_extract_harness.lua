@@ -61,9 +61,11 @@ local function logger(level)
 end
 local modules = {
     ["xim.libxpkg.log"]     = { info = logger("info"), warn = logger("warn"), error = logger("error"), debug = logger("debug") },
-    ["xim.libxpkg.system"]  = { exec = function(cmd)
+    ["xim.libxpkg.system"]  = { exec = function(cmd, opt)
+        if type(opt) == "table" and opt.capture then return os.iorun(cmd) end
         if not sh(cmd) then error("exec failed: " .. cmd) end
     end },
+    ["xim.libxpkg.path"]    = path,
     ["xim.libxpkg.fs"]      = { mkdir_p = function(p) return os.mkdir(p) end },
     ["xim.libxpkg.pkginfo"] = { build_dep = function(name)
         assert(name == "7zip", "asked for " .. tostring(name))
@@ -113,8 +115,8 @@ sh(string.format('chmod +x "%s"', fake))
 -- The fake reads its mode from the environment; Lua has no setenv, so the
 -- command carries it.
 local plain_exec = modules["xim.libxpkg.system"].exec
-modules["xim.libxpkg.system"].exec = function(cmd)
-    plain_exec(string.format('FAKE_ROOT="%s" FAKE_7Z_MODE="%s" %s', ROOT, MODE, cmd))
+modules["xim.libxpkg.system"].exec = function(cmd, opt)
+    return plain_exec(string.format('FAKE_ROOT="%s" FAKE_7Z_MODE="%s" %s', ROOT, MODE, cmd), opt)
 end
 
 -- ── the archive: present and correct, so nothing is fetched ────────────

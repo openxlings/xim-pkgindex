@@ -23,8 +23,8 @@ def component_recipes():
 def test_config_closes_every_loader():
     lib = (ROOT / "libs/luban_component.lua").read_text()
     body = lib[lib.index("function M.close_loaders()"):lib.index("function M.config(")]
-    assert 'os.dirs(path.join(pkginfo.install_dir(), "libexec", "*"))' in body
-    assert '"ld-musl-" .. arch .. ".path"' in body and 'io.writefile(file, "")' in body
+    assert 'entries(path.join(pkginfo.install_dir(), "libexec"))' in body
+    assert '"ld-musl-" .. arch .. ".path"' in body and 'fs.write(file, "")' in body
     config = lib[lib.index("function M.config("):]
     assert config.split("\n")[1].strip() == "M.close_loaders()", "the first thing config does"
 
