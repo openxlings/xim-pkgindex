@@ -28,7 +28,7 @@ package = {
 
     -- xim pkg info
     type = "package", -- package, config
-    archs = {"x86_64", "aarch64"},
+    archs = {"x86_64"},
     status = "stable", -- dev, stable, deprecated
     categories = {"desktop-tools", "graph-tools"},
     keywords = { "project", "topology", "drawing", "graph" },
@@ -56,9 +56,12 @@ package = {
         linux = {
             deps = { "webkit2gtk" },
             ["latest"] = { ref = "1.7.10" },
+            -- The nightly release ships an amd64 .deb only.
             ["nightly"] = {
-                url = "%.deb$", -- url pattern
-                github_release_tag = "nightly",
+                x86_64 = {
+                    url = "%.deb$", -- url pattern
+                    github_release_tag = "nightly",
+                },
             },
             ["1.7.10"] = { url = _linux_donwload_url("1.7.10"), sha256 = { x86_64 = "679a46ea5dcf8384e7dded193d42e85a8bc363ec2c5f787fd0b82988c9f4046f" } },
             ["1.7.0"] = { url = _linux_donwload_url("1.7.0"), sha256 = { x86_64 = "6e9b3e66d784cf9b9df9ebe69ffb02f465b6a0b564fcdb9e17bff087a7891282" } },
