@@ -77,7 +77,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libjpeg-turbo/releases/download/3.2.0/libjpeg-turbo-3.2.0-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libjpeg-turbo/releases/download/3.2.0/libjpeg-turbo-3.2.0-linux-x86_64.tar.gz",
                 },
-                sha256 = "5588469c53ddc2eaafdbf6e2c889ebbd4fa22111901103162e754a936718eb83",
+                sha256 = { x86_64 = "5588469c53ddc2eaafdbf6e2c889ebbd4fa22111901103162e754a936718eb83" },
             },
         },
     },

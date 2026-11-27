@@ -75,7 +75,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/directx-headers/releases/download/1.614.1/directx-headers-1.614.1-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/directx-headers/releases/download/1.614.1/directx-headers-1.614.1-linux-x86_64.tar.gz",
                 },
-                sha256 = "1aa0097f091ccd75c02a00ceda8abbb3f82afea8c1947c303d2c019efbecb065",
+                sha256 = { x86_64 = "1aa0097f091ccd75c02a00ceda8abbb3f82afea8c1947c303d2c019efbecb065" },
             },
         },
     },

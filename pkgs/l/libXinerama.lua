@@ -65,7 +65,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libXinerama/releases/download/1.1.5/libXinerama-1.1.5-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libXinerama/releases/download/1.1.5/libXinerama-1.1.5-linux-x86_64.tar.gz",
                 },
-                sha256 = "8dfb7eb3459d920f6cc8209ee7db0a1b84cb3b4687f23f7a70442ee5c69802b3",
+                sha256 = { x86_64 = "8dfb7eb3459d920f6cc8209ee7db0a1b84cb3b4687f23f7a70442ee5c69802b3" },
             },
         },
     },

@@ -45,7 +45,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/xorgproto/releases/download/2024.1/xorgproto-2024.1-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/xorgproto/releases/download/2024.1/xorgproto-2024.1-linux-x86_64.tar.gz",
                 },
-                sha256 = "c2c08991786272d1f27b0e1156ac9dc16e1505c98e8bb090a76ddac69eb91901",
+                sha256 = { x86_64 = "c2c08991786272d1f27b0e1156ac9dc16e1505c98e8bb090a76ddac69eb91901" },
             },
         },
     },

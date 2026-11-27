@@ -53,7 +53,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/util-linux/releases/download/2.40.2/util-linux-2.40.2-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/util-linux/releases/download/2.40.2/util-linux-2.40.2-linux-x86_64.tar.gz",
                 },
-                sha256 = "f449a2f3c518c94058bbbfff9d8230a1b82293b0586954a730bf988734c0e551",
+                sha256 = { x86_64 = "f449a2f3c518c94058bbbfff9d8230a1b82293b0586954a730bf988734c0e551" },
             },
         },
     },

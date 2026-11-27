@@ -51,7 +51,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libXrandr/releases/download/1.5.4/libXrandr-1.5.4-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libXrandr/releases/download/1.5.4/libXrandr-1.5.4-linux-x86_64.tar.gz",
                 },
-                sha256 = "ddb17e5c345aa4f28127ccea61d8489b709d53f744ae05755c7808a813a8540a",
+                sha256 = { x86_64 = "ddb17e5c345aa4f28127ccea61d8489b709d53f744ae05755c7808a813a8540a" },
             },
         },
     },

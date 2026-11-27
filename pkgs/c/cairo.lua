@@ -89,14 +89,14 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/cairo/releases/download/1.18.4/cairo-1.18.4-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/cairo/releases/download/1.18.4/cairo-1.18.4-linux-x86_64.tar.gz",
                 },
-                sha256 = "d72cf1d45c0812fa9e823058dec8b8c0e17d403d430e01631801fae29ed2ea30",
+                sha256 = { x86_64 = "d72cf1d45c0812fa9e823058dec8b8c0e17d403d430e01631801fae29ed2ea30" },
             },
             ["1.18.0"] = {
                 url = {
                     GLOBAL = "https://github.com/xlings-res/cairo/releases/download/1.18.0/cairo-1.18.0-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/cairo/releases/download/1.18.0/cairo-1.18.0-linux-x86_64.tar.gz",
                 },
-                sha256 = "08e83de84aaef49cb1ab03e91832e0a1e88491337ff1fd3a7843b99e2a885a74",
+                sha256 = { x86_64 = "08e83de84aaef49cb1ab03e91832e0a1e88491337ff1fd3a7843b99e2a885a74" },
             },
         },
     },

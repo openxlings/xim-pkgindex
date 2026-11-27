@@ -53,7 +53,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/graphite2/releases/download/1.3.14/graphite2-1.3.14-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/graphite2/releases/download/1.3.14/graphite2-1.3.14-linux-x86_64.tar.gz",
                 },
-                sha256 = "67c266c33a1dad67a5a5f6caed964108710f594a837393c87f6abef9b8425124",
+                sha256 = { x86_64 = "67c266c33a1dad67a5a5f6caed964108710f594a837393c87f6abef9b8425124" },
             },
         },
     },

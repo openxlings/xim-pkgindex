@@ -48,7 +48,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/vulkan-headers/releases/download/1.4.313/vulkan-headers-1.4.313-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/vulkan-headers/releases/download/1.4.313/vulkan-headers-1.4.313-linux-x86_64.tar.gz",
                 },
-                sha256 = "bb305ab10c4d5c5ce5935099b4b8f364376e360bea53fee85a5e86370cef860a",
+                sha256 = { x86_64 = "bb305ab10c4d5c5ce5935099b4b8f364376e360bea53fee85a5e86370cef860a" },
             },
         },
     },

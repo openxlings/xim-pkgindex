@@ -46,9 +46,9 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/freebsd-disk/releases/download/14.5/freebsd-disk-14.5.tar.xz",
                     CN     = "https://gitcode.com/xlings-res/freebsd-disk/releases/download/14.5/freebsd-disk-14.5.tar.xz",
                 },
-                sha256 = "7844bcb147fc988c26193d6c91b5db9077edae5d64d63f523e97c9d681f58a49",
+                sha256 = { x86_64 = "7844bcb147fc988c26193d6c91b5db9077edae5d64d63f523e97c9d681f58a49" },
             },
-            ["14.5"] = { sha256 = "7844bcb147fc988c26193d6c91b5db9077edae5d64d63f523e97c9d681f58a49" },
+            ["14.5"] = { sha256 = { x86_64 = "7844bcb147fc988c26193d6c91b5db9077edae5d64d63f523e97c9d681f58a49" } },
         },
         macosx = {
             ["latest"] = { ref = "14.5-1" },

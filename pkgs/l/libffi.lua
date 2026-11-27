@@ -44,7 +44,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libffi/releases/download/3.4.4/libffi-3.4.4-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libffi/releases/download/3.4.4/libffi-3.4.4-linux-x86_64.tar.gz",
                 },
-                sha256 = "04797df0fa33a869a6093ee7238b2cf25d478eddb03658db76fd7f5c01f1ebef",
+                sha256 = { x86_64 = "04797df0fa33a869a6093ee7238b2cf25d478eddb03658db76fd7f5c01f1ebef" },
             },
         },
     },

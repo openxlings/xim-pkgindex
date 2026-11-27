@@ -56,7 +56,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libepoxy/releases/download/1.5.10/libepoxy-1.5.10-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libepoxy/releases/download/1.5.10/libepoxy-1.5.10-linux-x86_64.tar.gz",
                 },
-                sha256 = "238b011baa5ed7b2f7118c0b04c22c20872a41c480a566a882bc4c4b115f6fdb",
+                sha256 = { x86_64 = "238b011baa5ed7b2f7118c0b04c22c20872a41c480a566a882bc4c4b115f6fdb" },
             },
         },
     },

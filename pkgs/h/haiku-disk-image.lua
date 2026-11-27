@@ -28,7 +28,7 @@ package = {
         },
         linux = {
             ["latest"] = { ref = "hrev60431" },
-            ["hrev60431"] = { sha256 = "a5d4eccde4025a42980713320b97ec905759eafdd4679c6ac5022b25d5c9d1c6" },
+            ["hrev60431"] = { sha256 = { x86_64 = "a5d4eccde4025a42980713320b97ec905759eafdd4679c6ac5022b25d5c9d1c6" } },
         },
         macosx = {
             ["latest"] = { ref = "hrev60431" },

@@ -84,7 +84,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/qemu-system-gl/releases/download/9.2.4-r1/qemu-system-gl-9.2.4-r1-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/qemu-system-gl/releases/download/9.2.4-r1/qemu-system-gl-9.2.4-r1-linux-x86_64.tar.gz",
                 },
-                sha256 = "efcf2d061d6c84d82eeb4295ef02d48a999cb74b64cee8d81a3e94d48080769c",
+                sha256 = { x86_64 = "efcf2d061d6c84d82eeb4295ef02d48a999cb74b64cee8d81a3e94d48080769c" },
             },
         },
     },

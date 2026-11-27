@@ -66,7 +66,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libsoup/releases/download/3.6.6/libsoup-3.6.6-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libsoup/releases/download/3.6.6/libsoup-3.6.6-linux-x86_64.tar.gz",
                 },
-                sha256 = "3130630bc202dfde599b5a3608a7b48a64cf4e97225da1d1d5ad2ab080ca624c",
+                sha256 = { x86_64 = "3130630bc202dfde599b5a3608a7b48a64cf4e97225da1d1d5ad2ab080ca624c" },
             },
         },
     },

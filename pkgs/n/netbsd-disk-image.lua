@@ -45,9 +45,9 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/netbsd-disk-image/releases/download/10.2/netbsd-disk-image-10.2.tar.xz",
                     CN     = "https://gitcode.com/xlings-res/netbsd-disk-image/releases/download/10.2/netbsd-disk-image-10.2.tar.xz",
                 },
-                sha256 = "474d0b5be9e14002e4cb3f6399c63c2fe20c6b4a82413f176ecda6a5f96f0a6a",
+                sha256 = { x86_64 = "474d0b5be9e14002e4cb3f6399c63c2fe20c6b4a82413f176ecda6a5f96f0a6a" },
             },
-            ["10.2"] = { sha256 = "474d0b5be9e14002e4cb3f6399c63c2fe20c6b4a82413f176ecda6a5f96f0a6a" },
+            ["10.2"] = { sha256 = { x86_64 = "474d0b5be9e14002e4cb3f6399c63c2fe20c6b4a82413f176ecda6a5f96f0a6a" } },
         },
         macosx = {
             ["latest"] = { ref = "10.2-1" },

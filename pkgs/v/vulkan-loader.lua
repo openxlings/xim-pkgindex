@@ -57,7 +57,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/vulkan-loader/releases/download/1.4.313/vulkan-loader-1.4.313-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/vulkan-loader/releases/download/1.4.313/vulkan-loader-1.4.313-linux-x86_64.tar.gz",
                 },
-                sha256 = "4870e17d573117378132db72d338723c849bef5aa4ae3f01eb0aabbdfabd3c2b",
+                sha256 = { x86_64 = "4870e17d573117378132db72d338723c849bef5aa4ae3f01eb0aabbdfabd3c2b" },
             },
         },
 

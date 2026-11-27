@@ -51,7 +51,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libxkbcommon/releases/download/1.7.0/libxkbcommon-1.7.0-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libxkbcommon/releases/download/1.7.0/libxkbcommon-1.7.0-linux-x86_64.tar.gz",
                 },
-                sha256 = "d493b37955b7bd7c24c94d8481a44a933ac462accb2c699e80e312c3bb5a8425",
+                sha256 = { x86_64 = "d493b37955b7bd7c24c94d8481a44a933ac462accb2c699e80e312c3bb5a8425" },
             },
         },
     },

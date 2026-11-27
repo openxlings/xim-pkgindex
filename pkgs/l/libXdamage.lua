@@ -54,7 +54,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libXdamage/releases/download/1.1.7/libXdamage-1.1.7-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libXdamage/releases/download/1.1.7/libXdamage-1.1.7-linux-x86_64.tar.gz",
                 },
-                sha256 = "f69db67d3c39090a27a69ad5af5ade951c0dc9099ae624be58600c6ab626d9bb",
+                sha256 = { x86_64 = "f69db67d3c39090a27a69ad5af5ade951c0dc9099ae624be58600c6ab626d9bb" },
             },
         },
     },

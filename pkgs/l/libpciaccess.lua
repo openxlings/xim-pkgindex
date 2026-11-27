@@ -51,7 +51,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libpciaccess/releases/download/0.18.1/libpciaccess-0.18.1-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libpciaccess/releases/download/0.18.1/libpciaccess-0.18.1-linux-x86_64.tar.gz",
                 },
-                sha256 = "cf45c0441095e92ed8927f0496a9fe1e4ddb1bb606ec61535e9f81e580c6dade",
+                sha256 = { x86_64 = "cf45c0441095e92ed8927f0496a9fe1e4ddb1bb606ec61535e9f81e580c6dade" },
             },
         },
     },

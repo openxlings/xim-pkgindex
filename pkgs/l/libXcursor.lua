@@ -51,7 +51,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libXcursor/releases/download/1.2.3/libXcursor-1.2.3-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libXcursor/releases/download/1.2.3/libXcursor-1.2.3-linux-x86_64.tar.gz",
                 },
-                sha256 = "b85ad01f2ba44265921fd0f5133254b5bd4068e7dfc29368c8b96ad93b332bba",
+                sha256 = { x86_64 = "b85ad01f2ba44265921fd0f5133254b5bd4068e7dfc29368c8b96ad93b332bba" },
             },
         },
     },

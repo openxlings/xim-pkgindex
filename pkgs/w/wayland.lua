@@ -80,7 +80,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/wayland/releases/download/1.23.1/wayland-1.23.1-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/wayland/releases/download/1.23.1/wayland-1.23.1-linux-x86_64.tar.gz",
                 },
-                sha256 = "5132067ff533ea627a0335dfeaab9612889842ffbdd26148c9306993c41f6ea2",
+                sha256 = { x86_64 = "5132067ff533ea627a0335dfeaab9612889842ffbdd26148c9306993c41f6ea2" },
             },
         },
     },

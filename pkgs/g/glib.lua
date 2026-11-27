@@ -86,14 +86,14 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/glib/releases/download/2.88.3/glib-2.88.3-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/glib/releases/download/2.88.3/glib-2.88.3-linux-x86_64.tar.gz",
                 },
-                sha256 = "0d0c462b71320fe710f4c8e46982a035d7b40758f3a970b041fe7745e6695153",
+                sha256 = { x86_64 = "0d0c462b71320fe710f4c8e46982a035d7b40758f3a970b041fe7745e6695153" },
             },
             ["2.80.0"] = {
                 url = {
                     GLOBAL = "https://github.com/xlings-res/glib/releases/download/2.80.0/glib-2.80.0-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/glib/releases/download/2.80.0/glib-2.80.0-linux-x86_64.tar.gz",
                 },
-                sha256 = "acc0a845d0591d3cf178d0ca140254563024dd087d34e19b324f21799180ccb6",
+                sha256 = { x86_64 = "acc0a845d0591d3cf178d0ca140254563024dd087d34e19b324f21799180ccb6" },
             },
         },
     },

@@ -77,7 +77,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/spirv-tools/releases/download/2025.1/spirv-tools-2025.1-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/spirv-tools/releases/download/2025.1/spirv-tools-2025.1-linux-x86_64.tar.gz",
                 },
-                sha256 = "9996bdb6a1753b4106ab9d288996bd83063e8b52855d99b135f876880688adc8",
+                sha256 = { x86_64 = "9996bdb6a1753b4106ab9d288996bd83063e8b52855d99b135f876880688adc8" },
             },
         },
     },

@@ -132,7 +132,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/mesa/releases/download/25.0.7.3/mesa-25.0.7.3-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/mesa/releases/download/25.0.7.3/mesa-25.0.7.3-linux-x86_64.tar.gz",
                 },
-                sha256 = "ddfa3819df2ad4f34a77d0b2562809554030c3ce3deddc768d47d913c8af1f31",
+                sha256 = { x86_64 = "ddfa3819df2ad4f34a77d0b2562809554030c3ce3deddc768d47d913c8af1f31" },
             },
             -- 25.0.7.2: upstream is 25.0.7, the fourth component is ours. Adds
             -- iris and d3d12 to gallium-drivers; nothing else about the build
@@ -152,7 +152,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/mesa/releases/download/25.0.7.2/mesa-25.0.7.2-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/mesa/releases/download/25.0.7.2/mesa-25.0.7.2-linux-x86_64.tar.gz",
                 },
-                sha256 = "b589513ea1834ba995456680ad57a117428ba38299d8cc37d8fe301e5f6e6c9b",
+                sha256 = { x86_64 = "b589513ea1834ba995456680ad57a117428ba38299d8cc37d8fe301e5f6e6c9b" },
             },
             -- 25.0.7.1: upstream is 25.0.7, the fourth component is ours.
             -- The payload was rebuilt with the full driver set, and a payload
@@ -164,7 +164,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/mesa/releases/download/25.0.7.1/mesa-25.0.7.1-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/mesa/releases/download/25.0.7.1/mesa-25.0.7.1-linux-x86_64.tar.gz",
                 },
-                sha256 = "84789c203ead56343b64d9edb76c1ff4fe7e886ba4194e6bc79e332e66e8867b",
+                sha256 = { x86_64 = "84789c203ead56343b64d9edb76c1ff4fe7e886ba4194e6bc79e332e66e8867b" },
             },
         },
     },

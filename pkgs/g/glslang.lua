@@ -53,7 +53,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/glslang/releases/download/15.1.0/glslang-15.1.0-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/glslang/releases/download/15.1.0/glslang-15.1.0-linux-x86_64.tar.gz",
                 },
-                sha256 = "87167c9cb32f258addbedb607639b2c1f484c029ba91542a92f19ead21d65d13",
+                sha256 = { x86_64 = "87167c9cb32f258addbedb607639b2c1f484c029ba91542a92f19ead21d65d13" },
             },
         },
     },

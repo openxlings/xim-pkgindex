@@ -54,7 +54,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libselinux/releases/download/3.11/libselinux-3.11-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libselinux/releases/download/3.11/libselinux-3.11-linux-x86_64.tar.gz",
                 },
-                sha256 = "7902c5d5c70df855d0b435382d322276911b8aa9c7ea78eb394af47ec201e975",
+                sha256 = { x86_64 = "7902c5d5c70df855d0b435382d322276911b8aa9c7ea78eb394af47ec201e975" },
             },
         },
     },

@@ -62,7 +62,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libXft/releases/download/2.3.9/libXft-2.3.9-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libXft/releases/download/2.3.9/libXft-2.3.9-linux-x86_64.tar.gz",
                 },
-                sha256 = "1ed4776e4dd641baf74921a71cc8296b67d66ee5c498baf7041628c87d6080f6",
+                sha256 = { x86_64 = "1ed4776e4dd641baf74921a71cc8296b67d66ee5c498baf7041628c87d6080f6" },
             },
         },
     },

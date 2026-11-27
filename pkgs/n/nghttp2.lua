@@ -55,7 +55,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/nghttp2/releases/download/1.70.0/nghttp2-1.70.0-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/nghttp2/releases/download/1.70.0/nghttp2-1.70.0-linux-x86_64.tar.gz",
                 },
-                sha256 = "4343e8ea88063ea13a1e43dc001ca5519b63c9dda9c19c54782d2dbf594e9d30",
+                sha256 = { x86_64 = "4343e8ea88063ea13a1e43dc001ca5519b63c9dda9c19c54782d2dbf594e9d30" },
             },
         },
     },

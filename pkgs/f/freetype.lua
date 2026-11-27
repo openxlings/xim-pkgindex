@@ -66,7 +66,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/freetype/releases/download/2.13.2/freetype-2.13.2-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/freetype/releases/download/2.13.2/freetype-2.13.2-linux-x86_64.tar.gz",
                 },
-                sha256 = "a6c64a5008ec26917c769dd9840bf4f8d207e5a41f9ac48a8a9f2dc416af2664",
+                sha256 = { x86_64 = "a6c64a5008ec26917c769dd9840bf4f8d207e5a41f9ac48a8a9f2dc416af2664" },
             },
         },
     },

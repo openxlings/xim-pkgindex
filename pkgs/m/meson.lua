@@ -73,7 +73,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/meson/releases/download/1.8.2/meson-1.8.2-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/meson/releases/download/1.8.2/meson-1.8.2-linux-x86_64.tar.gz",
                 },
-                sha256 = "6afe6e96f53771b2c3810a7861e5b80de034ee306242877846de470f520b44e6",
+                sha256 = { x86_64 = "6afe6e96f53771b2c3810a7861e5b80de034ee306242877846de470f520b44e6" },
             },
         },
     },

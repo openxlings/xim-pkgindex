@@ -51,7 +51,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libXext/releases/download/1.3.6/libXext-1.3.6-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libXext/releases/download/1.3.6/libXext-1.3.6-linux-x86_64.tar.gz",
                 },
-                sha256 = "d7593a61cf640612f0b9af2a2b789913fef8f5717decdee8af0e487859d49f5d",
+                sha256 = { x86_64 = "d7593a61cf640612f0b9af2a2b789913fef8f5717decdee8af0e487859d49f5d" },
             },
         },
     },

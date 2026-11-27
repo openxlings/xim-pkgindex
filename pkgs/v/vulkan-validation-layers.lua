@@ -73,7 +73,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/vulkan-validation-layers/releases/download/1.4.357.0/vulkan-validation-layers-1.4.357.0-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/vulkan-validation-layers/releases/download/1.4.357.0/vulkan-validation-layers-1.4.357.0-linux-x86_64.tar.gz",
                 },
-                sha256 = "22011723f5d140eb85b8587716b75a4cabd212285181a18b1fa27cc29a804675",
+                sha256 = { x86_64 = "22011723f5d140eb85b8587716b75a4cabd212285181a18b1fa27cc29a804675" },
             },
         },
     },

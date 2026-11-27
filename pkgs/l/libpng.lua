@@ -44,7 +44,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libpng/releases/download/1.6.43/libpng-1.6.43-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libpng/releases/download/1.6.43/libpng-1.6.43-linux-x86_64.tar.gz",
                 },
-                sha256 = "e8c23040da7966bb8e3c96ee2ddb70ee86e533503dd362a156ebc516278ae25e",
+                sha256 = { x86_64 = "e8c23040da7966bb8e3c96ee2ddb70ee86e533503dd362a156ebc516278ae25e" },
             },
         },
     },

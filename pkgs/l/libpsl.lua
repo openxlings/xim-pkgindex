@@ -55,7 +55,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libpsl/releases/download/0.23.3/libpsl-0.23.3-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libpsl/releases/download/0.23.3/libpsl-0.23.3-linux-x86_64.tar.gz",
                 },
-                sha256 = "1987dd56df0aab14d516af533de370c97df6b37a167c1b4ef2dce54d7a796988",
+                sha256 = { x86_64 = "1987dd56df0aab14d516af533de370c97df6b37a167c1b4ef2dce54d7a796988" },
             },
         },
     },

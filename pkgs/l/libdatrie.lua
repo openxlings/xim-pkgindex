@@ -52,7 +52,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libdatrie/releases/download/0.2.14/libdatrie-0.2.14-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libdatrie/releases/download/0.2.14/libdatrie-0.2.14-linux-x86_64.tar.gz",
                 },
-                sha256 = "5c509113023cbe90de4681d4f9b78cedc2adc495b7562c1c6e4a498a38b8b40c",
+                sha256 = { x86_64 = "5c509113023cbe90de4681d4f9b78cedc2adc495b7562c1c6e4a498a38b8b40c" },
             },
         },
     },

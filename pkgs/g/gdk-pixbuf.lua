@@ -78,7 +78,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/gdk-pixbuf/releases/download/2.44.8/gdk-pixbuf-2.44.8-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/gdk-pixbuf/releases/download/2.44.8/gdk-pixbuf-2.44.8-linux-x86_64.tar.gz",
                 },
-                sha256 = "6d67043d56f72400433d45926b410207223348e4e7b0c5dc41698b2c7392b70e",
+                sha256 = { x86_64 = "6d67043d56f72400433d45926b410207223348e4e7b0c5dc41698b2c7392b70e" },
             },
         },
     },

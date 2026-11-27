@@ -83,7 +83,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libXtst/releases/download/1.2.5/libXtst-1.2.5-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libXtst/releases/download/1.2.5/libXtst-1.2.5-linux-x86_64.tar.gz",
                 },
-                sha256 = "5974d03284fd77e379f7790d635ff4b9950c40c1a4b17397444c0431dd13680c",
+                sha256 = { x86_64 = "5974d03284fd77e379f7790d635ff4b9950c40c1a4b17397444c0431dd13680c" },
             },
         },
     },

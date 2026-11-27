@@ -92,7 +92,7 @@ package = {
             },
             ["0.5.4"] = {
                 url = "https://github.com/rust-lang/mdBook/releases/download/v0.5.4/mdbook-v0.5.4-x86_64-unknown-linux-musl.tar.gz",
-                sha256 = "5222beabd3e37dc5be0d18ff99b79058469354db5c220153a1b92db5ba12be89",
+                sha256 = { x86_64 = "5222beabd3e37dc5be0d18ff99b79058469354db5c220153a1b92db5ba12be89" },
             },
         },
         macosx = {

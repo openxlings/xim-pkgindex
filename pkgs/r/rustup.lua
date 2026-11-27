@@ -78,14 +78,14 @@ package = {
                     GLOBAL = "https://static.rust-lang.org/rustup/archive/1.29.2/x86_64-unknown-linux-gnu/rustup-init",
                     CN = "https://mirrors.ustc.edu.cn/rust-static/rustup/archive/1.29.2/x86_64-unknown-linux-gnu/rustup-init",
                 },
-                sha256 = "5be191e8c70a5007074254cb74d78dbfdd25cd5a61c27de7b8e5410122ec24f4",
+                sha256 = { x86_64 = "5be191e8c70a5007074254cb74d78dbfdd25cd5a61c27de7b8e5410122ec24f4" },
             },
             ["1.29.3"] = {
                 url = {
                     GLOBAL = "https://static.rust-lang.org/rustup/archive/1.29.3/x86_64-unknown-linux-gnu/rustup-init",
                     CN = "https://mirrors.ustc.edu.cn/rust-static/rustup/archive/1.29.3/x86_64-unknown-linux-gnu/rustup-init",
                 },
-                sha256 = "b1c8cb14e30889e7e2999e6b69e62d9e9b9ffc0f4df8180564d306d9680e6c55",
+                sha256 = { x86_64 = "b1c8cb14e30889e7e2999e6b69e62d9e9b9ffc0f4df8180564d306d9680e6c55" },
             },
         },
         macosx = {

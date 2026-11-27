@@ -48,14 +48,14 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libglvnd/releases/download/1.7.0/libglvnd-1.7.0-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libglvnd/releases/download/1.7.0/libglvnd-1.7.0-linux-x86_64.tar.gz",
                 },
-                sha256 = "07366016ef25ec20436df65bf94f0dee758d41ec34d0723056690d5c899bf8c8",
+                sha256 = { x86_64 = "07366016ef25ec20436df65bf94f0dee758d41ec34d0723056690d5c899bf8c8" },
             },
             ["1.7.0"] = {
                 url = {
                     GLOBAL = "https://github.com/xlings-res/libglvnd/releases/download/1.7.0/libglvnd-1.7.0-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libglvnd/releases/download/1.7.0/libglvnd-1.7.0-linux-x86_64.tar.gz",
                 },
-                sha256 = "07366016ef25ec20436df65bf94f0dee758d41ec34d0723056690d5c899bf8c8",
+                sha256 = { x86_64 = "07366016ef25ec20436df65bf94f0dee758d41ec34d0723056690d5c899bf8c8" },
             },
         },
     },

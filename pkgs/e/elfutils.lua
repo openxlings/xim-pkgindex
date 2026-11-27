@@ -53,7 +53,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/elfutils/releases/download/0.191/elfutils-0.191-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/elfutils/releases/download/0.191/elfutils-0.191-linux-x86_64.tar.gz",
                 },
-                sha256 = "30efe8df032b049f47f6067c32fd86c7f0a253795988f2825cc61675a58f2c61",
+                sha256 = { x86_64 = "30efe8df032b049f47f6067c32fd86c7f0a253795988f2825cc61675a58f2c61" },
             },
         },
     },

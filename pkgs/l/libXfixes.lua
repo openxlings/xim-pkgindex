@@ -54,7 +54,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libXfixes/releases/download/6.0.1/libXfixes-6.0.1-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libXfixes/releases/download/6.0.1/libXfixes-6.0.1-linux-x86_64.tar.gz",
                 },
-                sha256 = "9e52c227f93b668a2c8fc1ee4c0768226c3e9168010a32466a95339d27dd6974",
+                sha256 = { x86_64 = "9e52c227f93b668a2c8fc1ee4c0768226c3e9168010a32466a95339d27dd6974" },
             },
         },
     },

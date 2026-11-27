@@ -51,7 +51,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libdrm/releases/download/2.4.123/libdrm-2.4.123-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libdrm/releases/download/2.4.123/libdrm-2.4.123-linux-x86_64.tar.gz",
                 },
-                sha256 = "8f70c903b3cd593c6b42f9621aacff2c6f6dcd96732cc91e5aad4a00357c53c1",
+                sha256 = { x86_64 = "8f70c903b3cd593c6b42f9621aacff2c6f6dcd96732cc91e5aad4a00357c53c1" },
             },
         },
     },

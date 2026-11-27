@@ -53,7 +53,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libbsd/releases/download/0.12.2/libbsd-0.12.2-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libbsd/releases/download/0.12.2/libbsd-0.12.2-linux-x86_64.tar.gz",
                 },
-                sha256 = "9c34584a71dee86497b817a6711e8a5d7a69bdaa2117d8294545c4260e28ae1c",
+                sha256 = { x86_64 = "9c34584a71dee86497b817a6711e8a5d7a69bdaa2117d8294545c4260e28ae1c" },
             },
         },
     },

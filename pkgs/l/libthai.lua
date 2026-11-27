@@ -60,7 +60,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libthai/releases/download/0.1.30/libthai-0.1.30-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libthai/releases/download/0.1.30/libthai-0.1.30-linux-x86_64.tar.gz",
                 },
-                sha256 = "18c89e627c24f8bc256be61db8348110ae071564387ea1dea9c98edbbdc7298a",
+                sha256 = { x86_64 = "18c89e627c24f8bc256be61db8348110ae071564387ea1dea9c98edbbdc7298a" },
             },
         },
     },

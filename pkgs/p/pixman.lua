@@ -45,7 +45,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/pixman/releases/download/0.42.2/pixman-0.42.2-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/pixman/releases/download/0.42.2/pixman-0.42.2-linux-x86_64.tar.gz",
                 },
-                sha256 = "8b721ae3ae5ea1006245b0253684ed29ec5208751e9e6684b6e0abd7f27494cf",
+                sha256 = { x86_64 = "8b721ae3ae5ea1006245b0253684ed29ec5208751e9e6684b6e0abd7f27494cf" },
             },
         },
     },

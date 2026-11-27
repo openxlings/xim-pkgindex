@@ -51,7 +51,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libXau/releases/download/1.0.11/libXau-1.0.11-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libXau/releases/download/1.0.11/libXau-1.0.11-linux-x86_64.tar.gz",
                 },
-                sha256 = "07df5c69c4e1c9480e0f0e98f18bcb0d9e25990e994f8f77540fb69f6b55dfb5",
+                sha256 = { x86_64 = "07df5c69c4e1c9480e0f0e98f18bcb0d9e25990e994f8f77540fb69f6b55dfb5" },
             },
         },
     },

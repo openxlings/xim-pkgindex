@@ -68,11 +68,11 @@ package = {
             ["latest"] = { ref = "0.13.3" },
             ["0.13.3"] = {
                 url = "https://github.com/ollama/ollama/releases/download/v0.13.3/ollama-linux-amd64.tgz",
-                sha256 = "70a3d0f4cccd003641c5531d564a3494ed9a422e397c437d40f802ec1003c6eb",
+                sha256 = { x86_64 = "70a3d0f4cccd003641c5531d564a3494ed9a422e397c437d40f802ec1003c6eb" },
             },
             ["0.13.0"] = {
                 url = "https://github.com/ollama/ollama/releases/download/v0.13.0/ollama-linux-amd64.tgz",
-                sha256 = "c5e5b4840008d9c9bf955ec32c32b03afc57c986ac1c382d44c89c9f7dd2cc30",
+                sha256 = { x86_64 = "c5e5b4840008d9c9bf955ec32c32b03afc57c986ac1c382d44c89c9f7dd2cc30" },
             },
         },
         macosx = {

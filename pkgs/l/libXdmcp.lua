@@ -51,7 +51,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libXdmcp/releases/download/1.1.5/libXdmcp-1.1.5-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libXdmcp/releases/download/1.1.5/libXdmcp-1.1.5-linux-x86_64.tar.gz",
                 },
-                sha256 = "d7f0c96723d92af1275e43c39cd66e64802409aa5c4f2f9aba43aaf0b113de08",
+                sha256 = { x86_64 = "d7f0c96723d92af1275e43c39cd66e64802409aa5c4f2f9aba43aaf0b113de08" },
             },
         },
     },

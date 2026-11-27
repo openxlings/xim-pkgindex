@@ -45,14 +45,14 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/fontconfig/releases/download/2.15.0/fontconfig-2.15.0-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/fontconfig/releases/download/2.15.0/fontconfig-2.15.0-linux-x86_64.tar.gz",
                 },
-                sha256 = "dfe6869d6b615414deb0c818a195a9f2b8cb8ad10789376dfa6ce9c2a1e3135f",
+                sha256 = { x86_64 = "dfe6869d6b615414deb0c818a195a9f2b8cb8ad10789376dfa6ce9c2a1e3135f" },
             },
             ["2.15.0"] = {
                 url = {
                     GLOBAL = "https://github.com/xlings-res/fontconfig/releases/download/2.15.0/fontconfig-2.15.0-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/fontconfig/releases/download/2.15.0/fontconfig-2.15.0-linux-x86_64.tar.gz",
                 },
-                sha256 = "dfe6869d6b615414deb0c818a195a9f2b8cb8ad10789376dfa6ce9c2a1e3135f",
+                sha256 = { x86_64 = "dfe6869d6b615414deb0c818a195a9f2b8cb8ad10789376dfa6ce9c2a1e3135f" },
             },
         },
     },

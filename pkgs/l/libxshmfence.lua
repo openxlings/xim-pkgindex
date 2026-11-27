@@ -51,7 +51,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libxshmfence/releases/download/1.3.2/libxshmfence-1.3.2-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libxshmfence/releases/download/1.3.2/libxshmfence-1.3.2-linux-x86_64.tar.gz",
                 },
-                sha256 = "dce29073e3225e2001ecba00b115cfee9062b85ef4e15a454db3b671454fdc9f",
+                sha256 = { x86_64 = "dce29073e3225e2001ecba00b115cfee9062b85ef4e15a454db3b671454fdc9f" },
             },
         },
     },

@@ -81,7 +81,7 @@ package = {
             ["latest"] = { ref = "7.2.0" },
             ["7.2.0"] = {
                 url = "https://github.com/multiarch/qemu-user-static/releases/download/v7.2.0-1/x86_64_qemu-aarch64-static.tar.gz",
-                sha256 = "b5dd968d522fd5d615d27c77fb1ca0847455d0b8badd7492647e7ab674339247",
+                sha256 = { x86_64 = "b5dd968d522fd5d615d27c77fb1ca0847455d0b8badd7492647e7ab674339247" },
             },
         },
     },

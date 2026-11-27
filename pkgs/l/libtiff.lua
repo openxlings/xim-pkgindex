@@ -71,7 +71,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libtiff/releases/download/4.7.2/libtiff-4.7.2-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libtiff/releases/download/4.7.2/libtiff-4.7.2-linux-x86_64.tar.gz",
                 },
-                sha256 = "bd5baf88fbb2fb0da9087478bc31b1d7ef12b0512944cd2c7430c2aa44ece940",
+                sha256 = { x86_64 = "bd5baf88fbb2fb0da9087478bc31b1d7ef12b0512944cd2c7430c2aa44ece940" },
             },
         },
     },

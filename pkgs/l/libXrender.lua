@@ -51,7 +51,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libXrender/releases/download/0.9.11/libXrender-0.9.11-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libXrender/releases/download/0.9.11/libXrender-0.9.11-linux-x86_64.tar.gz",
                 },
-                sha256 = "964a668be7f41b0e906032bbf2cb1c2ecfc21f26693e48a79a8248f9db02e7d7",
+                sha256 = { x86_64 = "964a668be7f41b0e906032bbf2cb1c2ecfc21f26693e48a79a8248f9db02e7d7" },
             },
         },
     },

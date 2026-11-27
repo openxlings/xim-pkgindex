@@ -51,7 +51,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libXi/releases/download/1.8.2/libXi-1.8.2-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libXi/releases/download/1.8.2/libXi-1.8.2-linux-x86_64.tar.gz",
                 },
-                sha256 = "3f297ef4c3519797570f3420c4ce08c0b085efa80d6c04c97eea586990c19ee5",
+                sha256 = { x86_64 = "3f297ef4c3519797570f3420c4ce08c0b085efa80d6c04c97eea586990c19ee5" },
             },
         },
     },

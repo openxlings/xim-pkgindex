@@ -79,7 +79,7 @@ package = {
                     GLOBAL = "https://gitlab.freedesktop.org/libinput/libinput/-/archive/1.31.3/libinput-1.31.3.tar.gz",
                     CN     = "https://gitcode.com/mcpp-res/libinput/releases/download/1.31.3/libinput-1.31.3.tar.gz",
                 },
-                sha256 = "b6749bf6f1890f6631c0a70a027c35fec9d2e096a39f720548896e41474a9854",
+                sha256 = { x86_64 = "b6749bf6f1890f6631c0a70a027c35fec9d2e096a39f720548896e41474a9854" },
             },
         },
     },

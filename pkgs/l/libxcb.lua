@@ -51,7 +51,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libxcb/releases/download/1.17.0/libxcb-1.17.0-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libxcb/releases/download/1.17.0/libxcb-1.17.0-linux-x86_64.tar.gz",
                 },
-                sha256 = "561b2f8f6d1452f211cdb9023efc3ecde8c365f1eba181bd2d183357b85f484a",
+                sha256 = { x86_64 = "561b2f8f6d1452f211cdb9023efc3ecde8c365f1eba181bd2d183357b85f484a" },
             },
         },
     },

@@ -54,7 +54,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/expat/releases/download/2.6.2/expat-2.6.2-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/expat/releases/download/2.6.2/expat-2.6.2-linux-x86_64.tar.gz",
                 },
-                sha256 = "2d2c0fffc8d5b2fd5ff25d9945dcab1a6d349e15a55e320ae7de7de161a9ab51",
+                sha256 = { x86_64 = "2d2c0fffc8d5b2fd5ff25d9945dcab1a6d349e15a55e320ae7de7de161a9ab51" },
             },
         },
     },

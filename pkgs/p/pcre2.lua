@@ -43,7 +43,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/pcre2/releases/download/10.42/pcre2-10.42-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/pcre2/releases/download/10.42/pcre2-10.42-linux-x86_64.tar.gz",
                 },
-                sha256 = "aba6cf9ee68d23fab2c0198599cf9fce19927bf986b71309c1ce320fb0d0ff1e",
+                sha256 = { x86_64 = "aba6cf9ee68d23fab2c0198599cf9fce19927bf986b71309c1ce320fb0d0ff1e" },
             },
         },
     },

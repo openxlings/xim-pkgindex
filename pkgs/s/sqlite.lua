@@ -64,7 +64,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/sqlite/releases/download/3.53.4/sqlite-3.53.4-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/sqlite/releases/download/3.53.4/sqlite-3.53.4-linux-x86_64.tar.gz",
                 },
-                sha256 = "f4f6fe756174986f0982010b756838b1b8cae362d0cb173e73d2748480614abb",
+                sha256 = { x86_64 = "f4f6fe756174986f0982010b756838b1b8cae362d0cb173e73d2748480614abb" },
             },
         },
     },

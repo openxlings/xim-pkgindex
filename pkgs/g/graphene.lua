@@ -55,7 +55,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/graphene/releases/download/1.10.8/graphene-1.10.8-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/graphene/releases/download/1.10.8/graphene-1.10.8-linux-x86_64.tar.gz",
                 },
-                sha256 = "f57d7059b2bba93dfb2a7b77e974bdd1943f3d461d917430ee2734f1f85427cb",
+                sha256 = { x86_64 = "f57d7059b2bba93dfb2a7b77e974bdd1943f3d461d917430ee2734f1f85427cb" },
             },
         },
     },

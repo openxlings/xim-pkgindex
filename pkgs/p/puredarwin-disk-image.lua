@@ -44,14 +44,14 @@ package = {
                     GLOBAL = "https://internal.lab004.dev/private/images/puredarwin-25.5-minimal.img",
                     CN = "https://internal.lab004.dev/private/images/puredarwin-25.5-minimal.img",
                 },
-                sha256 = "522bfca10026b83dcf5d5232f143fbe65f0001771d4e2668386bb3f13613267a",
+                sha256 = { x86_64 = "522bfca10026b83dcf5d5232f143fbe65f0001771d4e2668386bb3f13613267a" },
             },
             ["25.5-20261118"] = {
                 url = {
                     GLOBAL = "https://internal.lab004.dev/private/images/puredarwin-25.5-minimal.img",
                     CN = "https://internal.lab004.dev/private/images/puredarwin-25.5-minimal.img",
                 },
-                sha256 = "522bfca10026b83dcf5d5232f143fbe65f0001771d4e2668386bb3f13613267a",
+                sha256 = { x86_64 = "522bfca10026b83dcf5d5232f143fbe65f0001771d4e2668386bb3f13613267a" },
             },
         },
     },

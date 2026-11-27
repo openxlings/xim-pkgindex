@@ -88,14 +88,14 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/harfbuzz/releases/download/14.4.0/harfbuzz-14.4.0-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/harfbuzz/releases/download/14.4.0/harfbuzz-14.4.0-linux-x86_64.tar.gz",
                 },
-                sha256 = "303a1fb54ae787078e70132ac5883d62b9068a7362d8b412533d87bf0f700a7b",
+                sha256 = { x86_64 = "303a1fb54ae787078e70132ac5883d62b9068a7362d8b412533d87bf0f700a7b" },
             },
             ["8.3.0"] = {
                 url = {
                     GLOBAL = "https://github.com/xlings-res/harfbuzz/releases/download/8.3.0/harfbuzz-8.3.0-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/harfbuzz/releases/download/8.3.0/harfbuzz-8.3.0-linux-x86_64.tar.gz",
                 },
-                sha256 = "2a2bee694e8db83263e81d2b9c568583920dc63d13f7738b408b3659d38cc159",
+                sha256 = { x86_64 = "2a2bee694e8db83263e81d2b9c568583920dc63d13f7738b408b3659d38cc159" },
             },
         },
     },

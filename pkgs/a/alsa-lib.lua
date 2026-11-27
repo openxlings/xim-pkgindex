@@ -71,7 +71,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/alsa-lib/releases/download/1.2.11/alsa-lib-1.2.11-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/alsa-lib/releases/download/1.2.11/alsa-lib-1.2.11-linux-x86_64.tar.gz",
                 },
-                sha256 = "c95f1535f267608378d115a820e6b4aa29df408df0f8a1d45a866371957fb4e8",
+                sha256 = { x86_64 = "c95f1535f267608378d115a820e6b4aa29df408df0f8a1d45a866371957fb4e8" },
             },
         },
     },

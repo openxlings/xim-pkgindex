@@ -27,7 +27,7 @@ package = {
         },
         linux = {
             ["latest"] = { ref = "20260314" },
-            ["20260314"] = { sha256 = "cbf3dfa47fff9318d0a52f9feb3f7a5baa9d25423fd77dcde5e5ff2d4e3ae84e" },
+            ["20260314"] = { sha256 = { x86_64 = "cbf3dfa47fff9318d0a52f9feb3f7a5baa9d25423fd77dcde5e5ff2d4e3ae84e" } },
         },
         macosx = {
             ["latest"] = { ref = "20260314" },

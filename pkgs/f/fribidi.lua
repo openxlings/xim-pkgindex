@@ -43,7 +43,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/fribidi/releases/download/1.0.13/fribidi-1.0.13-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/fribidi/releases/download/1.0.13/fribidi-1.0.13-linux-x86_64.tar.gz",
                 },
-                sha256 = "c502b6094d11edba64f7d907457eb1e28747fa8ff0fb251bf3b8e0b4c53d49cc",
+                sha256 = { x86_64 = "c502b6094d11edba64f7d907457eb1e28747fa8ff0fb251bf3b8e0b4c53d49cc" },
             },
         },
     },

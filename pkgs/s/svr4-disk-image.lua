@@ -40,7 +40,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/svr4-disk-image/releases/download/4.0.3-20261119-r1/svr4-disk-image-4.0.3-20261119-r1.tar.xz",
                     CN = "https://gitcode.com/xlings-res/svr4-disk-image/releases/download/4.0.3-20261119-r1/svr4-disk-image-4.0.3-20261119-r1.tar.xz",
                 },
-                sha256 = "c8cfc82adf2333bb3b711826436a7975ef10d7138291f4f9611dc4e5c1cb3282",
+                sha256 = { x86_64 = "c8cfc82adf2333bb3b711826436a7975ef10d7138291f4f9611dc4e5c1cb3282" },
             },
         },
     },

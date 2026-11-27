@@ -51,7 +51,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libX11/releases/download/1.8.10/libX11-1.8.10-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libX11/releases/download/1.8.10/libX11-1.8.10-linux-x86_64.tar.gz",
                 },
-                sha256 = "03d9242551aef99f920ec1ce7aaa36227b9034f7f9b1d8d3ea44b21759f0bbe5",
+                sha256 = { x86_64 = "03d9242551aef99f920ec1ce7aaa36227b9034f7f9b1d8d3ea44b21759f0bbe5" },
             },
         },
     },

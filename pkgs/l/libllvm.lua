@@ -53,7 +53,7 @@ package = {
                     GLOBAL = "https://github.com/xlings-res/libllvm/releases/download/20.1.7/libllvm-20.1.7-linux-x86_64.tar.gz",
                     CN     = "https://gitcode.com/xlings-res/libllvm/releases/download/20.1.7/libllvm-20.1.7-linux-x86_64.tar.gz",
                 },
-                sha256 = "1de66726fb14ed043e1f6a17ffb80e03578c2e01da85f024c46689140d31246f",
+                sha256 = { x86_64 = "1de66726fb14ed043e1f6a17ffb80e03578c2e01da85f024c46689140d31246f" },
             },
         },
     },
