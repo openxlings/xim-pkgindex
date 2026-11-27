@@ -24,7 +24,7 @@ from tests.lib.assertions import (
 from tests.lib.platform_utils import xlings_home
 from tests.lib.xpkg_parser import parse_xpkg
 
-VERSION = "0.4.1"
+VERSION = "0.4.2"
 PKG = f"farnaherry:dbpp@{VERSION}"
 PKG_NAME = "dbpp"
 PKG_FILE = "pkgs/d/dbpp.lua"

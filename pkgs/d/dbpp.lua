@@ -1,6 +1,6 @@
 -- dbpp (db++): SQLite-first ADBC database manager & CLI built with HuxerUI.
 --
--- Platform and architecture coverage (upstream v0.4.1 release):
+-- Platform and architecture coverage (upstream v0.4.2 release):
 --   linux    x86_64   `build-linux-x86_64/` (`dbpp`, `dbpp.resources/`, `lib/`)
 --   linux    aarch64  `build-linux-arm64/` (`dbpp`, `dbpp.resources/`, `lib/`)
 --   macosx   aarch64  `dbpp.app/` in a DMG (ad-hoc signed bundle)
@@ -86,15 +86,15 @@ package = {
                 },
             },
             source = "https://github.com/FarnaHerry/dbpp/releases/download/v${version}/dbpp-${version}-linux-${arch}.${ext}",
-            ["latest"] = { ref = "0.4.1" },
-            ["0.4.1"] = {
+            ["latest"] = { ref = "0.4.2" },
+            ["0.4.2"] = {
                 x86_64 = {
-                    url = "https://github.com/FarnaHerry/dbpp/releases/download/v0.4.1/dbpp-0.4.1-linux-x86_64.tar.gz",
-                    sha256 = "bdae8f62b650d8699ecf8d4af749464e930f406bc4d7af104814bcd069aa43ef",
+                    url = "https://github.com/FarnaHerry/dbpp/releases/download/v0.4.2/dbpp-0.4.2-linux-x86_64.tar.gz",
+                    sha256 = "510a95352142e06f71d3c2811ba0163c6006df8c03fc043a797f209c4c93ece3",
                 },
                 aarch64 = {
-                    url = "https://github.com/FarnaHerry/dbpp/releases/download/v0.4.1/dbpp-0.4.1-linux-aarch64.tar.gz",
-                    sha256 = "c11158fe69d9bc4b0757c43f8b18de66ffcacf9122d0c3649b42599300a17783",
+                    url = "https://github.com/FarnaHerry/dbpp/releases/download/v0.4.2/dbpp-0.4.2-linux-aarch64.tar.gz",
+                    sha256 = "0712552a400bd32681379b40936b227a74adc8469a7275db3e4322d185b5cf75",
                 },
             },
             ["0.2.3"] = {
@@ -106,11 +106,11 @@ package = {
         },
         macosx = {
             source = "https://github.com/FarnaHerry/dbpp/releases/download/v${version}/dbpp-${version}-macos-${arch_alias}.${ext}",
-            ["latest"] = { ref = "0.4.1" },
-            ["0.4.1"] = {
+            ["latest"] = { ref = "0.4.2" },
+            ["0.4.2"] = {
                 aarch64 = {
-                    url = "https://github.com/FarnaHerry/dbpp/releases/download/v0.4.1/dbpp-0.4.1-macos-arm64.dmg",
-                    sha256 = "643c000e3ac02f35b9bf3178ca26a6d6359e400c29be136cc7d11ad357cb665f",
+                    url = "https://github.com/FarnaHerry/dbpp/releases/download/v0.4.2/dbpp-0.4.2-macos-arm64.dmg",
+                    sha256 = "5dafea7cce44b2a033c997e324c64ab6689172ea3c7ab1a33bc32b41a492e4f6",
                 },
             },
             ["0.2.3"] = {
@@ -122,11 +122,11 @@ package = {
         },
         windows = {
             source = "https://github.com/FarnaHerry/dbpp/releases/download/v${version}/dbpp-${version}-windows-${arch}.${ext}",
-            ["latest"] = { ref = "0.4.1" },
-            ["0.4.1"] = {
+            ["latest"] = { ref = "0.4.2" },
+            ["0.4.2"] = {
                 x86_64 = {
-                    url = "https://github.com/FarnaHerry/dbpp/releases/download/v0.4.1/dbpp-0.4.1-windows-x86_64.zip",
-                    sha256 = "4459eeafdab69358f51d465e8a43056ea9d0a1a2c3eca15bc850e384aa65fe8b",
+                    url = "https://github.com/FarnaHerry/dbpp/releases/download/v0.4.2/dbpp-0.4.2-windows-x86_64.zip",
+                    sha256 = "6d152cb810443ff66afb73996460b32e945f48140ed876dcc4a3e6a44f16b410",
                 },
             },
             ["0.2.3"] = {
