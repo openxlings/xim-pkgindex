@@ -1,8 +1,10 @@
 -- gron v0.7.1: official tomnomnom/gron release archives, downloaded and SHA256
 -- checked for all six targets. Archives contain only gron / gron.exe at root.
--- Linux amd64 needs the system glibc loader, libc and libpthread (GLIBC_2.3.2
--- maximum); Linux arm64 is static. Both Windows PE32+ binaries import only
--- kernel32.dll, with no VC runtime dependency. macOS assets are native Mach-O.
+-- Linux amd64 needs glibc's loader, libc and libpthread (GLIBC_2.3.2 maximum).
+-- Use the managed glibc loader without adding RPATH: patchelf's RPATH rewrite
+-- moves this Go binary's writable .dynamic into an RX LOAD and breaks startup.
+-- glibc >=2.44.3 finds its libraries beside its loader; arm64 remains static.
+-- Windows imports only kernel32.dll, with no VC runtime dependency. macOS uses Mach-O.
 -- Upstream provides neither checksum assets nor GitHub asset digests for this
 -- release. Its binaries report "gron version dev" despite the v0.7.1 release tag.
 -- Upstream archives omit LICENSE, so install the exact v0.7.1 MIT notice below.
@@ -51,6 +53,7 @@ package = {
     xpm = {
         linux = {
             source = "https://github.com/tomnomnom/gron/releases/download/v${version}/gron-linux-${arch_alias}-${version}.tgz",
+            deps = { runtime = { "xim:glibc@>=2.44.3" } },
             ["latest"] = { ref = "0.7.1" },
             ["0.7.1"] = {
                 arch_alias = { x86_64 = "amd64", aarch64 = "arm64" },
@@ -86,6 +89,7 @@ package = {
 }
 
 import("xim.libxpkg.fs")
+import("xim.libxpkg.elfpatch")
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
@@ -139,6 +143,30 @@ function install()
     end
     if not windows then
         system.exec(string.format('chmod +x "%s"', dir .. "/" .. exe))
+    end
+    if archive:find("gron-linux-", 1, true) then
+        assert(type(elfpatch.skip) == "function"
+            and type(elfpatch.set_interpreter) == "function",
+            "gron requires elfpatch interpreter control; run xlings self update")
+        -- Like bun.lua, take ownership of relocation through supported APIs:
+        -- preserve .dynamic and leave the static aarch64 ELF untouched.
+        elfpatch.skip()
+        if archive:find("gron-linux-amd64-", 1, true) then
+            local exports = _RUNTIME and _RUNTIME.deps_exports
+            assert(type(exports) == "table", "gron: no resolved runtime exports")
+            local loader
+            for _, runtime in pairs(exports) do
+                if type(runtime) == "table" and type(runtime.loader) == "string"
+                    and runtime.loader ~= "" then
+                    assert(not loader or loader == runtime.loader, "gron: ambiguous runtime loader")
+                    loader = runtime.loader
+                end
+            end
+            assert(loader and os.isfile(loader), "gron: managed glibc loader is missing")
+            local result = elfpatch.set_interpreter(dir .. "/gron", loader)
+            assert(type(result) == "table" and result.failed == 0 and result.patched == 1,
+                "gron: managed glibc interpreter could not be set")
+        end
     end
     local license = assert(io.open(dir .. "/LICENSE", "wb"))
     assert(license:write(LICENSE))

@@ -5,6 +5,8 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import struct
+import sys
 import tempfile
 
 import pytest
@@ -92,6 +94,9 @@ assert(package.licenses[1] == "MIT")
 assert(package.ci.mirror and package.xvm_enable)
 assert(#package.programs == 1 and package.programs[1] == "gron")
 assert(#package.archs == 2 and package.archs[1] == "x86_64" and package.archs[2] == "aarch64")
+assert(#package.xpm.linux.deps.runtime == 1)
+assert(package.xpm.linux.deps.runtime[1] == "xim:glibc@>=2.44.3")
+assert(package.xpm.macosx.deps == nil and package.xpm.windows.deps == nil)
 local auto = package.extensions.autoupdate
 assert(auto.source == "https://github.com/tomnomnom/gron/releases")
 assert(auto.resources.GLOBAL.required == true and auto.resources.CN == nil)
@@ -132,12 +137,25 @@ local root = arg[2]
 local src, dst = root .. "/downloads", root .. "/install"
 local archive, host = "", "linux"
 local calls = {}
+local patched, skipped = 0, 0
 local function write(path, value)
     local f = assert(io.open(path, "wb")); assert(f:write(value)); assert(f:close())
 end
 local function read(path)
     local f = assert(io.open(path, "rb")); local data = f:read("*a"); f:close(); return data
 end
+local loader = root .. "/managed-loader"
+write(loader, "managed runtime")
+_RUNTIME = {deps_exports = {["xim:glibc@>=2.44.3"] = {loader = loader}}}
+elfpatch = {
+    skip = function() skipped = skipped + 1 end,
+    set_interpreter = function(file, selected)
+        assert(file == dst .. "/gron" and selected == loader)
+        assert(read(file) == "linux-amd64")
+        patched = patched + 1
+        return {patched = 1, failed = 0}
+    end,
+}
 os.isfile = function(path) local f = io.open(path, "rb"); if f then f:close(); return true end; return false end
 os.isdir = function() return false end
 os.host = function() return host end
@@ -183,6 +201,15 @@ for _, target in ipairs({"linux-amd64", "linux-arm64", "darwin-amd64", "darwin-a
     assert(not installed(), "binary without license is incomplete")
     os.remove(dst .. "/" .. exe)
 end
+assert(patched == 1 and skipped == 2, "only dynamic Linux gets an interpreter; static Linux skips auto patching")
+archive = src .. "/gron-linux-amd64-0.7.1.tgz"
+host = "linux"
+write(src .. "/gron", "linux-amd64")
+local exports = _RUNTIME
+_RUNTIME = {}
+local sealed, reason = pcall(install)
+assert(not sealed and tostring(reason):find("no resolved runtime exports", 1, true))
+_RUNTIME = exports
 -- Unextracted Windows ZIP must use the shared pinned-system-tar path.
 archive = src .. "/gron-windows-arm64-0.7.1.zip"
 host = "windows"
@@ -216,7 +243,7 @@ class TestIsolation:
         source = (ROOT / PKG_FILE).read_text(encoding="utf-8")
         assert set(re.findall(r'import\("([^"]+)"\)', source)) == {
             "xim.libxpkg.fs", "xim.libxpkg.pkginfo", "xim.libxpkg.system",
-            "xim.libxpkg.xvm", "xim.pkgindex.payload",
+            "xim.libxpkg.xvm", "xim.libxpkg.elfpatch", "xim.pkgindex.payload",
         }
         assert not re.search(r'\b(?:path\.|is_host\(|os\.host\(|try\s*\{|raise\()', source)
 
@@ -273,6 +300,46 @@ class TestVerify:
         ) + "\n"
         assert filtered == 'json.project.name = "gron";\n'
         assert json.loads(_gron("--ungron", input=filtered)) == {"project": {"name": "gron"}}
+
+    @pytest.mark.verify
+    def test_linux_managed_runtime_closure(self):
+        if sys.platform != "linux":
+            pytest.skip("ELF runtime closure applies only to Linux")
+        home = Path(xlings_home()).resolve()
+        binaries = list((home / "data" / "xpkgs").glob("*-x-gron/0.7.1/gron"))
+        assert len(binaries) == 1, binaries
+        binary = binaries[0]
+        data = binary.read_bytes()
+        assert data[:6] == b"\x7fELF\x02\x01", "Expected little-endian ELF64"
+        machine = struct.unpack_from("<H", data, 18)[0]
+        offset = struct.unpack_from("<Q", data, 32)[0]
+        size, count = struct.unpack_from("<HH", data, 54)
+        loaders = []
+        for index in range(count):
+            segment = offset + index * size
+            if struct.unpack_from("<I", data, segment)[0] == 3:  # PT_INTERP
+                start = struct.unpack_from("<Q", data, segment + 8)[0]
+                length = struct.unpack_from("<Q", data, segment + 32)[0]
+                loaders.append(Path(data[start:start + length].rstrip(b"\0").decode()))
+        if machine == 183:  # Official Linux aarch64 binary is static.
+            assert not loaders
+            return
+        assert machine == 62 and len(loaders) == 1, loaders
+        loader = loaders[0].resolve()
+        assert loader.is_file() and loader.is_relative_to(home), loader
+        env = {key: value for key, value in os.environ.items() if key != "LD_LIBRARY_PATH"}
+        output = subprocess.run(
+            [str(loader), "--inhibit-cache", "--list", str(binary)],
+            capture_output=True, text=True, check=True, timeout=15, env=env,
+        ).stdout
+        resolved = {}
+        for line in output.splitlines():
+            name, separator, location = line.strip().partition(" => ")
+            if separator and name in {"libc.so.6", "libpthread.so.0"}:
+                resolved[name] = Path(location.rsplit(" (", 1)[0]).resolve()
+        assert set(resolved) == {"libc.so.6", "libpthread.so.0"}, output
+        for library in resolved.values():
+            assert library.is_file() and library.is_relative_to(home), output
 
     @pytest.mark.verify
     def test_license_installed(self):
