@@ -95,7 +95,8 @@ function config()
 end
 
 function uninstall()
-    system.exec("rustup self uninstall")
+    -- -y: there is nobody to answer its "Continue? (y/N)", and no answer is no.
+    system.exec("rustup self uninstall -y")
     xvm.remove("rustc")
     xvm.remove("cargo")
     xvm.remove("rustup")
