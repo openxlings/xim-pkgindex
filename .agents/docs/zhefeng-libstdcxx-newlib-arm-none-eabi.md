@@ -1,12 +1,12 @@
 # libstdcxx-newlib-arm-none-eabi
 
 libstdc++ and libsupc++ of GCC 14.2.0 (full and `_nano`) for every multilib of
-`ZheFeng7110:arm-none-eabi-gcc`, built against newlib 4.5.0.20241231, **in one complete sysroot
+`zhefeng:arm-none-eabi-gcc`, built against newlib 4.5.0.20241231, **in one complete sysroot
 that also carries that newlib** (`--sysroot=<prefix>/arm-none-eabi`). No commands. Status: dev.
 
 - Upstream: https://gcc.gnu.org/onlinedocs/libstdc++/ (GPL-3.0-or-later WITH GCC-exception-3.1)
   and newlib's licenses
-- Namespace: `ZheFeng7110` (unofficial, see "Provenance")
+- Namespace: `zhefeng` (unofficial, see "Provenance"; lowercase letters only, as the index's install checks require)
 - Platforms: one host-independent archive, declared for linux, macosx and windows.
 
 ## Naming

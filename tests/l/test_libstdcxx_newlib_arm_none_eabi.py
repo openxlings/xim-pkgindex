@@ -1,4 +1,4 @@
-"""Tests for ZheFeng7110:libstdcxx-newlib-arm-none-eabi (newlib sysroot + libstdc++ of GCC 14.2.0)."""
+"""Tests for zhefeng:libstdcxx-newlib-arm-none-eabi (newlib sysroot + libstdc++ of GCC 14.2.0)."""
 import os
 import re
 import subprocess
@@ -20,7 +20,7 @@ from tests.lib.assertions import (
 from tests.lib.platform_utils import project_root, skip_if_not, subos_bin_dir, xpkgs_dir
 from tests.lib.xpkg_parser import parse_xpkg
 
-NAMESPACE = "ZheFeng7110"
+NAMESPACE = "zhefeng"
 NAME = "libstdcxx-newlib-arm-none-eabi"
 VERSION = "14.2.0"
 PKG = f"{NAMESPACE}:{NAME}@{VERSION}"
@@ -69,8 +69,10 @@ class TestStatic:
     def test_one_payload_for_every_host(self, meta):
         source = meta.raw_content
         for os_name in ("linux", "macosx", "windows"):
-            assert f"{os_name} = versions," in source, f"{os_name} does not use the shared table"
-        assert source.count(f'sha256 = "{SHA256}"') == 1
+            assert re.search(rf"\n        {os_name} = \{{", source), f"no {os_name} table"
+        # The same archive in every platform's table, nothing else.
+        assert source.count(f'sha256 = "{SHA256}"') == 3
+        assert len(re.findall(r'sha256 = "', source)) == 3
 
     @pytest.mark.static
     def test_version_is_the_compilers(self, meta):
@@ -129,7 +131,7 @@ class TestVerify:
     def test_cxx_link_takes_nano_with_nano_specs(self, tmp_path):
         gxx = os.path.join(subos_bin_dir(), "arm-none-eabi-g++")
         if not os.path.exists(gxx):
-            pytest.skip("ZheFeng7110:arm-none-eabi-gcc is not installed in this home")
+            pytest.skip("zhefeng:arm-none-eabi-gcc is not installed in this home")
         sysroot = os.path.join(xpkgs_dir(), f"{NAMESPACE}-x-{NAME}", VERSION, "arm-none-eabi")
         src = tmp_path / "hello.cc"
         src.write_text("#include <vector>\n#include <string>\n#include <cstdio>\n"

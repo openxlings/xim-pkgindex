@@ -1,8 +1,8 @@
 -- newlib-arm-none-eabi: newlib 4.5.0.20241231 and newlib-nano for every multilib of
--- ZheFeng7110:arm-none-eabi-gcc, as the sysroot that compiler selects with
+-- zhefeng:arm-none-eabi-gcc, as the sysroot that compiler selects with
 -- `--sysroot=<this package>/arm-none-eabi`. The payload is what
 -- `xlings install fromsource:newlib-arm-none-eabi@4.5.0.20241231` builds (with
--- fromsource:arm-none-eabi-gcc 14.2.0, the compiler of ZheFeng7110:arm-none-eabi-gcc),
+-- fromsource:arm-none-eabi-gcc 14.2.0, the compiler of zhefeng:arm-none-eabi-gcc),
 -- exported by tools/fromsource.sh of
 -- https://github.com/ZheFeng7110/xlings-arm-none-eabi-gcc (README.provenance in the
 -- payload names the recipe commit, the xlings client and the factory image).
@@ -31,24 +31,20 @@
 -- path. The payload is target code, so ONE archive (one sha256) serves every host;
 -- a version bump is a factory rebuild.
 --
--- ⭐ NAMESPACE ZheFeng7110: built from the upstream sources by the repository above and
+-- ⭐ NAMESPACE zhefeng: built from the upstream sources by the repository above and
 -- hosted on its releases, so this is a personal packaging (AGENTS.md). The id is
 --
---   ZheFeng7110:newlib-arm-none-eabi@4.5.0.20241231
+--   zhefeng:newlib-arm-none-eabi@4.5.0.20241231
 --
--- and loses the prefix if a maintainer moves the payloads to xlings-res (the bytes,
--- and so the hashes, stay the same).
-local versions = {
-    ["latest"] = { ref = "4.5.0.20241231" },
-    -- The release newlib-arm-none-eabi-4.5.0.20241231 (build run 45975474963 of 3fa7932).
-    ["4.5.0.20241231"] = { sha256 = "dc5fb47392f89fdd5afa6d734c352cbe1a1d7628ce745e3208d7718e2ec3bc19" },
-}
+-- (lowercase letters only: the index's install checks take no other namespace, so it
+-- is not the GitHub handle). It loses the prefix if a maintainer moves the payloads
+-- to xlings-res (the bytes, and so the hashes, stay the same).
 
 package = {
     spec = "2",
     homepage = "https://sourceware.org/newlib/",
     name = "newlib-arm-none-eabi",
-    namespace = "ZheFeng7110",
+    namespace = "zhefeng",
     description = "newlib and newlib-nano for arm-none-eabi-gcc's Cortex-M/R multilibs (nano.specs, nosys.specs, rdimon.specs)",
     authors = {"Red Hat", "newlib contributors"},
     maintainers = {"https://sourceware.org/newlib/"},
@@ -70,11 +66,26 @@ package = {
     -- xlings-res after merge (no well-known CN mirror carries it).
     ci = { mirror = true },
 
+    -- The same table, written out per platform: the mirror's inspector
+    -- (tools/xpkg_ci.py) finds a platform only as `linux = {`, not through a
+    -- shared local table.
     xpm = {
         source = "https://github.com/ZheFeng7110/xlings-arm-none-eabi-gcc/releases/download/${name}-${version}/${name}-${version}.tar.gz",
-        linux = versions,
-        macosx = versions,
-        windows = versions,
+        linux = {
+            ["latest"] = { ref = "4.5.0.20241231" },
+            -- The release newlib-arm-none-eabi-4.5.0.20241231 (build run 45975474963 of 3fa7932).
+            ["4.5.0.20241231"] = { sha256 = "dc5fb47392f89fdd5afa6d734c352cbe1a1d7628ce745e3208d7718e2ec3bc19" },
+        },
+        macosx = {
+            ["latest"] = { ref = "4.5.0.20241231" },
+            -- The release newlib-arm-none-eabi-4.5.0.20241231 (build run 45975474963 of 3fa7932).
+            ["4.5.0.20241231"] = { sha256 = "dc5fb47392f89fdd5afa6d734c352cbe1a1d7628ce745e3208d7718e2ec3bc19" },
+        },
+        windows = {
+            ["latest"] = { ref = "4.5.0.20241231" },
+            -- The release newlib-arm-none-eabi-4.5.0.20241231 (build run 45975474963 of 3fa7932).
+            ["4.5.0.20241231"] = { sha256 = "dc5fb47392f89fdd5afa6d734c352cbe1a1d7628ce745e3208d7718e2ec3bc19" },
+        },
     },
 }
 

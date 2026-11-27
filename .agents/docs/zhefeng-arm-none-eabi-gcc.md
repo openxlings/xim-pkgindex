@@ -6,7 +6,7 @@ library** (libgcc only), as Homebrew's `arm-none-eabi-gcc`. Commands: the 27
 
 - Upstream: https://gcc.gnu.org/, https://www.gnu.org/software/binutils (GPL-3.0-or-later,
   GCC runtime library exception)
-- Namespace: `ZheFeng7110` (unofficial, see "Provenance"); id `ZheFeng7110:arm-none-eabi-gcc@14.2.0`
+- Namespace: `zhefeng` (unofficial, see "Provenance"; lowercase letters only, as the index's install checks require); id `zhefeng:arm-none-eabi-gcc@14.2.0`
 - Platforms: linux x86_64/aarch64, windows x86_64, macosx aarch64. Not built: macosx x86_64,
   windows aarch64.
 - Siblings (same pull request, designed together): `newlib-arm-none-eabi` (C) and

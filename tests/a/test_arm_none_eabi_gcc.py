@@ -1,4 +1,4 @@
-"""Tests for ZheFeng7110:arm-none-eabi-gcc (GCC + binutils for bare-metal Arm, no C library)."""
+"""Tests for zhefeng:arm-none-eabi-gcc (GCC + binutils for bare-metal Arm, no C library)."""
 import os
 import re
 import subprocess
@@ -21,7 +21,7 @@ from tests.lib.assertions import (
 from tests.lib.platform_utils import skip_if_not, subos_bin_dir
 from tests.lib.xpkg_parser import parse_xpkg
 
-NAMESPACE = "ZheFeng7110"
+NAMESPACE = "zhefeng"
 NAME = "arm-none-eabi-gcc"
 VERSION = "14.2.0"
 PKG = f"{NAMESPACE}:{NAME}@{VERSION}"

@@ -42,18 +42,19 @@
 --   macosx aarch64        built by Xcode's clang: system libraries only, macOS 11+
 -- The target code (libgcc) is the same bytes in all of them.
 --
--- ⭐ NAMESPACE ZheFeng7110: built from the upstream sources by the repository above and
+-- ⭐ NAMESPACE zhefeng: built from the upstream sources by the repository above and
 -- hosted on its releases, so this is a personal packaging (AGENTS.md). The id is
 --
---   ZheFeng7110:arm-none-eabi-gcc@14.2.0
+--   zhefeng:arm-none-eabi-gcc@14.2.0
 --
--- and loses the prefix if a maintainer moves the payloads to xlings-res (the bytes,
--- and so the hashes, stay the same).
+-- (lowercase letters only: the index's install checks take no other namespace, so it
+-- is not the GitHub handle). It loses the prefix if a maintainer moves the payloads
+-- to xlings-res (the bytes, and so the hashes, stay the same).
 package = {
     spec = "2",
     homepage = "https://gcc.gnu.org/",
     name = "arm-none-eabi-gcc",
-    namespace = "ZheFeng7110",
+    namespace = "zhefeng",
     description = "GCC 14.2.0 and binutils 2.43.1 for bare-metal Arm (arm-none-eabi), without a C library",
     authors = {"GNU"},
     maintainers = {"https://gcc.gnu.org/"},

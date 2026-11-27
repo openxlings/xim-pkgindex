@@ -1,5 +1,5 @@
 -- libstdcxx-newlib-arm-none-eabi: libstdc++ and libsupc++ of GCC 14.2.0 (full and
--- nano) for every multilib of ZheFeng7110:arm-none-eabi-gcc 14.2.0, built against
+-- nano) for every multilib of zhefeng:arm-none-eabi-gcc 14.2.0, built against
 -- newlib-arm-none-eabi 4.5.0.20241231 -- IN A COMPLETE SYSROOT THAT CARRIES THAT
 -- NEWLIB, selected with `--sysroot=<this package>/arm-none-eabi`. The payload is
 -- what `xlings install fromsource:libstdcxx-newlib-arm-none-eabi@14.2.0` builds,
@@ -37,24 +37,20 @@
 -- ⚠️ A target sysroot, not a host library: nothing enters the SubOS's include or lib
 -- path. Target code: ONE archive (one sha256) serves every host.
 --
--- ⭐ NAMESPACE ZheFeng7110: built from the upstream sources by the repository above and
+-- ⭐ NAMESPACE zhefeng: built from the upstream sources by the repository above and
 -- hosted on its releases, so this is a personal packaging (AGENTS.md). The id is
 --
---   ZheFeng7110:libstdcxx-newlib-arm-none-eabi@14.2.0
+--   zhefeng:libstdcxx-newlib-arm-none-eabi@14.2.0
 --
--- and loses the prefix if a maintainer moves the payloads to xlings-res (the bytes,
--- and so the hashes, stay the same).
-local versions = {
-    ["latest"] = { ref = "14.2.0" },
-    -- The release libstdcxx-newlib-arm-none-eabi-14.2.0 (build run 45975474963 of 3fa7932).
-    ["14.2.0"] = { sha256 = "ead19549a73a9c6f27bbaed61db0464eccf9c99d21d3088bb00450d76688aae4" },
-}
+-- (lowercase letters only: the index's install checks take no other namespace, so it
+-- is not the GitHub handle). It loses the prefix if a maintainer moves the payloads
+-- to xlings-res (the bytes, and so the hashes, stay the same).
 
 package = {
     spec = "2",
     homepage = "https://gcc.gnu.org/onlinedocs/libstdc++/",
     name = "libstdcxx-newlib-arm-none-eabi",
-    namespace = "ZheFeng7110",
+    namespace = "zhefeng",
     description = "libstdc++ (full and nano) for arm-none-eabi-gcc 14.2.0's Cortex-M/R multilibs, in a sysroot with newlib and newlib-nano",
     authors = {"GNU", "Red Hat", "newlib contributors"},
     maintainers = {"https://gcc.gnu.org/"},
@@ -74,11 +70,26 @@ package = {
     -- xlings-res after merge (no well-known CN mirror carries it).
     ci = { mirror = true },
 
+    -- The same table, written out per platform: the mirror's inspector
+    -- (tools/xpkg_ci.py) finds a platform only as `linux = {`, not through a
+    -- shared local table.
     xpm = {
         source = "https://github.com/ZheFeng7110/xlings-arm-none-eabi-gcc/releases/download/${name}-${version}/${name}-${version}.tar.gz",
-        linux = versions,
-        macosx = versions,
-        windows = versions,
+        linux = {
+            ["latest"] = { ref = "14.2.0" },
+            -- The release libstdcxx-newlib-arm-none-eabi-14.2.0 (build run 45975474963 of 3fa7932).
+            ["14.2.0"] = { sha256 = "ead19549a73a9c6f27bbaed61db0464eccf9c99d21d3088bb00450d76688aae4" },
+        },
+        macosx = {
+            ["latest"] = { ref = "14.2.0" },
+            -- The release libstdcxx-newlib-arm-none-eabi-14.2.0 (build run 45975474963 of 3fa7932).
+            ["14.2.0"] = { sha256 = "ead19549a73a9c6f27bbaed61db0464eccf9c99d21d3088bb00450d76688aae4" },
+        },
+        windows = {
+            ["latest"] = { ref = "14.2.0" },
+            -- The release libstdcxx-newlib-arm-none-eabi-14.2.0 (build run 45975474963 of 3fa7932).
+            ["14.2.0"] = { sha256 = "ead19549a73a9c6f27bbaed61db0464eccf9c99d21d3088bb00450d76688aae4" },
+        },
     },
 }
 

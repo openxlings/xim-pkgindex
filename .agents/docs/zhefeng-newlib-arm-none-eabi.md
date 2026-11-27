@@ -1,11 +1,11 @@
 # newlib-arm-none-eabi
 
-newlib 4.5.0.20241231 and newlib-nano for every multilib of `ZheFeng7110:arm-none-eabi-gcc`,
+newlib 4.5.0.20241231 and newlib-nano for every multilib of `zhefeng:arm-none-eabi-gcc`,
 as a sysroot (`--sysroot=<prefix>/arm-none-eabi`). No commands; an umbrella xvm node. Status: dev.
 
 - Upstream: https://sourceware.org/newlib/ (BSD-style collection; `COPYING.NEWLIB` and
   `COPYING.LIBGLOSS` in the payload are authoritative)
-- Namespace: `ZheFeng7110` (unofficial, see "Provenance")
+- Namespace: `zhefeng` (unofficial, see "Provenance"; lowercase letters only, as the index's install checks require)
 - Platforms: one host-independent archive, declared for linux, macosx and windows.
 
 ## Source
