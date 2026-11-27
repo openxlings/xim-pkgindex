@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 import select
 import shutil
+import signal
 import struct
 import subprocess
 import time
@@ -279,7 +280,12 @@ class TestVerify:
         import pty
         import termios
 
-        binary, env = installed
+        _, env = installed
+        # Shim routing is exercised by the version/JSON checks. Give the native
+        # UI direct ownership of this controlling terminal, not xlings' macOS
+        # child-process wrapper, so q and terminal cleanup belong to jless.
+        native_binary = Path(env["XLINGS_HOME"]) / "data/xpkgs/local-x-jless" / VERSION / "bin/jless"
+        assert native_binary.is_file()
         fixture = tmp_path / "fixture.json"
         rows = [{"value": f"row-{index:02}"} for index in range(60)]
         rows[45]["value"] = "needle-unique-731"
@@ -289,7 +295,7 @@ class TestVerify:
         process = None
         try:
             process = subprocess.Popen(
-                [str(binary), str(fixture)], stdin=slave, stdout=slave, stderr=slave,
+                [str(native_binary), str(fixture)], stdin=slave, stdout=slave, stderr=slave,
                 env={**env, "TERM": "xterm-256color"}, start_new_session=True,
                 preexec_fn=lambda: fcntl.ioctl(0, termios.TIOCSCTTY, 0),
             )
@@ -298,7 +304,7 @@ class TestVerify:
 
             def until(expected):
                 output = bytearray()
-                deadline = time.monotonic() + 10
+                deadline = time.monotonic() + 3
                 while time.monotonic() < deadline:
                     if not select.select([master], [], [], max(0, deadline - time.monotonic()))[0]:
                         break
@@ -331,15 +337,35 @@ class TestVerify:
             os.write(master, b"absent-unique-942\r")
             until(b"Pattern not found: absent-unique-942")
             os.write(master, b"q")
-            assert process.wait(timeout=5) == 0
+            # Keep consuming terminal output while the app restores the screen;
+            # waiting first can back-pressure a macOS PTY during shutdown.
+            deadline = time.monotonic() + 3
+            while process.poll() is None and time.monotonic() < deadline:
+                if select.select([master], [], [], 0.05)[0]:
+                    try:
+                        if not os.read(master, 65536):
+                            break
+                    except OSError as exc:
+                        if exc.errno != errno.EIO:
+                            raise
+                        break
+            assert process.wait(timeout=max(0.1, deadline - time.monotonic())) == 0
         finally:
             if slave >= 0:
                 os.close(slave)
-            if process is not None and process.poll() is None:
-                process.terminate()
-                try:
-                    process.wait(timeout=2)
-                except subprocess.TimeoutExpired:
-                    process.kill()
-                    process.wait(timeout=2)
+            # Closing the controlling terminal releases its foreground process
+            # before bounded process-group cleanup, including failure paths.
             os.close(master)
+            if process is not None and process.poll() is None:
+                try:
+                    os.killpg(process.pid, signal.SIGTERM)
+                except ProcessLookupError:
+                    pass
+                try:
+                    process.wait(timeout=1)
+                except subprocess.TimeoutExpired:
+                    try:
+                        os.killpg(process.pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                    process.wait(timeout=1)
