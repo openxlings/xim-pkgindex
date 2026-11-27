@@ -23,6 +23,7 @@ setting anything: xlings's elfpatch reads it from each dependency and writes
 the consumer's RPATH. `gcc-runtime` established the pattern.
 """
 import pathlib
+import re
 import sys
 
 # name -> (deps, has_libs, extra_config)
@@ -155,7 +156,7 @@ HEADER = '''package = {{
     repo = "{repo}",
 
     type = "package",
-    archs = {{"x86_64"}},
+    archs = {{{archs}}},
     status = "stable",
     categories = {{"graphics", "lib"}},
     keywords = {{{keywords}}},
@@ -165,12 +166,7 @@ HEADER = '''package = {{
             deps = {{{deps}}},
 {exports}            ["latest"] = {{ ref = "{version}" }},
             ["{version}"] = {{
-                url = {{
-                    GLOBAL = "{global_url}",
-                    CN     = "{cn}",
-                }},
-                sha256 = "{sha}",
-            }},
+{entries}            }},
         }},
     }},
 }}
@@ -292,7 +288,22 @@ def repo(name):
     return f"https://gitlab.freedesktop.org/xorg/{kind}/{name}"
 
 
-def render(name, version, sha, global_url, cn_url):
+# One per architecture the manifest publishes the version for: a payload is
+# built in a SubOS of that architecture and named after it.
+ARCH_ENTRY = """                {arch} = {{
+                    url = {{
+                        GLOBAL = "{global_url}",
+                        CN     = "{cn}",
+                    }},
+                    sha256 = "{sha}",
+                }},
+"""
+
+ARCH_ORDER = lambda a: (a != "x86_64", a)  # noqa: E731  x86_64 first, as the index writes them
+
+
+def render(name, version, assets):
+    """assets: {arch: (sha, global_url, cn_url)}"""
     deps, has_libs, _ = SPEC[name]
     deps_s = ""
     if deps:
@@ -302,8 +313,10 @@ def render(name, version, sha, global_url, cn_url):
         homepage=homepage(name), name=name, desc=DESCRIPTIONS[name],
         repo=repo(name), authors=AUTHORS.get(name, DEFAULT_AUTHORS),
         licenses=LICENSES.get(name, DEFAULT_LICENSE),
-        keywords=kw, deps=deps_s, version=version, sha=sha,
-        global_url=global_url, cn=cn_url,
+        keywords=kw, deps=deps_s, version=version,
+        archs=", ".join(f'"{a}"' for a in sorted(assets, key=ARCH_ORDER)),
+        entries="".join(ARCH_ENTRY.format(arch=a, sha=assets[a][0], global_url=assets[a][1], cn=assets[a][2])
+                        for a in sorted(assets, key=ARCH_ORDER)),
         exports=(EXPORTS if has_libs else ""),
     )
     out += INSTALL.format(name=name, version=version)
@@ -345,6 +358,9 @@ def main():
     manifest = pathlib.Path(sys.argv[1])
     outdir = pathlib.Path(sys.argv[2]) if len(sys.argv) > 2 else pathlib.Path("pkgs")
     written = 0
+    # name -> version -> arch -> asset; the architecture is the asset's own
+    # (<name>-<version>-linux-<arch>.tar.gz).
+    found = {}
     for line in manifest.read_text().splitlines():
         if not line.strip():
             continue
@@ -352,10 +368,15 @@ def main():
         if name not in SPEC:
             print(f"  skip {name} (not in SPEC — mesa is written by hand)")
             continue
+        m = re.search(r"-linux-([a-z0-9_]+)\.tar\.gz$", global_url)
+        if not m:
+            sys.exit(f"{global_url}: no -linux-<arch>.tar.gz in the asset's name")
+        found.setdefault(name, {}).setdefault(version, {})[m.group(1)] = (sha, global_url, cn_url)
+    for name, versions in found.items():
+        version, assets = next(iter(versions.items()))
         d = outdir / name[0].lower()
         d.mkdir(parents=True, exist_ok=True)
-        (d / f"{name}.lua").write_text(
-            render(name, version, sha, global_url, cn_url))
+        (d / f"{name}.lua").write_text(render(name, version, assets))
         print(f"  wrote {d / (name + '.lua')}")
         written += 1
     print(f"{written} recipes")

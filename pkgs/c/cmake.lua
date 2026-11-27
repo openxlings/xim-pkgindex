@@ -12,7 +12,7 @@ package = {
 
     -- xim pkg info
     type = "package",
-    archs = {"x86_64", "arm64"},
+    archs = {"x86_64", "aarch64"},
     status = "stable", -- dev, stable, deprecated
     categories = {"build", "system", "cmake"},
     keywords = {"build", "system", "cmake", "make", "generator", "cross-platform"},
@@ -46,6 +46,7 @@ package = {
                     url = {
                         linux = {
                             x86_64 = "https://github.com/Kitware/CMake/releases/download/v${version}/cmake-${version}-linux-x86_64.tar.gz",
+                            aarch64 = "https://github.com/Kitware/CMake/releases/download/v${version}/cmake-${version}-linux-aarch64.tar.gz",
                         },
                         macosx = {
                             aarch64 = "https://github.com/Kitware/CMake/releases/download/v${version}/cmake-${version}-macos-universal.tar.gz",
@@ -101,6 +102,10 @@ package = {
                     url = "https://github.com/Kitware/CMake/releases/download/v4.5.0/cmake-4.5.0-linux-x86_64.tar.gz",
                     sha256 = "81f0d5b0960fb6adc8197030ffc827fba937640d51e73e39e0e9e40d88c66f6f",
                 },
+                aarch64 = {
+                    url = "https://github.com/Kitware/CMake/releases/download/v4.5.0/cmake-4.5.0-linux-aarch64.tar.gz",
+                    sha256 = "0c8447e7bba9701467b5ac6155d157aa9e309e71af4981f78bd4b9176107f553",
+                },
             },
             ["4.4.2"] = {
                 url = "XLINGS_RES",
@@ -113,6 +118,10 @@ package = {
                 x86_64 = {
                     url = "https://github.com/Kitware/CMake/releases/download/v4.5.1/cmake-4.5.1-linux-x86_64.tar.gz",
                     sha256 = "83b71181fb62b4fe8f26067a9321448572e7a43bd04ff6c7f54a24c33698f16d",
+                },
+                aarch64 = {
+                    url = "https://github.com/Kitware/CMake/releases/download/v4.5.1/cmake-4.5.1-linux-aarch64.tar.gz",
+                    sha256 = "3bec208f11ed96c173032eeaf97937c54dd246acefee22acd7794a6b4e70d536",
                 },
             },
         },

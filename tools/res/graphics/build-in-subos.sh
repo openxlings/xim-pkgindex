@@ -296,12 +296,15 @@ check_build_inputs() {   # <builddir> → 0 clean, 1 host input, 2 no record rea
     # variables that carry compiler or linker arguments — which is why
     # `oldincludedir='/usr/include'`, an install default no build ever uses,
     # does not come through: it is lowercase and it is not a flags variable.
-    if [[ -f "$bd/config.log" ]]; then
-        awk '/^## Cache variables/{s=1} /^## confdefs.h/{s=0} s' "$bd/config.log" \
+    # libffi's configure builds in a directory named for the target
+    # (aarch64-unknown-linux-gnu/) and writes its record there.
+    for f in "$bd/config.log" "$bd"/*-linux-gnu/config.log; do
+        [[ -f "$f" ]] || continue
+        awk '/^## Cache variables/{s=1} /^## confdefs.h/{s=0} s' "$f" \
             | grep -E '^[A-Za-z_][A-Za-z0-9_]*(CFLAGS|CPPFLAGS|CXXFLAGS|LDFLAGS|LIBS|INCLUDES)[A-Za-z0-9_]*=' \
             > "$tmpd/config-log"
-        used+=("$tmpd/config-log"); origin+=("$bd/config.log"); mode+=(flags)
-    fi
+        used+=("$tmpd/config-log"); origin+=("$f"); mode+=(flags); break
+    done
 
     if [[ ${#used[@]} -eq 0 ]]; then
         echo "[gfx-build:$NAME] INCONCLUSIVE: no configure record under $bd" >&2
