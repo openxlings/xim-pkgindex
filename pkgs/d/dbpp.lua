@@ -88,9 +88,13 @@ package = {
             source = "https://github.com/FarnaHerry/dbpp/releases/download/v${version}/dbpp-${version}-linux-${arch}.${ext}",
             ["latest"] = { ref = "0.4.1" },
             ["0.4.1"] = {
-                sha256 = {
-                    x86_64 = "bdae8f62b650d8699ecf8d4af749464e930f406bc4d7af104814bcd069aa43ef",
-                    aarch64 = "c11158fe69d9bc4b0757c43f8b18de66ffcacf9122d0c3649b42599300a17783",
+                x86_64 = {
+                    url = "https://github.com/FarnaHerry/dbpp/releases/download/v0.4.1/dbpp-0.4.1-linux-x86_64.tar.gz",
+                    sha256 = "bdae8f62b650d8699ecf8d4af749464e930f406bc4d7af104814bcd069aa43ef",
+                },
+                aarch64 = {
+                    url = "https://github.com/FarnaHerry/dbpp/releases/download/v0.4.1/dbpp-0.4.1-linux-aarch64.tar.gz",
+                    sha256 = "c11158fe69d9bc4b0757c43f8b18de66ffcacf9122d0c3649b42599300a17783",
                 },
             },
             ["0.2.3"] = {
@@ -104,9 +108,9 @@ package = {
             source = "https://github.com/FarnaHerry/dbpp/releases/download/v${version}/dbpp-${version}-macos-${arch_alias}.${ext}",
             ["latest"] = { ref = "0.4.1" },
             ["0.4.1"] = {
-                url = "https://github.com/FarnaHerry/dbpp/releases/download/v0.4.1/dbpp-0.4.1-macos-arm64.dmg",
-                sha256 = {
-                    aarch64 = "643c000e3ac02f35b9bf3178ca26a6d6359e400c29be136cc7d11ad357cb665f",
+                aarch64 = {
+                    url = "https://github.com/FarnaHerry/dbpp/releases/download/v0.4.1/dbpp-0.4.1-macos-arm64.dmg",
+                    sha256 = "643c000e3ac02f35b9bf3178ca26a6d6359e400c29be136cc7d11ad357cb665f",
                 },
             },
             ["0.2.3"] = {
@@ -120,8 +124,9 @@ package = {
             source = "https://github.com/FarnaHerry/dbpp/releases/download/v${version}/dbpp-${version}-windows-${arch}.${ext}",
             ["latest"] = { ref = "0.4.1" },
             ["0.4.1"] = {
-                sha256 = {
-                    x86_64 = "4459eeafdab69358f51d465e8a43056ea9d0a1a2c3eca15bc850e384aa65fe8b",
+                x86_64 = {
+                    url = "https://github.com/FarnaHerry/dbpp/releases/download/v0.4.1/dbpp-0.4.1-windows-x86_64.zip",
+                    sha256 = "4459eeafdab69358f51d465e8a43056ea9d0a1a2c3eca15bc850e384aa65fe8b",
                 },
             },
             ["0.2.3"] = {

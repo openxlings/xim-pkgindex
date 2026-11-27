@@ -407,3 +407,50 @@ def test_materialize_takes_global_from_a_mirrored_latest():
     assert {a["os"] for a in manifest["assets"]} == {"linux", "macosx", "windows"}
     assert all(url.startswith("https://github.com/pnpm/pnpm/releases/download/v") for url in seen), seen
     assert all(f"/v{manifest['version']}/" in url for url in seen), seen
+
+
+def test_materialize_fetches_each_arch_resource(tmp_path, monkeypatch):
+    import hashlib
+    import io
+
+    contents = {
+        "https://upstream.example/x64.bin": b"x86 payload",
+        "https://upstream.example/arm.bin": b"arm payload",
+    }
+    recipe = tmp_path / "pkgs" / "d" / "demo.lua"
+    recipe.parent.mkdir(parents=True)
+    recipe.write_text('''package = {
+    name = "demo", archs = {"x86_64", "aarch64"},
+    xpm = {linux = {
+        source = "https://unused.example/${arch}.bin",
+        ["latest"] = {ref = "1.0.0"},
+        ["1.0.0"] = {
+            x86_64 = {url = "https://upstream.example/x64.bin", sha256 = "unused"},
+            ["aarch64"] = {
+                url = {CN = "https://mirror.example/arm.bin", GLOBAL = "https://upstream.example/arm.bin"},
+                sha256 = "unused",
+            },
+        },
+    }},
+}''', encoding="utf-8")
+    seen = []
+
+    def urlopen(request, timeout=None):
+        seen.append(request.full_url)
+        return io.BytesIO(contents[request.full_url])
+
+    monkeypatch.setattr(mod.urllib.request, "urlopen", urlopen)
+    output = tmp_path / "output"
+    args = type("A", (), {"workspace": str(tmp_path), "package": "demo",
+                          "version": None, "output": str(output)})()
+    assert mod.materialize(args) == 0
+    manifest = json.loads((output / "manifest.json").read_text(encoding="utf-8"))
+    assert {a["arch"]: a["source_url"] for a in manifest["assets"]} == {
+        "x86_64": "https://upstream.example/x64.bin",
+        "aarch64": "https://upstream.example/arm.bin",
+    }
+    assert sorted(seen) == sorted(contents)
+    for asset in manifest["assets"]:
+        content = contents[asset["source_url"]]
+        assert asset["sha256"] == hashlib.sha256(content).hexdigest()
+        assert (output / asset["filename"]).read_bytes() == content

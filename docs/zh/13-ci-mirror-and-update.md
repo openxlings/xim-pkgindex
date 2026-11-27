@@ -127,6 +127,9 @@ xpkgindex-update apply --plan plan.json --package xim:foo
 `tools/xpkg_ci.py` 提供 `inspect`、`materialize`、`verify`、`ensure-repo`、`mirror`；
 `tools/xpkg_mirror_queue.py` 负责把它们组成批次。
 
+资源物化同时支持逐架构校验和表与逐架构显式 `{ url, sha256 }` 资源。显式资源使用各自的
+GLOBAL URL，优先于 `source`；manifest 会包含该版本声明的每个架构。
+
 批次的行为（`.github/workflows/xpkg-mirror.yml`）：
 
 - 在 `main` 上 CI 成功后运行，处理自上一次成功运行以来变更的包，以及仍在失败列表中的包。

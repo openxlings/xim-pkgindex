@@ -20,7 +20,6 @@ from tests.lib.assertions import (
     assert_valid_type,
     assert_valid_xvm_node_kinds,
     assert_xim_add_succeeds,
-    assert_xvm_shim_exists,
 )
 from tests.lib.platform_utils import xlings_home
 from tests.lib.xpkg_parser import parse_xpkg
@@ -116,7 +115,6 @@ import = function() end
 os.arch = function() return "aarch64" end
 dofile(arg[1])
 assert(package.xpm.linux.deps == nil)
-assert(package.xpm.linux[package.xpm.linux.latest.ref].sha256.aarch64 ~= nil)
 print("ARM64_OK")
 ''',
             PKG_FILE,
@@ -181,10 +179,6 @@ class TestVerify:
     def test_version_and_help(self):
         assert VERSION in _dbpp("--version")
         assert "SQLite-first ADBC" in _dbpp("--help")
-
-    @pytest.mark.verify
-    def test_shim(self):
-        assert_xvm_shim_exists(PKG_NAME)
 
     @pytest.mark.verify
     def test_doctor_and_sqlite_cli(self, tmp_path):

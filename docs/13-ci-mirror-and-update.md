@@ -172,6 +172,10 @@ commit, descriptor, tag commit or resource bytes change.
 organisation (GitHub and GitCode). `tools/xpkg_ci.py` provides `inspect`, `materialize`, `verify`,
 `ensure-repo` and `mirror`; `tools/xpkg_mirror_queue.py` batches them.
 
+Materialization supports both per-architecture checksum tables and explicit per-architecture
+`{ url, sha256 }` resources. Each explicit resource uses its own GLOBAL URL, overriding `source`;
+every declared architecture is included in the manifest.
+
 How the batch behaves (`.github/workflows/xpkg-mirror.yml`):
 
 - It runs after a successful CI on `main` and handles the packages changed since the newest successful
