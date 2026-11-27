@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     homepage = "https://people.redhat.com/~dhowells/keyutils/",
     name = "keyutils",
@@ -46,6 +46,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- The libraries need libc.so.6;
             -- GLIBC_2.17 at most (readelf -d, objdump -T).
             deps = { "xim:glibc" },
@@ -85,8 +86,6 @@ import("xim.pkgindex.selfcontain")
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mv("keyutils-" .. pkginfo.version(), dir)
     selfcontain.seal(dir)
     sysroot.relocate_pkgconfig(dir, "lib/pkgconfig")
     return true

@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://gitlab.freedesktop.org/xorg/lib/libxft",
     name = "libXft",
     description = "X FreeType client-side font library",
@@ -71,6 +71,7 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 

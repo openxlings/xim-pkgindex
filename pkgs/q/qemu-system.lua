@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://www.qemu.org/",
 
     name = "qemu-system",
@@ -59,6 +59,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             ["latest"] = { ref = "9.2.4" },
             ["9.2.4"] = {
                 x86_64 = {
@@ -88,14 +89,13 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 function install()
     local dir = pkginfo.install_dir()
     -- The archive's root is its own name: qemu-system-<version>-linux-<arch>/.
-    local payload = pkginfo.install_file():replace(".tar.gz", "")
-    if os.isdir(payload) then
-        os.tryrm(dir)
-        os.mv(payload, dir)
+    if fs.is_dir(payload) then
     end
     -- Both emulators and the firmware they boot with, or it is not the payload:
     -- qemu finds share/qemu relative to itself, and an emulator without it
@@ -103,8 +103,8 @@ function install()
     for _, f in ipairs({"bin/qemu-system-x86_64", "bin/qemu-system-aarch64",
                         "share/qemu/bios-256k.bin", "share/qemu/edk2-x86_64-code.fd",
                         "share/qemu/edk2-aarch64-code.fd"}) do
-        if not os.isfile(path.join(dir, f)) then
-            raise("qemu-system payload is missing " .. f)
+        if not fs.is_file(path.join(dir, f)) then
+            error("qemu-system payload is missing " .. f)
         end
     end
     return true

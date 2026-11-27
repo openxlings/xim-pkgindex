@@ -20,7 +20,7 @@
 -- Measured (dirun 0.8.0, QEMU 9.2.4 translating on an x86_64 host): the login prompt 17 s after
 -- the start, a delivered file read, a command's status 7.
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://www.netbsd.org/",
     name = "aarch64-netbsd-disk-image",
     description = "NetBSD 10.2 (arm64), the official live image booted once, with a serial console, as a qcow2 disk for emulator runners; with the dirun profile that boots it",
@@ -39,6 +39,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             ["latest"] = { ref = "10.2" },
             ["10.2"] = {
                 url = {
@@ -52,6 +53,7 @@ package = {
             },
         },
         macosx = {
+            strip = 1,
             ["latest"] = { ref = "10.2" },
             ["10.2"] = {
                 url = {
@@ -66,6 +68,8 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 -- How this image boots and runs a command (dirun's profile format).
 local profile = [=[
@@ -116,14 +120,11 @@ report = "/tmp/dirun-mtest.ndjson"
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    local extracted = pkginfo.install_file():replace(".tar.xz", "")
-    if not os.isdir(extracted) then
-        raise("aarch64-netbsd-disk-image: the payload was not found at " .. extracted)
+    if not fs.is_dir(extracted) then
+        error("aarch64-netbsd-disk-image: the payload was not found at " .. extracted)
     end
-    os.mv(extracted, dir)
-    io.writefile(path.join(dir, "dirun.toml"), profile)
-    return os.isfile(path.join(dir, "netbsd-10.2-aarch64.qcow2"))
+    fs.write(path.join(dir, "dirun.toml"), profile)
+    return fs.is_file(path.join(dir, "netbsd-10.2-aarch64.qcow2"))
 end
 
 -- Data, not a program: the package name is registered so a home knows it has it; a runner names

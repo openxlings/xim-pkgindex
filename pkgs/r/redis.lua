@@ -11,7 +11,7 @@
 -- binaries from official redis/redis sources: upstream distributes source
 -- tarballs only for POSIX, and install-time source compilation is disallowed.
 package = {
-    spec = "2",
+    spec = "3",
 
     name = "redis",
     description = "Redis - in-memory key-value data structure store, cache and message broker (self-contained Windows MSYS2 build with TLS enabled)",

@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "3",
 
     name = "jetbrainsmono-nerd-font",
     description = "JetBrainsMono Nerd Font patched with terminal icons and glyphs",
@@ -87,6 +87,8 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.system")
 import("xim.libxpkg.log")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 local function _sh(value)
     return "'" .. tostring(value):gsub("'", [['"'"']]) .. "'"
@@ -109,7 +111,7 @@ local function _home_dir()
 end
 
 local function _font_dir()
-    if is_host("windows") then
+    if (pkginfo.platform() == "windows") then
         local base = os.getenv("LOCALAPPDATA")
         if not base then
             local home = _home_dir()
@@ -123,7 +125,7 @@ local function _font_dir()
     local home = _home_dir()
     if not home then error("HOME is required") end
 
-    if is_host("macosx") then
+    if (pkginfo.platform() == "macosx") then
         return path.join(home, "Library", "Fonts")
     end
 
@@ -132,13 +134,13 @@ local function _font_dir()
 end
 
 local function _refresh_linux_font_cache(font_dir)
-    if is_host("linux") then
+    if (pkginfo.platform() == "linux") then
         _run_sh("command -v fc-cache >/dev/null 2>&1 && fc-cache -f " .. _sh(font_dir) .. " || true")
     end
 end
 
 local function _copy_fonts_to(font_dir)
-    if is_host("windows") then
+    if (pkginfo.platform() == "windows") then
         local script = table.concat({
             "$src = " .. _ps(pkginfo.install_dir()),
             "$dst = " .. _ps(font_dir),
@@ -153,7 +155,7 @@ local function _copy_fonts_to(font_dir)
 end
 
 local function _remove_fonts_from(font_dir)
-    if is_host("windows") then
+    if (pkginfo.platform() == "windows") then
         local script = table.concat({
             "$dst = " .. _ps(font_dir),
             "$reg = 'HKCU:\\Software\\Microsoft\\Windows NT\\CurrentVersion\\Fonts'",
@@ -167,8 +169,8 @@ end
 
 function installed()
     return xvm.has(package.name)
-       and os.isfile(path.join(_font_dir(), "JetBrainsMonoNerdFont-Regular.ttf"))
-       and os.isfile(path.join(pkginfo.install_dir(), "JetBrainsMonoNerdFont-Regular.ttf"))
+       and fs.is_file(path.join(_font_dir(), "JetBrainsMonoNerdFont-Regular.ttf"))
+       and fs.is_file(path.join(pkginfo.install_dir(), "JetBrainsMonoNerdFont-Regular.ttf"))
 end
 
 function install()
@@ -180,7 +182,7 @@ end
 
 function config()
     local font_dir = _font_dir()
-    os.mkdir(font_dir)
+    fs.mkdir(font_dir)
     _copy_fonts_to(font_dir)
     _refresh_linux_font_cache(font_dir)
     xvm.add(package.name)

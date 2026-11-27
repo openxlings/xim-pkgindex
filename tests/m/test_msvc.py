@@ -204,7 +204,7 @@ class TestStatic:
         code = "\n".join(l for l in body.splitlines()
                           if not l.lstrip().startswith("--"))
         assert "vctip.exe" in code, "install() 没有删 vctip.exe —— toolset 会卸不掉"
-        assert "os.tryrm" in code
+        assert "fs.remove" in code
 
     @pytest.mark.static
     def test_installed_rejects_a_payload_that_still_has_vctip(self):

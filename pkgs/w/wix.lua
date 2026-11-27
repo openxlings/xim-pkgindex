@@ -54,7 +54,7 @@
 -- pretended to own it would be lying about what it installs. `wix --version`
 -- says so clearly when it is missing.
 package = {
-    spec = "2",
+    spec = "3",
 
     name = "wix",
     description = "WiX Toolset v5 — build Windows .msi packages and bundles from .wxs sources",
@@ -113,6 +113,7 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.log")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.path")
 
 -- id: the nuget package id, lowercased -- which is also how the flat container
 -- addresses it and how the .nupkg is named.
@@ -164,7 +165,7 @@ local function winpath(p)
 end
 
 local function sha256_of(file)
-    local out = os.iorun(string.format('certutil -hashfile "%s" SHA256', file)) or ""
+    local out = system.run(string.format('certutil -hashfile "%s" SHA256', file)).out or ""
     for line in out:gmatch("[^\r\n]+") do
         local hex = line:gsub("%s+", ""):lower()
         if #hex == 64 and hex:match("^%x+$") then return hex end
@@ -178,9 +179,9 @@ local function fetch_verified(entry, dir)
 
     -- An already-present file still has to prove itself: a partial download
     -- from an interrupted run is also "a file that exists".
-    if os.isfile(dst) then
+    if fs.is_file(dst) then
         if sha256_of(dst) == want then return true end
-        os.tryrm(dst)
+        fs.remove(dst)
     end
 
     log.info("wix: fetching " .. entry.id .. " " .. VERSION)
@@ -188,14 +189,14 @@ local function fetch_verified(entry, dir)
     -- non-zero exit, so without this a missing payload aborts with a stack
     -- trace instead of the message below.
     pcall(system.exec, string.format('curl -fsSL --retry 3 -o "%s" "%s"', dst, url_of(entry)))
-    if not os.isfile(dst) then
+    if not fs.is_file(dst) then
         log.error("wix: " .. entry.id .. " did not download")
         return false
     end
     local got = sha256_of(dst)
     if got ~= want then
         log.error("wix: " .. entry.id .. " sha256 is " .. tostring(got) .. ", expected " .. want)
-        os.tryrm(dst)
+        fs.remove(dst)
         return false
     end
     return true
@@ -239,7 +240,7 @@ function installed()
     local idir = pkginfo.install_dir()
     for _, entry in ipairs(PAYLOADS) do
         for _, anchor in ipairs(entry.anchors) do
-            if not os.isfile(path.join(idir, entry.into, anchor)) then
+            if not fs.is_file(path.join(idir, entry.into, anchor)) then
                 return false
             end
         end
@@ -250,8 +251,8 @@ end
 function install()
     local idir = pkginfo.install_dir()
     local work = path.join(idir, ".nupkg")
-    os.tryrm(idir)
-    fs.mkdir_p(work)
+    fs.remove(idir)
+    fs.mkdir(work)
 
     for _, entry in ipairs(PAYLOADS) do
         if not fetch_verified(entry, work) then return false end
@@ -259,20 +260,20 @@ function install()
 
     for _, entry in ipairs(PAYLOADS) do
         local dest = path.join(idir, entry.into)
-        fs.mkdir_p(dest)
+        fs.mkdir(dest)
         if not extract(path.join(work, entry.id .. ".nupkg"), dest) then
             log.error("wix: " .. entry.id .. " could not be extracted")
             return false
         end
         for _, anchor in ipairs(entry.anchors) do
-            if not os.isfile(path.join(dest, anchor)) then
+            if not fs.is_file(path.join(dest, anchor)) then
                 log.error("wix: " .. entry.id .. " extracted without " .. anchor)
                 return false
             end
         end
     end
 
-    os.tryrm(work)
+    fs.remove(work)
     return installed()
 end
 

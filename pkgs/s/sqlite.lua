@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://www.sqlite.org",
     name = "sqlite",
     description = "Self-contained, serverless, zero-configuration SQL database engine (libsqlite3 + sqlite3 CLI)",
@@ -73,6 +73,7 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 

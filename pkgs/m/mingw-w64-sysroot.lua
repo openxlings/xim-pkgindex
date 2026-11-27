@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://github.com/mstorsjo/llvm-mingw",
 
     name = "mingw-w64-sysroot",
@@ -43,6 +43,7 @@ package = {
             CN = "https://gitcode.com/xlings-res/mingw-w64-sysroot/releases/download/${version}/mingw-w64-sysroot-${version}.tar.xz",
         },
         linux = {
+            strip = 1,
             ["latest"] = { ref = "20261104-2" },
             ["20261104-2"] = { sha256 = { x86_64 = "7bafe4815bb7b0dfd31f9d82d36f92fe5c5e0658eb58f48bf0a1f80c273ff065", aarch64 = "7bafe4815bb7b0dfd31f9d82d36f92fe5c5e0658eb58f48bf0a1f80c273ff065" } },
             ["20261104-1"] = { sha256 = { x86_64 = "9fe4af80676911cc8e23a612a0e3c449bda710a17e2c6424b05a8ee02d561d8f", aarch64 = "9fe4af80676911cc8e23a612a0e3c449bda710a17e2c6424b05a8ee02d561d8f" } },
@@ -50,6 +51,7 @@ package = {
             ["20261104"] = { sha256 = { x86_64 = "66ca0c7c0f65a44e13ab7a28f6741dea5408250869adb02eaf92a01e96244f05", aarch64 = "66ca0c7c0f65a44e13ab7a28f6741dea5408250869adb02eaf92a01e96244f05" } },
         },
         macosx = {
+            strip = 1,
             ["latest"] = { ref = "20261104-2" },
             ["20261104-2"] = { sha256 = "7bafe4815bb7b0dfd31f9d82d36f92fe5c5e0658eb58f48bf0a1f80c273ff065" },
             ["20261104-1"] = { sha256 = "9fe4af80676911cc8e23a612a0e3c449bda710a17e2c6424b05a8ee02d561d8f" },
@@ -57,6 +59,7 @@ package = {
             ["20261104"] = { sha256 = "66ca0c7c0f65a44e13ab7a28f6741dea5408250869adb02eaf92a01e96244f05" },
         },
         windows = {
+            strip = 1,
             ["latest"] = { ref = "20261104-2" },
             ["20261104-2"] = { sha256 = "7bafe4815bb7b0dfd31f9d82d36f92fe5c5e0658eb58f48bf0a1f80c273ff065" },
             ["20261104-1"] = { sha256 = "9fe4af80676911cc8e23a612a0e3c449bda710a17e2c6424b05a8ee02d561d8f" },
@@ -68,6 +71,8 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 -- Files whose absence makes the base unusable, relative to the package root.
 local required = {
@@ -83,15 +88,12 @@ local required = {
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    local extracted = pkginfo.install_file():replace(".tar.xz", "")
-    if not os.isdir(extracted) then
-        raise("mingw-w64-sysroot payload not found at " .. extracted)
+    if not fs.is_dir(extracted) then
+        error("mingw-w64-sysroot payload not found at " .. extracted)
     end
-    os.mv(extracted, dir)
     for _, f in ipairs(required) do
-        if not os.isfile(path.join(dir, f)) then
-            raise("mingw-w64-sysroot payload is missing " .. f)
+        if not fs.is_file(path.join(dir, f)) then
+            error("mingw-w64-sysroot payload is missing " .. f)
         end
     end
     return true

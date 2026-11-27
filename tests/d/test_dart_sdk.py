@@ -45,7 +45,7 @@ class TestStatic:
     @pytest.mark.static
     def test_valid_spec(self, meta):
         assert_valid_spec(meta)
-        assert meta.spec == "2"
+        assert meta.spec == "3"
 
     @pytest.mark.static
     def test_valid_type(self, meta):

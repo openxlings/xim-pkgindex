@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     homepage = "https://github.com/openxlings/xim-pkgindex",
     name = "graphics",
@@ -200,6 +200,8 @@ package = {
 import("xim.libxpkg.log")
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 import("xim.pkgindex.graphics")
 
 -- Wire every GLX vendor in this stack into the dispatch's vendor directory.
@@ -292,7 +294,7 @@ function __wire_glx_vendors()
             for _, pat in ipairs(ENTRY_POINTS) do
                 local soname = string.format(pat, v.vendor)
                 local lib = path.join(dir, "lib", soname)
-                if os.isfile(lib) then
+                if fs.is_file(lib) then
                     local host, form = graphics.host_vendor_behind(lib)
                     if form == "unreadable" then
                         -- The tool did not run. That is not a fact about this
@@ -380,8 +382,8 @@ end
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mkdir(dir)
+    fs.remove(dir)
+    fs.mkdir(dir)
     return true
 end
 
@@ -409,8 +411,8 @@ function config()
         local d = pkginfo.dep_install_dir and pkginfo.dep_install_dir(name)
         if not d or d == "" then return nil end
         local f = path.join(d, marker)
-        if not os.isfile(f) then return nil end
-        return (io.readfile(f) or ""):gsub("%s+$", "")
+        if not fs.is_file(f) then return nil end
+        return (fs.read(f) or ""):gsub("%s+$", "")
     end
 
     -- Namespaced, as declared above. Bare names returned nil under explicit

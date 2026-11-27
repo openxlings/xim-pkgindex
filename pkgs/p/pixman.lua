@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "3",
     homepage = "https://pixman.org",
 
     name = "pixman",
@@ -54,6 +54,8 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 
 -- 通用二进制包安装: tarball 内是 <pkg>-<ver>-linux-x86_64/{lib,include,lib/pkgconfig}
@@ -79,21 +81,21 @@ function config()
     local binding = package.name .. "@" .. pkginfo.version()
     xvm.add(package.name)
     for _, lib in ipairs(libs) do
-        if os.isfile(path.join(libdir, lib)) then
+        if fs.is_file(path.join(libdir, lib)) then
             xvm.add(lib, { type = "lib", bindir = libdir, filename = lib, alias = lib, binding = binding })
         end
     end
     local sysroot = system.subos_sysrootdir()
     -- headers → sysroot/usr/include
     local sys_inc = path.join(sysroot, "usr/include")
-    os.mkdir(sys_inc)
+    fs.mkdir(sys_inc)
     local inc = path.join(idir, "include")
-    if os.isdir(inc) then
+    if fs.is_dir(inc) then
         system.exec(string.format("sh -c 'cp -a \"%s\"/* \"%s\"/ 2>/dev/null || true'", inc, sys_inc))
     end
     -- *.pc → sysroot, prefix 重写到 install dir
     local sys_pc = path.join(sysroot, "usr/lib/pkgconfig")
-    os.mkdir(sys_pc)
+    fs.mkdir(sys_pc)
     -- The payload's .pc files were already pointed at the payload in
     -- install(); copying them verbatim is what keeps that the only answer.
     system.exec(string.format(
@@ -107,7 +109,7 @@ function uninstall()
     xvm.remove(package.name)
     for _, lib in ipairs(libs) do xvm.remove(lib) end
     local sysroot = system.subos_sysrootdir()
-    os.tryrm(path.join(sysroot, "usr/include/pixman-1"))
+    fs.remove(path.join(sysroot, "usr/include/pixman-1"))
     system.exec(string.format("sh -c 'rm -f \"%s\"/usr/lib/pkgconfig/pixman-1.pc'", sysroot))
     return true
 end

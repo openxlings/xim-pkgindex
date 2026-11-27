@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     homepage = "https://gnupg.org/software/libgcrypt/",
     name = "libgcrypt",
@@ -45,6 +45,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- DT_NEEDED outside the payload (readelf -d): libgpg-error.
             deps = { "xim:glibc", "xim:libgpg-error" },
             exports = {
@@ -83,16 +84,15 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mv(package.name .. "-" .. pkginfo.version(), dir)
     selfcontain.seal(dir)
     sysroot.relocate_pkgconfig(dir, "lib/pkgconfig")
-    return os.isfile(dir .. "/lib/libgcrypt.so.20")
+    return fs.is_file(dir .. "/lib/libgcrypt.so.20")
 end
 
 function config()

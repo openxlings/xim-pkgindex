@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "3",
 
     name = "xdesk",
     description = "xdesk: the Luban OS desktop -- a compositor and shell over wlroots, workspaces on WuXian (an infinite plane), the GPU when there is one",
@@ -38,6 +38,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             deps = {
                 "xim:glibc@>=2.44",
                 "xim:gcc-runtime",
@@ -271,6 +272,8 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.elfpatch")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 import("xim.pkgindex.graphics")
 
 -- The versions that link GLES (2026.10.21.1 on): their shim names the stack.
@@ -283,23 +286,20 @@ end
 
 local function have_stack()
     local mesa = pkginfo.dep_install_dir and pkginfo.dep_install_dir("xim:mesa") or nil
-    return mesa and mesa ~= "" and os.isdir(path.join(mesa, "lib"))
+    return mesa and mesa ~= "" and fs.is_dir(path.join(mesa, "lib"))
 end
 
 function install()
     local dir = pkginfo.install_dir()
-    local payload = pkginfo.install_file():replace(".tar.gz", "")
-    if os.isdir(payload) then
-        os.tryrm(dir)
-        os.mv(payload, dir)
+    if fs.is_dir(payload) then
     end
     -- glibc's loader, and the private libraries on the RPATH too.
     elfpatch.set({
         interp_from = "linux-x86_64-glibc",
         extra_rpath = { path.join(dir, "libexec", "lib") },
     })
-    return os.isfile(path.join(dir, "bin", "xdesk"))
-       and os.isfile(path.join(dir, "share", "wayland-sessions", "xdesk-classic.desktop"))
+    return fs.is_file(path.join(dir, "bin", "xdesk"))
+       and fs.is_file(path.join(dir, "share", "wayland-sessions", "xdesk-classic.desktop"))
 end
 
 function config()
@@ -314,7 +314,7 @@ function config()
         xvm.files{ src = "share/wayland-sessions", dst = "share/wayland-sessions", binding = binding }
         xvm.files{ src = "share/xdesk", dst = "share/xdesk", binding = binding }
         -- Its own applications (its settings), where every launcher looks (J9).
-        if os.isdir(path.join(pkginfo.install_dir(), "share", "applications")) then
+        if fs.is_dir(path.join(pkginfo.install_dir(), "share", "applications")) then
             xvm.files{ src = "share/applications", dst = "share/applications", binding = binding }
         end
     end

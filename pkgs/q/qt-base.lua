@@ -32,7 +32,7 @@
 -- byte the same pin; the download, the mirrors and the extraction are
 -- libs/qtsdk.lua's, shared with qt.lua and qt-addons.lua.
 package = {
-    spec = "2",
+    spec = "3",
 
     name = "qt-base",
     description = "Qt 6 qtbase, qttools (moc, uic, rcc, lupdate, lrelease) with the QtQml library they load, and qttranslations, prebuilt, from the official online-installer repository; the widgets-and-console subset of xim:qt",
@@ -113,6 +113,7 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.log")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 import("xim.pkgindex.qtsdk")
 
 local BASE = {
@@ -246,15 +247,15 @@ function install()
     end
 
     local install_dir = pkginfo.install_dir()
-    os.tryrm(install_dir)
-    fs.mkdir_p(install_dir)
+    fs.remove(install_dir)
+    fs.mkdir(install_dir)
 
     if not qtsdk.fetch_and_extract(list, install_dir, marker_path(), "qt-base") then
         return false
     end
 
     qtsdk.ensure_qt_conf(install_dir)
-    if os.host() == "linux" then qtsdk.prune(install_dir, PRUNE_LINUX) end
+    if pkginfo.platform() == "linux" then qtsdk.prune(install_dir, PRUNE_LINUX) end
     qtsdk.mark_runtime(marker_path())
 
     return installed()
@@ -278,41 +279,41 @@ function installed()
     if not qtsdk.runtime_current(marker) then return false end
 
     local d = pkginfo.install_dir()
-    local osname = os.host()
+    local osname = pkginfo.platform()
     local exe = osname == "windows" and ".exe" or ""
 
     -- qtbase's build-time tools: bin/ on windows, libexec/ elsewhere.
     local tools = osname == "windows" and "bin" or "libexec"
-    if not os.isfile(path.join(d, tools, "moc" .. exe)) then return false end
+    if not fs.is_file(path.join(d, tools, "moc" .. exe)) then return false end
     -- qttools' Linguist tools, and the QtQml library they load
-    if not os.isfile(path.join(d, "bin", "lrelease" .. exe)) then return false end
-    if not os.isfile(path.join(d, "bin", "lupdate" .. exe)) then return false end
+    if not fs.is_file(path.join(d, "bin", "lrelease" .. exe)) then return false end
+    if not fs.is_file(path.join(d, "bin", "lupdate" .. exe)) then return false end
     if osname == "windows" then
-        if not os.isfile(path.join(d, "bin", "Qt6Qml.dll")) then return false end
+        if not fs.is_file(path.join(d, "bin", "Qt6Qml.dll")) then return false end
     elseif osname == "linux" then
-        if not os.isfile(path.join(d, "lib", "libQt6Qml.so.6")) then return false end
+        if not fs.is_file(path.join(d, "lib", "libQt6Qml.so.6")) then return false end
     else
-        if not os.isfile(path.join(d, "lib", "QtQml.framework", "Versions", "A", "QtQml")) then
+        if not fs.is_file(path.join(d, "lib", "QtQml.framework", "Versions", "A", "QtQml")) then
             return false
         end
     end
 
     -- qtbase headers and library
     if osname == "macosx" then
-        if not os.isfile(path.join(d, "lib", "QtCore.framework", "Headers", "QString")) then
+        if not fs.is_file(path.join(d, "lib", "QtCore.framework", "Headers", "QString")) then
             return false
         end
-        if not os.isfile(path.join(d, "lib", "QtCore.framework", "QtCore")) then return false end
+        if not fs.is_file(path.join(d, "lib", "QtCore.framework", "QtCore")) then return false end
     else
-        if not os.isfile(path.join(d, "include", "QtCore", "QString")) then return false end
+        if not fs.is_file(path.join(d, "include", "QtCore", "QString")) then return false end
     end
     if osname == "windows" then
-        if not os.isfile(path.join(d, "lib", "Qt6Core.lib")) then return false end
+        if not fs.is_file(path.join(d, "lib", "Qt6Core.lib")) then return false end
     elseif osname == "linux" then
-        if not os.isfile(path.join(d, "lib", "libQt6Core.so.6")) then return false end
+        if not fs.is_file(path.join(d, "lib", "libQt6Core.so.6")) then return false end
         -- ICU, which libQt6Core.so.6 needs beside it (pkgs/q/qt.lua says why
         -- this sentinel exists)
-        if not os.isfile(path.join(d, "lib", "libicuuc.so.73")) then return false end
+        if not fs.is_file(path.join(d, "lib", "libicuuc.so.73")) then return false end
     end
 
     return true

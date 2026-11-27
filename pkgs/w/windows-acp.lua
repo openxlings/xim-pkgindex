@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "3",
     -- base info
     name = "windows-acp",
     description = "ACP: Beta: Use Unicode UTF-8 for worldwide language support",
@@ -23,6 +23,7 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.log")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.system")
 
 function install()
     return true
@@ -37,7 +38,7 @@ function config()
     })
 
     log.info([[run 'windows-acp' to show current status ...]])
-    os.exec("windows-acp")
+    system.exec("windows-acp")
 
     return true
 end

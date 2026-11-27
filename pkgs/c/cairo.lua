@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://cairographics.org",
     name = "cairo",
     description = "2D graphics library (cairo + cairo-gobject, the GTK rendering base)",
@@ -105,6 +105,8 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
@@ -127,7 +129,7 @@ function config()
     xvm.add(package.name)
 
     local bindir = path.join(idir, "bin")
-    if os.isfile(path.join(bindir, "cairo-trace")) then
+    if fs.is_file(path.join(bindir, "cairo-trace")) then
         xvm.add("cairo-trace", { bindir = bindir })
     end
 

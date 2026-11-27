@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     homepage = "https://libusb.info",
     name = "libusb",
@@ -47,6 +47,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- DT_NEEDED outside the payload (readelf -d): libudev.
             deps = { "xim:glibc", "xim:libudev" },
             exports = {
@@ -82,16 +83,15 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mv(package.name .. "-" .. pkginfo.version(), dir)
     selfcontain.seal(dir)
     sysroot.relocate_pkgconfig(dir, "lib/pkgconfig")
-    return os.isfile(dir .. "/lib/libusb-1.0.so.0")
+    return fs.is_file(dir .. "/lib/libusb-1.0.so.0")
 end
 
 function config()

@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     homepage = "https://facebook.github.io/zstd/",
     name = "zstd",
@@ -50,6 +50,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- bin/zstd links libz.so.1 in addition to this payload's own
             -- libzstd.so.1: measured with readelf -d, zstd's gzip-compatible
             -- mode pulls in zlib. libzstd.so.1 itself needs only libc/
@@ -110,6 +111,8 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
@@ -117,8 +120,6 @@ local programs = {"zstd", "zstdcat", "unzstd", "zstdmt", "zstdgrep", "zstdless"}
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mv("zstd-" .. pkginfo.version(), dir)
 
     -- Stamp this payload's own dependency closure (glibc, zlib) onto both
     -- lib/*.so* and bin/*: the default libdirs list is {"lib","lib64"},
@@ -140,7 +141,7 @@ function config()
     -- other five names bind to it, exactly as nasm.lua's ndisasm and
     -- perl.lua's perldoc bind to their package's own entry.
     for _, prog in ipairs(programs) do
-        if os.isfile(path.join(bindir, prog)) then
+        if fs.is_file(path.join(bindir, prog)) then
             if prog == package.name then
                 xvm.add(prog, { bindir = bindir })
             else

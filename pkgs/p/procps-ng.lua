@@ -6,7 +6,7 @@
 -- same names (xlings design 2026-10-19 §20): BusyBox's ps has no -C and few
 -- -o fields. xlings-res/procps-ng on GitHub and GitCode.
 package = {
-    spec = "1",
+    spec = "3",
 
     name = "procps-ng",
     description = "procps-ng: ps, top, free, pgrep, pkill, pidof, uptime, vmstat and watch",
@@ -52,6 +52,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             ["latest"] = { ref = "4.0.5" },
             ["4.0.5"] = {
                 url = "XLINGS_RES",
@@ -66,15 +67,14 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 function install()
     local dir = pkginfo.install_dir()
-    local payload = pkginfo.install_file():replace(".tar.gz", "")
-    if os.isdir(payload) then
-        os.tryrm(dir)
-        os.mv(payload, dir)
+    if fs.is_dir(payload) then
     end
-    return os.isfile(path.join(dir, "bin", "ps"))
+    return fs.is_file(path.join(dir, "bin", "ps"))
 end
 
 function config()

@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     homepage = "https://openprinting.github.io/cups/",
     name = "libcups",
@@ -47,6 +47,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- DT_NEEDED outside the payload (readelf -d): libgssapi_krb5, libkrb5, libk5crypto, libcom_err, libz.
             deps = { "xim:glibc", "xim:krb5", "xim:zlib" },
             exports = {
@@ -86,16 +87,15 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mv(package.name .. "-" .. pkginfo.version(), dir)
     selfcontain.seal(dir)
     sysroot.relocate_pkgconfig(dir, "lib/pkgconfig")
-    return os.isfile(dir .. "/lib/libcups.so.2")
+    return fs.is_file(dir .. "/lib/libcups.so.2")
 end
 
 function config()

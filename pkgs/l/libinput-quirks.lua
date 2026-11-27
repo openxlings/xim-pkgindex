@@ -50,7 +50,7 @@
 -- newer than the library can carry keys it does not understand. Keeping the
 -- versions equal makes the pairing checkable.
 package = {
-    spec = "2",
+    spec = "3",
 
     homepage = "https://www.freedesktop.org/wiki/Software/libinput/",
     name = "libinput-quirks",
@@ -88,18 +88,20 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.log")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 import("xim.pkgindex.graphics")
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
+    fs.remove(dir)
 
     -- `share/libinput`, flat — meson's `install_subdir('quirks', …,
     -- strip_directory : true)` drops the `quirks/` level, and `quirks.c`
     -- scandir()s the directory itself, so the layout is part of the interface
     -- rather than a choice.
     local dst = path.join(dir, graphics.QUIRKS_DIR)
-    os.mkdir(path.directory(dst))
+    fs.mkdir(path.directory(dst))
 
     -- MOVE FIRST, CHECK THE RESULT — do not probe.
     --
@@ -115,13 +117,13 @@ function install()
     -- tarball's top level is `libinput-1.31.3/`, and a package whose archive
     -- has no top level (xkeyboard-config) is handed its contents directly.
     for _, cand in ipairs({"libinput-1.31.3/quirks", "quirks"}) do
-        if not os.isdir(dst) then pcall(os.mv, cand, dst) end
+        if not fs.is_dir(dst) then pcall(fs.move, cand, dst) end
     end
 
     -- Upstream's own `exclude_files` — it is documentation, not a quirk, and
     -- `is_data_file` would skip it anyway. Removed so the directory contains
     -- only what it claims to.
-    os.tryrm(path.join(dst, "README.md"))
+    fs.remove(path.join(dst, "README.md"))
 
     -- The outcome check, and the only one that means anything.
     --
@@ -140,7 +142,7 @@ function install()
     -- 1.2x ships it, as does 1.31.3). Coupling to one filename is worse than a
     -- glob; it is better than no check at all, which is what the restricted
     -- table otherwise leaves.
-    if not os.isdir(dst) or not os.isfile(path.join(dst, "10-generic-keyboard.quirks")) then
+    if not fs.is_dir(dst) or not fs.is_file(path.join(dst, "10-generic-keyboard.quirks")) then
         log.warn("no quirks landed in %s -- libinput would run on its built-in "
                  .. "defaults, which is what this package exists to avoid",
                  graphics.QUIRKS_DIR)

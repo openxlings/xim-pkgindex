@@ -47,7 +47,7 @@
 --   qtwaylandcompositor  linux only (Wayland compositor support; windows and
 --                        macosx have no Wayland compositor to support)
 package = {
-    spec = "2",
+    spec = "3",
 
     name = "qt-addons",
     description = "Qt 6 'Additional Libraries' add-on modules (Qt Charts, Qt Multimedia, Qt WebSockets, Qt 3D, ...), prebuilt from the official online-installer repository; own install prefix, requires xim:qt",
@@ -138,6 +138,7 @@ import("xim.libxpkg.system")
 import("xim.libxpkg.log")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 import("xim.pkgindex.qtsdk")
 
 local ADDONS = {
@@ -677,15 +678,15 @@ function install()
     end
 
     local install_dir = pkginfo.install_dir()
-    os.tryrm(install_dir)
-    fs.mkdir_p(install_dir)
+    fs.remove(install_dir)
+    fs.mkdir(install_dir)
 
     if not qtsdk.fetch_and_extract(list, install_dir, marker_path(), "qt-addons") then
         return false
     end
     -- Linux only: the runtime closure above exists on Linux alone, so Windows
     -- and macOS payloads already on disk stay valid (no 128-160 MB again).
-    if os.host() == "linux" then qtsdk.mark_runtime(marker_path()) end
+    if pkginfo.platform() == "linux" then qtsdk.mark_runtime(marker_path()) end
 
     return installed()
 end
@@ -708,29 +709,29 @@ function installed()
     end
     -- A Linux payload laid out before its runtime closure was declared (no
     -- loader, RUNPATH=$ORIGIN) is not this one.
-    if os.host() == "linux" and not qtsdk.runtime_current(marker) then return false end
+    if pkginfo.platform() == "linux" and not qtsdk.runtime_current(marker) then return false end
 
     local d = pkginfo.install_dir()
-    local osname = os.host()
+    local osname = pkginfo.platform()
 
     -- qtcharts: present on every platform this recipe supports.
     if osname == "windows" then
-        if not os.isfile(path.join(d, "lib", "Qt6Charts.lib")) then return false end
+        if not fs.is_file(path.join(d, "lib", "Qt6Charts.lib")) then return false end
     elseif osname == "linux" then
-        if not os.isfile(path.join(d, "lib", "libQt6Charts.so.6")) then return false end
+        if not fs.is_file(path.join(d, "lib", "libQt6Charts.so.6")) then return false end
     else
-        if not os.isfile(path.join(d, "lib", "QtCharts.framework", "QtCharts")) then return false end
+        if not fs.is_file(path.join(d, "lib", "QtCharts.framework", "QtCharts")) then return false end
     end
 
     -- qt3d: also present on every platform this recipe supports, and built
     -- from an entirely different upstream module than qtcharts -- catches a
     -- 7z extraction that landed one module but not the other.
     if osname == "windows" then
-        if not os.isfile(path.join(d, "lib", "Qt63DCore.lib")) then return false end
+        if not fs.is_file(path.join(d, "lib", "Qt63DCore.lib")) then return false end
     elseif osname == "linux" then
-        if not os.isfile(path.join(d, "lib", "libQt63DCore.so.6")) then return false end
+        if not fs.is_file(path.join(d, "lib", "libQt63DCore.so.6")) then return false end
     else
-        if not os.isfile(path.join(d, "lib", "Qt3DCore.framework", "Qt3DCore")) then return false end
+        if not fs.is_file(path.join(d, "lib", "Qt3DCore.framework", "Qt3DCore")) then return false end
     end
 
     return true

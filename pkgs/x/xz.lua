@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     homepage = "https://tukaani.org/xz/",
     name = "xz",
@@ -49,6 +49,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             deps = {
                 runtime = { "xim:glibc" },
                 build = { "xim:patchelf@0.18.0" },
@@ -115,6 +116,8 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
@@ -122,8 +125,6 @@ local programs = {"xz", "xzcat", "unxz", "lzma", "unlzma", "lzcat", "lzmainfo", 
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mv("xz-" .. pkginfo.version(), dir)
 
     -- Stamp this payload's own dependency closure (glibc) onto both
     -- lib/*.so* and bin/*; see pkgs/z/zstd.lua for why bin/ must be
@@ -145,7 +146,7 @@ function config()
     -- other eight names bind to it, exactly as nasm.lua's ndisasm and
     -- perl.lua's perldoc bind to their package's own entry.
     for _, prog in ipairs(programs) do
-        if os.isfile(path.join(bindir, prog)) then
+        if fs.is_file(path.join(bindir, prog)) then
             if prog == package.name then
                 xvm.add(prog, { bindir = bindir })
             else

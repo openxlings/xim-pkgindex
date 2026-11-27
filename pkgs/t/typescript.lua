@@ -54,7 +54,7 @@
 -- package is published at the same version as the shim.
 
 package = {
-    spec = "2",
+    spec = "3",
 
     name = "typescript",
     description = "TypeScript - the native TypeScript compiler (tsc 7)",
@@ -122,9 +122,11 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 local function binary_name()
-    return is_host("windows") and "tsc.exe" or "tsc"
+    return (pkginfo.platform() == "windows") and "tsc.exe" or "tsc"
 end
 
 function install()
@@ -135,7 +137,7 @@ function install()
     -- leaves a dangling shim.
     local libdir = path.join(pkginfo.install_dir(), "lib")
     local staged = path.join(libdir, binary_name())
-    if os.isfile(staged) then return true end
+    if fs.is_file(staged) then return true end
 
     -- npm's tarball root is `package/`; see ARCHIVE LAYOUT above.
     local candidates = {
@@ -143,14 +145,14 @@ function install()
         path.join(pkginfo.install_dir(), "package", "lib"),
     }
     for _, src in ipairs(candidates) do
-        if os.isfile(path.join(src, binary_name())) then
-            os.tryrm(libdir)
-            os.cp(src, libdir)
+        if fs.is_file(path.join(src, binary_name())) then
+            fs.remove(libdir)
+            fs.copy(src, libdir)
             break
         end
     end
-    os.tryrm(path.join(pkginfo.install_dir(), "package"))
-    return os.isfile(staged)
+    fs.remove(path.join(pkginfo.install_dir(), "package"))
+    return fs.is_file(staged)
 end
 
 function config()

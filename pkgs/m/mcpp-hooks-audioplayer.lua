@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     name = "mcpp-hooks-audioplayer",
     description = "Play embedded audio for mcpp build hooks",
@@ -20,6 +20,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             ["latest"] = { ref = "0.0.3" },
             ["0.0.3"] = {
                 x86_64 = {
@@ -41,6 +42,7 @@ package = {
             },
         },
         windows = {
+            strip = 1,
             ["latest"] = { ref = "0.0.3" },
             ["0.0.3"] = {
                 x86_64 = {
@@ -66,19 +68,16 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 function install()
-    local extracted = pkginfo.install_file()
-        :replace(".tar.gz", "")
-        :replace(".zip", "")
     local install_dir = pkginfo.install_dir()
-    os.tryrm(install_dir)
-    os.mv(extracted, install_dir)
 
-    local executable = os.host() == "windows"
+    local executable = pkginfo.platform() == "windows"
         and "mcpp-hooks-audioplayer.exe"
         or "mcpp-hooks-audioplayer"
-    return os.isfile(path.join(install_dir, executable))
+    return fs.is_file(path.join(install_dir, executable))
 end
 
 function config()

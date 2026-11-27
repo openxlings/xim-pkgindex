@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "3",
 
     -- base info
     name = "fontconfig-user-moyingji",
@@ -21,6 +21,8 @@ package = {
 
 
 import("xim.libxpkg.log")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 local function get_config_file()
     local config_dir = os.getenv("XDG_CONFIG_HOME") or path.join(os.getenv("HOME"), ".config")
@@ -29,7 +31,7 @@ end
 
 function installed()
     local config_file = get_config_file()
-    if os.isfile(config_file) then return true end
+    if fs.is_file(config_file) then return true end
 
     return false
 end
@@ -37,8 +39,8 @@ end
 function install()
     local config_file = get_config_file()
     local dir = path.directory(config_file)
-    if not os.isdir(dir) then os.mkdir(dir) end
-    io.writefile(config_file, content())
+    if not fs.is_dir(dir) then fs.mkdir(dir) end
+    fs.write(config_file, content())
 
     log.warn("已安装字体配置文件：%s", config_file)
     log.warn("可在此处进行自定义字体，或禁用衬线字体等操作，有注释引导操作")
@@ -48,7 +50,7 @@ function install()
 end
 
 function uninstall()
-    os.tryrm(get_config_file())
+    fs.remove(get_config_file())
 
     return true
 end

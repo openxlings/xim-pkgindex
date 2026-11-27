@@ -37,7 +37,7 @@
 -- all unpack into 14.44.35207). The directory name is what `-vcvars_ver` takes,
 -- what build systems report, and what a second toolset would have to differ in.
 package = {
-    spec = "1",
+    spec = "3",
 
     name = "msvc",
     description = "Microsoft Visual C++ compiler toolset (portable, pinned to a toolset build)",
@@ -83,6 +83,8 @@ import("xim.libxpkg.system")
 import("xim.libxpkg.log")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.subos")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 local SDK_DIR_VERSION = "10.0.26100.0"
 
@@ -257,7 +259,7 @@ end
 -- inside a shell string. certutil takes one quoted path and prints the digest
 -- on a line of its own.
 local function sha256_of(file)
-    local out = os.iorun(string.format('certutil -hashfile "%s" SHA256', file)) or ""
+    local out = system.run(string.format('certutil -hashfile "%s" SHA256', file)).out or ""
     for line in out:gmatch("[^\r\n]+") do
         local hex = line:gsub("%s+", ""):lower()
         if #hex == 64 and hex:match("^%x+$") then return hex end
@@ -285,9 +287,9 @@ local function fetch_verified(entry, dir)
     -- An already-present file still has to prove itself. A partial download
     -- from an interrupted run is also "a file that exists", and accepting it
     -- would turn a network blip into a corrupt compiler.
-    if os.isfile(dst) then
+    if fs.is_file(dst) then
         if sha256_of(dst) == want then return true end
-        os.tryrm(dst)
+        fs.remove(dst)
     end
 
     local why = {}
@@ -309,13 +311,13 @@ local function fetch_verified(entry, dir)
         -- install instead of falling through to the next address.
         pcall(system.exec, string.format(
             'curl -fsSL --retry 3 -o "%s" "%s"', dst, url))
-        if os.isfile(dst) then
+        if fs.is_file(dst) then
             local got = sha256_of(dst)
             if got == want then return true end
             -- Same address, wrong bytes. Say so per address: "the mirror is
             -- stale" and "the CDN is down" need different fixes.
             table.insert(why, host_of(url) .. ": sha256 " .. tostring(got))
-            os.tryrm(dst)
+            fs.remove(dst)
         else
             table.insert(why, host_of(url) .. ": no file")
         end
@@ -363,7 +365,7 @@ end
 
 function installed()
     for _, f in ipairs(required_files()) do
-        if not os.isfile(f) then return false end
+        if not fs.is_file(f) then return false end
     end
     -- A payload that still carries vctip.exe was unpacked by a recipe from
     -- BEFORE it was dropped, and it is the one thing that makes this package
@@ -376,7 +378,7 @@ function installed()
     -- not "some payload is here". The two differ exactly when a recipe
     -- changes, which is when it matters.
     for _, d in ipairs(bin_arch_dirs()) do
-        if os.isfile(path.join(d, "vctip.exe")) then return false end
+        if fs.is_file(path.join(d, "vctip.exe")) then return false end
     end
     return true
 end
@@ -384,8 +386,8 @@ end
 function install()
     local idir = pkginfo.install_dir()
     local work = path.join(idir, ".payloads")
-    os.tryrm(idir)
-    os.mkdir(work)
+    fs.remove(idir)
+    fs.mkdir(work)
 
     for _, e in ipairs(payloads()) do
         if not fetch_verified(e, work) then return false end
@@ -433,7 +435,7 @@ function install()
     local ok, err = pcall(function()
         for _, e in ipairs(payloads()) do
             log.info("msvc: unpacking " .. e.name)
-            os.mkdir(stage)
+            fs.mkdir(stage)
             -- The EXE IS NOT QUOTED, and that is not an oversight.
             --
             -- `cmd /c` mangles a line whose first token is quoted when more
@@ -456,7 +458,7 @@ function install()
                                       winpath(stage)))
             -- Everything useful lives under Contents/; the rest is vsix metadata.
             local contents = path.join(stage, "Contents")
-            if os.isdir(contents) then
+            if fs.is_dir(contents) then
                 -- All the payloads unpack into the SAME VC/ tree, so this is a
                 -- merge, not a move. os.cp of a directory INTO an existing one
                 -- of the same name nests it -- measured on windows-sdk, which
@@ -467,14 +469,14 @@ function install()
                 system.exec(string.format('xcopy "%s\\*" "%s\\" /E /I /Y /Q',
                                           winpath(contents), winpath(idir)))
             end
-            os.tryrm(stage)
+            fs.remove(stage)
         end
     end)
     if not ok then
         log.error("msvc: unpacking failed: " .. tostring(err))
         return false
     end
-    os.tryrm(work)
+    fs.remove(work)
 
     -- Drop vctip.exe: it is a background telemetry uploader that cl.exe
     -- spawns, and it makes the toolset UNINSTALLABLE.
@@ -501,7 +503,7 @@ function install()
     -- because they compiled something, so this deletion is not purely
     -- mechanical convenience.
     for _, d in ipairs(bin_arch_dirs()) do
-        os.tryrm(path.join(d, "vctip.exe"))
+        fs.remove(path.join(d, "vctip.exe"))
     end
 
     if not installed() then
@@ -510,7 +512,7 @@ function install()
         -- was neither of them.
         local missing = {}
         for _, f in ipairs(required_files()) do
-            if not os.isfile(f) then table.insert(missing, f) end
+            if not fs.is_file(f) then table.insert(missing, f) end
         end
         log.error("msvc: unpacked, but these are not where they should be:\n    " ..
                   table.concat(missing, "\n    ") ..

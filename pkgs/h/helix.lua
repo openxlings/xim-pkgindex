@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     name = "helix",
     description = "A post-modern modal text editor",
     homepage = "https://helix-editor.com",
@@ -40,6 +40,7 @@ package = {
     },
     xpm = {
         linux = {
+            strip = 1,
             source = "https://github.com/helix-editor/helix/releases/download/${version}/helix-${version}-${arch}-linux.tar.xz",
             -- Measured ELF closure: libc, libm and libgcc_s; no bundled loader.
             deps = { runtime = { "xim:glibc@>=2.34", "xim:gcc-runtime@15.1.0" } },
@@ -52,6 +53,7 @@ package = {
             },
         },
         macosx = {
+            strip = 1,
             source = "https://github.com/helix-editor/helix/releases/download/${version}/helix-${version}-${arch}-macos.tar.xz",
             ["latest"] = { ref = "25.07.1" },
             ["25.07.1"] = {
@@ -62,6 +64,7 @@ package = {
             },
         },
         windows = {
+            strip = 1,
             source = "https://github.com/helix-editor/helix/releases/download/${version}/helix-${version}-${arch}-windows.zip",
             ["latest"] = { ref = "25.07.1" },
             ["25.07.1"] = {
@@ -75,17 +78,15 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
 
 -- Preserve runtime/ beside hx: Helix discovers themes, queries and grammars
 -- relative to its executable, without setting a global HELIX_RUNTIME.
 function install()
-    local extracted = pkginfo.install_file():gsub("%.tar%.xz$", ""):gsub("%.zip$", "")
-    os.tryrm(pkginfo.install_dir())
-    os.mv(extracted, pkginfo.install_dir())
     local root = pkginfo.install_dir()
-    return (os.isfile(root .. "/hx") or os.isfile(root .. "/hx.exe"))
-        and os.isfile(root .. "/runtime/queries/rust/highlights.scm")
-        and os.isfile(root .. "/runtime/themes/base16_default_dark.toml")
+    return (fs.is_file(root .. "/hx") or fs.is_file(root .. "/hx.exe"))
+        and fs.is_file(root .. "/runtime/queries/rust/highlights.scm")
+        and fs.is_file(root .. "/runtime/themes/base16_default_dark.toml")
 end
 
 function config()

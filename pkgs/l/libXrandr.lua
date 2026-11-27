@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     homepage = "https://www.x.org",
     name = "libXrandr",
@@ -38,6 +38,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             deps = { "xim:libXext@>=1.3", "xim:libXrender@>=0.9", "xim:glibc", "xim:libX11" },
             -- elfpatch reads this from each dependency and writes the consumer's
             -- RPATH, which is what makes the stack resolve without anyone
@@ -60,13 +61,12 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mv("libXrandr-1.5.4", dir)
 
     -- Stamp this payload's own dependency closure onto its libraries, so
     -- they resolve from our payloads and not from the host's ld.so.cache.

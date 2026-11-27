@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     homepage = "http://thrysoee.dk/editline/",
     name = "libedit",
@@ -44,6 +44,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- libedit.so.0 carries DT_NEEDED libncurses.so.6 and
             -- libtinfo.so.6 -- the non-widec sonames, matching what
             -- pkgs/n/ncurses.lua's --with-termlib build provides (see
@@ -107,8 +108,6 @@ import("xim.pkgindex.selfcontain")
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mv("libedit-" .. pkginfo.version(), dir)
 
     selfcontain.seal(dir)
 

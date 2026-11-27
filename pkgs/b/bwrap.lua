@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "3",
 
     name = "bwrap",
     description = "Bubblewrap — namespace-based sandboxing tool",
@@ -73,6 +73,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
 
             ["latest"] = { ref = "0.11.2" },
             ["0.11.2"] = {
@@ -91,16 +92,8 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
+import("xim.libxpkg.path")
 
-function install()
-    os.tryrm(pkginfo.install_dir())
-    local bwrapdir = pkginfo.install_file()
-        :replace(".zip", "")
-        :replace(".tar.gz", "")
-    os.mv(bwrapdir, pkginfo.install_dir())
-
-    return true
-end
 
 function config()
     xvm.add("bwrap", { bindir = path.join(pkginfo.install_dir(), "bin") })

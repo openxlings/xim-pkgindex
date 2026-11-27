@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     homepage = "https://gitlab.gnome.org/GNOME/at-spi2-atk",
     name = "at-spi2-atk",
@@ -44,6 +44,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- DT_NEEDED outside the payload (readelf -d): libatk-1.0, libatspi, libdbus-1, libglib-2.0, libgmodule-2.0, libgobject-2.0.
             deps = { "xim:glibc", "xim:glib", "xim:dbus", "xim:atk", "xim:at-spi2-core" },
             exports = {
@@ -79,16 +80,15 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mv(package.name .. "-" .. pkginfo.version(), dir)
     selfcontain.seal(dir)
     sysroot.relocate_pkgconfig(dir, "lib/pkgconfig")
-    return os.isfile(dir .. "/lib/libatk-bridge-2.0.so.0")
+    return fs.is_file(dir .. "/lib/libatk-bridge-2.0.so.0")
 end
 
 function config()

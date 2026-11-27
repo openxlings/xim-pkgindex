@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     homepage = "https://www.freedesktop.org/wiki/Software/dbus/",
     name = "dbus",
@@ -47,6 +47,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- libdbus-1.so.3 needs libc.so.6 and libpthread.so.0 only, at
             -- GLIBC_2.17 at most (measured with readelf -d and objdump -T).
             deps = { "xim:glibc" },
@@ -99,8 +100,6 @@ import("xim.pkgindex.selfcontain")
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mv("dbus-" .. pkginfo.version(), dir)
     selfcontain.seal(dir)
     sysroot.relocate_pkgconfig(dir, "lib/pkgconfig")
     return true

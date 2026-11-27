@@ -8,7 +8,7 @@
 -- nginx.org sources: upstream distributes source tarballs only for POSIX, and
 -- third-party static prebuilts without reproducible provenance are avoided.
 package = {
-    spec = "2",
+    spec = "3",
 
     name = "nginx",
     description = "nginx - high-performance HTTP web server, reverse proxy and load balancer (official stable build)",

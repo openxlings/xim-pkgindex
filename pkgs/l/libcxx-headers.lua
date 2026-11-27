@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://libcxx.llvm.org/",
 
     name = "libcxx-headers",
@@ -103,14 +103,17 @@ package = {
             CN = "https://gitcode.com/xlings-res/libcxx-headers/releases/download/${version}/libcxx-headers-${version}.tar.xz",
         },
         linux = {
+            strip = 1,
             ["latest"] = { ref = "22.1.8" },
             ["22.1.8"] = { sha256 = { x86_64 = "e3e33e3d8b991810f0645221241a6ae55023bd8da10bb5febcd98098cc8d8982", aarch64 = "e3e33e3d8b991810f0645221241a6ae55023bd8da10bb5febcd98098cc8d8982" } },
         },
         macosx = {
+            strip = 1,
             ["latest"] = { ref = "22.1.8" },
             ["22.1.8"] = { sha256 = "e3e33e3d8b991810f0645221241a6ae55023bd8da10bb5febcd98098cc8d8982" },
         },
         windows = {
+            strip = 1,
             ["latest"] = { ref = "22.1.8" },
             ["22.1.8"] = { sha256 = "e3e33e3d8b991810f0645221241a6ae55023bd8da10bb5febcd98098cc8d8982" },
         },
@@ -119,18 +122,17 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
 
     -- One fixed archive name, so unlike a per-host package there is nothing to
     -- derive from the platform here.
-    local extracted = pkginfo.install_file():replace(".tar.xz", "")
-    if not os.isdir(extracted) then
-        raise("libcxx-headers payload not found at " .. extracted)
+    if not fs.is_dir(extracted) then
+        error("libcxx-headers payload not found at " .. extracted)
     end
-    os.mv(extracted, dir)
 
     -- ⚠️ ASSERT THE TWO HALVES SEPARATELY, BECAUSE A CONSUMER NEEDS BOTH AND
     -- THE SECOND IS EASY TO LEAVE OUT WHEN REPACKAGING.
@@ -140,11 +142,11 @@ function install()
     -- the standard library reads it rather than writing its own -- an export
     -- table naming absent declarations is an error in the module interface, not
     -- in the consumer.
-    if not os.isfile(path.join(dir, "include", "c++", "v1", "algorithm")) then
-        raise("libcxx-headers payload is missing include/c++/v1/algorithm")
+    if not fs.is_file(path.join(dir, "include", "c++", "v1", "algorithm")) then
+        error("libcxx-headers payload is missing include/c++/v1/algorithm")
     end
-    if not os.isfile(path.join(dir, "share", "libc++", "v1", "std", "array.inc")) then
-        raise("libcxx-headers payload is missing share/libc++/v1/std/array.inc")
+    if not fs.is_file(path.join(dir, "share", "libc++", "v1", "std", "array.inc")) then
+        error("libcxx-headers payload is missing share/libc++/v1/std/array.inc")
     end
 
     return true

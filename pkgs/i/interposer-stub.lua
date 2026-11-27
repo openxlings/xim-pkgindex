@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     -- Explicit, because a consumer in the SAME PR names it `xim:`.
     --
@@ -54,6 +54,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- Why a package at all: an interposer is produced by patchelf,
             -- and patchelf EDITS objects rather than creating them. There is
             -- no compiler at install time, so the object it starts from has
@@ -84,6 +85,8 @@ package = {
 import("xim.libxpkg.log")
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 function install()
     -- The tarball is one directory `interposer-stub-<ver>-linux-<arch>/`
@@ -91,11 +94,9 @@ function install()
     -- convention, so the stock move works. Everything that makes it an
     -- interposer is written later by patchelf, per consumer.
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mv(pkginfo.install_file():replace(".tar.gz", ""), dir)
 
     local stub = path.join(dir, "lib", "interposer-stub.so")
-    if not os.isfile(stub) then
+    if not fs.is_file(stub) then
         -- Name what WAS there. "not found" alone cannot tell a bad archive
         -- from an extraction that landed elsewhere, and an interposer built
         -- from a missing stub fails at dlopen with nothing naming this
@@ -104,7 +105,7 @@ function install()
         for _, e in ipairs(os.filedirs(path.join(dir, "*"))) do
             table.insert(seen, path.filename(e))
         end
-        raise("interposer-stub: lib/interposer-stub.so is not in the payload at "
+        error("interposer-stub: lib/interposer-stub.so is not in the payload at "
               .. dir .. "; found: "
               .. (#seen > 0 and table.concat(seen, ", ") or "<nothing>"))
     end

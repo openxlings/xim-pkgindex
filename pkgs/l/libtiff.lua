@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "http://www.simplesystems.org/libtiff/",
     name = "libtiff",
     description = "TIFF library and utilities (libtiff, libtiffxx and the tiff* tools)",
@@ -80,6 +80,7 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 

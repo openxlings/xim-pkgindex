@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     homepage = "https://aomedia.googlesource.com/aom",
     name = "aom",
@@ -19,6 +19,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- libaom.so.3 needs libc, libm and libpthread (readelf -d), GLIBC_2.17 at most.
             deps = { "xim:glibc" },
             exports = {
@@ -58,8 +59,6 @@ import("xim.pkgindex.selfcontain")
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mv("aom-" .. pkginfo.version(), dir)
     selfcontain.seal(dir)
     sysroot.relocate_pkgconfig(dir, "lib/pkgconfig")
     return true

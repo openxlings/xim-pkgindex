@@ -18,7 +18,7 @@
 -- The image is the x86_64 guest, booted by qemu-system-x86_64 with the host's acceleration
 -- where the host is x86_64.
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://www.netbsd.org/",
     name = "netbsd-disk-image",
     description = "NetBSD 10.2 (amd64), the official live image with a serial console, as a qcow2 disk for emulator runners; with the dirun profile that boots it",
@@ -37,6 +37,7 @@ package = {
             CN = "https://gitcode.com/xlings-res/netbsd-disk-image/releases/download/${version}/netbsd-disk-image-${version}.tar.xz",
         },
         linux = {
+            strip = 1,
             ["latest"] = { ref = "10.2-1" },
             ["10.2-1"] = {
                 -- r1: the files are copied to a writable /tmp/dirun, where the command runs (its working directory).
@@ -50,6 +51,7 @@ package = {
             ["10.2"] = { sha256 = { x86_64 = "474d0b5be9e14002e4cb3f6399c63c2fe20c6b4a82413f176ecda6a5f96f0a6a" } },
         },
         macosx = {
+            strip = 1,
             ["latest"] = { ref = "10.2-1" },
             ["10.2-1"] = {
                 -- r1: the files are copied to a writable /tmp/dirun, where the command runs (its working directory).
@@ -67,6 +69,8 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 -- How this image boots and runs a command (dirun's profile format).
 local profile = [=[
@@ -113,14 +117,11 @@ report = "/tmp/dirun-mtest.ndjson"
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    local extracted = pkginfo.install_file():replace(".tar.xz", "")
-    if not os.isdir(extracted) then
-        raise("netbsd-disk-image payload not found at " .. extracted)
+    if not fs.is_dir(extracted) then
+        error("netbsd-disk-image payload not found at " .. extracted)
     end
-    os.mv(extracted, dir)
-    io.writefile(path.join(dir, "dirun.toml"), profile)
-    return os.isfile(path.join(dir, "netbsd-10.2.qcow2"))
+    fs.write(path.join(dir, "dirun.toml"), profile)
+    return fs.is_file(path.join(dir, "netbsd-10.2.qcow2"))
 end
 
 -- Data, not a program: the package name is registered so a home knows it has it; a

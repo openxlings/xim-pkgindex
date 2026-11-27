@@ -8,7 +8,7 @@ local versions = {
 }
 
 package = {
-    spec = "1",
+    spec = "3",
 
     -- base info
     name = "github-notifications-clear",
@@ -33,17 +33,18 @@ package = {
 
 import("xim.libxpkg.json")
 import("xim.libxpkg.log")
+import("xim.libxpkg.system")
 
 function xpkg_main(person_access_token)
     if not person_access_token then
         log.error("need provide your github PERSONAL_ACCESS_TOKEN(PAT Classic)")
-        cprint("\n\t${bright dim cyan}github-notifications-clear ${green}PERSONAL_ACCESS_TOKEN\n")
+        log.info("\n\t${bright dim cyan}github-notifications-clear ${green}PERSONAL_ACCESS_TOKEN\n")
         log.warn(" -> https://github.com/settings/tokens <-")
         return
     end
 
     -- Check curl is available
-    local curl_check = os.iorun("which curl 2>/dev/null") or os.iorun("where curl 2>nul")
+    local curl_check = system.run("which curl 2>/dev/null").out or system.run("where curl 2>nul").out
     if not curl_check or curl_check:trim() == "" then
         log.error("curl not found, please install curl first")
         return
@@ -51,20 +52,20 @@ function xpkg_main(person_access_token)
 
     log.info("start get unread message list...")
 
-    local unread_msg_list_json = os.iorun(string.format([[curl -s -H "Authorization: token %s" https://api.github.com/notifications]],
+    local unread_msg_list_json = system.run(string.format([[curl -s -H "Authorization: token %s" https://api.github.com/notifications]],
         person_access_token
-    ))
+    )).out
 
-    cprint(unread_msg_list_json)
+    log.info(unread_msg_list_json)
 
     local unread_msg_list = json.decode(unread_msg_list_json)
 
     for _, msg in ipairs(unread_msg_list) do
         log.info("try to clearing notification: [ %s, %s ]", msg.id, msg.subject.title)
-        local response = os.iorun(string.format([[curl -s -X DELETE -H "Authorization: token %s" https://api.github.com/notifications/threads/%s]],
+        local response = system.run(string.format([[curl -s -X DELETE -H "Authorization: token %s" https://api.github.com/notifications/threads/%s]],
             person_access_token, msg.id
-        ))
-        cprint("\n" .. tostring(response) .. "\n")
+        )).out
+        log.info("\n" .. tostring(response) .. "\n")
     end
 
     log.info("All notifications cleared")

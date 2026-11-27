@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://gitlab.gnome.org/GNOME/libsoup",
     name = "libsoup",
     description = "HTTP client/server library for GLib (libsoup-3.0, GTK/GNOME stack)",
@@ -75,6 +75,7 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 

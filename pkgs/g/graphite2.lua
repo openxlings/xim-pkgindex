@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     homepage = "https://graphite.sil.org",
     name = "graphite2",
@@ -40,6 +40,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- libc and nothing else: graphite2 is C++ but is built without
             -- exceptions or RTTI and does not link libstdc++, so this needs
             -- no gcc-runtime. Checked with readelf, not assumed.
@@ -68,13 +69,12 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mv("graphite2-" .. pkginfo.version(), dir)
 
     -- Stamp this payload's own dependency closure onto its libraries, so they
     -- resolve from our payloads and not from the host's ld.so.cache.

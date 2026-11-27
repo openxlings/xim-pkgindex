@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://gitlab.gnome.org/GNOME/glib",
     name = "glib",
     description = "Low-level core library (GLib/GObject/GIO)",
@@ -102,6 +102,8 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
@@ -142,8 +144,8 @@ function install()
     -- real file from its own build.
     local pcdir = path.join(pkginfo.install_dir(), "lib", "pkgconfig")
     local noexport = path.join(pcdir, "gmodule-no-export-2.0.pc")
-    if os.isdir(pcdir) and not os.isfile(noexport) then
-        io.writefile(noexport, string.format([[
+    if fs.is_dir(pcdir) and not fs.is_file(noexport) then
+        fs.write(noexport, string.format([[
 prefix=/usr
 includedir=${prefix}/include
 libdir=${prefix}/lib
@@ -184,9 +186,9 @@ function config()
     -- and a version test here would have to be updated for every payload that
     -- follows.
     local bindir = path.join(idir, "bin")
-    if os.isdir(bindir) then
+    if fs.is_dir(bindir) then
         for _, tool in ipairs(package.programs or {}) do
-            if os.isfile(path.join(bindir, tool)) then
+            if fs.is_file(path.join(bindir, tool)) then
                 xvm.add(tool, { bindir = bindir })
             end
         end

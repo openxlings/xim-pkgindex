@@ -4,7 +4,7 @@ function __mingw_cn_mirror_url(version)
 end
 
 package = {
-    spec = "1",
+    spec = "3",
     -- base info
     name = "mingw-w64",
     description = "A complete runtime environment for GCC & LLVM for Windows",
@@ -27,6 +27,7 @@ package = {
 
     xpm = {
         windows = {
+            strip = 1,
             ["latest"] = { ref = "13.0.0" },
             ["13.0.0"] = {
                 url = {
@@ -44,6 +45,8 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.log")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.system")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 local gcc_version_map = {
     ["13.0.0"] = "15.1.0",
@@ -51,14 +54,9 @@ local gcc_version_map = {
 
 function installed()
     local installdir = pkginfo.install_dir()
-    return os.isfile(path.join(installdir, "version_info.txt"))
+    return fs.is_file(path.join(installdir, "version_info.txt"))
 end
 
-function install()
-    os.tryrm(pkginfo.install_dir())
-    os.mv("mingw64", pkginfo.install_dir())
-    return true
-end
 
 function config()
     local mingw_bindir = path.join(pkginfo.install_dir(), "bin")
@@ -144,14 +142,14 @@ function __config_mingw_bin(bin_path)
 
     -- 1. set MINGW_BIN env
     log.info("set MINGW_BIN -> %s", bin_path)
-    io.writefile(tmp_bat_script, string.format([[setx MINGW_BIN "%s"]], bin_path))
+    fs.write(tmp_bat_script, string.format([[setx MINGW_BIN "%s"]], bin_path))
     system.exec(tmp_bat_script)
 
     -- 2. add MINGW_BIN to PATH
     local path_env = os.getenv("PATH")
     if not path_env:find("MINGW_BIN", 1, true) then
         log.warn("MINGW_BIN not found in PATH, adding it...")
-        io.writefile(tmp_bat_script, [[setx PATH "%%MINGW_BIN%%;%PATH%"]])
+        fs.write(tmp_bat_script, [[setx PATH "%%MINGW_BIN%%;%PATH%"]])
         system.exec(tmp_bat_script)
     end
 end

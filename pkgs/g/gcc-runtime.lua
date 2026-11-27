@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "3",
 
     homepage = "https://gcc.gnu.org",
     name = "gcc-runtime",
@@ -59,6 +59,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- Tracks GCC main version. libstdc++ ABI is forward-
             -- compatible (versioned symbols GLIBCXX_3.4.x), so a single
             -- modern gcc-runtime covers all consumers.
@@ -113,9 +114,6 @@ function install()
     -- at build time, so the consumer's RPATH (set by elfpatch via
     -- exports.runtime.libdirs) is what ld.so uses to resolve transitive
     -- deps (libc/libm via xim:glibc).
-    local srcdir = pkginfo.install_file():replace(".tar.gz", "")
-    os.tryrm(pkginfo.install_dir())
-    os.mv(srcdir, pkginfo.install_dir())
 
     -- Stamp this payload's own dependency closure onto its libraries, so they
     -- resolve from our payloads and not from the host's ld.so.cache.

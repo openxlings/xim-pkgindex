@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://www.gnu.org/software/libc/",
 
     name = "aarch64-linux-gnu-sysroot",
@@ -86,6 +86,7 @@ package = {
             CN = "https://gitcode.com/xlings-res/aarch64-linux-gnu-sysroot/releases/download/${version}/aarch64-linux-gnu-sysroot-${version}.tar.xz",
         },
         linux = {
+            strip = 1,
             ["latest"] = { ref = "2.44.3" },
             ["2.44.3"] = {
                 revision = 3,
@@ -100,6 +101,7 @@ package = {
             },
         },
         macosx = {
+            strip = 1,
             ["latest"] = { ref = "2.44.3" },
             ["2.44.3"] = {
                 revision = 3,
@@ -111,6 +113,7 @@ package = {
             },
         },
         windows = {
+            strip = 1,
             ["latest"] = { ref = "2.44.3" },
             ["2.44.3"] = {
                 revision = 3,
@@ -126,6 +129,8 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 -- What a C link, a C++ link and `import std` each read first, by the names
 -- that are files of the archive on every host (the names beside them at the
@@ -149,15 +154,12 @@ local required = {
 -- too deep, and only the recipe's own verify tests said so).
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    local extracted = pkginfo.install_file():replace(".tar.xz", "")
-    if not os.isdir(extracted) then
-        raise("aarch64-linux-gnu-sysroot payload not found at " .. extracted)
+    if not fs.is_dir(extracted) then
+        error("aarch64-linux-gnu-sysroot payload not found at " .. extracted)
     end
-    os.mv(extracted, dir)
     for _, f in ipairs(required) do
-        if not os.isfile(path.join(dir, f)) then
-            raise("aarch64-linux-gnu-sysroot payload is missing " .. f)
+        if not fs.is_file(path.join(dir, f)) then
+            error("aarch64-linux-gnu-sysroot payload is missing " .. f)
         end
     end
     return true

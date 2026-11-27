@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "3",
     -- base info
     name = "wsl-ubuntu",
     description = "Windows Subsystem for Linux (WSL) Ubuntu",
@@ -21,12 +21,12 @@ package = {
 }
 
 function installed()
-    local output = os.iorun("wsl --list --verbose")
+    local output = system.run("wsl --list --verbose").out
     return string.find(output, "Ubuntu", 1, true) ~= nil
 end
 
 function install()
-    os.exec("wsl --install -d Ubuntu")
+    system.exec("wsl --install -d Ubuntu")
 
     log.debug("\n\n  ${yellow}Note${clear}: maybe need to restart your computer to complete WSL installation")
     log.debug("  ${yellow}注意${clear}: 可能需要重启让WSL安装和配置生效\n\n")
@@ -37,11 +37,12 @@ function install()
 end
 
 function uninstall()
-    os.exec("wsl --unregister Ubuntu")
+    system.exec("wsl --unregister Ubuntu")
     return true
 end
 
 import("xim.libxpkg.log")
+import("xim.libxpkg.system")
 
 function guide_wsl_setup()
     log.debug([[

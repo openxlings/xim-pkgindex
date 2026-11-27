@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     name = "gost",
     description = "GO Simple Tunnel: a network proxy and tunnel tool",
     homepage = "https://gost.run",
@@ -83,12 +83,13 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
 
 -- Archives are flat; default extraction retains the executable, license and
 -- documentation. No daemon, service or user configuration is installed.
 function config()
     local root = pkginfo.install_dir()
-    if not os.isfile(root .. "/gost") and not os.isfile(root .. "/gost.exe") then
+    if not fs.is_file(root .. "/gost") and not fs.is_file(root .. "/gost.exe") then
         error("gost executable is missing from " .. root)
     end
     xvm.add("gost", { bindir = root })

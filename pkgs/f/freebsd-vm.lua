@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
     homepage = "https://www.freebsd.org/",
 
     name = "freebsd-vm",

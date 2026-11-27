@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     homepage = "https://icu.unicode.org/",
     name = "icu",
@@ -47,6 +47,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- libicui18n/io/tu/uc all carry DT_NEEDED libstdc++.so.6 and
             -- libgcc_s.so.1 (ICU's public API is C, its implementation is
             -- C++). Both sonames are provided by xim:gcc-runtime, confirmed
@@ -127,8 +128,6 @@ import("xim.pkgindex.selfcontain")
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mv("icu-" .. pkginfo.version(), dir)
 
     selfcontain.seal(dir)
 

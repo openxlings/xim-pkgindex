@@ -54,7 +54,7 @@ class TestStatic:
         _run_lua('''
 import = function() end
 dofile(arg[1])
-assert(package.spec == "2")
+assert(package.spec == "3")
 assert(package.name == "redis")
 assert(package.xvm_enable == true)
 assert(package.ci and package.ci.mirror == true)

@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "3",
     -- base info
 
     homepage = "https://github.com/openxlings/xim-pkgindex",
@@ -38,18 +38,18 @@ import("xim.libxpkg.system")
 import("xim.libxpkg.pkgmanager")
 
 function installed()
-    if os.host() == "macosx" then
-        local output = os.iorun("gcc --version")
+    if pkginfo.platform() == "macosx" then
+        local output = system.run("gcc --version").out
         if not output then
-            output = os.iorun("clang --version")
+            output = system.run("clang --version").out
         end
         return output ~= nil
     elseif pkginfo.version() == "msvc" then
         -- Check for MSVC cl.exe via vswhere or PATH
-        local output = os.iorun("where cl 2>nul") or os.iorun("cl 2>&1")
+        local output = system.run("where cl 2>nul").out or system.run("cl 2>&1").out
         return output ~= nil and output ~= ""
     elseif pkginfo.version() == "mingw" or pkginfo.version() == "gnu" then
-        local output = os.iorun("gcc --version")
+        local output = system.run("gcc --version").out
         return output ~= nil and string.find(output:trim(), "gcc", 1, true) ~= nil
     else
         return true
@@ -57,7 +57,7 @@ function installed()
 end
 
 function install()
-    if os.host() == "macosx" then
+    if pkginfo.platform() == "macosx" then
         pkgmanager.install("gcc")
     elseif pkginfo.version() == "msvc" then
         pkgmanager.install("msvc@2022")
@@ -68,14 +68,14 @@ function install()
 end
 
 function uninstall()
-    if os.host() == "macosx" then
-        pkgmanager.uninstall("gcc")
+    if pkginfo.platform() == "macosx" then
+        pkgmanager.remove("gcc")
     elseif pkginfo.version() == "msvc" then
-        pkgmanager.uninstall("msvc@2022")
+        pkgmanager.remove("msvc@2022")
     elseif pkginfo.version() == "mingw" then
-        pkgmanager.uninstall("mingw-w64@13")
+        pkgmanager.remove("mingw-w64@13")
     elseif pkginfo.version() == "gnu" then
-        pkgmanager.uninstall("gcc")
+        pkgmanager.remove("gcc")
     end
     return true
 end

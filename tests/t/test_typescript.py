@@ -98,8 +98,8 @@ class TestStatic:
         """tsc finds lib.*.d.ts next to itself: the whole package/lib is installed."""
         assert '"tsc.exe"' in code
         assert 'path.join("package", "lib")' in code
-        assert 'os.cp(src, libdir)' in code
-        assert 'os.isfile(staged)' in code
+        assert 'fs.copy(src, libdir)' in code
+        assert 'fs.is_file(staged)' in code
 
 
 class TestIndex:

@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "3",
 
     name = "syslinux",
     description = "SYSLINUX bootloader collection (isolinux, pxelinux, extlinux + EFI loaders)",
@@ -36,6 +36,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             ["latest"] = { ref = "6.03" },
             ["6.03"] = {
                 url = "https://www.kernel.org/pub/linux/utils/boot/syslinux/syslinux-6.03.tar.xz",
@@ -48,25 +49,25 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
+import("xim.libxpkg.system")
 
 local host_installers = { "extlinux", "syslinux", "syslinux-nomtools" }
 
 function install()
     -- Tarball extracts to syslinux-<ver>/ at the runtime download dir.
-    local srcdir = pkginfo.install_file():replace(".tar.xz", "")
-    os.tryrm(pkginfo.install_dir())
-    os.mv(srcdir, pkginfo.install_dir())
 
     -- Surface the three host installer ELFs under a single bindir so
     -- xvm can shim them — upstream parks them under bios/extlinux/ and
     -- bios/linux/, neither of which is conventional.
     local bindir = path.join(pkginfo.install_dir(), "bin")
-    os.mkdir(bindir)
-    os.cp(path.join(pkginfo.install_dir(), "bios/extlinux/extlinux"),     path.join(bindir, "extlinux"))
-    os.cp(path.join(pkginfo.install_dir(), "bios/linux/syslinux"),         path.join(bindir, "syslinux"))
-    os.cp(path.join(pkginfo.install_dir(), "bios/linux/syslinux-nomtools"), path.join(bindir, "syslinux-nomtools"))
+    fs.mkdir(bindir)
+    fs.copy(path.join(pkginfo.install_dir(), "bios/extlinux/extlinux"),     path.join(bindir, "extlinux"), { replace = true })
+    fs.copy(path.join(pkginfo.install_dir(), "bios/linux/syslinux"),         path.join(bindir, "syslinux"), { replace = true })
+    fs.copy(path.join(pkginfo.install_dir(), "bios/linux/syslinux-nomtools"), path.join(bindir, "syslinux-nomtools"), { replace = true })
     for _, p in ipairs(host_installers) do
-        os.execute('chmod +x "' .. path.join(bindir, p) .. '"')
+        system.run('chmod +x "' .. path.join(bindir, p) .. '"')
     end
     return true
 end

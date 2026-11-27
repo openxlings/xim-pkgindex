@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "3",
 
     name = "patchelf",
     description = "ELF patch tool for interpreter and RPATH",
@@ -36,6 +36,7 @@ package = {
     --   CN     → gitcode.com/xlings-res/patchelf/releases/download/<ver>/...
     xpm = {
         linux = {
+            strip = 1,
 
             ["latest"] = { ref = "0.18.0" },
             ["0.18.0"] = {
@@ -60,15 +61,8 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.path")
 
-function install()
-    os.tryrm(pkginfo.install_dir())
-    local patchelfdir = pkginfo.install_file()
-        :replace(".zip", "")
-        :replace(".tar.gz", "")
-    os.mv(patchelfdir, pkginfo.install_dir())
-    return true
-end
 
 function config()
     xvm.add("patchelf", { bindir = path.join(pkginfo.install_dir(), "bin") })

@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     homepage = "https://www.alsa-project.org",
     name = "alsa-lib",
@@ -53,6 +53,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             -- Just glibc, and measured rather than assumed:
             --
             --   objdump -p lib/libasound.so.2.0.0 | grep NEEDED
@@ -81,18 +82,18 @@ import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 import("xim.pkgindex.sysroot")
 import("xim.pkgindex.selfcontain")
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mv("alsa-lib-1.2.11", dir)
 
     -- The SONAME libjsound.so asks for. The `.so` dev symlink existing says
     -- nothing about whether the runtime name resolves.
-    if not os.isfile(path.join(dir, "lib", "libasound.so.2")) then
-        raise("alsa-lib payload has no lib/libasound.so.2 -- that is the SONAME "
+    if not fs.is_file(path.join(dir, "lib", "libasound.so.2")) then
+        error("alsa-lib payload has no lib/libasound.so.2 -- that is the SONAME "
               .. "libjsound.so has a DT_NEEDED on")
     end
 

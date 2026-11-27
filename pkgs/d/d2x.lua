@@ -7,7 +7,7 @@ package = {
     -- others -- which reads as `<pkg>@<ver> not found` on the platforms that
     -- lack it, against a file that contains the version string.
     platform_versions_diverge = true,
-    spec = "1",
+    spec = "3",
 
     -- base info
     name = "d2x",
@@ -32,6 +32,7 @@ package = {
 
     xpm = {
         windows = {
+            strip = 1,
             ["latest"] = { ref = "2026.10.21.1" },
             ["2026.10.21.1"] = {
                 url = "XLINGS_RES",
@@ -55,6 +56,7 @@ package = {
             ["0.1.1"] = "XLINGS_RES",
         },
         linux = {
+            strip = 1,
             deps = { "xim:glibc@>=2.39", "xim:openssl@3.1.5" },
             ["latest"] = { ref = "2026.10.21.1" },
             ["2026.10.21.1"] = {
@@ -107,6 +109,7 @@ package = {
             },
         },
         macosx = {
+            strip = 1,
             ["latest"] = { ref = "2026.10.21.1" },
             ["2026.10.21.1"] = {
                 url = "XLINGS_RES",
@@ -136,15 +139,6 @@ import("xim.libxpkg.xvm")
 -- design) reads glibc.lua's exports.runtime.loader and rewrites our
 -- INTERP / RPATH automatically. No install-hook elfpatch call needed.
 
-function install()
-    local d2xdir = pkginfo.install_file()
-        :replace(".zip", "")
-        :replace(".tar.gz", "")
-    os.tryrm(pkginfo.install_dir())
-    os.mv(d2xdir, pkginfo.install_dir())
-
-    return true
-end
 
 function config()
     xvm.add("d2x")

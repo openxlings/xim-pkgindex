@@ -30,7 +30,7 @@
 --   like `flutter.lua` until JSON manifests are supported.
 
 package = {
-    spec = "2",
+    spec = "3",
 
     name = "dart-sdk",
     description = "The Dart SDK - libraries, command-line tools, and compilers for the Dart programming language",
@@ -94,6 +94,7 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.system")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.fs")
 import("xim.pkgindex.payload")
 
 local REQUIRED_POSIX = {
@@ -133,12 +134,12 @@ function install()
     payload.unpack{ extracted = "dart-sdk", strip = 1 }
 
     local dir = pkginfo.install_dir()
-    if os.isfile(dir .. "/bin/dart.exe") then
+    if fs.is_file(dir .. "/bin/dart.exe") then
         payload.require(REQUIRED_WINDOWS)
     else
         for _, rel in ipairs(POSIX_EXECUTABLES) do
             local p = dir .. "/" .. rel
-            if os.isfile(p) then
+            if fs.is_file(p) then
                 system.exec(string.format('chmod +x "%s"', p))
             end
         end

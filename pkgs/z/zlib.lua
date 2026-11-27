@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "3",
     homepage = "https://zlib.net",
 
     name = "zlib",
@@ -47,6 +47,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             deps = { "xim:glibc" },
             ["latest"] = { ref = "1.3.1" },
             ["1.3.1"] = {
@@ -75,15 +76,14 @@ import("xim.libxpkg.xvm")
 import("xim.pkgindex.selfcontain")
 import("xim.pkgindex.sysroot")
 import("xim.libxpkg.log")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 local libs = {
     "libz.so", "libz.so.1",
 }
 
 function install()
-    local srcdir = pkginfo.install_file():replace(".tar.gz", ""):replace(".tar.xz", "")
-    os.tryrm(pkginfo.install_dir())
-    os.mv(srcdir, pkginfo.install_dir())
 
     -- Stamp this payload's own dependency closure onto its libraries, so
     -- they resolve from our payloads and not from the host's ld.so.cache.
@@ -114,7 +114,7 @@ function config()
 
     for _, lib in ipairs(libs) do
         local libpath = path.join(libdir, lib)
-        if os.isfile(libpath) then
+        if fs.is_file(libpath) then
             xvm.add(lib, {
                 type = "lib",
                 bindir = libdir,
@@ -133,12 +133,12 @@ function config()
     -- client takes the else branch and behaves exactly as it did before.
     local inc_dir = path.join(pkginfo.install_dir(), "include")
     local headers = {"zlib.h", "zconf.h"}
-    if os.isdir(inc_dir) then
+    if fs.is_dir(inc_dir) then
         if xvm.files then
             -- Declared, so they follow `xlings use` instead of being
             -- whichever version happened to be installed last.
             for _, h in ipairs(headers) do
-                if os.isfile(path.join(inc_dir, h)) then
+                if fs.is_file(path.join(inc_dir, h)) then
                     xvm.files{
                         src = path.join("include", h),
                         dst = path.join("usr/include", h),
@@ -148,10 +148,10 @@ function config()
             end
         else
             local sys_inc = path.join(system.subos_sysrootdir(), "usr/include")
-            if os.isdir(sys_inc) then
+            if fs.is_dir(sys_inc) then
                 for _, h in ipairs(headers) do
                     local src = path.join(inc_dir, h)
-                    if os.isfile(src) then os.cp(src, sys_inc) end
+                    if fs.is_file(src) then fs.copy(src, path.join(sys_inc, h), { replace = true }) end
                 end
             end
         end
@@ -182,8 +182,8 @@ function uninstall()
     -- 2026.8.26.1 on; see `sysroot.declare_headers` in libs/sysroot.lua.
     if not xvm.files then
         local sys_inc = path.join(system.subos_sysrootdir(), "usr/include")
-        os.tryrm(path.join(sys_inc, "zlib.h"))
-        os.tryrm(path.join(sys_inc, "zconf.h"))
+        fs.remove(path.join(sys_inc, "zlib.h"))
+        fs.remove(path.join(sys_inc, "zconf.h"))
     end
 
     return true

@@ -14,7 +14,7 @@ mirror_version = {
 }
 
 package = {
-    spec = "1",
+    spec = "3",
     -- base info
     name = "rust-crates-mirror",
     description = "Config Index Mirror for Rust Crates (Cargo)",
@@ -37,6 +37,8 @@ import("xim.libxpkg.system")
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.log")
 import("xim.libxpkg.pkgmanager")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
 
 local mirror_config_template = [[
 [source.crates-io]
@@ -52,7 +54,7 @@ index = "sparse+%s"
 local function get_cargo_config_file()
     local cargo_home = os.getenv("CARGO_HOME")
     if not cargo_home or cargo_home == "" then
-        if os.host() == "windows" then
+        if pkginfo.platform() == "windows" then
             cargo_home = path.join(os.getenv("USERPROFILE"), ".cargo")
         else
             cargo_home = path.join(os.getenv("HOME"), ".cargo")
@@ -63,10 +65,10 @@ end
 
 local function read_cargo_config()
     local cargo_config_file = get_cargo_config_file()
-    if not os.isfile(cargo_config_file) then
-        io.writefile(cargo_config_file, "")
+    if not fs.is_file(cargo_config_file) then
+        fs.write(cargo_config_file, "")
     end
-    return io.readfile(cargo_config_file)
+    return fs.read(cargo_config_file)
 end
 
 function installed()
@@ -86,7 +88,7 @@ function install()
         if found then
             log.warn("removing old rust-crates-mirror config: " .. version)
             pkgmanager.remove("rust-crates-mirror")
-            cargo_config_content = io.readfile(cargo_config_file)
+            cargo_config_content = fs.read(cargo_config_file)
             break
         end
     end
@@ -96,7 +98,7 @@ function install()
 
     -- backup config file
     local backup_file = path.join(pkginfo.install_dir(), "config.toml")
-    io.writefile(backup_file, cargo_config_content)
+    fs.write(backup_file, cargo_config_content)
 
     cargo_config_content = cargo_config_content .. string.format(
         mirror_config_template,
@@ -105,7 +107,7 @@ function install()
         pkginfo.version(), mirror_version[pkginfo.version()].crate_io_index
     )
 
-    io.writefile(cargo_config_file, cargo_config_content)
+    fs.write(cargo_config_file, cargo_config_content)
 
     return true
 end
@@ -125,7 +127,7 @@ function uninstall()
         { plain = true }
     )
 
-    io.writefile(cargo_config_file, cargo_config_content)
+    fs.write(cargo_config_file, cargo_config_content)
 
     return true
 end

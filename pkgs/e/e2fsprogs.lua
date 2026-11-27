@@ -1,5 +1,5 @@
 package = {
-    spec = "1",
+    spec = "3",
 
     name = "e2fsprogs",
     description = "ext2/ext3/ext4 filesystem utilities (mke2fs, e2fsck, tune2fs, resize2fs, debugfs)",
@@ -70,6 +70,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             ["latest"] = { ref = "1.47.3" },
             -- 1: an aarch64 payload, 1.47.3-r1 (built without hard links:
             -- Android refuses link(2)); the x86_64 one unchanged.
@@ -97,6 +98,9 @@ package = {
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
 import("xim.libxpkg.log")
+import("xim.libxpkg.fs")
+import("xim.libxpkg.path")
+import("xim.libxpkg.system")
 
 -- Programs we ship and shim. Ordered to match the `programs` field above.
 local sbin_programs = {
@@ -112,15 +116,12 @@ function install()
     -- layout: sbin/ usr/sbin/ etc/. Move the whole tree to install_dir,
     -- then collapse usr/sbin into sbin so a single bindir covers every
     -- shimmed program.
-    local srcdir = pkginfo.install_file():replace(".tar.gz", "")
-    os.tryrm(pkginfo.install_dir())
-    os.mv(srcdir, pkginfo.install_dir())
 
     local sbin = path.join(pkginfo.install_dir(), "sbin")
     local usr_sbin = path.join(pkginfo.install_dir(), "usr", "sbin")
-    if os.isdir(usr_sbin) then
-        os.execute(string.format('mv "%s"/* "%s"/', usr_sbin, sbin))
-        os.tryrm(path.join(pkginfo.install_dir(), "usr"))
+    if fs.is_dir(usr_sbin) then
+        system.run(string.format('mv "%s"/* "%s"/', usr_sbin, sbin))
+        fs.remove(path.join(pkginfo.install_dir(), "usr"))
     end
     return true
 end

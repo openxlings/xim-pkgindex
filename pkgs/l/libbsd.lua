@@ -1,5 +1,5 @@
 package = {
-    spec = "2",
+    spec = "3",
 
     homepage = "https://libbsd.freedesktop.org",
     name = "libbsd",
@@ -43,6 +43,7 @@ package = {
 
     xpm = {
         linux = {
+            strip = 1,
             deps = { "xim:glibc", "xim:libmd@>=1.2.0" },
             exports = {
                 runtime = { libdirs = { "lib" } },
@@ -183,8 +184,6 @@ import("xim.pkgindex.selfcontain")
 
 function install()
     local dir = pkginfo.install_dir()
-    os.tryrm(dir)
-    os.mv("libbsd-" .. pkginfo.version(), dir)
 
     selfcontain.seal(dir)
 
