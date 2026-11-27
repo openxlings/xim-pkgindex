@@ -463,7 +463,7 @@ def plan_entries(files: list[str] | None = None, root: Path = ROOT) -> list[dict
         for version, e in sorted(linux.entries.items()):
             if e.ref or xa.declares_no_download_source(pkg, linux, e):
                 continue
-            if xa.classify(pkg, e) not in ("Weak", "None"):
+            if xa.classify(pkg, e) not in ("Weak", "None") or xa.is_git_repository(e):
                 continue
             url = e.url or linux.source or xa.matrix_source(pkg)
             if not e.url:
@@ -814,6 +814,93 @@ def _bump(body: str, inner: str) -> str:
     return head + ", revision = 1 }"
 
 
+def _swap_between(a: str, b: str) -> tuple[str, str] | None:
+    """The architecture-word swap that turns URL a into URL b."""
+    for x, y in SWAPS:
+        if a.replace(x, y) == b:
+            return x, y
+    return None
+
+
+def _field(text: str, start: int, end: int, key: str):
+    for k, ks, vs, ve in _fields(text, start, end):
+        if k == key:
+            return ks, vs, ve
+    return None
+
+
+def fix_autoupdate(text: str, swap: tuple[str, str]) -> tuple[str, str]:
+    """The text with each autoupdate target's Linux URL written per architecture.
+
+    K4 (design §5.6): the updater writes a new version in the form of the
+    platform's entries; once they carry an artifact per architecture, so
+    does the declaration (the aarch64 URL is the x86_64 one with the same
+    word swapped as upstream's aarch64 artifact). Returns (text, what was
+    done or why not).
+    """
+    m = re.search(r"\bautoupdate\s*=\s*\{", text)
+    if not m:
+        return text, "no autoupdate"
+    a_s = m.end() - 1
+    a_e = _match_brace(text, a_s)
+    res = _field(text, a_s + 1, a_e - 1, "resources")
+    if not res or text[res[1]] != "{":
+        return text, "autoupdate.resources is not a table literal"
+    edits = []
+    for region, _rs, rvs, rve in _fields(text, res[1] + 1, res[2] - 1):
+        if text[rvs] != "{":
+            continue
+        url = _field(text, rvs + 1, rve - 1, "url")
+        if not url or text[url[1]] != "{":
+            return text, f"autoupdate {region}.url is not a per-platform table"
+        linux = _field(text, url[1] + 1, url[2] - 1, "linux")
+        if not linux:
+            continue
+        value = text[linux[1]:linux[2]]
+        if not value.startswith('"'):
+            return text, f"autoupdate {region}.url.linux is already a table"
+        template = value[1:-1]
+        x, y = swap
+        if x not in template:
+            return text, f"autoupdate {region}.url.linux has no `{x}` to swap"
+        ind = _indent_of(text, linux[0])
+        new = ("{\n" + f'{ind}    x86_64 = "{template}",\n'
+               + f'{ind}    aarch64 = "{template.replace(x, y)}",\n' + ind + "}")
+        edits.append((linux[1], linux[2], new))
+    if not edits:
+        return text, "no Linux URL in autoupdate"
+    for s, e, new in sorted(edits, reverse=True):
+        text = text[:s] + new + text[e:]
+    return text, f"autoupdate Linux URLs per architecture ({len(edits)} target(s))"
+
+
+def cmd_bump_flagged(args) -> int:
+    """Raise `revision` on each entry the revision gate reports as changed.
+
+    An entry that now gives aarch64 upstream's aarch64 artifact, where the
+    one artifact it had was given to every architecture the package listed,
+    changed what an aarch64 client installs: the gate asks for a higher
+    revision, and a client that installed x86_64 bytes on aarch64 is offered
+    the right ones (`floor` stays: x86_64 payloads remain current).
+    """
+    gate = ROOT / ".github/scripts/check-revision.sh"
+    run = subprocess.run(["bash", str(gate)], cwd=ROOT, capture_output=True, text=True,
+                         env={**__import__("os").environ, "REVISION_BASE_REF": args.base})
+    flagged = re.findall(r'::error file=([^:]+)::\S+ xpm\.(\w+)\["([^"]+)"\]: the resource of a published '
+                         r'version changed while its revision stayed', run.stdout)
+    for file, plat, version in flagged:
+        if plat != "linux":
+            print(f"not bumped (not Linux): {file} {plat} {version}")
+            continue
+        path = ROOT / file
+        text = path.read_text(encoding="utf-8")
+        vs, ve = locate_entry(text, version)
+        inner = _indent_of(text, vs) + "    "
+        path.write_text(text[:vs] + _bump(text[vs:ve], inner) + text[ve:], encoding="utf-8")
+        print(f"revision raised: {file} xpm.linux[\"{version}\"]")
+    return 0
+
+
 def plan_rewrite(ev: dict[str, Any], installs: dict[str, Any]) -> dict[str, Any] | None:
     """What to write for one evidence row: {"hashes": ...} or {"per_arch": ...}, or None."""
     d = ev.get("decision", "")
@@ -835,9 +922,32 @@ def plan_rewrite(ev: dict[str, Any], installs: dict[str, Any]) -> dict[str, Any]
     return None
 
 
+DECISIONS = Path(__file__).resolve().parent / "arch-decisions.json"
+
+
+def with_decisions(evidence: list[dict[str, Any]], path: str | None) -> list[dict[str, Any]]:
+    """The evidence with the decisions people made (tools/arch-decisions.json):
+    `"<file>@<version>"` or `"<file>"` -> {"decision", "why"}. Those are the
+    cases §5.6 leaves to a person: the bytes say one machine's programs and
+    the package is target data (a Linux sysroot), or a host toolchain beside
+    its targets' binaries (android-ndk)."""
+    source = Path(path) if path else DECISIONS
+    if not source.exists():
+        return evidence
+    decided = json.loads(source.read_text())
+    out = []
+    for ev in evidence:
+        d = decided.get(f"{ev['file']}@{ev['version']}") or decided.get(ev["file"])
+        if d:
+            ev = dict(ev, decision=d["decision"], why=f"decided: {d['why']} (bytes: {ev.get('decision')})")
+        out.append(ev)
+    return out
+
+
 def cmd_apply(args) -> int:
     evidence = json.loads(Path(args.evidence).read_text())
     installs = json.loads(Path(args.installs).read_text()) if args.installs else {}
+    evidence = with_decisions(evidence, args.decisions)
     if args.only:
         evidence = [e for e in evidence if e["file"] in args.only or e.get("name") in args.only]
     by_file: dict[str, list] = {}
@@ -856,6 +966,14 @@ def cmd_apply(args) -> int:
             bump = bool(args.bump and f"{file}@{ev['version']}" in args.bump)
             text = rewrite_entry(text, ev["version"], hashes=rw.get("hashes"), per_arch=rw.get("per_arch"),
                                  bump=bump or bool(rw.get("per_arch") and args.bump_per_arch))
+        swaps = {_swap_between(ev["read"]["url"], ev["probe"]["url"]) for ev in evs
+                 if plan_rewrite(ev, installs) and "per_arch" in plan_rewrite(ev, installs)}
+        if len(swaps) == 1 and None not in swaps:
+            text, note = fix_autoupdate(text, swaps.pop())
+            if note != "no autoupdate":
+                print(f"{file}: {note}")
+        elif swaps:
+            print(f"{file}: autoupdate left as is (swaps {swaps}): write it per architecture by hand")
         if text != path.read_text(encoding="utf-8"):
             path.write_text(text, encoding="utf-8")
             changed += 1
@@ -883,7 +1001,7 @@ def _elf_cell(r: dict[str, Any] | None) -> str:
 
 
 def cmd_table(args) -> int:
-    evidence = json.loads(Path(args.evidence).read_text())
+    evidence = with_decisions(json.loads(Path(args.evidence).read_text()), None)
     lines = ["| recipe | version | read | decision | evidence | other architecture |", "|---|---|---|---|---|---|"]
     for ev in sorted(evidence, key=lambda e: (e["file"], e["version"])):
         if ev["group"] == "mechanical" and not args.all:
@@ -929,11 +1047,15 @@ def main() -> int:
     p = sub.add_parser("apply")
     p.add_argument("--evidence", required=True)
     p.add_argument("--installs")
+    p.add_argument("--decisions", help="default: tools/arch-decisions.json")
     p.add_argument("--only", nargs="*")
     p.add_argument("--bump", nargs="*", help="file@version entries whose revision rises")
     p.add_argument("--bump-per-arch", action="store_true",
                    help="raise the revision of an entry that gains an artifact per architecture")
     p.set_defaults(func=cmd_apply)
+    p = sub.add_parser("bump-flagged", help="raise the revision of the entries the revision gate reports")
+    p.add_argument("--base", default="origin/main")
+    p.set_defaults(func=cmd_bump_flagged)
     p = sub.add_parser("table")
     p.add_argument("--evidence", required=True)
     p.add_argument("--output")

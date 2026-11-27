@@ -334,6 +334,12 @@ def entry_archs_for_union(pkg: dict[str, Any], pname: str, plat: Platform, e: En
     return set()
 
 
+def is_git_repository(e: Entry) -> bool:
+    """A URL ending in `.git` is a repository the client clones: no artifact,
+    no digest to name architectures with (brew, musl-cross-make)."""
+    return bool(e.url) and e.url.split("?", 1)[0].endswith(".git") and not e.architectures()
+
+
 def check_k1(file: str, pkg: dict[str, Any]) -> list[Finding]:
     """K1: on a platform with two host architectures, an entry with an artifact names them."""
     out: list[Finding] = []
@@ -344,7 +350,7 @@ def check_k1(file: str, pkg: dict[str, Any]) -> list[Finding]:
         if not hosts or len(hosts) < 2:
             continue
         for version, e in sorted(plat.entries.items()):
-            if e.ref or declares_no_download_source(pkg, plat, e):
+            if e.ref or declares_no_download_source(pkg, plat, e) or is_git_repository(e):
                 continue
             if classify(pkg, e) in ("Weak", "None"):
                 out.append(Finding("K1", file,

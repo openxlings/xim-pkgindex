@@ -247,3 +247,13 @@ def test_an_entry_without_a_digest_gets_the_downloads(scratch):
     text = am.rewrite_entry(text, "1.0.0", hashes={"x86_64": H2})
     pkg = _load(scratch, text)
     assert xa.platforms(pkg)["linux"].entries["1.0.0"].sha256_by_arch == {"x86_64": H2}
+
+
+@pytest.mark.static
+@needs_lua
+def test_k1_leaves_a_git_repository_alone(scratch):
+    text = RECIPE.replace('url = "https://example.org/foo-1.0.0-x86_64.tar.gz",\n'
+                          f'                sha256 = "{H1}",',
+                          'url = "https://example.org/foo.git",')
+    pkg = _load(scratch, text)
+    assert not [f for f in xa.check_k1("foo.lua", pkg) if '"1.0.0"' in f.message]
