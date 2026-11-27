@@ -34,6 +34,11 @@ the skills (see "Read next"), the reasons in `docs/`.
   written by maintainers**: do not use it; ask in an issue if a package needs it.
 - **Install means unpack and place**: never compile, never use a host package manager, `sudo`, a
   shell profile or `PATH`.
+- **Dependencies close inside the ecosystem.** What a payload loads (its `DT_NEEDED` libraries,
+  `dlopen`ed ones, the MSVC runtime) and what a hook needs are declared as `xim:` dependencies
+  or placed by the xpkg, not taken from the machine. Relying on the host needs a strong reason,
+  written in the xpkg's header comment and the pull request; "it runs on my machine" is not one
+  (see `source-selection.md`, "Closing the dependencies").
 - **Unofficial packaging** (a repack, a patched build, a personal packaging) sets
   `namespace = "<your handle>"`: its id is `<ns>:<name>@<version>`.
 - **Luban OS** (`pkgs/luban/`, `libs/luban*.lua`): bug fixes only, verified locally; a feature
