@@ -29,7 +29,7 @@ from tests.lib.platform_utils import skip_if_not, under_test, xlings_home
 
 PKG = "arcmd"
 PKG_FILE = "pkgs/a/arcmd.lua"
-VERSION = "0.5.0"
+VERSION = "0.5.2"
 REPO = Path(__file__).resolve().parents[2]
 
 
@@ -190,7 +190,7 @@ system.exec = function(cmd)
     if cmd:match("^'tar' ") then
         files[install_dir .. "/arcmd"] = true
         files[install_dir .. "/LICENSE"] = true
-        files[install_dir .. "/icon.png"] = true
+        files[install_dir .. "/arcmd.png"] = true
         files[install_dir .. "/third_party/README.md"] = true
     end
 end
@@ -271,7 +271,6 @@ system.exec = function(cmd)
     if cmd:find("tar.exe", 1, true) then
         files[install_dir .. "/ArcMD.exe"] = true
         files[install_dir .. "/LICENSE"] = true
-        files[install_dir .. "/icon.png"] = true
         files[install_dir .. "/third_party/README.md"] = true
     elseif cmd:find("CreateShortcut(", 1, true) then
         local q = string.char(39)
