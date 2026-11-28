@@ -16,7 +16,6 @@ import shutil
 import struct
 import subprocess
 import sys
-import time
 
 import pytest
 
@@ -307,8 +306,8 @@ package = {
                     sha256 = "510a95352142e06f71d3c2811ba0163c6006df8c03fc043a797f209c4c93ece3",
                 },
                 aarch64 = {
-                    url = "https://github.com/FarnaHerry/dbpp/releases/download/v0.4.2/dbpp-0.4.2-linux-aarch64.tar.gz",
-                    sha256 = "0715252a400db32681379b40936b227a74adc8469a7275db3e4322d185b5cf75",
+                    url = "https://github.com/FarnaHerry/dbpp/releases/download/v0.4.2/dbpp-aarch64.tar.gz",
+                    sha256 = "0712552a400bd32681379b40936b227a74adc8469a7275db3e4322d185b5cf75",
                 },
             },
         },
@@ -342,14 +341,7 @@ end
         assert registered, output
         assert under_test(name, "0.4.2") == coordinate
         installation_attempted = True
-        # GitHub's release CDN can answer a freshly (re-)uploaded asset with a
-        # transient 404 from some PoPs while other assets of the same release
-        # already work; retry only that signature, never real failures.
-        for _ in range(3):
-            installed, output = XlingsClient.install(coordinate, timeout=600)
-            if installed or "download failed" not in output:
-                break
-            time.sleep(20)
+        installed, output = XlingsClient.install(coordinate, timeout=600)
         assert installed, output
         yield _installed_root("GTK4_CONSUMER_ROOT", name, "0.4.2")
     finally:
