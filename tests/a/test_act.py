@@ -102,18 +102,19 @@ for plat, arches in pairs(expected_assets) do
     local ref = assert(p.latest and p.latest.ref, "missing latest ref for " .. plat)
     assert(ref == "0.2.99", plat .. " latest should be 0.2.99")
     local ver = assert(p[ref], "missing version entry in " .. plat)
-    assert(ver.arch_alias and ver.arch_alias.x86_64 == "x86_64" and ver.arch_alias.aarch64 == "arm64")
-    assert(ver.sha256)
     for arch, asset in pairs(arches) do
-        local h = assert(ver.sha256[arch], "missing sha256 for " .. plat .. "/" .. arch)
+        local item = assert(ver[arch], "missing per-arch entry for " .. plat .. "/" .. arch)
+        local h = assert(item.sha256, "missing sha256 for " .. plat .. "/" .. arch)
         assert(#h == 64 and h:match("^%x+$"), "invalid sha256 for " .. plat .. "/" .. arch)
-        local expanded = p.source:gsub("%${version}", ref):gsub("%${arch_alias}", ver.arch_alias[arch])
         local expected_url = "https://github.com/nektos/act/releases/download/v0.2.99/" .. asset
-        assert(expanded == expected_url, plat .. "/" .. arch .. " source mismatch: " .. expanded)
+        assert(item.url == expected_url, plat .. "/" .. arch .. " url mismatch: " .. tostring(item.url))
         local tmpl = assert(global_au[plat] and global_au[plat][arch],
                             "missing autoupdate template for " .. plat .. "/" .. arch)
         assert(tmpl:gsub("%${version}", ref) == expected_url,
                "autoupdate template mismatch for " .. plat .. "/" .. arch)
+    end
+    for key in pairs(ver) do
+        assert(arches[key], "unexpected key in version entry: " .. plat .. "/" .. key)
     end
 end
 ''',

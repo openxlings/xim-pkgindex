@@ -71,10 +71,13 @@ package = {
                 },
             },
             ["0.2.99"] = {
-                arch_alias = { x86_64 = "x86_64", aarch64 = "arm64" },
-                sha256 = {
-                    x86_64 = "244abf6b011257ae959be907d618a8243863991020190c9107e151b545e32cdd",
-                    aarch64 = "e7544abd0d74a06fd63a158a45c0f935c54a3f8759bf4c615034b1eb66d3a950",
+                x86_64 = {
+                    url = "https://github.com/nektos/act/releases/download/v0.2.99/act_Linux_x86_64.tar.gz",
+                    sha256 = "244abf6b011257ae959be907d618a8243863991020190c9107e151b545e32cdd",
+                },
+                aarch64 = {
+                    url = "https://github.com/nektos/act/releases/download/v0.2.99/act_Linux_arm64.tar.gz",
+                    sha256 = "e7544abd0d74a06fd63a158a45c0f935c54a3f8759bf4c615034b1eb66d3a950",
                 },
             },
         },
@@ -89,10 +92,13 @@ package = {
                 },
             },
             ["0.2.99"] = {
-                arch_alias = { x86_64 = "x86_64", aarch64 = "arm64" },
-                sha256 = {
-                    x86_64 = "67129cc527906cad2cbfe90fbae73d0fc9c077d481c8fea2da874c94e0500203",
-                    aarch64 = "53e650238211e6af86458c252e896dac30497eb16fecf08dd7fef4d9ce6eec5b",
+                x86_64 = {
+                    url = "https://github.com/nektos/act/releases/download/v0.2.99/act_Darwin_x86_64.tar.gz",
+                    sha256 = "67129cc527906cad2cbfe90fbae73d0fc9c077d481c8fea2da874c94e0500203",
+                },
+                aarch64 = {
+                    url = "https://github.com/nektos/act/releases/download/v0.2.99/act_Darwin_arm64.tar.gz",
+                    sha256 = "53e650238211e6af86458c252e896dac30497eb16fecf08dd7fef4d9ce6eec5b",
                 },
             },
         },
@@ -107,10 +113,13 @@ package = {
                 },
             },
             ["0.2.99"] = {
-                arch_alias = { x86_64 = "x86_64", aarch64 = "arm64" },
-                sha256 = {
-                    x86_64 = "f65de87205f8a45bf73d8fc63819cab65f60195f1e815a4c472e944af723d6a6",
-                    aarch64 = "61da54b51aa3bbb4597665d3b42b814ee3b7dce2b3c5462e261a8f62592d709c",
+                x86_64 = {
+                    url = "https://github.com/nektos/act/releases/download/v0.2.99/act_Windows_x86_64.zip",
+                    sha256 = "f65de87205f8a45bf73d8fc63819cab65f60195f1e815a4c472e944af723d6a6",
+                },
+                aarch64 = {
+                    url = "https://github.com/nektos/act/releases/download/v0.2.99/act_Windows_arm64.zip",
+                    sha256 = "61da54b51aa3bbb4597665d3b42b814ee3b7dce2b3c5462e261a8f62592d709c",
                 },
             },
         },
