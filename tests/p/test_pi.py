@@ -25,7 +25,7 @@ from tests.lib.xpkg_parser import parse_xpkg
 
 PKG = "pi"
 PKG_FILE = "pkgs/p/pi.lua"
-RELEASE_VERSION = "1.5.2"
+RELEASE_VERSION = "1.7.0"
 SUPPORTED_ARCHES = {"x86_64": "x64", "aarch64": "arm64"}
 
 
@@ -82,7 +82,7 @@ local platform_urls = {
 }
 for platform, prefix in pairs(platform_urls) do
     local entries = assert(package.xpm[platform], platform)
-    assert(entries.latest.ref == "1.5.2", platform .. " latest is not 1.5.2")
+    assert(entries.latest.ref == "1.7.0", platform .. " latest is not 1.7.0")
     local entry = assert(entries["1.0.0"], platform .. " is missing v1.0.0")
     assert(entry.revision == nil, "unexpected packaging revision")
     local hashes = assert(entry.sha256, "missing platform checksums")
@@ -103,7 +103,7 @@ for platform, prefix in pairs(platform_urls) do
     for arch in pairs(aliases) do assert(expected[arch], "unexpected URL architecture") end
     for version in pairs(entries) do
         if version ~= "source" and version ~= "latest" and version ~= "deps" then
-            assert(version == "1.0.0" or version == "1.4.0" or version == "1.5.2", "unexpected release")
+            assert(version == "1.0.0" or version == "1.4.0" or version == "1.5.2" or version == "1.7.0", "unexpected release")
         end
     end
 end
