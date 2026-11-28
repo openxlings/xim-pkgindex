@@ -100,7 +100,7 @@ assert(au.resources.GLOBAL.required == true)
 for plat, arches in pairs(expected_assets) do
     local p = assert(package.xpm[plat], "missing platform: " .. plat)
     local ref = assert(p.latest and p.latest.ref, "missing latest ref for " .. plat)
-    assert(ref == "0.2.98", plat .. " latest should be 0.2.98")
+    assert(ref == "0.2.99", plat .. " latest should be 0.2.99")
     local ver = assert(p[ref], "missing version entry in " .. plat)
     assert(ver.arch_alias and ver.arch_alias.x86_64 == "x86_64" and ver.arch_alias.aarch64 == "arm64")
     assert(ver.sha256)
@@ -108,7 +108,7 @@ for plat, arches in pairs(expected_assets) do
         local h = assert(ver.sha256[arch], "missing sha256 for " .. plat .. "/" .. arch)
         assert(#h == 64 and h:match("^%x+$"), "invalid sha256 for " .. plat .. "/" .. arch)
         local expanded = p.source:gsub("%${version}", ref):gsub("%${arch_alias}", ver.arch_alias[arch])
-        local expected_url = "https://github.com/nektos/act/releases/download/v0.2.98/" .. asset
+        local expected_url = "https://github.com/nektos/act/releases/download/v0.2.99/" .. asset
         assert(expanded == expected_url, plat .. "/" .. arch .. " source mismatch: " .. expanded)
         local tmpl = assert(global_au[plat] and global_au[plat][arch],
                             "missing autoupdate template for " .. plat .. "/" .. arch)
@@ -153,7 +153,7 @@ winpath = { native = function(p) return (tostring(p):gsub("/", "\\\\")) end }
 local files, moved, chmods = {}, {}, {}
 pkginfo = {
     install_file = function() return "/cache/act_Linux_x86_64.tar.gz" end,
-    install_dir = function() return "/xpkgs/act/0.2.98" end,
+    install_dir = function() return "/xpkgs/act/0.2.99" end,
 }
 files["/cache/act"] = true
 files["/cache/LICENSE"] = true
@@ -169,8 +169,8 @@ system = { exec = function(cmd) table.insert(chmods, cmd) end }
 
 assert(install())
 assert(#moved == 2)
-assert(moved[1][1] == "/cache/act" and moved[1][2] == "/xpkgs/act/0.2.98/act")
-assert(moved[2][1] == "/cache/LICENSE" and moved[2][2] == "/xpkgs/act/0.2.98/LICENSE")
+assert(moved[1][1] == "/cache/act" and moved[1][2] == "/xpkgs/act/0.2.99/act")
+assert(moved[2][1] == "/cache/LICENSE" and moved[2][2] == "/xpkgs/act/0.2.99/LICENSE")
 assert(#chmods == 1 and chmods[1]:find("chmod %+x"))
 
 -- 2. Windows zip fallback via System32\\tar.exe when zip is not pre-extracted
@@ -178,14 +178,14 @@ files, moved = {}, {}
 local execs = {}
 pkginfo = {
     install_file = function() return "C:\\\\cache\\\\act_Windows_x86_64.zip" end,
-    install_dir = function() return "C:\\\\xpkgs\\\\act\\\\0.2.98" end,
+    install_dir = function() return "C:\\\\xpkgs\\\\act\\\\0.2.99" end,
 }
 files["C:\\\\cache\\\\act_Windows_x86_64.zip"] = true
 os.getenv = function(k) return k == "SystemRoot" and "C:\\\\Windows" or nil end
 system = {
     exec = function(cmd)
         table.insert(execs, cmd)
-        files["C:\\\\xpkgs\\\\act\\\\0.2.98/act.exe"] = true
+        files["C:\\\\xpkgs\\\\act\\\\0.2.99/act.exe"] = true
     end,
 }
 assert(install())
@@ -197,7 +197,7 @@ files, moved, execs = {}, {}, {}
 files["C:/cache/act.exe"] = true
 assert(install())
 assert(#execs == 0)
-assert(#moved == 1 and moved[1][1] == "C:/cache/act.exe" and moved[1][2] == "C:\\\\xpkgs\\\\act\\\\0.2.98/act.exe")
+assert(#moved == 1 and moved[1][1] == "C:/cache/act.exe" and moved[1][2] == "C:\\\\xpkgs\\\\act\\\\0.2.99/act.exe")
 
 -- 4. Missing both pre-extracted binary and archive must fail
 files = {}
@@ -281,7 +281,7 @@ class TestVerify:
     @pytest.mark.verify
     @skip_if_not("linux")
     def test_version(self):
-        expected = os.environ.get("XLINGS_TEST_VERSION", "0.2.98")
+        expected = os.environ.get("XLINGS_TEST_VERSION", "0.2.99")
         assert_command_output("act --version", contains=f"act version {expected}")
 
     @pytest.mark.verify
