@@ -42,6 +42,9 @@ xpkg 并不从这里开始。包指向上游自己的发布，或知名第三方
 - 每个上游输入都按 `tools/res/inputs.txt` 中的 digest 校验；
 - 每次构建在成为 artifact 之前检查产物 —— 能运行、声称静态的确实是静态、链接 glibc 的只
   依赖 glibc、没有硬链接；
+- `libaio`、`numactl`、`libcurl` 和 `redis` 还拒绝无法解析的 ELF 元数据、RPATH/RUNPATH、
+  DWARF `.debug_*` 节以及已知的工厂/CI 路径前缀。普通的运行时用户主目录路径不视为
+  构建路径；`--strict-tmp` 另外扫描载荷中的所有文件，拒绝残留的临时目录路径；
 - 每个载荷带一份 `README.provenance`：输入、它们的 digest、容器，以及容器内安装的包。
 
 ```bash

@@ -255,23 +255,27 @@ glibc_only() {    # every ELF given needs nothing but glibc's libraries (and its
     done
 }
 
-check_elf_hygiene() { # [--strict-tmp] <dir> -> verify no RPATH/RUNPATH, DWARF .debug_* sections, or build-machine paths
-    local strict_tmp=0 dir f found=0 bad
+check_elf_hygiene() { # [--strict-tmp] <dir> -> reject RPATH/RUNPATH, DWARF .debug_* sections, and known build/CI paths
+    local strict_tmp=0 dir f found=0 bad elf_info
     if [[ "${1:-}" == --strict-tmp ]]; then strict_tmp=1; shift; fi
     dir="$1"
     while IFS= read -r -d '' f; do
         file -b "$f" | grep -q '^ELF' || continue
         found=1
-        bad="$(readelf -d "$f" 2>/dev/null | grep -E 'RPATH|RUNPATH' || true)"
-        [[ -z "$bad" ]] || die "$f names RPATH/RUNPATH: $bad"
-        bad="$(readelf -S "$f" 2>/dev/null | grep -E '\.debug_' || true)"
-        [[ -z "$bad" ]] || die "$f retains DWARF debug sections: $bad"
-        bad="$(grep -aoE '/(w|home|Users)/[^[:cntrl:]"'\''[:space:]]+|scratchpad|\.xlings_data|/tmp/(tmp\.|build|res-|cc|agent|runner|xlings)[^[:cntrl:]"'\''[:space:]]*' "$f" || true)"
+        # readelf can report errors with status 0; diagnostics must fail the gate too.
+        elf_info="$(readelf -d "$f" 2>&1)" || die "$f: cannot inspect ELF dynamic table: $elf_info"
+        bad="$(grep -E '^readelf:|RPATH|RUNPATH' <<< "$elf_info" || true)"
+        [[ -z "$bad" ]] || die "$f has invalid dynamic metadata or RPATH/RUNPATH: $bad"
+        elf_info="$(readelf -S "$f" 2>&1)" || die "$f: cannot inspect ELF sections: $elf_info"
+        bad="$(grep -E '^readelf:|\.debug_' <<< "$elf_info" || true)"
+        [[ -z "$bad" ]] || die "$f has invalid section metadata or DWARF debug sections: $bad"
+        # Runtime home paths are legitimate; only concrete factory/CI roots are forbidden.
+        bad="$(grep -aoE '/(w|home/runner|Users/runner)/[^[:cntrl:]"'\''[:space:]]+|scratchpad|\.xlings_data|/tmp/(tmp\.|build|res-|cc|agent|runner|xlings)[^[:cntrl:]"'\''[:space:]]*' "$f" || true)"
         [[ -z "$bad" ]] || die "$f carries build-machine paths: $bad"
     done < <(find "$dir" -type f -print0)
     [[ "$found" -eq 1 ]] || die "check_elf_hygiene: no ELF found in $dir"
     if [[ "$strict_tmp" -eq 1 ]]; then
-        bad="$(grep -rnE '/(w|tmp|home|Users)/' "$dir" || true)"
+        bad="$(grep -rnE '/(w|tmp|home/runner|Users/runner)/' "$dir" || true)"
         [[ -z "$bad" ]] || die "$dir carries build-machine/tmp paths: $bad"
     fi
 }
