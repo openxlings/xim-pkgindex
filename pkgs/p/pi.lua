@@ -49,7 +49,7 @@ package = {
     xpm = {
         linux = {
             source = "https://github.com/earendil-works/pi/releases/download/v${version}/pi-linux-${arch_alias}.tar.gz",
-            ["latest"] = { ref = "1.5.2" },
+            ["latest"] = { ref = "1.7.0" },
             ["1.0.0"] = {
                 arch_alias = { x86_64 = "x64", aarch64 = "arm64" },
                 sha256 = {
@@ -77,10 +77,20 @@ package = {
                     sha256 = "42805cd5615952fcbbfc9c56b04f8feb84395134952e169a6cdc8d7676975666",
                 },
             },
+            ["1.7.0"] = {
+                x86_64 = {
+                    url = "https://github.com/earendil-works/pi/releases/download/v1.7.0/pi-linux-x64.tar.gz",
+                    sha256 = "42f7ed67e83f727fe51dd2746d50dc45c7d1784159a9518296a282402ac68f4a",
+                },
+                aarch64 = {
+                    url = "https://github.com/earendil-works/pi/releases/download/v1.7.0/pi-linux-arm64.tar.gz",
+                    sha256 = "cd209cfc90fb94fb4b00ccd785a8d64a4a154f924e52f88febeb6cf36d5c9a24",
+                },
+            },
         },
         macosx = {
             source = "https://github.com/earendil-works/pi/releases/download/v${version}/pi-darwin-${arch_alias}.tar.gz",
-            ["latest"] = { ref = "1.5.2" },
+            ["latest"] = { ref = "1.7.0" },
             ["1.0.0"] = {
                 arch_alias = { x86_64 = "x64", aarch64 = "arm64" },
                 sha256 = {
@@ -108,11 +118,21 @@ package = {
                     sha256 = "56b5e194d485ced555667b8ba3276157a8272e9ecde9e001e428af80985bdd9b",
                 },
             },
+            ["1.7.0"] = {
+                x86_64 = {
+                    url = "https://github.com/earendil-works/pi/releases/download/v1.7.0/pi-darwin-x64.tar.gz",
+                    sha256 = "427d03ed20d14ddeddbe610f56cc7a493f5880f5800e0ecae174284a0a9c4691",
+                },
+                aarch64 = {
+                    url = "https://github.com/earendil-works/pi/releases/download/v1.7.0/pi-darwin-arm64.tar.gz",
+                    sha256 = "ff95a9ae160a55bb0417b35031a86c3fa52b39216999fba540b53568f2efc6eb",
+                },
+            },
         },
         windows = {
             deps = { build = { "xim:7zip" } },
             source = "https://github.com/earendil-works/pi/releases/download/v${version}/pi-windows-${arch_alias}.zip",
-            ["latest"] = { ref = "1.5.2" },
+            ["latest"] = { ref = "1.7.0" },
             ["1.0.0"] = {
                 arch_alias = { x86_64 = "x64", aarch64 = "arm64" },
                 sha256 = {
@@ -138,6 +158,16 @@ package = {
                 aarch64 = {
                     url = "https://github.com/earendil-works/pi/releases/download/v1.5.2/pi-windows-arm64.zip",
                     sha256 = "e83404bc5a6003ac950683edd9b6cf499dac91ec890d8439a8c32528de534a77",
+                },
+            },
+            ["1.7.0"] = {
+                x86_64 = {
+                    url = "https://github.com/earendil-works/pi/releases/download/v1.7.0/pi-windows-x64.zip",
+                    sha256 = "e98bb945fb7f6917a4bea1956759ce9faf07cf6bdd8c42bfef521eccf2276a17",
+                },
+                aarch64 = {
+                    url = "https://github.com/earendil-works/pi/releases/download/v1.7.0/pi-windows-arm64.zip",
+                    sha256 = "603d4eb1b85a233ba395aa0166c53fc219df56680a85332f0bdbfef0c98967f4",
                 },
             },
         },
