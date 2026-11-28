@@ -12,7 +12,7 @@ from tests.lib.assertions import (
     assert_required_fields, assert_valid_spec, assert_valid_type,
     assert_no_typos, assert_no_exec_xvm, assert_no_bashrc_modification,
     assert_no_direct_path_modification, assert_uses_new_api,
-    assert_xim_add_succeeds, assert_command_output,
+    assert_xim_add_succeeds,
 )
 from tests.lib.platform_utils import skip_if_not
 
@@ -189,5 +189,21 @@ class TestVerify:
     @pytest.mark.verify
     @skip_if_not("windows")
     def test_version(self):
+        # assert_command_output shells through bash, which is WSL on Windows
+        # runners; probe the registered shim directly instead.
         expected = os.environ.get("XLINGS_TEST_VERSION", "8.12.0")
-        assert_command_output("redis-server --version", contains=expected)
+        base = Path(os.environ["XLINGS_HOME"]) / "subos"
+        subos = os.environ.get("XLINGS_TEST_SUBOS")
+        candidates = [subos] if subos else ["current", "default"]
+        shim = None
+        for name in candidates:
+            candidate = base / name / "bin" / "redis-server.exe"
+            if candidate.is_file():
+                shim = candidate
+                break
+        assert shim is not None, "redis-server shim is missing from subos bin"
+        result = subprocess.run([str(shim), "--version"], capture_output=True,
+                                text=True, timeout=30)
+        output = result.stdout + result.stderr
+        assert result.returncode == 0, output
+        assert expected in output, f"unexpected redis-server version: {output!r}"
