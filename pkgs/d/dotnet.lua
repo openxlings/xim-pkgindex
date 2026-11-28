@@ -25,12 +25,16 @@ package = {
 
     xpm = {
         windows = {
-            ["latest"] = { ref = "9.0" },
+            ["latest"] = { ref = "11.0" },
+            ["11.0"] = { url = windows_install_script, sha256 = nil },
+            ["10.0"] = { url = windows_install_script, sha256 = nil },
             ["9.0"] = { url = windows_install_script, sha256 = nil },
             ["8.0"] = { url = windows_install_script, sha256 = nil },
         },
         linux = {
-            ["latest"] = { ref = "9.0" },
+            ["latest"] = { ref = "11.0" },
+            ["11.0"] = { url = linux_install_script, sha256 = nil },
+            ["10.0"] = { url = linux_install_script, sha256 = nil },
             ["9.0"] = { url = linux_install_script, sha256 = nil },
             ["8.0"] = { url = linux_install_script, sha256 = nil },
         },
