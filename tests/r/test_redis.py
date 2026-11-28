@@ -1,4 +1,5 @@
 """redis"""
+import os
 from pathlib import Path
 import re
 import shutil
@@ -11,8 +12,9 @@ from tests.lib.assertions import (
     assert_required_fields, assert_valid_spec, assert_valid_type,
     assert_no_typos, assert_no_exec_xvm, assert_no_bashrc_modification,
     assert_no_direct_path_modification, assert_uses_new_api,
-    assert_xim_add_succeeds,
+    assert_xim_add_succeeds, assert_command_output,
 )
+from tests.lib.platform_utils import skip_if_not
 
 PKG = "redis"
 PKG_FILE = "pkgs/r/redis.lua"
@@ -60,9 +62,9 @@ assert(package.xvm_enable == true)
 assert(package.ci and package.ci.mirror == true)
 assert(#package.archs == 1 and package.archs[1] == "x86_64")
 local win = assert(package.xpm.windows)
-assert(win.latest and win.latest.ref == "8.10.3")
-local v = assert(win["8.10.3"] and win["8.10.3"].x86_64)
-assert(type(v.url) == "string" and v.url == "https://github.com/redis-windows/redis-windows/releases/download/8.10.3/Redis-8.10.3-Windows-x64-msys2.zip")
+assert(win.latest and win.latest.ref == "8.12.0")
+local v = assert(win["8.12.0"] and win["8.12.0"].x86_64)
+assert(type(v.url) == "string" and v.url == "https://github.com/redis-windows/redis-windows/releases/download/8.12.0/Redis-8.12.0-Windows-x64-msys2.zip")
 assert(type(v.sha256) == "string" and #v.sha256 == 64 and v.sha256:match("^%x+$"))
 ''', PKG_FILE)
 
@@ -96,9 +98,9 @@ local programs = {
 
 pkginfo = {
     name = function() return "redis" end,
-    version = function() return "8.10.3" end,
-    install_file = function() return "C:/cache/Redis-8.10.3-Windows-x64-msys2.zip" end,
-    install_dir = function() return "C:/xpkgs/redis/8.10.3" end,
+    version = function() return "8.12.0" end,
+    install_file = function() return "C:/cache/Redis-8.12.0-Windows-x64-msys2.zip" end,
+    install_dir = function() return "C:/xpkgs/redis/8.12.0" end,
 }
 os.host = function() return "windows" end
 os.getenv = function(k) return k == "SystemRoot" and "C:\\\\Windows" or nil end
@@ -115,7 +117,7 @@ system = {
     exec = function(cmd)
         table.insert(execs, cmd)
         for _, rel in ipairs(required) do
-            files["C:/xpkgs/redis/8.10.3/" .. rel] = true
+            files["C:/xpkgs/redis/8.12.0/" .. rel] = true
         end
     end,
 }
@@ -123,24 +125,24 @@ system = {
 assert(not installed())
 assert(install())
 assert(#execs == 1)
-assert(execs[1]:match('^C:\\\\Windows\\\\System32\\\\tar%.exe %-xf "C:\\\\cache\\\\Redis%-8%.10%.3%-Windows%-x64%-msys2%.zip" %-%-strip%-components=1 %-C "C:\\\\xpkgs\\\\redis\\\\8%.10%.3"$'))
+assert(execs[1]:match('^C:\\\\Windows\\\\System32\\\\tar%.exe %-xf "C:\\\\cache\\\\Redis%-8%.12%.0%-Windows%-x64%-msys2%.zip" %-%-strip%-components=1 %-C "C:\\\\xpkgs\\\\redis\\\\8%.12%.0"$'))
 assert(installed())
 
 for _, rel in ipairs(required) do
-    files["C:/xpkgs/redis/8.10.3/" .. rel] = nil
+    files["C:/xpkgs/redis/8.12.0/" .. rel] = nil
     assert(not installed(), "accepted missing " .. rel)
-    files["C:/xpkgs/redis/8.10.3/" .. rel] = true
+    files["C:/xpkgs/redis/8.12.0/" .. rel] = true
 end
 
 assert(config())
 assert(#xvm_adds == #programs)
 assert(xvm_adds[1][1] == "redis-server")
-assert(xvm_adds[1][2].bindir == "C:/xpkgs/redis/8.10.3")
+assert(xvm_adds[1][2].bindir == "C:/xpkgs/redis/8.12.0")
 assert(xvm_adds[1][2].binding == nil)
 for i = 2, #programs do
     assert(xvm_adds[i][1] == programs[i])
-    assert(xvm_adds[i][2].bindir == "C:/xpkgs/redis/8.10.3")
-    assert(xvm_adds[i][2].binding == "redis-server@8.10.3")
+    assert(xvm_adds[i][2].bindir == "C:/xpkgs/redis/8.12.0")
+    assert(xvm_adds[i][2].binding == "redis-server@8.12.0")
 end
 
 assert(uninstall())
@@ -181,3 +183,11 @@ class TestIsolation:
             "xim.libxpkg.pkginfo", "xim.libxpkg.xvm", "xim.pkgindex.payload",
         }
         assert not re.search(r'\b(?:path\.|is_host\(|os\.host\(|raise\()', src)
+
+
+class TestVerify:
+    @pytest.mark.verify
+    @skip_if_not("windows")
+    def test_version(self):
+        expected = os.environ.get("XLINGS_TEST_VERSION", "8.12.0")
+        assert_command_output("redis-server --version", contains=expected)
