@@ -70,13 +70,10 @@ package = {
                 },
             },
             ["3.29.0"] = {
-                x86_64 = {
-                    url = "https://github.com/vale-cli/vale/releases/download/v3.29.0/vale_3.29.0_Linux_64-bit.tar.gz",
-                    sha256 = "00356ae1bacd1160aa415664f3ed0d34ce9ef5319c61d31123a97366ea1a2f64",
-                },
-                aarch64 = {
-                    url = "https://github.com/vale-cli/vale/releases/download/v3.29.0/vale_3.29.0_Linux_arm64.tar.gz",
-                    sha256 = "ffff63b3aaf97ca3c7e0a0c5226a8ddf7c21f21f1695e40461b0037d2189ba74",
+                arch_alias = { x86_64 = "64-bit", aarch64 = "arm64" },
+                sha256 = {
+                    x86_64 = "00356ae1bacd1160aa415664f3ed0d34ce9ef5319c61d31123a97366ea1a2f64",
+                    aarch64 = "ffff63b3aaf97ca3c7e0a0c5226a8ddf7c21f21f1695e40461b0037d2189ba74",
                 },
             },
         },
@@ -91,13 +88,10 @@ package = {
                 },
             },
             ["3.29.0"] = {
-                x86_64 = {
-                    url = "https://github.com/vale-cli/vale/releases/download/v3.29.0/vale_3.29.0_macOS_64-bit.tar.gz",
-                    sha256 = "5c983d634074ea0a7a9b40e6450dff1035f2b406a3f79b130ec4cddd8ff14675",
-                },
-                aarch64 = {
-                    url = "https://github.com/vale-cli/vale/releases/download/v3.29.0/vale_3.29.0_macOS_arm64.tar.gz",
-                    sha256 = "62b0eb911aa9255ad4520afa5284d0b8a27f11eea5ffe40390a1eaaca9baab73",
+                arch_alias = { x86_64 = "64-bit", aarch64 = "arm64" },
+                sha256 = {
+                    x86_64 = "5c983d634074ea0a7a9b40e6450dff1035f2b406a3f79b130ec4cddd8ff14675",
+                    aarch64 = "62b0eb911aa9255ad4520afa5284d0b8a27f11eea5ffe40390a1eaaca9baab73",
                 },
             },
         },
@@ -112,13 +106,10 @@ package = {
                 },
             },
             ["3.29.0"] = {
-                x86_64 = {
-                    url = "https://github.com/vale-cli/vale/releases/download/v3.29.0/vale_3.29.0_Windows_64-bit.zip",
-                    sha256 = "5977efcb833248b69c870759c74d368cdaf8845103ac59b986cad1467affc1a0",
-                },
-                aarch64 = {
-                    url = "https://github.com/vale-cli/vale/releases/download/v3.29.0/vale_3.29.0_Windows_arm64.zip",
-                    sha256 = "139641ed5ef31b6a4b05b93570aa1be4246e64816c55fe20724abd07821d2c7c",
+                arch_alias = { x86_64 = "64-bit", aarch64 = "arm64" },
+                sha256 = {
+                    x86_64 = "5977efcb833248b69c870759c74d368cdaf8845103ac59b986cad1467affc1a0",
+                    aarch64 = "139641ed5ef31b6a4b05b93570aa1be4246e64816c55fe20724abd07821d2c7c",
                 },
             },
         },

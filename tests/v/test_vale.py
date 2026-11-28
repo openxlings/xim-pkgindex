@@ -29,7 +29,7 @@ from tests.lib.platform_utils import skip_if_not, under_test
 
 PKG = "vale"
 PKG_FILE = "pkgs/v/vale.lua"
-VERSION = "3.28.1"
+VERSION = "3.29.0"
 REPO = Path(__file__).resolve().parents[2]
 
 
@@ -135,9 +135,9 @@ dofile(arg[1])
 local files, dirs, mvs, execs, adds, rms = {}, {}, {}, {}, {}, {}
 pkginfo = {
     name = function() return "vale" end,
-    version = function() return "3.28.1" end,
-    install_file = function() return "/cache/vale_3.28.1_Linux_64-bit.tar.gz" end,
-    install_dir = function() return "/xpkgs/vale/3.28.1" end,
+    version = function() return "3.29.0" end,
+    install_file = function() return "/cache/vale_3.29.0_Linux_64-bit.tar.gz" end,
+    install_dir = function() return "/xpkgs/vale/3.29.0" end,
 }
 os.host = function() return "linux" end
 os.getenv = function() return nil end
@@ -155,7 +155,7 @@ system = {
     exec = function(cmd)
         table.insert(execs, cmd)
         if cmd:find("'tar'", 1, true) then
-            files["/xpkgs/vale/3.28.1/vale"] = true
+            files["/xpkgs/vale/3.29.0/vale"] = true
         end
     end,
 }
@@ -165,14 +165,14 @@ xvm = {
 }
 
 assert(not installed())
-files["/cache/vale_3.28.1_Linux_64-bit.tar.gz"] = true
+files["/cache/vale_3.29.0_Linux_64-bit.tar.gz"] = true
 assert(install())
 assert(installed())
 assert(#execs == 2)
-assert(execs[1] == "'tar' '-xzf' '/cache/vale_3.28.1_Linux_64-bit.tar.gz' '-C' '/xpkgs/vale/3.28.1'")
-assert(execs[2] == "'chmod' '+x' '/xpkgs/vale/3.28.1/vale'")
+assert(execs[1] == "'tar' '-xzf' '/cache/vale_3.29.0_Linux_64-bit.tar.gz' '-C' '/xpkgs/vale/3.29.0'")
+assert(execs[2] == "'chmod' '+x' '/xpkgs/vale/3.29.0/vale'")
 assert(config())
-assert(#adds == 1 and adds[1][1] == "vale" and adds[1][2].bindir == "/xpkgs/vale/3.28.1")
+assert(#adds == 1 and adds[1][1] == "vale" and adds[1][2].bindir == "/xpkgs/vale/3.29.0")
 assert(uninstall())
 assert(#rms == 1 and rms[1] == "vale")
 
@@ -180,24 +180,24 @@ assert(#rms == 1 and rms[1] == "vale")
 files, dirs, mvs, execs = {}, {}, {}, {}
 files["/cache/vale"] = true
 assert(install())
-assert(#mvs == 1 and mvs[1][1] == "/cache/vale" and mvs[1][2] == "/xpkgs/vale/3.28.1/vale")
-assert(#execs == 1 and execs[1] == "'chmod' '+x' '/xpkgs/vale/3.28.1/vale'")
+assert(#mvs == 1 and mvs[1][1] == "/cache/vale" and mvs[1][2] == "/xpkgs/vale/3.29.0/vale")
+assert(#execs == 1 and execs[1] == "'chmod' '+x' '/xpkgs/vale/3.29.0/vale'")
 
 -- Windows install via libs/payload.lua (.zip -> System32\\tar.exe)
 files, dirs, mvs, execs, adds, rms = {}, {}, {}, {}, {}, {}
 pkginfo = {
     name = function() return "vale" end,
-    version = function() return "3.28.1" end,
-    install_file = function() return "C:/cache/vale_3.28.1_Windows_64-bit.zip" end,
-    install_dir = function() return "C:/xpkgs/vale/3.28.1" end,
+    version = function() return "3.29.0" end,
+    install_file = function() return "C:/cache/vale_3.29.0_Windows_64-bit.zip" end,
+    install_dir = function() return "C:/xpkgs/vale/3.29.0" end,
 }
 os.host = function() return "windows" end
 os.getenv = function(k) return k == "SystemRoot" and "C:\\\\Windows" or nil end
-files["C:/cache/vale_3.28.1_Windows_64-bit.zip"] = true
+files["C:/cache/vale_3.29.0_Windows_64-bit.zip"] = true
 system = {
     exec = function(cmd)
         table.insert(execs, cmd)
-        files["C:/xpkgs/vale/3.28.1/vale.exe"] = true
+        files["C:/xpkgs/vale/3.29.0/vale.exe"] = true
     end,
 }
 
@@ -205,7 +205,7 @@ assert(not installed())
 assert(install())
 assert(installed())
 assert(#execs == 1)
-assert(execs[1] == 'C:\\\\Windows\\\\System32\\\\tar.exe -xf "C:\\\\cache\\\\vale_3.28.1_Windows_64-bit.zip" -C "C:\\\\xpkgs\\\\vale\\\\3.28.1"')
+assert(execs[1] == 'C:\\\\Windows\\\\System32\\\\tar.exe -xf "C:\\\\cache\\\\vale_3.29.0_Windows_64-bit.zip" -C "C:\\\\xpkgs\\\\vale\\\\3.29.0"')
 
 -- Missing archive and extracted binary must fail
 files = {}
