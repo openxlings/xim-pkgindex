@@ -345,3 +345,37 @@ def test_candidate_verification_receives_the_installed_version(index, monkeypatc
     assert len(verified) == 1
     evidence = json.loads((recipe.parents[2] / 'candidate-evidence.json').read_text())
     assert evidence['version'] == '1.1.0' and evidence['status'] == 'verified-and-removed'
+
+
+@pytest.mark.parametrize('layout', [('data',), ('data', 'xim')])
+def test_candidate_helpers_are_copied_into_the_registered_index(index, layout):
+    module, _ = index
+    libraries = module.ROOT / 'libs'
+    libraries.mkdir()
+    (libraries / 'payload.lua').write_text('return { present = true }')
+    home = module.ROOT / 'home'
+    destination = home.joinpath(*layout, 'xim-pkgindex-local', 'libs')
+    destination.mkdir(parents=True)
+    (destination / 'existing.lua').write_text('keep this user module')
+    module._stage_local_libraries(home)
+    assert (destination / 'payload.lua').read_text() == 'return { present = true }'
+    assert (destination / 'existing.lua').read_text() == 'keep this user module'
+
+
+def test_candidate_helpers_refuse_an_escaping_local_index(index, tmp_path):
+    import os
+    if os.name == 'nt':
+        pytest.skip('requires POSIX directory symlinks')
+    module, _ = index
+    libraries = module.ROOT / 'libs'
+    libraries.mkdir()
+    (libraries / 'payload.lua').write_text('return { present = true }')
+    home = module.ROOT / 'home'
+    local = home / 'data/xim/xim-pkgindex-local'
+    local.mkdir(parents=True)
+    outside = tmp_path / 'outside'
+    outside.mkdir()
+    (local / 'libs').symlink_to(outside, target_is_directory=True)
+    with pytest.raises(module.Invalid, match='escape'):
+        module._stage_local_libraries(home)
+    assert not list(outside.iterdir())

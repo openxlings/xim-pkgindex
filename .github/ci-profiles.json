@@ -1,4 +1,23 @@
 {
+  "gtk4_runtime": {
+    "workflow": "gtk4-runtime.yml",
+    "direct_only": true,
+    "paths": [
+      "pkgs/g/gtk4-runtime.lua",
+      "tests/g/test_gtk4_runtime.py",
+      ".agents/tools/graphics/verify-gtk4-runtime.py",
+      "tools/res/gtk4_runtime.py",
+      "tools/res/gtk4-runtime-*.json",
+      "tests/test_gtk4_runtime_builder.py",
+      ".agents/tools/repack/repack.py",
+      "tests/test_repack.py",
+      ".github/scripts/autoupdate-ci.py",
+      ".github/workflows/gtk4-runtime.yml",
+      "libs/payload.lua",
+      "libs/relocate.lua",
+      "libs/selfcontain.lua"
+    ]
+  },
   "ci_xpkg_test": {
     "workflow": "ci-xpkg-test.yml",
     "paths": [

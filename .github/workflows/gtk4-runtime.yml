@@ -1,0 +1,72 @@
+name: GTK4 private runtime
+
+on:
+  workflow_call:
+    inputs:
+      base_sha:
+        type: string
+        default: ''
+      head_sha:
+        type: string
+        default: ''
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  UPDATER_COMMIT: c60835a1f00f902dd02f85739d5be9680cd52754
+  PYTHONUTF8: '1'
+
+jobs:
+  native:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-24.04
+            arch: x86_64
+          - runner: ubuntu-24.04-arm
+            arch: aarch64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/checkout@v4
+        with:
+          repository: openxlings/xpkgindex-update
+          ref: ${{ env.UPDATER_COMMIT }}
+          path: .updater
+          persist-credentials: false
+      - name: Prepare the isolated native graphics test harness
+        run: |
+          set -euo pipefail
+          sudo timeout 180 apt-get -o Acquire::Retries=2 update
+          sudo timeout 240 apt-get install -y --no-install-recommends gcc libc6-dev lua5.4 xvfb xauth dbus-daemon # host-dep-ok: native acceptance toolchain and display services, not package runtime dependencies
+          python -m pip install pytest pyyaml # host-dep-ok: the runner test harness
+          mkdir -p "$RUNNER_TEMP/gtk4-home"
+          echo "HOME=$RUNNER_TEMP/gtk4-home" >> "$GITHUB_ENV"
+          echo "XDG_CONFIG_HOME=$RUNNER_TEMP/gtk4-home/config" >> "$GITHUB_ENV"
+          echo "XDG_CACHE_HOME=$RUNNER_TEMP/gtk4-home/cache" >> "$GITHUB_ENV"
+          echo "PYTHONPATH=$GITHUB_WORKSPACE/.updater/src" >> "$GITHUB_ENV"
+      - uses: ./.github/actions/setup-xlings
+        with:
+          version: v2026.11.23.1
+      - name: Install, render, verify the real dbpp consumer, and remove
+        env:
+          ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          dbus-run-session -- xvfb-run -a python .github/scripts/autoupdate-ci.py candidate \
+            --package xim:gtk4-runtime --path pkgs/g/gtk4-runtime.lua --version 4.24.2 --arch "$ARCH"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gtk4-runtime-${{ matrix.arch }}-evidence
+          path: candidate-evidence.json
+          if-no-files-found: warn

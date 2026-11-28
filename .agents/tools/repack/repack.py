@@ -398,7 +398,14 @@ def provenance(args, sources, result, removed):
     return "\n".join(lines)
 
 
-def build(args):
+def build(args, prepare=None):
+    """Build a payload, optionally preparing generated data before its audit.
+
+    Imported callers may supply prepare(root). It runs after pruning but before
+    placeholder auditing, required-path checks, provenance and final packaging.
+    The caller must record its full reproduction command and generator versions
+    in BUILD-METADATA.json; the bare repack command cannot reproduce that data.
+    """
     for tool in ("tar", "gzip"):
         if not shutil.which(tool):
             raise CannotRun(f"{tool} not found on PATH")
@@ -423,12 +430,17 @@ def build(args):
             elif archive.name.endswith((".conda", ".tar.bz2")):
                 meta = extract_conda(archive, stage)
                 declared += [p for p in meta.get("paths", []) if p.get("prefix_placeholder")]
+                # Package-local metadata collides across sources; its parsed
+                # provenance and copied licenses above are retained separately.
+                prune(stage, args.keep, ["info/**"])
             else:
                 raise Broken(f"unsupported artefact: {archive.name}")
             merge_tree(stage, root)
             sources.append({"url": url, "sha256": sha, "meta": meta})
 
         removed = prune(root, args.keep, DEFAULT_DROP + args.drop)
+        if prepare is not None:
+            prepare(root)
         result = audit(root, declared, args.relocate, args.host, args.inert)
         if result["unresolved"]:
             for rel, why in result["unresolved"]:
@@ -441,7 +453,16 @@ def build(args):
         if result["relocate"]:
             (root / "RELOCATE.json").write_text(json.dumps(
                 {"schema": 1, "entries": result["relocate"]}, indent=2) + "\n")
-        (root / "PROVENANCE.md").write_text(provenance(args, sources, result, removed))
+        details = provenance(args, sources, result, removed)
+        if prepare is not None:
+            details = details.replace(
+                "## Command\n", "## Command\n\n"
+                "This bare repack command reproduces only the source layout, not "
+                "prepared/generated data. Use the complete builder command and "
+                "tool versions in `BUILD-METADATA.json` to reproduce this payload.\n",
+                1,
+            )
+        (root / "PROVENANCE.md").write_text(details)
 
         tarball = out / f"{top}-linux-{args.arch}.tar.gz"
         subprocess.run(["tar", "--sort=name", "--owner=0", "--group=0", "--numeric-owner",
