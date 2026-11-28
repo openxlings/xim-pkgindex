@@ -1,0 +1,207 @@
+-- Written by `mcpp emit xpkg --package` from the four okld-<version>-<os>-<arch>.zip
+-- that openkal-image's `release binaries` workflow attaches to its release
+-- (each `mcpp pack` of the tool over openkal-platform's hosted arrangement:
+-- static on Linux, no SDK on macOS, no MSVC run-time on Windows), with the
+-- index's own parts added: description, authors, license, the CN mirror.
+--
+-- GLOBAL is the upstream release; CN is the same bytes at
+-- gitcode.com/xlings-res/okld (uploaded with `gtc release upload` and verified
+-- by download), so one sha256 serves both. A POSIX package holds the program
+-- under bin/ (the root's `okld` is a convenience script); a Windows one holds
+-- okld.exe at its root -- hence the per-system bindir in config().
+package = {
+    spec = "2",
+    name = "okld",
+    description = "Link, check, sign and bundle ok images (openkal): the linker and bundler of .oke images and .okb bundles",
+
+    authors = {"mcpplibs"},
+    maintainers = {"https://github.com/mcpplibs/openkal-image/graphs/contributors"},
+    licenses = {"Apache-2.0"},
+    repo = "https://github.com/mcpplibs/openkal-image",
+    docs = "https://github.com/mcpplibs/openkal-image#readme",
+    homepage = "https://github.com/mcpplibs/openkal-image",
+    type = "package",
+    status = "dev", -- 0.x: the ok-image format and its tools are pre-1.0
+    categories = {"openkal", "runtime", "tools"},
+    keywords = {"openkal", "linker", "ok-image", "okb", "bundle"},
+    archs = {"aarch64", "x86_64"},
+    programs = {"okld"},
+    xvm_enable = true,
+    -- 0.5.0 selects the immutable jit1 asset revision. Its package version is
+    -- unchanged; the runner retains debugger registration symbols when packed.
+    xpm = {
+        linux = {
+            source = {
+                GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/${version}/okld-${version}-linux-${arch}.zip",
+                CN = "https://gitcode.com/xlings-res/okld/releases/download/${version}/okld-${version}-linux-${arch}.zip",
+            },
+            ["latest"] = { ref = "0.5.0" },
+            ["0.5.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/0.5.0/okld-0.5.0-jit1-linux-${arch}.zip",
+                    CN = "https://gitcode.com/xlings-res/okld/releases/download/0.5.0/okld-0.5.0-jit1-linux-${arch}.zip",
+                },
+                sha256 = {
+                    ["aarch64"] = "d46d85a27d88eb8046eb56de700c8ba181e74ba48c05ec0aa442b308cbc5cf15",
+                    ["x86_64"] = "1eca64ea3139cb05a7a183083c9a1b09b56b024e043140dac50d1984a4a6c79f",
+                },
+            },
+            ["0.4.4"] = {
+                sha256 = {
+                    ["aarch64"] = "43aa97dc0ea264b7466d13c81f8ec78b77d86c850fe3263b6bf53275c6f3ec73",
+                    ["x86_64"] = "778556c1bbda0db3a16569c0e10558184ffb5ff0e62b6c0dcb0572b03b3a4616",
+                },
+            },
+            ["0.4.3"] = {
+                sha256 = {
+                    ["aarch64"] = "aacf831bb11214a1241604a31600cf817e58f4f657c9350718a1a8a0379a7b7b",
+                    ["x86_64"] = "24093b965ab736b8d47e4b1137214b6176ba47d02c29202035908d91372953f9",
+                },
+            },
+            ["0.4.2"] = {
+                sha256 = {
+                    ["aarch64"] = "5a5889fd16b7ea955eb21a71f5d0c9a718b1bf9c1f7c8da32634cdd9b3eb9d76",
+                    ["x86_64"] = "aeb72ae0a7b63223f27ba14799cad48afcf3d407174900fd0e3cf555f085810c",
+                },
+            },
+            ["0.3.1"] = {
+                sha256 = {
+                    ["aarch64"] = "283fe783d9e111978c0c1fbc29fdadcd10ec9e43fc16e190f845e0918ce5164f",
+                    ["x86_64"] = "d877e08d7693216acb3e95ed842ed8262254f9571733f5f004aa626bf723e02f",
+                },
+            },
+            ["0.3.0"] = {
+                sha256 = {
+                    ["aarch64"] = "0c2b37391976476190c67fc6c7bfed1b87c9688e8e6b9621b08d0d741b76566e",
+                    ["x86_64"] = "db9caaa24423d38c8e7d702b56a6279a7392f5854a59092a87e3f65913251396",
+                },
+            },
+            ["0.1.3"] = {
+                sha256 = {
+                    ["aarch64"] = "f52be058ebf3b1af8151633ac5a05ae209f699e363373ea53e6d62e16d0f6366",
+                    ["x86_64"] = "baa13039f8f2b0a87577c79c85c5ea815eae34ca6aebb5cf156bb7553b543f54",
+                },
+            },
+        },
+        macosx = {
+            source = {
+                GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/${version}/okld-${version}-macos-${arch}.zip",
+                CN = "https://gitcode.com/xlings-res/okld/releases/download/${version}/okld-${version}-macos-${arch}.zip",
+            },
+            ["latest"] = { ref = "0.5.0" },
+            ["0.5.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/0.5.0/okld-0.5.0-jit1-macos-${arch}.zip",
+                    CN = "https://gitcode.com/xlings-res/okld/releases/download/0.5.0/okld-0.5.0-jit1-macos-${arch}.zip",
+                },
+                sha256 = {
+                    ["aarch64"] = "7505f88ef1214be89bbeb3daca8c0f803548e5685f0121d7cc8611d3e6d0e026",
+                },
+            },
+            ["0.4.4"] = {
+                sha256 = {
+                    ["aarch64"] = "f5a1b93372603411bc88a4b768b1c313ef307fa2f1b32072dd1dc7eefe510e0e",
+                },
+            },
+            ["0.4.3"] = {
+                sha256 = {
+                    ["aarch64"] = "f33937bdde33d4fa629c0dccf8abaeb26717dedd1cdc8b7f245635e284ce23f1",
+                },
+            },
+            ["0.4.2"] = {
+                sha256 = {
+                    ["aarch64"] = "eae8477f27568049b48c3aa6cae88914e035dba11eb48f797c1c8b8ce597edab",
+                },
+            },
+            ["0.3.1"] = {
+                sha256 = {
+                    ["aarch64"] = "982e8f2c13d713cfbf3f2b1120f72013c47562dc3108022236ef22c82f2b4530",
+                },
+            },
+            ["0.3.0"] = {
+                sha256 = {
+                    ["aarch64"] = "c07a5e92c40310514ee08cc903cdf68fd4c38574506840f3d15a487316122766",
+                },
+            },
+            ["0.1.3"] = {
+                sha256 = {
+                    ["aarch64"] = "f392b94a9398a604f668cca9868324961db98823cb30c1c72a1e9c5e4d463534",
+                },
+            },
+        },
+        windows = {
+            source = {
+                GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/${version}/okld-${version}-windows-${arch}.zip",
+                CN = "https://gitcode.com/xlings-res/okld/releases/download/${version}/okld-${version}-windows-${arch}.zip",
+            },
+            ["latest"] = { ref = "0.5.0" },
+            ["0.5.0"] = {
+                url = {
+                    GLOBAL = "https://github.com/mcpplibs/openkal-image/releases/download/0.5.0/okld-0.5.0-jit1-windows-${arch}.zip",
+                    CN = "https://gitcode.com/xlings-res/okld/releases/download/0.5.0/okld-0.5.0-jit1-windows-${arch}.zip",
+                },
+                sha256 = {
+                    ["x86_64"] = "5e29ec83ede4d546815acb62563564cc538203fde1920c284ff3ae7469e1cfc7",
+                },
+            },
+            ["0.4.4"] = {
+                sha256 = {
+                    ["x86_64"] = "6e4c5b358345b2b22e2bafc7bf29913233e2ca83030d718212db17f9b98b5943",
+                },
+            },
+            ["0.4.3"] = {
+                sha256 = {
+                    ["x86_64"] = "eafdb3cfd06c065a17dbe337498a976c0ba37a2cd544621060d0779aa7c32f17",
+                },
+            },
+            ["0.4.2"] = {
+                sha256 = {
+                    ["x86_64"] = "79790632625495f9a8f2cefbc62c376f15c5ab54bc7892ee278c0e30d6cd4667",
+                },
+            },
+            ["0.3.1"] = {
+                sha256 = {
+                    ["x86_64"] = "4da1b8244380b9aea3500e5eac4347edfb236c5f5945fc0eb05297f5a4785d34",
+                },
+            },
+            ["0.3.0"] = {
+                sha256 = {
+                    ["x86_64"] = "3ef0b3ce424b695be0edeae003bd1c161c2b74578dee5a9ffb966068b4bdf016",
+                },
+            },
+            ["0.1.3"] = {
+                sha256 = {
+                    ["x86_64"] = "bd8a58922655a7fe0f6852729552a5112ca90af4b808507593adcc30b993c2dd",
+                },
+            },
+        },
+    },
+}
+
+import("xim.libxpkg.pkginfo")
+import("xim.libxpkg.xvm")
+
+function install()
+    -- The archive's one top-level directory is the package; it is named
+    -- after the archive, which xim unpacks beside it.
+    local top = pkginfo.install_file()
+    for _, ext in ipairs({ ".zip" }) do
+        if top:sub(-#ext) == ext then top = top:sub(1, #top - #ext) break end
+    end
+    if not os.isdir(top) then return false end
+    os.tryrm(pkginfo.install_dir())
+    os.mv(top, pkginfo.install_dir())
+    return os.isdir(pkginfo.install_dir())
+end
+
+function config()
+    local bindir = { linux = "bin", macosx = "bin", windows = "." }
+    local opts = { bindir = path.join(pkginfo.install_dir(), bindir[os.host()]) }
+    xvm.add("okld", opts)
+    return true
+end
+
+function uninstall()
+    xvm.remove("okld")
+    return true
+end

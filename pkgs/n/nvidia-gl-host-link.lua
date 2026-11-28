@@ -17,6 +17,17 @@ package = {
     categories = {"graphics", "gpu", "nvidia", "lib"},
     keywords = {"nvidia", "opengl", "egl", "glx", "host-link", "sentinel"},
 
+    -- The host file the links are generated from (xpkg manifest v1 §3.2): the
+    -- version of the NVIDIA kernel module now loaded. A client from xlings
+    -- 2026.11.23.1 records it after config() and runs config() again where it
+    -- reads differently (install, `xlings use`, SubOS entry, `self doctor`);
+    -- config() links the driver's files as they are then (__link_host). An
+    -- older client ignores the field, and `xlings-gl-doctor` still reports the
+    -- mismatch.
+    host_facts = {
+        linux = { "/sys/module/nvidia/version" },
+    },
+
     -- The self-check is a real program and has to be declared as one.
     --
     -- Measured: `xvm.add("xlings-gl-doctor", {...})` alone registers the node
@@ -306,6 +317,64 @@ exit $rc
     system.exec(string.format([[chmod +x "%s"]], script))
 end
 
+-- The vendor's entry points: each is the root of a load chain glvnd dlopens by
+-- name, and install() puts an interposer at each (see there).
+local ENTRY_POINTS = {
+    "libEGL_nvidia.so.0",
+    "libGLX_nvidia.so.0",        -- GLX vendor AND Vulkan ICD: same file
+    "libGLESv1_CM_nvidia.so.1",
+    "libGLESv2_nvidia.so.2",
+}
+
+-- The host's half of `lib/`, from the host as it is now: a link to every
+-- NVIDIA userspace file in NVDIR, and the GBM backend in `lib/gbm`. Links of an
+-- earlier driver are removed, and the interposers (regular files) stay, by the
+-- generation step every host-link package uses (hostlib.link_set). Run by
+-- install() and by config(), which a changed driver version runs again
+-- (`host_facts`); NVDIR nil (no driver now) leaves no host link.
+--
+-- The GBM backend: libgbm picks one by the render node's driver name
+-- (`nvidia-drm` -> nvidia-drm_gbm.so) along GBM_BACKENDS_PATH, which names the
+-- subos's lib/gbm and nothing of the host's; without it gbm_create_device() on
+-- an NVIDIA node falls to Mesa's DRI backend and fails. The host ships it as a
+-- link to libnvidia-allocator (libc and libdl only, so our glibc loads it);
+-- linked here as the host resolves it.
+local function __link_host(dir, nvdir)
+    local targets = {}
+    for _, name in ipairs(nvdir and __nvidia_entries(nvdir) or {}) do
+        targets[name] = path.join(nvdir, name)
+    end
+    local linked = hostlib.link_set(path.join(dir, "lib"), targets)
+    local gbm = nvdir and path.join(nvdir, "gbm", "nvidia-drm_gbm.so")
+    local target = gbm and os.isfile(gbm) and os.iorun(string.format([[readlink -f "%s"]], gbm)) or ""
+    target = target:gsub("%s+$", "")
+    hostlib.link_set(path.join(dir, "lib", "gbm"), target ~= "" and { ["nvidia-drm_gbm.so"] = target } or {})
+    return linked
+end
+
+-- The driver version the links were generated for, and the self-check that
+-- compares it with the module loaded when a program asks (see install()).
+-- Counted from the disk, so install() and config() report the same thing: the
+-- entry points the host has, and those an interposer answers for.
+local function __stamp(dir, nvdir)
+    local kver = ""
+    if os.isfile("/sys/module/nvidia/version") then
+        kver = (io.readfile("/sys/module/nvidia/version") or ""):gsub("%s+$", "")
+    end
+    local present, done = 0, 0
+    for _, name in ipairs(ENTRY_POINTS) do
+        if nvdir and os.isfile(path.join(nvdir, name)) then
+            present = present + 1
+            local own = os.iorun(string.format([[sh -c 'test -f "%s" && ! test -L "%s" && echo own']],
+                path.join(dir, "lib", name), path.join(dir, "lib", name))) or ""
+            if own:find("own") then done = done + 1 end
+        end
+    end
+    io.writefile(path.join(dir, ".host-driver-version"), kver .. "\n")
+    __write_gl_doctor(dir, kver, done, present)
+    return kver, done, present
+end
+
 function install()
     local dir = pkginfo.install_dir()
     os.tryrm(dir)
@@ -331,31 +400,11 @@ function install()
         -- The script already handles this state: no kernel module loaded is
         -- reported as normal, with nothing to repair. A sentinel's no-driver
         -- path must be a complete install, not a shorter one.
-        io.writefile(path.join(dir, ".host-driver-version"), "\n")
-        __write_gl_doctor(dir, "", 0, 0)
+        __stamp(dir, nil)
         return true
     end
 
-    local linked = 0
-    for _, name in ipairs(__nvidia_entries(nvdir)) do
-        system.exec(string.format([[ln -sf "%s" "%s"]],
-            path.join(nvdir, name), path.join(dir, "lib", name)))
-        linked = linked + 1
-    end
-
-    -- The GBM backend. libgbm picks one by the render node's driver name
-    -- (`nvidia-drm` -> nvidia-drm_gbm.so) along GBM_BACKENDS_PATH, which names
-    -- the subos's lib/gbm and nothing of the host's; without it
-    -- gbm_create_device() on an NVIDIA node falls to Mesa's DRI backend and
-    -- fails. The host ships it as a link to libnvidia-allocator (libc and
-    -- libdl only, so our glibc loads it); linked here as the host resolves it.
-    local gbm = path.join(nvdir, "gbm", "nvidia-drm_gbm.so")
-    local target = os.isfile(gbm) and os.iorun(string.format([[readlink -f "%s"]], gbm)) or ""
-    target = target:gsub("%s+$", "")
-    if target ~= "" then
-        os.mkdir(path.join(dir, "lib", "gbm"))
-        system.exec(string.format([[ln -sf "%s" "%s"]], target, path.join(dir, "lib", "gbm", "nvidia-drm_gbm.so")))
-    end
+    local linked = __link_host(dir, nvdir)
 
     -- What the vendor needs from OUR packages, in its own directory.
     --
@@ -427,13 +476,6 @@ function install()
     -- while `glxinfo` still resolved the vendor's deps from the host.
     -- libGLX_nvidia.so.0 is also the Vulkan ICD, so that one root carries two
     -- APIs.
-    local ENTRY_POINTS = {
-        "libEGL_nvidia.so.0",
-        "libGLX_nvidia.so.0",        -- GLX vendor AND Vulkan ICD: same file
-        "libGLESv1_CM_nvidia.so.1",
-        "libGLESv2_nvidia.so.2",
-    }
-
     local has_interposer = type(elfpatch.host_link_interposer) == "function"
     local present, done = {}, {}
     for _, name in ipairs(ENTRY_POINTS) do
@@ -668,12 +710,7 @@ function install()
     -- so the same invariant can only be a RUN-TIME CHECK -- which is what the
     -- stamp plus `xlings-gl-doctor` are. Flatpak reads the same file for the
     -- same reason (`enable-if: active-gl-driver`).
-    local kver = ""
-    if os.isfile("/sys/module/nvidia/version") then
-        kver = (io.readfile("/sys/module/nvidia/version") or ""):gsub("%s+$", "")
-    end
-    io.writefile(path.join(dir, ".host-driver-version"), kver .. "\n")
-    __write_gl_doctor(dir, kver, #done, #present)
+    local kver = __stamp(dir, nvdir)
 
     -- Both numbers, and the interposers as a FRACTION of the entry points the
     -- host actually has. Reporting only the symlink count would make "the
@@ -783,6 +820,20 @@ function config()
 
     -- Before anything else: without the right tag nothing below matters.
     if not __force_rpath_on_interposers(dir) then return false end
+
+    -- The host's links as the driver is now, before they are declared below.
+    -- This is the step a changed `host_facts` runs again: after a driver
+    -- upgrade the links install() made name the previous driver's files.
+    local nvdir = __probe_nvidia_dir()
+    __link_host(dir, nvdir)
+    local _, done, present = __stamp(dir, nvdir)
+    if done < present then
+        log.warn("nvidia-gl-host-link: %d of %d NVIDIA entry points have no interposer "
+                 .. "(the driver was installed after this package); they resolve their "
+                 .. "dependencies from the host until the package is installed again "
+                 .. "(`xlings remove nvidia-gl-host-link`, then `xlings install "
+                 .. "nvidia-gl-host-link`), which builds them", present - done, present)
+    end
 
     xvm.add(package.name)
 

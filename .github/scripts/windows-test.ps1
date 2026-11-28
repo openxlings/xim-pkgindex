@@ -13,7 +13,11 @@ param(
     [string]$ChangedFiles,
 
     [Parameter(Mandatory=$true)]
-    [string]$WorkspaceRoot
+    [string]$WorkspaceRoot,
+
+    # The recipes placed in the index before any is installed: the whole plan for this platform
+    # when the plan is sharded (a dependency the PR changes may be another shard's).
+    [string]$OverlayFiles = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -106,7 +110,7 @@ function Add-RecipeOverlay([string]$relFile) {
     if (-not $isNew) { return $true }
     Remove-Item -Force -ErrorAction SilentlyContinue (Join-Path $indexDir ".xlings-index-cache.json")
     $name = [System.IO.Path]::GetFileNameWithoutExtension($relFile)
-    $found = (& $xlingsCmd search $name 2>$null | Out-String) -match "xim:$([regex]::Escape($name))\b"
+    $found = (& $xlingsCmd search $name 2>$null | Out-String) -match "xim:$([regex]::Escape($name))([^A-Za-z0-9._+-]|$)"
     if ($found) { return $true }
     Remove-Item -Force -ErrorAction SilentlyContinue $dst
     return $false
@@ -120,11 +124,17 @@ if ((Test-Path (Join-Path $WorkspaceRoot "libs")) -and (Test-Path $indexDir -Pat
 }
 
 # Every changed recipe is placed before any is installed, so a dependency the
-# PR adds resolves whichever order the files are tested in.
-foreach ($f in $files) {
+# PR adds resolves whichever order -- and whichever shard -- the files are tested in.
+# (A name of its own: PowerShell's names ignore case, and $OverlayFiles is a [string] parameter, so
+# the list assigned to it would be joined back into one string.)
+$placedFirst = if ($OverlayFiles) { @($OverlayFiles -split '\s+' | Where-Object { $_ -and $_.Trim() -ne "" }) } else { $files }
+foreach ($f in $placedFirst) {
     $rel = $f -replace '/', '\'
     if (-not (Test-Path (Join-Path $WorkspaceRoot $rel))) { continue }
-    if (-not (Add-RecipeOverlay $rel)) {
+    if (Add-RecipeOverlay $rel) {
+        Write-Host "  placed in the index: $rel"
+    } else {
+        Write-Host "  placed through --add-xpkg (it did not resolve under xim:): $rel"
         & $xlingsCmd config --add-xpkg (Join-Path $WorkspaceRoot $rel) 2>&1 | Out-Null
     }
 }

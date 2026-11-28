@@ -119,7 +119,10 @@ class TestLifecycle:
         # Installing succeeds whether or not the host has the driver: the link
         # is allowed to dangle at the canonical path so it self-heals when the
         # distro driver package is installed later.
-        assert_install_succeeds(PKG)
+        # The version the verify step reads. A dependent that pins an earlier
+        # one (ollama: libcuda-host-link@0.0.1) may have installed it in the
+        # same run, and a bare name is then already satisfied.
+        assert_install_succeeds(f"{PKG}@{VERSION}")
 
 
 class TestVerify:

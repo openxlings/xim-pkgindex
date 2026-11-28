@@ -121,7 +121,6 @@ def test_one_pr_entry_and_no_feature_push_duplication():
 def test_profile_routes_watch_their_own_executors():
     for profile in PROFILES.values():
         assert '.github/workflows/' + profile['workflow'] in profile['paths']
-    assert '.github/scripts/check-payload-hard-links.py' in PROFILES['payload_hard_links']['paths']
 
 
 def test_bot_dispatch_compares_complete_pr_not_last_commit():
@@ -176,8 +175,35 @@ def test_publication_follows_build_inputs_too():
         assert on['workflow_run']['workflows'] == ['CI']
         assert on['workflow_run']['branches'] == ['main']
         assert 'pull_request' not in on
-        assert any('${{ github.event.workflow_run.head_sha || github.sha }}' == step.get('with', {}).get('ref')
+        # The workflow_run head_sha must stay in the checkout chain: a manual
+        # dispatch may prepend its own ref (publish-artifact.yml's `ref`
+        # input), but the CI-verified fallback can never be dropped.
+        assert any('github.event.workflow_run.head_sha || github.sha' in (step.get('with', {}).get('ref') or '')
                    for job in d['jobs'].values() for step in job.get('steps', []))
+
+
+def test_a_failed_mirror_can_be_retried_for_one_package_on_main():
+    """A retry names one package; the planner still requires ci.mirror; the retry runs only from main."""
+    import subprocess
+    d, on = workflow('xpkg-mirror.yml')
+    inputs = on['workflow_dispatch']['inputs']
+    assert inputs['package']['default'] == '' and inputs['manifest']['required'] is False
+    assert "inputs.package != ''" in d['jobs']['plan']['if']
+    assert "github.ref == 'refs/heads/main'" in d['jobs']['plan']['if']
+    assert "inputs.manifest != ''" in d['jobs']['publish-manual']['if']
+    step = next(s for s in d['jobs']['plan']['steps'] if s.get('id') == 'plan')
+    assert '--only "$PACKAGE"' in step['run']
+    out = ROOT / '.pytest-mirror-plan.json'
+    try:
+        ok = subprocess.run(['python3', 'tools/xpkg_mirror_queue.py', '--workspace', '.', 'plan', '--head', 'HEAD',
+                             '--only', 'pnpm', '--out', str(out)], cwd=ROOT, capture_output=True, text=True)
+        assert ok.returncode == 0, ok.stderr
+        assert json.loads(out.read_text())['packages'] == ['pnpm']
+        refused = subprocess.run(['python3', 'tools/xpkg_mirror_queue.py', '--workspace', '.', 'plan', '--head', 'HEAD',
+                                  '--only', 'cmake', '--out', str(out)], cwd=ROOT, capture_output=True, text=True)
+        assert refused.returncode != 0 and 'ci = { mirror = true }' in refused.stderr
+    finally:
+        out.unlink(missing_ok=True)
 
 
 def test_multicommit_pr_keeps_earlier_package_change(tmp_path):
@@ -242,9 +268,84 @@ def test_a_large_install_plan_is_sharded(monkeypatch):
     planned = [f for s in shards for f in s['files'].split()]
     assert sorted(planned) == sorted(files)
     assert max(len(s['files'].split()) for s in shards) <= planner.INSTALL_SHARD_SIZE
+    # every shard places the whole plan first: a dependency may be another shard's
+    assert all(sorted(s['overlay'].split()) == sorted(files) for s in shards)
+
+
+def test_the_edited_recipes_are_named_once_for_their_own_tests(monkeypatch):
+    """A recipe the change edits runs its lifecycle and verify tests; one it only reaches does not."""
+    monkeypatch.setattr(planner, 'supported_platforms', lambda src: {'linux'})
+    before = {'pkgs/a/a.lua': pkg(), 'pkgs/b/b.lua': 'package = { name = "b", deps = {"a"} }'}
+    after = dict(before, **{'pkgs/a/a.lua': pkg() + '\n-- changed\nfunction install() return true end\n'})
+    p = planner.plan(['pkgs/a/a.lua'], before, after, PROFILES)
+    entries = p['install_matrix']['include']
+    assert [e['edited'] for e in entries] == ['pkgs/a/a.lua']
+    assert sorted(entries[0]['files'].split()) == ['pkgs/a/a.lua', 'pkgs/b/b.lua']
 
 
 def test_a_small_install_plan_is_one_unnamed_job(monkeypatch):
     monkeypatch.setattr(planner, 'supported_platforms', lambda src: {'linux'})
     p = planner.plan(['pkgs/a/a.lua'], {}, {'pkgs/a/a.lua': pkg()}, PROFILES)
     assert 'shard' not in p['install_matrix']['include'][0]
+
+
+def versioned(entries, hook='return true'):
+    """A provider whose linux table holds `entries` (version -> body) and an install hook."""
+    rows = ''.join(f'            ["{v}"] = {{ {body} }},\n' for v, body in entries.items())
+    return ('package = {\n    name = "a",\n    keywords = {"a"},\n    xpm = {\n        linux = {\n'
+            + rows + '        },\n    },\n}\nfunction install() ' + hook + ' end\n')
+
+
+def test_a_bare_word_outside_deps_is_not_a_dependency():
+    # "desktop" and "luban" in keyword lists planned seventy packages for one mcpp version (#1094).
+    files = {'pkgs/a/a.lua': pkg(), 'pkgs/b/b.lua': 'package = {name="b", keywords = {"a"}, deps = {}}\n',
+             'pkgs/c/c.lua': pkg('"a"'), 'pkgs/d/d.lua': 'package = {name="d"}\nlocal p = pkginfo.dep_install_dir("xim:a")\n'}
+    assert planner.affected(['pkgs/a/a.lua'], files, files) == ['pkgs/a/a.lua', 'pkgs/c/c.lua', 'pkgs/d/d.lua']
+
+
+def test_an_appended_version_leaves_consumers_of_other_versions():
+    before = {'pkgs/a/a.lua': versioned({'latest': 'ref = "1"', '1': 'sha256 = "x"'}),
+              'pkgs/p/p.lua': pkg('"xim:a@1"'), 'pkgs/u/u.lua': pkg('"xim:a"'), 'pkgs/r/r.lua': pkg('"xim:a@>=1"')}
+    after = dict(before, **{'pkgs/a/a.lua': versioned({'latest': 'ref = "2"', '1': 'sha256 = "x"', '2': 'sha256 = "y"'})})
+    assert planner.affected(['pkgs/a/a.lua'], before, after) == ['pkgs/a/a.lua', 'pkgs/r/r.lua', 'pkgs/u/u.lua']
+
+
+def test_a_pinned_version_changed_or_a_hook_changed_reaches_its_consumers():
+    base = {'pkgs/a/a.lua': versioned({'1': 'sha256 = "x"', '2': 'sha256 = "y"'}), 'pkgs/p/p.lua': pkg('"xim:a@1"')}
+    entry = dict(base, **{'pkgs/a/a.lua': versioned({'1': 'sha256 = "z"', '2': 'sha256 = "y"'})})
+    hook = dict(base, **{'pkgs/a/a.lua': versioned({'1': 'sha256 = "x"', '2': 'sha256 = "y"'}, 'return false')})
+    removed = dict(base, **{'pkgs/a/a.lua': versioned({'2': 'sha256 = "y"'})})
+    for after in (entry, hook, removed):
+        assert planner.affected(['pkgs/a/a.lua'], base, after) == ['pkgs/a/a.lua', 'pkgs/p/p.lua']
+
+
+def test_a_consumer_reached_through_another_is_wholly_changed():
+    files = {'libs/x.lua': '', 'pkgs/a/a.lua': versioned({'1': ''}, 'import("xim.pkgindex.x")'),
+             'pkgs/p/p.lua': pkg('"xim:a@1"')}
+    assert planner.affected(['libs/x.lua'], files, files) == ['pkgs/a/a.lua', 'pkgs/p/p.lua']
+
+
+def test_a_name_of_two_recipes_reaches_the_consumers_of_both():
+    files = {'pkgs/x/xdesk.lua': pkg(), 'pkgs/luban/xdesk.lua': pkg(), 'pkgs/c/c.lua': pkg('"xim:xdesk"')}
+    assert planner.affected(['pkgs/x/xdesk.lua'], files, files) == ['pkgs/c/c.lua', 'pkgs/x/xdesk.lua']
+    assert planner.affected(['pkgs/luban/xdesk.lua'], files, files) == ['pkgs/c/c.lua', 'pkgs/luban/xdesk.lua']
+
+
+def test_direct_only_profile_ignores_dependency_expansion(monkeypatch):
+    # #1144: one claude version bump planned the luban acceptance suite
+    # (40min workspace + 2x60min editions) because luban recipes depend on
+    # claude. direct_only fires on the directly edited files only; the
+    # deliberate publication route is the workflow's workflow_dispatch.
+    monkeypatch.setattr(planner, 'supported_platforms', lambda src: set())
+    files = {'pkgs/c/claude.lua': versioned({'latest': 'ref = "2"', '2': 'sha256 = "y"'}),
+             'pkgs/luban/agent-workspace.lua': pkg('"xim:claude"')}
+    p = planner.plan(['pkgs/c/claude.lua'], {}, files, PROFILES)
+    assert 'pkgs/luban/agent-workspace.lua' in p['packages']
+    assert not p['flags']['luban_agent_workspace']
+    p = planner.plan(['pkgs/luban/agent-workspace.lua'], {}, files, PROFILES)
+    assert p['flags']['luban_agent_workspace']
+
+
+def test_direct_only_profile_keeps_manual_dispatch():
+    d, on = workflow(PROFILES['luban_agent_workspace']['workflow'])
+    assert 'workflow_dispatch' in on

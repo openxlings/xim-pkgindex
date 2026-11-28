@@ -1,0 +1,15 @@
+# The admission of the aarch64-linux-gnu base package by the engine that
+# reads it: a C program for the identity the package is the base of, built by
+# the consumer job's `mcpp build`. check.sh holds the rest of the contract --
+# C++ over the headers, `import std`, dynamic and static, what the artifacts
+# name, and a run of each.
+[package]
+name    = "base-c"
+version = "0.1.0"
+
+[build]
+target = "aarch64-linux-gnu"
+
+[targets.base-c]
+kind = "bin"
+main = "src/main.c"
