@@ -106,17 +106,17 @@ for platform, arches in pairs(expected) do
     local tag = "v" .. version
     local entry = assert(p[version], "missing version entry: " .. platform)
     for arch, alias in pairs(arches) do
-        assert(entry.arch_alias[arch] == alias, platform .. "/" .. arch)
-        local sha = assert(entry.sha256[arch], "missing sha256: " .. platform .. "/" .. arch)
+        local item = assert(entry[arch], "missing per-arch entry: " .. platform .. "/" .. arch)
+        local sha = assert(item.sha256, "missing sha256: " .. platform .. "/" .. arch)
         assert(type(sha) == "string" and #sha == 64 and sha:match("^%x+$"), platform .. "/" .. arch)
+        local url = assert(item.url, "missing url: " .. platform .. "/" .. arch)
         local auto = au.resources.GLOBAL.url[platform][arch]
         local resolved_auto = auto:gsub("%${tag}", tag):gsub("%${version}", version)
-        local resolved_xpm = p.source:gsub("%${version}", version):gsub("%${arch_alias}", alias)
-        assert(resolved_auto == resolved_xpm, "installer/updater URLs disagree: " .. platform .. "/" .. arch)
+        assert(url == resolved_auto, "installer/updater URLs disagree: " .. platform .. "/" .. arch)
         count = count + 1
     end
-    for arch in pairs(entry.sha256) do
-        assert(arches[arch], "unexpected arch: " .. arch)
+    for key in pairs(entry) do
+        assert(arches[key], "unexpected key in version entry: " .. platform .. "/" .. key)
     end
 end
 assert(count == 6)
