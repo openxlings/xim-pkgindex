@@ -147,5 +147,9 @@ class TestInstall:
         else:
             assert_xim_add_succeeds(PKG_FILE)
         assert_xvm_registered("zola")
-        out = assert_command_output("zola --version")
+        # assert_command_output asserts but does not return the output; probe inline.
+        result = subprocess.run(["bash", "-l", "-c", "zola --version"],
+                                capture_output=True, text=True, timeout=15)
+        out = result.stdout + result.stderr
+        assert result.returncode == 0, out
         assert re.search(r"zola\s+0\.23\.6", out), f"unexpected zola --version output: {out!r}"
