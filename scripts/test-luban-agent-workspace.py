@@ -146,6 +146,11 @@ def main():
         assert isinstance(record["packages"].get("xim:claude"), str), record
         assert record["policy"].startswith("xim:agent-private@"), record
         assert "up to date" in luban("upgrade", "agent", "--dry-run"), "a fresh workspace is the newest"
+        # Its zone is the proxy's exit, asked with curl from the store the
+        # system's packages are in (the domain's when it lives in one): this
+        # runner's /usr/bin/curl would hide one the edition did not bring.
+        curl = [*home.glob("domains/*/*/data/xpkgs/xim-x-curl/*/bin/curl"), *home.glob("data/xpkgs/xim-x-curl/*/bin/curl")]
+        assert curl, "the edition brings curl, which asks the proxy's exit for the zone"
 
         # Inside: its tools, its persona (made on the first entry), nothing of
         # the host's environment.

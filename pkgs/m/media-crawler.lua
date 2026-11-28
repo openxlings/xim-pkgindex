@@ -31,6 +31,11 @@ package = {
             },
         },
         macosx = {
+            -- uv: `uv sync` installs the lockfile's wheels under the project's
+            -- Python (3.11). Without it install() falls back to pip and the
+            -- host's python3, for which matplotlib 3.9.0 has no wheel, and its
+            -- source build fails under a current clang.
+            deps = {"xim:uv"},
             ["latest"] = { ref = "2026.4.30" },
             ["2026.4.30"] = {
                 url = "https://github.com/NanmiCoder/MediaCrawler/archive/f328ee35b55e25e8aaeb9c847fe8b622e3f3447f.tar.gz",

@@ -5,7 +5,9 @@
     tools/res/publish.py <artifacts-dir> --execute
 
 <artifacts-dir> holds `gh run download` output: one directory per artifact,
-named res-<what>-<version>-<arch>, each with a payload and its .sha256.
+named res-<what>-<version>-<arch>, each with its payloads (one, or one per
+host a build makes on that architecture: llvm's Linux and Windows archives)
+and a .sha256 beside each.
 
 A release is immutable: an asset is added when its release lacks it, never
 replaced. An asset of the same name already published is compared by digest
@@ -45,15 +47,9 @@ def main() -> int:
     execute = "--execute" in sys.argv
     plan = []
     for art in sorted(p for p in root.iterdir() if p.is_dir() and p.name.startswith("res-")):
-        payloads = [f for f in art.iterdir() if f.is_file() and not f.name.endswith(".sha256")]
-        if len(payloads) != 1:
-            print(f"::error::{art.name}: expected one payload, found {[p.name for p in payloads]}")
-            return 1
-        payload = payloads[0]
-        sidecar = payload.with_name(payload.name + ".sha256")
-        digest = sha256(payload)
-        if not sidecar.is_file() or sidecar.read_text().split()[0] != digest:
-            print(f"::error::{payload.name}: its .sha256 does not match its bytes")
+        payloads = sorted(f for f in art.iterdir() if f.is_file() and not f.name.endswith(".sha256"))
+        if not payloads:
+            print(f"::error::{art.name}: no payload")
             return 1
         stem = art.name[len("res-"):]
         what_version, arch = stem.rsplit("-", 1)
@@ -62,8 +58,14 @@ def main() -> int:
         what = what_version[:i]
         version = what_version[len(what) + 1:]
         package = PACKAGE.get(what, what)
-        plan.append({"package": package, "tag": version, "arch": arch, "file": str(payload),
-                     "sidecar": str(sidecar), "sha256": digest})
+        for payload in payloads:
+            sidecar = payload.with_name(payload.name + ".sha256")
+            digest = sha256(payload)
+            if not sidecar.is_file() or sidecar.read_text().split()[0] != digest:
+                print(f"::error::{payload.name}: its .sha256 does not match its bytes")
+                return 1
+            plan.append({"package": package, "tag": version, "arch": arch, "file": str(payload),
+                         "sidecar": str(sidecar), "sha256": digest})
 
     results = []
     for item in plan:

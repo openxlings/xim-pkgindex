@@ -33,14 +33,20 @@ jobs:
               result = subprocess.run(args, text=True, capture_output=True, timeout=300)
               print(result.stdout, result.stderr)
               result.check_returncode()
-              return result.stdout
+              return result.stdout + result.stderr
           home = pathlib.Path.home() / '.xlings'
           exe = home / 'bin' / ('xlings.exe' if os.name == 'nt' else 'xlings')
+          # A client from 2026.10.10.2 does not register a recipe that is
+          # byte-identical to its published copy ("nothing to add"), so
+          # `local:` would name nothing; install under the namespace the
+          # registration produced.
+          ns = {}
           for name in ('eden', 'eden-android'):
-              run(str(exe), 'config', '--add-xpkg', f'pkgs/e/{name}.lua')
-              run(str(exe), 'install', f'local:{name}', '--yes')
+              out = run(str(exe), 'config', '--add-xpkg', f'pkgs/e/{name}.lua')
+              ns[name] = 'xim' if f'is identical to xim:{name};' in out else 'local'
+              run(str(exe), 'install', f'{ns[name]}:{name}', '--yes')
           root = home / 'data/xpkgs'
-          desktop = root / 'local-x-eden/0.2.1'
+          desktop = root / f"{ns['eden']}-x-eden/0.2.1"
           cli = desktop / ('eden-cli.exe' if os.name == 'nt' else 'bin/eden-cli')
           version = run(str(cli), '--version')
           if os.name == 'nt':
@@ -51,14 +57,14 @@ jobs:
               assert probe.returncode == 0xffffffff, probe.returncode
           else:
               assert '0.2.1' in version
-          apk = root / 'local-x-eden-android/0.2.1/eden.apk'
+          apk = root / f"{ns['eden-android']}-x-eden-android/0.2.1/eden.apk"
           assert hashlib.sha256(apk.read_bytes()).hexdigest() == 'befbf70b1a05715811fe092ef9cf71e6f1c1672008a6c5caa31d633e99615668'
           with zipfile.ZipFile(apk) as z:
               assert 'AndroidManifest.xml' in z.namelist()
               assert any(n.startswith('lib/arm64-v8a/') and n.endswith('.so') for n in z.namelist())
           for name in ('eden', 'eden-android'):
-              run(str(exe), 'remove', f'local:{name}@0.2.1', '--yes')
-              assert not (root / f'local-x-{name}/0.2.1').exists()
+              run(str(exe), 'remove', f'{ns[name]}:{name}@0.2.1', '--yes')
+              assert not (root / f"{ns[name]}-x-{name}/0.2.1").exists()
           shim = home / 'subos/default/bin'
           for name in ('eden', 'eden-cli', 'eden-android'):
               for suffix in ('', '.exe', '.cmd', '.bat'):

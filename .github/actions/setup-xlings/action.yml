@@ -3,7 +3,7 @@ description: Install an explicit xlings version and refresh its bundled index.
 inputs:
   version:
     description: Client compatibility version
-    default: v2026.8.10.1
+    default: v2026.11.23.1
 runs:
   using: composite
   steps:

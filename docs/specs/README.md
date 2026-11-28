@@ -1,14 +1,14 @@
 # Specifications
 
-The recipe format and its conventions, for whoever writes or reads recipes
+The xpkg format and its conventions, for whoever writes or reads xpkgs
 mechanically. Specifications are in English only. The chapters explain how to
 use them; these say exactly what is accepted.
 
 | Specification | What it governs |
 |---|---|
-| [XPackage V2](xpackage-v2.md) | the current recipe format: architectures, sources, revisions, the seven rules, capability probing |
+| [XPackage V2](xpackage-v2.md) | the current xpkg format: architectures, sources, revisions, the seven rules, capability probing |
 | [V2 changelog](xpackage-v2-changelog.md) | what changed in V2 and in its tooling |
-| [Template](xpackage-template.lua) | a V2 recipe to copy |
+| [Template](xpackage-template.lua) | a V2 xpkg to copy |
 | [url-template](url-template.md) | the legacy opt-in for automatic version updates |
 | [Legacy V1](legacy/V1/xpackage-spec.md), [V0](legacy/V0/xpackage-spec.md) | earlier formats, still read by clients; deprecated, not translated |
 

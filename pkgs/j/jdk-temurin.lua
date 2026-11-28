@@ -157,7 +157,7 @@ package = {
 
     xpm = {
         linux = {
-            ["latest"] = { ref = "25.0.4+7" },
+            ["latest"] = { ref = "25.0.5.1+2" },
             ["25.0.4"] = { ref = "25.0.4+7" },
             ["25.0.4+7"] = {
                 x86_64 = {
@@ -175,9 +175,25 @@ package = {
                     sha256 = "621f7196f0b682fb557da58bec89bd7dfe5419811fe1c0ba75c9cc8432f084c7",
                 },
             },
+            ["25.0.5.1+2"] = {
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5.1+2/OpenJDK25U-jdk_x64_linux_hotspot_25.0.5.1_2.tar.gz",
+                        CN = "https://mirrors.ustc.edu.cn/github-release/adoptium/temurin25-binaries/jdk-25.0.5.1+2/OpenJDK25U-jdk_x64_linux_hotspot_25.0.5.1_2.tar.gz",
+                    },
+                    sha256 = "760f91b22c3efc9bd1b64ff950598231be82928cc807e30691a0e7a2995a62c0",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5.1+2/OpenJDK25U-jdk_aarch64_linux_hotspot_25.0.5.1_2.tar.gz",
+                        CN = "https://mirrors.ustc.edu.cn/github-release/adoptium/temurin25-binaries/jdk-25.0.5.1+2/OpenJDK25U-jdk_aarch64_linux_hotspot_25.0.5.1_2.tar.gz",
+                    },
+                    sha256 = "c37879e0d08eeb1baa69fcbb7758cd455b7b1c0ceab1e2a136ccb1713c530984",
+                },
+            },
         },
         macosx = {
-            ["latest"] = { ref = "25.0.4+7" },
+            ["latest"] = { ref = "25.0.5.1+2" },
             ["25.0.4"] = { ref = "25.0.4+7" },
             ["25.0.4+7"] = {
                 x86_64 = {
@@ -195,9 +211,25 @@ package = {
                     sha256 = "5a101c54abf5a9f16c0f70d8c38ba99e6567c1ba213378f0bb04497284f051bd",
                 },
             },
+            ["25.0.5.1+2"] = {
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5.1+2/OpenJDK25U-jdk_x64_mac_hotspot_25.0.5.1_2.tar.gz",
+                        CN = "https://mirrors.ustc.edu.cn/github-release/adoptium/temurin25-binaries/jdk-25.0.5.1+2/OpenJDK25U-jdk_x64_mac_hotspot_25.0.5.1_2.tar.gz",
+                    },
+                    sha256 = "b4b96fb7b9babd1b4faab1238e1835d0d7dd77b0690d220643c749a9ac00db36",
+                },
+                aarch64 = {
+                    url = {
+                        GLOBAL = "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5.1+2/OpenJDK25U-jdk_aarch64_mac_hotspot_25.0.5.1_2.tar.gz",
+                        CN = "https://mirrors.ustc.edu.cn/github-release/adoptium/temurin25-binaries/jdk-25.0.5.1+2/OpenJDK25U-jdk_aarch64_mac_hotspot_25.0.5.1_2.tar.gz",
+                    },
+                    sha256 = "248353ea41be39d5d2c1c67c7ce0ae4d1668966aacd0c5308464bc1be42f677b",
+                },
+            },
         },
         windows = {
-            ["latest"] = { ref = "25.0.4+7" },
+            ["latest"] = { ref = "25.0.5.1+2" },
             ["25.0.4"] = { ref = "25.0.4+7" },
             ["25.0.4+7"] = {
                 x86_64 = {
@@ -206,6 +238,15 @@ package = {
                         CN = "https://gitcode.com/xlings-res/jdk-temurin/releases/download/25.0.4_7/OpenJDK25U-jdk_x64_windows_hotspot_25.0.4_7.zip",
                     },
                     sha256 = "7caab7db43bf4b94a2e6252c699e70d90084f9aa7c943cd3414761fd540937ae",
+                },
+            },
+            ["25.0.5.1+2"] = {
+                x86_64 = {
+                    url = {
+                        GLOBAL = "https://github.com/adoptium/temurin25-binaries/releases/download/jdk-25.0.5.1+2/OpenJDK25U-jdk_x64_windows_hotspot_25.0.5.1_2.zip",
+                        CN = "https://mirrors.ustc.edu.cn/github-release/adoptium/temurin25-binaries/jdk-25.0.5.1+2/OpenJDK25U-jdk_x64_windows_hotspot_25.0.5.1_2.zip",
+                    },
+                    sha256 = "849d380ab0a64d9098e7d3a2de28beb73841c3b255c8284f019ccd8748c5eb5b",
                 },
             },
         },

@@ -31,6 +31,7 @@ jobs:
     outputs:
       ci_sweep: ${{ steps.plan.outputs.ci_sweep }}
       llvm_linux_aarch64: ${{ steps.plan.outputs.llvm_linux_aarch64 }}
+      llvm_payload: ${{ steps.plan.outputs.llvm_payload }}
       glibc_root_runtime: ${{ steps.plan.outputs.glibc_root_runtime }}
       base_sha: ${{ steps.plan.outputs.base_sha }}
       head_sha: ${{ steps.plan.outputs.head_sha }}
@@ -42,7 +43,6 @@ jobs:
       ci_tools: ${{ steps.plan.outputs.ci_tools }}
       site_check: ${{ steps.plan.outputs.site_check }}
       consumer_through_index_override: ${{ steps.plan.outputs.consumer_through_index_override }}
-      payload_hard_links: ${{ steps.plan.outputs.payload_hard_links }}
       runtime_revision_gate: ${{ steps.plan.outputs.runtime_revision_gate }}
       eden_smoke: ${{ steps.plan.outputs.eden_smoke }}
       android_runner: ${{ steps.plan.outputs.android_runner }}
@@ -67,7 +67,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: openxlings/xpkgindex-update
-          ref: ffda5ad4cdaae5c4fec6e76ab1d498220cf79a69
+          ref: c60835a1f00f902dd02f85739d5be9680cd52754
           path: .updater
           persist-credentials: false
       - name: Plan validations from the complete comparison
@@ -128,13 +128,6 @@ jobs:
       head_sha: ${{ needs.plan.outputs.head_sha }}
       files: ${{ needs.plan.outputs.files }}
 
-  payload_hard_links:
-    needs: plan
-    if: needs.plan.outputs.payload_hard_links == 'true'
-    uses: ./.github/workflows/payload-hard-links.yml
-    with:
-      base_sha: ${{ needs.plan.outputs.base_sha }}
-      head_sha: ${{ needs.plan.outputs.head_sha }}
   runtime_revision_gate:
     needs: plan
     if: needs.plan.outputs.runtime_revision_gate == 'true'
@@ -242,6 +235,13 @@ jobs:
     with:
       base_sha: ${{ needs.plan.outputs.base_sha }}
       head_sha: ${{ needs.plan.outputs.head_sha }}
+  llvm_payload:
+    needs: plan
+    if: needs.plan.outputs.llvm_payload == 'true'
+    uses: ./.github/workflows/llvm-payload.yml
+    with:
+      base_sha: ${{ needs.plan.outputs.base_sha }}
+      head_sha: ${{ needs.plan.outputs.head_sha }}
   ci_sweep:
     needs: plan
     if: needs.plan.outputs.ci_sweep == 'true'
@@ -258,7 +258,7 @@ jobs:
       head_sha: ${{ needs.plan.outputs.head_sha }}
   required:
     if: always()
-    needs: [plan, install, ci_xpkg_test, ci_tools, site_check, consumer_through_index_override, payload_hard_links, runtime_revision_gate, eden_smoke, android_runner, apple_runners, baremetal_riscv_smoke, bundletool, chatgpt_runtime, jvm_build_tools, node_native_modules, wix_bundle, toolchain_consumer_smoke, luban_agent_workspace, release_owned, glibc_root_runtime, llvm_linux_aarch64, ci_sweep, ci_candidates]
+    needs: [plan, install, ci_xpkg_test, ci_tools, site_check, consumer_through_index_override, runtime_revision_gate, eden_smoke, android_runner, apple_runners, baremetal_riscv_smoke, bundletool, chatgpt_runtime, jvm_build_tools, node_native_modules, wix_bundle, toolchain_consumer_smoke, luban_agent_workspace, release_owned, glibc_root_runtime, llvm_linux_aarch64, llvm_payload, ci_sweep, ci_candidates]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
