@@ -94,7 +94,7 @@ local count = 0
 for platform, arches in pairs(expected) do
     local p = assert(package.xpm[platform], "missing platform: " .. platform)
     local version = assert(p.latest and p.latest.ref, "missing latest ref: " .. platform)
-    assert(version == "0.23.5", platform .. " latest should be 0.23.5")
+    assert(version == "0.23.6", platform .. " latest should be 0.23.6")
     local entry = assert(p[version], "missing version entry: " .. platform)
     for _, arch in ipairs(arches) do
         local item = assert(entry[arch], platform .. "/" .. arch .. " missing entry")
@@ -139,7 +139,7 @@ class TestIsolation:
 
 
 class TestInstall:
-    @pytest.mark.install
+    @pytest.mark.verify
     @skip_if_not("linux")
     def test_install_and_verify(self, xlings_home):
         if under_test(PKG):
@@ -148,4 +148,4 @@ class TestInstall:
             assert_xim_add_succeeds(PKG_FILE, xlings_home)
         assert_xvm_registered("zola", xlings_home)
         out = assert_command_output(["zola", "--version"], xlings_home)
-        assert re.search(r"zola\s+0\.23\.5", out), f"unexpected zola --version output: {out!r}"
+        assert re.search(r"zola\s+0\.23\.6", out), f"unexpected zola --version output: {out!r}"
