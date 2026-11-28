@@ -72,11 +72,6 @@ class TestLifecycle:
     def test_install(self):
         assert_install_succeeds(PKG)
 
-    @pytest.mark.lifecycle
-    @skip_if_not('linux')
-    def test_uninstall(self):
-        assert_uninstall_succeeds(PKG)
-
 
 class TestVerify:
     @pytest.mark.verify
@@ -94,3 +89,12 @@ class TestVerify:
     @skip_if_not('linux')
     def test_pkgconfig_resolves(self):
         assert_pkgconfig_resolves("datrie-0.2")
+
+
+# Verify asserts the payload while it is installed, so uninstall -- which the
+# install job already proves, shim leak included -- runs last in the module.
+class TestUninstall:
+    @pytest.mark.lifecycle
+    @skip_if_not('linux')
+    def test_uninstall(self):
+        assert_uninstall_succeeds(PKG)

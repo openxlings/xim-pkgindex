@@ -165,13 +165,18 @@ def replace_published_glibc(directory, source_run, source_sha):
     values = subprocess.check_output(['lua5.4', 'tests/lua/glibc_metadata_harness.lua',
         'pkgs/g/glibc.lua', 'aarch64'], text=True).strip().split('\t')
     loader, abi, revision, version, digest, global_url, cn_url, _ = values
-    if revision not in ('3', '4'):
-        raise ValueError('only admitted published glibc revisions 3 and 4 are supported')
-    name = f'glibc-2.44.3-r{revision}-linux-aarch64.tar.gz'
+    # The recipe `revision` counts hook revisions; the published asset line is
+    # still r3/r4. Recipe revision 5 installs the revision 4 asset with fixed
+    # linker scripts (see pkgs/g/glibc.lua), so it reuses the r4 bytes and
+    # derivation proofs below.
+    asset_revision = {'3': '3', '4': '4', '5': '4'}.get(revision)
+    if asset_revision is None:
+        raise ValueError('only admitted published glibc revisions 3, 4 and 5 are supported')
+    name = f'glibc-2.44.3-r{asset_revision}-linux-aarch64.tar.gz'
     if (loader, abi, revision, version) != ('lib64/ld-linux-aarch64.so.1',
             'linux-aarch64-glibc', revision, '2.44.3'):
         raise ValueError('published glibc replacement requires the exact ARM64 runtime contract')
-    tag = f'2.44.3-r{revision}'
+    tag = f'2.44.3-r{asset_revision}'
     expected_url = f'https://github.com/xlings-res/glibc/releases/download/{tag}/{name}'
     if global_url != expected_url or cn_url != expected_url.replace('github.com', 'gitcode.com'):
         raise ValueError('unexpected published glibc route')
@@ -183,8 +188,8 @@ def replace_published_glibc(directory, source_run, source_sha):
     proof_path = '.agents/docs/2026-10-08-glibc-r3-resource-admission.json'
     proof = json.loads(Path(proof_path).read_text())
     ledger = json.loads(Path('.agents/docs/2026-10-08-glibc-r3-source-build.json').read_text())
-    derived = json.loads(Path('.agents/docs/2026-10-10-glibc-r4-resource-admission.json').read_text()) if revision == '4' else None
-    validate_glibc_derivation(revision, name, digest, proof, ledger, derived)
+    derived = json.loads(Path('.agents/docs/2026-10-10-glibc-r4-resource-admission.json').read_text()) if asset_revision == '4' else None
+    validate_glibc_derivation(asset_revision, name, digest, proof, ledger, derived)
     origin_id, origin_sha = str(proof['source_run_id']), proof['source_commit']
     if not re.fullmatch('[0-9]+', origin_id) or not re.fullmatch('[0-9a-f]{40}', origin_sha):
         raise ValueError('invalid published glibc source identity')
@@ -216,7 +221,7 @@ def replace_published_glibc(directory, source_run, source_sha):
     (directory / (name + '.GLOBAL.verified')).rename(directory / name)
     (directory / (name + '.CN.verified')).unlink()
     subprocess.run(['python3', '.agents/tools/check-glibc-data-inventory.py', str(directory/name),
-                    '--arch', 'aarch64', '--revision', revision], check=True)
+                    '--arch', 'aarch64', '--revision', asset_revision], check=True)
     archives = dict(UNCHANGED_ARCHIVES, **{name: digest})
     for archive, checksum in archives.items():
         (directory / (archive + '.sha256')).write_text(f'{checksum}  {archive}\n')
