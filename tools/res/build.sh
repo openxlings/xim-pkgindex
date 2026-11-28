@@ -584,9 +584,10 @@ redis)
     v="${version%%-r[0-9]*}"
     d="redis-$version-linux-$arch"
     source_of redis "$v" "https://github.com/redis/redis/archive/refs/tags/$v.tar.gz" "$work/src.tar.gz"
+    # Global LDFLAGS also reach xxhash's shared-library build; only Redis links static.
     alpine "apk add -q $APK_STATIC \
         && tar -xzf src.tar.gz && cd redis-$v \
-        && SOURCE_DATE_EPOCH=0 make -s -C src -j\$(nproc) LDFLAGS=-static MALLOC=libc BUILD_TLS=no USE_SYSTEMD=no \
+        && SOURCE_DATE_EPOCH=0 make -s -C src -j\$(nproc) REDIS_LDFLAGS=-static MALLOC=libc BUILD_TLS=no USE_SYSTEMD=no \
              CFLAGS='-O2 -g0 -ffile-prefix-map=/w=.' redis-server redis-cli redis-benchmark >/dev/null \
         && mkdir -p /w/$d/bin /w/$d/etc \
         && cp src/redis-server src/redis-cli src/redis-benchmark /w/$d/bin/ \
@@ -599,7 +600,7 @@ redis)
     "$work/$d/bin/redis-server" --version | grep -qF "$v" || die "redis-server does not report $v"
     "$work/$d/bin/redis-cli" --version | grep -qF "$v" || die "redis-cli does not report $v"
     check_elf_hygiene "$work/$d"
-    provenance "$d" "redis $v (github.com/redis/redis tag $v, sha256 $(input redis "$v")); static (musl, MALLOC=libc, BUILD_TLS=no, USE_SYSTEMD=no); Alpine 3.20"
+    provenance "$d" "redis $v (github.com/redis/redis tag $v, sha256 $(input redis "$v")); static (musl, REDIS_LDFLAGS=-static, MALLOC=libc, BUILD_TLS=no, USE_SYSTEMD=no); Alpine 3.20"
     pack "$d" ;;
 gdb)
     # The GNU debugger and its remote server, static (musl): it runs on any
