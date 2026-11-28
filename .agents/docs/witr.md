@@ -57,6 +57,9 @@ package provides `witr` without installing shell integration.
   bytes, not a changed URL or relaxed checksum.
 - The offline feature test starts a sanitized Python child, queries only its
   PID using `--short --json`, and checks its PID/name without logging raw JSON.
+  Upstream statuses 1 (warnings) and 6 (untraced launch cause) are diagnostic
+  findings, not lookup failures. The test accepts 0/1/6 only with valid short
+  JSON and the exact owned PID/name; lookup, permission and internal errors fail.
   Pinned upstream code serializes only PID/name and optional parent markers in
   this mode, with no outbound reporting. Witr intrinsically reads related
   ancestry context internally; no environment values are inspected by the test.

@@ -276,8 +276,11 @@ class TestVerify:
                 )
             except subprocess.TimeoutExpired:
                 pytest.fail("Witr owned-process inspection timed out", pytrace=False)
-            if result.returncode != 0:
-                pytest.fail("Witr owned-process inspection failed", pytrace=False)
+            # v0.3.4 renderResult returns 1 for warnings and 6 for an unknown
+            # launch cause even when PID lookup and short JSON output succeed.
+            # All three statuses must still pass the exact identity checks below.
+            if result.returncode not in (0, 1, 6):
+                pytest.fail(f"Witr inspection failed with exit {result.returncode}", pytrace=False)
             try:
                 report = json.loads(result.stdout)
                 owned = next(entry for entry in report if entry.get("PID") == child.pid)
