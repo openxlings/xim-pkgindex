@@ -58,11 +58,17 @@ package = {
 
     xpm = {
         windows = {
-            ["latest"] = { ref = "8.10.3" },
+            ["latest"] = { ref = "8.12.0" },
             ["8.10.3"] = {
                 x86_64 = {
                     url = "https://github.com/redis-windows/redis-windows/releases/download/8.10.3/Redis-8.10.3-Windows-x64-msys2.zip",
                     sha256 = "af16df340525b431e9ec8dabfd625d5e7a233f82805b5418819904ea909c447f",
+                },
+            },
+            ["8.12.0"] = {
+                x86_64 = {
+                    url = "https://github.com/redis-windows/redis-windows/releases/download/8.12.0/Redis-8.12.0-Windows-x64-msys2.zip",
+                    sha256 = "867e67057399f016ca836379cfffba4f7ba6aeb410227f85c465071235f83140",
                 },
             },
         },
