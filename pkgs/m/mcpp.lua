@@ -4856,6 +4856,8 @@ package = {
 
 import("xim.libxpkg.pkginfo")
 import("xim.libxpkg.xvm")
+import("xim.libxpkg.log")
+import("xim.libxpkg.system")
 
 local function mcpp_bin()
     local exe = "mcpp"
@@ -4883,6 +4885,33 @@ local function ensure_runtime_dir()
     return os.isfile(mcpp_bin())
 end
 
+-- ─────────────────────────────────────────────────────────────────────
+-- Shell tab completion. `mcpp self completion <shell> --print` (mcpp
+-- 2026.11.27.1 and later) prints the script for a shell; `mcpp <TAB>` is
+-- answered by `mcpp __complete`, the wire protocol xlings' own profile
+-- uses for `xlings <TAB>` (openxlings/xlings#643). The script comes from the
+-- JUST-INSTALLED binary, so it always matches the version on disk.
+--
+-- Generating, checking, placing and registering it in xlings' own profiles
+-- (never the user's ~/.bashrc, config.fish or PowerShell profile) is
+-- libs/shell_profile.lua's business, for every package alike. Best-effort by
+-- its contract: an older mcpp (the lifecycle test installs 0.0.56) costs the
+-- completion, never the install.
+--
+-- The module is imported INSIDE the hook: uninstall() runs from a snapshot of
+-- this file where a top-level import of an index lib is a silent no-op stub
+-- (openxlings/xlings#743). Remove the guard when that is fixed.
+-- ─────────────────────────────────────────────────────────────────────
+
+local function profile_lib()
+    local lib = import("xim.pkgindex.shell_profile")
+    if type(lib.register_completion) ~= "function" then
+        log.warn("mcpp: xim.pkgindex.shell_profile is not available here, tab completion left as it is")
+        return nil
+    end
+    return lib
+end
+
 function install()
     return ensure_runtime_dir()
 end
@@ -4890,10 +4919,19 @@ end
 function config()
     ensure_runtime_dir()
     xvm.add("mcpp", { bindir = path.join(pkginfo.install_dir(), "bin") })
+    local lib = profile_lib()
+    if lib then
+        lib.register_completion{ name = "mcpp", bin = mcpp_bin(),
+                                 args = { "self", "completion", "{shell}", "--print" } }
+    end
     return true
 end
 
 function uninstall()
     xvm.remove("mcpp")
+    local lib = profile_lib()
+    if lib then
+        lib.unregister_completion("mcpp")
+    end
     return true
 end
