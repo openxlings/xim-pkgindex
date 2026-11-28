@@ -55,9 +55,10 @@ Brook's GUI, Android application, OpenWrt build, or the separate `ipio` command.
   cleanup. Resource acceptance uses the pinned updater inspect/check and mirror
   materialize/verify; the PR records actual command results.
 - Native local execution is Linux x86_64 only. The remaining five binaries are
-  resource/layout/linkage-verified, not claimed as locally executed. CI provides
-  native Linux ARM64, macOS ARM64 and Windows x86_64 coverage; macOS Intel and
-  Windows ARM64 remain resource-only in the standard runner matrix.
+  resource/layout/linkage-verified, not claimed as locally executed. Normal PR
+  CI plans Linux x86_64, macOS ARM64 and Windows x86_64 native jobs. Linux ARM64,
+  macOS Intel and Windows ARM64 are resource-only in this PR; updater-candidate
+  workflows have a separate native-coverage matrix.
 
 ## Revision log
 
