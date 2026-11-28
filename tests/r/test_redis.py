@@ -14,7 +14,7 @@ from tests.lib.assertions import (
     assert_no_direct_path_modification, assert_uses_new_api,
     assert_xim_add_succeeds, assert_install_succeeds,
 )
-from tests.lib.platform_utils import skip_if_not
+from tests.lib.platform_utils import skip_if_not, xlings_home
 
 PKG = "redis"
 PKG_FILE = "pkgs/r/redis.lua"
@@ -199,7 +199,7 @@ class TestVerify:
         # assert_command_output shells through bash, which is WSL on Windows
         # runners; probe the registered shim directly instead.
         expected = os.environ.get("XLINGS_TEST_VERSION", "8.12.0")
-        base = Path(os.environ["XLINGS_HOME"]) / "subos"
+        base = Path(xlings_home()) / "subos"
         subos = os.environ.get("XLINGS_TEST_SUBOS")
         candidates = [subos] if subos else ["current", "default"]
         shim = None
