@@ -172,13 +172,30 @@ import("xim.pkgindex.payload")
 import("xim.pkgindex.shell")
 import("xim.pkgindex.shortcut")
 
-local LINUX_FILES = { "arcmd", "LICENSE", "icon.png", "third_party/README.md" }
+-- Upstream v0.5.1 renamed `icon.png` -> `arcmd.png` in the linux tarball and
+-- dropped icon files from the Windows zip entirely; v0.5.0 archives keep
+-- `icon.png`. Manifests below therefore key off the version being installed.
+local function image_file()
+    if pkginfo.version() == "0.5.0" then return "icon.png" end
+    return "arcmd.png"
+end
+
+local function linux_files()
+    return { "arcmd", "LICENSE", image_file(), "third_party/README.md" }
+end
+
 local MACOS_FILES = {
     "ArcMD.app/Contents/MacOS/ArcMD",
     "ArcMD.app/Contents/Info.plist",
     "ArcMD.app/Contents/Resources/LICENSE",
 }
-local WINDOWS_FILES = { "ArcMD.exe", "LICENSE", "icon.png", "third_party/README.md" }
+
+local function windows_files()
+    local files = { "ArcMD.exe", "LICENSE" }
+    if pkginfo.version() == "0.5.0" then table.insert(files, "icon.png") end
+    table.insert(files, "third_party/README.md")
+    return files
+end
 
 local function is_windows()
     if os.getenv("OS") == "Windows_NT" then return true end
@@ -189,9 +206,9 @@ local function is_windows()
 end
 
 function installed()
-    return payload.present(LINUX_FILES)
+    return payload.present(linux_files())
         or payload.present(MACOS_FILES)
-        or payload.present(WINDOWS_FILES)
+        or payload.present(windows_files())
 end
 
 function install()
@@ -209,7 +226,7 @@ function install()
     if is_windows() then
         -- Flat Windows zip: extract straight into install_dir via System32\tar.exe.
         payload.unpack{}
-        payload.require(WINDOWS_FILES)
+        payload.require(windows_files())
         return true
     end
 
@@ -231,7 +248,7 @@ function install()
         payload.require(MACOS_FILES)
     else
         shell.exec({ "chmod", "+x", dir .. "/arcmd" })
-        payload.require(LINUX_FILES)
+        payload.require(linux_files())
     end
 
     return true
