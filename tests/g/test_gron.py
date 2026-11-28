@@ -255,7 +255,11 @@ class TestIndex:
         local_index = Path(xlings_home()) / "data" / "xim-pkgindex-local"
         shutil.copytree(ROOT / "libs", local_index / "libs", dirs_exist_ok=True)
         output = _xlings("search", PKG)
-        assert "local:gron" in output, output
+        # Once gron is published on the main index, search resolves the
+        # published `xim:gron` coordinate even though this test also
+        # registers a local copy; accept the namespace that actually
+        # resolves (same treatment as the jless native tests, #1517).
+        assert re.search(r"\b(?:local|xim):gron\b", output), output
 
 
 class TestLifecycle:
