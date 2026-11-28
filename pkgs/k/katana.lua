@@ -14,6 +14,8 @@ package = {
     homepage = "https://github.com/projectdiscovery/katana",
     archs = { "x86_64", "aarch64" },
     status = "stable",
+    categories = { "security", "crawler", "cli", "tools" },
+    keywords = { "katana", "crawler", "web", "security", "cli" },
     programs = { "katana" },
     xvm_enable = true,
     ci = { mirror = true },
