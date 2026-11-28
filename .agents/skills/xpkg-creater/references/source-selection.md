@@ -48,6 +48,29 @@ factory (`tools/res/`), never the xpkg's.
 A payload that finds its own libraries through `$ORIGIN` (Electron-style, xPack) declares no
 loader dependency: declaring `xim:glibc` would make elfpatch replace its `DT_RPATH`.
 
+### Closing the dependencies
+
+An xpkg's dependencies close **inside the xlings ecosystem**: every library its payload loads and
+every tool its hooks run is a declared `xim:` dependency (`xim:glibc`, `xim:gcc-runtime`,
+`xim:vcruntime`, a toolchain) or is carried by the payload itself. The index tests what it
+declares; it cannot test what happens to be on a user's machine, and a host library is not the one
+xlings relocated the payload against.
+
+- A dynamic glibc payload declares `xim:glibc` plus the libraries `readelf -d` names. A comment
+  such as "runs against the host's glibc >= 2.14" is **not** a reason to declare nothing: it makes
+  the install depend on a machine the index never ran on (a musl host, a minimal container, an old
+  distribution) and the program starts or not by luck.
+- A hook uses `xim.libxpkg.*` and the `libs/` modules. A host command is the platform's own base
+  tool (`tar`, `chmod`, `sh` on POSIX; `%SystemRoot%\System32\tar.exe` on Windows) and nothing
+  beyond that without a reason; never a host package manager.
+- A reason that **is** strong: the thing cannot be shipped and must belong to the machine, such as
+  the GPU driver stack (`libs/hostlib.lua` resolves it the way the loader would), a kernel
+  interface, or a licence that forbids redistribution. State which one, in the header comment of the
+  xpkg ("Host: <what>, because <why>") and in the pull request, so a reviewer can accept or refuse
+  it. Convenience, a smaller diff, or "the CI runner has it" are not reasons.
+- If no `xim:` package provides what you need, say so in the pull request and open an issue for the
+  missing package; do not paper over it with the host's copy.
+
 ## 4. No compiling at install
 
 `install()` never runs `configure`, `cmake`, `make`, `cargo`, `go build` or a compiler. It
