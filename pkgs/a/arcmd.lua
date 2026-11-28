@@ -80,7 +80,7 @@ package = {
     xpm = {
         linux = {
             source = "https://github.com/Ciao1019/ArcMD/releases/download/v${version}/arcmd-${version}-linux-${arch_alias}.tar.gz",
-            ["latest"] = { ref = "0.5.0" },
+            ["latest"] = { ref = "0.5.2" },
             ["0.5.0"] = {
                 x86_64 = {
                     url = "https://github.com/Ciao1019/ArcMD/releases/download/v0.5.0/arcmd-0.5.0-linux-amd64.tar.gz",
@@ -98,10 +98,20 @@ package = {
                     aarch64 = "6a2b8909f6cb62c4e70e3c64ee41fbd14e9e04bb49899cfeb5fa8f6560eb2cc6",
                 },
             },
+            ["0.5.2"] = {
+                x86_64 = {
+                    url = "https://github.com/Ciao1019/ArcMD/releases/download/v0.5.2/arcmd-0.5.2-linux-amd64.tar.gz",
+                    sha256 = "f36092f934182649b333ca75b54bf0a3eee1fc6a7b32217e828d980ce5529fa4",
+                },
+                aarch64 = {
+                    url = "https://github.com/Ciao1019/ArcMD/releases/download/v0.5.2/arcmd-0.5.2-linux-arm64.tar.gz",
+                    sha256 = "3171316432a60235c5bc2c66989d0fe0eb3039c4e06de5c5193e4cf6f6668349",
+                },
+            },
         },
         macosx = {
             source = "https://github.com/Ciao1019/ArcMD/releases/download/v${version}/arcmd-${version}-darwin-${arch_alias}.tar.gz",
-            ["latest"] = { ref = "0.5.0" },
+            ["latest"] = { ref = "0.5.2" },
             ["0.5.0"] = {
                 x86_64 = {
                     url = "https://github.com/Ciao1019/ArcMD/releases/download/v0.5.0/arcmd-0.5.0-darwin-amd64.tar.gz",
@@ -119,10 +129,20 @@ package = {
                     aarch64 = "036f100e1f00e2ffc395cc3ac223f949aae80a9b6cb73ac8d67122061c2112d6",
                 },
             },
+            ["0.5.2"] = {
+                x86_64 = {
+                    url = "https://github.com/Ciao1019/ArcMD/releases/download/v0.5.2/arcmd-0.5.2-darwin-amd64.tar.gz",
+                    sha256 = "7f9ca58762df6fa3931481add5422811d97ce3cfea18f9f12aa1484fa59762b9",
+                },
+                aarch64 = {
+                    url = "https://github.com/Ciao1019/ArcMD/releases/download/v0.5.2/arcmd-0.5.2-darwin-arm64.tar.gz",
+                    sha256 = "744d8e1681e03c036c981835f57fbeb805209be306651be8d60b3d3ddb326d5c",
+                },
+            },
         },
         windows = {
             source = "https://github.com/Ciao1019/ArcMD/releases/download/v${version}/arcmd-${version}-windows-${arch_alias}.zip",
-            ["latest"] = { ref = "0.5.0" },
+            ["latest"] = { ref = "0.5.2" },
             ["0.5.0"] = {
                 x86_64 = {
                     url = "https://github.com/Ciao1019/ArcMD/releases/download/v0.5.0/arcmd-0.5.0-windows-amd64.zip",
@@ -133,6 +153,12 @@ package = {
                 arch_alias = { x86_64 = "amd64" },
                 sha256 = {
                     x86_64 = "890452d64234acd43d0e5057397c1efb8a7792f5510c708c39c55e4020ca0117",
+                },
+            },
+            ["0.5.2"] = {
+                x86_64 = {
+                    url = "https://github.com/Ciao1019/ArcMD/releases/download/v0.5.2/arcmd-0.5.2-windows-amd64.zip",
+                    sha256 = "8c741d28c3dd7e1e4e97b0b4afc2cfb0660e0c6da376ad518ee1866afb300348",
                 },
             },
         },
@@ -146,13 +172,30 @@ import("xim.pkgindex.payload")
 import("xim.pkgindex.shell")
 import("xim.pkgindex.shortcut")
 
-local LINUX_FILES = { "arcmd", "LICENSE", "icon.png", "third_party/README.md" }
+-- Upstream v0.5.1 renamed `icon.png` -> `arcmd.png` in the linux tarball and
+-- dropped icon files from the Windows zip entirely; v0.5.0 archives keep
+-- `icon.png`. Manifests below therefore key off the version being installed.
+local function image_file()
+    if pkginfo.version() == "0.5.0" then return "icon.png" end
+    return "arcmd.png"
+end
+
+local function linux_files()
+    return { "arcmd", "LICENSE", image_file(), "third_party/README.md" }
+end
+
 local MACOS_FILES = {
     "ArcMD.app/Contents/MacOS/ArcMD",
     "ArcMD.app/Contents/Info.plist",
     "ArcMD.app/Contents/Resources/LICENSE",
 }
-local WINDOWS_FILES = { "ArcMD.exe", "LICENSE", "icon.png", "third_party/README.md" }
+
+local function windows_files()
+    local files = { "ArcMD.exe", "LICENSE" }
+    if pkginfo.version() == "0.5.0" then table.insert(files, "icon.png") end
+    table.insert(files, "third_party/README.md")
+    return files
+end
 
 local function is_windows()
     if os.getenv("OS") == "Windows_NT" then return true end
@@ -163,9 +206,9 @@ local function is_windows()
 end
 
 function installed()
-    return payload.present(LINUX_FILES)
+    return payload.present(linux_files())
         or payload.present(MACOS_FILES)
-        or payload.present(WINDOWS_FILES)
+        or payload.present(windows_files())
 end
 
 function install()
@@ -183,7 +226,7 @@ function install()
     if is_windows() then
         -- Flat Windows zip: extract straight into install_dir via System32\tar.exe.
         payload.unpack{}
-        payload.require(WINDOWS_FILES)
+        payload.require(windows_files())
         return true
     end
 
@@ -205,7 +248,7 @@ function install()
         payload.require(MACOS_FILES)
     else
         shell.exec({ "chmod", "+x", dir .. "/arcmd" })
-        payload.require(LINUX_FILES)
+        payload.require(linux_files())
     end
 
     return true
