@@ -408,5 +408,45 @@
     "what": "gdb",
     "version": "18.1",
     "arch": "aarch64"
+  },
+  {
+    "what": "libaio",
+    "version": "0.3.113",
+    "arch": "x86_64"
+  },
+  {
+    "what": "libaio",
+    "version": "0.3.113",
+    "arch": "aarch64"
+  },
+  {
+    "what": "numactl",
+    "version": "2.0.19",
+    "arch": "x86_64"
+  },
+  {
+    "what": "numactl",
+    "version": "2.0.19",
+    "arch": "aarch64"
+  },
+  {
+    "what": "libcurl",
+    "version": "8.23.0",
+    "arch": "x86_64"
+  },
+  {
+    "what": "libcurl",
+    "version": "8.23.0",
+    "arch": "aarch64"
+  },
+  {
+    "what": "redis",
+    "version": "8.10.3",
+    "arch": "x86_64"
+  },
+  {
+    "what": "redis",
+    "version": "8.10.3",
+    "arch": "aarch64"
   }
 ]

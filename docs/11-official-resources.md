@@ -49,6 +49,10 @@ architecture it is for. The `res-build` workflow runs it on `ubuntu-24.04` and
 - every build checks what it made — it runs, it is static where it says so, it
   needs only glibc where it links it, it holds no hard link — before it is an
   artifact;
+- `libaio`, `numactl`, `libcurl` and `redis` also reject unreadable ELF metadata,
+  RPATH/RUNPATH, DWARF `.debug_*` sections and known factory/CI path prefixes.
+  Ordinary runtime home paths are allowed; `--strict-tmp` additionally scans
+  every payload file for temporary paths;
 - each payload carries a `README.provenance`: its inputs, their digests, the
   container, and the packages installed inside it.
 

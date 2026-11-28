@@ -107,3 +107,10 @@ patchelf-aarch64 0.19.3 2281dd071995b449b9ce7c53c71d6d56ec3a280ae1cc66b779442abf
 # winlibs' MinGW-w64 GCC 16.2.0 for Windows x86_64 (POSIX, SEH, UCRT, without LLVM), release
 # 16.2.0posix-23.1.3-14.0.0-ucrt-r3 (the digest GitHub records for the asset).
 winlibs-x86_64-posix-seh-ucrt 16.2.0 3c69305081e4a647144339a936244fcf7d3d9e558319e1ad7be2cd2886d4b6a1
+# Shared glibc libraries (built in Debian 12 for Linux x86_64 and aarch64).
+# libaio: Debian archive snapshot of upstream 0.3.113 tarball (pagure.io/libaio).
+libaio 0.3.113 2c44d1c5fd0d43752287c9ae1eb9c023f04ef848ea8d4aafa46e9aedb678200b
+numactl 2.0.19 f2672a0381cb59196e9c246bf8bcc43d5568bc457700a697f1a1df762b9af884
+libcurl 8.23.0 8dadd7d2536a314f982ad05a651b713f426bf7d02cc2c76cffb9796f2218e6c5
+# Static musl binaries (built in Alpine 3.20 for Linux x86_64 and aarch64).
+redis 8.10.3 85ae62e175cc76f638015fa18cb384b549b6808a765425d9e9d47466f69532ea
