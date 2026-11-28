@@ -45,8 +45,8 @@ Stable distributed, offline-first issue tracker storing issues in Git objects; p
 
 ## Verification
 
-- `tests/g/test_git_bug.py` covers static metadata, full indexed matrix/hash/template
-  agreement, isolation, index registration/search, install/reinstall/list, version,
+- `tests/g/test_git_bug.py` covers static metadata, Lua syntax, shared isolation
+  policy, index registration/search, install/reinstall/list, version,
   actual offline issue creation/list/read/close in a temporary local Git repository,
   and remove/re-remove plus xvm shim/workspace cleanup.
 - The functional workflow uses only the managed Git shim on PATH, disables system/global
