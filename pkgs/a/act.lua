@@ -62,7 +62,7 @@ package = {
     xpm = {
         linux = {
             source = "https://github.com/nektos/act/releases/download/v${version}/act_Linux_${arch_alias}.tar.gz",
-            ["latest"] = { ref = "0.2.98" },
+            ["latest"] = { ref = "0.2.99" },
             ["0.2.98"] = {
                 arch_alias = { x86_64 = "x86_64", aarch64 = "arm64" },
                 sha256 = {
@@ -70,10 +70,20 @@ package = {
                     aarch64 = "a30ba1a1582cb93810c77f743415cac33c16f60fc288116a8e0943144b6a6a4f",
                 },
             },
+            ["0.2.99"] = {
+                x86_64 = {
+                    url = "https://github.com/nektos/act/releases/download/v0.2.99/act_Linux_x86_64.tar.gz",
+                    sha256 = "244abf6b011257ae959be907d618a8243863991020190c9107e151b545e32cdd",
+                },
+                aarch64 = {
+                    url = "https://github.com/nektos/act/releases/download/v0.2.99/act_Linux_arm64.tar.gz",
+                    sha256 = "e7544abd0d74a06fd63a158a45c0f935c54a3f8759bf4c615034b1eb66d3a950",
+                },
+            },
         },
         macosx = {
             source = "https://github.com/nektos/act/releases/download/v${version}/act_Darwin_${arch_alias}.tar.gz",
-            ["latest"] = { ref = "0.2.98" },
+            ["latest"] = { ref = "0.2.99" },
             ["0.2.98"] = {
                 arch_alias = { x86_64 = "x86_64", aarch64 = "arm64" },
                 sha256 = {
@@ -81,15 +91,35 @@ package = {
                     aarch64 = "14477d7e076b12a885c54301beff2b524a905e4238a2b3ec9b3d1fd0efdc100f",
                 },
             },
+            ["0.2.99"] = {
+                x86_64 = {
+                    url = "https://github.com/nektos/act/releases/download/v0.2.99/act_Darwin_x86_64.tar.gz",
+                    sha256 = "67129cc527906cad2cbfe90fbae73d0fc9c077d481c8fea2da874c94e0500203",
+                },
+                aarch64 = {
+                    url = "https://github.com/nektos/act/releases/download/v0.2.99/act_Darwin_arm64.tar.gz",
+                    sha256 = "53e650238211e6af86458c252e896dac30497eb16fecf08dd7fef4d9ce6eec5b",
+                },
+            },
         },
         windows = {
             source = "https://github.com/nektos/act/releases/download/v${version}/act_Windows_${arch_alias}.zip",
-            ["latest"] = { ref = "0.2.98" },
+            ["latest"] = { ref = "0.2.99" },
             ["0.2.98"] = {
                 arch_alias = { x86_64 = "x86_64", aarch64 = "arm64" },
                 sha256 = {
                     x86_64 = "d0d868ee2b33bb710f4df82d69345ce3a10d2f9fc7bbee9522bf36a15779ada0",
                     aarch64 = "c67cd28ccd1c9a9238614306a8f49c2037b7df7aa01b5d890ad671d43cbdc503",
+                },
+            },
+            ["0.2.99"] = {
+                x86_64 = {
+                    url = "https://github.com/nektos/act/releases/download/v0.2.99/act_Windows_x86_64.zip",
+                    sha256 = "f65de87205f8a45bf73d8fc63819cab65f60195f1e815a4c472e944af723d6a6",
+                },
+                aarch64 = {
+                    url = "https://github.com/nektos/act/releases/download/v0.2.99/act_Windows_arm64.zip",
+                    sha256 = "61da54b51aa3bbb4597665d3b42b814ee3b7dce2b3c5462e261a8f62592d709c",
                 },
             },
         },

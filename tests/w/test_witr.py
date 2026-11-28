@@ -153,15 +153,15 @@ def sandbox(tmp_path_factory):
         "XDG_DATA_HOME": str(root / "data"), "XDG_STATE_HOME": str(root / "state"),
         "BASH_ENV": os.devnull, "PATH": str(bindir) + os.pathsep + os.environ["PATH"],
     }
-    local = xhome / "data/xim-pkgindex-local"
-    registered = False
+
+
     try:
         _run([executable, "self", "init", "--home", xhome, "--agent"], env)
         _run([executable, "config", "--mirror", "GLOBAL", "--agent"], env)
         _run([executable, "update", "--yes", "--agent"], env)
         shutil.copytree(ROOT / "libs", xhome / "data/xim-pkgindex/libs", dirs_exist_ok=True)
         _run([executable, "config", "--add-xpkg", ROOT / PKG_FILE, "--agent"], env)
-        registered = True
+
         if archives := os.environ.get("XLINGS_TEST_ARCHIVES"):
             host = {"linux": "linux", "darwin": "macosx", "win32": "windows"}[sys.platform]
             arch = {"amd64": "x86_64", "x86_64": "x86_64", "arm64": "aarch64",
@@ -178,12 +178,11 @@ def sandbox(tmp_path_factory):
             shutil.copy2(source, runtime / source.name)
         yield executable, env, bindir
     finally:
-        try:
-            if registered:
-                _run([executable, "config", "--remove-xpkg", "witr", "--agent"], env)
-                assert not (local / "pkgs/w/witr.lua").exists()
-        finally:
-            shutil.rmtree(root)
+        # The isolated home is throwaway: `config --add-xpkg` registers into the
+        # synced index (data/xim-pkgindex), which `config --remove-xpkg` does not
+        # read ("no local recipe named ..."); every other index test in this repo
+        # simply tears the sandbox down without deregistering.
+        shutil.rmtree(root)
 
 
 @pytest.fixture(scope="module")
