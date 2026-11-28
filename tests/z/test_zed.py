@@ -74,7 +74,7 @@ class TestVerify:
     @pytest.mark.verify
     @skip_if_not("linux")
     def test_version(self):
-        assert_command_output("zed --version", contains="Zed 1.29.3")
+        assert_command_output("zed --version", contains="Zed 1.30.2")
 
     @pytest.mark.verify
     @skip_if_not("linux")
