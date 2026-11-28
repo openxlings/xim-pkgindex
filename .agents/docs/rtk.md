@@ -21,7 +21,7 @@ The engine and proxy distributions are deliberately not selected.
 Both Linux musl binaries have no DT_NEEDED entries. The x86_64 binary is
 static PIE; a dynamic table alone is not evidence of a dynamic dependency.
 Windows PE imports VCRUNTIME140.dll: `xim:vcruntime` is a runtime dependency,
-and its DLL is copied app-locally beside rtk.exe. Other imports are Windows
+and its complete runtime set is copied beside rtk.exe. Other imports are Windows
 system DLLs/API sets. macOS uses the corresponding official Mach-O build.
 Wrapper subcommands invoke the user's separately selected developer tools;
 the built-in JSON filter requires none of those tools.
@@ -30,7 +30,8 @@ the built-in JSON filter requires none of those tools.
 
 - install: place only the flat tarball's executable and LICENSE; Windows uses
   the shared ZIP extractor, then places the declared app-local CRT.
-- installed: require the executable and license, plus the CRT on Windows.
+- installed: require the executable and license; Windows runtime files come from
+  the declared provider rather than a hard-coded DLL list.
 - config: register only `rtk` with xvm.
 - uninstall: remove its xvm registration; xlings owns payload removal.
 - No shell/profile/PATH changes, hooks, daemon or telemetry opt-in.

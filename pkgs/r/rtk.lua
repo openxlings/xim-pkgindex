@@ -54,7 +54,6 @@ import("xim.libxpkg.xvm")
 import("xim.pkgindex.payload")
 
 local function required_files(exe)
-    if exe == "rtk.exe" then return { exe, "LICENSE", "vcruntime140.dll" } end
     return { exe, "LICENSE" }
 end
 
@@ -68,8 +67,11 @@ function install()
     local dir = pkginfo.install_dir()
     if archive:match("%.zip$") then
         payload.unpack{}
-        local crt = pkginfo.dep_install_dir("xim:vcruntime")
-        os.cp(crt .. "/bin/vcruntime140.dll", dir .. "/vcruntime140.dll")
+        local crt = assert(pkginfo.dep_install_dir("xim:vcruntime"),
+                           "rtk: xim:vcruntime payload directory is missing")
+        for _, dll in ipairs(fs.files(crt .. "/bin") or {}) do
+            os.cp(dll, dir)
+        end
         payload.require(required_files("rtk.exe"))
     else
         -- Move only this tarball's files, never the shared extraction tree.
