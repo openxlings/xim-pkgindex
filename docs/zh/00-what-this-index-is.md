@@ -3,23 +3,23 @@
 [English](../00-what-this-index-is.md) | **简体中文**
 
 xim-pkgindex 是 [xlings](https://github.com/openxlings/xlings) 的官方包索引：
-`xlings install` 读取的配方、配方指向的资源，以及保证它们可安装的测试。站点见
+`xlings install` 读取的 xpkg、xpkg 指向的资源，以及保证它们可安装的测试。站点见
 [index.xlings.org](https://index.xlings.org)。
 
 ## 里面有什么
 
 | 路径 | 内容 |
 |---|---|
-| `pkgs/<首字母>/<name>.lua` | 每个包一个配方（xpkg：元数据、平台—版本资源矩阵、钩子） |
+| `pkgs/<首字母>/<name>.lua` | 每个包一个 xpkg（xpkg：元数据、平台—版本资源矩阵、钩子） |
 | `pkgs/luban/<name>.lua` | 只为 Luban 存在的包：各 edition、启动配置、`luban-os`、`xdesk`、`labwc-desktop`、`luban-fonts` |
-| `libs/` | 配方共用的 Lua 模块（`sysroot`、`relocate`、`graphics`、`luban` 等） |
+| `libs/` | xpkg 共用的 Lua 模块（`sysroot`、`relocate`、`graphics`、`luban` 等） |
 | `tests/` | 与 `pkgs/` 一一对应的 pytest 测试，以及全仓库的检查 |
 | `tools/res/` | 本索引自己构建的资源所用的构建工厂 |
 | `xim-indexrepos.lua` | 默认的子索引 |
 | `index-compat.json` | 本索引需要的最低客户端版本 |
 | `.xpkgindex.json` | 站点配置 |
 
-配方以数据为主：它安装的资源及其 sha256、它提供的程序、它的依赖。钩子只做数据
+xpkg 以数据为主：它安装的资源及其 sha256、它提供的程序、它的依赖。钩子只做数据
 做不到的事。格式见 [XPackage V2](../specs/xpackage-v2.md)。
 
 ## 命名空间
@@ -36,7 +36,7 @@ xim-pkgindex 是 [xlings](https://github.com/openxlings/xlings) 的官方包索�
 裸名字（`gcc`）先在主索引中查找；只有所有主索引都没有时才查子索引。显式命名空间
 （`xim:gcc`）只查那一个索引。两个主索引都能回答同一个裸名字时报错，要求写出命名空间。
 
-本索引中的配方不带命名空间声明的依赖，指的是**本索引**中同名的包。
+本索引中的 xpkg 不带命名空间声明的依赖，指的是**本索引**中同名的包。
 
 ## 它怎样到达一台机器
 

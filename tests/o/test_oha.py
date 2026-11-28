@@ -1,0 +1,379 @@
+"""Tests for the oha package."""
+from http.server import BaseHTTPRequestHandler, HTTPServer
+import os
+from pathlib import Path
+import re
+import shutil
+import subprocess
+import threading
+
+import pytest
+
+from tests.lib.assertions import (
+    assert_command_output,
+    assert_config_registers_package_name,
+    assert_install_succeeds,
+    assert_no_bashrc_modification,
+    assert_no_direct_path_modification,
+    assert_no_direct_pkg_manager,
+    assert_no_exec_xvm,
+    assert_no_typos,
+    assert_platform_supported,
+    assert_required_fields,
+    assert_uses_new_api,
+    assert_valid_spec,
+    assert_valid_type,
+    assert_valid_xvm_node_kinds,
+    assert_xim_add_succeeds,
+    assert_xvm_registered,
+    assert_xvm_shim_exists,
+)
+from tests.lib.platform_utils import skip_if_not, under_test, xlings_home
+from tests.lib.xpkg_parser import parse_xpkg
+
+PKG = "oha"
+PKG_FILE = "pkgs/o/oha.lua"
+VERSION = "1.17.0"
+REPO_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _run_lua(script, *args):
+    lua = shutil.which("lua5.4") or shutil.which("lua")
+    if not lua:
+        pytest.skip("Lua interpreter is unavailable")
+    return subprocess.run(
+        [lua, "-", *args],
+        input=script,
+        text=True,
+        capture_output=True,
+        check=True,
+        cwd=REPO_ROOT,
+    ).stdout
+
+
+@pytest.fixture(scope="module")
+def meta():
+    return parse_xpkg(PKG_FILE)
+
+
+class TestStatic:
+    @pytest.mark.static
+    def test_required_fields(self, meta):
+        assert_required_fields(meta)
+
+    @pytest.mark.static
+    def test_valid_spec(self, meta):
+        assert_valid_spec(meta)
+        assert meta.spec == "2"
+
+    @pytest.mark.static
+    def test_valid_type(self, meta):
+        assert_valid_type(meta)
+
+    @pytest.mark.static
+    def test_no_typos(self):
+        assert_no_typos(PKG_FILE)
+
+    @pytest.mark.static
+    def test_valid_xvm_node_kinds(self, meta):
+        assert_valid_xvm_node_kinds(meta)
+
+    @pytest.mark.static
+    def test_config_registers_package_name(self, meta):
+        assert_config_registers_package_name(meta)
+
+    @pytest.mark.static
+    def test_supported_platforms(self, meta):
+        for platform in ("linux", "macosx", "windows"):
+            assert_platform_supported(meta, platform)
+
+    @pytest.mark.static
+    def test_resource_architecture_mapping_and_autoupdate(self):
+        _run_lua(
+            r'''
+function import() end
+assert(loadfile(arg[1]))()
+assert(package.spec == "2", "spec must be 2")
+assert(package.ci and package.ci.mirror == true, "ci.mirror must be true")
+assert(package.xvm_enable == true, "xvm_enable must be true")
+assert(package.programs and #package.programs == 1 and package.programs[1] == "oha")
+
+local au = assert(package.extensions and package.extensions.autoupdate, "missing extensions.autoupdate")
+assert(au.source == "https://github.com/hatoo/oha/releases")
+assert(au.resources and au.resources.GLOBAL and au.resources.GLOBAL.required == true)
+
+assert(package.xpm.linux.deps == nil, "static linux binaries must declare no runtime deps")
+assert(package.xpm.macosx.deps == nil, "macosx binaries must declare no runtime deps")
+local win_deps = assert(package.xpm.windows.deps and package.xpm.windows.deps.runtime)
+assert(#win_deps == 1 and win_deps[1] == "xim:vcruntime", "windows must declare xim:vcruntime")
+
+local expected = {
+    linux = { x86_64 = "amd64", aarch64 = "arm64" },
+    macosx = { x86_64 = "amd64", aarch64 = "arm64" },
+    windows = { x86_64 = "amd64" },
+}
+local seen_filenames = {}
+local count = 0
+for platform, arches in pairs(expected) do
+    local p = assert(package.xpm[platform], "missing platform: " .. platform)
+    local version = assert(p.latest and p.latest.ref, "missing latest.ref: " .. platform)
+    assert(version == "1.17.0")
+    local entry = assert(p[version], "missing version entry: " .. platform)
+    for arch, alias in pairs(arches) do
+        assert(entry.arch_alias and entry.arch_alias[arch] == alias, platform .. "/" .. arch)
+        local sha = assert(entry.sha256 and entry.sha256[arch], "missing sha256: " .. platform .. "/" .. arch)
+        assert(type(sha) == "string" and #sha == 64 and sha:match("^[0-9a-f]+$"), platform .. "/" .. arch)
+        local auto = assert(au.resources.GLOBAL.url[platform] and au.resources.GLOBAL.url[platform][arch])
+        assert(auto:find("${tag}", 1, true), "autoupdate template must use ${tag}: " .. platform .. "/" .. arch)
+        assert(not auto:find("${arch_alias}", 1, true),
+               "autoupdate template must not use runtime placeholder ${arch_alias}: " .. platform .. "/" .. arch)
+        local auto_resolved = auto:gsub("%${tag}", "v" .. version)
+        local xpm_resolved = p.source:gsub("%${version}", version):gsub("%${arch_alias}", alias)
+        assert(auto_resolved == xpm_resolved,
+               "installer/updater URLs disagree: " .. platform .. "/" .. arch)
+        local filename = xpm_resolved:match("([^/]+)$")
+        assert(not seen_filenames[filename], "duplicate asset filename: " .. filename)
+        seen_filenames[filename] = true
+        count = count + 1
+    end
+    for arch in pairs(entry.sha256) do
+        assert(arches[arch], "unexpected arch: " .. arch)
+    end
+end
+assert(count == 5)
+''',
+            PKG_FILE,
+        )
+
+    @pytest.mark.static
+    def test_hooks_behavior_in_lua_sandbox(self):
+        _run_lua(
+            r'''
+local files = {}
+local dirs = {}
+local execs = {}
+local xvm_calls = {}
+local copied = {}
+local cur_install_file = ""
+local cur_install_dir = ""
+local cur_dep_dir = ""
+
+local mods = {
+    ["xim.libxpkg.fs"] = function()
+        fs = {
+            mkdir_p = function(d) dirs[d] = true end,
+            files = function(dir)
+                local out = {}
+                local prefix = dir .. "/"
+                for k in pairs(files) do
+                    if k:sub(1, #prefix) == prefix then
+                        table.insert(out, k)
+                    end
+                end
+                table.sort(out)
+                return out
+            end,
+        }
+    end,
+    ["xim.libxpkg.pkginfo"] = function()
+        pkginfo = {
+            install_file = function() return cur_install_file end,
+            install_dir = function() return cur_install_dir end,
+            dep_install_dir = function(name)
+                if name == "xim:vcruntime" then return cur_dep_dir end
+                return nil
+            end,
+        }
+    end,
+    ["xim.libxpkg.xvm"] = function()
+        xvm = {
+            add = function(name, opts) table.insert(xvm_calls, {"add", name, opts}) end,
+            remove = function(name) table.insert(xvm_calls, {"remove", name}) end,
+        }
+    end,
+    ["xim.libxpkg.system"] = function()
+        system = {
+            exec = function(cmd) table.insert(execs, cmd) end,
+        }
+    end,
+}
+
+function import(name)
+    assert(mods[name], "unexpected import: " .. name)()
+end
+
+os.isfile = function(p) return files[p] == true end
+os.tryrm = function(d)
+    dirs[d] = nil
+    for k in pairs(files) do
+        if k:sub(1, #d) == d then files[k] = nil end
+    end
+end
+os.mv = function(src, dst)
+    assert(files[src], "missing src: " .. src)
+    files[src] = nil
+    files[dst] = true
+end
+os.cp = function(src, dst_dir)
+    assert(files[src], "missing cp src: " .. src)
+    local name = src:match("([^/\\]+)$")
+    files[dst_dir .. "/" .. name] = true
+    table.insert(copied, {src, dst_dir})
+end
+
+assert(loadfile(arg[1]))()
+
+-- Unix case
+cur_install_file = "/tmp/dl/oha-linux-amd64"
+cur_install_dir = "/store/xpkgs/xim-x-oha/1.17.0"
+files[cur_install_file] = true
+assert(installed() == false)
+assert(install() == true)
+assert(dirs[cur_install_dir] == true)
+assert(files["/store/xpkgs/xim-x-oha/1.17.0/oha"] == true)
+assert(#execs == 1 and execs[1] == 'chmod +x "/store/xpkgs/xim-x-oha/1.17.0/oha"')
+assert(installed() == true)
+
+-- Windows case
+files = {}
+dirs = {}
+execs = {}
+copied = {}
+cur_install_file = "C:\\dl\\oha-windows-amd64.exe"
+cur_install_dir = "C:\\store\\xpkgs\\xim-x-oha\\1.17.0"
+cur_dep_dir = "C:\\store\\xpkgs\\xim-x-vcruntime\\14.44.35211"
+files[cur_install_file] = true
+files[cur_dep_dir .. "/bin/test_crt.dll"] = true
+assert(installed() == false)
+assert(install() == true)
+assert(dirs[cur_install_dir] == true)
+assert(files["C:\\store\\xpkgs\\xim-x-oha\\1.17.0/oha.exe"] == true)
+assert(files["C:\\store\\xpkgs\\xim-x-oha\\1.17.0/test_crt.dll"] == true)
+assert(#copied == 1)
+assert(#execs == 0, "must not run chmod on Windows")
+assert(installed() == true)
+
+-- config & uninstall
+assert(config() == true)
+assert(xvm_calls[1][1] == "add" and xvm_calls[1][2] == "oha" and xvm_calls[1][3].bindir == cur_install_dir)
+assert(uninstall() == true)
+assert(xvm_calls[2][1] == "remove" and xvm_calls[2][2] == "oha")
+''',
+            PKG_FILE,
+        )
+
+
+class TestIndex:
+    @pytest.mark.index
+    def test_xim_add(self):
+        assert_xim_add_succeeds(PKG_FILE)
+
+
+class TestIsolation:
+    @pytest.mark.isolation
+    def test_no_exec_xvm(self):
+        assert_no_exec_xvm(PKG_FILE)
+
+    @pytest.mark.isolation
+    def test_no_bashrc(self):
+        assert_no_bashrc_modification(PKG_FILE)
+
+    @pytest.mark.isolation
+    def test_no_path_modification(self):
+        assert_no_direct_path_modification(PKG_FILE)
+
+    @pytest.mark.isolation
+    def test_new_api(self):
+        assert_uses_new_api(PKG_FILE)
+
+    @pytest.mark.isolation
+    def test_no_direct_pkg_manager(self):
+        assert_no_direct_pkg_manager(PKG_FILE)
+
+    @pytest.mark.isolation
+    def test_portable_lua_and_libxpkg_only(self):
+        src = (REPO_ROOT / PKG_FILE).read_text(encoding="utf-8")
+        assert set(re.findall(r'import\("([^"]+)"\)', src)) <= {
+            "xim.libxpkg.fs",
+            "xim.libxpkg.pkginfo",
+            "xim.libxpkg.system",
+            "xim.libxpkg.xvm",
+        }
+        assert not re.search(r'\b(?:path\.|is_host\(|os\.host\(|raise\()', src)
+
+
+class TestLifecycle:
+    @pytest.mark.lifecycle
+    @skip_if_not("linux")
+    def test_install(self):
+        assert_install_succeeds(under_test(PKG), timeout=120)
+
+
+class TestVerify:
+    def _oha_bin(self):
+        suffix = ".exe" if os.name == "nt" else ""
+        subos = os.environ.get("XLINGS_TEST_SUBOS", "current")
+        bindir = Path(xlings_home()) / "subos" / subos / "bin"
+        if not bindir.is_dir():
+            bindir = Path(xlings_home()) / "subos" / os.environ.get("XLINGS_TEST_SUBOS", "default") / "bin"
+        shim = bindir / ("oha" + suffix)
+        if shim.is_file():
+            return str(shim)
+        found = shutil.which("oha")
+        assert found, f"Missing installed oha shim at {shim} or in PATH"
+        return found
+
+    @pytest.mark.verify
+    @skip_if_not("linux")
+    def test_version(self):
+        expected = os.environ.get("XLINGS_TEST_VERSION", VERSION)
+        assert_command_output(f'"{self._oha_bin()}" --version', contains=expected)
+
+    @pytest.mark.verify
+    @skip_if_not("linux")
+    def test_xvm_registered(self, monkeypatch):
+        if not os.environ.get("XLINGS_TEST_SUBOS"):
+            subos = "current" if (Path(xlings_home()) / "subos" / "current" / ".xlings.json").is_file() else "default"
+            monkeypatch.setenv("XLINGS_TEST_SUBOS", subos)
+        assert_xvm_registered(PKG)
+
+    @pytest.mark.verify
+    @skip_if_not("linux")
+    def test_shim(self):
+        suffix = ".exe" if os.name == "nt" else ""
+        subos = os.environ.get("XLINGS_TEST_SUBOS")
+        if subos:
+            shim = Path(xlings_home()) / "subos" / subos / "bin" / ("oha" + suffix)
+            assert shim.is_file(), f"shim not found at {shim}"
+        else:
+            assert_xvm_shim_exists(PKG)
+
+    @pytest.mark.verify
+    @skip_if_not("linux")
+    def test_http_load_burst(self):
+        class _Handler(BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(200)
+                self.end_headers()
+                self.wfile.write(b"ok\n")
+
+            def log_message(self, format, *args):
+                return
+
+        srv = HTTPServer(("127.0.0.1", 0), _Handler)
+        port = srv.server_address[1]
+        thread = threading.Thread(target=srv.serve_forever, daemon=True)
+        thread.start()
+        try:
+            proc = subprocess.run(
+                [self._oha_bin(), "-n", "5", "-c", "1", "--no-tui", f"http://127.0.0.1:{port}/"],
+                capture_output=True,
+                text=True,
+                check=True,
+                timeout=15,
+            )
+            assert "100.00%" in proc.stdout
+            assert "[200] 5 responses" in proc.stdout
+        finally:
+            srv.shutdown()
+            srv.server_close()

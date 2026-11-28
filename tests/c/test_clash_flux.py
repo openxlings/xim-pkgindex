@@ -21,7 +21,8 @@ from tests.lib.platform_utils import skip_if_not
 from tests.lib.xpkg_parser import parse_xpkg
 
 
-PKG = "clash-flux"
+PKG = "farnaherry:clash-flux@0.3.131"
+PROGRAM = "clash-flux"
 PKG_FILE = "pkgs/c/clash-flux.lua"
 
 
@@ -46,8 +47,19 @@ class TestStatic:
     @pytest.mark.static
     def test_release_assets_are_pinned(self, meta):
         source = meta.raw_content
-        assert '["latest"] = { ref = "0.1.3" }' in source
+        assert '["latest"] = { ref = "0.3.131" }' in source
+        assert source.count('["latest"] = { ref = "0.3.131" }') == 3
+        assert source.count('["0.3.131"] = {') == 3
         assert source.count('["0.1.3"] = {') == 3
+        # 0.3.131 pinned sha256s
+        assert source.count('"4357995dabe0b087a3e6f1dc1f19881ce0d312c69589eb3ed534f8af0a08694d"') == 1
+        assert source.count('"a0e72d8ab398d5d524f376e6fa28031ee913df9cadfa3579add5e297464d4979"') == 1
+        assert source.count('"ca974e97b942fea7189b37274d16e99ca5b03375578789b11264ac5b2279d416"') == 1
+        assert source.count('"5fe666eccc505c7dad83eaca33a0b6110f7acbef85b65b5ed354372cca02227a"') == 1
+        assert re.search(r"clash-flux-\$\{version\}-linux-\$\{arch\}\.\$\{ext\}", source)
+        assert re.search(r"clash-flux-\$\{version\}-macos-\$\{arch_alias\}\.\$\{ext\}", source)
+        assert re.search(r"clash-flux-\$\{version\}-windows-\$\{arch\}\.\$\{ext\}", source)
+        # 0.1.3 published entries preserved
         assert source.count('"87263deb4ea50ec19a8c5c96b2c348f3b785e91607109b52d35f83663c2760d5"') == 1
         assert source.count('"578503bebff0111fbbd11b9518387b3f43b84419a4cf4684eec744eed83f8195"') == 1
         assert source.count('"908b9b07f5b3c05d040adf9c73839b4ca0132d20587b0f506eb70aad6493c077"') == 1
@@ -97,9 +109,9 @@ class TestVerify:
     @pytest.mark.verify
     @skip_if_not("linux")
     def test_version(self):
-        assert_command_output("clash-flux version", contains="Clash-Flux v0.1.3")
+        assert_command_output("clash-flux version", contains="Clash-Flux v0.3.131")
 
     @pytest.mark.verify
     @skip_if_not("linux")
     def test_shim(self):
-        assert_xvm_shim_exists(PKG)
+        assert_xvm_shim_exists(PROGRAM)

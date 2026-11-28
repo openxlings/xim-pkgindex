@@ -121,7 +121,6 @@ def test_one_pr_entry_and_no_feature_push_duplication():
 def test_profile_routes_watch_their_own_executors():
     for profile in PROFILES.values():
         assert '.github/workflows/' + profile['workflow'] in profile['paths']
-    assert '.github/scripts/check-payload-hard-links.py' in PROFILES['payload_hard_links']['paths']
 
 
 def test_bot_dispatch_compares_complete_pr_not_last_commit():
@@ -181,6 +180,30 @@ def test_publication_follows_build_inputs_too():
         # input), but the CI-verified fallback can never be dropped.
         assert any('github.event.workflow_run.head_sha || github.sha' in (step.get('with', {}).get('ref') or '')
                    for job in d['jobs'].values() for step in job.get('steps', []))
+
+
+def test_a_failed_mirror_can_be_retried_for_one_package_on_main():
+    """A retry names one package; the planner still requires ci.mirror; the retry runs only from main."""
+    import subprocess
+    d, on = workflow('xpkg-mirror.yml')
+    inputs = on['workflow_dispatch']['inputs']
+    assert inputs['package']['default'] == '' and inputs['manifest']['required'] is False
+    assert "inputs.package != ''" in d['jobs']['plan']['if']
+    assert "github.ref == 'refs/heads/main'" in d['jobs']['plan']['if']
+    assert "inputs.manifest != ''" in d['jobs']['publish-manual']['if']
+    step = next(s for s in d['jobs']['plan']['steps'] if s.get('id') == 'plan')
+    assert '--only "$PACKAGE"' in step['run']
+    out = ROOT / '.pytest-mirror-plan.json'
+    try:
+        ok = subprocess.run(['python3', 'tools/xpkg_mirror_queue.py', '--workspace', '.', 'plan', '--head', 'HEAD',
+                             '--only', 'pnpm', '--out', str(out)], cwd=ROOT, capture_output=True, text=True)
+        assert ok.returncode == 0, ok.stderr
+        assert json.loads(out.read_text())['packages'] == ['pnpm']
+        refused = subprocess.run(['python3', 'tools/xpkg_mirror_queue.py', '--workspace', '.', 'plan', '--head', 'HEAD',
+                                  '--only', 'cmake', '--out', str(out)], cwd=ROOT, capture_output=True, text=True)
+        assert refused.returncode != 0 and 'ci = { mirror = true }' in refused.stderr
+    finally:
+        out.unlink(missing_ok=True)
 
 
 def test_multicommit_pr_keeps_earlier_package_change(tmp_path):

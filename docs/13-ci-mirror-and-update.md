@@ -36,10 +36,17 @@ required by default; set `required = false` explicitly for an optional mirror af
 review. At least one target must remain required. Use `latest = "keep"` for an LTS
 or pinned default. Before opening the PR, run `inspect` and a package-specific
 `check` with the pinned tool below and review the plan. Keep configuration in the
-recipe itself; document manual-maintenance reasons in a recipe comment or the PR.
+xpkg itself; document manual-maintenance reasons in an xpkg comment or the PR.
 Initial package versions use normal package CI; the updater candidate checks apply
-to added versions in existing recipes. CI validates current recipes and generates `coverage.json`, uploaded as an
+to added versions in existing xpkgs. CI validates current xpkgs and generates `coverage.json`, uploaded as an
 Actions artifact. Generated audit snapshots do not belong in the PR.
+
+A version older than every existing one is a historical backfill: the updater
+never appends it, so CI checks the URLs its entry declares instead of the release
+template, with the same platform, architecture, required-region and SHA256 rules,
+and installs it natively. An updater proposal (`auto/bump-*`) must not change
+dependencies, other metadata or hooks; any other PR is reviewed and may correct
+them. Published versions and the latest policy hold for both.
 
 `latest = "advance"` and each resource target's `required = true` are defaults.
 Use `latest = "keep"` for a pinned/LTS default. A target can expand to
@@ -161,14 +168,37 @@ commit, descriptor, tag commit or resource bytes change.
 
 ## Mirror publication
 
-`ci = { mirror = true }` remains an independent request to mirror already declared resources.
-`tools/xpkg_ci.py` provides `inspect`, `materialize`, `verify`, `ensure-repo` and `mirror`.
-It has no version discovery or proposal command. Mirror publication runs separately and cannot
-produce the resources a proposal is waiting for only after that same proposal is merged.
+`ci = { mirror = true }` asks CI to copy a package's declared GLOBAL resources to the `xlings-res`
+organisation (GitHub and GitCode). `tools/xpkg_ci.py` provides `inspect`, `materialize`, `verify`,
+`ensure-repo` and `mirror`; `tools/xpkg_mirror_queue.py` batches them.
+
+How the batch behaves (`.github/workflows/xpkg-mirror.yml`):
+
+- It runs after a successful CI on `main` and handles the packages changed since the newest successful
+  run of this workflow, plus the packages still failing. A run replaced by a newer one loses nothing:
+  the newest run covers every change since the last success.
+- One job publishes the batch, two packages at a time. Each GitCode upload has a 600-second timeout and
+  one retry; there is no timeout per package size.
+- A failed package does not fail the run. It is listed in one tracking issue (label `mirror-failed`, title
+  "xlings-res mirror: packages that did not publish"), which is found and updated, never duplicated. The
+  package is attempted again on the next run until it publishes; a package that keeps failing is attempted
+  on every run, so fix it or remove `ci = { mirror = true }`.
+- A pull request that changes a package declaring `ci = { mirror = true }` is materialized and verified
+  before merge (`.github/workflows/mirror-precheck.yml`). Nothing is published from a pull request.
+- By default a package declares `ci = { mirror = true }`. A well-known CN mirror declared in `url` replaces
+  it: the lint fails a pull request that declares both. Known CN hosts are listed in `KNOWN_CN_MIRRORS` in
+  `tools/xpkg_mirror_queue.py`. An explicit `url`, `ci` or `CN` you write is never overwritten.
+- To retry one package by hand, run `xpkg-mirror.yml` on `main` with `package` set. It must still declare
+  `ci = { mirror = true }`.
+- Publication is immutable: a release that exists with different assets is refused, never overwritten.
+
+Merging the pull request is the approval. The mirror does not rewrite the package's `url`: a `CN` leg that
+points at the mirror is added by a later reviewed change. The maintainer procedure is
+`.agents/skills/xlings-res-maintainer/SKILL.md`.
 
 Self-built/repacked payloads need their own resource production workflow. The updater can consume
 those assets once available; it does not create them. Published resource changes require the existing
 reviewed revision procedure, not an updater refresh.
 
 The old update fields and workflows have been removed. There is no legacy update fallback.
-CI derives the complete package inventory from recipes on each run; it does not read a committed audit snapshot.
+CI derives the complete package inventory from xpkgs on each run; it does not read a committed audit snapshot.

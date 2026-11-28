@@ -38,7 +38,9 @@ package = {
 
     xpm = {
         linux = {
-            deps = { "xim:zlib@>=1.2", "xim:glibc@>=2.38" },
+            -- gcc-runtime: eu-nm and eu-srcfiles are C++ (DT_NEEDED
+            -- libstdc++.so.6 and libgcc_s.so.1).
+            deps = { "xim:zlib@>=1.2", "xim:glibc@>=2.38", "xim:gcc-runtime" },
             -- elfpatch reads this from each dependency and writes the consumer's
             -- RPATH, which is what makes the stack resolve without anyone
             -- setting LD_LIBRARY_PATH. Same mechanism `gcc-runtime` uses.

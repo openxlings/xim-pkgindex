@@ -33,6 +33,8 @@ DEFAULT_ARCH_ALIASES = {"x86_64": "amd64", "aarch64": "arm64"}
 ARCHIVE_SUFFIXES = (".tar.gz", ".tar.xz", ".tar.bz2", ".tgz", ".zip")
 # GitCode's upload callback is especially slow for large release assets.
 GITCODE_UPLOAD_TIMEOUT = 600
+# One attempt plus one retry: a timed-out upload is re-checked before the retry (asset_available).
+GITCODE_UPLOAD_ATTEMPTS = 2
 GITCODE_VERIFY_TIMEOUT = 20
 
 
@@ -147,6 +149,24 @@ def find_block(text: str, key: str) -> tuple[int, int] | None:
 def lua_string(body: str, key: str) -> str | None:
     match = re.search(rf'\b{re.escape(key)}\s*=\s*"([^"]+)"', body)
     return match.group(1) if match else None
+
+
+def entry_url(body: str) -> str | None:
+    """The upstream URL of a version entry.
+
+    An entry spells it as a string, or as a region map
+    `url = { GLOBAL = "...", CN = "..." }` once a mirror carries it (xpackage
+    v2). The mirror is materialized from GLOBAL, the upstream bytes; reading
+    only the string form failed every pnpm release since 7.33.7 gained a CN URL
+    ("URL/template missing", runs 35108801349, 39872912661, 44882411917)."""
+    url = lua_string(body, "url")
+    if url:
+        return url
+    match = re.search(r"\burl\s*=\s*\{([^{}]*)\}", body)
+    if not match:
+        return None
+    regions = dict(re.findall(r"\b([A-Za-z][A-Za-z0-9_]*)\s*=\s*\"([^\"]+)\"", match.group(1)))
+    return regions.get("GLOBAL")
 
 
 def source_templates(body: str) -> dict[str, str] | None:
@@ -264,7 +284,7 @@ def resolve_platform_arches(arches: list[str], template: str,
 
 def validate_archive(path: Path) -> str | None:
     try:
-        if path.name.endswith(".tar.gz") or path.name.endswith(".tar.xz") or path.name.endswith(".tar.bz2"):
+        if path.name.endswith((".tar.gz", ".tar.xz", ".tar.bz2", ".tgz")):
             with tarfile.open(path, "r:*") as archive:
                 if archive.next() is None:
                     return "tar archive is empty"
@@ -337,7 +357,7 @@ def materialize(args: argparse.Namespace) -> int:
         if not version_block:
             return fail(f"{platform}: version {version} block missing")
         body = platform_body[version_block[0]:version_block[1]]
-        url = lua_string(body, "url")
+        url = entry_url(body)
         source_match = re.search(r'\bsource\s*=\s*"([^"]+)"', platform_body)
         if not source_match:
             source_match = re.search(r'\bsource\s*=\s*"([^"]+)"', xpm_body)
@@ -660,7 +680,7 @@ def cmd_mirror(args: argparse.Namespace) -> int:
         last_error = ""
         if asset_available(filename):
             continue
-        for attempt in range(3):
+        for attempt in range(GITCODE_UPLOAD_ATTEMPTS):
             try:
                 result_upload = subprocess.run(
                     upload,
@@ -674,7 +694,7 @@ def cmd_mirror(args: argparse.Namespace) -> int:
             if asset_available(filename):
                 uploaded = True
                 break
-            if attempt < 2:
+            if attempt < GITCODE_UPLOAD_ATTEMPTS - 1:
                 time.sleep(2 ** attempt)
         if not uploaded:
             return fail(f"GitCode asset upload failed for {filename}: {last_error}")

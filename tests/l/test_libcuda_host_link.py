@@ -103,7 +103,10 @@ class TestLifecycle:
         # whether the host has an NVIDIA driver — the symlink is
         # intentionally allowed to be dangling so it self-heals on a
         # later driver install.
-        assert_install_succeeds(PKG)
+        # The version the verify step reads. A dependent that pins an earlier
+        # one (ollama: libcuda-host-link@0.0.1) may have installed it in the
+        # same run, and a bare name is then already satisfied.
+        assert_install_succeeds(f"{PKG}@{VERSION}")
 
 
 class TestVerify:

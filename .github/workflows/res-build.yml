@@ -48,8 +48,9 @@ jobs:
   build:
     name: ${{ matrix.what }} ${{ matrix.version }} (${{ matrix.arch }})
     runs-on: ${{ matrix.arch == 'aarch64' && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
-    # gcc is the long one (an hour or two on four cores); the rest take minutes.
-    timeout-minutes: ${{ matrix.what == 'gcc' && 330 || 120 }}
+    # gcc and the mingw cross gcc are the long ones (an hour or two on four
+    # cores); the rest take minutes.
+    timeout-minutes: ${{ (matrix.what == 'gcc' || matrix.what == 'mingw-cross-gcc') && 330 || 120 }}
     needs: plan
     if: needs.plan.result == 'success'
     strategy:
@@ -58,7 +59,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Room to build
-        if: (matrix.what == 'gcc' || matrix.what == 'kernel-virt')
+        if: (matrix.what == 'gcc' || matrix.what == 'mingw-cross-gcc' || matrix.what == 'kernel-virt' || matrix.what == 'llvm')
         run: |
           sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/share/boost /opt/hostedtoolcache || true
           df -h /

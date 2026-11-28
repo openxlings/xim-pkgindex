@@ -61,7 +61,7 @@ package = {
     xpm = {
         linux = {
 
-            ["latest"] = { ref = "1.27.3" },
+            ["latest"] = { ref = "1.27.4" },
             ["1.27.0"] = {
                 url = "https://go.dev/dl/go1.27.0.linux-amd64.tar.gz",
                 sha256 = "675c26c449cbb18fc24b74650de1eabbae6e16f64326fd85a283fb3b58280685",
@@ -77,10 +77,17 @@ package = {
                 },
                 sha256 = "65efbc80fdc1fa2cd2631cad5b481777a68e8725f34e89f50fc6ac714e379b40",
             },
+            ["1.27.4"] = {
+                url = {
+                    GLOBAL = "https://go.dev/dl/go1.27.4.linux-amd64.tar.gz",
+                    CN = "https://mirrors.nju.edu.cn/golang/go1.27.4.linux-amd64.tar.gz",
+                },
+                sha256 = "7226736c2339719cda28fbf3a54d71aa63bcefe376e98cef00034268dab24840",
+            },
         },
         macosx = {
 
-            ["latest"] = { ref = "1.27.3" },
+            ["latest"] = { ref = "1.27.4" },
             ["1.27.0"] = {
                 url = "https://go.dev/dl/go1.27.0.darwin-arm64.tar.gz",
                 sha256 = "90493b3bbd5e10f91d12153198bf1994fd756399b4fec93b49b0c6e2acdeeb3e",
@@ -96,10 +103,17 @@ package = {
                 },
                 sha256 = "dd3908cf20959d798c1e06ebe5b72213f0505ce01373b40ce3110975a6cd99c2",
             },
+            ["1.27.4"] = {
+                url = {
+                    GLOBAL = "https://go.dev/dl/go1.27.4.darwin-arm64.tar.gz",
+                    CN = "https://mirrors.nju.edu.cn/golang/go1.27.4.darwin-arm64.tar.gz",
+                },
+                sha256 = "91a44a2b8a716600ad94a4f143e156116620db8828086a6e3602291be9bd0bb4",
+            },
         },
         windows = {
 
-            ["latest"] = { ref = "1.27.3" },
+            ["latest"] = { ref = "1.27.4" },
             ["1.27.0"] = {
                 url = "https://go.dev/dl/go1.27.0.windows-amd64.zip",
                 sha256 = "f0c0a0d33ba94f4d2c5dbc887334ce678b21813504ddb3aafcb06e60a5a667c4",
@@ -114,6 +128,13 @@ package = {
                     CN = "https://mirrors.nju.edu.cn/golang/go1.27.3.windows-amd64.zip",
                 },
                 sha256 = "f26081f438319757f8a1b46d7d0b2c5ec7583d4038e485e0aa725cfde7885fff",
+            },
+            ["1.27.4"] = {
+                url = {
+                    GLOBAL = "https://go.dev/dl/go1.27.4.windows-amd64.zip",
+                    CN = "https://mirrors.nju.edu.cn/golang/go1.27.4.windows-amd64.zip",
+                },
+                sha256 = "178ab98950ac69ab25069307dc6ade79f3816e414cce95b4da166a115cde1e7e",
             },
         },
     },
